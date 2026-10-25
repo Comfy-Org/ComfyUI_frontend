@@ -1910,6 +1910,26 @@ describe('AgentPanel extension flag gate', () => {
     expect(await notOffered()).not.toHaveBeenCalled()
   })
 
+  it('reports the finished launch window, not a storage failure, when writes fail after it', async () => {
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('Storage unavailable')
+    })
+
+    await loadEntryAndSetup()
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).not.toHaveBeenCalled()
+    expect(await offerExited()).toHaveBeenCalledWith({
+      exit: 'activation_window_complete',
+      stage: 'startup',
+      retry_armed: false
+    })
+  })
+
   it('treats unreadable storage as past the automatic launches', async () => {
     setAgentReady(true)
     Object.assign(consentStore, { accepted: false, isChecking: false })

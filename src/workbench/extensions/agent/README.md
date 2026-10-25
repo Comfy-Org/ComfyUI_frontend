@@ -47,9 +47,9 @@ The panel speaks one contract on the cloud and on the local agent:
 
 ## Activation and consent
 
-The dock is visible only when the server's `agent` feature reports
-`state: "ready"`, the panel has an open intent, and the current user and
-workspace have accepted Agent consent. Cloud and ComfyUI (`--enable-agent`)
+The dock is visible when the server's `agent` feature reports
+`state: "ready"` and the panel has an open intent; sending still requires
+Agent consent for the current user and workspace. Cloud and ComfyUI (`--enable-agent`)
 publish the same feature, and ComfyUI pushes `agent_status` when it changes;
 while it is `starting` or `failed` the entry button shows that, inert. Builds
 with `VITE_AGENT_STANDALONE=true` (the local agent harness) ignore the feature
@@ -64,9 +64,9 @@ a closed panel, and Send asks before the first message. Signed-out users see
 the card before sign-in. Acceptance is stored through the hosted Global
 Settings API under `Comfy.AgentPanel.ConsentAccepted` for the authenticated
 user and workspace. Skip, Escape and outside clicks dismiss without accepting.
-Skip is remembered on the device for the account and workspace and ends the
-automatic card; Escape and outside clicks do not. Failed loads or saves keep
-the panel closed and allow retry.
+Skip is remembered on the device for the account and workspace (or for
+signed-out use) and ends the automatic card; Escape and outside clicks do not.
+Failed loads or saves keep the panel closed and allow retry.
 Switching user or workspace invalidates the cached acceptance and loads the
 new scope. Desktop/Local sign-in continuation authenticates before saving.
 
