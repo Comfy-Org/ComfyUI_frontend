@@ -31,7 +31,6 @@ import {
 import { activateBillingScope } from '@/platform/billing/composables/activateBillingScope.testUtils'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import BillingTab from './BillingTab.vue'
 
@@ -1196,9 +1195,7 @@ describe('BillingTab', () => {
           settleWorkspaceBList = resolve
         })
       )
-      Object.assign(useTeamWorkspaceStore(), {
-        activeWorkspaceId: 'workspace-b'
-      })
+      activateBillingScope('actor-a', 'workspace-b')
       await nextTick()
 
       settleDetail[0](checkout('failed', { session_id: 'cs_a' }))
@@ -1237,9 +1234,7 @@ describe('BillingTab', () => {
         checkouts: [],
         next_cursor: null
       })
-      Object.assign(useTeamWorkspaceStore(), {
-        activeWorkspaceId: 'workspace-b'
-      })
+      activateBillingScope('actor-a', 'workspace-b')
 
       await vi.waitFor(() =>
         expect(

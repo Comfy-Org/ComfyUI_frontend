@@ -4350,7 +4350,13 @@
       },
       {
         "from": "billing/domain",
-        "allow": ["billing/domain", "billing/domain/outer-1", "unclassified"]
+        "allow": [
+          "billing/domain",
+          "design-system/domain",
+          "billing/domain/outer-1",
+          "design-system/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "billing/application",
@@ -4358,9 +4364,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4371,9 +4381,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4384,8 +4398,13 @@
           "billing/domain",
           "billing/application",
           "billing/presentation",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
           "billing/domain/outer-1",
           "billing/application/outer-1",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4398,9 +4417,15 @@
           "billing/infrastructure",
           "billing/presentation",
           "billing/integration",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "design-system/presentation",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -6850,7 +6875,13 @@
       },
       {
         "from": "billing/domain/outer-1",
-        "allow": ["billing/domain", "billing/domain/outer-1", "unclassified"]
+        "allow": [
+          "billing/domain",
+          "design-system/domain",
+          "billing/domain/outer-1",
+          "design-system/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "billing/application/outer-1",
@@ -6858,9 +6889,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -6871,9 +6906,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -7561,9 +7600,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
