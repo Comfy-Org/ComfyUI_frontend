@@ -266,12 +266,8 @@ test.describe(
       })
     })
 
-    test(
-      'reuses one subgraph definition as an independent second instance',
-      {
-        tag: '@vue-nodes'
-      },
-      async ({ page, getAgentSocket }) => {
+    test.describe('subgraph definition reuse', { tag: '@vue-nodes' }, () => {
+      test.beforeEach(async ({ page }) => {
         await page.setViewportSize({ width: 1920, height: 1280 })
         await bootAgentApp(page, true, {
           onboardingCompleted: true,
@@ -285,7 +281,12 @@ test.describe(
             await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
           }
         })
+      })
 
+      test('creates an independent second instance', async ({
+        page,
+        getAgentSocket
+      }) => {
         const outboundFrames: string[] = []
         await loadSeedIntoActiveTab(page, subgraphWorkflow)
         const agentPanel = new AgentPanel(page)
@@ -362,8 +363,8 @@ test.describe(
             original: AGENT_SUBGRAPH_INITIAL_TEXT,
             reused: secondInstanceText
           })
-      }
-    )
+      })
+    })
 
     test('applies interior widget edits to the subgraph and its host', async ({
       page,
