@@ -30,6 +30,7 @@ import type {
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -485,6 +486,7 @@ const agentTabGraph: ComfyWorkflowJSON = {
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 const settingStore = useSettingStore()
+const dialogStore = useDialogStore()
 watch(
   () => canvasStore.canvas?.graph,
   (graph, _previous, onCleanup) => {
@@ -592,7 +594,9 @@ const coachDeferredBy = computed(() =>
     ? 'app_mode'
     : activeTour.value !== null
       ? 'tour_active'
-      : null
+      : dialogStore.dialogStack.length > 0
+        ? 'dialog_open'
+        : null
 )
 const coachCompletionWaiters = new Set<() => void>()
 function releaseCoachCompletionWaiters(): void {
