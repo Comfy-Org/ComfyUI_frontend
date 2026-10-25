@@ -2,6 +2,11 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  EXTENSION_FAILURES_TRUNCATED_FIELD,
+  EXTENSION_LOAD_ERROR_TYPE
+} from '@/platform/telemetry/extensionLoadTelemetry'
+import type { ExtensionFailureDiagnostic } from '@/platform/telemetry/extensionLoadTelemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -14,7 +19,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage, toError } from '@/utils/errorUtil'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
@@ -31,11 +36,35 @@ export function shouldLoadExtension(
   return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
 }
 
-const MAX_NAMED_FAILED_EXTENSIONS = 10
+const MAX_EXTENSION_PATH_LENGTH = 512
+const MAX_EXTENSION_DIAGNOSTIC_LENGTH = 2048
+const MAX_REPORTED_FAILURES = 10
 
 export interface ExtensionLoadFailure {
   ext: string
   error: unknown
+}
+
+function toFailureDiagnostic({
+  ext,
+  error
+}: ExtensionLoadFailure): ExtensionFailureDiagnostic {
+  const path = ext.slice(0, MAX_EXTENSION_PATH_LENGTH)
+  try {
+    return {
+      ext: path,
+      message: (getErrorMessage(error) ?? toError(error).message).slice(
+        0,
+        MAX_EXTENSION_DIAGNOSTIC_LENGTH
+      ),
+      stack:
+        error instanceof Error
+          ? error.stack?.slice(0, MAX_EXTENSION_DIAGNOSTIC_LENGTH)
+          : undefined
+    }
+  } catch {
+    return { ext: path, message: 'Unknown extension load failure' }
+  }
 }
 
 /**
@@ -60,40 +89,32 @@ async function importCustomExtension(
   }
 }
 
-/**
- * The paths go in the message because `reportError` writes its console line
- * from the error, not from `options.tags`. The count is tagged; backend paths
- * are unbounded and belong in context instead of an indexed facet.
- */
 export function reportExtensionLoadFailures(
   failures: ExtensionLoadFailure[]
 ): void {
   if (failures.length === 0) return
 
-  const named = failures.slice(0, MAX_NAMED_FAILED_EXTENSIONS)
-  const elided = failures.length - named.length
-  const paths = named.map(({ ext }) => ext).join(', ')
-  const noun = failures.length === 1 ? 'extension' : 'extensions'
-
-  reportError(
-    new Error(
-      `Error loading ${failures.length} ${noun}: ${paths}` +
-        (elided > 0 ? ` (+${elided} more)` : ''),
-      { cause: failures[0].error }
-    ),
-    {
-      errorType: 'error_loading_extension',
-      surface: 'platform',
-      level: 'warning',
-      tags: { failed_extension_count: failures.length },
-      context: {
-        failures: named.map(({ ext, error }) => ({
-          ext,
-          message: getErrorMessage(error)
-        }))
-      }
-    }
+  const reportedFailures = failures
+    .slice(0, MAX_REPORTED_FAILURES)
+    .map(toFailureDiagnostic)
+  const errors = reportedFailures.map(({ message, stack }) =>
+    Object.assign(new Error(message), stack ? { stack } : {})
   )
+  const aggregate = new AggregateError(errors, 'Error loading extensions')
+  aggregate.stack = `${aggregate.stack ?? aggregate.message}\nFailed extensions: ${reportedFailures.map(({ ext }) => ext).join(', ')}`
+
+  reportError(aggregate, {
+    errorType: EXTENSION_LOAD_ERROR_TYPE,
+    surface: 'platform',
+    level: 'warning',
+    tags: { failed_extension_count: failures.length },
+    context: {
+      failures: reportedFailures,
+      ...(failures.length > MAX_REPORTED_FAILURES && {
+        [EXTENSION_FAILURES_TRUNCATED_FIELD]: true
+      })
+    }
+  })
 }
 
 export const useExtensionService = () => {
