@@ -1132,6 +1132,23 @@ describe('naming the CPU server step', () => {
     expect(isRegistered('A')).toBe(true)
   })
 
+  it('imports the scripts at the next answer once a server being created can no longer be read', async () => {
+    vi.mocked(workspaceApi.getDeploymentCpuServer)
+      .mockResolvedValueOnce({ cpu_server: 'creating' })
+      .mockRejectedValue(cpuServerUnknown())
+    serve({ '/extensions/a/main.js': { ms: 500, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(api.fileURL).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(3_000)
+
+    expect(api.fileURL).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(isRegistered('A')).toBe(true)
+  })
+
   it('says the server is being built for a new version', async () => {
     cpuServerAnswers('building')
     serve({ '/extensions/a/main.js': { ms: 500, extension: 'A' } })
