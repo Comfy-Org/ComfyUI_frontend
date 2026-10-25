@@ -6174,5 +6174,11 @@
       "descriptionTooLong": "Trigger line must be {max} characters or less",
       "bodyRequired": "Instructions are required"
     }
+  },
+  "lateCustomNodes": {
+    "starting": "Custom nodes are starting... {seconds} s",
+    "startingDetail": "Usually about 20 s. Their buttons and menus will show up here on their own.",
+    "waitingFor": "Waiting for: {packs}",
+    "ready": "Custom nodes are ready"
   }
 }

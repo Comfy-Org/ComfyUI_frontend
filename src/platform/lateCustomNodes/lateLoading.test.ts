@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -555,5 +556,39 @@ describe('late custom node loading', () => {
     expect(isRegistered('A')).toBe(true)
     expect(log).toEqual([])
     expect(nodeTypesMayStillArrive()).toBe(false)
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('shows a starting toast that counts the seconds and names the packs still loading, then says they are ready', async () => {
+    serve({
+      '/extensions/fast/main.js': { ms: 500, extension: 'Fast' },
+      '/extensions/slow-pack/main.js': { ms: 15_000, extension: 'Slow' }
+    })
+
+    await startEditor()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'loading',
+        title: 'Custom nodes are starting... 2 s',
+        description: expect.stringContaining('Waiting for: slow-pack')
+      })
+    ])
+
+    await vi.advanceTimersByTimeAsync(3_000)
+    expect(useToast().toasts[0].title).toBe('Custom nodes are starting... 5 s')
+
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ kind: 'info', title: 'Custom nodes are ready' })
+    ])
+  })
+
+  it('takes the starting toast down without saying ready when no late extension arrived', async () => {
+    serve({ '/extensions/a/main.js': { ms: 3_000, fails: true } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(useToast().toasts).toEqual([])
   })
 })

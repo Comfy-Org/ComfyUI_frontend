@@ -15,6 +15,8 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isNonNullish } from '@/utils/typeGuardUtil'
 
+import { showReadyToast, showStartingToast } from './lateToasts'
+
 interface LateScriptFailure {
   ext: string
   error: unknown
@@ -176,36 +178,46 @@ async function startLateExtensions(extensions: ComfyExtension[]) {
   reportStartupHookFailures(failures)
 }
 
-async function runLateBatch(work: ReturnType<typeof watchLateWork>) {
+async function runLateBatch(
+  work: ReturnType<typeof watchLateWork>
+): Promise<boolean> {
   await until(() => !useWorkspaceStore().spinner || work.isAborted()).toBe(true)
   await until(() => !work.isArtistBusy() || work.isAborted()).toBe(true, {
     timeout: ARTIST_PAUSE_TIMEOUT_MS
   })
-  if (work.isAborted()) return
+  if (work.isAborted()) return false
 
   const extensions = registerHeldExtensions()
   if (extensions.length > 0) await startLateExtensions(extensions)
-  if (work.isAborted()) return
+  if (work.isAborted()) return false
   useExtensionStore().finishLateExtensions()
   await rebuildOpenWorkflow()
+  return extensions.length > 0
 }
 
-async function turnOnLateExtensions(
-  firstTries: Promise<(LateScriptFailure | undefined)[]>,
-  loader: ScriptLoader,
+interface LateRun {
+  firstTries: Promise<(LateScriptFailure | undefined)[]>
+  waiting: Set<string>
+  loader: ScriptLoader
   signal: AbortSignal
-) {
-  const work = watchLateWork(signal, keepHeldExtensionsForNextEditor)
+}
+
+async function turnOnLateExtensions(run: LateRun, startedAt: number) {
+  const work = watchLateWork(run.signal, keepHeldExtensionsForNextEditor)
+  const starting = showStartingToast(startedAt, run.waiting)
   try {
-    loader.reportFailures((await firstTries).filter(isNonNullish))
-    await runLateBatch(work)
+    run.loader.reportFailures((await run.firstTries).filter(isNonNullish))
+    const turnedOn = await runLateBatch(work)
+    if (turnedOn && !work.isAborted()) showReadyToast()
   } catch (error) {
-    reportError(error, {
-      errorType: LATE_EXTENSION_ERROR_TYPE,
-      surface: 'platform',
-      level: 'warning'
-    })
+    if (!run.signal.aborted)
+      reportError(error, {
+        errorType: LATE_EXTENSION_ERROR_TYPE,
+        surface: 'platform',
+        level: 'warning'
+      })
   } finally {
+    starting.dismiss()
     work.stop()
     if (!work.isAborted()) useExtensionStore().finishLateExtensions()
   }
@@ -217,8 +229,12 @@ export async function loadCustomExtensionsWithDeadline(
   loader: ScriptLoader,
   signal: AbortSignal
 ) {
+  const startedAt = Date.now()
+  const waiting = new Set(extensions)
   const firstTries = Promise.all(
-    extensions.map((ext) => loader.importScript(ext))
+    extensions.map((ext) =>
+      loader.importScript(ext).finally(() => waiting.delete(ext))
+    )
   )
   const settledInTime = await Promise.race([
     firstTries.then(() => true),
@@ -229,5 +245,5 @@ export async function loadCustomExtensionsWithDeadline(
     return
   }
   useExtensionStore().holdNewExtensions()
-  void turnOnLateExtensions(firstTries, loader, signal)
+  void turnOnLateExtensions({ firstTries, waiting, loader, signal }, startedAt)
 }
