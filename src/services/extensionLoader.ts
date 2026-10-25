@@ -1,6 +1,7 @@
 import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
 import { t } from '@/i18n'
 import {
+  importNoticingFetchFailure,
   lateLoadingApplies,
   loadCustomExtensionsWithDeadline
 } from '@/platform/lateCustomNodes/lateLoading'
@@ -87,23 +88,20 @@ function toFailureDiagnostic({
   }
 }
 
-/**
- * Import one backend-provided extension, returning the failure rather than
- * throwing, so one broken pack cannot abort the rest of the parallel load.
- *
- * Reporting deliberately does not happen here. A systemic failure — a backend
- * restart, or a proxy serving HTML for every `.js` — fails every import in the
- * list, and one report per extension is then unbounded. Off cloud that is
- * actively harmful: with no sink live, each report is held in `reportError`'s
- * 25-entry pending buffer, so a handful of broken packs during bootstrap would
- * silently crowd out every later error in the session. The batch is reported
- * once, by `reportExtensionLoadFailures`.
- */
+function importModule(url: string): Promise<unknown> {
+  return import(/* @vite-ignore */ url)
+}
+
 async function importCustomExtension(
-  ext: string
+  ext: string,
+  { late = false, retry = false } = {}
 ): Promise<ExtensionLoadFailure | undefined> {
+  const base = api.fileURL(ext)
+  const url = retry ? `${base}${base.includes('?') ? '&' : '?'}retry=1` : base
   try {
-    await import(/* @vite-ignore */ api.fileURL(ext))
+    await (late
+      ? importNoticingFetchFailure(url, importModule)
+      : importModule(url))
   } catch (error) {
     return { ext, error }
   }
@@ -250,7 +248,8 @@ export async function loadExtensions(
       loadCustomExtensionsWithDeadline(
         customExtensions,
         {
-          importScript: importCustomExtension,
+          importScript: (ext, { retry } = {}) =>
+            importCustomExtension(ext, { late: true, retry }),
           reportFailures: reportExtensionLoadFailures,
           afterLateRegistration: scheduleAgentExtensionDiscovery
         },
