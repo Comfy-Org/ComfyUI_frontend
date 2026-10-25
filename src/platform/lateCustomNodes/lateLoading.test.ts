@@ -838,7 +838,7 @@ describe('late custom node loading', () => {
 
     await startEditor()
     await vi.advanceTimersByTimeAsync(5_000)
-    expect(isRegistered('A')).toBe(false)
+    expect(isRegistered(agentName)).toBe(false)
     expect(useToast().toasts[0].description).toContain('Waiting for: a')
 
     await vi.advanceTimersByTimeAsync(4_000)
