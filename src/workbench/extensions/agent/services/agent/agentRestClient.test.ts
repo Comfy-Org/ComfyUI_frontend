@@ -410,6 +410,24 @@ describe('listThreads pagination', () => {
     })
   })
 
+  it('filters every page by workflow id', async () => {
+    respond(
+      threadPage(['th-new'], { has_more: true, next_cursor: 'older page' })
+    )
+    respond(threadPage(['th-old'], { has_more: false }))
+
+    const result = await makeClient().listThreads({ workflowId: 'wf/one' })
+
+    expect(vi.mocked(api.fetchApi).mock.calls.map(([route]) => route)).toEqual([
+      '/agent/threads?workflow_id=wf%2Fone&limit=100',
+      '/agent/threads?workflow_id=wf%2Fone&limit=100&after=older%20page'
+    ])
+    expect(result).toMatchObject({
+      status: 'complete',
+      threads: [{ id: 'th-new' }, { id: 'th-old' }]
+    })
+  })
+
   it.for([
     {
       reason: 'missing_cursor',
@@ -892,9 +910,12 @@ describe('error mapping', () => {
     expect(Reflect.get(apiError, 'retryAfterSeconds')).toBe(5)
   })
 
-  it('falls back to statusText and undefined body for a non-JSON error response', async () => {
+  it('uses bounded request context instead of an unhelpful status text', async () => {
     respond(
-      new Response('gateway boom', { status: 502, statusText: 'Bad Gateway' })
+      new Response('gateway boom', {
+        status: 502,
+        statusText: 'No error message'
+      })
     )
 
     const error = await makeClient()
@@ -902,12 +923,46 @@ describe('error mapping', () => {
       .catch((e: unknown) => e)
 
     if (!(error instanceof AgentApiError)) throw error
-    expect(error.message).toBe('Bad Gateway')
+    expect(error.message).toBe(
+      'Agent request failed (HTTP 502, get_thread_messages)'
+    )
     expect(error.status).toBe(502)
     expect(error.body).toBeUndefined()
   })
 
-  it('falls back to the HTTP status when the response has no error body or status text', async () => {
+  it('keeps a useful status text inside the bounded fallback', async () => {
+    respond(
+      new Response('gateway boom', {
+        status: 502,
+        statusText: 'Bad Gateway'
+      })
+    )
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      'Agent request failed (HTTP 502 Bad Gateway, get_thread_messages)'
+    )
+  })
+
+  it('bounds status text included in the fallback', async () => {
+    const statusText = 'x'.repeat(200)
+    respond(new Response('gateway boom', { status: 502, statusText }))
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      `Agent request failed (HTTP 502 ${'x'.repeat(80)}, get_thread_messages)`
+    )
+  })
+
+  it('falls back to the HTTP status and operation when the response has no error body', async () => {
     respond(new Response('', { status: 503 }))
 
     const error = await makeClient()
@@ -916,7 +971,20 @@ describe('error mapping', () => {
 
     expect(error).toBeInstanceOf(AgentApiError)
     expect((error as AgentApiError).message).toBe(
-      'Agent request failed (HTTP 503)'
+      'Agent request failed (HTTP 503, get_thread_messages)'
+    )
+  })
+
+  it('uses the bounded fallback when a structured error message is blank', async () => {
+    respond(jsonResponse(503, { error: '   ' }))
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      'Agent request failed (HTTP 503, get_thread_messages)'
     )
   })
 
@@ -1020,6 +1088,21 @@ describe('error mapping', () => {
       authScheme: 'unreported',
       credential: 'unreported',
       backendReason: 'other'
+    })
+  })
+
+  it('does not classify the client fallback as backend refusal text', async () => {
+    respondWithAuthScheme(new Response('', { status: 401 }), 'web-session')
+
+    await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toEqual({
+      operation: 'get_thread_messages',
+      status: 401,
+      authScheme: 'web-session',
+      credential: 'unreported'
     })
   })
 

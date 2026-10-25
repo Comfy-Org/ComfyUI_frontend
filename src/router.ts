@@ -247,7 +247,12 @@ function installCloudAuthGuards(router: Router): void {
 
     if (to.name === 'cloud-user-check') {
       if (to.meta.requiresAuth && !isLoggedIn) {
-        return { name: 'cloud-login' }
+        return {
+          name: 'cloud-login',
+          query: needsFirebaseForDesktopCode
+            ? { switchAccount: 'true' }
+            : undefined
+        }
       }
       return
     }

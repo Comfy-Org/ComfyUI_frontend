@@ -1,3 +1,5 @@
+import type { DatadogRum } from '@datadog/browser-rum'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TelemetryEvents } from '@/platform/telemetry/types'
@@ -5,24 +7,26 @@ import { useTelemetry as sharedUseTelemetry } from '@/platform/telemetry'
 
 import { BootstrapTracer } from './bootstrapTracer'
 
-const { addAction, addTiming, distribution, setViewLoadingTime } = vi.hoisted(
+const { addAction, addTiming, rumInstalled, setViewLoadingTime } = vi.hoisted(
   () => ({
     addAction: vi.fn(),
     addTiming: vi.fn(),
-    distribution: { isCloud: true },
+    rumInstalled: { value: true },
     setViewLoadingTime: vi.fn()
   })
 )
 
-vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
-  datadogRum: { addAction, addTiming, setViewLoadingTime }
+vi.mock(import('@/platform/telemetry/rumContext'), () => ({
+  getDatadogRum: () =>
+    rumInstalled.value
+      ? fromPartial<DatadogRum>({ addAction, addTiming, setViewLoadingTime })
+      : undefined
 }))
-vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock(import('@/platform/telemetry'))
 
 describe('bootstrapTracer', () => {
   beforeEach(() => {
-    distribution.isCloud = true
+    rumInstalled.value = true
     const telemetry = sharedUseTelemetry()
     if (!telemetry) throw new Error('Expected telemetry mock')
     vi.mocked(sharedUseTelemetry).mockReturnValue(telemetry)
@@ -172,6 +176,16 @@ describe('bootstrapTracer', () => {
     expect(setViewLoadingTime).not.toHaveBeenCalled()
   })
 
+  it('exposes the startup outcome once it is known', () => {
+    const tracer = new BootstrapTracer()
+    const before = tracer.outcome
+
+    tracer.complete('failed')
+    tracer.complete()
+
+    expect([before, tracer.outcome]).toEqual(['pending', 'failed'])
+  })
+
   it('reports only once', () => {
     const telemetry = sharedUseTelemetry()
     if (!telemetry) throw new Error('Expected telemetry mock')
@@ -237,8 +251,8 @@ describe('bootstrapTracer', () => {
     expect(setViewLoadingTime).toHaveBeenCalledOnce()
   })
 
-  it('publishes nothing to RUM off cloud', async () => {
-    distribution.isCloud = false
+  it('publishes nothing to RUM when the SDK is not installed', async () => {
+    rumInstalled.value = false
     const tracer = new BootstrapTracer()
 
     await tracer.settle('bootstrap/settings', () => Promise.resolve())

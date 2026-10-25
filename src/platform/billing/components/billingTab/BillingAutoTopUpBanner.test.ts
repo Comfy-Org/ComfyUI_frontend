@@ -31,7 +31,7 @@ describe('BillingAutoTopUpBanner', () => {
     {
       kind: 'autoTopUpOff',
       title: 'Auto top-up turned off',
-      body: 'Your card was declined 3 times in a row. Update your payment method, then turn auto top-up back on.'
+      body: 'Your payment method was declined 3 times in a row. Update your payment method, then turn auto top-up back on.'
     }
   ] as const)('renders the $kind copy', (row) => {
     renderBanner(row.kind)
