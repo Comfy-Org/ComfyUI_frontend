@@ -606,6 +606,29 @@ function supersededOverflowAlias(
   return positional !== undefined && Object.hasOwn(document, positional.name)
 }
 
+/** The DynamicGroup controller and row index a row field name addresses. */
+function dynamicGroupRow(
+  node: LGraphNode,
+  name: string
+): { controller: IBaseWidget; index: number } | undefined {
+  for (const controller of node.widgets ?? []) {
+    if (!isDynamicGroupController(controller)) continue
+    if (!name.startsWith(`${controller.name}.`)) continue
+    const [index] = name.slice(controller.name.length + 1).split('.')
+    if (/^\d+$/.test(index)) return { controller, index: Number(index) }
+  }
+  return undefined
+}
+
+/**
+ * Whether `name` is a field of a row at or above its group's row count. The
+ * document keeps those values so a regrow can restore them.
+ */
+function isHiddenDynamicGroupRow(node: LGraphNode, name: string): boolean {
+  const row = dynamicGroupRow(node, name)
+  return row !== undefined && row.index >= Number(row.controller.value)
+}
+
 /** Rows the document carries values for under the DynamicGroup `name`. */
 function documentedRowCount(name: string, widgets: DocNode['widgets']): number {
   if (widgets === undefined || Array.isArray(widgets)) return 0
@@ -1295,6 +1318,7 @@ export class LiveGraphApplier {
     reportMissing: boolean
   ): void {
     for (const [name] of unresolved) {
+      if (isHiddenDynamicGroupRow(node, name)) continue
       if (reportMissing || overflowWidgetIndex(name) !== null)
         this.reportMissingWidget(node, name)
     }
@@ -1670,6 +1694,9 @@ function changed(
   names: ReadonlySet<string>
 ): boolean {
   if (names.has(name)) return true
+  // A regrown row shows the value the document kept for it while hidden.
+  const row = dynamicGroupRow(node, name)
+  if (row !== undefined && names.has(row.controller.name)) return true
   const positional = overflowWidget(node, name)
   return positional !== undefined && names.has(positional.name)
 }
