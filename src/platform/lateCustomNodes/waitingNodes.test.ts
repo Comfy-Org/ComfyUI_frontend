@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { createUuidv4 } from '@/utils/uuid'
 
@@ -10,7 +15,7 @@ class KnownNode extends LGraphNode {
   static override title = 'Known'
 }
 
-function graphWith(types: string[]): LGraph {
+function graphWith(types: string[], title?: string): LGraph {
   const serialised: ISerialisedGraph = {
     id: createUuidv4(),
     revision: 0,
@@ -20,6 +25,7 @@ function graphWith(types: string[]): LGraph {
     nodes: types.map((type, i) => ({
       id: i + 1,
       type,
+      title,
       pos: [0, i * 100],
       size: [200, 60],
       flags: {},
@@ -47,21 +53,51 @@ function badgeTexts(node: LGraphNode): string[] {
   )
 }
 
+function strokes(node: LGraphNode) {
+  return Object.values(node.strokeStyles)
+    .map((style) => style.call(node))
+    .filter(Boolean)
+}
+
 describe('showPlaceholdersAsWaiting', () => {
   beforeEach(() => {
     LiteGraph.registerNodeType('test/Known', KnownNode)
   })
 
-  it('shows a node whose type is not registered yet as waiting, not missing', () => {
+  it('shows a node whose type is not registered yet as waiting, not missing, and keeps it a placeholder', () => {
     const graph = graphWith(['LatePackNode'])
     const node = nodeOfType(graph, 'LatePackNode')
-    expect(node.has_errors).toBe(true)
+    expect(strokes(node)).not.toEqual([])
 
     showPlaceholdersAsWaiting(graph)
 
-    expect(node.has_errors).toBe(false)
+    expect(strokes(node)).toEqual([])
+    expect(node.has_errors).toBe(true)
     expect(node.getTitle()).toBe('LatePackNode')
     expect(badgeTexts(node)).toEqual(['Waiting for its pack'])
+  })
+
+  it('keeps the title the workflow gave the node', () => {
+    const graph = graphWith(['LatePackNode'], 'My sampler')
+
+    showPlaceholdersAsWaiting(graph)
+
+    expect(nodeOfType(graph, 'LatePackNode').getTitle()).toBe('My sampler')
+  })
+
+  it('shows a node inside a subgraph as waiting', () => {
+    const rootGraph = createTestRootGraph()
+    const subgraph = createTestSubgraph({ rootGraph })
+    const nested = new LGraphNode('', 'LatePackNode')
+    nested.last_serialization = nested.serialize()
+    nested.has_errors = true
+    subgraph.add(nested)
+    rootGraph.add(createTestSubgraphNode(subgraph))
+
+    showPlaceholdersAsWaiting(rootGraph)
+
+    expect(badgeTexts(nested)).toEqual(['Waiting for its pack'])
+    expect(strokes(nested)).toEqual([])
   })
 
   it('leaves nodes of registered types alone', () => {

@@ -21,11 +21,15 @@ function isPlaceholder(node: LGraphNode): boolean {
   )
 }
 
-/** Shows the nodes whose type is not registered yet as waiting for their pack instead of missing; changes nothing they save. */
+function hideMissingOutline(node: LGraphNode): void {
+  node.strokeStyles = { ...node.strokeStyles, error: () => undefined }
+}
+
+/** Shows the nodes whose type is not registered yet as waiting for their pack instead of missing; they stay placeholders and change nothing they save. */
 export function showPlaceholdersAsWaiting(graph: LGraph): void {
   forEachNode(graph, (node) => {
     if (!isPlaceholder(node) || node.badges.includes(waitingBadge)) return
-    node.has_errors = false
+    hideMissingOutline(node)
     if (!node.getTitle()) node.getTitle = () => node.type
     node.badges.push(waitingBadge)
   })
