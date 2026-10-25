@@ -822,9 +822,18 @@ describe('late custom node loading', () => {
     expect(useToast().toasts).toEqual([])
   })
 
-  it('tries a script that could not be fetched once more after five seconds, and turns it on', async () => {
+  it('turns an agent extension on and discovers it after its fetch retry succeeds', async () => {
+    const agentName = 'agent.a.toolbar'
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
+    })
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
     serve({
-      '/extensions/a/main.js': { ms: 3_000, extension: 'A', fetchFailures: 1 }
+      '/extensions/a/main.js': {
+        ms: 3_000,
+        extension: agentName,
+        fetchFailures: 1
+      }
     })
 
     await startEditor()
@@ -834,12 +843,26 @@ describe('late custom node loading', () => {
 
     await vi.advanceTimersByTimeAsync(4_000)
 
-    expect(isRegistered('A')).toBe(true)
-    expect(log).toContain('A:setup')
+    expect(isRegistered(agentName)).toBe(true)
+    expect(log).toContain(`${agentName}:setup`)
     expect(reportError).not.toHaveBeenCalled()
-    expect(useToast().toasts).toEqual([
-      expect.objectContaining({ title: 'Custom nodes are ready' })
-    ])
+    expect(useToast().toasts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: `Your agent added ${agentName}`,
+          actions: [
+            expect.objectContaining({ label: 'Manage' }),
+            expect.objectContaining({ label: 'Disable' })
+          ]
+        }),
+        expect.objectContaining({ title: 'Custom nodes are ready' })
+      ])
+    )
+    await vi.waitFor(() =>
+      expect(
+        useSettingStore().get('Comfy.Extension.SeenAgentExtensions')
+      ).toEqual([agentName])
+    )
   })
 
   it.for<{
