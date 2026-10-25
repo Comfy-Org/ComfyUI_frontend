@@ -12,7 +12,10 @@ layout split in [ADR-CRDT-LAYOUT-0003](../../docs/adr/CRDT-LAYOUT-0003-crdt-layo
 
 **Mechanical subset now machine-checked (FE-1968):** the production TypeScript files under
 the CRDT and Agent transport seams are checked for outbound `update_b64` construction,
-branch-pinned catalog citations, and hardcoded endpoints. Run
+branch-pinned catalog citations, and hardcoded endpoints. The endpoint rule is deliberately
+broad inside these seams: any absolute (`ws(s)://`, `http(s)://`, or protocol-relative) string
+literal counts, not only Agent socket addresses, so a pinned reference URL belongs in a comment
+(where the catalog rule still checks it) rather than a string constant. Run
 `pnpm follower-invariants:check` (`scripts/check-follower-invariants.ts`, tested by
 `scripts/check-follower-invariants.test.ts`). CI runs it through the required repository
 checks. Treat a failure there as the same `issue:` severity as a manual finding of the

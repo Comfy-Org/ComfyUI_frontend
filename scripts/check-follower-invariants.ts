@@ -119,22 +119,38 @@ function runAstCheck(
     : check(file, parsed.sourceFile)
 }
 
+function enclosingPattern(pattern: ts.Node): ts.Node | undefined {
+  const container = pattern.parent
+  if (
+    ts.isParenthesizedExpression(container) ||
+    ts.isArrayLiteralExpression(container)
+  )
+    return container
+  if (ts.isPropertyAssignment(container) && container.initializer === pattern)
+    return container.parent
+}
+
+function isAssignmentTarget(pattern: ts.Node): boolean {
+  const container = pattern.parent
+  return (
+    ts.isBinaryExpression(container) &&
+    container.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+    container.left === pattern
+  )
+}
+
 function isDestructuringProperty(node: ts.Node): boolean {
   if (!ts.isPropertyAssignment(node) && !ts.isShorthandPropertyAssignment(node))
     return false
-  const objectLiteral = node.parent
-  let container = objectLiteral.parent
-  let assignmentTarget: ts.Node = objectLiteral
-  while (ts.isParenthesizedExpression(container)) {
-    assignmentTarget = container
-    container = container.parent
-  }
-  return (
-    ts.isObjectLiteralExpression(objectLiteral) &&
-    ts.isBinaryExpression(container) &&
-    container.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-    container.left === assignmentTarget
+  let pattern: ts.Node = node.parent
+  if (!ts.isObjectLiteralExpression(pattern)) return false
+  for (
+    let outer = enclosingPattern(pattern);
+    outer;
+    outer = enclosingPattern(pattern)
   )
+    pattern = outer
+  return isAssignmentTarget(pattern)
 }
 
 function isOutboundUpdateField(node: ts.Node): boolean {
@@ -240,12 +256,7 @@ function catalogPinnedBySha(file: string, source: string): Violation[] {
   }))
 }
 
-export function checkCatalogPinnedBySha(
-  file: string,
-  source: string
-): Violation[] {
-  return catalogPinnedBySha(file, source)
-}
+export { catalogPinnedBySha as checkCatalogPinnedBySha }
 
 function endpointText(node: ts.Node): string | undefined {
   if (
@@ -308,7 +319,7 @@ function noHardcodedEndpoint(
         sourceFile,
         node,
         'no-hardcoded-endpoint',
-        'hardcodes an endpoint inside the follower seam — agent traffic must use the shared /api/agent/events transport'
+        'hardcodes an endpoint or absolute URL literal inside the follower seam — agent traffic must use the shared /api/agent/events transport'
       )
     )
   })

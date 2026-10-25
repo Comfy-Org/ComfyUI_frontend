@@ -21,8 +21,13 @@ describe('checkNoOutboundUpdateB64', () => {
       }
     `
     const violations = checkNoOutboundUpdateB64(FOLLOWER_FILE, fixture)
-    expect(violations).toHaveLength(1)
-    expect(violations[0].rule).toBe('no-outbound-update-b64')
+    expect(violations).toEqual([
+      expect.objectContaining({
+        file: FOLLOWER_FILE,
+        line: 3,
+        rule: 'no-outbound-update-b64'
+      })
+    ])
   })
 
   test('passes the allowed follower projection: decoding an inbound update_b64', () => {
@@ -62,13 +67,21 @@ describe('checkNoOutboundUpdateB64', () => {
     ).toHaveLength(1)
   })
 
-  test('passes an inbound destructuring assignment', () => {
-    expect(
-      checkNoOutboundUpdateB64(
-        FOLLOWER_FILE,
-        'let update_b64; ({ update_b64 } = data)'
-      )
-    ).toEqual([])
+  test.for([
+    { source: 'let update_b64; ({ update_b64 } = data)', expected: 0 },
+    {
+      source: 'let update_b64; ({ payload: { update_b64 } } = data)',
+      expected: 0
+    },
+    { source: 'let update_b64; [{ update_b64 }] = data', expected: 0 },
+    {
+      source: 'let payload; ({ payload = { update_b64: encoded } } = data)',
+      expected: 1
+    }
+  ])('classifies assignment pattern $source', ({ source, expected }) => {
+    expect(checkNoOutboundUpdateB64(FOLLOWER_FILE, source)).toHaveLength(
+      expected
+    )
   })
 })
 
@@ -246,15 +259,25 @@ describe('filesystem contract', () => {
   })
 
   test('analyzes discovered CRDT and Agent transport production files', () => {
-    const files = [
-      'src/workbench/extensions/agent/crdt/follower.ts',
-      'src/workbench/extensions/agent/services/agent/transport.ts'
-    ]
-    for (const file of [...files, `${files[0]}.test.ts`]) {
-      const target = join(root, file)
-      mkdirSync(join(target, '..'), { recursive: true })
-      writeFileSync(target, "const endpoint = 'wss://example.com/ws'")
-    }
+    const crdtDirectory = join(root, 'src/workbench/extensions/agent/crdt')
+    const transportDirectory = join(
+      root,
+      'src/workbench/extensions/agent/services/agent'
+    )
+    mkdirSync(crdtDirectory, { recursive: true })
+    mkdirSync(transportDirectory, { recursive: true })
+    writeFileSync(
+      join(crdtDirectory, 'follower.ts'),
+      "const endpoint = 'wss://example.com/ws'"
+    )
+    writeFileSync(
+      join(transportDirectory, 'transport.ts'),
+      "const endpoint = 'wss://example.com/ws'"
+    )
+    writeFileSync(
+      join(crdtDirectory, 'follower.test.ts'),
+      "const endpoint = 'wss://example.com/ws'"
+    )
     expect(
       checkFollowerFiles(root).map(({ file, rule }) => ({ file, rule }))
     ).toEqual([
@@ -274,7 +297,18 @@ describe('filesystem contract', () => {
       'src/workbench/extensions/agent/crdt/first.ts',
       'src/workbench/extensions/agent/crdt/second.ts'
     ]
-    expect(checkFollowerFiles(root, files)).toHaveLength(2)
+    expect(
+      checkFollowerFiles(root, files).map(({ file, rule }) => ({ file, rule }))
+    ).toEqual([
+      {
+        file: 'src/workbench/extensions/agent/crdt/first.ts',
+        rule: 'declared-file-unreadable'
+      },
+      {
+        file: 'src/workbench/extensions/agent/crdt/second.ts',
+        rule: 'declared-file-unreadable'
+      }
+    ])
   })
 
   test('an empty discovered scope fails closed', () => {
