@@ -5,7 +5,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SubscriptionState } from '@comfyorg/ingest-types'
+import type {
+  BillingCapabilitiesResponse,
+  SubscriptionState
+} from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -67,6 +70,7 @@ interface Scenario {
   subscription?: SubscriptionInfo | null
   subscriptionStatus?: 'active' | 'canceled' | 'ended' | null
   subscriptionState?: SubscriptionState | null
+  planKind?: NonNullable<BillingCapabilitiesResponse['plan_kind']> | null
   isInitialized?: boolean
   error?: string | null
   canManageSubscription?: boolean
@@ -141,6 +145,9 @@ function arrange(scenario: Scenario = {}) {
       ),
       canOpenPlans: computed(() =>
         receiveServerFact('can_open_plans', scenario.canOpenPlans ?? true)
+      ),
+      planKind: computed(() =>
+        receiveServerFact('plan_kind', scenario.planKind ?? null)
       ),
       canRevertScheduledChange: computed(
         () => scenario.canRevertScheduledChange ?? false
@@ -421,6 +428,34 @@ describe('BillingTab', () => {
     )
     expect(screen.queryByText(/Activating your/)).not.toBeInTheDocument()
   })
+
+  it('replaces Manage with Contact sales when plan_kind is sales_managed', () => {
+    arrange({ planKind: 'sales_managed', canOpenPlans: false })
+
+    const link = screen.getByRole('link', { name: 'Contact sales' })
+    expect(link).toHaveAttribute('href', 'https://comfy.org/contact/')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener')
+    expect(link).toHaveClass('no-underline')
+    expect(
+      screen.queryByRole('button', { name: 'Manage' })
+    ).not.toBeInTheDocument()
+  })
+
+  it.for([
+    { subscriptionStatus: 'ended' as const, variant: 'inverted' },
+    { subscriptionStatus: 'canceled' as const, variant: 'secondary' },
+    { subscriptionStatus: 'active' as const, variant: 'secondary' }
+  ])(
+    'renders Contact sales as $variant when subscription_status is $subscriptionStatus',
+    ({ subscriptionStatus, variant }) => {
+      arrange({ planKind: 'sales_managed', subscriptionStatus })
+
+      expect(
+        screen.getByRole('link', { name: 'Contact sales' })
+      ).toHaveAttribute('data-variant', variant)
+    }
+  )
 
   it('opens plan management on Cloud instead of a platform plans page', async () => {
     arrange()

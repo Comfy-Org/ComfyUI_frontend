@@ -44,6 +44,7 @@
         v-else
         :state="planRow"
         :action="action"
+        :sales-variant="salesVariant"
         :can-manage-subscription="capabilities.canManageSubscription.value"
         @open-plan="openPlan"
       />
@@ -163,8 +164,13 @@ const load = computed(() =>
 
 const action = computed(() =>
   planRowAction(planRow.value, {
-    canOpenPlans: capabilities.canOpenPlans.value
+    canOpenPlans: capabilities.canOpenPlans.value,
+    planKind: capabilities.planKind.value
   })
+)
+
+const salesVariant = computed(() =>
+  billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
 const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
