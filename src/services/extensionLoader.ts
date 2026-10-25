@@ -1,3 +1,8 @@
+import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
+import {
+  lateLoadingApplies,
+  loadCustomExtensionsWithDeadline
+} from '@/platform/lateCustomNodes/lateLoading'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   EXTENSION_FAILURES_TRUNCATED_FIELD,
@@ -7,6 +12,7 @@ import type { ExtensionFailureDiagnostic } from '@/platform/telemetry/extensionL
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { getErrorMessage, toError } from '@/utils/errorUtil'
 
@@ -107,9 +113,11 @@ export function reportExtensionLoadFailures(
 /**
  * Loads the core extensions, then every extension served by the backend, in
  * parallel. Core extensions load first because custom extensions may depend
- * on them.
+ * on them. Late custom extensions stop turning on when `signal` aborts.
  */
-export async function loadExtensions() {
+export async function loadExtensions(
+  signal: AbortSignal = new AbortController().signal
+) {
   const extensionStore = useExtensionStore()
   extensionStore.loadDisabledExtensionNames(
     useSettingStore().get('Comfy.Extension.Disabled')
@@ -117,21 +125,32 @@ export async function loadExtensions() {
 
   const extensions = await api.getExtensions()
 
-  await bootstrapTracer.settle(
-    'bootstrap/extensions-load-core',
-    () => import('@/extensions/core/index')
-  )
+  installErrorNodeWidgets()
+  installTouchPointerGuards()
+  await bootstrapTracer.settle('bootstrap/extensions-load-core', async () => {
+    const { registerCoreExtensions } = await import('@/extensions/core/index')
+    await registerCoreExtensions()
+  })
   extensionStore.captureCoreExtensions()
+  const customExtensions = extensions.filter((extension) =>
+    shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
+  )
+  if (lateLoadingApplies()) {
+    await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>
+      loadCustomExtensionsWithDeadline(
+        customExtensions,
+        {
+          importScript: importCustomExtension,
+          reportFailures: reportExtensionLoadFailures
+        },
+        signal
+      )
+    )
+    return
+  }
   const outcomes = await bootstrapTracer.settle(
     'bootstrap/extensions-load-custom',
-    () =>
-      Promise.all(
-        extensions
-          .filter((extension) =>
-            shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
-          )
-          .map((ext) => importCustomExtension(ext))
-      )
+    () => Promise.all(customExtensions.map((ext) => importCustomExtension(ext)))
   )
   reportExtensionLoadFailures(outcomes.filter((outcome) => !!outcome))
 }

@@ -29,7 +29,8 @@ import type {
 } from '@e2e/fixtures/agentWireFrame'
 
 const SUBSCRIBE_TIMEOUT = 15_000
-const COMFY_SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
+/** The sid the fake ComfyUI reports on its first `status` frame. */
+export const COMFY_SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 
 /**
  * ComfyUI execution frames the fake host can emit alongside doc and agent
@@ -155,6 +156,8 @@ export class AgentFollowerHostSocket {
     this.resolveSubscribed = resolve
   })
 
+  private fixedSid: string | undefined
+
   constructor(
     private readonly page: Page,
     private readonly workflowId: string,
@@ -163,14 +166,21 @@ export class AgentFollowerHostSocket {
     private readonly hostUpdateSink?: HostUpdateSink
   ) {}
 
+  /** Pins the `status` sid; `''` models a socket with no id. */
+  reportSocketSid(sid: string): this {
+    this.fixedSid = sid
+    return this
+  }
+
   async install(): Promise<void> {
     await this.page.routeWebSocket(/\/ws/, (socket) => {
       this.comfySocket = socket
       this.comfyConnections += 1
       const sid =
-        this.comfyConnections === 1
+        this.fixedSid ??
+        (this.comfyConnections === 1
           ? COMFY_SOCKET_SID
-          : `${COMFY_SOCKET_SID}-${this.comfyConnections}`
+          : `${COMFY_SOCKET_SID}-${this.comfyConnections}`)
       socket.send(
         JSON.stringify({
           type: 'status',
@@ -203,6 +213,10 @@ export class AgentFollowerHostSocket {
   sendExecution(frame: ExecutionHostFrame): void {
     if (!this.comfySocket) throw new Error('the app has not opened /ws yet')
     this.comfySocket.send(JSON.stringify(frame))
+  }
+
+  comfyConnectionCount(): number {
+    return this.comfyConnections
   }
 
   sendExecutionBinary(frame: Buffer): void {
@@ -292,15 +306,6 @@ export class AgentFollowerHostSocket {
     return batch.ops
   }
 
-  /**
-   * Make the host REFUSE subscribes, as it does when `docService` is nil,
-   * when it is overloaded, or at the per-session document cap. No catch-up
-   * follows a refusal, so the follower gets no canvas frame at all.
-   *
-   * `times` bounds the refusal: a finite count models a transient overload
-   * that the follower's own subscribe-retry ladder is meant to ride out, and
-   * the default (unbounded) models a host that never recovers.
-   */
   refuseSubscribes(
     reason = 'overloaded',
     times = Number.POSITIVE_INFINITY
@@ -317,7 +322,11 @@ export class AgentFollowerHostSocket {
     if (this.refuseReason !== null && this.refusalsLeft > 0) {
       this.refusalsLeft -= 1
       this.refusedSubscribes += 1
-      this.send(this.host.subscribeRefused(this.refuseReason))
+      const refusal = this.host.subscribeRefused(this.refuseReason)
+      this.send({
+        ...refusal,
+        data: { ...refusal.data, code: this.refuseReason }
+      })
       this.resolveSubscribed?.()
       return
     }

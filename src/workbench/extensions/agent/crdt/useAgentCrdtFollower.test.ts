@@ -6,7 +6,7 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
@@ -26,10 +26,11 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
+import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 
-const bridgeState = vi.hoisted(() => {
+const bridgeState = (() => {
   const liveSubscriptions = new Map<object, Set<string>>()
   let maxLiveSubscriptions = 0
   const countLiveSubscriptions = () =>
@@ -51,7 +52,7 @@ const bridgeState = vi.hoisted(() => {
     unsubscribe = vi.fn(() => {
       liveSubscriptions.delete(this)
     })
-    resubscribe = vi.fn()
+    resubscribe = vi.fn(() => true)
     reconnect = vi.fn()
     reconcile = vi.fn()
     destroy = vi.fn(() => {
@@ -81,7 +82,7 @@ const bridgeState = vi.hoisted(() => {
       maxLiveSubscriptions = 0
     }
   }
-})
+})()
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
@@ -133,15 +134,7 @@ const telemetryState = vi.hoisted(() => ({
   reportError: vi.fn<typeof reportErrorFn>()
 }))
 
-vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
-  LayoutFollowerBridge: class {
-    constructor() {
-      const bridge = new bridgeState.FakeBridge()
-      bridgeState.current = bridge
-      return bridge
-    }
-  }
-}))
+vi.mock(import('./layoutFollowerBridge'), { spy: true })
 
 vi.mock<unknown>(import('./docFrameClient'), () => ({
   DocFrameClient: class {
@@ -236,24 +229,38 @@ function mountFollower(
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
   enqueue: (operations: GraphOperation[]) => void
+  retry: () => void
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
   let enqueue!: (operations: GraphOperation[]) => void
+  let retry!: () => void
   const host = defineComponent({
     setup() {
-      const { status, enqueueHumanOperations } = useAgentCrdtFollower(
-        workflowId,
-        { transport, isTargetActive, getGraph, events, canvasFor }
-      )
+      const { status, enqueueHumanOperations, retrySubscription } =
+        useAgentCrdtFollower(workflowId, {
+          transport,
+          isTargetActive,
+          getGraph,
+          events,
+          canvasFor
+        })
       exposedStatus = () => status.value as AgentCrdtStatus
       enqueue = enqueueHumanOperations
+      retry = retrySubscription
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus, enqueue }
+  return {
+    unmount,
+    workflowId,
+    isTargetActive,
+    status: exposedStatus,
+    enqueue,
+    retry
+  }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -281,6 +288,11 @@ describe('useAgentCrdtFollower', () => {
     sessionStorage.clear()
     bridgeState.current = null
     bridgeState.resetLiveSubscriptions()
+    vi.mocked(LayoutFollowerBridge).mockImplementation(function () {
+      const bridge = new bridgeState.FakeBridge()
+      bridgeState.current = bridge
+      return fromPartial<LayoutFollowerBridge>(bridge)
+    })
     clientState.transport = null
     projectionState.applyFrame
       .mockReset()
@@ -390,6 +402,7 @@ describe('useAgentCrdtFollower', () => {
     localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
     vi.resetModules()
     const diagnostics = await import('./crdtDebugGate')
+    onTestFinished(diagnostics.startCrdtDebugGate())
     expect(diagnostics.isCrdtDebugEnabled()).toBe(true)
     expect(diagnostics.resolveDebugPanelEnabled(false)).toBe(false)
 
@@ -407,6 +420,7 @@ describe('useAgentCrdtFollower', () => {
     window.history.replaceState({}, '', '/?crdtDebug=0&agentCrdtFollower=0')
     vi.resetModules()
     const diagnostics = await import('./crdtDebugGate')
+    onTestFinished(diagnostics.startCrdtDebugGate())
     expect(diagnostics.isCrdtDebugEnabled()).toBe(false)
     expect(diagnostics.resolveDebugPanelEnabled(true)).toBe(false)
 
@@ -533,6 +547,18 @@ describe('useAgentCrdtFollower', () => {
         workflow_id: 'wf-1',
         code: 'schema_version_mismatch'
       })
+    }
+
+    function spendRetryBudget(): void {
+      for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
+        refuse()
+        vi.advanceTimersByTime(delay)
+      }
+    }
+
+    function exhaustRetryBudget(): void {
+      spendRetryBudget()
+      refuse()
     }
 
     it('stays non-terminal while a refused subscribe still has a retry behind it', () => {
@@ -1064,18 +1090,41 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reports a refusal terminal once the retry budget is spent', () => {
-      const { unmount, status } = mountFollower('wf-1')
-      for (let attempt = 0; attempt < 6; attempt++) {
-        refuse()
-        vi.advanceTimersByTime(500 * 2 ** attempt)
-      }
+    it('reports exhausted retries as recoverable and retries on request', () => {
+      const { unmount, status, retry } = mountFollower('wf-1')
+      spendRetryBudget()
       expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
       expect(status().terminal).toBeNull()
 
       refuse()
 
+      expect(status().terminal).toBe('retry_exhausted')
+
+      bridge().resubscribe.mockReturnValueOnce(false)
+      retry()
+
+      expect(status().terminal).toBe('retry_exhausted')
+
+      retry()
+
+      expect(status().terminal).toBeNull()
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(8)
+      unmount()
+    })
+
+    it('does not retry a permanent refusal that supersedes exhaustion', () => {
+      const { unmount, status, retry } = mountFollower('wf-1')
+      exhaustRetryBudget()
+      expect(status().terminal).toBe('retry_exhausted')
+
+      refuseForGood()
       expect(status().terminal).toBe('refused')
+      const attempts = bridge().resubscribe.mock.calls.length
+
+      retry()
+
+      expect(status().terminal).toBe('refused')
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(attempts)
       unmount()
     })
   })
@@ -1559,7 +1608,25 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('does not ask for a reload when the document is older than this build reads', () => {
+  it('tells the person once that this page is ahead of the service when the document is older', () => {
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    const found = SCHEMA_VERSION - 1
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found })
+
+    expect(onSyncError).toHaveBeenCalledExactlyOnceWith(
+      `document schema v${found} is older than this page reads (v${SCHEMA_VERSION})`,
+      'stale_host_schema'
+    )
+    unmount()
+  })
+
+  it('still asks for a reload when an older document is later replaced by a newer one', () => {
     const onSyncError = vi.fn()
     const { unmount } = mountFollower('wf-1', true, () => null, {
       onSyncError
@@ -1570,6 +1637,35 @@ describe('useAgentCrdtFollower', () => {
       workflowId: 'wf-1',
       found: SCHEMA_VERSION - 1
     })
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      found: SCHEMA_VERSION + 1
+    })
+
+    expect(onSyncError).toHaveBeenNthCalledWith(
+      2,
+      `document schema v${SCHEMA_VERSION + 1} is newer than this page reads (v${SCHEMA_VERSION})`,
+      'stale_client_schema'
+    )
+    unmount()
+  })
+
+  it.for([
+    { label: 'the current version', found: SCHEMA_VERSION },
+    { label: 'zero', found: 0 },
+    { label: 'a non-number', found: '1' },
+    { label: 'negative', found: -1 },
+    { label: 'fractional', found: SCHEMA_VERSION + 0.5 },
+    { label: 'infinite', found: Number.POSITIVE_INFINITY },
+    { label: 'NaN', found: Number.NaN }
+  ])('stays silent when the document schema is $label', ({ found }) => {
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found })
 
     expect(onSyncError).not.toHaveBeenCalled()
     unmount()
@@ -2660,10 +2756,11 @@ describe('useAgentCrdtFollower', () => {
       removed_count: 0,
       apply_failure_count: 0
     })
-    expect(telemetryState.reportError).toHaveBeenCalledWith(
+    expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'agent_crdt_human_ops_rejected',
+        errorType: 'error_applying_agent_graph_edit',
+        fingerprint: ['error_applying_agent_graph_edit'],
         context: expect.objectContaining({
           opId: ops[1].op_id,
           code: 'unknown_node'

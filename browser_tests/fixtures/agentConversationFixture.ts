@@ -55,7 +55,7 @@ import {
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
-import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
+import { mockEmptyAgentThreadList } from '@e2e/fixtures/utils/agentThreadList'
 import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -200,6 +200,8 @@ interface DroppedWorkflowScope {
   graphId: string
 }
 
+type WorkflowTarget = 'saved-via-picker' | 'unsaved-draft'
+
 interface ReplayResponseOptions {
   beforeFirstGraphOps?: () => Promise<void>
   beforeGraphOps?: (ops: readonly RecordedGraphOperation[]) => Promise<void>
@@ -235,7 +237,8 @@ export class AgentConversationHarness {
     readonly replayTiming: ReplayTiming,
     caseId: string,
     private readonly extraNodeDefs: Record<string, ComfyNodeDef> = {},
-    humanOpsHost: HumanOpsHost = 'hold'
+    humanOpsHost: HumanOpsHost = 'hold',
+    private readonly workflowTarget: WorkflowTarget = 'saved-via-picker'
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
@@ -336,7 +339,8 @@ export class AgentConversationHarness {
 
     await loadSeedIntoActiveTab(this.page, this.conversation.workflow.seed)
     await new AgentPanel(this.page).open(PANEL_MOUNT_TIMEOUT)
-    await this.selectWorkflowTarget()
+    if (this.workflowTarget === 'saved-via-picker')
+      await this.selectWorkflowTarget()
   }
 
   private async selectWorkflowTarget(name = 'Unsaved Workflow'): Promise<void> {
@@ -349,12 +353,6 @@ export class AgentConversationHarness {
     await expect(picker).toHaveText(name)
   }
 
-  /**
-   * Delegates to the shared persistence mock (`savedWorkflowPersistence.ts`)
-   * instead of independently re-capturing/re-serving saves: this harness and
-   * `MultiAutogrowRealignHarness` had drifted into two mutable
-   * implementations of the same save/reopen round trip.
-   */
   async persistSavedWorkflow(): Promise<void> {
     this.savedWorkflow = await mockSavedWorkflowPersistence(
       this.page,
@@ -714,9 +712,7 @@ export class AgentConversationHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    await page.route('**/api/agent/threads?*', (route) =>
-      route.fulfill(jsonRoute(emptyAgentThreadList()))
-    )
+    await mockEmptyAgentThreadList(page)
     await page.route('**/api/agent/threads/*/messages', (route) => {
       const request = route.request()
       if (request.method() === 'POST') {
@@ -951,11 +947,9 @@ export class AgentConversationHarness {
 
     const canvasBounds = await this.comfyPage.canvas.boundingBox()
     if (!canvasBounds) throw new Error('the graph canvas is not visible')
-    await this.comfyPage.canvas.click({
-      position: {
-        x: position.x - canvasBounds.x,
-        y: position.y - canvasBounds.y
-      }
+    await this.comfyPage.canvasOps.click({
+      x: position.x - canvasBounds.x,
+      y: position.y - canvasBounds.y
     })
     const after = await this.graphNodeIds()
     const [added] = after.filter((id) => !before.has(id))
@@ -1349,11 +1343,13 @@ interface ConversationFixtures {
   // Node definitions this case needs beyond the recorded core subset.
   extraNodeDefs: Record<string, ComfyNodeDef>
   humanOpsHost: HumanOpsHost
+  workflowTarget: WorkflowTarget
   // Assets the boot mock serves for every /api/assets query, so combo widgets
   // loaded with the seed already see them.
   bootAssets: ListAssetsResponse
   // Opt in only for cases that assert telemetry through hostTelemetryFixture.
   telemetryEnabled: boolean
+  seedPassthrough: Omit<Partial<WorkflowJSON>, 'nodes' | 'links'>
   comfyPage: ComfyPage
   agentConversation: AgentConversationHarness
 }
@@ -1366,8 +1362,10 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   replayTiming: [defaultReplayTiming(), { option: true }],
   extraNodeDefs: [{}, { option: true }],
   humanOpsHost: ['hold', { option: true }],
+  workflowTarget: ['saved-via-picker', { option: true }],
   bootAssets: [{ assets: [], total: 0, has_more: false }, { option: true }],
   telemetryEnabled: [false, { option: true }],
+  seedPassthrough: [{}, { option: true }],
   comfyPage: async ({ page, request }, use) => {
     await use(new ComfyPage(page, request))
   },
@@ -1388,8 +1386,10 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       replayTiming,
       extraNodeDefs,
       humanOpsHost,
+      workflowTarget,
       bootAssets,
-      telemetryEnabled
+      telemetryEnabled,
+      seedPassthrough
     },
     use,
     testInfo
@@ -1401,14 +1401,20 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       throw new Error(
         `a conversation replay is judged on Vue nodes; tag the test ${VUE_NODES_TAG}`
       )
+    const conversation = loadAgentConversation(conversationCase)
+    conversation.workflow.seed = {
+      ...conversation.workflow.seed,
+      ...seedPassthrough
+    }
     const harness = new AgentConversationHarness(
       page,
       comfyPage,
-      loadAgentConversation(conversationCase),
+      conversation,
       replayTiming,
       conversationCase,
       extraNodeDefs,
-      humanOpsHost
+      humanOpsHost,
+      workflowTarget
     )
     await harness.boot(agentFlagEnabled, vueNodes, bootAssets, telemetryEnabled)
     await use(harness)

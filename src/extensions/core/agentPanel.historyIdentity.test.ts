@@ -22,7 +22,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(
@@ -142,7 +142,11 @@ describe('AgentPanel history during account transitions', () => {
       const resetSocket = vi.spyOn(api, 'resetSocket')
       const history = useAgentChatHistoryStore()
       const onFailure = vi.fn()
-      let refreshPromise: Promise<void> | undefined
+      let refreshPromise:
+        | ReturnType<
+            ReturnType<typeof useAgentChatHistoryRefresh>['refreshHistory']
+          >
+        | undefined
       let secondPageSignal: AbortSignal | null | undefined
       let resolveSecondPage!: (response: Response) => void
       const secondPage = new Promise<Response>((resolve) => {

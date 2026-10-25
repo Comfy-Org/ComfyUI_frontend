@@ -27,7 +27,6 @@
     <ManagerProgressToast />
   </ToastDock>
   <PartnerNodesEducationCard v-if="!isCloud" />
-  <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
@@ -67,8 +66,8 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
-import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
-import { scanAllMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
+import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
+import { scanAllMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
 import { startTemplateInputDownloadGraphSync } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { refreshDownloadedTemplateInputBindings } from '@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
@@ -79,11 +78,12 @@ import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vu
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
-import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
+import { useDesktopCloudNotification } from '@/platform/cloud/notification/composables/useDesktopCloudNotification'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
@@ -111,7 +111,7 @@ import {
   useQueueStore
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
-import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
@@ -126,6 +126,8 @@ setupAutoQueueHandler()
 useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
+useDesktopCloudNotification()
+if (isCloud) useDeploymentCompatibility()
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()

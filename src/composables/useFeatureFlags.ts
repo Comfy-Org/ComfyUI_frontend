@@ -2,15 +2,14 @@ import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
-import { normalizeHostedBillingDestination } from '@/config/billingWeb'
+import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
-  cachedBillingControlEnabled,
-  cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig,
   sessionAgentGrant,
-  sessionAgentGrantValidUntil
+  sessionAgentGrantValidUntil,
+  useRemoteConfigCache
 } from '@/platform/remoteConfig/remoteConfig'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@/platform/telemetry'
@@ -233,6 +232,20 @@ export function useFeatureFlags() {
         false
       )
     },
+    get deploymentCompatibilityMarksEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED,
+        remoteConfig.value.deployment_compatibility_marks_enabled,
+        false
+      )
+    },
+    get lateCustomNodesEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.LATE_CUSTOM_NODES_ENABLED,
+        remoteConfig.value.late_custom_nodes_enabled,
+        false
+      )
+    },
     get hostedBillingDestination() {
       return hostedBillingDestination()
     },
@@ -287,7 +300,7 @@ export function useFeatureFlags() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig.value.billing_control_enabled,
-        cachedBillingControlEnabled
+        useRemoteConfigCache().cachedBillingControlEnabled
       )
     },
     get memberCreditLimitsEnabled() {
@@ -316,8 +329,6 @@ export function useFeatureFlags() {
       return this.billingSdkSubscriptionEnabled && this.unifiedCloudAuthEnabled
     },
     get unifiedBillingSettingsEnabled() {
-      if (!isCloud) return false
-
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.UNIFIED_BILLING_SETTINGS,
         remoteConfig.value.unified_billing_settings
@@ -335,7 +346,7 @@ export function useFeatureFlags() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.V1_PAYMENT_RECOVERY,
         remoteConfig.value.v1_payment_recovery,
-        cachedV1PaymentRecovery
+        useRemoteConfigCache().cachedV1PaymentRecovery
       )
     },
     get signupTurnstileMode() {

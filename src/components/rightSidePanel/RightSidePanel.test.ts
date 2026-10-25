@@ -11,7 +11,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
