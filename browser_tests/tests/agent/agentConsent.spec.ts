@@ -662,7 +662,6 @@ test.describe(
       agentConsentAccepted: false,
       initialSettings: { 'Comfy.TutorialCompleted': false },
       initialFeatureFlags: {
-        onboarding_tour_enabled: true,
         subscription_required: true
       }
     })
