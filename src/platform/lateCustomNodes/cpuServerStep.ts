@@ -90,24 +90,61 @@ function reportReadFailure(error: unknown) {
   })
 }
 
+function unlessStopped<T>(
+  work: Promise<T>,
+  signal: AbortSignal,
+  stopAt: number
+): Promise<T | undefined> {
+  if (signal.aborted || Date.now() >= stopAt) {
+    work.catch(() => {})
+    return Promise.resolve(undefined)
+  }
+  return new Promise((resolve, reject) => {
+    const deadline = setTimeout(stop, stopAt - Date.now())
+    signal.addEventListener('abort', stop, { once: true })
+    work.then(
+      (value) => {
+        release()
+        resolve(value)
+      },
+      (error: unknown) => {
+        release()
+        reject(error)
+      }
+    )
+
+    function stop() {
+      release()
+      resolve(undefined)
+    }
+
+    function release() {
+      clearTimeout(deadline)
+      signal.removeEventListener('abort', stop)
+    }
+  })
+}
+
 async function askUntilSettled(
   firstReading: Promise<CpuServerReading>,
   signal: AbortSignal,
   step: { value: CpuServerStep | undefined }
 ) {
   const stopAt = Date.now() + CPU_SERVER_ASK_FOR_MS
-  let reading = await firstReading
+  let asking = firstReading
   let failureReported = false
-  while (!signal.aborted) {
+  for (;;) {
+    const reading = await unlessStopped(asking, signal, stopAt)
+    if (!reading) break
     if (!failureReported && reading.error !== undefined) {
       reportReadFailure(reading.error)
       failureReported = true
     }
     step.value = stepAfter(step.value, reading.answer)
     if (reading.answer === 'created' || reading.answer === 'none') return
-    if (Date.now() + CPU_SERVER_ASK_EVERY_MS > stopAt) break
-    if (!(await waitUnlessStopped(CPU_SERVER_ASK_EVERY_MS, signal))) return
-    reading = await askCpuServer()
+    if (Date.now() + CPU_SERVER_ASK_EVERY_MS >= stopAt) break
+    if (!(await waitUnlessStopped(CPU_SERVER_ASK_EVERY_MS, signal))) break
+    asking = askCpuServer()
   }
   step.value = undefined
 }
