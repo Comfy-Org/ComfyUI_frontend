@@ -58,11 +58,6 @@ export const domainRecordSchema = z
   })
   .strict()
 
-/**
- * The metadata every architecture exception carries. Exported on its own so a second
- * exception surface can `.pick()` the fields it shares instead of restating the owner,
- * date and removal-criteria contract and drifting from it.
- */
 export const architectureExceptionSchema = z
   .object({
     id: z.string().regex(/^DDD-EX-\d{3}$/),

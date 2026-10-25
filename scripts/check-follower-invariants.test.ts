@@ -15,15 +15,11 @@ import {
   checkOpLayerManifest,
   checkOpLayerPurity,
   checkOpLayerRuntimeImports,
-  findFollowerFiles,
-  findSuppressions
+  findFollowerFiles
 } from './check-follower-invariants'
 
-// An in-scope filename, not whichever production file happens to sort first: these
-// AST cases need a path the scope predicate accepts and nothing else.
 const FOLLOWER_FILE = 'src/workbench/extensions/agent/crdt/follower.ts'
 
-/** A throwaway package root, so the filesystem cases own their own fixtures. */
 function withPackageRoot(
   files: readonly { name: string; source: string }[],
   assert: (root: string) => void
@@ -298,8 +294,6 @@ describe('checkNoOpIdRegeneration', () => {
     expect(violations[0].rule).toBe('no-op-id-regeneration')
   })
 
-  // Minted ids were tracked by spelling in a file-wide set, so one function's
-  // minted local condemned an unrelated local of the same name in another scope.
   test.for([
     {
       name: 'a same-named local in another function that preserves the identity',
@@ -321,6 +315,24 @@ describe('checkNoOpIdRegeneration', () => {
       fixture: 'const op = { op_id: String(existing.op_id) }'
     }
   ])('passes $name', ({ fixture }) => {
+    expect(checkNoOpIdRegeneration(FOLLOWER_FILE, fixture)).toEqual([])
+  })
+
+  test('keeps type names out of minted-value provenance', () => {
+    const fixture = [
+      'type id = string',
+      'const id = mintOpId()',
+      'const retry = { op_id: id }'
+    ].join('\n')
+    expect(checkNoOpIdRegeneration(FOLLOWER_FILE, fixture)).toHaveLength(1)
+  })
+
+  test('does not acquire minted-value provenance through a type reference', () => {
+    const fixture = [
+      'const id = mintOpId()',
+      'type id = string',
+      'const retry = { op_id: previous as id }'
+    ].join('\n')
     expect(checkNoOpIdRegeneration(FOLLOWER_FILE, fixture)).toEqual([])
   })
 })
@@ -395,8 +407,6 @@ describe('op-layer purity', () => {
     ])
   })
 
-  // A package can reach forbidden runtime code without declaring a manifest
-  // dependency, and an unresolvable load used to read as an ordinary node.
   test.for([
     {
       name: 'a CommonJS require',
@@ -435,8 +445,33 @@ describe('op-layer purity', () => {
     expect(checkOpLayerRuntimeImports('dist/index.js', fixture)).toEqual([])
   })
 
-  // Globbing dist/**/*.js alone passed a package whose declared entry was an .mjs
-  // file and whose only .js file was unrelated.
+  test.for([
+    {
+      name: 'an unrelated inner declaration with the same spelling',
+      fixture:
+        "const name = 'node:crypto'; function unrelated() { const name = 'yjs' }; await import(name)",
+      expected: 'node:crypto'
+    },
+    {
+      name: 'a parameter shadowing an allowed outer constant',
+      fixture:
+        "const name = 'yjs'; async function load(name) { return import(name) }",
+      expected: 'an unverifiable runtime load'
+    },
+    {
+      name: 'a mutable specifier initialized to an allowed package',
+      fixture: "let name = 'yjs'; name = 'node:crypto'; await import(name)",
+      expected: 'an unverifiable runtime load'
+    }
+  ])('fails $name', ({ fixture, expected }) => {
+    expect(checkOpLayerRuntimeImports('dist/index.js', fixture)).toEqual([
+      expect.objectContaining({
+        rule: 'op-layer-yjs-only',
+        message: expect.stringContaining(expected)
+      })
+    ])
+  })
+
   test('fails a forbidden import in the manifest entry, not just under dist/**/*.js', () => {
     withPackageRoot(
       [
@@ -445,12 +480,12 @@ describe('op-layer purity', () => {
           source: JSON.stringify({
             name: '@comfyorg/comfy-multi-player',
             version: '0.0.0',
-            main: './dist/entry.mjs',
+            main: './runtime/entry.mjs',
             dependencies: { yjs: '*' }
           })
         },
         {
-          name: 'dist/entry.mjs',
+          name: 'runtime/entry.mjs',
           source: "import { createHash } from 'node:crypto'\n"
         },
         { name: 'dist/unrelated.js', source: "import * as Y from 'yjs'\n" }
@@ -489,8 +524,84 @@ describe('op-layer purity', () => {
     )
   })
 
-  // Returning [] when the manifest cannot be read, or dropping the missing-runtime
-  // violation, passed every other test in this suite.
+  test('scans a browser-map replacement target', () => {
+    withPackageRoot(
+      [
+        {
+          name: 'package.json',
+          source: JSON.stringify({
+            main: './dist/index.js',
+            browser: { './dist/index.js': './browser/index.js' },
+            dependencies: { yjs: '*' }
+          })
+        },
+        { name: 'dist/index.js', source: "import * as Y from 'yjs'\n" },
+        {
+          name: 'browser/index.js',
+          source: "import { createHash } from 'node:crypto'\n"
+        }
+      ],
+      (root) => {
+        expect(checkOpLayerPurity(root)).toEqual([
+          expect.objectContaining({
+            rule: 'op-layer-yjs-only',
+            message: expect.stringContaining('node:crypto')
+          })
+        ])
+      }
+    )
+  })
+
+  test('rejects a manifest entry outside the package', () => {
+    withPackageRoot(
+      [
+        {
+          name: 'package.json',
+          source: JSON.stringify({
+            main: '../forbidden.js',
+            dependencies: { yjs: '*' }
+          })
+        },
+        { name: 'dist/index.js', source: "import * as Y from 'yjs'\n" }
+      ],
+      (root) => {
+        expect(checkOpLayerPurity(root)).toEqual([
+          expect.objectContaining({
+            rule: 'op-layer-yjs-only',
+            message: expect.stringContaining('points outside the package')
+          })
+        ])
+      }
+    )
+  })
+
+  test('scans local modules reachable from a manifest entry', () => {
+    withPackageRoot(
+      [
+        {
+          name: 'package.json',
+          source: JSON.stringify({
+            main: './runtime/index.js',
+            dependencies: { yjs: '*' }
+          })
+        },
+        { name: 'runtime/index.js', source: "export * from './hidden.js'\n" },
+        {
+          name: 'runtime/hidden.js',
+          source: "import { createHash } from 'node:crypto'\n"
+        }
+      ],
+      (root) => {
+        expect(checkOpLayerPurity(root)).toEqual([
+          expect.objectContaining({
+            rule: 'op-layer-yjs-only',
+            message: expect.stringContaining('node:crypto')
+          })
+        ])
+      }
+    )
+  })
+
   test.for([
     { name: 'missing manifest', files: [], problem: 'unreadable manifest' },
     {
@@ -526,10 +637,6 @@ describe('op-layer purity', () => {
       }
     )
   })
-
-  test('the installed shared op layer is yjs-only', () => {
-    expect(checkOpLayerPurity(process.cwd())).toEqual([])
-  })
 })
 
 describe('checkCatalogPinnedBySha', () => {
@@ -540,7 +647,8 @@ describe('checkCatalogPinnedBySha', () => {
     'widget catalog https://raw.githubusercontent.com/Comfy-Org/repo/main/catalog.json',
     'widget vocabulary https://example.com/spec?ref=HEAD',
     'widget catalog\nhttps://github.com/Comfy-Org/repo/blob/master/catalog.json',
-    'widget catalog https://github.com/Comfy-Org/repo/commits/latest/catalog.json'
+    'widget catalog https://github.com/Comfy-Org/repo/commits/latest/catalog.json',
+    'widget catalog https://github.com/Org/repo/blob/feature/0123456789abcdef0123456789abcdef01234567/catalog.json'
   ])('fails an unpinned catalog citation: %s', (fixture) => {
     const violations = checkCatalogPinnedBySha(FOLLOWER_FILE, fixture)
     expect(violations).toHaveLength(1)
@@ -553,8 +661,6 @@ describe('checkCatalogPinnedBySha', () => {
     expect(checkCatalogPinnedBySha(FOLLOWER_FILE, fixture)).toEqual([])
   })
 
-  // Scanning forward from the keyword started the window inside `catalog.json`,
-  // past the branch segment it had to see, so every bare URL passed.
   test.for([
     '// https://github.com/Org/repo/blob/main/catalog.json',
     '// https://raw.githubusercontent.com/Org/repo/main/catalog.json',
@@ -690,6 +796,32 @@ describe('checkNoScatteredDistributionChecks', () => {
     ).toHaveLength(2)
   })
 
+  test.for([
+    {
+      name: 'an imported flag shadowed by a parameter',
+      importStatement:
+        "import { isCloud } from '@/platform/distribution/types'",
+      branch: 'function unrelated(isCloud: boolean) { return isCloud ? 1 : 0 }'
+    },
+    {
+      name: 'an imported namespace shadowed by a parameter',
+      importStatement:
+        "import * as distribution from '@/platform/distribution/types'",
+      branch:
+        "function unrelated(distribution: Flags) { return distribution['isCloud'] }"
+    }
+  ])('passes $name', ({ importStatement, branch }) => {
+    const fixture = [
+      '// follower-invariant-allow-next-line no-scattered-distribution-checks',
+      '// owner: @christian-byrne; rationale: isolate imported binding identity; sunset: 2099-01-01; removalCriteria: when this test is removed',
+      importStatement,
+      branch
+    ].join('\n')
+    expect(checkNoScatteredDistributionChecks(FOLLOWER_FILE, fixture)).toEqual(
+      []
+    )
+  })
+
   test('fails the ambient flag a local alias would be derived from', () => {
     const violations = checkNoScatteredDistributionChecks(
       FOLLOWER_FILE,
@@ -699,8 +831,6 @@ describe('checkNoScatteredDistributionChecks', () => {
     expect(violations[0].message).toContain('DISTRIBUTION')
   })
 
-  // A file-wide "declared" set answered whether the spelling existed somewhere
-  // rather than whether a declaration was in scope at the read.
   test('fails an ambient flag that only an out-of-scope declaration would cover', () => {
     const violations = checkNoScatteredDistributionChecks(
       FOLLOWER_FILE,
@@ -712,6 +842,44 @@ describe('checkNoScatteredDistributionChecks', () => {
     expect(violations).toHaveLength(1)
     expect(violations[0].line).toBe(2)
     expect(violations[0].message).toContain('ambient distribution flag')
+  })
+
+  test.for([
+    {
+      name: 'a type alias with the same name',
+      fixture:
+        "type __DISTRIBUTION__ = string; const cloud = __DISTRIBUTION__ === 'cloud'"
+    },
+    {
+      name: 'a function type parameter with the same name',
+      fixture:
+        "function unrelated<__DISTRIBUTION__>() {}; const cloud = __DISTRIBUTION__ === 'cloud'"
+    }
+  ])('fails an ambient flag hidden by $name', ({ fixture }) => {
+    expect(checkNoScatteredDistributionChecks(FOLLOWER_FILE, fixture)).toEqual([
+      expect.objectContaining({
+        rule: 'no-scattered-distribution-checks',
+        message: expect.stringContaining('ambient distribution flag')
+      })
+    ])
+  })
+
+  test('passes a renamed destructuring field', () => {
+    expect(
+      checkNoScatteredDistributionChecks(
+        FOLLOWER_FILE,
+        'const { isCloud: cloud } = flags'
+      )
+    ).toEqual([])
+  })
+
+  test('still fails a computed destructuring key', () => {
+    expect(
+      checkNoScatteredDistributionChecks(
+        FOLLOWER_FILE,
+        'const { [isCloud]: cloud } = flags'
+      )
+    ).toHaveLength(1)
   })
 
   test.for([
@@ -740,8 +908,6 @@ describe('checkNoScatteredDistributionChecks', () => {
     expect(violations[0].message).toContain(detail)
   })
 
-  // Keyed on the member name alone, this rejected a local object while allowing the
-  // identical dot access.
   test.for([
     "const flags = { isCloud: false }; const enabled = flags['isCloud']",
     "function read(flags: Flags) { return flags['isDesktop'] }",
@@ -847,17 +1013,37 @@ describe('suppression path', () => {
     ).toEqual([])
   })
 
-  test('binds the directive to the next non-comment line', () => {
-    expect(findSuppressions(directive(COMPLETE))).toEqual([
-      expect.objectContaining({
-        rule: 'no-scattered-distribution-checks',
-        directiveLine: 1,
-        targetLine: 3
-      })
+  test('does not suppress a matching violation after the target line', () => {
+    const source = directive(COMPLETE).replace(
+      BRANCH,
+      `const harmless = 1\n${BRANCH}`
+    )
+    expect(checkFile(FOLLOWER_FILE, source).map(({ rule }) => rule)).toEqual([
+      'no-scattered-distribution-checks',
+      'suppression-unused'
     ])
   })
 
-  // Fail-closed: a directive that is wrong in any way must not quietly suppress.
+  test.for([
+    {
+      name: 'ordinary string',
+      opening:
+        "const note = 'follower-invariant-allow-next-line no-scattered-distribution-checks '",
+      expected: ['no-scattered-distribution-checks']
+    },
+    {
+      name: 'template literal',
+      opening:
+        'const note = `follower-invariant-allow-next-line no-scattered-distribution-checks `',
+      expected: ['no-scattered-distribution-checks']
+    }
+  ])('ignores a directive marker inside an $name', ({ opening, expected }) => {
+    const source = [opening, `// ${COMPLETE}`, BRANCH].join('\n')
+    expect(checkFile(FOLLOWER_FILE, source).map(({ rule }) => rule)).toEqual(
+      expected
+    )
+  })
+
   test.for([
     {
       name: 'an expired sunset',
@@ -890,8 +1076,6 @@ describe('suppression path', () => {
       problem: 'not a YYYY-MM-DD date'
     },
     {
-      // The checker's own date validator accepted this; the architecture schema it
-      // claims to follow does not.
       name: 'a sunset that is not a real calendar date',
       fields:
         'owner: @christian-byrne; rationale: x; sunset: 2099-02-31; removalCriteria: later',
@@ -929,8 +1113,6 @@ describe('suppression path', () => {
     expect(violations[1].message).toContain('names unknown rule "no-such-rule"')
   })
 
-  // A marker whose rule argument is absent was recorded as no directive at all, so
-  // a stale exception sat beside harmless code with nothing reporting it.
   test('reports a marker that names no rule', () => {
     const fixture = [
       '// follower-invariant-allow-next-line',
@@ -957,6 +1139,15 @@ describe('suppression path', () => {
     )
     expect(violations).toHaveLength(1)
     expect(violations[0].rule).toBe('suppression-unused')
+  })
+
+  test('rejects duplicate directive fields instead of choosing one', () => {
+    const fixture = directive(`${COMPLETE}; sunset: broken`)
+    expect(
+      checkNoScatteredDistributionChecks(FOLLOWER_FILE, fixture).map(
+        ({ rule }) => rule
+      )
+    ).toEqual(['no-scattered-distribution-checks', 'suppression-invalid'])
   })
 
   test('a directive for one rule does not suppress another', () => {
@@ -1060,15 +1251,16 @@ describe('checkFile (combined) — allowed follower projection', () => {
   })
 })
 
-describe('checkFile against the real follower-core sources', () => {
-  test('every declared current-main seam file exists and passes', () => {
-    expect(checkFollowerFiles(process.cwd())).toEqual([])
+describe('filesystem contract', () => {
+  let root = ''
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), 'follower-scope-'))
+    return () => rmSync(root, { recursive: true, force: true })
   })
 
   test('a missing declared seam file fails closed', () => {
-    expect(
-      checkFollowerFiles('/definitely-not-a-repository', [FOLLOWER_FILE])
-    ).toEqual([
+    expect(checkFollowerFiles(root, [FOLLOWER_FILE])).toEqual([
       expect.objectContaining({
         file: FOLLOWER_FILE,
         line: 1,
@@ -1090,16 +1282,16 @@ describe('checkFile against the real follower-core sources', () => {
   })
 
   test('discovers CRDT and Agent transport production files', () => {
-    const files = findFollowerFiles(process.cwd())
-    expect(files).toContain(
-      'src/workbench/extensions/agent/crdt/opCoalescer.ts'
-    )
-    expect(files).toContain(
-      'src/workbench/extensions/agent/services/agent/agentEventSource.ts'
-    )
-    expect(files).not.toContain(
-      'src/workbench/extensions/agent/crdt/opEnvelope.test.ts'
-    )
+    const files = [
+      'src/workbench/extensions/agent/crdt/follower.ts',
+      'src/workbench/extensions/agent/services/agent/transport.ts'
+    ]
+    for (const file of [...files, `${files[0]}.test.ts`]) {
+      const target = join(root, file)
+      mkdirSync(join(target, '..'), { recursive: true })
+      writeFileSync(target, '')
+    }
+    expect(findFollowerFiles(root)).toEqual(files)
   })
 
   test('scans exactly the files it is given, never a rediscovered set', () => {
@@ -1107,13 +1299,11 @@ describe('checkFile against the real follower-core sources', () => {
       'src/workbench/extensions/agent/crdt/first.ts',
       'src/workbench/extensions/agent/crdt/second.ts'
     ]
-    expect(
-      checkFollowerFiles('/definitely-not-a-repository', files)
-    ).toHaveLength(2)
+    expect(checkFollowerFiles(root, files)).toHaveLength(2)
   })
 
   test('an empty discovered scope fails closed', () => {
-    expect(checkFollowerFiles('/definitely-not-a-repository')).toEqual([
+    expect(checkFollowerFiles(root)).toEqual([
       expect.objectContaining({ rule: 'follower-scope-empty' })
     ])
   })

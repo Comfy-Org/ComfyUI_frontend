@@ -34,29 +34,27 @@ construction specifically, not "does this write the shared doc".
 
 **Two deliberate limits inside the rules that are machine-checked.**
 
-- `no-op-id-regeneration` resolves minters within one file, following them through local
-  variables, local function returns, and callable aliases (`const next = crypto.randomUUID`,
-  or a `.bind` of one), so extracting a mint into a helper does not defeat it. A minted
-  **value** is tracked by its declaration, not its spelling, so a minted local in one
-  scope does not condemn an unrelated local of the same name in another. Two residues
-  remain, stated so a pass is not over-read: there is no cross-file resolution, so a
-  minter imported from another module is not recognised; and a minter reached by a
-  same-file _name_ is still matched by spelling, so a non-minter shadowing that name in
-  another scope could be read as one. Closing the first needs either type information or
-  the blunter inversion — flag every `op_id` whose right-hand side is a call — and the
-  inversion flags legitimate reads like `{ op_id: String(op.op_id) }`. On a required check
-  a false positive costs more than this residue.
+- `no-op-id-regeneration` follows supported same-file variable initializers, local
+  function returns and callable aliases such as `const next = crypto.randomUUID`
+  and a `.bind` of one. Minted values are tracked by their declarations. It does
+  not resolve cross-file minters, destructured callable aliases, assignments after
+  declaration or calls through type-wrapped callees. Same-file minter names are
+  still matched by spelling, so an unrelated non-minter shadow can be classified
+  as a minter. These syntax limits require manual review. Flagging every call on
+  an `op_id` right-hand side instead would also reject legitimate preserved-id
+  reads such as `{ op_id: String(op.op_id) }`.
 - `op-layer-yjs-only` reads the installed `@comfyorg/comfy-multi-player`, so its input can
   change with no pull request touching it. That is intentional: invariant #3 is asserted
   on every run rather than sampled at dependency-bump time. The cost is that a bad release
   reddens open pull requests indiscriminately, so the violation message names the installed
   version and says the cause is the dependency and not the diff. It inspects every
-  `.js`/`.mjs`/`.cjs` file under `dist/` **and** every path the manifest nominates as
-  runtime code (`main`, `module`, `browser`, and the string leaves of `exports`), so an
-  entry outside the glob is not skipped; an entry whose extension it cannot parse is
-  reported rather than ignored. It recognises `require(...)` as well as static and dynamic
-  `import`, resolves a specifier held in a local string constant, and reports a load whose
-  specifier it cannot resolve as unverifiable instead of passing it.
+  `.js`/`.mjs`/`.cjs` file under `dist/`, every path the manifest nominates as runtime
+  code (`main`, `module`, `browser`, browser-map targets, and the string leaves of
+  `exports`), and every local runtime module reachable from those roots. Out-of-package
+  and unsupported entries are rejected rather than dropped. It recognises `require(...)`
+  as well as static and dynamic `import`, resolves a specifier held in an immutable local
+  string binding, and reports a mutable, shadowed, or otherwise unverifiable load instead
+  of passing it.
 
 ### Suppressing a rule that is wrong
 
@@ -73,7 +71,8 @@ surface cannot drift from the ledger's owner, date and removal-criteria contract
 const isCloud = readSomethingUnrelated()
 ```
 
-It fails closed. An incomplete, unparsable or past-sunset directive suppresses nothing
+Only real comment trivia is parsed; marker-shaped strings and templates have no effect.
+It fails closed. An incomplete, duplicate, unparsable or past-sunset directive suppresses nothing
 and reports itself as `suppression-invalid` — including a bare marker that names no rule
 at all, and a `sunset` that is well-formed but not a real calendar date; a directive that
 matches no violation reports itself as `suppression-unused`. So an exception cannot go quiet once merged, and

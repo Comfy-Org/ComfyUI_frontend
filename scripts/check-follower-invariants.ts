@@ -1,5 +1,5 @@
-import { globSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { existsSync, globSync, readFileSync } from 'node:fs'
+import { dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 
@@ -94,7 +94,6 @@ const SIGNATURE_KINDS = [
   ts.SyntaxKind.SetAccessor
 ] as const
 
-/** Kinds whose `var` declarations belong to them rather than to a nested block. */
 const VAR_OWNER_KINDS: ReadonlySet<ts.SyntaxKind> = new Set([
   ...SIGNATURE_KINDS,
   ts.SyntaxKind.SourceFile,
@@ -156,9 +155,6 @@ function addSignatureBindings(
 ): void {
   for (const parameter of scope.parameters)
     eachBoundName(parameter.name, add, parameter)
-  for (const typeParameter of scope.typeParameters ?? [])
-    add(typeParameter.name, typeParameter)
-  // A function expression's own name is bound inside its own body, not outside.
   if (ts.isFunctionExpression(scope) && scope.name) add(scope.name, scope)
 }
 
@@ -167,11 +163,8 @@ function addClassBindings(
   add: AddBinding
 ): void {
   if (scope.name) add(scope.name, scope)
-  for (const typeParameter of scope.typeParameters ?? [])
-    add(typeParameter.name, typeParameter)
 }
 
-/** The statements a scope owns directly, flattened across a switch's clauses. */
 function scopeStatements(scope: ts.Node): readonly ts.Statement[] {
   if (ts.isSourceFile(scope) || ts.isBlock(scope) || ts.isModuleBlock(scope))
     return scope.statements
@@ -186,8 +179,7 @@ const isNamedDeclarationStatement = (
   ts.isFunctionDeclaration(node) ||
   ts.isClassDeclaration(node) ||
   ts.isEnumDeclaration(node) ||
-  ts.isModuleDeclaration(node) ||
-  ts.isTypeAliasDeclaration(node)
+  ts.isModuleDeclaration(node)
 
 function addStatementBindings(scope: ts.Node, add: AddBinding): void {
   for (const statement of scopeStatements(scope)) {
@@ -207,7 +199,6 @@ function addStatementBindings(scope: ts.Node, add: AddBinding): void {
   }
 }
 
-/** A `catch (error)` binding, or the `let`/`const` a `for` header introduces. */
 function addLoopAndCatchBindings(scope: ts.Node, add: AddBinding): void {
   if (ts.isCatchClause(scope)) {
     const declaration = scope.variableDeclaration
@@ -224,10 +215,6 @@ function addLoopAndCatchBindings(scope: ts.Node, add: AddBinding): void {
     addVariableList(initializer, add)
 }
 
-/**
- * `var` ignores block scope, so a function body owns the `var`s of its nested blocks.
- * Without this a `var` read beside its block reads as unbound.
- */
 function addHoistedVars(scope: ts.Node, add: AddBinding): void {
   if (!VAR_OWNER_KINDS.has(scope.kind)) return
   const collect = (node: ts.Node): void => {
@@ -240,12 +227,6 @@ function addHoistedVars(scope: ts.Node, add: AddBinding): void {
   ts.forEachChild(scope, collect)
 }
 
-/**
- * Names declared *directly* in one scope, so a reference can be resolved by walking
- * ancestors instead of consulting a file-wide set. The file-wide set is what let an
- * out-of-scope declaration exempt an ambient read and let one function's local poison
- * another's — both measured false results rather than theoretical ones.
- */
 function ownDeclarations(scope: ts.Node): Map<string, ts.Node> {
   const declarations = new Map<string, ts.Node>()
   const add: AddBinding = (identifier, declaration) => {
@@ -279,8 +260,6 @@ function scopeIndex(): ScopeIndex {
   }
   return {
     resolve: (node) => {
-      // Every node sits under a SourceFile, which always introduces a scope, so the
-      // walk terminates there rather than on a nullish parent.
       for (let current: ts.Node = node; ; current = current.parent) {
         if (!introducesScope(current)) continue
         const declaration = declarationsOf(current).get(node.text)
@@ -292,10 +271,6 @@ function scopeIndex(): ScopeIndex {
   }
 }
 
-/**
- * The four metadata fields are `architectureExceptionSchema`'s, picked from it rather
- * than restated, so this surface cannot drift from the ledger it claims to follow.
- */
 const suppressionMetadataSchema = architectureExceptionSchema.pick({
   owner: true,
   rationale: true,
@@ -304,12 +279,9 @@ const suppressionMetadataSchema = architectureExceptionSchema.pick({
 })
 
 const SUPPRESSION_MARKER = /follower-invariant-allow-next-line\b[ \t]*(\S*)/
-const REQUIRED_SUPPRESSION_FIELDS = [
-  'owner',
-  'rationale',
-  'sunset',
-  'removalCriteria'
-] as const
+const REQUIRED_SUPPRESSION_FIELDS = Object.keys(
+  suppressionMetadataSchema.shape
+) as (keyof typeof suppressionMetadataSchema.shape)[]
 const SUPPRESSION_FIELD = new RegExp(
   `\\b(${REQUIRED_SUPPRESSION_FIELDS.join('|')})\\s*:\\s*([^;]+)`,
   'g'
@@ -320,36 +292,69 @@ export interface Suppression {
   directiveLine: number
   targetLine: number
   fields: Map<string, string>
+  duplicateFields: string[]
 }
 
-const isCommentLine = (line: string): boolean =>
-  /^\s*(?:\/\/|\/\*|\*)/.test(line)
+const isCommentLine = (line: string): boolean => /^\s*\S/.test(line)
 
-function suppressionFields(lines: readonly string[]): Map<string, string> {
+function commentText(source: string): string {
+  const masked: string[] = source
+    .split('')
+    .map((character) =>
+      character === '\n' || character === '\r' ? character : ' '
+    )
+  const scanner = ts.createScanner(
+    ts.ScriptTarget.Latest,
+    false,
+    ts.LanguageVariant.Standard,
+    source
+  )
+  for (
+    let token = scanner.scan();
+    token !== ts.SyntaxKind.EndOfFileToken;
+    token = scanner.scan()
+  ) {
+    if (
+      token !== ts.SyntaxKind.SingleLineCommentTrivia &&
+      token !== ts.SyntaxKind.MultiLineCommentTrivia
+    )
+      continue
+    const start = scanner.getTokenPos()
+    const end = scanner.getTextPos()
+    for (let index = start; index < end; index += 1)
+      masked[index] = source[index]
+  }
+  return masked.join('')
+}
+
+function suppressionFields(lines: readonly string[]): {
+  fields: Map<string, string>
+  duplicateFields: string[]
+} {
   const fields = new Map<string, string>()
+  const duplicateFields = new Set<string>()
   for (const line of lines)
-    for (const [, key, value] of line.matchAll(SUPPRESSION_FIELD))
-      if (!fields.has(key))
-        fields.set(key, value.replace(/\*\/\s*$/, '').trim())
-  return fields
+    for (const [, key, value] of line.matchAll(SUPPRESSION_FIELD)) {
+      if (fields.has(key)) duplicateFields.add(key)
+      else fields.set(key, value.replace(/\*\/\s*$/, '').trim())
+    }
+  return { fields, duplicateFields: [...duplicateFields] }
 }
 
 export function findSuppressions(source: string): Suppression[] {
-  const lines = source.split('\n')
+  const lines = commentText(source).split('\n')
   const suppressions: Suppression[] = []
   lines.forEach((line, index) => {
     const marker = SUPPRESSION_MARKER.exec(line)
     if (!marker) return
     let cursor = index + 1
     while (cursor < lines.length && isCommentLine(lines[cursor])) cursor += 1
+    const metadata = suppressionFields(lines.slice(index, cursor))
     suppressions.push({
-      // A marker with no rule argument is recorded with an empty rule so it reaches
-      // the invalid-directive path. Requiring the argument to parse before recording
-      // left a bare marker completely undiagnosed.
       rule: marker[1],
       directiveLine: index + 1,
       targetLine: cursor + 1,
-      fields: suppressionFields(lines.slice(index, cursor))
+      ...metadata
     })
   })
   return suppressions
@@ -359,7 +364,6 @@ function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-/** Phrase a schema rejection in the vocabulary of the directive, not of zod. */
 function metadataProblem(
   fields: ReadonlyMap<string, string>,
   issue: { path: PropertyKey[]; message: string }
@@ -376,10 +380,12 @@ function suppressionProblem(
   suppression: Suppression,
   now: string
 ): string | undefined {
-  const { rule, fields } = suppression
+  const { rule, fields, duplicateFields } = suppression
   if (!rule) return 'does not name a rule'
   if (!(RULE_NAMES as readonly string[]).includes(rule))
     return `names unknown rule "${rule}"`
+  if (duplicateFields.length)
+    return `repeats required field(s) ${duplicateFields.join(', ')}`
   const missing = REQUIRED_SUPPRESSION_FIELDS.filter(
     (field) => !fields.get(field)
   )
@@ -476,11 +482,6 @@ function functionLikeName(node: ts.Node): string | undefined {
   if (ts.isPropertyAssignment(parent)) return propertyName(parent.name)
 }
 
-/**
- * Whether this node by itself yields a fresh id. A reference to a value that already
- * holds a minted id carries that provenance through any wrapper, which is what makes
- * `return String(id)` mint while `String(op.op_id)` does not.
- */
 function nodeMintsOpId(
   node: ts.Node,
   root: ts.Expression,
@@ -498,7 +499,11 @@ function expressionMintsOpId(
   if (isFunctionLike(expression)) return false
   let mints = false
   const walk = (node: ts.Node): void => {
-    if (mints || (node !== expression && isFunctionLike(node))) return
+    if (
+      mints ||
+      (node !== expression && (isFunctionLike(node) || ts.isTypeNode(node)))
+    )
+      return
     if (nodeMintsOpId(node, expression, minted)) mints = true
     else ts.forEachChild(node, walk)
   }
@@ -506,7 +511,6 @@ function expressionMintsOpId(
   return mints
 }
 
-/** The receiver of an `X.bind(…)` call, which names a callable without invoking it. */
 function boundReceiver(expression: ts.Expression): ts.Expression | undefined {
   if (!ts.isCallExpression(expression)) return
   const callee = expression.expression
@@ -518,7 +522,6 @@ function boundReceiver(expression: ts.Expression): ts.Expression | undefined {
     return callee.expression
 }
 
-/** A minter named without being called: `crypto.randomUUID`, or `X.bind(…)` of one. */
 function minterReferenceName(
   expression: ts.Expression,
   minted: MintedOpIds
@@ -575,24 +578,9 @@ function functionReturnsMintedOpId(
 
 interface MintedOpIds {
   functions: ReadonlySet<string>
-  /**
-   * Declarations — not spellings — that hold an already-minted id. Keying on the
-   * declaration is what stops one function's minted local from condemning an
-   * unrelated local of the same name in another scope.
-   */
   values: ReadonlySet<ts.Node>
   scopes: ScopeIndex
 }
-
-/**
- * Accepted limit: one file at a time with no type information, so a minter imported
- * from another module is not recognised. The alternative — flagging every `op_id`
- * whose right-hand side is a call — rejects legitimate reads such as
- * `{ op_id: String(op.op_id) }`, and on a required check a false positive costs more
- * than this residue. A minter reached by a same-file name is still resolved by
- * spelling rather than by declaration, so a shadowing non-minter of the same name in
- * another scope remains possible.
- */
 function mintedOpIds(
   sourceFile: ts.SourceFile,
   scopes: ScopeIndex
@@ -901,51 +889,65 @@ export function checkOpLayerManifest(
 
 const isLocalOrYjs = (specifier: string): boolean =>
   specifier.startsWith('.') ||
-  specifier.startsWith('/') ||
   specifier === 'yjs' ||
   specifier.startsWith('yjs/')
 
-/** A `require(…)` or `import(…)` whose argument is not a bare string literal. */
 function isRuntimeLoad(node: ts.Node): node is ts.CallExpression {
   if (!ts.isCallExpression(node)) return false
   if (node.expression.kind === ts.SyntaxKind.ImportKeyword) return true
   return ts.isIdentifier(node.expression) && node.expression.text === 'require'
 }
 
-function constantStrings(sourceFile: ts.SourceFile): Map<string, string> {
-  const constants = new Map<string, string>()
-  visit(sourceFile, (node) => {
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.initializer &&
-      ts.isStringLiteralLike(node.initializer)
-    )
-      constants.set(node.name.text, node.initializer.text)
-  })
-  return constants
+function immutableString(
+  identifier: ts.Identifier,
+  scopes: ScopeIndex
+): string | undefined {
+  const declaration = scopes.resolve(identifier)
+  if (!declaration || !ts.isVariableDeclaration(declaration)) return
+  const list = declaration.parent
+  if (
+    !ts.isVariableDeclarationList(list) ||
+    (list.flags & ts.NodeFlags.Const) === 0 ||
+    !declaration.initializer ||
+    !ts.isStringLiteralLike(declaration.initializer)
+  )
+    return
+  return declaration.initializer.text
 }
 
-/** The specifier a runtime load names, or the reason it could not be determined. */
 function loadedSpecifier(
   node: ts.CallExpression,
   sourceFile: ts.SourceFile,
-  constants: ReadonlyMap<string, string>
+  scopes: ScopeIndex
 ): string {
   const argument = node.arguments.at(0)
   if (argument && ts.isStringLiteralLike(argument)) return argument.text
   if (argument && ts.isIdentifier(argument)) {
-    const resolved = constants.get(argument.text)
+    const resolved = immutableString(argument, scopes)
     if (resolved !== undefined) return resolved
   }
   return `an unverifiable runtime load (${node.getText(sourceFile).slice(0, 80)})`
 }
 
-/**
- * Fail closed on a load this classifier cannot resolve. A package can reach forbidden
- * runtime code without declaring a manifest dependency, and treating an unresolvable
- * `import(name)` like an ordinary non-import node reported nothing at all.
- */
+interface RuntimeLoad {
+  node: ts.Node
+  specifier: string
+}
+
+function runtimeLoads(sourceFile: ts.SourceFile): RuntimeLoad[] {
+  const scopes = scopeIndex()
+  const loads: RuntimeLoad[] = []
+  visit(sourceFile, (node) => {
+    const specifier =
+      moduleSpecifier(node) ??
+      (isRuntimeLoad(node)
+        ? loadedSpecifier(node, sourceFile, scopes)
+        : undefined)
+    if (specifier !== undefined) loads.push({ node, specifier })
+  })
+  return loads
+}
+
 export function checkOpLayerRuntimeImports(
   file: string,
   source: string,
@@ -957,57 +959,233 @@ export function checkOpLayerRuntimeImports(
       opLayerPurityViolation(file, 1, 'invalid built JavaScript', installed)
     ]
   const { sourceFile } = parsed
-  const constants = constantStrings(sourceFile)
-  const violations: Violation[] = []
-  visit(sourceFile, (node) => {
-    const specifier =
-      moduleSpecifier(node) ??
-      (isRuntimeLoad(node)
-        ? loadedSpecifier(node, sourceFile, constants)
-        : undefined)
-    if (specifier === undefined || isLocalOrYjs(specifier)) return
-    violations.push(
-      opLayerPurityViolation(
-        file,
-        lineOf(sourceFile, node),
-        specifier,
-        installed
-      )
-    )
-  })
-  return violations
+  return runtimeLoads(sourceFile).flatMap(({ node, specifier }) =>
+    isLocalOrYjs(specifier)
+      ? []
+      : [
+          opLayerPurityViolation(
+            file,
+            lineOf(sourceFile, node),
+            specifier,
+            installed
+          )
+        ]
+  )
 }
 
 const RUNTIME_EXTENSIONS = ['.js', '.mjs', '.cjs'] as const
 
-/**
- * Every path the manifest nominates as runtime code: `main`, `module`, `browser` and
- * every string leaf of `exports`. Globbing `dist/**` alone passed a package whose
- * declared entry was `./dist/entry.mjs` and whose only `.js` file was unrelated.
- */
-function declaredEntryPoints(manifest: unknown): string[] {
-  if (typeof manifest !== 'object' || manifest === null) return []
-  const entries = new Set<string>()
+interface DeclaredEntries {
+  entries: string[]
+  problems: string[]
+}
+
+function collectStringLeaves(value: unknown): string[] {
+  if (typeof value === 'string') return [value]
+  if (typeof value !== 'object' || value === null) return []
+  return Object.entries(value).flatMap(([key, nested]) =>
+    key === 'types' ? [] : collectStringLeaves(nested)
+  )
+}
+
+function browserEntries(value: unknown): DeclaredEntries {
+  if (value === undefined) return { entries: [], problems: [] }
+  if (typeof value === 'string') return { entries: [value], problems: [] }
+  if (typeof value !== 'object' || value === null)
+    return {
+      entries: [],
+      problems: ['browser entry has an unsupported shape']
+    }
+  const entries: string[] = []
+  const problems: string[] = []
+  for (const [key, target] of Object.entries(value)) {
+    if (typeof target === 'string') entries.push(target)
+    else if (target !== false)
+      problems.push(`browser mapping "${key}" has an unsupported target`)
+  }
+  return { entries, problems }
+}
+
+function normalizedEntry(entry: string): string {
+  return entry.replace(/^\.\//, '').replaceAll('\\', '/')
+}
+
+function declaredEntryPoints(manifest: unknown): DeclaredEntries {
+  if (typeof manifest !== 'object' || manifest === null)
+    return { entries: [], problems: [] }
   const record = manifest as Record<string, unknown>
-  for (const field of ['main', 'module', 'browser', 'types'] as const) {
-    const value = record[field]
-    if (typeof value === 'string' && field !== 'types') entries.add(value)
+  const mainEntries = [record['main'], record['module']].filter(
+    (value): value is string => typeof value === 'string'
+  )
+  const browser = browserEntries(record['browser'])
+  const exports = collectStringLeaves(record['exports'])
+  return {
+    entries: [...new Set([...mainEntries, ...browser.entries, ...exports])].map(
+      normalizedEntry
+    ),
+    problems: browser.problems
   }
-  const collect = (value: unknown): void => {
-    if (typeof value === 'string') {
-      entries.add(value)
-      return
-    }
-    if (typeof value !== 'object' || value === null) return
-    for (const [key, nested] of Object.entries(value)) {
-      if (key === 'types') continue
-      collect(nested)
+}
+
+function entryProblem(entry: string): string | undefined {
+  const segments = entry.split('/')
+  if (
+    entry.length === 0 ||
+    entry.startsWith('/') ||
+    /^[A-Za-z]:\//.test(entry) ||
+    segments.includes('..')
+  )
+    return `entry "${entry}" points outside the package`
+  if (!RUNTIME_EXTENSIONS.some((extension) => entry.endsWith(extension)))
+    return `entry "${entry}" is not one of ${RUNTIME_EXTENSIONS.join(', ')}`
+}
+
+function localRuntimeTarget(
+  packageRoot: string,
+  importer: string,
+  specifier: string
+): { target?: string; problem?: string } {
+  const absolute = resolve(packageRoot, dirname(importer), specifier)
+  const target = relative(packageRoot, absolute).replaceAll('\\', '/')
+  if (target.startsWith('../') || target === '..')
+    return { problem: `local import "${specifier}" points outside the package` }
+  const candidates = RUNTIME_EXTENSIONS.some((extension) =>
+    target.endsWith(extension)
+  )
+    ? [target]
+    : [
+        ...RUNTIME_EXTENSIONS.map((extension) => `${target}${extension}`),
+        ...RUNTIME_EXTENSIONS.map((extension) => `${target}/index${extension}`)
+      ]
+  const match = candidates.find((candidate) =>
+    existsSync(resolve(packageRoot, candidate))
+  )
+  return match
+    ? { target: match }
+    : { problem: `cannot inspect local runtime import "${specifier}"` }
+}
+
+function runtimeLayout(
+  packageRoot: string,
+  manifestFile: string,
+  manifest: unknown,
+  installed: string | undefined
+): { files: string[]; violations: Violation[] } {
+  const globbed = globSync(
+    RUNTIME_EXTENSIONS.map((extension) => `dist/**/*${extension}`),
+    { cwd: packageRoot }
+  ).map((file) => file.replaceAll('\\', '/'))
+  const declared = declaredEntryPoints(manifest)
+  const problems = [...declared.problems]
+  const entries = declared.entries.filter((entry) => {
+    const problem = entryProblem(entry)
+    if (problem) problems.push(problem)
+    return problem === undefined
+  })
+  const violations = problems.map((problem) =>
+    opLayerPurityViolation(
+      manifestFile,
+      1,
+      `an unsupported runtime layout: ${problem}`,
+      installed
+    )
+  )
+  const files = [...new Set([...globbed, ...entries])].sort()
+  if (files.length === 0)
+    violations.push(
+      opLayerPurityViolation(
+        `${OP_LAYER_PACKAGE_PATH}/dist/**/*.js`,
+        1,
+        'no built runtime files',
+        installed
+      )
+    )
+  return { files, violations }
+}
+
+function localLoadResults(
+  packageRoot: string,
+  relativeFile: string,
+  file: string,
+  sourceFile: ts.SourceFile,
+  installed: string | undefined
+): { targets: string[]; violations: Violation[] } {
+  const targets: string[] = []
+  const violations: Violation[] = []
+  const localLoads = runtimeLoads(sourceFile).filter(({ specifier }) =>
+    specifier.startsWith('.')
+  )
+  for (const load of localLoads) {
+    const result = localRuntimeTarget(packageRoot, relativeFile, load.specifier)
+    if (result.target) targets.push(result.target)
+    else
+      violations.push(
+        opLayerPurityViolation(
+          file,
+          lineOf(sourceFile, load.node),
+          result.problem ?? 'an unresolvable local runtime import',
+          installed
+        )
+      )
+  }
+  return { targets, violations }
+}
+
+function inspectRuntimeFile(
+  packageRoot: string,
+  relativeFile: string,
+  installed: string | undefined
+): { targets: string[]; violations: Violation[] } {
+  const file = `${OP_LAYER_PACKAGE_PATH}/${relativeFile}`
+  let source: string
+  try {
+    source = readFileSync(resolve(packageRoot, relativeFile), 'utf8')
+  } catch (error) {
+    return {
+      targets: [],
+      violations: [
+        opLayerPurityViolation(
+          file,
+          1,
+          `unreadable runtime file (${error instanceof Error ? error.message : String(error)})`,
+          installed
+        )
+      ]
     }
   }
-  collect(record['exports'])
-  return [...entries]
-    .map((entry) => entry.replace(/^\.\//, '').replaceAll('\\', '/'))
-    .filter((entry) => entry.length > 0 && !entry.startsWith('..'))
+  const violations = checkOpLayerRuntimeImports(file, source, installed)
+  const parsed = parse(file, source)
+  if (parsed.violations.length) return { targets: [], violations }
+  const local = localLoadResults(
+    packageRoot,
+    relativeFile,
+    file,
+    parsed.sourceFile,
+    installed
+  )
+  return {
+    targets: local.targets,
+    violations: [...violations, ...local.violations]
+  }
+}
+
+function scanRuntimeFiles(
+  packageRoot: string,
+  initialFiles: readonly string[],
+  installed: string | undefined
+): Violation[] {
+  const pending = [...initialFiles]
+  const inspected = new Set<string>()
+  const violations: Violation[] = []
+  while (pending.length > 0) {
+    const relativeFile = pending.shift()
+    if (relativeFile === undefined || inspected.has(relativeFile)) continue
+    inspected.add(relativeFile)
+    const result = inspectRuntimeFile(packageRoot, relativeFile, installed)
+    pending.push(...result.targets)
+    violations.push(...result.violations)
+  }
+  return violations
 }
 
 export function checkOpLayerPurity(repositoryRoot: string): Violation[] {
@@ -1026,7 +1204,6 @@ export function checkOpLayerPurity(repositoryRoot: string): Violation[] {
     ]
   }
 
-  const violations = checkOpLayerManifest(manifestFile, manifestSource)
   let manifest: unknown
   try {
     manifest = JSON.parse(manifestSource)
@@ -1034,66 +1211,17 @@ export function checkOpLayerPurity(repositoryRoot: string): Violation[] {
     manifest = undefined
   }
   const installed = installedLabel(manifest)
-  const glob = globSync(
-    RUNTIME_EXTENSIONS.map((extension) => `dist/**/*${extension}`),
-    { cwd: packageRoot }
-  ).map((file) => file.replaceAll('\\', '/'))
-
-  const entryPoints = declaredEntryPoints(manifest)
-  const unsupported = entryPoints.filter(
-    (entry) =>
-      !RUNTIME_EXTENSIONS.some((extension) => entry.endsWith(extension))
-  )
-  for (const entry of unsupported)
-    violations.push(
-      opLayerPurityViolation(
-        `${OP_LAYER_PACKAGE_PATH}/${entry}`,
-        1,
-        `an unsupported runtime layout: entry "${entry}" is not one of ${RUNTIME_EXTENSIONS.join(', ')}`,
-        installed
-      )
-    )
-
-  const runtimeFiles = [
-    ...new Set([
-      ...glob,
-      ...entryPoints.filter((entry) =>
-        RUNTIME_EXTENSIONS.some((extension) => entry.endsWith(extension))
-      )
-    ])
-  ].sort()
-
-  if (runtimeFiles.length === 0) {
-    violations.push(
-      opLayerPurityViolation(
-        `${OP_LAYER_PACKAGE_PATH}/dist/**/*.js`,
-        1,
-        'no built runtime files',
-        installed
-      )
-    )
-    return violations
-  }
-
-  for (const relativeFile of runtimeFiles) {
-    const file = `${OP_LAYER_PACKAGE_PATH}/${relativeFile}`
-    let source: string
-    try {
-      source = readFileSync(resolve(packageRoot, relativeFile), 'utf8')
-    } catch (error) {
-      violations.push(
-        opLayerPurityViolation(
-          file,
-          1,
-          `unreadable runtime file (${error instanceof Error ? error.message : String(error)})`,
-          installed
-        )
-      )
-      continue
-    }
-    violations.push(...checkOpLayerRuntimeImports(file, source, installed))
-  }
-  return violations
+  const layout = runtimeLayout(packageRoot, manifestFile, manifest, installed)
+  if (layout.files.length === 0)
+    return [
+      ...checkOpLayerManifest(manifestFile, manifestSource),
+      ...layout.violations
+    ]
+  return [
+    ...checkOpLayerManifest(manifestFile, manifestSource),
+    ...layout.violations,
+    ...scanRuntimeFiles(packageRoot, layout.files, installed)
+  ]
 }
 
 const CATALOG_KEYWORD = /\b(?:catalog|vocabulary)\b/i
@@ -1107,16 +1235,26 @@ const HOSTED_URL = /https?:\/\/[^\s'"`)\]}]+/gi
 const BARE_MOVING_REFERENCE =
   /@(?:main|master|develop|HEAD)\b|refs\/heads\/[\w.-]+|[?&]ref=(?:main|master|develop|HEAD)\b/gi
 
+function hasPinnedHostedRevision(url: string): boolean {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return false
+  }
+  const segments = parsed.pathname.split('/').filter(Boolean)
+  if (parsed.hostname === 'raw.githubusercontent.com')
+    return PINNED_SHA.test(segments[2] ?? '')
+  const marker = segments.findIndex((segment) =>
+    ['blob', 'tree', 'commit'].includes(segment)
+  )
+  return marker >= 0 && PINNED_SHA.test(segments[marker + 1] ?? '')
+}
+
 const citesMovingTarget = (url: string): boolean =>
   MOVING_REFERENCE.test(url) ||
-  (HOSTED_CITATION.test(url) && !PINNED_SHA.test(url))
+  (HOSTED_CITATION.test(url) && !hasPinnedHostedRevision(url))
 
-/**
- * Scan the references, then ask whether a catalog keyword sits beside one. Scanning
- * from the keyword forward missed every bare URL, because in
- * `https://…/blob/main/catalog.json` the keyword is in the filename — after the branch
- * it needed to see.
- */
 function catalogPinnedBySha(file: string, source: string): Violation[] {
   if (!isFollowerSeamFile(file)) return []
   const nearbyKeyword = (start: number, end: number): boolean =>
@@ -1133,8 +1271,6 @@ function catalogPinnedBySha(file: string, source: string): Violation[] {
       offsets.push(match.index)
   }
 
-  // A moving reference cited without a URL at all — `catalog @main`. Skip the ones
-  // already inside a matched URL so one citation reports once.
   for (const match of source.matchAll(BARE_MOVING_REFERENCE)) {
     const end = match.index + match[0].length
     const insideUrl = urlSpans.some(
@@ -1215,52 +1351,48 @@ const NAME_POSITIONS: ReadonlySet<ts.SyntaxKind> = new Set([
   ts.SyntaxKind.ImportSpecifier,
   ts.SyntaxKind.ImportClause,
   ts.SyntaxKind.NamespaceImport,
-  ts.SyntaxKind.ExportSpecifier
+  ts.SyntaxKind.ExportSpecifier,
+  ts.SyntaxKind.TypeParameter
 ])
 
 function namedNode(node: ts.Node): ts.Node | undefined {
   return (node as { name?: ts.Node }).name
 }
 
-/** A shorthand property (`{ isCloud }`) is deliberately absent: that one reads a binding. */
 function isDeclarationName(node: ts.Identifier): boolean {
   const { parent } = node
-  return NAME_POSITIONS.has(parent.kind) && namedNode(parent) === node
+  return (
+    (ts.isBindingElement(parent) && parent.propertyName === node) ||
+    (NAME_POSITIONS.has(parent.kind) && namedNode(parent) === node)
+  )
 }
 
 function importedBindingNodes(
   node: ts.ImportDeclaration
 ): { name: ts.Identifier; declaration: ts.Node }[] {
   const clause = node.importClause
-  if (!clause) return []
-  const bound = clause.name
+  if (!clause || clause.isTypeOnly) return []
+  const defaultBinding = clause.name
     ? [{ name: clause.name, declaration: clause as ts.Node }]
     : []
   const bindings = clause.namedBindings
-  if (bindings && ts.isNamespaceImport(bindings))
-    bound.push({ name: bindings.name, declaration: bindings })
-  if (bindings && ts.isNamedImports(bindings))
-    for (const element of bindings.elements)
-      bound.push({ name: element.name, declaration: element })
-  return bound
+  if (!bindings) return defaultBinding
+  const namedBindings = ts.isNamespaceImport(bindings)
+    ? [{ name: bindings.name, declaration: bindings as ts.Node }]
+    : bindings.elements
+        .filter((element) => !element.isTypeOnly)
+        .map((element) => ({ name: element.name, declaration: element }))
+  return [...defaultBinding, ...namedBindings]
 }
 
-const importedBindings = (node: ts.ImportDeclaration): string[] =>
-  importedBindingNodes(node).map(({ name }) => name.text)
-
-/**
- * Names the file took from the distribution module. Everything else is resolved
- * lexically at each reference, because a file-wide "declared" set answers the wrong
- * question: it reports whether the spelling exists somewhere, not whether a
- * declaration is in scope at the read.
- */
-function distributionImports(sourceFile: ts.SourceFile): ReadonlySet<string> {
-  const imported = new Set<string>()
+function distributionImports(sourceFile: ts.SourceFile): ReadonlySet<ts.Node> {
+  const imported = new Set<ts.Node>()
   visit(sourceFile, (node) => {
     if (!ts.isImportDeclaration(node)) return
     const specifier = staticModuleSpecifier(node) ?? ''
     if (DISTRIBUTION_MODULE.test(specifier))
-      for (const name of importedBindings(node)) imported.add(name)
+      for (const binding of importedBindingNodes(node))
+        imported.add(binding.declaration)
   })
   return imported
 }
@@ -1281,15 +1413,10 @@ function buildEnvironmentRead(node: ts.Node): string | undefined {
     return 'reads a build-time environment flag'
 }
 
-/**
- * `x['isCloud']`, but only where `x` itself carries distribution provenance. Keyed on
- * the member name alone it rejected `const flags = { isCloud: false }; flags['isCloud']`
- * while allowing the identical dot access.
- */
 function keyedDistributionRead(
   node: ts.Node,
   sourceFile: ts.SourceFile,
-  imported: ReadonlySet<string>,
+  imported: ReadonlySet<ts.Node>,
   scopes: ScopeIndex
 ): string | undefined {
   if (
@@ -1301,16 +1428,15 @@ function keyedDistributionRead(
     return
   const receiver = node.expression
   if (!ts.isIdentifier(receiver)) return
-  const locallyBound =
-    !imported.has(receiver.text) && scopes.resolve(receiver) !== undefined
-  if (locallyBound) return
+  const declaration = scopes.resolve(receiver)
+  if (declaration !== undefined && !imported.has(declaration)) return
   return `reads the distribution flag "${node.argumentExpression.text}"`
 }
 
 function distributionFlagRead(
   node: ts.Node,
   sourceFile: ts.SourceFile,
-  imported: ReadonlySet<string>,
+  imported: ReadonlySet<ts.Node>,
   scopes: ScopeIndex
 ): string | undefined {
   if (
@@ -1319,12 +1445,10 @@ function distributionFlagRead(
     isTypePosition(node, sourceFile)
   )
     return
-  if (imported.has(node.text))
+  const declaration = scopes.resolve(node)
+  if (declaration !== undefined && imported.has(declaration))
     return `branches on the imported distribution flag "${node.text}"`
-  if (
-    DISTRIBUTION_FLAGS.includes(node.text) &&
-    scopes.resolve(node) === undefined
-  )
+  if (DISTRIBUTION_FLAGS.includes(node.text) && declaration === undefined)
     return `branches on the ambient distribution flag "${node.text}"`
 }
 
