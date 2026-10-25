@@ -72,7 +72,7 @@ const WithoutTooltip: FunctionalComponent = (_, { slots }) =>
       <span
         v-if="indicator"
         aria-hidden="true"
-        class="pointer-events-none absolute -top-1 -right-1 size-2 rounded-full bg-base-foreground"
+        class="pointer-events-none absolute -top-1 -right-1 size-2 rounded-full bg-foreground"
       />
     </Primitive>
   </component>

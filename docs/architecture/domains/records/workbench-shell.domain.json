@@ -4,10 +4,6 @@
   "description": "Workbench layout, persisted panel sizing, contribution registries, command dispatch, menus, sidebar and bottom-panel tabs, action bar buttons, and extension slots. Feature content belongs to its respective modules.",
   "modules": [
     {
-      "path": "src/components/common/ExtensionSlot.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/LiteGraphCanvasSplitterOverlay.test.ts",
       "role": "presentation"
     },
@@ -20,27 +16,19 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/sidebar/ComfyMenuButton.test.ts",
+      "path": "src/components/TopMenuSection.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/components/sidebar/ComfyMenuButton.vue",
+      "path": "src/components/TopMenuSection.vue",
       "role": "presentation"
     },
     {
-      "path": "src/components/sidebar/SidebarIcon.test.ts",
+      "path": "src/components/common/ExtensionSlot.vue",
       "role": "presentation"
     },
     {
-      "path": "src/components/sidebar/SidebarIcon.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/SideToolbar.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/SideToolbar.vue",
+      "path": "src/components/sidebar/**",
       "role": "presentation"
     },
     {
@@ -76,60 +64,24 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/TopMenuSection.test.ts",
-      "role": "presentation"
+      "path": "src/composables/sidebarTabs/registerCoreSidebarTabs.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/components/TopMenuSection.vue",
-      "role": "presentation"
+      "path": "src/composables/sidebarTabs/registerCoreSidebarTabs.ts",
+      "role": "integration"
     },
     {
-      "path": "src/stores/commandStore.ts",
-      "role": "application"
+      "path": "src/composables/useCoreCommands.selectOnly.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/stores/commandStore.test.ts",
-      "role": "application"
+      "path": "src/composables/useCoreCommands.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/stores/menuItemStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/menuItemStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspace/sidebarTabStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspace/sidebarTabStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspace/bottomPanelStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspace/bottomPanelStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/actionBarButtonStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/topbarBadgeStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspaceStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspaceStore.test.ts",
-      "role": "application"
+      "path": "src/composables/useCoreCommands.ts",
+      "role": "integration"
     },
     {
       "path": "src/composables/usePanelSizing.test.ts",
@@ -148,6 +100,54 @@
       "role": "application"
     },
     {
+      "path": "src/stores/actionBarButtonStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/commandStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/commandStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/menuItemStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/menuItemStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/topbarBadgeStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspace/bottomPanelStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspace/bottomPanelStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspace/sidebarTabStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspace/sidebarTabStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspaceStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspaceStore.ts",
+      "role": "application"
+    },
+    {
       "path": "src/utils/splitterPersistence.test.ts",
       "role": "infrastructure"
     },
@@ -162,31 +162,11 @@
     {
       "path": "src/utils/splitterWidthUtil.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/composables/useCoreCommands.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/useCoreCommands.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/useCoreCommands.selectOnly.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/sidebarTabs/registerCoreSidebarTabs.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/sidebarTabs/registerCoreSidebarTabs.test.ts",
-      "role": "integration"
     }
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
       "name": "Splitter overlay and top menu arrange workbench regions from layout settings",

@@ -4,40 +4,16 @@
   "description": "Shared technical module, not a business domain. The Yjs-backed layout store that owns durable node, group, reroute, link, and slot geometry under ADR-CRDT-LAYOUT-0003, its LayoutOperation mutations and actor attribution, hit-target authority, pure geometry and layout math, Yjs mappers, the QuadTree spatial index used for hit testing and culling, the TransformPane and transform-state helpers that map canvas space to DOM space, and adapters that attach LiteGraph graphs, node sizes, and slot offsets to the store. Graph topology and entity stores remain with the graph core.",
   "modules": [
     {
-      "path": "src/renderer/core/layout/constants.ts",
+      "path": "src/renderer/core/layout/**",
       "role": "domain"
     },
     {
-      "path": "src/renderer/core/layout/slots/slotIdentifier.ts",
-      "role": "domain"
+      "path": "src/renderer/core/layout/__tests__/TransformPane.test.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/renderer/core/layout/types.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/core/layout/utils/geometry.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/core/layout/utils/layoutMath.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/core/layout/utils/layoutMath.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/core/layout/utils/layoutUtils.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/core/layout/utils/layoutUtils.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/core/spatial/**",
-      "role": "domain"
+      "path": "src/renderer/core/layout/operations/**",
+      "role": "integration"
     },
     {
       "path": "src/renderer/core/layout/operations/layoutMutations.test.ts",
@@ -48,40 +24,20 @@
       "role": "application"
     },
     {
+      "path": "src/renderer/core/layout/slots/syncSlotOffsets.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/core/layout/slots/syncSlotOffsets.ts",
+      "role": "integration"
+    },
+    {
       "path": "src/renderer/core/layout/store/**",
       "role": "application"
     },
     {
-      "path": "src/renderer/core/layout/transform/__mocks__/useTransformState.ts",
+      "path": "src/renderer/core/layout/transform/**",
       "role": "application"
-    },
-    {
-      "path": "src/renderer/core/layout/transform/useTransformSettling.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/core/layout/transform/useTransformSettling.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/core/layout/transform/useTransformState.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/core/layout/transform/useTransformState.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/core/layout/utils/mappers.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/core/layout/utils/mappers.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/core/layout/__tests__/TransformPane.test.ts",
-      "role": "presentation"
     },
     {
       "path": "src/renderer/core/layout/transform/TransformPane.test.ts",
@@ -92,30 +48,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/renderer/core/layout/operations/graphLayoutAttachment.perf.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/core/layout/operations/graphLayoutAttachment.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/core/layout/operations/graphLayoutAttachment.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/core/layout/operations/subgraphConversionLayout.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/core/layout/slots/syncSlotOffsets.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/core/layout/slots/syncSlotOffsets.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/renderer/core/layout/transform/graphRenderTransform.test.ts",
       "role": "integration"
     },
@@ -124,8 +56,24 @@
       "role": "integration"
     },
     {
+      "path": "src/renderer/core/layout/utils/mappers.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/core/layout/utils/mappers.ts",
+      "role": "infrastructure"
+    },
+    {
       "path": "src/renderer/core/layout/utils/nodeSizeUtil.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/renderer/core/spatial/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/spatialIndex.ts",
+      "role": "domain"
     },
     {
       "path": "src/utils/positionBounds.test.ts",
@@ -133,10 +81,6 @@
     },
     {
       "path": "src/utils/positionBounds.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/spatialIndex.ts",
       "role": "domain"
     }
   ],

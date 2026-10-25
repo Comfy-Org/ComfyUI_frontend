@@ -2,6 +2,7 @@
 import { translationsFor } from '@/i18n/translations'
 
 import Button from '@/components/ui/button/Button.vue'
+import { externalLinks } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { captureWorkshopEvent } from '@/scripts/posthog'
 
@@ -10,6 +11,7 @@ const {
   locale = 'en',
   appSlug
 } = defineProps<{
+  /** The app's own repository; until it exists the link opens Comfy's GitHub. */
   repo?: string
   locale?: Locale
   /** The app this link belongs to, for the click's analytics. */
@@ -18,7 +20,7 @@ const {
 const { t } = translationsFor(locale)
 
 function captureClick() {
-  if (!repo || !appSlug) return
+  if (!appSlug) return
   captureWorkshopEvent({
     name: 'github_clicked',
     properties: { app_slug: appSlug, page_type: 'app' }
@@ -28,13 +30,12 @@ function captureClick() {
 
 <template>
   <Button
-    :as="repo ? 'a' : 'span'"
-    :href="repo"
-    :target="repo && '_blank'"
-    :rel="repo && 'noopener noreferrer'"
+    as="a"
+    :href="repo ?? externalLinks.githubOrg"
+    target="_blank"
+    rel="noopener noreferrer"
     variant="outline"
     size="sm"
-    :class="!repo && 'pointer-events-none opacity-50'"
     @click="captureClick"
   >
     <template #prepend>
@@ -43,6 +44,6 @@ function captureClick() {
         aria-hidden="true"
       />
     </template>
-    {{ t(repo ? 'cinematic.repo.view' : 'cinematic.repo.soon') }}
+    {{ repo ? t('cinematic.repo.view') : t('cinematic.repo.org') }}
   </Button>
 </template>

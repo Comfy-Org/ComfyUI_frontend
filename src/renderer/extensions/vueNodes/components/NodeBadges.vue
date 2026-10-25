@@ -18,7 +18,7 @@ defineProps<{
   >
     <div
       v-if="core.length"
-      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-component-node-widget-background"
+      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-input"
     >
       <template v-for="(badge, index) of core" :key="badge.text">
         <div
@@ -35,7 +35,7 @@ defineProps<{
     <div
       v-if="hasComfyBadge"
       data-testid="comfy-badge"
-      class="flex size-6 items-center justify-center rounded-full bg-component-node-widget-background"
+      class="flex size-6 items-center justify-center rounded-full bg-input"
     >
       <i
         :class="
@@ -48,7 +48,7 @@ defineProps<{
     </div>
     <div
       v-if="extension.length"
-      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-component-node-widget-background"
+      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-input"
     >
       <template v-for="(badge, index) of extension" :key="badge.text">
         <div

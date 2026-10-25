@@ -1,6 +1,6 @@
 import { onTestFinished, vi } from 'vitest'
 
-import type { useErrorHandling as realUseErrorHandling } from '../useErrorHandling'
+import type { useErrorHandling as realUseErrorHandling } from '@/composables/useErrorHandling'
 
 const defaults: ReturnType<typeof realUseErrorHandling> = {
   wrapWithErrorHandling: (action) => action,

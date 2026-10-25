@@ -11,13 +11,14 @@ import {
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import {
+  coerceRestoredWidgetValue,
   getWidgetIds,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/utils/widget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { zDynamicGroupInputSpec } from '@/schemas/nodeDefSchema'
-import { useLitegraphService } from '@/services/litegraphService'
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { deriveWidgetSurfaces } from '@/types/widgetVisibility'
@@ -42,7 +43,7 @@ export function dynamicGroupWidget(
   } = zDynamicGroupInputSpec.parse(inputData)[1]
   const fields = { ...template.required, ...template.optional }
   const store = useWidgetValueStore()
-  const { addNodeInput } = useLitegraphService()
+  const { addNodeInput } = useLitegraphServiceAccess()
   const controller: IBaseWidget = node.addCustomWidget({
     name: inputName,
     type: 'number',
@@ -388,7 +389,7 @@ export function dynamicGroupWidget(
       inputName,
       position
     )
-    if (restored?.value !== value) return
+    if (coerceRestoredWidgetValue(controller, restored?.value) !== value) return
     const savedValueCount = store.getRestoredWidgetValueCount(graphId, node.id)
     if (requested > Math.max(max, savedValueCount ?? 0))
       throw new RangeError(

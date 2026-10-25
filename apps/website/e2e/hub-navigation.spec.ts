@@ -170,7 +170,7 @@ for (const width of [1440, 390]) {
         await expectAt(page, from)
         await page.getByRole('button', { name: 'Close', exact: true }).click()
         await expect(
-          page.getByText('Comfy Agent can now build workflows inside ComfyUI.')
+          page.locator('[data-slot="announcement-banner"]')
         ).toBeHidden()
         await expect(page.getByTestId(HERO_TEST_ID[from])).toBeVisible()
         const way = wayTo(page, from, to)

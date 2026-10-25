@@ -118,7 +118,47 @@ describe('SiteFooter', () => {
     ['en', '/nvidia-vfx/'],
     ['zh-CN', '/zh-CN/nvidia-vfx/']
   ] as const)(
-    'links the Nvidia VFX page last in footer Models (%s)',
+    'links the Nvidia VFX page in footer Models (%s)',
+    ([locale, href]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const models = within(
+        screen.getByRole('navigation', {
+          name: locale === 'en' ? 'Models' : '模型'
+        })
+      ).getAllByRole('link')
+      const nvidiaVfx = models.find(
+        (link) => link.textContent.trim() === 'Nvidia VFX'
+      )
+      expect(nvidiaVfx?.getAttribute('href')).toBe(href)
+    }
+  )
+
+  it.for([
+    ['en', '/flux-3-image-klein/'],
+    ['zh-CN', '/zh-CN/flux-3-image-klein/']
+  ] as const)(
+    'links the FLUX 3 Image Klein page in footer Models (%s)',
+    ([locale, href]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const models = within(
+        screen.getByRole('navigation', {
+          name: locale === 'en' ? 'Models' : '模型'
+        })
+      ).getAllByRole('link')
+      const klein = models.find(
+        (link) => link.textContent.trim() === 'FLUX 3 Image Klein'
+      )
+      expect(klein?.getAttribute('href')).toBe(href)
+    }
+  )
+
+  it.for([
+    ['en', '/krea-3/'],
+    ['zh-CN', '/zh-CN/krea-3/']
+  ] as const)(
+    'links the Krea 3 page last in footer Models (%s)',
     ([locale, href]) => {
       render(SiteFooter, { props: { locale } })
 
@@ -128,7 +168,7 @@ describe('SiteFooter', () => {
         })
       ).getAllByRole('link')
       const last = models.at(-1)
-      expect(last?.textContent.trim()).toBe('Nvidia VFX')
+      expect(last?.textContent.trim()).toBe('Krea 3')
       expect(last?.getAttribute('href')).toBe(href)
     }
   )

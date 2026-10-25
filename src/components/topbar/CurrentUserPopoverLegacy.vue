@@ -11,18 +11,19 @@
       />
 
       <!-- User Details -->
-      <h3 class="my-0 mb-1 truncate text-base font-bold text-base-foreground">
+      <h3 class="my-0 mb-1 truncate text-base font-bold text-foreground">
         {{ userDisplayName || $t('g.user') }}
       </h3>
       <p v-if="userEmail" class="my-0 truncate text-sm text-muted-foreground">
         {{ userEmail }}
       </p>
-      <span
+      <Badge
         v-if="subscriptionTierName"
-        class="my-0 mt-2 rounded-full bg-secondary-background-hover px-2 py-0.5 text-xs font-bold text-base-foreground uppercase"
+        variant="pill"
+        class="mt-2 bg-accent text-xs font-bold uppercase"
       >
         {{ subscriptionTierName }}
-      </span>
+      </Badge>
     </div>
 
     <div v-if="showWorkspaceSwitcher" class="relative">
@@ -31,7 +32,7 @@
           <Button
             ref="workspaceSwitcherTrigger"
             variant="muted-textonly"
-            class="flex h-auto w-full items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+            class="flex h-auto w-full justify-between px-4 py-2"
             :aria-expanded="isWorkspaceSwitcherOpen"
             aria-haspopup="menu"
             aria-controls="workspace-switcher-panel"
@@ -45,7 +46,7 @@
                 :workspace-name
                 :subscription-tier="tier"
               />
-              <span class="truncate text-sm text-base-foreground">
+              <span class="truncate text-sm text-foreground">
                 {{ workspaceName }}
               </span>
             </div>
@@ -62,7 +63,7 @@
         id="workspace-switcher-panel"
         ref="workspaceSwitcherPanel"
         role="menu"
-        class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+        class="absolute top-0 right-full z-10 mr-4 rounded-lg border bg-background shadow-md"
         data-testid="workspace-switcher-panel"
       >
         <WorkspaceSwitcherPopover @select="isWorkspaceSwitcherOpen = false" />
@@ -76,7 +77,7 @@
     >
       <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton v-if="isLoading" class="h-5 w-16" />
-      <span v-else class="text-base font-semibold text-base-foreground">{{
+      <span v-else class="text-base font-semibold text-foreground">{{
         formattedBalance
       }}</span>
       <Button
@@ -90,10 +91,9 @@
         <i class="icon-[lucide--circle-help]" />
       </Button>
       <Button
-        v-if="showAddCredits"
+        v-if="canTopUp"
         variant="secondary"
         size="sm"
-        class="text-base-foreground"
         data-testid="add-credits-button"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
         @click="handleTopUp"
@@ -102,52 +102,52 @@
       </Button>
     </div>
 
-    <div class="mx-0 my-2 border-t border-interface-stroke" />
+    <div class="mx-0 my-2 border-t" />
 
     <div
       v-if="canAccessSubscriptionFeatures"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
     >
-      <i class="icon-[lucide--tag] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <i class="icon-[lucide--tag] text-muted-foreground" />
+      <span class="flex-1 text-foreground">{{
         $t('subscription.partnerNodesCredits')
       }}</span>
     </div>
 
     <div
       v-if="canAccessSubscriptionFeatures || showWorkspaceSwitcher"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-accent"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
       <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <span class="flex-1 text-sm text-foreground">{{
         $t('credits.credits')
       }}</span>
     </div>
 
     <div
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
       data-testid="user-settings-menu-item"
       @click="handleOpenUserSettings"
     >
-      <i class="icon-[lucide--settings-2] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <i class="icon-[lucide--settings-2] text-muted-foreground" />
+      <span class="flex-1 text-foreground">{{
         $t('userSettings.accountSettings')
       }}</span>
     </div>
 
-    <div class="mx-0 my-2 border-t border-interface-stroke" />
+    <div class="mx-0 my-2 border-t" />
 
     <div
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
       data-testid="logout-menu-item"
       @click="handleLogout"
     >
-      <i class="icon-[lucide--log-out] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <i class="icon-[lucide--log-out] text-muted-foreground" />
+      <span class="flex-1 text-foreground">{{
         $t('auth.signOut.signOut')
       }}</span>
     </div>
@@ -155,6 +155,7 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@/components/ui/badge/Badge.vue'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
@@ -228,10 +229,7 @@ const showWorkspaceSwitcher = computed(
   () => initState.value === 'ready' && workspaces.value.length > 0
 )
 
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
-const showAddCredits = computed(
-  () => canTopUp.value || canSubscribeSelfServe.value
-)
+const { canTopUp } = useBillingCapabilities()
 
 const subscriptionTierName = computed(() =>
   formatTierName(tier.value, subscription.value?.duration === 'ANNUAL')
@@ -256,8 +254,6 @@ const handleOpenUserSettings = () => {
 }
 
 const handleOpenPlanAndCreditsSettings = () => {
-  // 'workspace' is the V1 Plan & Credits panel; the legacy 'credits' panel is
-  // hidden from the settings menu and only reachable by key.
   settingsDialog.show('workspace')
   emit('close')
 }

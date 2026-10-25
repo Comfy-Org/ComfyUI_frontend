@@ -1,7 +1,7 @@
 import type { SubscriptionDialogOptions } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useBillingDialogsAccess } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
+import { useSubscriptionDialogAccess } from '@/platform/cloud/subscription/composables/subscriptionDialogAccess'
 
 /**
  * Opens the paywall for the active billing rail: workspace billing shows the
@@ -12,8 +12,8 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
  */
 export function useSubscriptionPaywall() {
   const { type, whenRoutingKnown } = useBillingContext()
-  const { showSubscriptionRequiredDialog } = useBillingDialogs()
-  const subscriptionDialog = useSubscriptionDialog()
+  const { showSubscriptionRequiredDialog } = useBillingDialogsAccess()
+  const subscriptionDialog = useSubscriptionDialogAccess()
 
   function showForRail(options?: SubscriptionDialogOptions): void {
     if (type.value === 'workspace') subscriptionDialog.show(options)

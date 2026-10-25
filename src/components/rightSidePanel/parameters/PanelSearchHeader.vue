@@ -20,14 +20,14 @@ defineOptions({ inheritAttrs: false })
 </script>
 
 <template>
-  <div
-    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
-  >
+  <div class="flex items-center border-b px-4 pt-1 pb-4">
     <AsyncSearchInput
       v-model="query"
+      :clear-label="$t('g.clear')"
+      :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+      :accessible-label="$t('g.search')"
       :searcher
       :update-key="updateKey"
-      class="flex-1"
       @enter="emit('enter', $event)"
     />
     <slot />

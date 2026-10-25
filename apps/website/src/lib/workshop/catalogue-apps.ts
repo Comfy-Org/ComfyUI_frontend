@@ -52,6 +52,11 @@ const copy = {
   paparazziMeTask: {
     en: 'Get snapped next to a star',
     'zh-CN': '和明星同框被拍'
+  },
+  openjutsuName: { en: 'Openjutsu', 'zh-CN': 'Openjutsu' },
+  openjutsuTask: {
+    en: 'Swap a character in a video',
+    'zh-CN': '替换视频中的角色'
   }
 } as const satisfies Record<string, LocalizedText>
 

@@ -36,12 +36,12 @@ export function useQueueProgress() {
 
   const totalProgressStyle = computed(() => ({
     transform: `scaleX(${totalPercent.value / 100})`,
-    background: 'var(--color-interface-panel-job-progress-primary)'
+    background: 'var(--primary)'
   }))
 
   const currentNodeProgressStyle = computed(() => ({
     transform: `scaleX(${currentNodePercent.value / 100})`,
-    background: 'var(--color-interface-panel-job-progress-secondary)'
+    background: 'color-mix(in srgb, var(--primary) 30%, transparent)'
   }))
 
   return {

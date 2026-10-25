@@ -30,6 +30,7 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   collectAllNodes,
@@ -504,15 +505,9 @@ function collectEmbeddedModels(
   return result
 }
 
-interface AssetVerifier {
-  updateModelsForNodeType: (nodeType: string) => Promise<void>
-  getAssets: (nodeType: string) => AssetItem[] | undefined
-}
-
 export async function verifyAssetSupportedCandidates(
   candidates: MissingModelCandidate[],
-  signal?: AbortSignal,
-  assetsStore?: AssetVerifier
+  signal?: AbortSignal
 ): Promise<void> {
   if (signal?.aborted) return
 
@@ -537,8 +532,7 @@ export async function verifyAssetSupportedCandidates(
     pendingCandidates.map((candidate) => candidate.nodeType)
   )
 
-  const store =
-    assetsStore ?? (await import('@/stores/assetsStore')).useAssetsStore()
+  const store = useAssetsStore()
 
   const failedNodeTypes = new Set<string>()
   await Promise.allSettled(
@@ -562,7 +556,7 @@ export async function verifyAssetSupportedCandidates(
     if (!c.isAssetSupported || c.isMissing !== undefined) continue
     if (failedNodeTypes.has(c.nodeType)) continue
 
-    const assets = store.getAssets(c.nodeType) ?? []
+    const assets = store.getAssets(c.nodeType)
     c.isMissing = !isAssetInstalled(c, assets)
   }
 }

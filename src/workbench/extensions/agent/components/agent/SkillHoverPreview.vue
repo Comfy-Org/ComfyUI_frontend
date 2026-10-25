@@ -20,7 +20,7 @@ const { t } = useI18n()
       side="top"
       align="start"
       :collision-padding="16"
-      class="w-62.5 max-w-[calc(100vw-2rem)] rounded-[10px] bg-base-background"
+      class="w-62.5 max-w-[calc(100vw-2rem)] rounded-[10px] bg-background"
     >
       <div
         role="tooltip"

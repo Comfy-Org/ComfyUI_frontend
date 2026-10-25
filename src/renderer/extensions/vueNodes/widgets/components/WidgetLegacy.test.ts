@@ -97,3 +97,42 @@ describe('WidgetLegacy canvas sizing', () => {
     }
   )
 })
+
+describe('WidgetLegacy canvas width', () => {
+  it('uses the untransformed layout width when the canvas is zoomed', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Legacy')
+    const widget = node.addWidget('number', 'frame_load_cap', 0, () => {})
+    graph.add(node)
+    widget.draw = () => {}
+    useCanvasStore().canvas = fromPartial({ graph })
+    await nextTick()
+
+    const layoutWidth = 200
+    const zoomedRectWidth = layoutWidth * 0.5
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
+      layoutWidth
+    )
+    vi.spyOn(
+      HTMLCanvasElement.prototype,
+      'getBoundingClientRect'
+    ).mockReturnValue(DOMRect.fromRect({ width: zoomedRectWidth, height: 20 }))
+    const canvases: HTMLCanvasElement[] = []
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      function (this: HTMLCanvasElement) {
+        canvases.push(this)
+        return null
+      }
+    )
+
+    render(WidgetLegacy, {
+      props: {
+        nodeId: node.id,
+        widget: { name: 'frame_load_cap', type: 'number', value: undefined }
+      }
+    })
+
+    expect(widget.width).toBe(layoutWidth)
+    expect(canvases.at(-1)?.width).toBe(layoutWidth * 2)
+  })
+})

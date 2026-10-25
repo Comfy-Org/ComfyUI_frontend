@@ -104,19 +104,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/composables/canvas/useSelectedLiteGraphItems.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/canvas/useSelectedLiteGraphItems.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/canvas/useSelectionToolboxPosition.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/canvas/useSelectionToolboxPosition.ts",
+      "path": "src/composables/canvas/**",
       "role": "integration"
     },
     {

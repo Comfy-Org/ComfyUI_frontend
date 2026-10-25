@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
 import { toNodeId } from '@/types/nodeId'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Load3D', { tag: '@vue-nodes' }, () => {
   test(
@@ -34,7 +35,7 @@ test.describe('Load3D', { tag: '@vue-nodes' }, () => {
 
       await expect(load3d.menuButton).toBeVisible()
 
-      await expect(load3d.node).toHaveScreenshot('load3d-empty-node.png', {
+      await expectElementScreenshot(load3d.node, 'load3d-empty-node.png', {
         maxDiffPixelRatio: 0.05
       })
     }
@@ -54,7 +55,8 @@ test.describe('Load3D', { tag: '@vue-nodes' }, () => {
       await expect(load3d.getMenuCategory('Gizmo')).toBeVisible()
       await expect(load3d.exportButton).toBeVisible()
 
-      await expect(load3d.node).toHaveScreenshot(
+      await expectElementScreenshot(
+        load3d.node,
         'load3d-controls-menu-open.png',
         { maxDiffPixelRatio: 0.05 }
       )
@@ -80,7 +82,7 @@ test.describe('Load3D', { tag: '@vue-nodes' }, () => {
         )
         .toBe('#cc3333')
 
-      await expect(load3d.node).toHaveScreenshot('load3d-red-background.png', {
+      await expectElementScreenshot(load3d.node, 'load3d-red-background.png', {
         maxDiffPixelRatio: 0.05
       })
     }
@@ -115,7 +117,7 @@ test.describe('Load3D', { tag: '@vue-nodes' }, () => {
       await expect.poll(() => modelFileWidget.getValue()).toContain('cube.obj')
 
       await load3d.waitForModelLoaded()
-      await comfyPage.expectScreenshot(
+      await expectElementScreenshot(
         load3d.node,
         'load3d-uploaded-cube-obj.png',
         { maxDiffPixelRatio: 0.1 }
@@ -145,7 +147,7 @@ test.describe('Load3D', { tag: '@vue-nodes' }, () => {
       const modelFileWidget = await node.getWidget(0)
       await expect.poll(() => modelFileWidget.getValue()).toContain('cube.obj')
 
-      await comfyPage.expectScreenshot(
+      await expectElementScreenshot(
         load3d.node,
         'load3d-dropped-cube-obj.png',
         { maxDiffPixelRatio: 0.1 }
@@ -186,7 +188,7 @@ test.describe('Load3D', { tag: '@vue-nodes' }, () => {
       await expect(load3d.panoramaModeButton).toBeVisible()
       await expect(load3d.removeBackgroundImageButton).toBeVisible()
 
-      await comfyPage.expectScreenshot(
+      await expectElementScreenshot(
         load3d.node,
         'load3d-background-image-tiled.png',
         { maxDiffPixelRatio: 0.05 }
@@ -203,7 +205,7 @@ test.describe('Load3D', { tag: '@vue-nodes' }, () => {
             return properties['Scene Config']?.backgroundRenderMode
           })
           .toBe('panorama')
-        await comfyPage.expectScreenshot(
+        await expectElementScreenshot(
           load3d.node,
           'load3d-background-image-panorama.png',
           { maxDiffPixelRatio: 0.05 }
@@ -238,19 +240,19 @@ test.describe('Load3D', { tag: '@vue-nodes' }, () => {
         await readShowGrid(),
         'Load3D workflow should start with grid visible (true or undefined)'
       ).not.toBe(false)
-      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-visible.png', {
+      await expectElementScreenshot(load3d.node, 'load3d-grid-visible.png', {
         maxDiffPixelRatio: 0.05
       })
 
       await load3d.gridToggleButton.click()
       await expect.poll(readShowGrid).toBe(false)
-      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-hidden.png', {
+      await expectElementScreenshot(load3d.node, 'load3d-grid-hidden.png', {
         maxDiffPixelRatio: 0.05
       })
 
       await load3d.gridToggleButton.click()
       await expect.poll(readShowGrid).toBe(true)
-      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-visible.png', {
+      await expectElementScreenshot(load3d.node, 'load3d-grid-visible.png', {
         maxDiffPixelRatio: 0.05
       })
     }

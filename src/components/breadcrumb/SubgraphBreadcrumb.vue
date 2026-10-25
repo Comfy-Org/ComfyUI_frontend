@@ -2,7 +2,7 @@
   <div
     data-testid="subgraph-breadcrumb"
     :data-collapsed="collapseTabs || undefined"
-    class="flex w-auto min-w-30 flex-auto shrink-10000 items-center overflow-hidden drop-shadow-(--interface-panel-drop-shadow)"
+    class="flex min-w-30 flex-auto shrink-10000 items-center overflow-hidden drop-shadow-(--interface-panel-drop-shadow)"
     :style="{
       '--breadcrumb-item-margin': `${ITEM_GAP / 2}px`,
       '--breadcrumb-item-min-width': `${MIN_WIDTH}px`,
@@ -15,7 +15,7 @@
     />
     <Button
       v-if="isInSubgraph"
-      class="pointer-events-auto ml-1.5 size-8 shrink-0 border border-transparent bg-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
+      class="pointer-events-auto ml-1.5 shrink-0 border border-transparent p-0 transition-all hover:rounded-lg hover:border-border hover:bg-background"
       data-testid="subgraph-breadcrumb-back"
       variant="muted-textonly"
       size="icon"
@@ -44,7 +44,7 @@
         <template v-for="(item, index) in items" :key="item.key">
           <li
             data-breadcrumb-item
-            class="pointer-events-auto flex h-8 min-w-[calc(var(--breadcrumb-item-min-width)+1rem)] shrink-10000 items-center overflow-hidden border border-transparent bg-transparent transition-all duration-200 first:shrink-5000 last:shrink hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg hover:text-base-foreground has-data-active:min-w-[calc(var(--breadcrumb-item-min-width)+1rem+20px)]"
+            class="pointer-events-auto flex h-8 min-w-[calc(var(--breadcrumb-item-min-width)+1rem)] shrink-10000 items-center overflow-hidden border border-transparent transition-all duration-200 first:shrink-5000 last:shrink hover:rounded-lg hover:border-border hover:bg-background hover:text-foreground has-data-active:min-w-[calc(var(--breadcrumb-item-min-width)+1rem+20px)]"
           >
             <SubgraphBreadcrumbItem
               :item
@@ -54,7 +54,7 @@
           <li
             v-if="index < items.length - 1"
             data-breadcrumb-separator
-            class="flex border border-transparent bg-transparent px-(--breadcrumb-item-margin)"
+            class="flex border border-transparent px-(--breadcrumb-item-margin)"
             aria-hidden="true"
           >
             <span class="scale-150">/</span>

@@ -4,48 +4,20 @@
   "description": "Scans loaded workflows (including promoted subgraph widgets) for image, video, and audio inputs whose files are not available, verifies candidates against assets, stores per-workflow results, and renders the missing-media error card.",
   "modules": [
     {
-      "path": "src/platform/missingMedia/types.ts",
-      "role": "domain"
+      "path": "src/platform/missingMedia/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/missingMedia/components/**",
+      "role": "presentation"
     },
     {
       "path": "src/platform/missingMedia/missingMediaGrouping.ts",
       "role": "domain"
     },
     {
-      "path": "src/platform/missingMedia/missingMediaScan.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/missingMedia/missingMediaScan.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/missingMedia/missingMediaScan.promotedWidget.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/missingMedia/missingMediaPipeline.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/missingMedia/missingMediaPipeline.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/missingMedia/missingMediaStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/missingMedia/missingMediaStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/missingMedia/__fixtures__/**",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/missingMedia/components/**",
-      "role": "presentation"
+      "path": "src/platform/missingMedia/types.ts",
+      "role": "domain"
     },
     {
       "path": "src/stores/missingMediaPreviewRegression.test.ts",

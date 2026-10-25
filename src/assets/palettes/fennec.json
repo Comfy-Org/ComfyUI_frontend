@@ -1,0 +1,34 @@
+{
+  "id": "fennec",
+  "name": "Fennec Girl",
+  "colors": {
+    "node_slot": {},
+    "litegraph_base": {
+      "BACKGROUND_IMAGE": "/assets/images/fennec-daisies.png",
+      "CLEAR_BACKGROUND_COLOR": "#191722",
+      "LINK_COLOR": "#dc7f66",
+      "CONNECTING_LINK_COLOR": "#f7e5bd"
+    },
+    "comfy_base": {},
+    "theme": {
+      "background": "#191722",
+      "foreground": "#f7e5bd",
+      "card": "#241f2e",
+      "primary": "#2b5f9e",
+      "secondary": "#2a2433",
+      "muted": "#4a3828",
+      "muted-foreground": "#d4b48a",
+      "accent": "#2c2636",
+      "destructive": "#c4473a",
+      "border": "#7a5a36",
+      "input": "#15131c",
+      "ring": "#70a8c1",
+      "node": "#1e1a27",
+      "node-foreground": "#f4c86e",
+      "node-header": "#74461f",
+      "node-border": "#e9b864",
+      "warning": "#ed9b3b",
+      "shadow-color": "rgb(10 8 16 / 0.55)"
+    }
+  }
+}

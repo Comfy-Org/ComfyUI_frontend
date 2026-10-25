@@ -27,7 +27,14 @@ export type NavColumn = {
   placement?: 'footer'
 }
 
+type NavFeaturedVariant = {
+  imageSrc: string
+  videoSrc?: string
+  imageAlt: string
+}
+
 export type NavFeatured = {
+  analyticsId?: string
   imageSrc: string
   videoSrc?: string
   showPlayOverlay?: boolean
@@ -38,6 +45,7 @@ export type NavFeatured = {
     ariaLabel?: string
     href: string
   }
+  variants?: Record<string, NavFeaturedVariant>
 }
 
 type NavExploreLink = {
@@ -52,6 +60,7 @@ export type NavItem =
       columns: NavColumn[]
       featured?: NavFeatured
       exploreLink?: NavExploreLink
+      analyticsId: string
       activePathPrefix?: string
       badge?: 'new'
       href?: never
@@ -92,6 +101,7 @@ export function getMainNavigation(
   return [
     {
       label: t('nav.workshop'),
+      analyticsId: 'hub',
       activePathPrefix: '/hub/',
       exploreLink: {
         label: t('nav.hubExplore'),
@@ -99,6 +109,7 @@ export function getMainNavigation(
         href: routes.hubExplore
       },
       featured: {
+        analyticsId: 'seedance-2-5',
         imageSrc:
           'https://media.comfy.org/website/seedance-2.5/balloons-poster.webp',
         videoSrc: 'https://media.comfy.org/website/seedance-2.5/balloons.webm',
@@ -176,7 +187,9 @@ export function getMainNavigation(
     },
     {
       label: t('nav.products'),
+      analyticsId: 'products',
       featured: {
+        analyticsId: 'gemini-omni',
         imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
         videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
         imageAlt: t('nav.featuredProductsAlt'),
@@ -254,7 +267,9 @@ export function getMainNavigation(
     },
     {
       label: t('nav.enterprise'),
+      analyticsId: 'enterprise',
       featured: {
+        analyticsId: 'minimax-license',
         imageSrc:
           'https://media.comfy.org/website/minimax-license/hero-poster.jpg',
         videoSrc: 'https://media.comfy.org/website/minimax-license/hero.mp4',
@@ -300,7 +315,9 @@ export function getMainNavigation(
     { label: t('nav.pricing'), href: routes.pricing },
     {
       label: t('nav.company'),
+      analyticsId: 'company',
       featured: {
+        analyticsId: 'customer-story',
         imageSrc: 'https://media.comfy.org/website/nav/customer-story-card.jpg',
         showPlayOverlay: true,
         imageAlt: t('nav.featuredCompanyAlt'),

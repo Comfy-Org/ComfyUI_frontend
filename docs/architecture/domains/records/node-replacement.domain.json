@@ -4,7 +4,11 @@
   "description": "Detects node types missing from the registry, records them per workflow, fetches server-provided node replacements, and swaps missing nodes for their replacements while preserving links and widget values. Detection and replacement are one record because the scan classifies missing nodes by replaceability and replacement clears the missing-node state it resolves.",
   "modules": [
     {
-      "path": "src/platform/nodeReplacement/types.ts",
+      "path": "src/platform/nodeReplacement/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/nodeReplacement/cnrIdUtil.test.ts",
       "role": "domain"
     },
     {
@@ -12,48 +16,16 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/nodeReplacement/cnrIdUtil.test.ts",
-      "role": "domain"
+      "path": "src/platform/nodeReplacement/components/**",
+      "role": "presentation"
     },
     {
       "path": "src/platform/nodeReplacement/nodeReplacementService.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/nodeReplacement/nodeReplacementStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/nodeReplacement/nodeReplacementStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/nodeReplacement/missingNodesErrorStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/nodeReplacement/missingNodesErrorStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/nodeReplacement/missingNodeScan.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/nodeReplacement/missingNodeScan.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/nodeReplacement/useNodeReplacement.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/nodeReplacement/useNodeReplacement.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/nodeReplacement/components/**",
-      "role": "presentation"
+      "path": "src/platform/nodeReplacement/types.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

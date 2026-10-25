@@ -1,6 +1,7 @@
 import { whenever } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
+import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -154,3 +155,5 @@ export const useCurrentUser = () => {
     onUserLogout
   }
 }
+
+provideCurrentUser(useCurrentUser)
