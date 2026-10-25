@@ -15,7 +15,11 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isNonNullish } from '@/utils/typeGuardUtil'
 
-import { showReadyToast, showStartingToast } from './lateToasts'
+import {
+  showFailedToast,
+  showReadyToast,
+  showStartingToast
+} from './lateToasts'
 
 interface LateScriptFailure {
   ext: string
@@ -23,13 +27,56 @@ interface LateScriptFailure {
 }
 
 interface ScriptLoader {
-  importScript: (ext: string) => Promise<LateScriptFailure | undefined>
+  importScript: (
+    ext: string,
+    options?: { retry?: boolean }
+  ) => Promise<LateScriptFailure | undefined>
   reportFailures: (failures: LateScriptFailure[]) => void
 }
 
 const LATE_EXTENSION_WAIT_MS = 2000
+const LATE_EXTENSION_RETRY_MS = 5000
 const ARTIST_PAUSE_TIMEOUT_MS = 30_000
 const LATE_EXTENSION_ERROR_TYPE = 'late_extension_failed'
+
+const MODULE_FETCH_FAILURES = [
+  'Failed to fetch dynamically imported module',
+  'error loading dynamically imported module',
+  'Importing a module script failed'
+]
+
+function isModuleFetchFailure(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return MODULE_FETCH_FAILURES.some((wording) => message.includes(wording))
+}
+
+/** Imports `url` through `load`, rejecting when the editor's preload helper swallowed a fetch failure for it or for a file it imports. */
+export async function importNoticingFetchFailure(
+  url: string,
+  load: (url: string) => Promise<unknown>
+): Promise<void> {
+  const seen: Error[] = []
+  const stopListening = useEventListener(
+    window,
+    'vite:preloadError',
+    ({ payload }) => {
+      seen.push(payload)
+    }
+  )
+  let loaded: unknown
+  try {
+    loaded = await load(url)
+  } finally {
+    stopListening()
+  }
+  const named = seen.find(({ message }) => message.includes(url))
+  if (named) throw named
+  if (loaded !== undefined) return
+  throw (
+    seen.find(isModuleFetchFailure) ??
+    new TypeError(`Failed to fetch dynamically imported module: ${url}`)
+  )
+}
 
 /** Whether startup may stop waiting for slow custom node scripts. */
 export function lateLoadingApplies(): boolean {
@@ -115,9 +162,12 @@ function reportStartupHookFailures(failures: StartupHookFailure[]) {
     reportLateExtensionFailure(extension, method, error)
 }
 
-function registerHeldExtensions() {
+function registerHeldExtensions(last: boolean) {
   const service = useExtensionService()
-  const held = useExtensionStore().stopHoldingExtensions()
+  const extensionStore = useExtensionStore()
+  const held = last
+    ? extensionStore.stopHoldingExtensions()
+    : extensionStore.takeHeldExtensions()
   const registered = held.filter((extension) => {
     try {
       service.registerExtensionNow(extension)
@@ -131,7 +181,7 @@ function registerHeldExtensions() {
 }
 
 function keepHeldExtensionsForNextEditor() {
-  registerHeldExtensions()
+  registerHeldExtensions(true)
   useExtensionStore().finishLateExtensions()
 }
 
@@ -190,7 +240,8 @@ interface BatchOutcome {
 }
 
 async function runLateBatch(
-  work: ReturnType<typeof watchLateWork>
+  work: ReturnType<typeof watchLateWork>,
+  last: boolean
 ): Promise<BatchOutcome> {
   await until(() => !useWorkspaceStore().spinner || work.isAborted()).toBe(true)
   await until(() => !work.isArtistBusy() || work.isAborted()).toBe(true, {
@@ -198,12 +249,12 @@ async function runLateBatch(
   })
   if (work.isAborted()) return { turnedOn: false, allStarted: false }
 
-  const { registered, allRegistered } = registerHeldExtensions()
+  const { registered, allRegistered } = registerHeldExtensions(last)
   const allHooksRan =
     registered.length === 0 || (await startLateExtensions(registered))
   if (work.isAborted()) return { turnedOn: false, allStarted: false }
-  useExtensionStore().finishLateExtensions()
-  await rebuildOpenWorkflow()
+  if (last) useExtensionStore().finishLateExtensions()
+  if (last || registered.length > 0) await rebuildOpenWorkflow()
   return {
     turnedOn: registered.length > 0,
     allStarted: allRegistered && allHooksRan
@@ -217,6 +268,66 @@ interface LateRun {
   signal: AbortSignal
 }
 
+interface LateOutcome extends BatchOutcome {
+  failedAgain: LateScriptFailure[]
+}
+
+async function retryFetchFailures(
+  failures: LateScriptFailure[],
+  { loader, waiting, signal }: LateRun
+): Promise<LateScriptFailure[]> {
+  await delay(LATE_EXTENSION_RETRY_MS, { signal })
+  const retries = await Promise.all(
+    failures.map(({ ext }) =>
+      loader
+        .importScript(ext, { retry: true })
+        .finally(() => waiting.delete(ext))
+    )
+  )
+  return retries.filter(isNonNullish)
+}
+
+async function turnOnInBatches(
+  run: LateRun,
+  work: ReturnType<typeof watchLateWork>,
+  onWaitingChange: () => void
+): Promise<LateOutcome> {
+  const failures = (await run.firstTries).filter(isNonNullish)
+  const fetchFailures = failures.filter(({ error }) =>
+    isModuleFetchFailure(error)
+  )
+  const otherFailures = failures.filter(
+    (failure) => !fetchFailures.includes(failure)
+  )
+  run.loader.reportFailures(otherFailures)
+  const scriptsLoaded = otherFailures.length === 0
+  if (fetchFailures.length === 0) {
+    const batch = await runLateBatch(work, true)
+    return {
+      turnedOn: batch.turnedOn,
+      allStarted: batch.allStarted && scriptsLoaded,
+      failedAgain: []
+    }
+  }
+
+  fetchFailures.forEach(({ ext }) => run.waiting.add(ext))
+  onWaitingChange()
+  const retries = retryFetchFailures(fetchFailures, run)
+  const first = await runLateBatch(work, false)
+  const failedAgain = await retries
+  const last = await runLateBatch(work, true)
+  return {
+    turnedOn: first.turnedOn || last.turnedOn,
+    allStarted: first.allStarted && last.allStarted && scriptsLoaded,
+    failedAgain
+  }
+}
+
+function showOutcome({ turnedOn, allStarted, failedAgain }: LateOutcome) {
+  if (failedAgain.length > 0) showFailedToast(failedAgain.map(({ ext }) => ext))
+  else if (turnedOn && allStarted) showReadyToast()
+}
+
 async function turnOnLateExtensions(run: LateRun, startedAt: number) {
   const starting = showStartingToast(startedAt, run.waiting)
   const work = watchLateWork(run.signal, () => {
@@ -224,16 +335,9 @@ async function turnOnLateExtensions(run: LateRun, startedAt: number) {
     keepHeldExtensionsForNextEditor()
   })
   try {
-    const scriptFailures = (await run.firstTries).filter(isNonNullish)
-    run.loader.reportFailures(scriptFailures)
-    const batch = await runLateBatch(work)
-    if (
-      !work.isAborted() &&
-      batch.turnedOn &&
-      batch.allStarted &&
-      scriptFailures.length === 0
-    )
-      showReadyToast()
+    const outcome = await turnOnInBatches(run, work, starting.refresh)
+    run.loader.reportFailures(outcome.failedAgain)
+    if (!work.isAborted()) showOutcome(outcome)
   } catch (error) {
     if (!run.signal.aborted)
       reportError(error, {
@@ -248,7 +352,7 @@ async function turnOnLateExtensions(run: LateRun, startedAt: number) {
   }
 }
 
-/** Imports every custom script at once but waits for them only two seconds; extensions registered later are turned on after startup, until `signal` aborts. */
+/** Imports every custom script at once but waits for them only two seconds; extensions registered later, and scripts that could not be fetched, are turned on after startup, until `signal` aborts. */
 export async function loadCustomExtensionsWithDeadline(
   extensions: string[],
   loader: ScriptLoader,
@@ -266,8 +370,11 @@ export async function loadCustomExtensionsWithDeadline(
     delay(LATE_EXTENSION_WAIT_MS).then(() => false)
   ])
   if (settledInTime) {
-    loader.reportFailures((await firstTries).filter(isNonNullish))
-    return
+    const failures = (await firstTries).filter(isNonNullish)
+    if (!failures.some(({ error }) => isModuleFetchFailure(error))) {
+      loader.reportFailures(failures)
+      return
+    }
   }
   useExtensionStore().holdNewExtensions()
   void turnOnLateExtensions({ firstTries, waiting, loader, signal }, startedAt)
