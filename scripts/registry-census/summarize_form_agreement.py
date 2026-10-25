@@ -143,17 +143,17 @@ def report(rows: list[dict]) -> list[str]:
 
     discovered_types = sum(
         len(r.get('newTypes', []))
-        for r in with_telemetry
+        for r in done
         if isinstance(r.get('newTypes'), list)
     )
     driven_types = sum(
         len(r.get('driveTypes', {}))
-        for r in with_telemetry
+        for r in done
         if isinstance(r.get('driveTypes'), dict)
     )
     omitted_types = sum(
         value
-        for r in with_telemetry
+        for r in done
         if isinstance((value := r.get('driveTypesOmitted')), int)
     )
     lines.append(

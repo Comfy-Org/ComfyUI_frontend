@@ -139,6 +139,27 @@ class TestReport(unittest.TestCase):
             'frontend-only types: 3 discovered, 2 driven, 1 omitted', text
         )
 
+    def test_type_coverage_counts_rows_whose_form_channel_never_fired(self) -> None:
+        """A row can record omitted types and still carry no formNodes.
+
+        Summing only over rows with form telemetry reports zero omissions
+        while a complete row recorded one, which reads as a clean cap.
+        """
+        rows = [
+            row('measured', node('emitAgree')),
+            {
+                'pack': 'serialize-failed',
+                'formAgreement': {'harnessError': 'onSerialize threw'},
+                'newTypes': ['One', 'Two'],
+                'driveTypes': {'One': 'ok'},
+                'driveTypesOmitted': 1,
+            },
+        ]
+        text = '\n'.join(sfa.report(rows))
+        self.assertIn(
+            'frontend-only types: 2 discovered, 1 driven, 1 omitted', text
+        )
+
     def test_disagreement_names_pack_and_node_class(self) -> None:
         rows = [
             row('videohelpersuite', node('emitDisagree:keyOrder', 'VHS_VideoCombine')),

@@ -92,6 +92,43 @@ describe('matrix runner', () => {
     expect(row.driveTypesOmitted).toBe(0)
     expect(drivenTypes).toEqual(nodeTypes)
   })
+
+  it('caps one pack at 64 driven types and records the remainder', async () => {
+    outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
+    vi.stubEnv('MATRIX_OUT', outputDir)
+    vi.stubEnv('MATRIX_VUE', '')
+    const nodeTypes = Array.from(
+      { length: 65 },
+      (_, index) => `matrix-capped-types-${String(index).padStart(2, '0')}`
+    )
+    await runPack(
+      'capped-types',
+      {
+        entry: async () => {
+          for (const nodeType of nodeTypes) {
+            LiteGraph.registerNodeType(
+              nodeType,
+              class MatrixCappedTypesNode extends LGraphNode {}
+            )
+          }
+        }
+      },
+      ['entry'],
+      'capped-types'
+    )
+
+    const row = JSON.parse(
+      fs.readFileSync(path.join(outputDir, 'capped-types.json'), 'utf8')
+    ) as {
+      newTypes?: string[]
+      driveTypes?: Record<string, string>
+      driveTypesOmitted?: number
+    }
+
+    expect(row.newTypes).toEqual(nodeTypes)
+    expect(Object.keys(row.driveTypes ?? {})).toEqual(nodeTypes.slice(0, 64))
+    expect(row.driveTypesOmitted).toBe(1)
+  })
 })
 
 describe('form/values agreement channel', () => {

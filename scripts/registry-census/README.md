@@ -195,6 +195,14 @@ the safety cap cannot silently shrink the measured population. The report
 labels these explicitly. A number that is printed is not thereby a number
 that gates.
 
+A pack can register an unbounded number of types, so `MAX_DRIVEN_TYPES_PER_PACK`
+exists to cover real multi-node packs without letting one pathological pack
+monopolise its shard. The cap is a measurement bound, not a correctness one:
+the type-coverage line is summed over **every complete row**, including rows
+whose serialization failed before the form channel fired, so an omission
+recorded by a row that carries no `formNodes` still reaches the report rather
+than reading as zero omissions.
+
 Packs execute under real timers: the matrix config assigns `setupFiles`
 explicitly, keeping `vitest.setup.ts` (environment globals) and dropping
 the unit suite's `vitest.timer.setup.ts` fake timers that `mergeConfig`

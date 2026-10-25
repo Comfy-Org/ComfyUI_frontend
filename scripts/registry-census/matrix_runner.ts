@@ -48,9 +48,7 @@ let DISPATCHED = true
 /** Store rows could not be read at all, as distinct from "read, and clean". */
 const UNMEASURED = 'unmeasured'
 
-// A pack can register an unbounded number of types. Exercise enough to cover
-// real multi-node packs without letting one pathological pack monopolise its
-// shard; any remainder is recorded explicitly below.
+/** Per-pack safety cap; the remainder lands in `driveTypesOmitted`. */
 const MAX_DRIVEN_TYPES_PER_PACK = 64
 
 type WidgetValueStore = ReturnType<typeof useWidgetValueStore>
