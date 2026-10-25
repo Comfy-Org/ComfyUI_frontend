@@ -230,15 +230,6 @@ function onOpenHistory(): void {
   }
   emit('openHistory')
 }
-/**
- * `onFailure: 'leave'` is for Back, the only way out of history that does not
- * abandon the chat. The row the user picked reports its own failure and keeps
- * the list on screen to retry, but Back has to end on the chat screen even
- * when the chat it reopens cannot be read: a chat that fails every attempt
- * otherwise answers Back with another failed attempt and strands the user in
- * history, with New Chat - which costs them the chat - as the only exit
- * (PM-2044).
- */
 async function openHistoryChat(
   id: string,
   onFailure: 'stay' | 'leave'
