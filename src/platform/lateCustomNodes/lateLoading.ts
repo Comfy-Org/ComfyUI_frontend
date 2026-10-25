@@ -133,16 +133,36 @@ function keepHeldExtensionsForNextEditor() {
   useExtensionStore().finishLateExtensions()
 }
 
+async function fetchNodeDefs() {
+  try {
+    return await useApp().getNodeDefs()
+  } catch (error) {
+    reportError(error, {
+      errorType: LATE_EXTENSION_ERROR_TYPE,
+      surface: 'platform',
+      level: 'warning',
+      tags: { step: 'getNodeDefs' }
+    })
+    return undefined
+  }
+}
+
 async function startLateExtensions(extensions: ComfyExtension[]) {
   const service = useExtensionService()
-  const app = useApp()
   const failures = await service.invokeStartupHook(extensions, 'init')
-  const defs = await app.getNodeDefs()
+  const defs = await fetchNodeDefs()
+  if (defs)
+    failures.push(
+      ...(await service.invokeStartupHook(
+        useExtensionStore().extensions,
+        'addCustomNodeDefs',
+        defs
+      ))
+    )
   failures.push(
-    ...(await service.invokeStartupHook(extensions, 'addCustomNodeDefs', defs)),
     ...(await service.invokeStartupHook(extensions, 'registerCustomNodes'))
   )
-  await app.reloadNodeDefs(defs)
+  if (defs) await useApp().reloadNodeDefs(defs)
   failures.push(...(await service.invokeStartupHook(extensions, 'setup')))
   reportStartupHookFailures(failures)
 }

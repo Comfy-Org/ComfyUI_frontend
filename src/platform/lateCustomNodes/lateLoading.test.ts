@@ -345,6 +345,65 @@ describe('late custom node loading', () => {
     })
   })
 
+  it('gives the late node definitions to every extension that reads them, early ones too', async () => {
+    let earlyDefs: Record<string, ComfyNodeDef> = {}
+    vi.stubGlobal('registerTestPack', (name: string) =>
+      useExtensionService().registerExtension({
+        ...recording(name),
+        addCustomNodeDefs: (defs) => {
+          log.push(`${name}:addCustomNodeDefs`)
+          if (name === 'Early') earlyDefs = defs
+          else defs[`${name}Custom`] = nodeDef(`${name}Custom`)
+        }
+      })
+    )
+    serve({
+      '/extensions/early/main.js': { ms: 500, extension: 'Early' },
+      '/extensions/a/main.js': { ms: 3_000, extension: 'A' }
+    })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(log).toEqual([
+      'A:init',
+      'Early:addCustomNodeDefs',
+      'A:addCustomNodeDefs',
+      'A:registerCustomNodes',
+      'reloadNodeDefs',
+      'A:setup',
+      'reloadCurrentWorkflow'
+    ])
+    expect(earlyDefs).toEqual({
+      Server: nodeDef('Server'),
+      ACustom: nodeDef('ACustom')
+    })
+  })
+
+  it('still turns late extensions on and rebuilds when the node definitions cannot be fetched, and reports it', async () => {
+    const fetchFailed = new SyntaxError('Unexpected token <')
+    vi.mocked(app.getNodeDefs).mockRejectedValueOnce(fetchFailed)
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(log).toEqual([
+      'A:init',
+      'A:registerCustomNodes',
+      'A:setup',
+      'reloadCurrentWorkflow'
+    ])
+    expect(nodeTypesMayStillArrive()).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(
+      fetchFailed,
+      expect.objectContaining({
+        errorType: 'late_extension_failed',
+        tags: { step: 'getNodeDefs' }
+      })
+    )
+  })
+
   it('counts node types as still arriving until the late extensions have finished starting', async () => {
     let finishInit = () => {}
     const initDone = new Promise<void>((resolve) => {

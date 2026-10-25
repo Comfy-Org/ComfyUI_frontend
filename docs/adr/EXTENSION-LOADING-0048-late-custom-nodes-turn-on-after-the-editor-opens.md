@@ -34,10 +34,13 @@ scripts and then stops waiting.
 2. **One batch.** Once every script has settled, the startup spinner is gone,
    and the artist is not holding the pointer down or typing in a text field
    (at most 30 s), holding stops and the held extensions are registered. Their
-   `init`, `addCustomNodeDefs` (on freshly fetched node definitions) and
-   `registerCustomNodes` run on them only, then those definitions are
-   registered again so every extension's per-definition hooks see the new
-   types, then their `setup` runs.
+   `init` runs, node definitions are fetched again and every extension's
+   `addCustomNodeDefs` gets them (so caches such as the group node's see the
+   new types), the held extensions' `registerCustomNodes` runs, then those
+   definitions are registered again so every extension's per-definition hooks
+   see the new types, then the held extensions' `setup` runs. When that fetch
+   fails it is reported, and `registerCustomNodes` and `setup` still run; the
+   next definition refresh picks the new types up.
 3. **Rebuild.** The open workflow is rebuilt once so every extension's per-node
    functions run on its nodes, even when no late extension arrived. The rebuild keeps the saved baseline and the
    unsaved mark, and adds no undo entry.
