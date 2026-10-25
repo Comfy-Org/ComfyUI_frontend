@@ -259,10 +259,6 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
     resolve: () => catalogMatch(INSUFFICIENT_CREDITS_CATALOG_ID)
   },
   {
-    // CLOUD_SUBSCRIPTION_REQUIRED is the typed submit-time 402 for a FREE-tier
-    // account without a usable free run (GTM-303). Its message varies with
-    // whether the account holds credits it cannot spend on Cloud, so it is
-    // matched by type.
     matches: (info, message) =>
       info.exceptionType === 'InactiveSubscriptionError' ||
       info.exceptionType === 'CLOUD_SUBSCRIPTION_REQUIRED' ||

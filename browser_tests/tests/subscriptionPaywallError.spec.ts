@@ -46,9 +46,6 @@ test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
     ).toBeHidden()
   })
 
-  // The FREE-tier cloud-subscription gate (GTM-303) answers with its own typed
-  // 402. A user who bought credits without a plan gets the credits_locked
-  // variant and, before this case, saw a raw error instead of the paywall.
   test('keeps the cloud-subscription 402 out of the error panel', async ({
     comfyPage
   }) => {
