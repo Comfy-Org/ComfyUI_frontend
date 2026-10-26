@@ -7,21 +7,22 @@
  * user's other data, so it follows them between machines — which `localStorage`
  * does not, and which is why packs reached for `api.storeUserData` directly.
  *
- * Names are logical within the caller's host-selected user/pack namespace.
- * A dotted prefix groups documents; it does not establish pack ownership.
+ * Native hosts scope records to the current user. A dotted pack prefix avoids
+ * collisions; it does not establish pack ownership. An isolated extension host
+ * can additionally enforce its caller's pack namespace.
  */
 import { api } from '@/scripts/api'
 
 import { ComfyApiError } from './errors'
 
 /**
- * Logical text documents scoped by host-selected user and pack identity.
- * Keys never supply or select the physical storage namespace.
+ * Logical text documents scoped to the current user. Native hosts use dotted
+ * pack prefixes by convention; isolated hosts can enforce pack namespaces.
  */
 export interface StorageHandle {
   /**
    * Lists logical keys including `namespace`, ready for `get()` or `remove()`.
-   * Physical user/pack prefixes stay hidden. Empty folders return an empty array.
+   * Physical user prefixes stay hidden. Empty folders return an empty array.
    */
   list(namespace: string): Promise<readonly string[]>
   /** The stored text, or `undefined` if there is none. */
@@ -30,13 +31,7 @@ export interface StorageHandle {
   remove(name: string): Promise<void>
 }
 
-/**
- * Rejects a name that is not the pack's to write.
- *
- * A bare name would collide across packs; `..` would climb out of the
- * namespace and reach another pack's data or the user's own files.
- */
-function assertOwned(name: string, what: string): void {
+function assertNamespaced(name: string, what: string): void {
   if (!name.includes('.')) {
     throw new ComfyApiError(
       `Storage ${what} '${name}' must be namespaced, e.g. 'MyPack.${name}'.`
@@ -50,7 +45,7 @@ function assertOwned(name: string, what: string): void {
 export function createStorageApi(): StorageHandle {
   const handle: StorageHandle = {
     async list(namespace: string) {
-      assertOwned(namespace, 'namespace')
+      assertNamespaced(namespace, 'namespace')
       const entries = await api.listUserDataFullInfo(namespace)
       // Paths come back relative to the namespace, and `get`/`remove` take a
       // namespaced name — so listing then reading failed on its own output.
@@ -58,7 +53,7 @@ export function createStorageApi(): StorageHandle {
     },
 
     async get(name: string) {
-      assertOwned(name, 'name')
+      assertNamespaced(name, 'name')
       const response = await api.getUserData(name)
       // Nothing stored is a normal answer, not a failure.
       if (response.status === 404) return undefined
@@ -71,7 +66,7 @@ export function createStorageApi(): StorageHandle {
     },
 
     async set(name: string, value: string) {
-      assertOwned(name, 'name')
+      assertNamespaced(name, 'name')
       // `stringify: false` because the value is already text; letting it
       // JSON-encode would quote and escape what the pack wrote.
       await api.storeUserData(name, value, {
@@ -82,7 +77,7 @@ export function createStorageApi(): StorageHandle {
     },
 
     async remove(name: string) {
-      assertOwned(name, 'name')
+      assertNamespaced(name, 'name')
       const response = await api.deleteUserData(name)
       if (!response.ok) {
         throw new ComfyApiError(
