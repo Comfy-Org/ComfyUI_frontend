@@ -2040,27 +2040,35 @@ describe('useMediaAssetActions', () => {
       return node.serialize().widgets_values?.[0]
     }
 
-    function expectReferenceCleaned(node: LGraphNode, deletedValue: string) {
-      expect(serializedImageValue(node)).toBe('')
-      expect(node.imgs).toBeUndefined()
-      expect(mockRemoveNodeOutputsForNode).toHaveBeenCalledWith(node)
-      expect(useMissingMediaStore().missingMediaCandidates).toContainEqual(
-        expect.objectContaining({
-          nodeId: String(node.id),
-          name: deletedValue,
-          isMissing: true
-        })
-      )
+    function referenceState(node: LGraphNode) {
+      return {
+        value: serializedImageValue(node),
+        hasPreview: node.imgs !== undefined,
+        outputsRemoved: mockRemoveNodeOutputsForNode.mock.calls.some(
+          ([removed]) => removed === node
+        ),
+        missingNames: (useMissingMediaStore().missingMediaCandidates ?? [])
+          .filter(
+            (candidate) =>
+              candidate.nodeId === String(node.id) && candidate.isMissing
+          )
+          .map((candidate) => candidate.name)
+      }
     }
 
-    function expectReferenceKept(node: LGraphNode, value: string) {
-      expect(serializedImageValue(node)).toBe(value)
-      expect(node.imgs).toHaveLength(1)
-      expect(mockRemoveNodeOutputsForNode).not.toHaveBeenCalledWith(node)
-      expect(
-        useMissingMediaStore().missingMediaCandidates ?? []
-      ).not.toContainEqual(expect.objectContaining({ nodeId: String(node.id) }))
-    }
+    const cleared = (deletedValue: string) => ({
+      value: '',
+      hasPreview: false,
+      outputsRemoved: true,
+      missingNames: [deletedValue]
+    })
+
+    const kept = (value: string) => ({
+      value,
+      hasPreview: true,
+      outputsRemoved: false,
+      missingNames: []
+    })
 
     it.for([
       ['flat', () => deletedAssets],
@@ -2069,18 +2077,17 @@ describe('useMediaAssetActions', () => {
       'clears hash-backed temp and output references after deleting the %s assets',
       async ([, deletionTargets]) => {
         const { actions, nodes } = await addReferencesTo(deletedAssets)
-        const addedValues = nodes.map(serializedImageValue)
-        expect(addedValues).toEqual([
+        expect(nodes.map(serializedImageValue)).toEqual([
           'previews/aa7ecf08.png [temp]',
           'runs/2026/bb12cd34.png [output]',
           'cc56ef78.png [temp]'
         ])
         const survivors = [
-          'aa7ecf08.png [output]',
-          'other/aa7ecf08.png [temp]',
-          'ComfyUI_temp_00001_.png [temp]',
-          'bb12cd34.png [output]'
-        ].map((value) => ({ value, node: addLoadImageNode(value) }))
+          addLoadImageNode('aa7ecf08.png [output]'),
+          addLoadImageNode('other/aa7ecf08.png [temp]'),
+          addLoadImageNode('ComfyUI_temp_00001_.png [temp]'),
+          addLoadImageNode('bb12cd34.png [output]')
+        ]
 
         await expect(actions.deleteAssets(deletionTargets())).resolves.toBe(
           true
@@ -2095,11 +2102,17 @@ describe('useMediaAssetActions', () => {
             'url-temp-asset'
           ])
         )
-        nodes.forEach((node, index) =>
-          expectReferenceCleaned(node, String(addedValues[index]))
-        )
-        for (const { node, value } of survivors)
-          expectReferenceKept(node, value)
+        expect(nodes.map(referenceState)).toEqual([
+          cleared('previews/aa7ecf08.png [temp]'),
+          cleared('runs/2026/bb12cd34.png [output]'),
+          cleared('cc56ef78.png [temp]')
+        ])
+        expect(survivors.map(referenceState)).toEqual([
+          kept('aa7ecf08.png [output]'),
+          kept('other/aa7ecf08.png [temp]'),
+          kept('ComfyUI_temp_00001_.png [temp]'),
+          kept('bb12cd34.png [output]')
+        ])
       }
     )
 
@@ -2115,7 +2128,7 @@ describe('useMediaAssetActions', () => {
         createMockAsset({ ...tempAsset, user_metadata: undefined })
       )
 
-      expectReferenceCleaned(node, value)
+      expect(referenceState(node)).toEqual(cleared(value))
     })
 
     it('clears every compatible input form and keeps other roots and folders', async () => {
@@ -2126,23 +2139,31 @@ describe('useMediaAssetActions', () => {
         tags: ['input']
       })
       const deletedNodes = [
-        'photo.png',
-        'photo.png [input]',
-        'dd90ab12.png',
-        'dd90ab12.png [input]'
-      ].map((value) => ({ value, node: addLoadImageNode(value) }))
+        addLoadImageNode('photo.png'),
+        addLoadImageNode('photo.png [input]'),
+        addLoadImageNode('dd90ab12.png'),
+        addLoadImageNode('dd90ab12.png [input]')
+      ]
       const survivors = [
-        'photo.png [output]',
-        'photo.png [temp]',
-        'clipspace/photo.png [input]'
-      ].map((value) => ({ value, node: addLoadImageNode(value) }))
+        addLoadImageNode('photo.png [output]'),
+        addLoadImageNode('photo.png [temp]'),
+        addLoadImageNode('clipspace/photo.png [input]')
+      ]
       const { actions } = mountMediaActions()
 
       await actions.deleteAssets(inputAsset)
 
-      for (const { node, value } of deletedNodes)
-        expectReferenceCleaned(node, value)
-      for (const { node, value } of survivors) expectReferenceKept(node, value)
+      expect(deletedNodes.map(referenceState)).toEqual([
+        cleared('photo.png'),
+        cleared('photo.png [input]'),
+        cleared('dd90ab12.png'),
+        cleared('dd90ab12.png [input]')
+      ])
+      expect(survivors.map(referenceState)).toEqual([
+        kept('photo.png [output]'),
+        kept('photo.png [temp]'),
+        kept('clipspace/photo.png [input]')
+      ])
     })
 
     it('keeps every reference when the deletion fails', async () => {
@@ -2151,7 +2172,9 @@ describe('useMediaAssetActions', () => {
 
       await actions.deleteAssets(unflattenOutputAssets([tempAsset]))
 
-      expectReferenceKept(nodes[0], 'previews/aa7ecf08.png [temp]')
+      expect(nodes.map(referenceState)).toEqual([
+        kept('previews/aa7ecf08.png [temp]')
+      ])
     })
   })
 

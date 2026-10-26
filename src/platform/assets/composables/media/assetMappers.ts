@@ -68,12 +68,12 @@ const byCreatedAtAsc = (a: AssetItem, b: AssetItem): number =>
 
 const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-const byIsTemp = (a: AssetItem, b: AssetItem): number =>
-  Number(b.tags.includes('temp')) - Number(a.tags.includes('temp'))
-
 function isTempOutput(asset: AssetItem): boolean {
   return asset.tags.includes('temp') || getAssetSourceType(asset) === 'temp'
 }
+
+const byIsTemp = (a: AssetItem, b: AssetItem): number =>
+  Number(isTempOutput(b)) - Number(isTempOutput(a))
 
 function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
