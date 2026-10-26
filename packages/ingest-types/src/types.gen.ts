@@ -132,6 +132,39 @@ export type WorkspaceDeployment = {
 }
 
 /**
+ * One declared pack that failed to import on the Release's build, as comfy-builder names it.
+ */
+export type ReleaseUnsupportedPack = {
+  /**
+   * The pack's folder under custom_nodes.
+   */
+  folder: string
+  /**
+   * The pack's Comfy Registry id; empty for a pack not installed from the registry.
+   */
+  registry_id: string
+  /**
+   * The repository URL the pack's own pyproject.toml names, for matching only, never a verified source; empty when it names none.
+   */
+  repository: string
+  /**
+   * Why the pack failed to import: the last line of its import error, or "needs a GPU". Empty when ComfyUI logged no reason.
+   */
+  cause: string
+}
+
+/**
+ * The declared packs that failed to import on the build of the editor's Release, in the order the build declared them, and which Release that is.
+ */
+export type ReleaseUnsupportedPacks = {
+  /**
+   * The Release whose build the packs were read for, the same id as a deployment's release_id in GET /api/workspaces/{id}/deployments. The route answers for the Release the deployment runs now, so an editor that booted on an earlier Release compares this id with its own and ignores the packs when they differ. Null when no Release's build was read: Comfy Cloud, the rollout flag off, or comfy-builder could not be read.
+   */
+  release_id: string | null
+  packs: Array<ReleaseUnsupportedPack>
+}
+
+/**
  * Which step the CPU server of the deployment this browser's editor runs on is on.
  */
 export type WorkspaceDeploymentCpuServer = {
@@ -14587,6 +14620,41 @@ export type GetNodeInfoResponses = {
 
 export type GetNodeInfoResponse =
   GetNodeInfoResponses[keyof GetNodeInfoResponses]
+
+export type GetReleaseUnsupportedPacksData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/release/unsupported-packs'
+}
+
+export type GetReleaseUnsupportedPacksErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+}
+
+export type GetReleaseUnsupportedPacksError =
+  GetReleaseUnsupportedPacksErrors[keyof GetReleaseUnsupportedPacksErrors]
+
+export type GetReleaseUnsupportedPacksResponses = {
+  /**
+   * The packs the Release built without, in the order the build declared them
+   */
+  200: ReleaseUnsupportedPacks
+}
+
+export type GetReleaseUnsupportedPacksResponse =
+  GetReleaseUnsupportedPacksResponses[keyof GetReleaseUnsupportedPacksResponses]
 
 export type GetLegacyObjectInfoByNodeClassData = {
   body?: never

@@ -32,6 +32,7 @@ import type {
   Plan,
   PreviewSubscribeRequest,
   PreviewSubscribeResponse,
+  ReleaseUnsupportedPacks,
   RenewalInvoice,
   ResubscribeRequest,
   ResubscribeResponse,
@@ -57,6 +58,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import {
   zDeploymentCompatibility,
+  zReleaseUnsupportedPacks,
   zRetentionAcceptance,
   zRetentionFlowResponse,
   zWorkspaceDeploymentCpuServer
@@ -468,6 +470,24 @@ export const workspaceApi = {
       return zWorkspaceDeploymentCpuServer.parse(response.data)
     } catch (err) {
       handleAxiosError(err, 'getDeploymentCpuServer')
+    }
+  },
+
+  /**
+   * The packs the build of the Release this browser's deployment runs now
+   * could not load, and why, with that Release's id; empty on Comfy Cloud.
+   * GET /api/release/unsupported-packs
+   */
+  async getReleaseUnsupportedPacks(): Promise<ReleaseUnsupportedPacks> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        workspaceApiUrl('/release/unsupported-packs'),
+        auth
+      )
+      return zReleaseUnsupportedPacks.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'getReleaseUnsupportedPacks')
     }
   },
 
