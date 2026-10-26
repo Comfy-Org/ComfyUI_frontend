@@ -127,6 +127,28 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
     })
   })
 
+  it('records and rejects malformed ops without numeric base_versions', async () => {
+    const { hostSocket, emitClientFrame, sentFrames } = await installHost()
+
+    const firstOp = validOp('b'.repeat(32), 2)
+    const secondOp = validOp('b'.repeat(32), 3)
+    delete firstOp.base_version
+    secondOp.base_version = 'not-a-number'
+    emitClientFrame({
+      type: 'doc_ops',
+      data: { workflow_id: WORKFLOW_ID, tab: 'tab-1', ops: [firstOp, secondOp] }
+    })
+
+    expect(hostSocket.clientDocFrames().at(-1)).toEqual(
+      expect.objectContaining({ baseVersions: [] })
+    )
+    expect(hostSocket.humanOpOutcomes()).toEqual([])
+    expect(sentFrames().at(-1)).toEqual({
+      type: 'doc_ops_result',
+      data: expect.objectContaining({ ok: false, code: 'invalid_frame' })
+    })
+  })
+
   it('still applies a well-formed doc_ops batch through the real applier', async () => {
     const { hostSocket, emitClientFrame, sentFrames } = await installHost()
 
@@ -173,6 +195,34 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
     class_type: 'TestNode',
     pos: [10, 20],
     node: { id: nodeId, type: 'TestNode', pos: [10, 20] }
+  })
+
+  it('releases a held batch against the workflow that sent it', async () => {
+    const {
+      host: primaryHost,
+      hostSocket,
+      emitClientFrame
+    } = await installHost('hold')
+    const secondaryWorkflowId = 'wf-2'
+    const secondaryHost = new HostDoc(
+      secondaryWorkflowId,
+      { nodes: [], links: [] },
+      { types: {} }
+    )
+    hostSocket.addWorkflow(secondaryWorkflowId, secondaryHost)
+
+    emitClientFrame({
+      type: 'doc_ops',
+      data: {
+        workflow_id: secondaryWorkflowId,
+        tab: 'tab-1',
+        ops: [validOp('c'.repeat(32), 3)]
+      }
+    })
+    hostSocket.releaseHeldClientOps()
+
+    expect(primaryHost.graph().nodes).toEqual({})
+    expect(secondaryHost.graph().nodes).toHaveProperty('3')
   })
 
   it.for([
