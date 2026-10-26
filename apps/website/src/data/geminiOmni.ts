@@ -104,8 +104,8 @@ export const geminiOmniPage: ModelLaunchPage = {
     videoSrc: media.hero.src,
     posterSrc: media.hero.posterSrc,
     logoSrc: '/icons/ai-models/gemini.svg',
-    titleKey: 'geminiOmni.hero.titleModel',
-    titleRestKey: 'geminiOmni.hero.titleRest',
+    titleKey: 'geminiOmni.hero.headline',
+    titleModelKey: 'geminiOmni.hero.titleModel',
     descriptionKey: 'geminiOmni.hero.description',
     primaryCta: {
       labelKey: 'geminiOmni.hero.primaryCta',

@@ -4,6 +4,7 @@ import type { Reason } from '@/components/blocks/ReasonsSplit01.vue'
 import { getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { I18nT } from 'vue-i18n'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
@@ -20,13 +21,16 @@ const MCP_REASON_ID = '5'
 </script>
 
 <template>
-  <ReasonsSplit01
-    :heading="t('cli.why.heading')"
-    :heading-highlight="t('cli.why.headingHighlight')"
-    highlight-class="text-primary-comfy-yellow"
-    :subtitle="t('cli.why.subtitle')"
-    :reasons="reasons"
-  >
+  <ReasonsSplit01 :subtitle="t('cli.why.subtitle')" :reasons="reasons">
+    <template #heading>
+      <I18nT keypath="cli.why.headline" :i18n="translationsFor(locale)">
+        <template #highlight>
+          <span class="text-primary-comfy-yellow">{{
+            t('cli.why.headingHighlight')
+          }}</span>
+        </template>
+      </I18nT>
+    </template>
     <template #reason-extra="{ reason }">
       <a
         v-if="reason.id === MCP_REASON_ID"
