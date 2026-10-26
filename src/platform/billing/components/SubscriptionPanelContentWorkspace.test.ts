@@ -82,12 +82,14 @@ const teamCreditStops: TeamCreditStops = {
       monthly: {
         action: 'subscribe',
         list_price_cents: 70000,
-        price_cents: 66500
+        price_cents: 66500,
+        period_charge_cents: 66500
       },
       yearly: {
         action: 'subscribe',
         list_price_cents: 70000,
-        price_cents: 63000
+        price_cents: 63000,
+        period_charge_cents: 756000
       }
     },
     {
@@ -96,12 +98,14 @@ const teamCreditStops: TeamCreditStops = {
       monthly: {
         action: 'subscribe',
         list_price_cents: 250000,
-        price_cents: 225000
+        price_cents: 225000,
+        period_charge_cents: 225000
       },
       yearly: {
         action: 'subscribe',
         list_price_cents: 250000,
-        price_cents: 200000
+        price_cents: 200000,
+        period_charge_cents: 2400000
       }
     }
   ]
@@ -839,12 +843,14 @@ describe('SubscriptionPanelContentWorkspace', () => {
           monthly: {
             action: 'subscribe',
             list_price_cents: 70000,
-            price_cents: 66550
+            price_cents: 66550,
+            period_charge_cents: 66550
           },
           yearly: {
             action: 'subscribe',
             list_price_cents: 70000,
-            price_cents: 63000
+            price_cents: 63000,
+            period_charge_cents: 756000
           }
         }
       ]

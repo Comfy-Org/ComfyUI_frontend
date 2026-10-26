@@ -5,18 +5,29 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { DOMWidget } from '@/types/domWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
 import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { createMarkdownEditor } from '@/renderer/extensions/vueNodes/widgets/composables/markdownEditor'
 
-const { canvasMock } = vi.hoisted(() => ({
+const { canvasMock, reportErrorMock } = vi.hoisted(() => ({
   canvasMock: {
     processMouseDown: vi.fn(),
     processMouseMove: vi.fn(),
     processMouseUp: vi.fn()
-  }
+  },
+  reportErrorMock: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { id: 'root' }, canvas: canvasMock }
 }))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: reportErrorMock
+}))
+
+vi.mock(
+  import('@/renderer/extensions/vueNodes/widgets/composables/markdownEditor'),
+  { spy: true }
+)
 
 function createMarkdownWidget(node: LGraphNode, defaultValue = '') {
   const inputSpec: InputSpec = {
@@ -54,7 +65,7 @@ describe('useMarkdownWidget', () => {
     expect(callback).toHaveBeenCalledTimes(2)
   })
 
-  it('renders Markdown links and tables', () => {
+  it('renders Markdown links and tables', async () => {
     const node = createMockDOMWidgetNode()
     const widget = createMarkdownWidget(
       node,
@@ -62,8 +73,41 @@ describe('useMarkdownWidget', () => {
     )
     onTestFinished(() => widget.onRemove?.())
 
-    expect(widget.element.querySelector('a')?.textContent).toBe('Comfy')
+    await expect
+      .poll(() => widget.element.querySelector('a')?.textContent)
+      .toBe('Comfy')
     expect(widget.element.querySelector('table')?.textContent).toContain('Name')
+  })
+
+  it('renders text edited before the editor finishes loading', async () => {
+    const node = createMockDOMWidgetNode()
+    const widget = createMarkdownWidget(node, 'default')
+    onTestFinished(() => widget.onRemove?.())
+
+    const textarea = widget.element.querySelector('textarea')!
+    textarea.value = '# Loaded later'
+    textarea.dispatchEvent(new Event('change'))
+
+    await expect
+      .poll(() => widget.element.querySelector('h1')?.textContent)
+      .toBe('Loaded later')
+    expect(widget.element.textContent).not.toContain('default')
+  })
+
+  it('reports an editor that fails to construct', async () => {
+    const error = new Error('schema conflict')
+    vi.mocked(createMarkdownEditor).mockImplementationOnce(() => {
+      throw error
+    })
+    const widget = createMarkdownWidget(createMockDOMWidgetNode())
+    onTestFinished(() => widget.onRemove?.())
+
+    await vi.waitFor(() =>
+      expect(reportErrorMock).toHaveBeenCalledWith(error, {
+        errorType: 'error_loading_markdown_editor',
+        surface: 'platform'
+      })
+    )
   })
 
   it('toggles editing on dblclick/blur and stops keydown propagation', () => {

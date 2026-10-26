@@ -1,9 +1,4 @@
 <script setup lang="ts">
-import {
-  TransitionPresets,
-  usePreferredReducedMotion,
-  useTransition
-} from '@vueuse/core'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -89,27 +84,11 @@ const discountedMonthly = computed(() =>
 const saveAmount = computed(() => current.value.usd - discountedMonthly.value)
 const hasDiscount = computed(() => effectiveDiscountPercent.value > 0)
 
-/**
- * Smoothly count the price figures up/down as the slider moves between stops
- * instead of snapping. Honors the user's reduced-motion preference. The save
- * badge ("X% ($Y)") is intentionally left snapping — its percent is a discrete
- * tier, so animating the bracketed amount alone would read inconsistently.
- */
-const prefersReducedMotion = usePreferredReducedMotion()
-const priceTween = {
-  duration: 350,
-  easing: TransitionPresets.easeOutCubic,
-  disabled: computed(() => prefersReducedMotion.value === 'reduce')
-}
-const animatedMonthly = useTransition(discountedMonthly, priceTween)
-const animatedOriginal = useTransition(() => current.value.usd, priceTween)
-
-const displayMonthly = computed(() => Math.round(animatedMonthly.value))
-const displayOriginal = computed(() => Math.round(animatedOriginal.value))
-// Derive the yearly total from the displayed monthly so it always reads as
-// exactly 12× the price shown — even mid-count — rather than drifting as a
-// second, independently-phased tween would.
-const displayBilledYearly = computed(() => displayMonthly.value * 12)
+const displayMonthly = computed(() => Math.round(discountedMonthly.value))
+const displayOriginal = computed(() => Math.round(current.value.usd))
+const displayBilledYearly = computed(
+  () => current.value.periodChargeUsd?.yearly ?? displayMonthly.value * 12
+)
 
 /**
  * Bridge the discrete stop index (0..n-1) to the reka-ui slider's `number[]`

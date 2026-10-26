@@ -67,6 +67,12 @@ function openedAt(url: string) {
   onTestFinished(() => window.history.replaceState(null, '', '/'))
 }
 
+function answersAfter(ms: number, answer: () => Promise<unknown>) {
+  mockWorkspaceApi.listDeployments.mockImplementation(() =>
+    new Promise((resolve) => setTimeout(resolve, ms)).then(() => answer())
+  )
+}
+
 function settledAt(promise: Promise<boolean>) {
   const result = { value: undefined as boolean | undefined }
   void promise.then((value) => {
@@ -236,12 +242,6 @@ describe('waitForDeploymentPick', () => {
   })
 
   describe('with no hint', () => {
-    function answersAfter(ms: number, answer: () => Promise<unknown>) {
-      mockWorkspaceApi.listDeployments.mockImplementation(() =>
-        new Promise((resolve) => setTimeout(resolve, ms)).then(() => answer())
-      )
-    }
-
     it('boots on Comfy Cloud, confirmed, once the short wait passes', async () => {
       mockWorkspaceApi.listDeployments.mockReturnValue(new Promise(() => {}))
       const onLateDeployment = vi.fn()
@@ -326,5 +326,72 @@ describe('waitForDeploymentPick', () => {
         expect(onLateDeployment).not.toHaveBeenCalled()
       }
     )
+  })
+
+  describe('after a listing failed with no hint', () => {
+    async function afterAFailedListing() {
+      mockWorkspaceApi.listDeployments.mockRejectedValueOnce(
+        new WorkspaceApiError('Server error', 500)
+      )
+      await useDeploymentPickStore().load()
+    }
+
+    it.for([
+      { pickSource: 'workspace_default' as const },
+      { pickSource: 'browser' as const }
+    ])(
+      'boots on Comfy Cloud without waiting, then says so when the listing answers late with a deployment: picked by $pickSource',
+      async ({ pickSource }) => {
+        await afterAFailedListing()
+        answersAfter(1_000, async () => listingOn('dep-2', pickSource))
+        const onLateDeployment = vi.fn()
+
+        const confirmed = settledAt(waitForDeploymentPick(onLateDeployment))
+        await vi.advanceTimersByTimeAsync(0)
+        expect(confirmed.value).toBe(true)
+        expect(useDeploymentPickStore().bootDeployment).toBeNull()
+        expect(onLateDeployment).not.toHaveBeenCalled()
+        await vi.advanceTimersByTimeAsync(1_000)
+
+        expect(onLateDeployment).toHaveBeenCalledOnce()
+        expect(useDeploymentPickStore().bootDeployment).toBeNull()
+      }
+    )
+
+    it('says nothing when the listing answers late with Comfy Cloud', async () => {
+      await afterAFailedListing()
+      answersAfter(1_000, async () => ({
+        builds_visible: true,
+        picked_deployment_id: null,
+        pick_source: null,
+        items: []
+      }))
+      const onLateDeployment = vi.fn()
+
+      const confirmed = settledAt(waitForDeploymentPick(onLateDeployment))
+      await vi.advanceTimersByTimeAsync(0)
+      expect(confirmed.value).toBe(true)
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(useDeploymentPickStore().bootDeployment).toBeNull()
+      expect(onLateDeployment).not.toHaveBeenCalled()
+    })
+
+    it('boots on the deployment a listing that answers at once names', async () => {
+      await afterAFailedListing()
+      mockWorkspaceApi.listDeployments.mockResolvedValue(
+        listingOn('dep-2', 'browser')
+      )
+      const onLateDeployment = vi.fn()
+
+      const confirmed = settledAt(waitForDeploymentPick(onLateDeployment))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(confirmed.value).toBe(true)
+      expect(useDeploymentPickStore().bootDeployment?.deployment_id).toBe(
+        'dep-2'
+      )
+      expect(onLateDeployment).not.toHaveBeenCalled()
+    })
   })
 })

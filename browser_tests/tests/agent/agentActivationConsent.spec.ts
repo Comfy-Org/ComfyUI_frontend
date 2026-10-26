@@ -157,6 +157,47 @@ test.describe(
       })
     }
 
+    test('shows the hold notice and keeps the draft when the tour is left untouched', async ({
+      agentPanel,
+      comfyPage,
+      postedMessages
+    }) => {
+      const page = comfyPage.page
+      const consent = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+      const coach = page.getByRole('dialog', {
+        name: enMessages.agent.coachTitle
+      })
+      const draft = 'Build a product photo workflow'
+
+      await agentPanel.selectWorkflow()
+      await agentPanel.composer.fill(draft)
+      await agentPanel.sendButton.click()
+      await consent
+        .getByRole('button', { name: enMessages.agent.consent.accept })
+        .click()
+
+      await expect(coach).toBeVisible()
+      await expect(coach.getByTestId('agent-coach-hold-notice')).toHaveText(
+        enMessages.agent.coachHoldNotice
+      )
+      expect(postedMessages).toHaveLength(0)
+
+      await agentPanel.openButton.dispatchEvent('click')
+      await expect(agentPanel.root).toHaveCount(0)
+      await agentPanel.openButton.click()
+      await expect(agentPanel.root).toBeVisible()
+      await expect(agentPanel.composer).toHaveText(draft)
+      expect(postedMessages).toHaveLength(0)
+
+      await coach.getByRole('button', { name: enMessages.agent.skip }).click()
+      await expect(coach).toHaveCount(0)
+      await agentPanel.sendButton.click()
+      await expect(consent).toHaveCount(0)
+      await expect.poll(() => postedMessages).toHaveLength(1)
+    })
+
     test('resumes the held send when App Mode defers the active tour', async ({
       agentPanel,
       comfyPage,

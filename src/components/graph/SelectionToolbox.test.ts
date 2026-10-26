@@ -410,8 +410,10 @@ describe('SelectionToolbox', () => {
           ])
         },
         registerExtension: vi.fn(),
+        registerExtensionNow: vi.fn(),
         invokeExtensions: vi.fn(() => ['test-command']),
-        invokeExtensionsAsync: vi.fn()
+        invokeExtensionsAsync: vi.fn(),
+        invokeStartupHook: vi.fn(async () => [])
       } as ReturnType<typeof useExtensionService>)
 
       setCanvasSelection([new LGraphNode('Test Node')])
