@@ -22,7 +22,9 @@ const funded: BillingBannerInputs = {
   planChangeDismissed: false,
   hasScheduledChange: false,
   topUpDeniedPastDue: false,
-  runDeniedPastDue: false
+  runDeniedPastDue: false,
+  unifiedBillingSettingsEnabled: false,
+  isActive: true
 }
 
 function derive(overrides: Partial<BillingBannerInputs>, now?: number) {
@@ -166,6 +168,27 @@ describe('deriveBillingBanner', () => {
 
   it('surfaces out of credits when the balance is exhausted', () => {
     expect(derive({ hasFunds: false })).toBe('outOfCredits')
+  })
+
+  it('hides cloud credit banners when unified billing is on and the plan is not active', () => {
+    expect(
+      derive({
+        unifiedBillingSettingsEnabled: true,
+        isActive: false,
+        hasFunds: false,
+        topUpDeniedPastDue: true
+      })
+    ).toBeNull()
+  })
+
+  it('keeps cloud credit banners when unified billing is on and the plan is active', () => {
+    expect(
+      derive({
+        unifiedBillingSettingsEnabled: true,
+        isActive: true,
+        hasFunds: false
+      })
+    ).toBe('outOfCredits')
   })
 
   it('shows out of credits to members too', () => {

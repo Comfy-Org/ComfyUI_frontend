@@ -656,12 +656,14 @@ describe('UnifiedPricingTable team plan CTA', () => {
           monthly: {
             action: 'subscribe',
             list_price_cents: 32_000,
-            price_cents: 30_400
+            price_cents: 30_400,
+            period_charge_cents: 30_400
           },
           yearly: {
             action: 'subscribe',
             list_price_cents: 32_000,
-            price_cents: 28_800
+            price_cents: 28_800,
+            period_charge_cents: 345_600
           }
         },
         {
@@ -670,12 +672,14 @@ describe('UnifiedPricingTable team plan CTA', () => {
           monthly: {
             action: 'subscribe',
             list_price_cents: 64_000,
-            price_cents: 60_800
+            price_cents: 60_800,
+            period_charge_cents: 60_800
           },
           yearly: {
             action: 'subscribe',
             list_price_cents: 64_000,
-            price_cents: 57_600
+            price_cents: 57_600,
+            period_charge_cents: 691_200
           }
         }
       ]
@@ -694,9 +698,56 @@ describe('UnifiedPricingTable team plan CTA', () => {
             id: 'stop-640',
             usd: 640,
             credits: 135_040,
-            discountedUsd: 576
+            discountedUsd: 576,
+            periodChargeUsd: { monthly: 608, yearly: 6912 }
           },
           billingCycle: 'yearly',
+          isChange: false
+        }
+      ]
+    ])
+  })
+  it('checks out a monthly team stop at its served price', async () => {
+    const user = userEvent.setup()
+    useBillingContext().teamCreditStops = computed(() => ({
+      default_stop_index: 0,
+      stops: [
+        {
+          id: 'team_400',
+          credits: 84_400,
+          monthly: {
+            action: 'subscribe',
+            list_price_cents: 40_000,
+            price_cents: 39_000,
+            period_charge_cents: 39_000
+          },
+          yearly: {
+            action: 'subscribe',
+            list_price_cents: 40_000,
+            price_cents: 37_800,
+            period_charge_cents: 453_600
+          }
+        }
+      ]
+    }))
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Subscribe to Team Monthly' })
+    )
+    expect(emitted('subscribeTeam')).toEqual([
+      [
+        {
+          stop: {
+            id: 'team_400',
+            usd: 400,
+            credits: 84_400,
+            discountedUsd: 390,
+            periodChargeUsd: { monthly: 390, yearly: 4536 }
+          },
+          billingCycle: 'monthly',
           isChange: false
         }
       ]

@@ -669,6 +669,43 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('deploymentCompatibilityMarksEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('turns on from remote config', () => {
+      remoteConfig.value = { deployment_compatibility_marks_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.deploymentCompatibilityMarksEnabled).toBe(true)
+    })
+
+    it('falls back to the server feature of the same key', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) =>
+          path === 'deployment_compatibility_marks_enabled'
+            ? true
+            : defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.deploymentCompatibilityMarksEnabled).toBe(true)
+    })
+
+    it('defaults to false when the remote flag is unset', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.deploymentCompatibilityMarksEnabled).toBe(false)
+    })
+  })
+
   describe('dev override via localStorage', () => {
     it('resolveFlag returns localStorage override over remoteConfig and server value', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)

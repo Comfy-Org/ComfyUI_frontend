@@ -585,22 +585,23 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
   })
 
-  it('shows the purchase disclosure before confirming without charging', async () => {
+  it('shows the plan-required line under the presets and drops it on Confirm without charging', async () => {
+    const billing = mockBillingContext()
+    billing.isInitialized.value = true
+    billing.subscriptionState = computed(() => 'never_subscribed')
     renderDialog()
 
+    const line = screen.getByTestId('top-up-plan-credit-line')
+    expect(line).toHaveTextContent(
+      "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud."
+    )
     expect(
-      screen.getByText(
-        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
-      )
-    ).toBeVisible()
+      screen.getByRole('button', { name: '$100' }).compareDocumentPosition(line)
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
 
     await clickAddCredits()
 
-    expect(
-      screen.getByText(
-        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
-      )
-    ).toBeVisible()
+    expect(screen.queryByTestId('top-up-plan-credit-line')).toBeNull()
     expect(screen.getByText('Confirm')).toBeInTheDocument()
     expect(screen.getByText('Total due today')).toBeInTheDocument()
     expect(screen.getByText('$50.00')).toBeInTheDocument()
@@ -611,6 +612,33 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'intent',
       outcome: 'pending'
     })
+  })
+
+  it('says Subscribe keeps runs going while the served free runs remain', () => {
+    remoteConfig.value = {
+      free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
+    }
+    onTestFinished(() => {
+      remoteConfig.value = {}
+    })
+    const billing = mockBillingContext()
+    billing.isInitialized.value = true
+    billing.subscriptionState = computed(() => 'never_subscribed')
+    renderDialog()
+
+    expect(screen.getByTestId('top-up-plan-credit-line')).toHaveTextContent(
+      "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
+    )
+  })
+
+  it('shows no plan line for an active plan', () => {
+    const billing = mockBillingContext()
+    billing.isInitialized.value = true
+    billing.subscriptionState = computed(() => 'active')
+    renderDialog()
+
+    expect(screen.getByRole('button', { name: '$50' })).toBeVisible()
+    expect(screen.queryByTestId('top-up-plan-credit-line')).toBeNull()
   })
 
   function renderWithBalance(overrides: Partial<BalanceInfo>) {
@@ -2423,6 +2451,96 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         returnUrl: window.location.href,
         signal: expect.any(AbortSignal)
       })
+    })
+  })
+
+  function serveProcessingCheckout(paymentAmountCents: number | null) {
+    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+      checkouts: [
+        {
+          amount_cents: 2500,
+          created_at: '2026-10-20T00:00:00Z',
+          session_id: 'cs_bank'
+        }
+      ],
+      next_cursor: null
+    })
+    vi.spyOn(workspaceApi, 'getTopupCheckout').mockResolvedValue({
+      amount_cents: 2500,
+      payment_amount_cents: paymentAmountCents,
+      session_id: 'cs_bank',
+      state: 'payment_processing'
+    })
+  }
+
+  describe('a top-up payment still processing', () => {
+    it('keeps add credits available and names the served amount', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveProcessingCheckout(2500)
+      renderDialog()
+
+      const notice = await screen.findByRole('status')
+      expect(notice).toHaveTextContent('A $25 payment is still processing')
+      expect(notice).toHaveTextContent('No need to pay again.')
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+      expect(screen.getByRole('button', { name: '$50' })).toBeEnabled()
+    })
+
+    it('places the notice between the amount choices and Add credits', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveProcessingCheckout(2500)
+      renderDialog()
+
+      const notice = await screen.findByRole('status')
+      const preset = screen.getByRole('button', { name: '$50' })
+      const addCredits = screen.getByRole('button', { name: 'Add credits' })
+      expect(
+        preset.compareDocumentPosition(notice) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+      expect(
+        notice.compareDocumentPosition(addCredits) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+    })
+
+    it('drops the amount when the server does not serve one', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveProcessingCheckout(null)
+      renderDialog()
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        'A payment is still processing'
+      )
+    })
+
+    it('leaves the dialog unchanged while unified billing settings are off', () => {
+      const list = vi.spyOn(workspaceApi, 'listTopupCheckouts')
+      renderDialog()
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+      expect(list).not.toHaveBeenCalled()
+    })
+
+    it('hides the notice when the checkout list cannot be read', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      vi.spyOn(workspaceApi, 'listTopupCheckouts').mockRejectedValue(
+        new WorkspaceApiError('unavailable', 503)
+      )
+      renderDialog()
+
+      await waitFor(() =>
+        expect(mockReportError).toHaveBeenCalledWith(
+          expect.any(WorkspaceApiError),
+          {
+            errorType: 'failure_reading_topup_checkout',
+            surface: 'billing'
+          }
+        )
+      )
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
     })
   })
 })
