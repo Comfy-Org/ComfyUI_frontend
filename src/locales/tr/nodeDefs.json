@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "Bağlı girişler arasından ada göre seçim yapın. Girişler, üzerlerine çift tıklanarak yeniden adlandırılabilir.",
+    "display_name": "Dal",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Bria kullanarak bir görüntüye düz metinle açıklanan bir nesne ekleyin. Bria, tüm kareyi yaklaşık 1 megapikselde yeniden oluşturur; bu nedenle sonuç girdiyle piksel hizalı değildir.",
     "display_name": "Bria Nesne Ekle",
@@ -850,7 +871,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Edit ile yapılacak sonraki düzenleme için, düzenlenmiş görüntünün yapılandırılmış açıklaması."
+        "tooltip": "Düzenlenmiş görüntünün, Bria FIBO 2.0 Image Edit ile yapılacak sonraki düzenleme için yapılandırılmış açıklaması."
       }
     }
   },
@@ -876,7 +897,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Edit ile yapılacak sonraki düzenleme için, düzenlenmiş görüntünün yapılandırılmış açıklaması."
+        "tooltip": "Düzenlenmiş görüntünün, Bria FIBO 2.0 Image Edit ile yapılacak sonraki düzenleme için yapılandırılmış açıklaması."
       }
     }
   },
@@ -1002,9 +1023,31 @@
       }
     }
   },
+  "BriaGuidedRemoveBackground": {
+    "description": "İstemin tanımladıklarını koruyarak Bria ile bir görüntünün arka planını kaldırın. Orijinal pikseller, yeni bir alfa kanalıyla tam çözünürlükte geri gelir. Düz bir kesim için Bria Remove Image Background daha az maliyetlidir.",
+    "display_name": "Bria Yönlendirmeli Arka Plan Kaldırma",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Örneğin 'matı ve bitkisi olan kişi', 'lambasız olarak masasındaki kadın' veya 'yalnızca sandalye' gibi; neyin korunacağını, çıkarılacağını ya da neye daraltılacağını belirtin. Hiçbir şeyle eşleşmeyen bir istem, tamamen saydam bir görüntü döndürür."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
-    "description": "Bria'nın en son modeliyle görüntüleri düzenleyin",
-    "display_name": "Bria Görüntü Düzenleme",
+    "description": "Bria FIBO 2.0 kullanarak görüntüleri düzenleyin.",
+    "display_name": "Bria FIBO 2.0 Görüntü Düzenleme",
     "inputs": {
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol"
@@ -1055,6 +1098,49 @@
       }
     }
   },
+  "BriaImageGenerate": {
+    "description": "Bria FIBO 2.0 kullanarak bir metin isteminden, referans görüntüden veya yapılandırılmış istemden görüntü oluşturun.",
+    "display_name": "Bria FIBO 2.0 Görüntü Oluşturma",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "16:10 ve ondan sonraki oranlar 1MP ile prompt ya da structured_prompt seçeneklerinden tam olarak birini gerektirir."
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Yararlanılacak referans görüntü. Sonuç, bunun düzenlenmiş hâli değil, seçilen en-boy oranında yeni bir görüntüdür."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "structured_prompt": {
+        "name": "structured_prompt",
+        "tooltip": "Önceki bir Bria FIBO sonucundan gelen JSON yapılandırılmış istemi. Aynı seed ile o görüntüyü yeniden oluşturur; iyileştirmek için JSON'u değiştirin veya bir prompt ekleyin."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Oluşturulan görüntünün, bu düğümle yeniden oluşturmak veya iyileştirmek için yapılandırılmış açıklaması."
+      }
+    }
+  },
   "BriaIncreaseResolution": {
     "description": "Orijinal içeriği koruyarak Bria ile bir görüntüyü 2x veya 4x büyütün.",
     "display_name": "Bria Çözünürlüğünü Artır",
@@ -1073,6 +1159,42 @@
       "moderation": {
         "name": "moderation",
         "tooltip": "Moderasyon ayarları"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaProductHolding": {
+    "description": "Bria ile bir ürünü kişinin ellerine yerleştirin. Kişinin kimliği, pozu ve arka planı korunur; sahne yaklaşık 1 megapikselde yeniden işlenir.",
+    "display_name": "Bria Ürün Tutuşu",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto, kişi fotoğrafının kadrajını yaklaşık 1 megapikselde korur. Sabit bir oran, örneğin 3:4 için 768x1024 olmak üzere 0,6 ila 1 megapiksel döndürür."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası denetim"
+      },
+      "instruction": {
+        "name": "instruction",
+        "tooltip": "Hangi elin kullanılacağı veya etiketin hangi yöne bakacağı gibi, Bria'nın yerleşik yönergesine eklenen isteğe bağlı ek yönlendirme."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "person_image": {
+        "name": "person_image"
+      },
+      "product_images": {
+        "name": "product_images",
+        "tooltip": "Tek bir ürünün 1-3 görüntüsü: ürünün kendisi, ambalajı, başka bir açıdan görünümü veya eşlik eden bir öğe. Toplu giriş, görüntü başına bir kez sayılır. Saydam alanlar beyaz olarak değerlendirilir."
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -1107,7 +1229,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Edit ile yapılacak sonraki düzenleme için, düzenlenmiş görüntünün yapılandırılmış açıklaması."
+        "tooltip": "Bria FIBO 2.0 Image Edit ile takip düzenlemesi için düzenlenmiş görüntünün yapılandırılmış açıklaması."
       }
     }
   },
@@ -1236,7 +1358,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Edit ile yapılacak sonraki bir düzenleme için, düzenlenmiş görüntünün yapılandırılmış açıklaması."
+        "tooltip": "Bria FIBO 2.0 Image Edit ile takip düzenlemesi için düzenlenmiş görüntünün yapılandırılmış açıklaması."
       }
     }
   },
@@ -1262,7 +1384,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Edit ile yapılacak sonraki bir düzenleme için, düzenlenmiş görüntünün yapılandırılmış açıklaması."
+        "tooltip": "Bria FIBO 2.0 Image Edit ile takip düzenlemesi için düzenlenmiş görüntünün yapılandırılmış açıklaması."
       }
     }
   },
@@ -1284,7 +1406,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Edit ile sonraki bir düzenleme için, düzenlenmiş görüntünün yapılandırılmış açıklaması."
+        "tooltip": "Bria FIBO 2.0 Image Edit ile takip düzenlemesi için düzenlenmiş görüntünün yapılandırılmış açıklaması."
       }
     }
   },
@@ -1388,6 +1510,42 @@
       "video": {
         "name": "video",
         "tooltip": "Arka planı değiştirilecek ön plan videosu."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVirtualTryOn": {
+    "description": "Bria ile bir kişiye giysi veya aksesuar giydirin. Kişinin kimliği, pozu ve arka planı korunur; sahne yaklaşık 1 megapikselde yeniden oluşturulur.",
+    "display_name": "Bria Sanal Deneme",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto, kişi fotoğrafının kadrajını yaklaşık 1 megapikselde korur. Sabit bir oran, örneğin 3:4 için 768x1024 olmak üzere 0,6 ila 1 megapiksel döndürür."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası denetim"
+      },
+      "garment_images": {
+        "name": "garment_images",
+        "tooltip": "Birlikte giyilen, her biri kişinin giydiği eşleşen öğenin yerine geçen 1-3 giysi veya aksesuar. Toplu bir girdi, görüntü başına bir kez sayılır. Saydam alanlar beyaz olarak işlenir."
+      },
+      "instruction": {
+        "name": "instruction",
+        "tooltip": "Hangi elin kullanılacağı veya etiketin hangi yöne bakacağı gibi, Bria'nın yerleşik talimatına eklenen isteğe bağlı ek yönlendirme."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "person_image": {
+        "name": "person_image"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -2413,7 +2571,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "Tarifler:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Önerilen) veya t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL veya Music3 Qwen/RVQ",
+    "description": "Tarifler:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226 belirteç dolgusu)\ncosmos: eski t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Önerilen) veya t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL veya Music3 Qwen/RVQ\nflux3: qwen3-vl 4B\nfibo2: qwen3-vl 4B",
     "display_name": "CLIP Yükle",
     "inputs": {
       "clip_name": {
@@ -2953,6 +3111,24 @@
       },
       "model_creativity": {
         "name": "yaratıcılık"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "Kaynağa sadık kalan yüksek kaliteli bir büyütücü olan Clarity AI Crystal Video Upscaler ile videoyu büyütün. Çıktı, kare başına 9 megapikselle (örneğin 4000x2250) sınırlıdır ve uzun klipler daha düşük çözünürlükte döner. 30 fps üzerindeki klipler 2x, 60 fps üzerindekiler 3x ücrete tabidir; bu şekilde devam eder.",
+    "display_name": "Clarity AI Crystal Video Büyütme",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
       },
       "model_scale_factor": {
         "name": "scale_factor"
@@ -5701,7 +5877,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "Metni konuşmaya dönüştürür. Metindeki duygu ipuçlarını ([happy], [whispering] s2.1-pro'da; (happy) s1'de) ve birden çok bağlı sesle {'@'}Voice1/{'@'}Voice2 etiketleri aracılığıyla çok konuşmacılı diyaloğu destekler.",
+    "description": "Metni konuşmaya dönüştürün. Metinde duygu ipuçlarını ([happy], [whispering] s2.1-pro'da; (happy) s1'de), drama-3'te düz dilde [directions] ve `<whisper>...</whisper>` kelime etiketlerini ve birden fazla bağlı sesle {'@'}Voice1/{'@'}Voice2 etiketleri aracılığıyla çok konuşmacılı diyaloğu destekler.",
     "display_name": "Fish Audio Metinden Konuşmaya",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +6069,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "Bir istemden FLUX 3 ile bir görsel üretir veya en fazla 10 referans görseli düzenler ve birleştirir. İstem içinde referanslara görsel 1, görsel 2 ve benzeri olarak başvurun.",
-    "display_name": "Flux 3 Görsel",
+    "description": "FLUX 3 Image ile bir istemden görüntü oluşturur veya en fazla 10 referans görüntüsünü düzenler ve birleştirir. İstem içinde referanslara image 1, image 2 vb. olarak başvurun.",
+    "display_name": "FLUX 3 Görüntü",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5988,6 +6164,118 @@
       }
     }
   },
+  "Flux3LayoutPrompt": {
+    "description": "Create Bounding Boxes içindeki kutuları, düzen tablosu olarak bir FLUX 3 Image istemine ekler.",
+    "display_name": "FLUX 3 Image Düzen İstemi",
+    "inputs": {
+      "element": {
+        "name": "element",
+        "tooltip": "Create Bounding Boxes düğümünden gelen istem öğeleri. Renk paletleri kullanılmaz; renkleri açıklamada belirtin."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstem metni. Sözcükleri kutuya bağlamak için N numaralı kutuya <obj_N> olarak atıfta bulunun."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxImageToVideoNode": {
+    "description": "FLUX 3 Max ile 1 ila 10 görüntüyü canlandırır. Her görüntü klibin bir karesi olur: tek görüntü klibi açar, iki görüntü ilk ve son karesi olur; daha fazlası klibe yayılır veya seçtiğiniz zamanlara sabitlenir.",
+    "display_name": "FLUX 3 Max Görüntüden Videoya",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Çıktı en-boy oranı. 'auto', metin promptları için 16:9'dur; diğer durumlarda ilk görüntüyü izler."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası denetim"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Klibin saniye cinsinden uzunluğu."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Senkronize ses üretin. Kapalıyken ses parçası olmayan bir video oluşturulur."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Oynatma sırasına göre 1 ila 10 görüntü."
+      },
+      "placement": {
+        "name": "placement",
+        "tooltip": "'spread across the clip', ilk görüntüyü başlangıca, son görüntüyü sona ve kalanları aralarına eşit olarak yerleştirir; 'at times' ise her görüntüyü seçtiğiniz bir saniyeye sabitler."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Sahnenin nasıl hareket etmesi ve ses çıkarması gerektiği."
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "Modelin üretmeden önce prompt hakkında ne kadar akıl yürüttüğü ve onu ne kadar genişlettiği. 'high' daha uzun sürer; ücret aynıdır."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Çıktı çözünürlüğü."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün yeniden çalıştırılıp çalıştırılmayacağını denetler; sonuçlar seed'den bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxTextToVideoNode": {
+    "description": "FLUX 3 Max aracılığıyla bir metin promptundan senkronize ses içeren bir video üretir.",
+    "display_name": "FLUX 3 Max Metinden Videoya",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Çıktı en-boy oranı. 'auto', metin promptları için 16:9'dur; diğer durumlarda ilk görüntüyü izler."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası denetim"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Klibin saniye cinsinden uzunluğu."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Senkronize ses üretin. Kapalıyken ses parçası olmayan bir video oluşturulur."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstediğiniz şeyi sade bir dille yazın. Katmanlı ses için ortam sesini, müziği ve konuşmayı ayrı ayrı açıklayın."
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "Modelin üretmeden önce prompt hakkında ne kadar akıl yürüttüğü ve onu ne kadar genişlettiği. 'high' daha uzun sürer; ücret aynıdır."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Çıktı çözünürlüğü."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün yeniden çalıştırılıp çalıştırılmayacağını denetler; sonuçlar seed'den bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "FLUX 3 üzerinden bir metin promptundan senkronize sesli video üretir.",
     "display_name": "Flux 3 Metinden Videoya",
@@ -6067,7 +6355,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "Devam ettirilecek klip."
+        "tooltip": "Devam ettirilecek klip. Alanı 3840x2160 pikseli aşan klipler sığacak şekilde küçültülür."
       }
     },
     "outputs": {
@@ -7223,6 +7511,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "Bir ses latentinin uzunluğunu, ses kanalı sayısını ve batch boyutunu döndürür.",
+    "display_name": "Ses Latent Boyutunu Al",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "İncelenecek ses veya ses/video latenti."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "uzunluk",
+        "tooltip": "Ses latenti uzunluğu."
+      },
+      "1": {
+        "name": "ses_kanalları",
+        "tooltip": "Ses kanallarının sayısı. Ses kanalı boyutu olmayan latentlerin bir kanalı vardır."
+      },
+      "2": {
+        "name": "toplu_işlem_boyutu",
+        "tooltip": "Toplu işlemdeki latent sayısı."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "Bir LoRA yüklü modelin safetensors meta verilerinden IC-LoRA parametrelerini çıkarır ve LTXVAddGuide için çıktılar (örn. reference_downscale_factor).",
     "display_name": "IC-LoRA Parametrelerini Al",
@@ -7275,6 +7587,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "Bir görüntü veya video latentinin genişliğini, yüksekliğini, kare sayısını ve toplu işlem boyutunu döndürür.",
+    "display_name": "Görüntü/Video Latent Boyutunu Al",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "İncelenecek görüntü veya video latenti."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "genişlik",
+        "tooltip": "Latent genişliği."
+      },
+      "1": {
+        "name": "yükseklik",
+        "tooltip": "Latent yüksekliği."
+      },
+      "2": {
+        "name": "kareler",
+        "tooltip": "Latent kare sayısı. Görüntü latentlerinde bir kare bulunur."
+      },
+      "3": {
+        "name": "toplu_işlem_boyutu",
+        "tooltip": "Toplu işlemdeki latent sayısı."
       }
     }
   },
@@ -8046,6 +8386,66 @@
       }
     }
   },
+  "HeyGenVoiceCloneNode": {
+    "description": "HeyGen Voice 1.0 ile tek bir konuşmacının kaydından ses klonlayın. voice_id'yi HeyGen Voice 1.0 Metinden Sese düğümüne veya HeyGen Avatar Video ve HeyGen Talking Photo içindeki custom_voice_id'ye bağlayın.",
+    "display_name": "HeyGen Voice 1.0 Anında Klonlama",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Tek bir konuşmacının kaydı. En az 10 saniyelik net konuşma kullanın; yalnızca ilk 3 dakika kullanılır."
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "language": {
+        "name": "dil",
+        "tooltip": "Kayıtta konuşulan dil."
+      },
+      "remove_background_noise": {
+        "name": "arka_plan_gürültüsünü_kaldır"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Kaydı yeniden klonlamak için seed'i değiştirin; her klon biraz farklı bir sestir."
+      },
+      "similarity": {
+        "name": "benzerlik",
+        "tooltip": "Sesin kaydı ne kadar yakından takip ettiği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "HeyGen Voice 1.0 Anında Klonlama ile klonlanmış bir sesle metni seslendirin.",
+    "display_name": "HeyGen Voice 1.0 Metinden Sese",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "model_expressiveness_boost": {
+        "name": "ifade_güçlendirmesi"
+      },
+      "model_language": {
+        "name": "dil"
+      },
+      "model_text": {
+        "name": "metin"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "Örneklemenin son kısmında model çıktısını birden fazla kaydırılmış yama-ızgara pozisyonunda ortalar. Dikişleri yok eder.",
     "display_name": "HiDream-O1 Yama Dikiş Yumuşatma",
@@ -8106,6 +8506,33 @@
       },
       "1": {
         "name": "negatif",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "Hareketini, kamera hareketini ve zamanlamasını korurken bir videoyu referans görsellerden yeni karakterler, konumlar veya stillerle yeniden biçimlendirin.",
+    "display_name": "Higgsfield Genjutsu Hareket Aktarımı",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "model_seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8759,6 +9186,54 @@
       }
     }
   },
+  "IdeogramVectorGenerateApi": {
+    "description": "Ideogram Vector kullanarak, isteğe bağlı olarak en fazla 5 görselin rehberliğinde, metin isteminden düzenlenebilir bir SVG oluşturur.",
+    "display_name": "Ideogram Vector SVG Oluştur",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramVectorImageToSVGApi": {
+    "description": "Ideogram Vector kullanarak bir görseli düzenlenebilir bir SVG'ye dönüştürür. Alfa içeren bir görselin saydam alanları saydam kalır.",
+    "display_name": "Ideogram Vector Görseli SVG'ye Dönüştür",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_mode": {
+        "name": "mod"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageAddNoise": {
     "display_name": "ImageAddNoise",
     "inputs": {
@@ -8835,12 +9310,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB, doğrusal Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 ve HDR ACEScct arasında dönüştürür. LogC3, Rec.709 ana renkleriyle EI 800 eğrisini kullanır ve kodlar [0, 1] aralığına sınırlandırılır. ACEScct, AP1 ana renklerini ve D60 beyaz noktasını, D65'e Bradford uyarlamasıyla kullanır. EXR olarak kaydetmek için LogC3 veya ACEScct'yi doğrusala dönüştürün. Doğrusal 1.0, sRGB ile aynı 203 nit referans beyazını kullanır; HLG ise 1000 nit referans ekran kullanır. Doğrusal ve ACEScct çıktıları genişletilmiş değerleri korur. Doğrusal-HDR dönüşümleri, ton eşleme olmadan parlak vurguları korur; HLG ve PQ çıktıları negatif kanalları kırpar. SDR çıktısı ve PQ'dan HLG'ye dönüşüm, grup genelindeki fazla parlaklığı ton eşler ve renk gamı dışındaki renkleri sıkıştırır. Dönüşümler float32 ile hesaplanır ve ara aygıtı ile dtype'ı döndürür. Düz alfa renk dönüşümüne tabi tutulmaz.",
+    "description": "sRGB, doğrusal Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3, doğrusal ACEScg ve HDR ACEScct arasında dönüştürür. LogC3, Rec.709 ana renkleriyle EI 800 eğrisini ve [0, 1] aralığına sınırlandırılmış kod değerlerini kullanır. ACEScg, D60 beyaz noktasına sahip sahne-doğrusal AP1'dir. ACEScct, ACEScg'nin log kodlamasıdır. Her ikisi de D65'e Bradford uyarlaması kullanır. EXR kaydetmeden önce LogC3 veya ACEScct'yi doğrusal ACEScg'ye (AP1 sahne-doğrusal) ya da doğrusala (Rec.709) dönüştürün. Video kaydetmeden önce sRGB/HDR/HDR PQ'ya dönüştürün. Doğrusal 1.0 ve ACEScg 1.0, sRGB ile aynı 203 nit referans beyazını kullanır; HLG ise 1000 nit referans ekran kullanır. Doğrusal, ACEScg ve ACEScct çıktıları genişletilmiş değerleri korur. Doğrusal-HDR dönüşümleri, ton eşleme olmadan parlak vurguları korur; HLG ve PQ çıktıları negatif kanalları kırpar. SDR çıktısı ve PQ'dan HLG'ye dönüşüm, toplu iş genelindeki fazla parlaklığı ton eşler ve gamut dışı renkleri sıkıştırır. Dönüşümler float32 ile hesaplanır ve ara cihazı ile veri türünü döndürür. Düz alfa renk dönüşümüne tabi tutulmaz.",
     "display_name": "Görüntü Renk Uzayını Dönüştür",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Çıktı piksellerinin renk uzayı. Kaydetme düğümünü aynı renk uzayına ayarlayın. EXR kaydetmeden önce LogC3 veya ACEScct’yi doğrusal alana, video kaydetmeden önce ise sRGB/HDR/HDR PQ’ya dönüştürün."
+        "tooltip": "Çıktı piksellerinin renk uzayı. Kaydetme düğümünü aynı renk uzayına ayarlayın. ACEScg EXR için LogC3 veya ACEScct'yi doğrusal ACEScg'ye, Rec.709 EXR içinse doğrusala dönüştürün. Video kaydetmeden önce sRGB/HDR/HDR PQ'ya dönüştürün."
       },
       "image": {
         "name": "image"
@@ -9263,6 +9738,28 @@
       },
       "rotation": {
         "name": "döndürme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "sRGB parlaklığını Rec.2020 HLG HDR'ye genişletir. Sonucu HDR renk uzayı seçiliyken kaydedin. Alfa korunur.",
+    "display_name": "SDR'yi HDR'ye Dönüştür",
+    "inputs": {
+      "algorithm": {
+        "name": "algoritma",
+        "tooltip": "Kalibre edilmiş monoton bir log-kazanç eğrisiyle harmanlanmış, Lottes tarzı rasyonel genişletme."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "görsel",
+        "tooltip": "sRGB'deki SDR görsel(ler)."
       }
     },
     "outputs": {
@@ -10563,6 +11060,41 @@
     "outputs": {
       "0": {
         "name": "stil_referansı",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Krea 3 ile görselleri düzenleyin veya bağlı görsel yoksa metinden yeni bir görsel oluşturun.",
+    "display_name": "Krea 3 Görsel",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_precise_edit": {
+        "name": "precise_edit"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_thinking_mode": {
+        "name": "düşünme_modu"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13166,6 +13698,83 @@
       }
     }
   },
+  "MOSSImageControl": {
+    "description": "LoRA yükleyicisiyle yüklenen bir MOSS-Image renk/derinlik kontrol adaptörü için renk bölgesi ve derinlik haritalarını ekler.",
+    "display_name": "MOSS-Image Renk/Derinlik Kontrolü",
+    "inputs": {
+      "color_map": {
+        "name": "color_map",
+        "tooltip": "Çıkış boyutunda, her bölge için tek bir düz renk. Renkler yalnızca bölge kimlikleridir."
+      },
+      "depth_map": {
+        "name": "depth_map",
+        "tooltip": "Çıktı boyutundaki derinlik haritası; yakın alan beyazdır."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Kontrolün sona erdiği örnekleme yüzdesi. Erken bitirmek düzeni ve derinliği korurken kalan adımlar şekilleri gevşetir."
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Kontrolün başladığı örnekleme yüzdesi."
+      },
+      "strength": {
+        "name": "güç",
+        "tooltip": "Haritaların görüntü tokenlarına katkısını ölçekler. 0.0, hiç harita olmamasıyla aynıdır; 1.0, eğitilmiş güçtür."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "İstemden ve Create Bounding Boxes düğümündeki kutulardan bir MOSS-Image düzen istemi oluşturur.",
+    "display_name": "MOSS-Image Düzen İstemi",
+    "inputs": {
+      "character_boxes": {
+        "name": "character_boxes",
+        "tooltip": "Create Bounding Boxes önizlemesinde etiketlendiği üzere, nesne yerine karakter olarak etiketlenecek nesne kutularının numaraları; ör. \"1, 3\"."
+      },
+      "element": {
+        "name": "öge",
+        "tooltip": "Create Bounding Boxes düğümündeki istem ögeleri. Açıklama kutunun başlığıdır; metin kutuları ayrıca metinlerini de işler."
+      },
+      "height": {
+        "name": "yükseklik",
+        "tooltip": "Oluşturulan görüntünün yüksekliği; kutular görüntünün piksellerine yerleştirilir."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Tüm görüntünün açıklaması."
+      },
+      "width": {
+        "name": "genişlik",
+        "tooltip": "Oluşturulan görüntünün genişliği; kutular görüntünün piksellerine yerleştirilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "istem",
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "Bir görseli ışık ayarlarıyla ve isteğe bağlı referans tabanlı ışık transferiyle yeniden ışıklandır.",
     "display_name": "Magnific Görsel Yeniden Işıklandırma",
@@ -13815,6 +14424,58 @@
       }
     }
   },
+  "MeshyImageToModelSmartTopologyNode": {
+    "description": "Hedef yüz sayısında doğrudan oyuna hazır bir üçgen ağ oluşturun.",
+    "display_name": "Meshy: Görüntüden Modele (Akıllı Topoloji)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "poz_modu"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalıştırılıp çalıştırılmayacağını denetler; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      },
+      "should_texture": {
+        "name": "dokulandırmalı_mı"
+      },
+      "should_texture_enable_pbr": {
+        "name": "pbr_etkinleştir"
+      },
+      "should_texture_texture_prompt": {
+        "name": "doku_istem metni"
+      },
+      "should_texture_texture_resolution": {
+        "name": "doku_çözünürlüğü"
+      },
+      "target_polycount": {
+        "name": "hedef_poligon_sayısı",
+        "tooltip": "Oluşturulan ağdaki yaklaşık üçgen sayısı."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_görev_kimliği",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Çoklu Görüntüden Modele",
     "inputs": {
@@ -14025,6 +14686,46 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelSmartTopologyNode": {
+    "description": "Hedef yüz sayısında doğrudan oyuna hazır bir üçgen ağ oluşturun.",
+    "display_name": "Meshy: Metinden Modele (Akıllı Topoloji)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "poz_modu"
+      },
+      "prompt": {
+        "name": "istem metni"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalıştırılıp çalıştırılmayacağını denetler; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      },
+      "target_polycount": {
+        "name": "hedef_poligon_sayısı",
+        "tooltip": "Oluşturulan ağdaki yaklaşık üçgen sayısı."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_görev_kimliği",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -14712,6 +15413,71 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "MireloTextToSFX": {
+    "description": "Mirelo SFX ile metin açıklamasından ses efektleri oluşturun.",
+    "display_name": "Mirelo Metinden SFX'e",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_negative_prompt": {
+        "name": "negatif_istem metni"
+      },
+      "model_prompt": {
+        "name": "istem metni"
+      },
+      "model_seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MireloVideoToSFX": {
+    "description": "Mirelo SFX ile bir videoyla senkronize ses efektleri oluşturun.",
+    "display_name": "Mirelo Videodan SFX'e",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonraki kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_preserve_speech": {
+        "name": "preserve_speech"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ses",
+        "tooltip": null
+      },
+      "1": {
+        "name": "konuşma",
+        "tooltip": "Film müziğinden ayrılmış diyalog; konuşma bulunmadığında sessizdir."
       }
     }
   },
@@ -15998,6 +16764,170 @@
       },
       "transformer_blocks_9_": {
         "name": "dönüştürücü_blokları.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "final_linear_video."
+      },
+      "final_norm_video_": {
+        "name": "final_norm_video."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "layers.23."
+      },
+      "layers_24_": {
+        "name": "layers.24."
+      },
+      "layers_25_": {
+        "name": "layers.25."
+      },
+      "layers_26_": {
+        "name": "layers.26."
+      },
+      "layers_27_": {
+        "name": "layers.27."
+      },
+      "layers_28_": {
+        "name": "layers.28."
+      },
+      "layers_29_": {
+        "name": "layers.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "layers.30."
+      },
+      "layers_31_": {
+        "name": "layers.31."
+      },
+      "layers_32_": {
+        "name": "layers.32."
+      },
+      "layers_33_": {
+        "name": "layers.33."
+      },
+      "layers_34_": {
+        "name": "layers.34."
+      },
+      "layers_35_": {
+        "name": "layers.35."
+      },
+      "layers_36_": {
+        "name": "layers.36."
+      },
+      "layers_37_": {
+        "name": "layers.37."
+      },
+      "layers_38_": {
+        "name": "layers.38."
+      },
+      "layers_39_": {
+        "name": "layers.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "layers.40."
+      },
+      "layers_41_": {
+        "name": "layers.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "video_head_modulation."
       }
     }
   },
@@ -17631,6 +18561,47 @@
       }
     }
   },
+  "PadImageNode": {
+    "description": "Bir görüntüye düz bir renkle veya kenarlarının yansıtılmış kopyasıyla dolgu ekler.",
+    "display_name": "Görüntüye Dolgu Ekle",
+    "inputs": {
+      "image": {
+        "name": "görüntü"
+      },
+      "padding_style": {
+        "name": "padding_style",
+        "tooltip": "Dolgulu alanın neyle doldurulacağı."
+      },
+      "padding_style_color": {
+        "name": "renk"
+      },
+      "padding_style_feathering": {
+        "name": "yumuşatma"
+      },
+      "padding_type": {
+        "name": "padding_type",
+        "tooltip": "Eklenecek dolgu miktarını seçin: her kenar için kesin miktarlar, bir boyut çarpanı veya sonraki katına kadar."
+      },
+      "padding_type_bottom": {
+        "name": "alt"
+      },
+      "padding_type_left": {
+        "name": "sol"
+      },
+      "padding_type_right": {
+        "name": "sağ"
+      },
+      "padding_type_top": {
+        "name": "üst"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "görüntü",
+        "tooltip": null
+      }
+    }
+  },
   "PaintMesh": {
     "description": "Her mesh tepe noktasını, giriş voxel alanındaki en yakın voxel rengiyle boyar.",
     "display_name": "Mesh Boya",
@@ -18889,7 +19860,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Modelin çizimden önce ne kadar muhakeme yapacağını belirler. Daha yüksek seviyeler ayrıntıyı iyileştirir ve daha fazla token maliyetine yol açar. Yalnızca Arrow 2 modelleri tarafından kullanılır."
+        "tooltip": "Modelin çizimden önce ne kadar akıl yürüttüğü. Daha yüksek seviyeler ayrıntıyı artırır ve daha fazla belirtece mal olur."
       },
       "seed": {
         "name": "seed",
@@ -18977,7 +19948,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Modelin çizimden önce ne kadar muhakeme yapacağını belirler. Daha yüksek seviyeler ayrıntıyı iyileştirir ve daha fazla token maliyetine yol açar. Yalnızca Arrow 2 modelleri tarafından kullanılır."
+        "tooltip": "Modelin çizimden önce ne kadar akıl yürüttüğü. Daha yüksek seviyeler ayrıntıyı artırır ve daha fazla belirtece mal olur."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19836,6 +20807,42 @@
       }
     }
   },
+  "ReferenceMultiLatent": {
+    "description": "Referans görüntüleri kodlar ve latent'lerini düzenleme modelleri için pozitif ve isteğe bağlı negatif koşullandırmaya ekler.",
+    "display_name": "Referans Çoklu Latent Ayarla",
+    "inputs": {
+      "images": {
+        "name": "görüntüler"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE bağlı olmadığında referans görüntüleri yok sayılır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": "Negatif koşullandırma bağlı olmadığında pozitif çıktıyı döndürür."
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "0.0 ile çarpılmış ilk referans latent veya seçilen çözünürlükte kare, boş bir latent."
+      }
+    }
+  },
   "ReferenceTimbreAudio": {
     "description": "Bu düğüm, tını için referans sesi ayarlar (ace step 1.5 için)",
     "display_name": "ReferenceTimbreAudio",
@@ -19950,7 +20957,7 @@
     "inputs": {
       "band": {
         "name": "band",
-        "tooltip": "Voxel birimleri cinsinden dar bant genişliği. UDF modunda yüzeyi de kaydırır."
+        "tooltip": "Voksel birimlerinde dar bant genişliği. udf modunda yüzeyi de kaydırır; solid modunda kapatma yarıçapıdır: kıvrımlar bu boyutta yuvarlatılır ve boşluklar köprülenir, yüzey yarım voksel dışarıda konumlanır."
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -19977,7 +20984,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: dağınık/manifold olmayan girişe karşı dayanıklıdır. sdf: QEF (Quadratic Error Function) keskin özellik kurtarmalı temiz tek yüzeydir, ancak tutarlı sarım gerektirir."
+        "tooltip": "udf: dağınık/manifold olmayan girdilere dayanıklıdır. sdf: QEF (Kuadratik Hata Fonksiyonu) keskin özellik kurtarmalı temiz tek yüzey; ancak tutarlı sarım yönü gerektirir. solid: dağınık girdiden tek bir su geçirmez katı elde eder: genel bir iç/dış grafik kesimi (CelloCut) çift kabukları kaldırır ve küçük delikleri kapatır. Daha yavaştır."
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"
@@ -24332,6 +25339,54 @@
       }
     }
   },
+  "TextEncodeFibo2": {
+    "description": "Bir Fibo 2.0 promptunu, yapılandırılmış bir JSON açıklamasını veya düz metni kodlar. Görsellerle birlikte prompt, düzenleme talimatıdır ya da edit_instruction anahtarını içeren sonucun JSON açıklamasıdır; vae bağlı olduğunda görseller her iki çıktının da referans latent'leri olur. latent çıktısını örnekleyin; sonuç, görsellerin kırpıldığı boyutta olur.",
+    "display_name": "TextEncodeFibo2",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Sonucun yüksekliği. 0 = ilk görselin en-boy oranı için Fibo 2.0'ın eğitildiği boyut, yaklaşık 1 megapiksel; görsel olmadan ise 1024."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Düzenlenecek görseller; talimatta <image_1>, <image_2> vb. olarak anılır. Düzenleme piksel piksel onunla hizalandığından, tek bir görsel sonucun boyutuna ölçeklendirilir ve merkezden kırpılır; birden çok görselin her biri kendi eğitilmiş boyutuna getirilir."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Boş olması, düzenleme iş akışlarıyla CFG için Fibo 2.0'ın eğitildiği null açıklamadır."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Sonucun genişliği. 0 = ilk görselin en-boy oranı için Fibo 2.0'ın eğitildiği boyut, yaklaşık 1 megapiksel; görsel olmadan ise 1024."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "MetinKodlamaHunyuanVideo_GörüntüdenVideoya",
     "inputs": {
@@ -24369,6 +25424,38 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMOSSImageEdit": {
+    "description": "Bir MOSS-Image düzenleme LoRA'sı için, referans görsellerle bir düzenleme talimatını kodlar; negatif prompt için de bunu kullanın. Referanslar geldikleri boyutta kullanılır; önce onları ölçeklendirin. VAE olmadan görseller yalnızca metin kodlayıcıya gider.",
+    "display_name": "MOSS-Image Düzenleme Metin Kodlama",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "edit_format": {
+        "name": "edit_format",
+        "tooltip": "Düzenleme LoRA'sının eğitildiği düzen: ai-toolkit'in MOSS-Image Edit Training'i (kv_cache seçeneği açık veya kapalı) ya da Moss-Image-Edit. kv_cache kapalıyken referanslar, oluşturulan görsele de dikkat verir; dolayısıyla her adımda yeniden hesaplanırlar."
+      },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "Modelin metin kodlayıcının gördüğü görsellere ne ölçüde dikkat vereceğini ölçekler (ai-toolkit biçimleri veya VAE yoksa): 0 bunları yok sayar, 1 değişmez, 1'in üzeri vurgular."
+      },
+      "images": {
+        "name": "images"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Görselleri düzenleme LoRA'sı için referans latent'ler olarak kodlar."
       }
     },
     "outputs": {
@@ -24588,7 +25675,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "Kontrol noktasının çoklu belirteç tahmini başlığıyla spekülatif kod çözme. MTP ağırlıkları olmadan etkisizdir. auto taslak derinliğini uyarlar; 2-5 bunu sabitler. Örneklenen çıktı doğru dağılımı korur ancak aynı seed için MTP olmayan çıktıdan farklıdır."
+        "tooltip": "Kontrol noktasının çoklu belirteç tahmin başlığıyla spekülatif kod çözme. MTP ağırlıkları olmadan etkisi yoktur. auto, taslak derinliğini ve genişliğini gözlemlenen belirteç eşleşmelerine ve yürütme maliyetine göre uyarlar; 2-5 sabit bir taslak derinliğini sabitler; tree modları hem genişliği hem de derinliği sabitler. Örneklenen çıktı doğru dağılımını korur, ancak aynı seed için MTP olmayan çıktıdan farklıdır."
       },
       "prompt": {
         "name": "istem"
@@ -24662,7 +25749,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "Kontrol noktasının çoklu belirteç tahmin başlığıyla spekülatif kod çözme. MTP ağırlıkları olmadan etkisi yoktur. auto taslak derinliğini uyarlar; 2-5 sabitler. Örneklenen çıktı doğru dağılımı korur ancak aynı seed için MTP olmayan çıktıdan farklıdır."
+        "tooltip": "Kontrol noktasının çoklu belirteç tahmin başlığıyla spekülatif kod çözme. MTP ağırlıkları olmadan etkisi yoktur. auto, taslak derinliğini ve genişliğini gözlemlenen belirteç eşleşmelerine ve yürütme maliyetine göre uyarlar; 2-5 sabit bir taslak derinliğini sabitler; tree modları hem genişliği hem de derinliği sabitler. Örneklenen çıktı doğru dağılımını korur, ancak aynı seed için MTP olmayan çıktıdan farklıdır."
       },
       "prompt": {
         "name": "istem"
@@ -27283,6 +28370,119 @@
       "0": {
         "name": "voxel_colors",
         "tooltip": null
+      }
+    }
+  },
+  "VeedCleanAudioNode": {
+    "description": "VEED ile konuşmadaki arka plan gürültüsünü kaldırın. Her dildeki konuşmalar için tasarlanmıştır: müzik ve ses efektleri de kaldırılır. 48 kHz mono ses döndürür.",
+    "display_name": "VEED Ses Temizleme",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "30 dakikadan kısa konuşma kaydı."
+      },
+      "loudness": {
+        "name": "ses yüksekliği"
+      },
+      "loudness_target_lufs": {
+        "name": "hedef_lufs"
+      },
+      "strength": {
+        "name": "güç",
+        "tooltip": "Konuşma altındaki gürültünün ne kadarının kaldırılacağı. Daha düşük değer, sesin arkasındaki ortam sesini daha fazla korur; kelimeler arasındaki duraklamalar her zaman tamamen temizlenir ve varsayılan değerin üzerindeki değerler çok az değişiklik yaratır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedCleanVideoAudioNode": {
+    "description": "VEED ile bir videodaki konuşmadan arka plan gürültüsünü kaldırın. Yalnızca ses parçası değişir: temizlenmiş 48 kHz mono konuşmayla değiştirilir.",
+    "display_name": "VEED Clean Audio (Videoda)",
+    "inputs": {
+      "loudness": {
+        "name": "ses yüksekliği"
+      },
+      "loudness_target_lufs": {
+        "name": "hedef_lufs"
+      },
+      "strength": {
+        "name": "güç",
+        "tooltip": "Konuşma altındaki gürültünün ne kadarının kaldırılacağı. Daha düşük değer, sesin arkasındaki ortam sesini daha fazla korur; kelimeler arasındaki duraklamalar her zaman tamamen temizlenir ve varsayılan değerin üzerindeki değerler çok az değişiklik yaratır."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "30 dakikadan kısa, konuşma ses parçası içeren video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedFabricNode": {
+    "description": "Sabit bir görüntüyü ve konuşma kaydını VEED Fabric ile konuşan, dudak senkronlu bir videoya dönüştürün. Fotoğraflar, illüstrasyonlar ve maskotlarla çalışır; video ses kadar uzundur.",
+    "display_name": "VEED Fabric 1.0",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedLipsyncNode": {
+    "description": "VEED Lipsync ile bir videodaki konuşmacının ağzını yeni bir konuşma kaydıyla yeniden senkronize edin. Video başına bir konuşmacı; çıktı videonun çözünürlüğünü 25 fps'de korur ve ses kadar uzundur.",
+    "display_name": "VEED Lipsync 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedRemoveVideoBackgroundNode": {
+    "description": "VEED ile videodaki özneyi kesin ve kareleri bir alfa maskesiyle birlikte döndürün. Bunları birleştirme için kullanın veya saydam bir video yazmak üzere Join Image with Alpha ve Save WEBM ile birleştirin.",
+    "display_name": "VEED Video Arka Planını Kaldır",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "standard: her türlü arka plan, en iyi kenarlar, 3840x2160'e kadar çıktı. fast: daha hızlı, 1920x1080'e kadar çıktı. green screen: yeşil arka planı ayıklar, 3840x2160'e kadar çıktı. Daha büyük videoların ölçeği küçültülür."
+      },
+      "model_refine_foreground_edges": {
+        "name": "ön_plan_kenarlarını_iyileştir"
+      },
+      "model_subject_is_person": {
+        "name": "özne_kişidir"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "görüntüler",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": "Arka planın kaldırıldığı yerlerde 1. Saydam video için Join Image with Alpha ve Save WEBM kullanın; Image Composite Masked öncesinde Invert Mask ekleyin."
       }
     }
   },

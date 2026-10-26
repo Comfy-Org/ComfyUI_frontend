@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "מחיקת הפריטים הנבחרים"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "מחק קישורים נבחרים"
+  },
   "Comfy_Canvas_FitView": {
     "label": "התאמת התצוגה לצמתים הנבחרים"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "הסתר קישורים נבחרים"
   },
   "Comfy_Canvas_Lock": {
     "label": "נעילת הקנבס"

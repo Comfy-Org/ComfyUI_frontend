@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Supprimer les éléments sélectionnés"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "Supprimer les liens sélectionnés"
+  },
   "Comfy_Canvas_FitView": {
     "label": "Ajuster la vue aux nœuds sélectionnés"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "Masquer les liens sélectionnés"
   },
   "Comfy_Canvas_Lock": {
     "label": "Verrouiller la toile"

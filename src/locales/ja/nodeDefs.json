@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "名前で接続された入力から選択します。入力はダブルクリックして名前を変更できます。",
+    "display_name": "分岐",
+    "inputs": {
+      "autogrow": {
+        "name": "自動拡張"
+      },
+      "branch": {
+        "name": "分岐"
+      },
+      "branch_names": {
+        "name": "分岐名"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "出力",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Bria を使用して、プレーンテキストで説明したオブジェクトを画像に挿入します。Bria はフレーム全体を約1メガピクセルで再レンダリングするため、結果は入力画像とピクセル単位では一致しません。",
     "display_name": "Bria オブジェクトを追加",
@@ -850,7 +871,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "編集後の画像の構造化された説明。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+        "tooltip": "Bria FIBO 2.0 Image Edit で後続の編集を行うための、編集済み画像の構造化された説明。"
       }
     }
   },
@@ -876,7 +897,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "編集後の画像の構造化された説明。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+        "tooltip": "Bria FIBO 2.0 Image Edit で後続の編集を行うための、編集済み画像の構造化された説明。"
       }
     }
   },
@@ -1002,9 +1023,31 @@
       }
     }
   },
+  "BriaGuidedRemoveBackground": {
+    "description": "Bria を使用して、プロンプトで説明されたものを残しながら画像から背景を除去します。元のピクセルは新しいアルファチャンネル付きでフル解像度のまま復元されます。単純な切り抜きには、Bria Remove Image Background のほうが低コストです。",
+    "display_name": "Bria ガイド付き背景除去",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "「マットと植物がある人物」、「ランプなしで机に座る女性」、「椅子のみ」など、残す対象、除外する対象、または絞り込む対象を指定します。何にも一致しないプロンプトでは、完全に透明な画像が返されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
-    "description": "Briaの最新モデルを使って画像を編集します",
-    "display_name": "Bria画像編集",
+    "description": "Bria FIBO 2.0 を使用して画像を編集します。",
+    "display_name": "Bria FIBO 2.0 Image Edit",
     "inputs": {
       "control_after_generate": {
         "name": "生成後コントロール"
@@ -1055,6 +1098,49 @@
       }
     }
   },
+  "BriaImageGenerate": {
+    "description": "Bria FIBO 2.0 を使用して、テキストプロンプト、参照画像、または構造化プロンプトから画像を生成します。",
+    "display_name": "Bria FIBO 2.0 Image Generate",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "16:10 およびそれ以降の比率では、1MP と、prompt または structured_prompt のどちらか一方のみが必要です。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "参照として使用する画像です。結果はこの画像を編集したものではなく、選択したアスペクト比の新しい画像になります。"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "structured_prompt": {
+        "name": "構造化プロンプト",
+        "tooltip": "以前の Bria FIBO の結果からの JSON 構造化プロンプトです。同じシードではその画像を再現し、JSON を変更するかプロンプトを追加すると調整できます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "構造化プロンプト",
+        "tooltip": "このノードで再現または調整するための、生成された画像の構造化された説明。"
+      }
+    }
+  },
   "BriaIncreaseResolution": {
     "description": "Briaを使用して、元の内容を保持したまま画像を2倍または4倍にアップスケールします。",
     "display_name": "Bria 解像度を上げる",
@@ -1073,6 +1159,42 @@
       "moderation": {
         "name": "モデレーション",
         "tooltip": "モデレーション設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaProductHolding": {
+    "description": "Bria を使用して人物の手に製品を持たせます。人物のアイデンティティ、ポーズ、背景は保持され、シーンは約1メガピクセルで再レンダリングされます。",
+    "display_name": "Bria Product Holding",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "auto は人物写真のフレーミングを約1メガピクセルに維持します。固定比率では0.6～1メガピクセルで返されます。例: 3:4 の場合は 768x1024。"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "instruction": {
+        "name": "指示",
+        "tooltip": "Bria の組み込み指示に追加される任意の補足指示です。たとえば、使用する手やラベルの向きなどを指定できます。"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "person_image": {
+        "name": "人物画像"
+      },
+      "product_images": {
+        "name": "製品画像",
+        "tooltip": "1つの製品の画像を1～3枚指定します。製品自体、パッケージ、別角度、または付属アイテムを使用できます。バッチ入力では画像ごとに1枚として数えられます。透明な領域は白として扱われます。"
+      },
+      "seed": {
+        "name": "シード"
       }
     },
     "outputs": {
@@ -1107,7 +1229,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "編集後の画像の構造化された説明。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+        "tooltip": "Bria FIBO 2.0 Image Edit で後続の編集を行うための、編集済み画像の構造化された説明。"
       }
     }
   },
@@ -1236,7 +1358,7 @@
       },
       "1": {
         "name": "構造化プロンプト",
-        "tooltip": "編集後の画像の構造化された説明です。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+        "tooltip": "Bria FIBO 2.0 Image Edit で後続の編集を行うための、編集済み画像の構造化された説明。"
       }
     }
   },
@@ -1262,7 +1384,7 @@
       },
       "1": {
         "name": "構造化プロンプト",
-        "tooltip": "編集後の画像の構造化された説明です。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+        "tooltip": "Bria FIBO 2.0 Image Edit で後続の編集を行うための、編集済み画像の構造化された説明。"
       }
     }
   },
@@ -1284,7 +1406,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Editで後続の編集を行うための、編集済み画像の構造化された説明。"
+        "tooltip": "Bria FIBO 2.0 Image Edit で後続の編集を行うための、編集済み画像の構造化された説明。"
       }
     }
   },
@@ -1388,6 +1510,42 @@
       "video": {
         "name": "ビデオ",
         "tooltip": "背景が置き換えられる前景ビデオ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVirtualTryOn": {
+    "description": "Bria を使用して、人物に衣服やアクセサリーを着用させます。人物のアイデンティティ、ポーズ、背景は維持され、シーンは約1メガピクセルで再レンダリングされます。",
+    "display_name": "Bria バーチャル試着",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "auto は人物写真のフレーミングを約1メガピクセルに維持します。固定比率では0.6～1メガピクセルで返されます。例: 3:4 の場合は 768x1024。"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "garment_images": {
+        "name": "衣服画像",
+        "tooltip": "一緒に着用する1～3点の衣服またはアクセサリー。各アイテムは人物が着用している対応するアイテムを置き換えます。バッチ入力では画像ごとに1点として数えられます。透明領域は白として扱われます。"
+      },
+      "instruction": {
+        "name": "指示",
+        "tooltip": "使用する手やラベルの向きなど、Bria の組み込み指示に追加する任意の指示。"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "person_image": {
+        "name": "人物画像"
+      },
+      "seed": {
+        "name": "シード"
       }
     },
     "outputs": {
@@ -2413,7 +2571,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "推奨構成:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl（226トークンのパディング）\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推奨）または t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL または Music3 Qwen/RVQ",
+    "description": "レシピ:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (推奨) または t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL または Music3 Qwen/RVQ\nflux3: qwen3-vl 4B\nfibo2: qwen3-vl 4B",
     "display_name": "CLIPを読み込む",
     "inputs": {
       "clip_name": {
@@ -2956,6 +3114,24 @@
       },
       "model_scale_factor": {
         "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "ソースに忠実な高忠実度アップスケーラー、Clarity AI の Crystal Video Upscaler で動画をアップスケールします。出力はフレームあたり9メガピクセル（例: 4000x2250）に制限され、長いクリップはより低い解像度で返されます。30 fps 超のクリップは2倍、60 fps 超は3倍となり、以降も同様です。",
+    "display_name": "Clarity AI Crystal Video アップスケール",
+    "inputs": {
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_scale_factor": {
+        "name": "スケール係数"
       }
     },
     "outputs": {
@@ -5701,7 +5877,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "テキストを音声に変換します。テキスト内の感情キュー（s2.1-proでは[happy]、[whispering]、s1では(happy)）と、複数の接続された音声で{'@'}Voice1/{'@'}Voice2タグを使用した複数話者の対話をサポートします。",
+    "description": "テキストを音声に変換します。テキスト内の感情キュー（s2.1-pro では [happy]、[whispering]、s1 では (happy)）、drama-3 での自然言語の [directions] と `<whisper>...</whisper>` 単語タグ、および複数の接続された音声での {'@'}Voice1/{'@'}Voice2 タグによる複数話者の会話をサポートします。",
     "display_name": "Fish Audio テキスト読み上げ",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +6069,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "プロンプトから FLUX 3 で画像を生成するか、最大10枚の参照画像を編集・組み合わせます。プロンプト内では、参照画像を画像1、画像2のように指定してください。",
-    "display_name": "Flux 3 画像",
+    "description": "FLUX 3 Image でプロンプトから画像を生成するか、最大10枚の参照画像を編集・結合します。プロンプト内では参照画像を image 1、image 2 のように指定してください。",
+    "display_name": "FLUX 3 Image",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5988,6 +6164,118 @@
       }
     }
   },
+  "Flux3LayoutPrompt": {
+    "description": "Create Bounding Boxes のボックスをレイアウトテーブルとして FLUX 3 Image のプロンプトに追加します。",
+    "display_name": "FLUX 3 Image レイアウトプロンプト",
+    "inputs": {
+      "element": {
+        "name": "要素",
+        "tooltip": "Create Bounding Boxes ノードからのプロンプト要素。カラーパレットは使用されないため、色は説明内に記述してください。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "プロンプトのテキスト。単語をボックスに関連付けるには、ボックス N を <obj_N> として参照します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "プロンプト",
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxImageToVideoNode": {
+    "description": "FLUX 3 Max で1～10枚の画像をアニメーション化します。各画像はクリップのフレームになります。1枚の場合は開始フレームに、2枚の場合は最初と最後のフレームに、それ以上の場合はクリップ全体に分散配置するか、指定した時点に固定します。",
+    "display_name": "FLUX 3 Max Image to Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "出力アスペクト比。テキストプロンプトでは「'auto'」は16:9になり、それ以外では最初の画像に従います。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "クリップの長さ（秒）。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "同期した音声を生成します。オフにすると、音声トラックのない動画が生成されます。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "再生順の1～10枚の画像。"
+      },
+      "placement": {
+        "name": "placement",
+        "tooltip": "「'spread across the clip'」では最初の画像を開始位置、最後の画像を終了位置に配置し、残りをその間に均等に配置します。「'at times'」では、各画像を指定した秒数の位置に固定します。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "シーンの動き方と音の内容を指定します。"
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "生成前にモデルがプロンプトについてどの程度推論し、拡張するかを指定します。「'high'」は時間が長くかかりますが、料金は同じです。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "出力解像度。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードにかかわらず、結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxTextToVideoNode": {
+    "description": "FLUX 3 Max を介して、テキストプロンプトから同期した音声付き動画を生成します。",
+    "display_name": "FLUX 3 Max テキストから動画",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "出力アスペクト比。テキストプロンプトでは「'auto'」は16:9になり、それ以外では最初の画像に従います。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "クリップの長さ（秒）。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "同期した音声を生成します。オフにすると、音声トラックのない動画が生成されます。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "必要な内容を自然言語で指定します。レイヤー化された音声にするには、環境音、音楽、音声をそれぞれ個別に記述してください。"
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "生成前にモデルがプロンプトについてどの程度推論し、拡張するかを指定します。「'high'」は時間が長くかかりますが、料金は同じです。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "出力解像度。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードにかかわらず、結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "テキストプロンプトからFLUX 3経由で同期音声付き動画を生成します。",
     "display_name": "Flux 3 テキストから動画へ",
@@ -6067,7 +6355,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "継続するクリップ。"
+        "tooltip": "続きの生成に使用するクリップ。面積が3840x2160ピクセルを超えるクリップは、収まるように縮小されます。"
       }
     },
     "outputs": {
@@ -7223,6 +7511,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "オーディオ潜在の長さ、オーディオチャンネル数、バッチサイズを返します。",
+    "display_name": "オーディオ潜在サイズを取得",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "検査するオーディオまたはオーディオ／動画のlatent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "長さ",
+        "tooltip": "オーディオlatentの長さ。"
+      },
+      "1": {
+        "name": "オーディオチャンネル",
+        "tooltip": "オーディオチャンネル数。オーディオチャンネル次元を持たないlatentは1チャンネルです。"
+      },
+      "2": {
+        "name": "バッチサイズ",
+        "tooltip": "バッチ内のlatent数。"
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "LoRA読み込み済みモデルのsafetensorsメタデータからIC-LoRAパラメータを抽出し、LTXVAddGuide（例：reference_downscale_factor）用に出力します。",
     "display_name": "IC-LoRAパラメータの取得",
@@ -7275,6 +7587,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "画像または動画のlatentの幅、高さ、フレーム数、バッチサイズを返します。",
+    "display_name": "画像／動画latentサイズを取得",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "検査する画像または動画のlatent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "幅",
+        "tooltip": "latentの幅。"
+      },
+      "1": {
+        "name": "高さ",
+        "tooltip": "latentの高さ。"
+      },
+      "2": {
+        "name": "フレーム",
+        "tooltip": "latentのフレーム数。画像latentは1フレームです。"
+      },
+      "3": {
+        "name": "バッチサイズ",
+        "tooltip": "バッチ内のlatent数。"
       }
     }
   },
@@ -8046,6 +8386,66 @@
       }
     }
   },
+  "HeyGenVoiceCloneNode": {
+    "description": "HeyGen Voice 1.0で、1人の話者の録音から音声をクローンします。voice_idをHeyGen Voice 1.0 Text to Speech、またはHeyGen Avatar VideoおよびHeyGen Talking Photoのcustom_voice_idに接続します。",
+    "display_name": "HeyGen Voice 1.0 インスタントクローン",
+    "inputs": {
+      "audio": {
+        "name": "オーディオ",
+        "tooltip": "1人の話者の録音。明瞭な音声を少なくとも10秒使用してください。使用されるのは最初の3分間のみです。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "language": {
+        "name": "言語",
+        "tooltip": "録音内で話されている言語。"
+      },
+      "remove_background_noise": {
+        "name": "背景ノイズを除去"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "録音を再度クローンするにはシードを変更します。各クローンはわずかに異なる音声になります。"
+      },
+      "similarity": {
+        "name": "類似度",
+        "tooltip": "音声が録音にどの程度忠実に従うか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "HeyGen Voice 1.0 Instant Cloneでクローンした音声でテキストを読み上げます。",
+    "display_name": "HeyGen Voice 1.0 テキスト読み上げ",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "model_expressiveness_boost": {
+        "name": "表現力ブースト"
+      },
+      "model_language": {
+        "name": "言語"
+      },
+      "model_text": {
+        "name": "テキスト"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "サンプリングの後半で、複数のシフトしたパッチグリッド位置にわたってモデル出力を平均化します。継ぎ目を除去します。",
     "display_name": "HiDream-O1 パッチ継ぎ目スムージング",
@@ -8106,6 +8506,33 @@
       },
       "1": {
         "name": "ネガティブ",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "モーション、カメラ移動、タイミングを維持したまま、参照画像の新しいキャラクター、場所、またはスタイルで動画を再構成します。",
+    "display_name": "Higgsfield Genjutsu モーション転送",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8759,6 +9186,54 @@
       }
     }
   },
+  "IdeogramVectorGenerateApi": {
+    "description": "Ideogram Vector を使用して、テキストプロンプトから編集可能な SVG を生成します。最大5枚の画像をガイドとして任意で使用できます。",
+    "display_name": "Ideogram Vector SVG生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramVectorImageToSVGApi": {
+    "description": "Ideogram Vector を使用して画像を編集可能な SVG に変換します。アルファを含む画像の透明な領域は透明のまま維持されます。",
+    "display_name": "Ideogram Vector 画像からSVGへ",
+    "inputs": {
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_mode": {
+        "name": "モード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageAddNoise": {
     "display_name": "ImageAddNoise",
     "inputs": {
@@ -8835,12 +9310,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB、リニアRec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3、HDR ACEScctを変換します。LogC3はRec.709原色と[0, 1]にクランプされたコード値を使用するEI 800カーブを使用します。ACEScctはAP1原色とD60白色点を使用し、D65へBradford適応を行います。EXR保存用には、LogC3またはACEScctをリニアに変換してください。リニア1.0はsRGBと同じ203ニトの基準白色を使用します。HLGは1000ニトの基準ディスプレイを使用します。リニアおよびACEScct出力では拡張値が保持されます。リニアからHDRへの変換ではトーンマッピングなしでハイライトを保持します。HLGおよびPQ出力では負のチャンネルがクリップされます。SDR出力およびPQからHLGへの変換では、バッチ全体で過剰な輝度をトーンマップし、色域外の色を圧縮します。変換はfloat32で計算され、中間デバイスとdtypeを返します。ストレートアルファには色変換を適用しません。",
+    "description": "sRGB、リニア Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3、リニア ACEScg、および HDR ACEScct を変換します。LogC3 は Rec.709 原色を用いた EI 800 カーブを使用し、コード値は [0, 1] にクランプされます。ACEScg は D60 白色点のシーンリニア AP1 です。ACEScct は ACEScg の対数エンコーディングです。両方とも D65 への Bradford 色順応を使用します。EXR を保存する前に、LogC3 または ACEScct をリニア ACEScg（AP1 シーンリニア）またはリニア（Rec.709）に変換してください。リニア 1.0 と ACEScg 1.0 は、sRGB と同じ 203 nit の基準白色を使用します。HLG は 1000 nit の基準ディスプレイを使用します。リニア、ACEScg、ACEScct の出力は拡張値を保持します。リニアから HDR への変換では、トーンマッピングを行わずにハイライトを保持します。HLG および PQ 出力では負のチャンネル値がクリップされます。SDR 出力および PQ から HLG への変換では、バッチ全体で過剰な輝度をトーンマッピングし、色域外の色を圧縮します。変換は float32 で計算され、中間のデバイスと dtype を返します。ストレートアルファは色変換されません。",
     "display_name": "画像カラースペースを変換",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "出力ピクセルの色空間。この色空間と同じものを保存ノードに設定してください。EXR を保存する前に LogC3 または ACEScct をリニアに変換し、動画を保存する前に sRGB/HDR/HDR PQ に変換してください。"
+        "tooltip": "出力ピクセルの色空間。保存ノードも同じ色空間に設定してください。ACEScg EXR の場合は LogC3 または ACEScct をリニア ACEScg に、Rec.709 EXR の場合はリニアに変換してください。動画を保存する前に sRGB/HDR/HDR PQ に変換してください。"
       },
       "image": {
         "name": "image"
@@ -9263,6 +9738,28 @@
       },
       "rotation": {
         "name": "回転"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "sRGB の明るさを Rec.2020 HLG HDR に拡張します。HDR 色空間を選択して結果を保存してください。アルファは保持されます。",
+    "display_name": "SDRをHDRに変換",
+    "inputs": {
+      "algorithm": {
+        "name": "アルゴリズム",
+        "tooltip": "キャリブレーション済みの単調な対数ゲインカーブとブレンドした、Lottes スタイルの有理拡張。"
+      },
+      "algorithm_target_luminance": {
+        "name": "目標輝度"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "sRGB の SDR 画像。"
       }
     },
     "outputs": {
@@ -10563,6 +11060,41 @@
     "outputs": {
       "0": {
         "name": "スタイル参照",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Krea 3 で画像を編集します。画像が接続されていない場合は、テキストから新しい画像を生成します。",
+    "display_name": "Krea 3 画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_precise_edit": {
+        "name": "精密編集"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_thinking_mode": {
+        "name": "思考モード"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13166,6 +13698,83 @@
       }
     }
   },
+  "MOSSImageControl": {
+    "description": "LoRAローダーで読み込んだ MOSS-Image カラー/深度コントロールアダプター用の、色領域マップと深度マップを追加します。",
+    "display_name": "MOSS-Image カラー/深度コントロール",
+    "inputs": {
+      "color_map": {
+        "name": "カラーマップ",
+        "tooltip": "出力サイズで、領域ごとに1つのフラットカラーを指定します。色は領域 ID としてのみ使用されます。"
+      },
+      "depth_map": {
+        "name": "深度マップ",
+        "tooltip": "出力サイズの深度マップ。近い部分は白です。"
+      },
+      "end_percent": {
+        "name": "終了パーセント",
+        "tooltip": "コントロールを終了するサンプリングの割合。早めに終了するとレイアウトと深度は維持され、残りのステップで形状が緩和されます。"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "start_percent": {
+        "name": "開始パーセント",
+        "tooltip": "コントロールを開始するサンプリングの割合。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "画像トークンに対するマップの寄与を調整します。0.0 はマップなしと同じで、1.0 は学習時の強度です。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "プロンプトと「Create Bounding Boxes」のボックスから、MOSS-Image 用のレイアウトプロンプトを作成します。",
+    "display_name": "MOSS-Image レイアウトプロンプト",
+    "inputs": {
+      "character_boxes": {
+        "name": "character_boxes",
+        "tooltip": "「Create Bounding Boxes」プレビューでタグ付けされた、オブジェクトではなくキャラクターとしてラベル付けするオブジェクトボックスの番号。例: \"1, 3\"。"
+      },
+      "element": {
+        "name": "要素",
+        "tooltip": "「Create Bounding Boxes」ノードのプロンプト要素。説明はボックスのキャプションとなり、テキストボックスではテキストも描画されます。"
+      },
+      "height": {
+        "name": "高さ",
+        "tooltip": "生成画像の高さ。ボックスはそのピクセル座標に配置されます。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像全体の説明。"
+      },
+      "width": {
+        "name": "幅",
+        "tooltip": "生成画像の幅。ボックスはそのピクセル座標に配置されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "プロンプト",
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "画像のライティングを調整し、オプションで参照画像からの光の転送も可能です。",
     "display_name": "Magnific 画像リライティング",
@@ -13815,6 +14424,58 @@
       }
     }
   },
+  "MeshyImageToModelSmartTopologyNode": {
+    "description": "指定した面数で、ゲーム対応の三角形メッシュを直接生成します。",
+    "display_name": "Meshy：画像からモデルへ（スマートトポロジー）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "pose_mode": {
+        "name": "ポーズモード"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードにかかわらず、結果は非決定的です。"
+      },
+      "should_texture": {
+        "name": "テクスチャを適用"
+      },
+      "should_texture_enable_pbr": {
+        "name": "PBRを有効化"
+      },
+      "should_texture_texture_prompt": {
+        "name": "テクスチャプロンプト"
+      },
+      "should_texture_texture_resolution": {
+        "name": "テクスチャ解像度"
+      },
+      "target_polycount": {
+        "name": "ターゲットポリゴン数",
+        "tooltip": "生成されるメッシュのおおよその三角形数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "MeshyタスクID",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：複数画像からモデルへ",
     "inputs": {
@@ -14025,6 +14686,46 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelSmartTopologyNode": {
+    "description": "指定した面数で、ゲーム対応の三角形メッシュを直接生成します。",
+    "display_name": "Meshy：テキストからモデルへ（スマートトポロジー）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "pose_mode": {
+        "name": "ポーズモード"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードにかかわらず、結果は非決定的です。"
+      },
+      "target_polycount": {
+        "name": "ターゲットポリゴン数",
+        "tooltip": "生成されるメッシュのおおよその三角形数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "MeshyタスクID",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -14712,6 +15413,71 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "MireloTextToSFX": {
+    "description": "Mirelo SFXを使用して、テキストによる説明から効果音を生成します。",
+    "display_name": "Mirelo テキストからSFXへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MireloVideoToSFX": {
+    "description": "Mirelo SFXを使用して、ビデオに同期した効果音を生成します。",
+    "display_name": "Mirelo ビデオからSFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "使用するモデル。"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_preserve_speech": {
+        "name": "preserve_speech"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      },
+      "1": {
+        "name": "speech",
+        "tooltip": "サウンドトラックから分離されたセリフ。音声が検出されない場合は無音です。"
       }
     }
   },
@@ -15998,6 +16764,170 @@
       },
       "transformer_blocks_9_": {
         "name": "トランスフォーマーブロック.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "final_linear_video."
+      },
+      "final_norm_video_": {
+        "name": "final_norm_video."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "layers.23."
+      },
+      "layers_24_": {
+        "name": "layers.24."
+      },
+      "layers_25_": {
+        "name": "layers.25."
+      },
+      "layers_26_": {
+        "name": "layers.26."
+      },
+      "layers_27_": {
+        "name": "layers.27."
+      },
+      "layers_28_": {
+        "name": "layers.28."
+      },
+      "layers_29_": {
+        "name": "layers.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "layers.30."
+      },
+      "layers_31_": {
+        "name": "layers.31."
+      },
+      "layers_32_": {
+        "name": "layers.32."
+      },
+      "layers_33_": {
+        "name": "layers.33."
+      },
+      "layers_34_": {
+        "name": "layers.34."
+      },
+      "layers_35_": {
+        "name": "layers.35."
+      },
+      "layers_36_": {
+        "name": "layers.36."
+      },
+      "layers_37_": {
+        "name": "layers.37."
+      },
+      "layers_38_": {
+        "name": "layers.38."
+      },
+      "layers_39_": {
+        "name": "layers.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "layers.40."
+      },
+      "layers_41_": {
+        "name": "layers.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "video_head_modulation."
       }
     }
   },
@@ -17631,6 +18561,47 @@
       }
     }
   },
+  "PadImageNode": {
+    "description": "単色または端部をミラーコピーしたもので画像をパディングします。",
+    "display_name": "画像をパディング",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "padding_style": {
+        "name": "padding_style",
+        "tooltip": "パディング領域を何で埋めるか。"
+      },
+      "padding_style_color": {
+        "name": "色"
+      },
+      "padding_style_feathering": {
+        "name": "フェザリング"
+      },
+      "padding_type": {
+        "name": "padding_type",
+        "tooltip": "追加するパディングの量を選択します: 各辺ごとの正確な量、サイズ倍率、または次の倍数まで。"
+      },
+      "padding_type_bottom": {
+        "name": "下"
+      },
+      "padding_type_left": {
+        "name": "左"
+      },
+      "padding_type_right": {
+        "name": "右"
+      },
+      "padding_type_top": {
+        "name": "上"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": null
+      }
+    }
+  },
   "PaintMesh": {
     "description": "入力ボクセルフィールドから最も近いボクセルの色で、各メッシュ頂点をペイントします。",
     "display_name": "メッシュをペイント",
@@ -18889,7 +19860,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "描画前にモデルがどの程度推論するかを指定します。レベルを上げるほど細部が向上しますが、より多くのトークンを消費します。Arrow 2モデルでのみ使用されます。"
+        "tooltip": "描画前にモデルが行う推論量。レベルを上げると詳細度が向上しますが、より多くのトークンを消費します。"
       },
       "seed": {
         "name": "seed",
@@ -18977,7 +19948,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "描画前にモデルがどの程度推論するかを指定します。レベルを上げるほど細部が向上しますが、より多くのトークンを消費します。Arrow 2モデルでのみ使用されます。"
+        "tooltip": "描画前にモデルが行う推論量。レベルを上げると詳細度が向上しますが、より多くのトークンを消費します。"
       },
       "reference_images": {
         "name": "reference_images",
@@ -19836,6 +20807,42 @@
       }
     }
   },
+  "ReferenceMultiLatent": {
+    "description": "参照画像をエンコードし、そのlatentを編集モデル用のポジティブおよび任意のネガティブconditioningに追加します。",
+    "display_name": "参照マルチlatentを設定",
+    "inputs": {
+      "images": {
+        "name": "画像"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAEが接続されていない場合、参照画像は無視されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": "ネガティブ conditioningが接続されていない場合、ポジティブ出力を返します。"
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "最初の参照latentに0.0を乗算したもの、または選択した解像度の正方形の空latent。"
+      }
+    }
+  },
   "ReferenceTimbreAudio": {
     "description": "このノードは音色のリファレンスオーディオを設定します（ace step 1.5用）",
     "display_name": "ReferenceTimbreAudio",
@@ -19950,7 +20957,7 @@
     "inputs": {
       "band": {
         "name": "band",
-        "tooltip": "ボクセル単位の狭帯域幅。UDFモードではサーフェスもオフセットします。"
+        "tooltip": "ボクセル単位でのナローバンド幅。udfモードではサーフェスをオフセットします。solidモードではクロージング半径です。このサイズで稜線はフィレット処理され、隙間は橋渡しされ、サーフェスはボクセル半分だけ外側に配置されます。"
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -19977,7 +20984,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: 乱雑な／非多様体の入力に対して堅牢です。sdf: QEF（Quadratic Error Function）によるシャープな特徴の復元を伴うクリーンな単一サーフェスですが、一貫した巻き方向が必要です。"
+        "tooltip": "udf: 煩雑な入力や非多様体入力に対して堅牢です。sdf: QEF（Quadratic Error Function）によるシャープな特徴の復元を備えたクリーンな単一サーフェスですが、一貫した巻き方向が必要です。solid: 煩雑な入力から単一の水密ソリッドを作成します。グローバルな内外グラフカット（CelloCut）により二重シェルを除去し、小さな穴を閉じます。低速です。"
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"
@@ -24332,6 +25339,54 @@
       }
     }
   },
+  "TextEncodeFibo2": {
+    "description": "Fibo 2.0のプロンプト、構造化JSONキャプション、またはプレーンテキストをエンコードします。画像を使用する場合、プロンプトは編集指示、またはedit_instructionキーを含む結果のJSONキャプションとなり、vaeが接続されている場合は画像が両方の出力の参照latentになります。latent出力をサンプリングします。画像は結果のサイズに合わせてクロップされます。",
+    "display_name": "TextEncodeFibo2",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高さ",
+        "tooltip": "結果の高さ。0 = 最初の画像のアスペクト比に対してFibo 2.0が学習したサイズ（約1メガピクセル）、または画像がない場合は1024。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "編集する画像。指示内では<image_1>、<image_2>などとして参照されます。編集はピクセル単位で画像に一致するため、単一画像は結果のサイズにスケーリングされて中央クロップされます。複数画像は、それぞれ学習時のサイズに合わせて処理されます。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "空の場合は、編集ワークフローでのCFG用にFibo 2.0が学習したnullキャプションになります。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅",
+        "tooltip": "結果の幅。0 = 最初の画像のアスペクト比に対してFibo 2.0が学習したサイズ（約1メガピクセル）、または画像がない場合は1024。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
     "inputs": {
@@ -24369,6 +25424,38 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMOSSImageEdit": {
+    "description": "MOSS-Image編集lora用に、参照画像を含む編集指示をエンコードします。ネガティブプロンプトにも使用してください。参照画像は入力されたサイズで使用されるため、事前にスケーリングしてください。VAEがない場合、画像はテキストエンコーダーにのみ渡されます。",
+    "display_name": "MOSS-Image 編集テキストエンコード",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "edit_format": {
+        "name": "edit_format",
+        "tooltip": "編集loraが学習したレイアウト: ai-toolkitのMOSS-Image Edit Training（kv_cacheオプションのオン／オフ）またはMoss-Image-Edit。kv_cacheがオフの場合、参照画像は生成中の画像にもアテンションするため、毎ステップ再計算されます。"
+      },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "テキストエンコーダーが受け取る画像にモデルがどの程度アテンションするかをスケーリングします（ai-toolkit形式、またはVAEなしの場合）。0では画像を無視し、1では変更なし、1より大きい値では強調します。"
+      },
+      "images": {
+        "name": "画像"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "編集lora用の参照latentとして画像をエンコードします。"
       }
     },
     "outputs": {
@@ -24588,7 +25675,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "チェックポイントのマルチトークン予測ヘッドを使用した投機的デコーディング。MTP 重みがない場合は効果がありません。auto はドラフト深度を適応的に調整し、2-5 は固定します。サンプリング出力は正しい分布を維持しますが、同じシードでも非 MTP 出力とは異なります。"
+        "tooltip": "チェックポイントのマルチトークン予測ヘッドを使用した投機的デコーディング。MTP重みがない場合は効果がありません。autoは、観測されたトークン一致と実行コストに応じてドラフトの深さと幅を適応させます。2-5は一定のドラフト深さに固定します。treeモードは幅と深さの両方を固定します。サンプリング出力は正しい分布を維持しますが、同じシードでも非MTP出力とは異なります。"
       },
       "prompt": {
         "name": "プロンプト"
@@ -24662,7 +25749,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "チェックポイントのマルチトークン予測ヘッドによる投機的デコーディング。MTP重みがない場合は効果がありません。autoはドラフト深度を自動調整し、2～5では固定します。サンプリング出力は正しい分布を維持しますが、同じシードでも非MTP出力とは異なります。"
+        "tooltip": "チェックポイントのマルチトークン予測ヘッドを使用した投機的デコーディング。MTP重みがない場合は効果がありません。autoは、観測されたトークン一致と実行コストに応じてドラフトの深さと幅を適応させます。2-5は一定のドラフト深さに固定します。treeモードは幅と深さの両方を固定します。サンプリング出力は正しい分布を維持しますが、同じシードでも非MTP出力とは異なります。"
       },
       "prompt": {
         "name": "プロンプト"
@@ -27283,6 +28370,119 @@
       "0": {
         "name": "ボクセルの色",
         "tooltip": null
+      }
+    }
+  },
+  "VeedCleanAudioNode": {
+    "description": "VEEDで音声から背景ノイズを除去します。あらゆる言語の音声向けに設計されており、音楽や効果音も除去されます。48 kHzのモノラル音声を返します。",
+    "display_name": "VEED オーディオクリーニング",
+    "inputs": {
+      "audio": {
+        "name": "オーディオ",
+        "tooltip": "30分未満の音声録音。"
+      },
+      "loudness": {
+        "name": "ラウドネス"
+      },
+      "loudness_target_lufs": {
+        "name": "target_lufs"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "音声下のノイズをどの程度除去するかを指定します。低い値では音声の背後にあるルームトーンがより残ります。単語間の無音部分は常に完全にクリーンアップされ、デフォルト値を超えても変化はわずかです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedCleanVideoAudioNode": {
+    "description": "VEEDを使用して、動画内の音声から背景ノイズを除去します。変更されるのは音声トラックのみで、クリーンアップされた48 kHzモノラル音声に置き換えられます。",
+    "display_name": "VEED Clean Audio（動画内）",
+    "inputs": {
+      "loudness": {
+        "name": "ラウドネス"
+      },
+      "loudness_target_lufs": {
+        "name": "target_lufs"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "音声下のノイズをどの程度除去するかを指定します。低い値では音声の背後にあるルームトーンがより残ります。単語間の無音部分は常に完全にクリーンアップされ、デフォルト値を超えても変化はわずかです。"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "30分未満の、音声トラックを含む動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedFabricNode": {
+    "description": "VEED Fabricを使用して、静止画と音声トラックから、話し、口の動きが同期した動画を作成します。写真、イラスト、マスコットに対応しており、動画の長さは音声と同じです。",
+    "display_name": "VEED Fabric 1.0",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedLipsyncNode": {
+    "description": "VEED Lipsyncを使用して、動画内の話者の口の動きを新しい音声トラックに再同期します。動画あたり話者は1人で、出力は動画の解像度を25 fpsで維持し、長さは音声と同じです。",
+    "display_name": "VEED Lipsync 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedRemoveVideoBackgroundNode": {
+    "description": "VEEDを使用して動画から被写体を切り抜き、フレームとアルファmaskを返します。コンポジットに使用するか、Join Image with AlphaおよびSave WEBMと組み合わせて、透明な動画を書き出せます。",
+    "display_name": "VEED 動画背景除去",
+    "inputs": {
+      "model": {
+        "name": "モデル",
+        "tooltip": "standard: あらゆる背景に対応し、エッジ品質が最良で、最大3840x2160で出力します。fast: より高速で、最大1920x1080で出力します。green screen: 緑色の背景をキーイングで除去し、最大3840x2160で出力します。より大きな動画は縮小されます。"
+      },
+      "model_refine_foreground_edges": {
+        "name": "refine_foreground_edges"
+      },
+      "model_subject_is_person": {
+        "name": "subject_is_person"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": "背景が除去された箇所は1です。透明な動画にはJoin Image with AlphaとSave WEBMを使用してください。Image Composite Maskedの前にInvert Maskを追加してください。"
       }
     }
   },
