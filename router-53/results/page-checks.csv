@@ -1,0 +1,102 @@
+check,path,status,location,x_comfy_content_source,served_by,note,ok
+hub index,/hub/workflows/,200,,cms,vercel-website,links to /workflows/,True
+hub index,/hub/models/,200,,cms,vercel-website,links to /workflows/,True
+hub index,/hub/apps/,200,,cms,vercel-website,links to /workflows/,True
+hub index,/hub/creators/,200,,cms,vercel-website,links to /workflows/,True
+hub index zh-CN,/zh-CN/hub/workflows/,200,,cms,vercel-website,links to /workflows/,True
+hub index zh-CN,/zh-CN/hub/models/,200,,cms,vercel-website,links to /workflows/,True
+hub index zh-CN,/zh-CN/hub/apps/,200,,cms,vercel-website,links to /workflows/,True
+hub index zh-CN,/zh-CN/hub/creators/,200,,cms,vercel-website,links to /workflows/,True
+hub index ja,/ja/hub/workflows/,200,,cms,vercel-website,links to /workflows/,True
+hub index ja,/ja/hub/models/,200,,cms,vercel-website,links to /workflows/,True
+hub index ja,/ja/hub/apps/,200,,cms,vercel-website,links to /workflows/,True
+hub index ja,/ja/hub/creators/,200,,cms,vercel-website,links to /workflows/,True
+creator profile,/hub/creators/comfyui/,200,,cms,vercel-website,links to /workflows/,True
+creator profile zh-CN,/zh-CN/hub/creators/comfyui/,200,,cms,vercel-website,links to /workflows/,True
+creator profile,/hub/creators/julienaiart/,200,,cms,vercel-website,links to /workflows/,True
+creator profile zh-CN,/zh-CN/hub/creators/julienaiart/,200,,cms,vercel-website,links to /workflows/,True
+creator profile,/hub/creators/purz/,200,,cms,vercel-website,links to /workflows/,True
+creator profile zh-CN,/zh-CN/hub/creators/purz/,200,,cms,vercel-website,links to /workflows/,True
+creator profile,/hub/creators/rob/,200,,cms,vercel-website,links to /workflows/,True
+creator profile zh-CN,/zh-CN/hub/creators/rob/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/wan-2-1-fun-camera-1-3b-a517ab82b0f1/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/hy-3d-2-1-bf82f1e42e83/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/remove-watermark-from-video-ltx-2-3-lora-fedbcfb05b08/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/seedance-2-0-reference-to-video-64f4db9e3e33/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/sdpose-ood-video-to-pose-map-5fd7dc1f9db5/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/seedance2-5-video-editing-8d3a504fd30d/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/nano-banana-2-image-edit-45638e198c1d/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/remove-object-from-video-ltx-2-3-obscura-remova-lora-875410c650b8/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/ace-step-v1-text-to-instrumentals-music-ea4911d91143/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/ai-on-the-lot-2026-ltx-2-3-i2v-67981edb9ad4/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/gemini-omni-flash-text-to-video-91a17d5206d2/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/minimax-image-to-video-924b279f0df1/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/flux-1-dev-fp8-text-to-image-3efed399a12d/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/kling-o1-text-to-video-9654558acd06/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/arrow2-image-to-svg-7952ece08bbb/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/animate-reference-sheet/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/nano-banana-2-1-text-to-image-322063a63900/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/image-enhancer-a09d65985659/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/recraft-creative-image-enhancement-upscaler-387eb41c0702/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/happyhorse-1-1-image-to-video-6991493996fd/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/firered-image-edit-1-1-image-edit-c0198b907108/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/flux-1-kontext-max-c8dc25fbb2d2/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/moonvalley-text-to-video-417d8dfe78c2/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/seedance-2-5-flf2v-3ddb7afa1aa4/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/wan2-5-image-to-video-a20d3822a38f/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/luma-text-to-video-4ebc86e57ea6/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/seedance-playblast2render-ef543bd4a773/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/wavespeed-ai-image-restoration-with-seedvr2-430b718c2c90/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/product-in-scene/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/apply-texture-to-logo-8c90417df6d3/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/minimax-h3-flf2v-ef37c26c9bbf/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/led-billboard-message-29633c85694f/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/flux-2-klein-9b-image-edit-563f9b5f6ce3/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/cinematic-product-advertisement-seedance-2-0-c7c1eb5d5df4/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/step-3-contact-sheet-workflow-aeb81743ddf7/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/quick-animatic-boards-76d64ca52b45/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/ovis-image-text-to-image-c01a333cfbd3/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/recraft-4-1-flash-text-to-image-3f2afb56cdb2/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/isometric-miniatures-from-a-selfie-364e72458b36/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/wan3-0-image-to-video-473606b441c6/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/flux-2-klein-9b-text-to-image-1606e79dd224/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/apply-color-grade-from-reference-image-c2586087f709/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/recraft-vector-generation-9990019f0e74/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/wan2-2-s2v-audio-driven-video-generation-02b3722db38c/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/sd3-5-simple-8a1f5f5998cb/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/image-inflation-effect-with-infl8-lora-361cd788164e/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/video-restoration-558cc012978d/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/image-editing-new-300efdae24f6/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/flux-1-redux-model-52dd3f09bb59/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail,/hub/workflows/character-turnaround-sheet-generator-ad315e41d8c2/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail zh-CN,/zh-CN/hub/workflows/ace-step-v1-text-to-song-5d72bed48e89/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail ja,/ja/hub/workflows/ace-step-v1-text-to-song-5d72bed48e89/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail zh-CN,/zh-CN/hub/workflows/comfy-for-advertising-ooh-visualization-c5cbee07611f/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail ja,/ja/hub/workflows/comfy-for-advertising-ooh-visualization-c5cbee07611f/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail zh-CN,/zh-CN/hub/workflows/any-image-any-aspect-ratio-1880d7035ea2/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail ja,/ja/hub/workflows/any-image-any-aspect-ratio-1880d7035ea2/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail zh-CN,/zh-CN/hub/workflows/sd3-5-large-canny-controlnet-0bb057fd76e3/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail ja,/ja/hub/workflows/sd3-5-large-canny-controlnet-0bb057fd76e3/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail zh-CN,/zh-CN/hub/workflows/pixverse-6-0-text-to-video-92d04a68658a/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail ja,/ja/hub/workflows/pixverse-6-0-text-to-video-92d04a68658a/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail zh-CN,/zh-CN/hub/workflows/stable-audio-2-5-audio-to-audio-e78f02853c98/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail ja,/ja/hub/workflows/stable-audio-2-5-audio-to-audio-e78f02853c98/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail zh-CN,/zh-CN/hub/workflows/meshy-6-image-to-model-e8182e8f88c4/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail ja,/ja/hub/workflows/meshy-6-image-to-model-e8182e8f88c4/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail zh-CN,/zh-CN/hub/workflows/kling-avatar-2-0-e81f8eb0ee5f/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail ja,/ja/hub/workflows/kling-avatar-2-0-e81f8eb0ee5f/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail zh-CN,/zh-CN/hub/workflows/image-to-3d-e4a4339afda4/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail ja,/ja/hub/workflows/image-to-3d-e4a4339afda4/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail zh-CN,/zh-CN/hub/workflows/arrow2-image-to-svg-7952ece08bbb/,200,,cms,vercel-website,links to /workflows/,True
+workflow detail ja,/ja/hub/workflows/arrow2-image-to-svg-7952ece08bbb/,200,,cms,vercel-website,links to /workflows/,True
+app detail,/hub/apps/cinematic-studio/,200,,cms,vercel-website,links to /workflows/,True
+app detail,/hub/apps/reshoot/,200,,cms,vercel-website,links to /workflows/,True
+untouched,/,200,,,vercel-website,,True
+untouched,/pricing,200,,,vercel-website,,True
+untouched,/models,404,,,vercel-website,,True
+untouched,/cloud,200,,,vercel-website,,True
+untouched,/download,200,,,vercel-website,,True
+old-site asset,/workflows/download/0f5f5bc82df5.json,200,,,vercel-workflows,,True
+old-site asset,/workflows/thumbnails/image.webp,404,,,vercel-workflows,,True
+old-site asset,/workflows/og/template.png,404,,,vercel-workflows,,True
+sitemap,/sitemap-index.xml,502,,,,,False
