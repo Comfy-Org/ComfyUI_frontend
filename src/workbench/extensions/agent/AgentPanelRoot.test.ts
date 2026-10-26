@@ -41,7 +41,7 @@ import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePr
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import { useLocalAgentGrant } from './composables/agent/useLocalAgentGrant'
-import type { LocalAgentGrantArm } from './composables/agent/useLocalAgentGrant'
+import type { LocalAgentGrantArm } from './composables/agent/localAgentGrantReadStore'
 
 setupInlinePromptEditorDom()
 
@@ -345,7 +345,10 @@ function syncFakeSelection() {
 beforeEach(() => {
   distribution.isCloud = true
   distribution.isDesktop = false
-  vi.mocked(useLocalAgentGrant).mockReturnValue({ arm: ref('unknown') })
+  vi.mocked(useLocalAgentGrant).mockReturnValue({
+    arm: ref('unknown'),
+    rereadIfFailed: vi.fn()
+  })
   agentSocket = createFakeAgentSocket()
   agentSocket.send.mockImplementation((frame) => {
     socketSend(frame)
@@ -810,7 +813,10 @@ describe('AgentPanelRoot Local grant messaging', () => {
 
   function assignArm(assignment: LocalAgentGrantArm) {
     const arm = ref(assignment)
-    vi.mocked(useLocalAgentGrant).mockReturnValue({ arm })
+    vi.mocked(useLocalAgentGrant).mockReturnValue({
+      arm,
+      rereadIfFailed: vi.fn()
+    })
     return arm
   }
 
@@ -911,6 +917,41 @@ describe('AgentPanelRoot Local grant messaging', () => {
       surface: 'agent',
       errorType: 'error_refreshing_agent_billing_status'
     })
+  })
+
+  it('recovers when an overlapping status read supersedes the first fresh read', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    paywallBilling.fetchStatus
+      .mockImplementationOnce(async () => {
+        paywallBilling.statusPublished = false
+      })
+      .mockImplementationOnce(async () => {
+        paywallBilling.statusPublished = true
+      })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByText('Try agent chat for free.')).toBeVisible()
+    expect(paywallBilling.fetchStatus).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows the Local standing paywall after status settles even if balance is stalled', async () => {
+    assignArm('treatment')
+    paywallHasFunds.value = false
+    paywallAgentScopedHasFunds.value = false
+    let finishBalance!: () => void
+    paywallBilling.fetchBalance.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishBalance = resolve
+      })
+    )
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
+
+    expect(
+      await screen.findByTestId('agent-credits-exhausted-paywall')
+    ).toBeVisible()
+    finishBalance()
   })
 
   it('does not report rejected reads from a replaced consent scope', async () => {
@@ -1210,6 +1251,22 @@ describe('AgentPanelRoot Local grant messaging', () => {
     expect(withConsent).not.toHaveBeenCalled()
   })
 
+  it('checks a failed Local arm read on Send without waiting for its result', async () => {
+    const rereadIfFailed = vi.fn()
+    vi.mocked(useLocalAgentGrant).mockReturnValue({
+      arm: ref('unknown'),
+      rereadIfFailed
+    })
+    const bodies = mockMessagesEndpoint('wf-local')
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    renderWithSelectedTarget()
+
+    await sendFromComposer('Build a workflow')
+
+    expect(rereadIfFailed).toHaveBeenCalledOnce()
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+  })
+
   it('refreshes Local billing after a refused send and retries only on another Send', async () => {
     assignArm('treatment')
     paywallAgentScopedHasFunds.value = false
@@ -1288,6 +1345,46 @@ describe('AgentPanelRoot Local grant messaging', () => {
     })
   })
 
+  it('keeps a confirmed funded banner visible during refresh and removes it on confirmed exhaustion', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByText('Try agent chat for free.')
+    activateThread()
+    let finishStatus!: () => void
+    paywallBilling.fetchStatus.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishStatus = () => {
+          paywallHasFunds.value = false
+          paywallAgentScopedHasFunds.value = false
+          resolve()
+        }
+      })
+    )
+
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('local-banner-refresh')
+    conversation.startTurn(turnId)
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th-active', usage: null }
+      })
+    )
+
+    await waitFor(() =>
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledTimes(2)
+    )
+    expect(screen.getByText('Try agent chat for free.')).toBeVisible()
+    finishStatus()
+    await waitFor(() =>
+      expect(screen.queryByText('Try agent chat for free.')).toBeNull()
+    )
+    expect(
+      await screen.findByTestId('agent-credits-exhausted-paywall')
+    ).toBeVisible()
+  })
+
   it('does not inherit the Cloud notice dismissal', async () => {
     assignArm('treatment')
     paywallAgentScopedHasFunds.value = true
@@ -1319,7 +1416,8 @@ describe('AgentPanelRoot Local grant messaging', () => {
     expect(
       appMock.extensionManager.dialog.showTopUpCreditsDialog
     ).toHaveBeenCalledExactlyOnceWith({
-      isInsufficientCredits: false
+      isInsufficientCredits: false,
+      source: 'agent_paywall'
     })
     expect(openAccountPrecondition).not.toHaveBeenCalled()
     expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()

@@ -1651,7 +1651,8 @@ const localGrantScope = computed(() =>
     ? consentIdentity.value
     : null
 )
-const { arm: localGrantArm } = useLocalAgentGrant(localGrantScope)
+const { arm: localGrantArm, rereadIfFailed: rereadLocalGrantArm } =
+  useLocalAgentGrant(localGrantScope)
 const dismissedLocalFreeNoticeScope = ref<string | null>(null)
 const verifiedLocalGrantStatusScope = ref<string | null>(null)
 const localGrantStatusVerified = computed(
@@ -1665,34 +1666,57 @@ function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
   freeUseExperiment?.reportNotice(metadata)
 }
 
-function refreshLocalGrantBilling(scope: string): void {
-  const readId = ++localGrantBillingReadId
-  verifiedLocalGrantStatusScope.value = null
-  if (billingType.value !== 'workspace') return
+function isCurrentLocalGrantBillingRead(
+  scope: string,
+  readId: number
+): boolean {
+  return (
+    readId === localGrantBillingReadId &&
+    localGrantScope.value === scope &&
+    billingType.value === 'workspace'
+  )
+}
 
-  void Promise.allSettled([
-    refreshWorkspaceStatusFresh(),
-    refreshBillingBalance({ fresh: true })
-  ]).then(([status, balance]) => {
-    if (
-      readId !== localGrantBillingReadId ||
-      localGrantScope.value !== scope ||
-      billingType.value !== 'workspace'
-    )
-      return
-
-    if (status.status === 'rejected')
-      reportError(status.reason, {
+async function readLocalGrantStatus(
+  scope: string,
+  readId: number
+): Promise<void> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let published: boolean
+    try {
+      published = await refreshWorkspaceStatusFresh()
+    } catch (error) {
+      if (!isCurrentLocalGrantBillingRead(scope, readId)) return
+      verifiedLocalGrantStatusScope.value = null
+      reportError(error, {
         surface: 'agent',
         errorType: 'error_refreshing_agent_billing_status'
       })
-    if (balance.status === 'rejected')
-      reportError(balance.reason, {
-        surface: 'agent',
-        errorType: 'error_refreshing_agent_billing_balance'
-      })
-    if (status.status === 'fulfilled' && status.value)
+      return
+    }
+    if (!isCurrentLocalGrantBillingRead(scope, readId)) return
+    if (published) {
       verifiedLocalGrantStatusScope.value = scope
+      return
+    }
+    verifiedLocalGrantStatusScope.value = null
+  }
+}
+
+function refreshLocalGrantBilling(scope: string): void {
+  const readId = ++localGrantBillingReadId
+  if (billingType.value !== 'workspace') {
+    verifiedLocalGrantStatusScope.value = null
+    return
+  }
+
+  void readLocalGrantStatus(scope, readId)
+  void refreshBillingBalance({ fresh: true }).catch((error: unknown) => {
+    if (!isCurrentLocalGrantBillingRead(scope, readId)) return
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'error_refreshing_agent_billing_balance'
+    })
   })
 }
 
@@ -1982,7 +2006,10 @@ async function consentAllowsSubmission(
 
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
-  onSubmit: agentPanelStore.retainWorkflowTarget,
+  onSubmit: () => {
+    agentPanelStore.retainWorkflowTarget()
+    rereadLocalGrantArm()
+  },
   target: () => selectedTarget.value,
   editableWorkflowId: () => editableWorkflowId.value,
   selection: {
@@ -2523,7 +2550,8 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
           :can-top-up="canTopUp"
           @add-credits="
             app.extensionManager.dialog.showTopUpCreditsDialog({
-              isInsufficientCredits: false
+              isInsufficientCredits: false,
+              source: 'agent_paywall'
             })
           "
         />

@@ -13,6 +13,7 @@ import { effectScope, ref } from 'vue'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { useAuthStore } from '@/stores/authStore'
 
+import { useLocalAgentGrantReadStore } from './localAgentGrantReadStore'
 import { useLocalAgentGrant } from './useLocalAgentGrant'
 
 vi.mock(import('firebase/auth'))
@@ -201,18 +202,155 @@ describe('useLocalAgentGrant', () => {
     expect(arm.value).toBe('unknown')
   })
 
-  it('aborts an outstanding request when its owner unmounts', async () => {
+  it('keeps the same assignment request across an Agent panel remount', async () => {
     const response = deferred<Response>()
     vi.mocked(fetch).mockReturnValueOnce(response.promise)
-    const { arm, stop } = start()
+    const { arm, scope, stop } = start()
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
     const signal = vi.mocked(fetch).mock.calls[0][1]?.signal
 
     stop()
     response.resolve(Response.json({ agent_gratis_local_arm: 'treatment' }))
+    await vi.waitFor(() => expect(arm.value).toBe('treatment'))
+    const reopened = start(scope)
+
+    expect(signal?.aborted).toBe(false)
+    expect(reopened.arm.value).toBe('treatment')
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it('retries a temporary failure once after two seconds and then stops', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    vi.mocked(fetch)
+      .mockRejectedValueOnce(new TypeError('offline'))
+      .mockRejectedValueOnce(new TypeError('offline'))
+    const { arm } = start()
+
+    await setImmediate()
+    expect(fetch).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(1_999)
+    expect(fetch).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(arm.value).toBe('unknown')
+  })
+
+  it('rereads after the cooldown on reopening, without resetting the retry budget', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const clock = vi.spyOn(performance, 'now')
+    clock.mockReturnValueOnce(0).mockReturnValueOnce(2_000)
+    vi.mocked(fetch)
+      .mockRejectedValueOnce(new TypeError('offline'))
+      .mockRejectedValueOnce(new TypeError('offline'))
+      .mockResolvedValueOnce(
+        Response.json({ agent_gratis_local_arm: 'treatment' })
+      )
+    const { scope, stop } = start()
+
+    await setImmediate()
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    stop()
+    clock.mockReturnValue(31_999)
+    const early = start(scope)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    early.stop()
+    clock.mockReturnValue(32_000)
+    const reopened = start(scope)
+    await vi.waitFor(() => expect(reopened.arm.value).toBe('treatment'))
+    expect(fetch).toHaveBeenCalledTimes(3)
+    reopened.rereadIfFailed()
+    expect(fetch).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not retry a successful unknown assignment', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({}))
+    const { arm, scope, stop } = start()
+
+    await setImmediate()
+    await vi.advanceTimersByTimeAsync(60_000)
+    stop()
+    start(scope)
+    expect(arm.value).toBe('unknown')
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it.for([
+    {
+      label: 'unauthorized',
+      response: () => new Response(null, { status: 401 })
+    },
+    { label: 'malformed', response: () => new Response('{') }
+  ])('does not automatically retry a $label response', async ({ response }) => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    vi.mocked(fetch).mockResolvedValueOnce(response())
+    const { arm } = start()
+
+    await setImmediate()
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(arm.value).toBe('unknown')
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it('cancels a scheduled retry when the account scope changes', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    vi.mocked(fetch)
+      .mockRejectedValueOnce(new TypeError('offline'))
+      .mockResolvedValueOnce(
+        Response.json({ agent_gratis_local_arm: 'control' })
+      )
+    const { arm, scope } = start()
+
+    await setImmediate()
+    scope.value = 'account-b/workspace-b/0'
+    await setImmediate()
+    await vi.advanceTimersByTimeAsync(2_000)
+
+    expect(arm.value).toBe('control')
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not retry an aborted request after the store is disposed', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    vi.mocked(fetch).mockImplementationOnce(
+      (_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('Aborted', 'AbortError'))
+          })
+        })
+    )
+    const { arm } = start()
     await setImmediate()
 
-    expect(signal?.aborted).toBe(true)
+    useLocalAgentGrantReadStore().$dispose()
+    await setImmediate()
+    await vi.advanceTimersByTimeAsync(2_000)
+
     expect(arm.value).toBe('unknown')
+    expect(fetch).toHaveBeenCalledOnce()
   })
 })
