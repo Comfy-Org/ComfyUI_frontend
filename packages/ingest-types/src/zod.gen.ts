@@ -84,9 +84,10 @@ export const zReleaseUnsupportedPack = z.object({
 })
 
 /**
- * The declared packs that failed to import on the build of the editor's Release, in the order the build declared them.
+ * The declared packs that failed to import on the build of the editor's Release, in the order the build declared them, and which Release that is.
  */
 export const zReleaseUnsupportedPacks = z.object({
+  release_id: z.string().nullable(),
   packs: z.array(zReleaseUnsupportedPack)
 })
 

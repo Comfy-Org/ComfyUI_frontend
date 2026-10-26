@@ -154,9 +154,13 @@ export type ReleaseUnsupportedPack = {
 }
 
 /**
- * The declared packs that failed to import on the build of the editor's Release, in the order the build declared them.
+ * The declared packs that failed to import on the build of the editor's Release, in the order the build declared them, and which Release that is.
  */
 export type ReleaseUnsupportedPacks = {
+  /**
+   * The Release whose build the packs were read for, the same id as a deployment's release_id in GET /api/workspaces/{id}/deployments. The route answers for the Release the deployment runs now, so an editor that booted on an earlier Release compares this id with its own and ignores the packs when they differ. Null when no Release's build was read: Comfy Cloud, the rollout flag off, or comfy-builder could not be read.
+   */
+  release_id: string | null
   packs: Array<ReleaseUnsupportedPack>
 }
 

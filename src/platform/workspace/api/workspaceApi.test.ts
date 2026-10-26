@@ -422,8 +422,9 @@ describe('workspaceApi', () => {
       }
     )
 
-    it('getReleaseUnsupportedPacks() sends GET /release/unsupported-packs and reads the packs', async () => {
+    it('getReleaseUnsupportedPacks() sends GET /release/unsupported-packs and reads the packs and their release', async () => {
       const data = {
+        release_id: 'release-2',
         packs: [
           {
             folder: 'ComfyUI-NVIDIA-VFX',
