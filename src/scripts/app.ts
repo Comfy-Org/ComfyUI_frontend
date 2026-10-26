@@ -788,7 +788,13 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('executed', ({ detail }) => {
-      if (!useExecutionStore().belongsToActiveWorkflow(detail.prompt_id)) return
+      if (
+        !useExecutionStore().belongsToActiveWorkflow(
+          detail.prompt_id,
+          detail.workflow_id
+        )
+      )
+        return
       const nodeOutputStore = useNodeOutputStore()
       const executionId = tryNormalizeNodeExecutionId(
         detail.display_node || detail.node
@@ -823,14 +829,14 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
-      const { blob, displayNodeId, jobId } = detail
+      const { blob, displayNodeId, jobId, workflowId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
       const displayNodeExecutionId = tryNormalizeNodeExecutionId(displayNodeId)
       if (!displayNodeExecutionId) return
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
-      if (!useExecutionStore().belongsToActiveWorkflow(jobId)) {
+      if (!useExecutionStore().belongsToActiveWorkflow(jobId, workflowId)) {
         releaseSharedObjectUrl(blobUrl)
         return
       }

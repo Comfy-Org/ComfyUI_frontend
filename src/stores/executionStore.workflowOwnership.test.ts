@@ -153,6 +153,32 @@ describe('executionStore workflow ownership', () => {
       ).toBe(true)
     })
 
+    it('reaches the gate from a real progress_state frame', async () => {
+      // The store API is not the only caller: the handlers must forward the
+      // stamped id, or the leg is only reachable from tests.
+      fire('progress_state', {
+        prompt_id: 'job-elsewhere',
+        workflow_id: 'other-graph',
+        nodes: {
+          '1': {
+            value: 3,
+            max: 10,
+            state: 'running',
+            node_id: '1',
+            prompt_id: 'job-elsewhere'
+          }
+        }
+      })
+      await vi.waitFor(() =>
+        expect(store.nodeProgressStatesByJob['job-elsewhere']).toBeDefined()
+      )
+
+      expect(
+        store.nodeProgressStates['1'],
+        "a frame stamped with another graph's id does not reach the visible tab"
+      ).toBeUndefined()
+    })
+
     it('loses to the session path when the two disagree', () => {
       store.ensureSessionWorkflowPath('job-b', workflowB.path)
 

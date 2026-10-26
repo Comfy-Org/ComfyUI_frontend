@@ -559,7 +559,7 @@ export const useExecutionStore = defineStore('execution', () => {
       executionStartedAt: queuedJobs.value[jobId].executionStartedAt
     })
 
-    if (!belongsToActiveWorkflow(jobId)) {
+    if (!belongsToActiveWorkflow(jobId, e.detail.workflow_id)) {
       reportAmbiguousExecutionStartRejection(jobId)
       return
     }
@@ -714,8 +714,8 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function applyProgressState(detail: ProgressStateWsMessage) {
-    const { nodes, prompt_id: jobId } = detail
-    const isOwned = belongsToActiveWorkflow(jobId)
+    const { nodes, prompt_id: jobId, workflow_id: workflowId } = detail
+    const isOwned = belongsToActiveWorkflow(jobId, workflowId)
 
     if (isOwned) {
       revokeStartedNodePreviews(

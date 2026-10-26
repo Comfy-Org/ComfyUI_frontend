@@ -1,10 +1,19 @@
 import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
+import type { WorkflowId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { TaskStatus } from '@/platform/tasks/services/taskSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 
 export type JobId = string
+
+/**
+ * Stamped by the server onto every frame carrying a `prompt_id`, from the
+ * `workflow_metadata` the client sent or from `extra_pnginfo.workflow.id`
+ * (ComfyUI#16763). Optional because `status` and `logs` frames have no
+ * `prompt_id`, and an older server sends it nowhere.
+ */
+type StampedWorkflowId = { workflow_id?: WorkflowId }
 
 export const zResultItem = z.object({
   filename: z.string().optional(),
@@ -39,7 +48,7 @@ export interface StatusWsMessage {
   status?: StatusWsMessageStatus | null
   sid?: string | null
 }
-export interface ProgressWsMessage {
+export interface ProgressWsMessage extends StampedWorkflowId {
   value: number
   max: number
   prompt_id: JobId
@@ -55,11 +64,11 @@ export interface NodeProgressState {
   parent_node_id?: NodeId
   real_node_id?: NodeId
 }
-export interface ProgressStateWsMessage {
+export interface ProgressStateWsMessage extends StampedWorkflowId {
   prompt_id: JobId
   nodes: Record<NodeId, NodeProgressState>
 }
-export interface ExecutingWsMessage {
+export interface ExecutingWsMessage extends StampedWorkflowId {
   node: NodeId | null
   display_node?: NodeId
   prompt_id: JobId
@@ -70,7 +79,7 @@ export interface ExecutedWsMessage extends ExecutingWsMessage {
   output: NodeExecutionOutput
   merge?: boolean
 }
-interface ExecutionWsMessageBase {
+interface ExecutionWsMessageBase extends StampedWorkflowId {
   prompt_id: JobId
   timestamp: number
 }
