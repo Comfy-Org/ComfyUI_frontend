@@ -120,7 +120,9 @@ that direct write.
 
 If you override `setValue`, accept the `WidgetValueOptions` type: `e` is never
 set for these calls, and `canvas` can be missing too. Don't read `options.e`
-or `options.canvas` without checking them first.
+or `options.canvas` without checking them first. A wrapper that calls the
+original `setValue` with only the value still works: the options default to
+`{ node: widget.node }`.
 
 `callback` and `onWidgetChanged` now receive the value the widget accepted, not
 the value the Agent sent. A number widget clamps to `min`/`max` and converts a

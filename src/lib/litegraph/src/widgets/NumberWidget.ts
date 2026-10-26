@@ -38,7 +38,7 @@ export class NumberWidget
     this.setValue(this.value - getWidgetStep(this.options), options)
   }
 
-  override setValue(value: number, options: WidgetValueOptions) {
+  override setValue(value: number, options?: WidgetValueOptions) {
     let newValue = value
     if (this.options.min != null && newValue < this.options.min) {
       newValue = this.options.min

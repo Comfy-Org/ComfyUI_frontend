@@ -736,7 +736,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   setValue(
     value: TWidget['value'],
-    { e, node, canvas }: WidgetValueOptions
+    { e, node, canvas }: WidgetValueOptions = { node: this.node }
   ): void {
     const oldValue = this.value
     if (value === this.value) return
