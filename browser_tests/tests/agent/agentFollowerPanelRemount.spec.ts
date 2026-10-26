@@ -60,11 +60,22 @@ test.describe(
         expect(await agent.settledCanvasNodeIds()).toEqual(
           [retainedNodeId, missedNodeId, liveNodeId].map(String).sort()
         )
-        expect(
-          agent.hostSocket
-            .clientDocFrames()
-            .filter(({ type }) => type === 'doc_ops' || type === 'doc_reseed')
-        ).toEqual([])
+        let cleanDocFrameSamples = 0
+        await expect
+          .poll(
+            () => {
+              const docFrameCount = agent.hostSocket
+                .clientDocFrames()
+                .filter(
+                  ({ type }) => type === 'doc_ops' || type === 'doc_reseed'
+                ).length
+              cleanDocFrameSamples =
+                docFrameCount === 0 ? cleanDocFrameSamples + 1 : 0
+              return cleanDocFrameSamples
+            },
+            { intervals: [250, 250, 250, 250], timeout: 2_000 }
+          )
+          .toBe(5)
         expect(agent.hostSocket.subscribeCount()).toBe(2)
       })
     })
