@@ -12,7 +12,6 @@ import {
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
-import { GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
 import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
   LGraphCanvas,
