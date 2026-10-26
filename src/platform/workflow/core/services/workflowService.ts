@@ -427,7 +427,12 @@ export const useWorkflowService = () => {
         return false
       beforeLoadNewGraph(true)
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-      if (workflow.graph !== graph) return false
+      if (workflow.graph !== graph) {
+        useNodeOutputStore().restorePreviewsForWorkflow(
+          getActiveWorkflow()?.path
+        )
+        return false
+      }
       const app = useApp()
       useSubgraphNavigationStore().suppressRootGraphHash(graph)
       app.activateRootGraph(graph)

@@ -44,6 +44,7 @@ import type { AppMode } from '@/utils/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@/utils/uuid'
 import { t } from '@/i18n'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
@@ -613,6 +614,60 @@ describe('useWorkflowService', () => {
             skipAssetScans: false
           })
         )
+      }
+    )
+
+    it.for([
+      {
+        exit: 'the refetch fails',
+        status: 404,
+        currentAfterFetch: true,
+        expected:
+          "Error: Failed to load file 'workflows/next.json': 404 Not Found"
+      },
+      {
+        exit: 'the refetch is superseded',
+        status: 200,
+        currentAfterFetch: false,
+        expected: false
+      }
+    ])(
+      'keeps the visible previews when $exit after a refused switch',
+      async ({ status, currentAfterFetch, expected }) => {
+        const outputs = useNodeOutputStore()
+        Object.assign(useWorkflowStore(), { openWorkflows: [previous, next] })
+        const locator = createNodeLocatorId(null, 7)
+        outputs.setNodePreviewsByLocatorId(locator, ['blob:visible-preview'])
+        const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL')
+        let current = true
+        useExtensionStore().registerExtension({
+          name: 'Test.ReleaseDuringSwitch',
+          beforeLoadGraph: async () => {
+            await Promise.resolve()
+            next.unload()
+          }
+        })
+        vi.spyOn(api, 'getUserData').mockImplementation(async () => {
+          current = currentAfterFetch
+          return new Response(JSON.stringify(makeWorkflowData()), {
+            status,
+            statusText: 'Not Found'
+          })
+        })
+
+        const result = await useWorkflowService()
+          .openWorkflow(next, { isCurrent: () => current })
+          .catch(String)
+
+        expect(result).toBe(expected)
+        expect(useWorkflowStore().activeWorkflow?.path).toBe(previous.path)
+        expect(app.loadGraphData).not.toHaveBeenCalled()
+        expect(outputs.nodePreviewImages[locator]).toEqual([
+          'blob:visible-preview'
+        ])
+        expect(app.nodePreviewImages[locator]).toEqual(['blob:visible-preview'])
+        expect(revokeObjectURL).not.toHaveBeenCalled()
+        outputs.resetAllOutputsAndPreviews()
       }
     )
 
