@@ -186,10 +186,9 @@ export function useFeatureFlags() {
       )
     },
     get deploymentStartEnabled() {
-      return resolveFlag(
+      return resolveStrictBooleanFlag(
         ServerFeatureFlag.DEPLOYMENT_START_ENABLED,
-        remoteConfig.value.deployment_start_enabled,
-        false
+        remoteConfig.value.deployment_start_enabled
       )
     },
     get partnerNodeTokenEnabled() {

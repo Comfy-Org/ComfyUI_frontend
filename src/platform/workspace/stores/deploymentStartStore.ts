@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { shallowRef, watch } from 'vue'
 
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
   DeploymentStartOutcome,
@@ -22,28 +23,44 @@ const REFUSALS_BY_STATUS = new Map<number, DeploymentStartRefusal>([
   [501, 'unavailable']
 ])
 
+function refusalFor(err: WorkspaceApiError): DeploymentStartRefusal {
+  if (err.status === 429 && err.code === undefined) return 'failed'
+  return (
+    (err.status !== undefined && REFUSALS_BY_STATUS.get(err.status)) || 'failed'
+  )
+}
+
 async function startDeployment(
   workspaceId: string,
   deploymentId: string
 ): Promise<DeploymentStartOutcome> {
   try {
-    await workspaceApi.startDeployment(workspaceId, deploymentId)
-    return { ok: true }
+    const started = await workspaceApi.startDeployment(
+      workspaceId,
+      deploymentId
+    )
+    return { ok: true, status: started.status }
   } catch (err) {
     if (!(err instanceof WorkspaceApiError)) {
+      reportError(err, {
+        surface: 'workspace',
+        errorType: 'error_starting_deployment'
+      })
       return { ok: false, reason: 'failed', message: null }
     }
-    const reason =
-      (err.status !== undefined && REFUSALS_BY_STATUS.get(err.status)) ||
-      'failed'
-    return { ok: false, reason, message: err.message || null }
+    return {
+      ok: false,
+      reason: refusalFor(err),
+      message: err.code === undefined ? null : err.message || null
+    }
   }
 }
 
 /**
  * The Starts this page asked for (DES-1279). A Start ends when the listing
  * shows the deployment ready, or when the server refuses it or it fails to
- * come up; the listing is refreshed after the server takes one.
+ * come up. A taken Start counts only once a listing asked for after it has
+ * landed, so a listing sent before it cannot read as a failure.
  */
 export const useDeploymentStartStore = defineStore('deploymentStart', () => {
   const pickStore = useDeploymentPickStore()
@@ -67,8 +84,8 @@ export const useDeploymentStartStore = defineStore('deploymentStart', () => {
     if (current && current.phase !== 'refused') return
     dispatch({ type: 'requested', deploymentId })
     const outcome = await startDeployment(workspaceId, deploymentId)
-    dispatch({ type: 'answered', deploymentId, outcome })
     if (outcome.ok) await pickStore.load()
+    dispatch({ type: 'answered', deploymentId, outcome })
   }
 
   return { starts, start }

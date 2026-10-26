@@ -32,7 +32,6 @@ interface MarkedRow {
   mark: DeploymentCompatibilityMark | null
 }
 
-/** Why a Start did not happen, said under the deployment's row. */
 interface DeploymentStartProblem {
   summary: string
   message: string | null

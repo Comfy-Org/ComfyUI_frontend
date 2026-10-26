@@ -4184,7 +4184,9 @@
       "failed": "Retry, or check it on the Developer Platform."
     },
     "pickStopped": "{deployment} is stopped, so jobs won't run. Start it, or pick a ready deployment.",
-    "stoppedStartTooltip": "Running on {deployment}. It's stopped, so jobs won't run. Open this menu to start it."
+    "pickFailed": "{deployment} failed, so jobs won't run. Start it again, or pick a ready deployment.",
+    "stoppedStartTooltip": "Running on {deployment}. It's stopped, so jobs won't run. Open this menu to start it.",
+    "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again."
   },
   "selectionToolbox": {
     "executeButton": {

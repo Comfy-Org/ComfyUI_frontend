@@ -49,9 +49,23 @@ describe('reduceDeploymentStarts', () => {
       after: { phase: 'requested' }
     },
     {
-      name: 'the server takes the Start',
+      name: 'the server takes the Start and says it is on its way',
       before: { phase: 'requested' },
-      event: { type: 'answered', deploymentId: ID, outcome: { ok: true } },
+      event: {
+        type: 'answered',
+        deploymentId: ID,
+        outcome: { ok: true, status: 'starting' }
+      },
+      after: { phase: 'accepted', seenStarting: true }
+    },
+    {
+      name: 'the server takes the Start before it is on its way',
+      before: { phase: 'requested' },
+      event: {
+        type: 'answered',
+        deploymentId: ID,
+        outcome: { ok: true, status: 'stopped' }
+      },
       after: { phase: 'accepted', seenStarting: false }
     },
     {
@@ -67,7 +81,11 @@ describe('reduceDeploymentStarts', () => {
     {
       name: 'an answer nobody is waiting for',
       before: undefined,
-      event: { type: 'answered', deploymentId: ID, outcome: { ok: true } },
+      event: {
+        type: 'answered',
+        deploymentId: ID,
+        outcome: { ok: true, status: 'starting' }
+      },
       after: undefined
     },
     {
@@ -89,6 +107,12 @@ describe('reduceDeploymentStarts', () => {
       after: { phase: 'refused', reason: 'failed', message: null }
     },
     {
+      name: 'it settles on neither starting nor stopped after starting',
+      before: { phase: 'accepted', seenStarting: true },
+      event: listedAs('unhealthy'),
+      after: { phase: 'refused', reason: 'failed', message: null }
+    },
+    {
       name: 'it is ready',
       before: { phase: 'accepted', seenStarting: true },
       event: listedAs('ready'),
@@ -98,6 +122,12 @@ describe('reduceDeploymentStarts', () => {
       name: 'a refused one is started elsewhere and is ready',
       before: { phase: 'refused', reason: 'tooManyRunning', message: null },
       event: listedAs('ready'),
+      after: undefined
+    },
+    {
+      name: 'a refused one is started elsewhere',
+      before: { phase: 'refused', reason: 'tooManyRunning', message: null },
+      event: listedAs('starting'),
       after: undefined
     },
     {
@@ -150,6 +180,12 @@ describe('deploymentRowAction', () => {
       status: 'stopped',
       start: { phase: 'refused', reason: 'unavailable', message: null },
       offered: true,
+      action: 'open'
+    },
+    {
+      status: 'stopped',
+      start: { phase: 'refused', reason: 'noCredits', message: null },
+      offered: false,
       action: 'open'
     }
   ] satisfies {

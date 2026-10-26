@@ -36,20 +36,9 @@
       >
         {{ deployment }}
       </span>
-      <span
-        ref="detailCell"
-        :class="
-          cn(
-            'flex w-14 shrink-0 truncate tabular-nums',
-            tone === 'failed' && !switching
-              ? 'text-warning'
-              : 'text-muted-foreground'
-          )
-        "
-      >
+      <span v-if="showsAction" class="flex min-w-14 shrink-0">
         <span
-          v-if="showsAction"
-          class="flex h-6 items-center rounded-md bg-accent px-2.5 text-foreground group-data-highlighted:bg-muted"
+          class="flex h-6 items-center rounded-md bg-accent px-2.5 whitespace-nowrap text-foreground group-data-highlighted:bg-muted"
           aria-hidden="true"
         >
           {{ actionLabel }}
@@ -59,9 +48,9 @@
             aria-hidden="true"
           />
         </span>
-        <template v-else>{{
-          switching ? $t('deploymentSwitcher.switching') : detail
-        }}</template>
+      </span>
+      <span v-else ref="detailCell" :class="detailClass">
+        {{ switching ? $t('deploymentSwitcher.switching') : detail }}
       </span>
       <span :class="switcherTrailingSlotClass">
         <i
@@ -148,6 +137,12 @@ const emit = defineEmits<{
 const noteId = useId()
 
 const showsAction = computed(() => actionLabel !== null && !switching)
+const detailClass = computed(() =>
+  cn(
+    'w-14 shrink-0 truncate tabular-nums',
+    tone === 'failed' && !switching ? 'text-warning' : 'text-muted-foreground'
+  )
+)
 
 const titleText = useTemplateRef<HTMLElement>('titleText')
 const deploymentText = useTemplateRef<HTMLElement>('deploymentText')

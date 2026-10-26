@@ -10,13 +10,13 @@ export type DeploymentStartRefusal =
 
 /** What asking the server to start a deployment did. */
 export type DeploymentStartOutcome =
-  | { ok: true }
+  | { ok: true; status: string }
   | { ok: false; reason: DeploymentStartRefusal; message: string | null }
 
 /**
  * A Start this page asked for: `requested` while the request is in flight,
- * `accepted` once the server took it (`seenStarting` after a listing showed
- * it on its way), `refused` with the server's reason.
+ * `accepted` once the server took it (`seenStarting` once the server or a
+ * listing showed it on its way), `refused` with the server's reason.
  */
 export type DeploymentStart =
   | { phase: 'requested' }
@@ -46,9 +46,12 @@ function afterListing(
   status: string
 ): DeploymentStart | null {
   if (status === 'ready') return null
+  if (start.phase === 'refused') {
+    return STARTABLE_STATUSES.has(status) ? start : null
+  }
   if (start.phase !== 'accepted') return start
   if (STARTING_STATUSES.has(status)) return { ...start, seenStarting: true }
-  if (start.seenStarting && STARTABLE_STATUSES.has(status)) {
+  if (start.seenStarting) {
     return { phase: 'refused', reason: 'failed', message: null }
   }
   return start
@@ -84,7 +87,10 @@ export function reduceDeploymentStarts(
       return new Map(starts).set(
         event.deploymentId,
         outcome.ok
-          ? { phase: 'accepted', seenStarting: false }
+          ? {
+              phase: 'accepted',
+              seenStarting: STARTING_STATUSES.has(outcome.status)
+            }
           : {
               phase: 'refused',
               reason: outcome.reason,
@@ -101,7 +107,7 @@ export function reduceDeploymentStarts(
  * What choosing a row does: only a ready deployment is picked. A stopped or
  * failed one is started when Start is offered, else it opens on the Developer
  * Platform. A refused Start is retried, or opened there when this editor cannot
- * start it.
+ * start it or Start is no longer offered.
  */
 export function deploymentRowAction(
   status: string,
@@ -109,7 +115,7 @@ export function deploymentRowAction(
   { startOffered }: { startOffered: boolean }
 ): DeploymentRowAction {
   if (start?.phase === 'refused') {
-    return start.reason === 'unavailable' ? 'open' : 'retry'
+    return start.reason === 'unavailable' || !startOffered ? 'open' : 'retry'
   }
   if (start) return 'none'
   if (pendingServerFact('BE-24332', status === 'ready')) return 'pick'
