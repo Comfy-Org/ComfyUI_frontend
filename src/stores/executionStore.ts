@@ -1008,6 +1008,13 @@ export const useExecutionStore = defineStore('execution', () => {
   function forgetFinishedJobs(jobIds: Iterable<JobId>) {
     for (const jobId of jobIds) {
       if (jobId === activeJobId.value || !(jobId in queuedJobs.value)) continue
+      // Before forgetJob, which drops the jobId→workflow entry this needs.
+      // handleExecutionStart set the tab to running and only a terminal frame
+      // clears it, so without this the badge claims the tab is still running
+      // for the rest of the session. Not inside forgetJob: that also runs on a
+      // normal completion, which has a 'completed' status to keep.
+      const workflow = jobIdToWorkflow.get(jobId)
+      if (workflow) clearWorkflowStatus(workflow)
       forgetJob(jobId)
     }
   }

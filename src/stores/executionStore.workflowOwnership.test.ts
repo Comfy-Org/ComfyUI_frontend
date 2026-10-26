@@ -34,13 +34,26 @@ function promptNode() {
   return { inputs: {}, class_type: 'TestNode', _meta: { title: 'Node' } }
 }
 
+/**
+ * Register tabs through the real store, so `isOpen` and `openWorkflows` are the
+ * production implementations. A hand-built double would keep passing if
+ * `isOpen` changed what it keys on, and `applyWorkflowStatus` refuses to record
+ * a status for a workflow the store does not consider open.
+ */
+function openTabs(...workflows: LoadedComfyWorkflow[]) {
+  const workflowStore = useWorkflowStore()
+  for (const wf of workflows) {
+    if (workflowStore.isOpen(wf)) continue
+    workflowStore.attachWorkflow(wf, workflowStore.openWorkflows.length)
+  }
+}
+
 describe('executionStore workflow ownership', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    const workflowStore = useWorkflowStore()
-    Object.assign(workflowStore, { openWorkflows: [workflowA, workflowB] })
-    workflowStore.activeWorkflow = workflowA
+    openTabs(workflowA, workflowB)
+    useWorkflowStore().activeWorkflow = workflowA
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
