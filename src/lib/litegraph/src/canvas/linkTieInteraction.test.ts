@@ -239,6 +239,47 @@ describe('tie visibility', () => {
     expect(findLinkTieAtPoint(canvas, graph, TIE_AT)).toBeUndefined()
     expect(tiePos(scope, tie)).toEqual(TIE_AT)
   })
+
+  it.for([
+    { rerouted: 1, shown: true },
+    { rerouted: 2, shown: false }
+  ])(
+    'with $rerouted of two tied links rerouted, shows the tie: $shown',
+    ({ rerouted, shown }) => {
+      const graph = new LGraph()
+      const origin = addNode(graph, 'Origin', 0, 0)
+      const target = addNode(graph, 'Target', 300, 0)
+      for (const slot of ['a', 'b']) {
+        origin.addOutput(slot, '*')
+        target.addInput(slot, '*')
+      }
+      const links = [0, 1].map((slot) => {
+        const link = origin.connect(slot, target, slot)
+        assert.exists(link)
+        return link
+      })
+      const canvas = createCanvas(graph)
+      canvas.visible_area.set([-100, -100, 1000, 800])
+      useLinkTieStore().addTie(graphScopeOf(graph), {
+        pos: TIE_AT,
+        angle: TIE_ANGLE,
+        linkIds: links.map((link) => link.id)
+      })
+      for (const link of links.slice(0, rerouted)) {
+        graph.createReroute([150, 200], link)
+      }
+      const ctx = drawCtx()
+
+      canvas.drawConnections(ctx)
+
+      expect(
+        vi.mocked(ctx.rotate).mock.calls.some(([angle]) => angle === TIE_ANGLE)
+      ).toBe(shown)
+      expect(findLinkTieAtPoint(canvas, graph, TIE_AT) !== undefined).toBe(
+        shown
+      )
+    }
+  )
 })
 
 describe('renderTiedLink', () => {

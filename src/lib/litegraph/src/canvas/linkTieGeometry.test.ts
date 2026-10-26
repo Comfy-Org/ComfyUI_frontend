@@ -5,8 +5,8 @@ import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import type { LinkId } from '@/types/linkId'
-import { toLinkTieId } from '@/types/linkTie'
 import type { LinkTie } from '@/types/linkTie'
+import { toLinkTieId } from '@/types/linkTieId'
 
 import {
   findLinkTieAt,

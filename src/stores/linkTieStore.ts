@@ -7,8 +7,9 @@ import type {
   RootGraphId
 } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
-import { toLinkTieId } from '@/types/linkTie'
-import type { LinkTie, LinkTieDraft, LinkTieId } from '@/types/linkTie'
+import type { LinkTie, LinkTieDraft } from '@/types/linkTie'
+import { toLinkTieId } from '@/types/linkTieId'
+import type { LinkTieId } from '@/types/linkTieId'
 
 interface OwnedTies {
   readonly ties: readonly LinkTie[]

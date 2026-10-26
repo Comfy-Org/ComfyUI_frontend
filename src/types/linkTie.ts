@@ -1,12 +1,7 @@
 import { z } from 'zod'
 
 import type { LinkId } from '@/types/linkId'
-
-export type LinkTieId = number & { readonly __brand: 'LinkTieId' }
-
-export function toLinkTieId(value: number): LinkTieId {
-  return value as LinkTieId
-}
+import type { LinkTieId } from '@/types/linkTieId'
 
 /** A tie that holds links side by side, in graph space; `linkIds` is the strand order. */
 export interface LinkTie {

@@ -91,7 +91,7 @@ function linkTiesShown(canvas: LGraphCanvas): boolean {
   return canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK
 }
 
-/** The graph's ties with at least one member link drawn in the canvas's last frame. */
+/** The graph's ties with at least one member link drawn through them in the canvas's last frame. */
 export function getVisibleLinkTies(
   canvas: LGraphCanvas,
   graph: LGraph
@@ -103,7 +103,11 @@ export function getVisibleLinkTies(
     .filter((tie) =>
       tie.linkIds.some((linkId) => {
         const link = graph.links.get(linkId)
-        return link !== undefined && renderedPaths.has(link)
+        return (
+          link !== undefined &&
+          link.parentId === undefined &&
+          renderedPaths.has(link)
+        )
       })
     )
 }
