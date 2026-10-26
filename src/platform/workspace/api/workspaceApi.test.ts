@@ -422,6 +422,34 @@ describe('workspaceApi', () => {
       }
     )
 
+    it('getReleaseUnsupportedPacks() sends GET /release/unsupported-packs and reads the packs', async () => {
+      const data = {
+        packs: [
+          {
+            folder: 'ComfyUI-NVIDIA-VFX',
+            registryId: 'comfyui-nvidia-vfx',
+            repository: 'https://github.com/NVIDIA/ComfyUI-NVIDIA-VFX',
+            cause: 'needs a GPU'
+          }
+        ]
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getReleaseUnsupportedPacks()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/release/unsupported-packs',
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getReleaseUnsupportedPacks() rejects a body without packs', async () => {
+      mockAxiosInstance.get.mockResolvedValue({ data: { items: [] } })
+
+      await expect(workspaceApi.getReleaseUnsupportedPacks()).rejects.toThrow()
+    })
+
     it('pickDeployment() sends PUT /workspaces/:id/deployment with the deployment', async () => {
       mockAxiosInstance.put.mockResolvedValue({})
 
