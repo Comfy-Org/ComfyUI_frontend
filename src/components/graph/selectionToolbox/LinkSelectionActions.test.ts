@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import LinkSelectionActions from '@/components/graph/selectionToolbox/LinkSelectionActions.vue'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import {
   selectLinksInMarquee,
   selectSlotLinks
@@ -17,7 +18,10 @@ import enMain from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
+import {
+  createMockCanvas,
+  createTestDragAndScale
+} from '@/utils/__tests__/canvasTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -25,7 +29,13 @@ const i18n = createI18n({
   messages: { en: { ...enMain, commands: enCommands } }
 })
 
-function createWorkflow() {
+function createWorkflow(
+  ds: Pick<DragAndScale, 'getViewportSize' | 'fitToBounds' | 'scale'> = {
+    getViewportSize: () => [800, 600],
+    fitToBounds: vi.fn(),
+    scale: 1
+  }
+) {
   const graph = new LGraph()
   const source = createTestNode(graph, [], ['number'], 'Load Checkpoint')
   const targets = ['Positive', 'Negative'].map((title, index) => {
@@ -39,11 +49,7 @@ function createWorkflow() {
     if (!link) throw new Error('connect failed')
     return link
   })
-  const canvas = createMockCanvas({
-    graph,
-    ds: { getViewportSize: () => [800, 600], fitToBounds: vi.fn(), scale: 1 },
-    animateToBounds: vi.fn()
-  })
+  const canvas = createMockCanvas({ graph, ds, animateToBounds: vi.fn() })
   useCanvasStore().canvas = canvas
   return { graph, source, targets, links, canvas }
 }
@@ -107,6 +113,8 @@ describe('LinkSelectionActions', () => {
       zoom: 0,
       viewport: [0, 0, 800, 600]
     })
+    expect(canvas.ds.fitToBounds).not.toHaveBeenCalled()
+    expect(canvas.setDirty).not.toHaveBeenCalled()
     const menuButton = await screen.findByRole('button', {
       name: 'Go to a linked node'
     })
@@ -152,8 +160,35 @@ describe('LinkSelectionActions', () => {
     expect(items[1]).toHaveAccessibleName(`Positive #${targets[0].id}`)
   })
 
-  it('moves the view in one step when animations are turned off', async () => {
-    const { graph, source, targets, canvas } = createWorkflow()
+  it.for([
+    { name: 'bigger than the view', height: 2000 },
+    { name: 'too big to leave room for the menu', height: 520 }
+  ])(
+    'centres the landing socket when the node is $name',
+    async ({ height }) => {
+      const { graph, source, targets, canvas } = createWorkflow()
+      source.size = [300, height]
+      source.updateArea()
+      clickSocket(graph, targets[0], 'input')
+      const { user } = renderActions()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Go to Load Checkpoint' })
+      )
+
+      const [x, y] = source.getOutputPos(0)
+      expect(canvas.animateToBounds).toHaveBeenCalledWith(
+        [x, y, 0, 0],
+        expect.anything()
+      )
+    }
+  )
+
+  it('centres the source at the current zoom in one step when animations are turned off', async () => {
+    const ds = createTestDragAndScale()
+    ds.scale = 1.7
+    ds.offset = [13, 29]
+    const { graph, source, targets, canvas } = createWorkflow(ds)
     useSettingStore().settingValues['Comfy.Appearance.DisableAnimations'] = true
     clickSocket(graph, targets[0], 'input')
     const { user } = renderActions()
@@ -162,11 +197,16 @@ describe('LinkSelectionActions', () => {
       screen.getByRole('button', { name: 'Go to Load Checkpoint' })
     )
 
-    expect(canvas.ds.fitToBounds).toHaveBeenCalledWith(
-      source.boundingRect,
-      expect.anything()
-    )
+    const [x, y, width, height] = source.boundingRect
+    const [centreX, centreY] = ds.convertOffsetToCanvas([
+      x + width / 2,
+      y + height / 2
+    ])
+    expect(ds.scale).toBe(1.7)
+    expect(centreX).toBeCloseTo(400)
+    expect(centreY).toBeCloseTo(300)
     expect(canvas.animateToBounds).not.toHaveBeenCalled()
+    expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
   })
 
   it('moves the view in one step when the OS asks for reduced motion', async () => {

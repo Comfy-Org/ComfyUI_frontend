@@ -13,7 +13,6 @@ import type { Point } from '@/renderer/core/layout/types'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
-import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 
 import {
   areSelectedLinksHidden,
@@ -21,8 +20,8 @@ import {
   getSelectedLinkDestinations,
   getSelectedLinkIds,
   getSelectedLinksAnchor,
-  goToLinkDestination,
   hideSelectedLinks,
+  selectLinkDestination,
   selectLinksInMarquee,
   selectSlotLinks,
   showSelectedLinks
@@ -410,8 +409,6 @@ describe('slot link selection', () => {
 })
 
 describe('going to the other end of a socket', () => {
-  const VIEWPORT: ReadOnlyRect = [0, 0, 800, 600]
-
   function place(node: LGraphNode, x: number, y: number): LGraphNode {
     node.pos = [x, y]
     node.updateArea()
@@ -447,26 +444,12 @@ describe('going to the other end of a socket', () => {
     selectSlotLinks(host, node, type, 0, { x: 0, y: 0 })
   }
 
-  function goTo(graph: LGraph, node: { id: LGraphNode['id'] }) {
-    const host = {
-      graph,
-      ds: {
-        fitToBounds: vi.fn(),
-        scale: 1,
-        getViewportSize: (): [number, number] => [800, 600]
-      },
-      animateToBounds: vi.fn(),
-      setDirty: vi.fn()
-    }
-    const moved = goToLinkDestination(host, node.id, {
-      viewport: VIEWPORT,
-      reducedMotion: false
-    })
-    return { host, moved }
+  function jumpTo(graph: LGraph, node: { id: LGraphNode['id'] }) {
+    return selectLinkDestination(graph, node.id)
   }
 
   function destinationIds(graph: LGraph) {
-    return getSelectedLinkDestinations(graph).map(({ nodeId }) => nodeId)
+    return getSelectedLinkDestinations(graph).map(({ node }) => node.id)
   }
 
   it('leads from an input socket to its source node', () => {
@@ -474,12 +457,11 @@ describe('going to the other end of a socket', () => {
     clickSocket(graph, targets[1], 'input')
 
     expect(destinationIds(graph)).toEqual([source.id])
-    const { host, moved } = goTo(graph, source)
+    const [x, y] = source.getOutputPos(0)
 
-    expect(moved).toBe(true)
-    expect(host.animateToBounds).toHaveBeenCalledWith(source.boundingRect, {
-      zoom: 0,
-      viewport: VIEWPORT
+    expect(jumpTo(graph, source)).toEqual({
+      socket: { x, y },
+      bounds: source.boundingRect
     })
   })
 
@@ -497,7 +479,7 @@ describe('going to the other end of a socket', () => {
     const { graph, source, targets, links } = createFanOut()
     clickSocket(graph, source, 'output')
 
-    goTo(graph, targets[2])
+    jumpTo(graph, targets[2])
 
     const [x, y] = targets[2].getInputPos(0)
     expect(getSelectedLinkIds(graph)).toEqual([links[2].id])
@@ -507,22 +489,19 @@ describe('going to the other end of a socket', () => {
   it('leads back to the output with every linked node on offer', () => {
     const { graph, source, targets, links } = createFanOut()
     clickSocket(graph, source, 'output')
-    goTo(graph, targets[2])
+    jumpTo(graph, targets[2])
 
     expect(destinationIds(graph)).toEqual([source.id])
-    const { host } = goTo(graph, source)
+    const arrival = jumpTo(graph, source)
 
     const [x, y] = source.getOutputPos(0)
-    expect(host.animateToBounds).toHaveBeenCalledWith(
-      source.boundingRect,
-      expect.anything()
-    )
+    expect(arrival?.bounds).toBe(source.boundingRect)
     expect(getSelectedLinkIds(graph)).toEqual(links.map(({ id }) => id))
     expect(getSelectedLinksAnchor(graph)).toEqual({ x, y })
     expect(destinationIds(graph)).toEqual(
       [targets[1], targets[2], targets[0]].map(({ id }) => id)
     )
-    expect(goTo(graph, targets[0]).moved).toBe(true)
+    expect(jumpTo(graph, targets[0])).toBeDefined()
   })
 
   it('lands on the node behind a reroute', () => {
@@ -540,7 +519,7 @@ describe('going to the other end of a socket', () => {
     presentation.patch(graphScopeOf(graph), links[0].id, { hidden: true })
     clickSocket(graph, source, 'output')
 
-    expect(goTo(graph, targets[0]).moved).toBe(true)
+    expect(jumpTo(graph, targets[0])).toBeDefined()
 
     expect(getSelectedLinkIds(graph)).toEqual([links[0].id])
     expect(
@@ -555,7 +534,7 @@ describe('going to the other end of a socket', () => {
     selectLinks(graph, links)
 
     expect(getSelectedLinkDestinations(graph)).toEqual([])
-    expect(goTo(graph, graph.nodes[1]).moved).toBe(false)
+    expect(jumpTo(graph, graph.nodes[1])).toBeUndefined()
     expect(getSelectedLinkIds(graph)).toEqual(links.map((link) => link.id))
   })
 
@@ -563,7 +542,7 @@ describe('going to the other end of a socket', () => {
     const { graph, source, targets } = createFanOut()
     clickSocket(graph, targets[0], 'input')
 
-    expect(goTo(graph, targets[1]).moved).toBe(false)
+    expect(jumpTo(graph, targets[1])).toBeUndefined()
     expect(destinationIds(graph)).toEqual([source.id])
   })
 
@@ -577,11 +556,11 @@ describe('going to the other end of a socket', () => {
     clickSocket(graph, source, 'output')
 
     expect(
-      getSelectedLinkDestinations(graph).map(({ nodeId, links }) => [
-        nodeId,
-        links.length
+      getSelectedLinkDestinations(graph).map(({ node, slot }) => [
+        node.id,
+        slot
       ])
-    ).toEqual([[target.id, 2]])
+    ).toEqual([[target.id, 0]])
   })
 
   it('lands on the lowest input when several links reach one node', () => {
@@ -592,7 +571,7 @@ describe('going to the other end of a socket', () => {
     const lowest = connect(source, target, 0)
     clickSocket(graph, source, 'output')
 
-    goTo(graph, target)
+    jumpTo(graph, target)
 
     const [x, y] = target.getInputPos(0)
     expect(getSelectedLinkIds(graph)).toEqual([lowest.id])
@@ -613,7 +592,7 @@ describe('going to the other end of a socket', () => {
     clickSocket(subgraph, target, 'input')
 
     expect(destinationIds(subgraph)).toEqual([])
-    expect(goTo(subgraph, { id: SUBGRAPH_INPUT_ID }).moved).toBe(false)
+    expect(jumpTo(subgraph, { id: SUBGRAPH_INPUT_ID })).toBeUndefined()
   })
 
   it('offers no jump to the side a subgraph input node does not have', () => {
@@ -648,7 +627,7 @@ describe('going to the other end of a socket', () => {
     clickSocket(graph, source, 'output')
 
     expect(destinationIds(graph)).toEqual([targets[1].id, targets[2].id])
-    expect(goTo(graph, targets[0]).moved).toBe(false)
+    expect(jumpTo(graph, targets[0])).toBeUndefined()
   })
 
   it('lands on the valid input when another link to the node is malformed', () => {
@@ -659,29 +638,11 @@ describe('going to the other end of a socket', () => {
     connect(source, target, 0).target_slot = -1
     clickSocket(graph, source, 'output')
 
-    expect(goTo(graph, target).moved).toBe(true)
+    expect(jumpTo(graph, target)).toBeDefined()
 
     const [x, y] = target.getInputPos(1)
     expect(getSelectedLinkIds(graph)).toEqual([valid.id])
     expect(getSelectedLinksAnchor(graph)).toEqual({ x, y })
-  })
-
-  it.for([
-    { name: 'bigger than the view', height: 2000 },
-    { name: 'too big to leave room for the menu', height: 520 }
-  ])('centres the landing socket when the node is $name', ({ height }) => {
-    const { graph, source, targets } = createFanOut()
-    targets[2].size = [300, height]
-    targets[2].updateArea()
-    clickSocket(graph, source, 'output')
-
-    const { host } = goTo(graph, targets[2])
-
-    const [x, y] = targets[2].getInputPos(0)
-    expect(host.animateToBounds).toHaveBeenCalledWith(
-      [x, y, 0, 0],
-      expect.anything()
-    )
   })
 
   it('leads from a node inside a subgraph to the subgraph inputs and back', () => {
@@ -695,12 +656,9 @@ describe('going to the other end of a socket', () => {
     expect(
       getSelectedLinkDestinations(subgraph).map(({ kind }) => kind)
     ).toEqual(['subgraphInputs'])
-    const { host } = goTo(subgraph, { id: SUBGRAPH_INPUT_ID })
+    const arrival = jumpTo(subgraph, { id: SUBGRAPH_INPUT_ID })
 
-    expect(host.animateToBounds).toHaveBeenCalledWith(
-      subgraph.inputNode.boundingRect,
-      expect.anything()
-    )
+    expect(arrival?.bounds).toBe(subgraph.inputNode.boundingRect)
     expect(destinationIds(subgraph)).toEqual([target.id])
   })
 
@@ -716,50 +674,12 @@ describe('going to the other end of a socket', () => {
     expect(
       getSelectedLinkDestinations(subgraph).map(({ kind }) => kind)
     ).toEqual(['subgraphOutputs'])
-    expect(goTo(subgraph, output).moved).toBe(true)
+    expect(jumpTo(subgraph, output)).toBeDefined()
 
     const [x, y] = output.slots[0].pos
     expect(getSelectedLinksAnchor(subgraph)).toEqual({ x, y })
     expect(destinationIds(subgraph)).toEqual([source.id])
-    expect(goTo(subgraph, source).moved).toBe(true)
+    expect(jumpTo(subgraph, source)).toBeDefined()
     expect(destinationIds(subgraph)).toEqual([output.id])
-  })
-
-  it('animates the pan without an instant move', () => {
-    const { graph, source, targets } = createFanOut()
-    clickSocket(graph, targets[0], 'input')
-
-    const { host } = goTo(graph, source)
-
-    expect(host.animateToBounds).toHaveBeenCalledOnce()
-    expect(host.ds.fitToBounds).not.toHaveBeenCalled()
-    expect(host.setDirty).not.toHaveBeenCalled()
-  })
-
-  it('centres the source at the current zoom when motion is reduced', () => {
-    const { graph, source, targets } = createFanOut()
-    const ds = createTestDragAndScale()
-    ds.scale = 1.7
-    ds.offset = [13, 29]
-    const host = { graph, ds, animateToBounds: vi.fn(), setDirty: vi.fn() }
-    clickSocket(graph, targets[0], 'input')
-
-    expect(
-      goToLinkDestination(host, source.id, {
-        viewport: VIEWPORT,
-        reducedMotion: true
-      })
-    ).toBe(true)
-
-    const [x, y, width, height] = source.boundingRect
-    const [centreX, centreY] = ds.convertOffsetToCanvas([
-      x + width / 2,
-      y + height / 2
-    ])
-    expect(ds.scale).toBe(1.7)
-    expect(centreX).toBeCloseTo(400)
-    expect(centreY).toBeCloseTo(300)
-    expect(host.animateToBounds).not.toHaveBeenCalled()
-    expect(host.setDirty).toHaveBeenCalledWith(true, true)
   })
 })

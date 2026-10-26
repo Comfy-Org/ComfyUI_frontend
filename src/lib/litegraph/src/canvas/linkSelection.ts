@@ -13,24 +13,15 @@ import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { SlotDirection } from '@/types/slotId'
 
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
-import type {
-  AnimationOptions,
-  DragAndScale
-} from '@/lib/litegraph/src/DragAndScale'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { LinkSegment, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import { inputLinkId, outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
-import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import { inputLink, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { getLinkEnd } from './linkGeometry'
+import type { LinkEnd } from './linkGeometry'
 import { deleteLinks, hideLinks, showLinks } from './linkVisibility'
 import type { LinkMutationHost } from './linkVisibility'
 
@@ -38,29 +29,10 @@ interface LinkSelectionHost extends LinkMutationHost {
   graph: LGraph | null
 }
 
-interface LinkJumpHost {
-  graph: LGraph | null
-  ds: Pick<DragAndScale, 'fitToBounds' | 'getViewportSize' | 'scale'>
-  animateToBounds(bounds: ReadOnlyRect, options?: AnimationOptions): void
-  setDirty(foreground: boolean, background?: boolean): void
-}
-
-interface PanOptions {
-  viewport?: ReadOnlyRect
-  reducedMotion: boolean
-}
-
-const ARRIVAL_TOOLBOX_CLEARANCE = 64
-
-type LinkEndNode =
-  | { readonly kind: 'node'; readonly node: LGraphNode }
-  | { readonly kind: 'subgraphInputs'; readonly node: SubgraphInputNode }
-  | { readonly kind: 'subgraphOutputs'; readonly node: SubgraphOutputNode }
-
-/** A node at the far end of a socket's selected links, with the links that reach it. */
-export type LinkDestination = LinkEndNode & {
-  readonly nodeId: NodeId
-  readonly links: readonly LLink[]
+/** Where a jump lands: the socket whose links it selected, and the bounds of that socket's node. */
+export interface LinkArrival {
+  readonly socket: Point
+  readonly bounds: ReadOnlyRect
 }
 
 interface MarqueeHost {
@@ -180,27 +152,15 @@ export function getSelectedLinksAnchor(graph: LGraph): Point | undefined {
   return { x, y: marquee.y }
 }
 
-function slotLinkIds(
-  graph: LGraph,
-  nodeId: NodeId,
-  direction: SlotDirection,
-  slot: number
-): LinkId[] {
-  if (direction === 'output') return outputLinkIds(graph, nodeId, slot)
-  const linkId = inputLinkId(graph, nodeId, slot)
-  return linkId === undefined ? [] : [linkId]
-}
-
 function slotLinks(
   graph: LGraph,
   nodeId: NodeId,
   direction: SlotDirection,
   slot: number
 ): LLink[] {
-  return slotLinkIds(graph, nodeId, direction, slot).flatMap((linkId) => {
-    const link = graph.getLink(linkId)
-    return link ? [link] : []
-  })
+  if (direction === 'output') return outputLinks(graph, nodeId, slot)
+  const link = inputLink(graph, nodeId, slot)
+  return link ? [link] : []
 }
 
 export function hasModifierKey(
@@ -243,170 +203,56 @@ function selectSocketLinks(
   })
 }
 
-function oppositeSlotDirection(direction: SlotDirection): SlotDirection {
-  return direction === 'input' ? 'output' : 'input'
+function selectedArrivalDirection(): SlotDirection | undefined {
+  const departure = useLinkSelectionStore().selection?.socketType
+  if (!departure) return undefined
+  return departure === 'input' ? 'output' : 'input'
 }
 
-function farEnd(
-  link: LLink,
-  near: SlotDirection
-): { nodeId: NodeId; slot: number } {
-  return near === 'input'
-    ? { nodeId: link.origin_id, slot: link.origin_slot }
-    : { nodeId: link.target_id, slot: link.target_slot }
-}
-
-function linkEndNode(graph: LGraph, nodeId: NodeId): LinkEndNode | undefined {
-  if (graph instanceof Subgraph) {
-    if (nodeId === SUBGRAPH_INPUT_ID)
-      return { kind: 'subgraphInputs', node: graph.inputNode }
-    if (nodeId === SUBGRAPH_OUTPUT_ID)
-      return { kind: 'subgraphOutputs', node: graph.outputNode }
-  }
-  const node = graph.getNodeById(nodeId)
-  return node ? { kind: 'node', node } : undefined
-}
-
-function slotCount(end: LinkEndNode, direction: SlotDirection): number {
-  switch (end.kind) {
-    case 'subgraphInputs':
-      return direction === 'output' ? end.node.slots.length : 0
-    case 'subgraphOutputs':
-      return direction === 'input' ? end.node.slots.length : 0
-    case 'node':
-      return direction === 'input'
-        ? end.node.inputs.length
-        : end.node.outputs.length
-  }
-}
-
-function isSlotIndex(
-  end: LinkEndNode,
-  direction: SlotDirection,
-  slot: number
-): boolean {
-  return Number.isInteger(slot) && slot >= 0 && slot < slotCount(end, direction)
-}
-
-function socketPosition(
-  end: LinkEndNode,
-  direction: SlotDirection,
-  slot: number
-): Point {
-  const [x, y] =
-    end.kind !== 'node'
-      ? end.node.slots[slot].pos
-      : direction === 'input'
-        ? end.node.getInputPos(slot)
-        : end.node.getOutputPos(slot)
-  return { x, y }
-}
-
-/** The nodes at the far end of a socket's selected links, top to bottom; none for a marquee. */
-export function getSelectedLinkDestinations(graph: LGraph): LinkDestination[] {
-  const socketType = useLinkSelectionStore().selection?.socketType
-  if (!socketType) return []
-  const arrivalDirection = oppositeSlotDirection(socketType)
-  const linksByNode = new Map<NodeId, LLink[]>()
-  for (const link of getSelectedLinks(graph)) {
-    const { nodeId } = farEnd(link, socketType)
-    const reaching = linksByNode.get(nodeId)
-    if (reaching) reaching.push(link)
-    else linksByNode.set(nodeId, [link])
-  }
-  const destinations = [...linksByNode].flatMap(([nodeId, links]) => {
-    const end = linkEndNode(graph, nodeId)
-    if (!end) return []
-    const arriving = links.filter((link) => {
-      const { slot } = farEnd(link, socketType)
-      return (
-        isSlotIndex(end, arrivalDirection, slot) &&
-        slotLinkIds(graph, nodeId, arrivalDirection, slot).includes(link.id)
-      )
-    })
-    return arriving.length ? [{ ...end, nodeId, links: arriving }] : []
-  })
-  return sortBy(destinations, [
-    (destination) => destination.node.pos[1],
-    (destination) => destination.node.pos[0]
-  ])
-}
-
-/** Frames the destination and selects the links of the socket it lands on, as a click on that socket would. */
-export function goToLinkDestination(
-  host: LinkJumpHost,
-  nodeId: NodeId,
-  options: PanOptions
-): boolean {
-  const { graph } = host
-  const socketType = useLinkSelectionStore().selection?.socketType
-  if (!graph || !socketType) return false
-  const destination = getSelectedLinkDestinations(graph).find(
-    (candidate) => candidate.nodeId === nodeId
-  )
-  if (!destination) return false
-  const arrival = selectArrivalSocket(graph, socketType, destination)
-  if (!arrival) return false
-  const nodeBounds = destination.node.boundingRect
-  panToBounds(
-    host,
-    fitsInView(host.ds, nodeBounds, options.viewport)
-      ? nodeBounds
-      : [arrival.x, arrival.y, 0, 0],
-    options
-  )
-  return true
-}
-
-function selectArrivalSocket(
+function destinationsByNode(
   graph: LGraph,
-  departureDirection: SlotDirection,
-  destination: LinkDestination
-): Point | undefined {
-  const arrivalDirection = oppositeSlotDirection(departureDirection)
-  const arrivalSlot = destination.links.reduce(
-    (lowest, link) => Math.min(lowest, farEnd(link, departureDirection).slot),
-    Infinity
-  )
-  const links = slotLinks(
-    graph,
-    destination.nodeId,
-    arrivalDirection,
-    arrivalSlot
-  )
-  if (!links.length) return undefined
-  const position = socketPosition(destination, arrivalDirection, arrivalSlot)
-  selectSocketLinks(links, arrivalDirection, position)
-  return position
-}
-
-function fitsInView(
-  ds: LinkJumpHost['ds'],
-  [, , width, height]: ReadOnlyRect,
-  viewport: ReadOnlyRect | undefined
-): boolean {
-  const [viewWidth, viewHeight] = viewport
-    ? [viewport[2], viewport[3]]
-    : ds.getViewportSize()
-  const clearance = 2 * ARRIVAL_TOOLBOX_CLEARANCE
-  return (
-    width * ds.scale <= viewWidth - clearance &&
-    height * ds.scale <= viewHeight - clearance
-  )
-}
-
-function panToBounds(
-  host: LinkJumpHost,
-  bounds: ReadOnlyRect,
-  { viewport, reducedMotion }: PanOptions
-): void {
-  const framing = { zoom: 0, viewport }
-  if (!reducedMotion) {
-    host.animateToBounds(bounds, framing)
-    return
+  arrival: SlotDirection
+): Map<NodeId, LinkEnd> {
+  const destinations = new Map<NodeId, LinkEnd>()
+  for (const link of getSelectedLinks(graph)) {
+    const end = getLinkEnd(graph, link, arrival)
+    if (!end) continue
+    const reached = destinations.get(end.node.id)
+    if (!reached || end.slot < reached.slot) destinations.set(end.node.id, end)
   }
-  host.ds.fitToBounds(bounds, framing)
-  host.setDirty(true, true)
+  return destinations
+}
+
+/** The nodes at the far end of a socket's selected links, top to bottom, each at the lowest socket reached; none for a marquee. */
+export function getSelectedLinkDestinations(graph: LGraph): LinkEnd[] {
+  const arrival = selectedArrivalDirection()
+  if (!arrival) return []
+  return sortBy(
+    [...destinationsByNode(graph, arrival).values()],
+    [
+      (destination) => destination.node.pos[1],
+      (destination) => destination.node.pos[0]
+    ]
+  )
+}
+
+/** Selects the links of the socket that a jump to the node lands on, as a click on that socket would. */
+export function selectLinkDestination(
+  graph: LGraph,
+  nodeId: NodeId
+): LinkArrival | undefined {
+  const arrival = selectedArrivalDirection()
+  if (!arrival) return undefined
+  const destination = destinationsByNode(graph, arrival).get(nodeId)
+  if (!destination) return undefined
+  const [x, y] = destination.position
+  const socket = { x, y }
+  selectSocketLinks(
+    slotLinks(graph, nodeId, arrival, destination.slot),
+    arrival,
+    socket
+  )
+  return { socket, bounds: destination.node.boundingRect }
 }
 
 export function selectLinksInMarquee(

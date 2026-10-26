@@ -6,7 +6,7 @@
       variant="muted-textonly"
       :aria-label="goToLabel(singleDestination)"
       data-testid="go-to-link-destination-button"
-      @click="goTo(singleDestination.nodeId)"
+      @click="goTo(singleDestination.node.id)"
     >
       <i class="icon-[lucide--locate]" />
     </Button>
@@ -74,17 +74,22 @@ import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
+import type { LinkEnd } from '@/lib/litegraph/src/canvas/linkGeometry'
 import {
   areSelectedLinksHidden,
   getSelectedLinkDestinations,
-  goToLinkDestination
+  selectLinkDestination
 } from '@/lib/litegraph/src/canvas/linkSelection'
-import type { LinkDestination } from '@/lib/litegraph/src/canvas/linkSelection'
+import type { LinkArrival } from '@/lib/litegraph/src/canvas/linkSelection'
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import type { NodeId } from '@/types/nodeId'
+
+const ARRIVAL_TOOLBOX_CLEARANCE = 64
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
@@ -114,7 +119,7 @@ const destinationNames = computed(
   () =>
     new Map<string, string>(
       destinations.value.map((destination) => [
-        destination.nodeId,
+        destination.node.id,
         destinationName(destination)
       ])
     )
@@ -124,17 +129,17 @@ const destinationItems = computed<MenuItem[]>(() =>
   destinations.value.map((destination) => {
     const name = destinationName(destination)
     const badge =
-      destination.kind === 'node' ? `#${destination.nodeId}` : undefined
+      destination.kind === 'node' ? `#${destination.node.id}` : undefined
     return {
-      key: destination.nodeId,
+      key: destination.node.id,
       label: badge ? `${name} ${badge}` : name,
       badge,
-      command: () => goTo(destination.nodeId)
+      command: () => goTo(destination.node.id)
     }
   })
 )
 
-function destinationName(destination: LinkDestination): string {
+function destinationName(destination: LinkEnd): string {
   switch (destination.kind) {
     case 'subgraphInputs':
       return t('selectionToolbox.linkDestinations.subgraphInputs')
@@ -144,12 +149,12 @@ function destinationName(destination: LinkDestination): string {
       return (
         destination.node.getTitle() ||
         destination.node.type ||
-        `#${destination.nodeId}`
+        `#${destination.node.id}`
       )
   }
 }
 
-function goToLabel(destination: LinkDestination): string {
+function goToLabel(destination: LinkEnd): string {
   return t('selectionToolbox.linkDestinations.goTo', {
     node: destinationName(destination)
   })
@@ -157,15 +162,39 @@ function goToLabel(destination: LinkDestination): string {
 
 async function goTo(nodeId: NodeId) {
   const canvas = canvasStore.canvas
-  if (!canvas) return
-  const moved = goToLinkDestination(canvas, nodeId, {
-    viewport: visibleCanvasViewport(canvas),
-    reducedMotion:
-      motionPreference.value === 'reduce' ||
-      settingStore.get('Comfy.Appearance.DisableAnimations')
-  })
-  if (!moved) return
+  const arrival = canvas?.graph && selectLinkDestination(canvas.graph, nodeId)
+  if (!canvas || !arrival) return
+  frameArrival(canvas, arrival)
   await nextTick()
   goToControl.value?.querySelector('button')?.focus()
+}
+
+function frameArrival(canvas: LGraphCanvas, { socket, bounds }: LinkArrival) {
+  const viewport = visibleCanvasViewport(canvas)
+  const target: ReadOnlyRect = fitsInView(canvas.ds.scale, bounds, viewport)
+    ? bounds
+    : [socket.x, socket.y, 0, 0]
+  const framing = { zoom: 0, viewport }
+  if (
+    motionPreference.value === 'reduce' ||
+    settingStore.get('Comfy.Appearance.DisableAnimations')
+  ) {
+    canvas.ds.fitToBounds(target, framing)
+    canvas.setDirty(true, true)
+  } else {
+    canvas.animateToBounds(target, framing)
+  }
+}
+
+function fitsInView(
+  scale: number,
+  [, , width, height]: ReadOnlyRect,
+  [, , viewWidth, viewHeight]: ReadOnlyRect
+): boolean {
+  const clearance = 2 * ARRIVAL_TOOLBOX_CLEARANCE
+  return (
+    width * scale <= viewWidth - clearance &&
+    height * scale <= viewHeight - clearance
+  )
 }
 </script>
