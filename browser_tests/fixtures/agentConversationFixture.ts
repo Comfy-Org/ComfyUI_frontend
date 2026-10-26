@@ -16,7 +16,10 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import {
+  DOC_PROTOCOL_VERSION,
+  parseServerDocFrame
+} from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import type { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
@@ -771,11 +774,7 @@ export class AgentConversationHarness {
     return this.hostSocket.clientDocFrames()
   }
 
-  /**
-   * Serves and activates another empty document on the same routed socket.
-   * This is the browser-harness equivalent of an agent `switch_tab` result;
-   * it lets lifecycle tests visit two real workflow lineages in one session.
-   */
+  /** Serves and activates another empty workflow on the routed socket. */
   async activateEmptyWorkflow(workflowId: string, name: string): Promise<void> {
     const seed = structuredClone(this.conversation.workflow.seed)
     seed.nodes = []
@@ -796,7 +795,7 @@ export class AgentConversationHarness {
       .toBeGreaterThanOrEqual(subscribes + 1)
   }
 
-  /** Holds the next subscribe acknowledgement for `workflowId`. */
+  /** Holds subscribe acknowledgements for `workflowId` until resumed. */
   pauseWorkflowSubscribe(workflowId: string): void {
     this.hostSocket.pauseSubscribes(workflowId)
   }
@@ -809,7 +808,7 @@ export class AgentConversationHarness {
     this.hostSocket.send({
       type: 'doc_reset',
       data: {
-        v: 1,
+        v: DOC_PROTOCOL_VERSION,
         workflow_id: workflowId,
         seq: 1,
         lineage_seq: 1,
@@ -818,6 +817,7 @@ export class AgentConversationHarness {
     })
   }
 
+  /** Returns to the recorded workflow's tab (the first) and holds its subscribe ack. */
   async activateRecordedWorkflowBeforeSubscribeAck(): Promise<void> {
     const { id, name } = this.conversation.workflow
     this.pauseWorkflowSubscribe(id)
@@ -836,6 +836,9 @@ export class AgentConversationHarness {
           ).length
       )
       .toBeGreaterThanOrEqual(sent + 1)
+    await expect(
+      this.topbar.getTab(0).and(this.topbar.getActiveTab())
+    ).toBeVisible()
   }
 
   /** The applier's verdict on every human op the host has judged so far. */
@@ -913,6 +916,26 @@ export class AgentConversationHarness {
 
   humanOpFrames(): ClientDocFrame[] {
     return this.clientDocFrames().filter((frame) => frame.type === 'doc_ops')
+  }
+
+  /** Waits for the human op adding `nodeId` to `workflowId`; returns its wire `base_version`. */
+  async humanAddNodeBaseVersion(
+    workflowId: string,
+    nodeId: string
+  ): Promise<number> {
+    const find = () => {
+      for (const frame of this.humanOpFrames()) {
+        if (frame.workflowId !== workflowId) continue
+        const index = frame.ops.indexOf(`add_node:${nodeId}`)
+        if (index !== -1) return frame.baseVersions[index]
+      }
+      return undefined
+    }
+    await expect.poll(find).toEqual(expect.any(Number))
+    const baseVersion = find()
+    if (typeof baseVersion !== 'number')
+      throw new Error(`no numeric base_version for add_node:${nodeId}`)
+    return baseVersion
   }
 
   leaveNextHumanBatchUnanswered(): void {

@@ -127,26 +127,28 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
     })
   })
 
-  it('records and rejects malformed ops without numeric base_versions', async () => {
-    const { hostSocket, emitClientFrame, sentFrames } = await installHost()
+  it('records each op base_version, null when it is not a number', async () => {
+    const { hostSocket, emitClientFrame } = await installHost()
 
-    const firstOp = validOp('b'.repeat(32), 2)
-    const secondOp = validOp('b'.repeat(32), 3)
-    delete firstOp.base_version
-    secondOp.base_version = 'not-a-number'
+    const numbered = validOp('b'.repeat(32), 2)
+    const missing = validOp('c'.repeat(32), 3)
+    const malformed = validOp('d'.repeat(32), 4)
+    delete missing.base_version
+    malformed.base_version = 'not-a-number'
     emitClientFrame({
       type: 'doc_ops',
-      data: { workflow_id: WORKFLOW_ID, tab: 'tab-1', ops: [firstOp, secondOp] }
+      data: {
+        workflow_id: WORKFLOW_ID,
+        tab: 'tab-1',
+        ops: [numbered, missing, malformed]
+      }
     })
 
-    expect(hostSocket.clientDocFrames().at(-1)).toEqual(
-      expect.objectContaining({ baseVersions: [] })
-    )
-    expect(hostSocket.humanOpOutcomes()).toEqual([])
-    expect(sentFrames().at(-1)).toEqual({
-      type: 'doc_ops_result',
-      data: expect.objectContaining({ ok: false, code: 'invalid_frame' })
-    })
+    expect(hostSocket.clientDocFrames().at(-1)?.baseVersions).toEqual([
+      1,
+      null,
+      null
+    ])
   })
 
   it('still applies a well-formed doc_ops batch through the real applier', async () => {

@@ -1,16 +1,18 @@
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
-// Source: https://github.com/Comfy-Org/ComfyUI_frontend/pull/19871
-// A reset belongs to one document lineage. It must not erase the human
-// sender's creator-owned Lamport cursor for another workflow visited earlier
-// in the same page session.
 const CASE = 'agent-rec-text-only-answer'
 const RESET_WORKFLOW_ID = '93ba31ab-65a2-42fe-bd12-b96bf4ef3591'
 
 test.describe(
   'Human edit after another workflow resets',
-  { tag: ['@cloud', '@agent', '@vue-nodes'] },
+  {
+    tag: ['@cloud', '@agent', '@vue-nodes'],
+    annotation: {
+      type: 'issue',
+      description: 'https://github.com/Comfy-Org/ComfyUI_frontend/pull/19871'
+    }
+  },
   () => {
     test.use({ conversationCase: CASE, humanOpsHost: 'apply' })
 
@@ -21,6 +23,7 @@ test.describe(
 
       await agentConversation.runTurns()
 
+      const recordedWorkflowId = agentConversation.conversation.workflow.id
       const firstNodeId = await agentConversation.addNodeOfType(
         'Note',
         [400, 400]
@@ -29,17 +32,10 @@ test.describe(
         agentConversation.vueNodes.getNodeLocator(firstNodeId)
       ).toBeVisible()
       await agentConversation.waitForHumanOps(1)
-
-      const recordedWorkflowId = agentConversation.conversation.workflow.id
-      const firstBatch = agentConversation
-        .clientDocFrames()
-        .find(
-          (frame) =>
-            frame.type === 'doc_ops' &&
-            frame.workflowId === recordedWorkflowId &&
-            frame.ops.includes(`add_node:${firstNodeId}`)
-        )
-      expect(firstBatch?.baseVersions).toHaveLength(1)
+      const firstBaseVersion = await agentConversation.humanAddNodeBaseVersion(
+        recordedWorkflowId,
+        firstNodeId
+      )
 
       await agentConversation.activateEmptyWorkflow(
         RESET_WORKFLOW_ID,
@@ -60,32 +56,12 @@ test.describe(
         agentConversation.vueNodes.getNodeLocator(secondNodeId)
       ).toBeVisible()
 
-      await expect
-        .poll(() =>
-          agentConversation
-            .clientDocFrames()
-            .find(
-              (frame) =>
-                frame.type === 'doc_ops' &&
-                frame.workflowId === recordedWorkflowId &&
-                frame.ops.includes(`add_node:${secondNodeId}`)
-            )
+      expect(
+        await agentConversation.humanAddNodeBaseVersion(
+          recordedWorkflowId,
+          secondNodeId
         )
-        .not.toBeUndefined()
-
-      // `expect.poll().not` returns void; re-read the frame after the retrying
-      // boundary so the assertion below judges the actual wire envelope.
-      const resumedBatch = agentConversation
-        .clientDocFrames()
-        .find(
-          (frame) =>
-            frame.type === 'doc_ops' &&
-            frame.workflowId === recordedWorkflowId &&
-            frame.ops.includes(`add_node:${secondNodeId}`)
-        )
-      expect(resumedBatch?.baseVersions[0]).toBeGreaterThan(
-        firstBatch!.baseVersions[0]
-      )
+      ).toBeGreaterThan(firstBaseVersion)
       agentConversation.resumeWorkflowSubscribe(recordedWorkflowId)
     })
   }

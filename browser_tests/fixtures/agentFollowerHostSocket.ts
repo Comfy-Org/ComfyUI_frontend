@@ -67,7 +67,8 @@ export interface ClientDocFrame {
   /** `op:node_id` per op for a `doc_ops` frame; empty otherwise. */
   ops: string[]
   opIds: string[]
-  baseVersions: number[]
+  /** Wire `base_version` per op for a `doc_ops` frame; `null` when not a number. */
+  baseVersions: Array<number | null>
   writers: Array<string | null>
   connection: number
   comfyConnection: number
@@ -173,17 +174,17 @@ export class AgentFollowerHostSocket {
     this.hosts.set(workflowId, host)
   }
 
-  /** Adds another semantic document served by this routed socket. */
+  /** Serves another document; subscribe knobs still apply to the primary one only. */
   addWorkflow(workflowId: string, host: HostDoc): void {
     this.hosts.set(workflowId, host)
   }
 
-  /** Holds the next subscribe answer so a test can exercise the pre-ack window. */
+  /** Holds subscribe answers for `workflowId` until {@link resumeSubscribe}. */
   pauseSubscribes(workflowId: string): void {
     this.pausedSubscribes.add(workflowId)
   }
 
-  /** Releases a subscribe held by {@link pauseSubscribes}. */
+  /** Ends the hold and answers the newest subscribe held by {@link pauseSubscribes}. */
   resumeSubscribe(workflowId: string): void {
     this.pausedSubscribes.delete(workflowId)
     const stateVector = this.pendingSubscribes.get(workflowId)
@@ -291,10 +292,10 @@ export class AgentFollowerHostSocket {
       stateVector: frame.stateVector,
       ops: ops.map((op) => opLabel(op)),
       opIds: ops.map((op) => op.op_id),
-      baseVersions: ops.flatMap((op) =>
+      baseVersions: ops.map((op) =>
         'base_version' in op && typeof op.base_version === 'number'
-          ? [op.base_version]
-          : []
+          ? op.base_version
+          : null
       ),
       writers: ops.map(claimedWriter),
       connection: this.connections,
@@ -372,7 +373,11 @@ export class AgentFollowerHostSocket {
 
   private answerSubscribe(workflowId: string, stateVector: string): void {
     const host = this.hosts.get(workflowId)!
-    if (this.refuseReason !== null && this.refusalsLeft > 0) {
+    if (
+      workflowId === this.workflowId &&
+      this.refuseReason !== null &&
+      this.refusalsLeft > 0
+    ) {
       this.refusalsLeft -= 1
       this.refusedSubscribes += 1
       const refusal = host.subscribeRefused(this.refuseReason)
@@ -486,14 +491,11 @@ export class AgentFollowerHostSocket {
   /**
    * Rises once per subscribe the host accepted, after its answer was sent.
    * A custom answer from {@link answerSubscribesWith} may carry no catch-up;
-   * refused subscribes count only in {@link refusedSubscribeCount}. Pass a
-   * workflow id to count only that document's subscribes.
+   * refused subscribes count only in {@link refusedSubscribeCount}. Counts the
+   * primary workflow unless another served workflow id is passed.
    */
-  subscribeCount(workflowId?: string): number {
-    if (workflowId !== undefined) return this.subscribes.get(workflowId) ?? 0
-    let total = 0
-    for (const count of this.subscribes.values()) total += count
-    return total
+  subscribeCount(workflowId = this.workflowId): number {
+    return this.subscribes.get(workflowId) ?? 0
   }
 
   connectionCount(): number {
