@@ -5,6 +5,8 @@
     size="md"
     :content-padding="isWorkspaceCategoryActive ? 'none' : 'default'"
     header-padding="symmetric"
+    :close-button-variant="closeButtonVariant"
+    :close-icon="closeIcon"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
@@ -62,6 +64,7 @@
         :workspace-name="workspaceName"
         :subscription-tier="activeWorkspace?.subscriptionTier"
         :collapsed="isHeaderCollapsed"
+        :large="unifiedBillingSettingsEnabled"
       />
     </template>
 
@@ -119,7 +122,7 @@ import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserM
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -146,6 +149,7 @@ const {
   defaultCategory,
   settingCategories,
   navGroups,
+  unifiedBillingSettingsEnabled,
   findCategoryByKey,
   findPanelByKey
 } = useSettingUI(defaultPanel, scrollToSettingId)
@@ -169,6 +173,14 @@ const WORKSPACE_CATEGORY_KEYS = new Set([
   'workspace-members',
   'workspace-allowlist'
 ])
+const closeButtonVariant = computed(() =>
+  unifiedBillingSettingsEnabled.value ? 'textonly' : undefined
+)
+const closeIcon = computed(() =>
+  unifiedBillingSettingsEnabled.value
+    ? 'icon-[lucide--x] size-4 shrink-0'
+    : undefined
+)
 const isWorkspaceCategoryActive = computed(
   () =>
     activeCategoryKey.value !== null &&

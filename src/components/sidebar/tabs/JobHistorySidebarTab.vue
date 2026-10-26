@@ -66,7 +66,7 @@
             @menu="onMenuItem"
           />
         </div>
-        <ContextMenu ref="jobContextMenuRef" :model="jobMenuEntries" />
+        <Menu v-bind="jobMenuProps" :items="jobMenuEntries" />
         <MediaLightbox
           v-model:active-index="galleryActiveIndex"
           :all-gallery-items="galleryItems"
@@ -80,11 +80,12 @@
 import { computed, defineAsyncComponent, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
 import JobAssetsList from '@/components/queue/job/JobAssetsList.vue'
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import { usePointMenu } from '@/components/ui/menu/usePointMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { getVisibleJobTabs, jobTabLabelKeys } from '@/composables/queue/jobTabs'
 import type { JobTab } from '@/composables/queue/jobTabs'
@@ -106,7 +107,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import { is3DResult } from '@/utils/resultItem'
 
 const Load3dViewerContent = defineAsyncComponent(
-  () => import('@/components/load3d/Load3dViewerContent.vue')
+  () => import('@/extensions/core/load3d/components/Load3dViewerContent.vue')
 )
 
 const { t, n } = useI18n()
@@ -210,7 +211,11 @@ const onInspectAsset = (item: JobListItem) => {
 }
 
 const currentMenuItem = ref<JobListItem | null>(null)
-const jobContextMenuRef = ref<InstanceType<typeof ContextMenu> | null>(null)
+const {
+  menuProps: jobMenuProps,
+  show: showJobMenu,
+  toggle: toggleJobMenu
+} = usePointMenu()
 
 const { jobMenuEntries, cancelJob } = useJobMenu(
   () => currentMenuItem.value,
@@ -228,10 +233,9 @@ const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
 })
 
 const onMenuItem = (item: JobListItem, event: Event) => {
-  const isSameClickTarget =
-    event.type === 'click' && currentMenuItem.value?.id === item.id
+  const isSameJob = currentMenuItem.value?.id === item.id
   currentMenuItem.value = item
-  if (isSameClickTarget) jobContextMenuRef.value?.toggle(event)
-  else jobContextMenuRef.value?.show(event)
+  if (event.type === 'click' && isSameJob) toggleJobMenu(event)
+  else showJobMenu(event)
 }
 </script>

@@ -9,13 +9,14 @@ import { nextTick } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import '@/scripts/changeTracker'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -39,6 +40,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 // Remove any previous global types
 declare global {
@@ -2749,6 +2751,32 @@ describe('useExecutionStore - frames from a background workflow', () => {
 
     expect(store.activeJobId).toBe('job-elsewhere')
     expect(store.nodeProgressStates['1'].prompt_id).toBe('job-elsewhere')
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('does not report a background job whose owner is known', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+
+    expect(store.activeJobId).toBe('job-visible')
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports a job with no known owner that is rejected while another job is active', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+
+    fire('execution_start', { prompt_id: 'job-unowned', timestamp: 0 })
+
+    expect(store.activeJobId).toBe('job-visible')
+    expect(reportError).toHaveBeenCalledOnce()
+    const [, options] = vi.mocked(reportError).mock.calls[0]
+    expect(options.errorType).toBe('warning_rejecting_unowned_execution_start')
+    expect(options.context).toMatchObject({
+      jobId: 'job-unowned',
+      activeJobId: 'job-visible',
+      hasOwnWorkflowRecord: false,
+      activeWorkflowInstanceId: visibleWorkflow.instanceId
+    })
   })
 
   it.for([
@@ -2805,6 +2833,30 @@ describe('useExecutionStore - frames from a background workflow', () => {
 
     expect(store.nodeProgressStatesByJob['job-background']).toBeUndefined()
     expect(store.runningJobIds).toEqual([])
+  })
+
+  it('drops a progress frame still queued when its job is forgotten', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+    fire('progress_state', {
+      prompt_id: 'job-background',
+      nodes: {
+        '1': {
+          value: 1,
+          max: 10,
+          state: 'running',
+          node_id: '1',
+          prompt_id: 'job-background',
+          display_node_id: '1'
+        }
+      }
+    })
+
+    store.forgetFinishedJobs(['job-background'])
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStatesByJob['job-background']).toBeUndefined()
+    expect(store.activeJobId).toBe('job-visible')
   })
 
   it('applies each job snapshot queued in the same animation frame', () => {

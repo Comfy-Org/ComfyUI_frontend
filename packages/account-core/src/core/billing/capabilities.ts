@@ -14,6 +14,7 @@
  */
 import {
   zBillingCapabilities,
+  zBillingCapabilitiesResponse,
   zBillingCapabilityRolloutDefaults,
   zBillingCapabilityScope
 } from '@comfyorg/ingest-types/zod'
@@ -59,6 +60,11 @@ export type CapabilityRolloutDefaults = z.infer<
 const CapabilitiesBodySchema = z.object({
   capabilities: zBillingCapabilities,
   expires_at: z.string(),
+  has_parked_billing_operation:
+    zBillingCapabilitiesResponse.shape.has_parked_billing_operation,
+  payment_recovery_available:
+    zBillingCapabilitiesResponse.shape.payment_recovery_available,
+  plan_kind: zBillingCapabilitiesResponse.shape.plan_kind,
   resolved_for: zBillingCapabilityScope,
   revision: z.number(),
   rollout_defaults_applied: zBillingCapabilityRolloutDefaults
@@ -75,6 +81,14 @@ export interface CapabilitiesSnapshot {
    * key never implies the capability was granted — read `capabilities`.
    */
   readonly denials: CapabilityDenials
+  /**
+   * As received. Absent when the server omits it: unknown, not a refusal.
+   */
+  readonly hasParkedBillingOperation?: boolean
+  readonly paymentRecoveryAvailable?: boolean
+  readonly planKind?: z.infer<
+    typeof zBillingCapabilitiesResponse.shape.plan_kind
+  >
   /** True values are rollout guidance, not evidence a write will succeed. */
   readonly rolloutDefaultsApplied: CapabilityRolloutDefaults
   readonly revision: number
@@ -179,6 +193,9 @@ export function createCapabilitiesReader(
       value: {
         capabilities: data.capabilities,
         denials,
+        hasParkedBillingOperation: data.has_parked_billing_operation,
+        paymentRecoveryAvailable: data.payment_recovery_available,
+        planKind: data.plan_kind,
         rolloutDefaultsApplied: data.rollout_defaults_applied,
         revision: data.revision,
         scope,

@@ -130,7 +130,6 @@ let registered = false
 
 export function registerAgentPanelExtension(): void {
   if (registered) return
-  registered = true
 
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
@@ -532,6 +531,7 @@ export function registerAgentPanelExtension(): void {
       setupFlagGate(loadConsentIfEligible, openWhenStartupDecided)
     }
   })
+  registered = true
 }
 
 function setupFlagGate(
