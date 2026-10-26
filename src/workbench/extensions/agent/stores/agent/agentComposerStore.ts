@@ -92,6 +92,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     textOffset: 0,
     referenceIndex: 0
   })
+  const editorFocusEpoch = ref(0)
   const retiredAssets = new Set<string>()
   const thumbnailJobs = new Map<
     string,
@@ -153,6 +154,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function setInsertionPoint(point: ComposerInsertionPoint): void {
     insertionPoint.value = point
+  }
+
+  function requestEditorFocus(): void {
+    editorFocusEpoch.value++
   }
 
   function resetPromptHistory(): void {
@@ -564,9 +569,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     promptOrigin,
     starterPrompt,
     insertionPoint,
+    editorFocusEpoch,
     submission,
     setText,
     setInsertionPoint,
+    requestEditorFocus,
     resetPromptHistory,
     applyEditorPrompt,
     resolveSkillMetadata,

@@ -182,6 +182,43 @@ describe('contextMenuConverter', () => {
       )
     })
 
+    it('places Reference in agent in its own section after Duplicate', () => {
+      const options: MenuOption[] = [
+        { label: 'Pin', source: 'vue' },
+        { label: 'Reference in agent', source: 'vue' },
+        { label: 'Rename', source: 'vue' },
+        { label: 'Copy', source: 'vue' },
+        { label: 'Duplicate', source: 'vue' },
+        { label: 'Custom Extension', source: 'litegraph' }
+      ]
+
+      const result = buildStructuredMenu(options)
+      const labels = result.map((opt) =>
+        opt.type === 'divider' ? 'divider' : opt.label
+      )
+      const renameIndex = labels.indexOf('Rename')
+
+      expect(labels.slice(renameIndex, renameIndex + 7)).toEqual([
+        'Rename',
+        'Copy',
+        'Duplicate',
+        'divider',
+        'Reference in agent',
+        'divider',
+        'Pin'
+      ])
+
+      const referenceIndex = result.findIndex(
+        (opt) => opt.label === 'Reference in agent'
+      )
+      const extensionsIndex = result.findIndex(
+        (opt) => opt.label === 'Extensions' && opt.type === 'category'
+      )
+      expect(referenceIndex).toBeGreaterThan(-1)
+      expect(extensionsIndex).toBeGreaterThan(-1)
+      expect(referenceIndex).toBeLessThan(extensionsIndex)
+    })
+
     it('should recognize Frame Nodes as a core menu item', () => {
       const options: MenuOption[] = [
         { label: 'Rename', source: 'vue' },

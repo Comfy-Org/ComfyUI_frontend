@@ -12,6 +12,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useExtensionService } from '@/services/extensionService'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useCommandStore } from '@/stores/commandStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
@@ -111,6 +112,9 @@ describe('SelectionToolbox', () => {
           frameNodes: 'Frame Nodes',
           moreOptions: 'More Options',
           refreshNode: 'Refresh Node'
+        },
+        agent: {
+          askAgent: 'Ask agent'
         }
       }
     }
@@ -317,6 +321,19 @@ describe('SelectionToolbox', () => {
       ).toBeTruthy()
       expect(
         container.querySelector('[data-testid="more-options-button"]')
+      ).toBeTruthy()
+      expect(
+        container.querySelector('[data-testid="ask-agent-button"]')
+      ).toBeFalsy()
+    })
+
+    it('shows the ask agent button when the agent is available', () => {
+      useAgentPanelStore().enabled = true
+      setCanvasSelection([new LGraphNode('Test Node')])
+      const { container } = renderComponent()
+
+      expect(
+        container.querySelector('[data-testid="ask-agent-button"]')
       ).toBeTruthy()
     })
 
