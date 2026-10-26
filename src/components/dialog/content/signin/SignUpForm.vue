@@ -74,7 +74,6 @@ import { useTurnstile, useTurnstileGate } from '@/composables/auth/useTurnstile'
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
-import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 import PasswordFields from './PasswordFields.vue'
 import TurnstileWidget from './TurnstileWidget.vue'
@@ -109,7 +108,7 @@ const emit = defineEmits<{
 }>()
 
 const { handleSubmit, meta } = useForm({
-  validationSchema: toTypedSchema(signUpSchema),
+  validationSchema: signUpSchema,
   initialValues: { email: '', password: '', confirmPassword: '' }
 })
 

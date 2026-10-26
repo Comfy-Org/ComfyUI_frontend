@@ -2,15 +2,15 @@ import { expectTypeOf, it } from 'vitest'
 
 import type { NodeId } from '@/types/nodeId'
 
-import type { BaseLGraph } from '../LGraph'
+import type { BaseLGraph } from '@/lib/litegraph/src/LGraph'
 import type {
   ContextMenu,
   LGraph,
   LGraphNode,
   LGraphNodeConstructor,
   Subgraph
-} from '../litegraph'
-import type { GraphOrSubgraph } from '../subgraph/Subgraph'
+} from '@/lib/litegraph/src/litegraph'
+import type { GraphOrSubgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type * as Entities from './entityRegistry'
 import type { LGraphNodeConstructor as NodeConstructor } from './nodeConstructor'
 import type { NodeBindable } from './widgets'

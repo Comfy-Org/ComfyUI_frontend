@@ -1,5 +1,6 @@
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { authCredentialOf } from '@/platform/auth/authCredential'
+import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -14,11 +15,30 @@ function credentialValue(header: AuthHeader): string {
     : header.Authorization.slice('Bearer '.length)
 }
 
+function isApiKeySession(): boolean {
+  const authStore = useAuthStore()
+  return (
+    !isDesktopHostSignedIn() &&
+    !authStore.currentUser &&
+    !authStore.sessionOnlyUser &&
+    useApiKeyAuthStore().isAuthenticated
+  )
+}
+
+async function agentAuthHeader(): Promise<AuthHeader | null> {
+  if (isApiKeySession()) return useApiKeyAuthStore().getAuthHeader()
+  const authStore = useAuthStore()
+  if (!authStore.isAuthenticated) return null
+  return {
+    Authorization: `Bearer ${await authStore.getWorkspaceAuthTokenOrThrow()}`
+  }
+}
+
 export async function withAgentAuth(
   init: AgentRequestInit
 ): Promise<AgentRequestInit> {
   if (isCloud) return init
-  const header = await useAuthStore().getUserAuthHeader()
+  const header = await agentAuthHeader()
   if (!header) return init
   const headers = new Headers(init.headers)
   for (const [name, value] of Object.entries(header)) headers.set(name, value)
@@ -35,7 +55,7 @@ export async function withAgentAuth(
 export async function agentSocketAuthParams(): Promise<URLSearchParams | null> {
   if (isCloud) return api.socketAuthParams()
   const params = new URLSearchParams()
-  const header = await useAuthStore().getUserAuthHeader()
+  const header = await agentAuthHeader()
   if (header) params.set('token', credentialValue(header))
   return params
 }

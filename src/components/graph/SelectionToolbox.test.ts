@@ -410,8 +410,10 @@ describe('SelectionToolbox', () => {
           ])
         },
         registerExtension: vi.fn(),
+        registerExtensionNow: vi.fn(),
         invokeExtensions: vi.fn(() => ['test-command']),
-        invokeExtensionsAsync: vi.fn()
+        invokeExtensionsAsync: vi.fn(),
+        invokeStartupHook: vi.fn(async () => [])
       } as ReturnType<typeof useExtensionService>)
 
       setCanvasSelection([new LGraphNode('Test Node')])
@@ -495,7 +497,9 @@ describe('SelectionToolbox', () => {
       expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
 
       await vi.advanceTimersByTimeAsync(500)
-      expect(screen.getByRole('tooltip')).toHaveTextContent('More Options')
+      expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
+        'More Options'
+      )
     })
   })
 })

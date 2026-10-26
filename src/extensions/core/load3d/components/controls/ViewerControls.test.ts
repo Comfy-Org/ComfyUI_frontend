@@ -1,0 +1,97 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import ViewerControls from '@/extensions/core/load3d/components/controls/ViewerControls.vue'
+import { useDialogStore } from '@/stores/dialogStore'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+
+const handleViewerClose = vi.fn()
+
+vi.mock<unknown>(
+  import('@/extensions/core/load3d/services/load3dService'),
+  () => ({
+    useLoad3dService: () => ({ handleViewerClose })
+  })
+)
+
+vi.mock<unknown>(
+  import('@/extensions/core/load3d/components/Load3dViewerContent.vue'),
+  () => ({
+    default: { name: 'Load3DViewerContentStub', template: '<div />' }
+  })
+)
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      load3d: {
+        openIn3DViewer: 'Open in 3D viewer',
+        viewer: { title: '3D viewer' }
+      }
+    }
+  }
+})
+
+const mockNode = createMockLGraphNode({ id: 'node-1' })
+
+describe('ViewerControls', () => {
+  it('renders the open-in-viewer button labeled by the localized aria-label', () => {
+    render(ViewerControls, {
+      props: { node: mockNode },
+      global: {
+        plugins: [i18n]
+      }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Open in 3D viewer' })
+    ).toBeInTheDocument()
+  })
+
+  it('opens the dialog with the provided node and viewer component when clicked', async () => {
+    const user = userEvent.setup()
+    render(ViewerControls, {
+      props: { node: mockNode },
+      global: {
+        plugins: [i18n]
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Open in 3D viewer' }))
+
+    const { showDialog } = useDialogStore()
+    expect(showDialog).toHaveBeenCalledOnce()
+    const callArgs = vi.mocked(showDialog).mock.calls[0][0]
+    expect(callArgs.key).toBe('global-load3d-viewer')
+    expect(callArgs.title).toBe('3D viewer')
+    expect(callArgs.component).toMatchObject({
+      name: 'Load3DViewerContentStub'
+    })
+    expect(callArgs.props).toEqual({ node: mockNode })
+    expect(callArgs.dialogComponentProps?.maximizable).toBe(true)
+  })
+
+  it('routes the dialog onClose handler through useLoad3dService.handleViewerClose with the node', async () => {
+    const user = userEvent.setup()
+    render(ViewerControls, {
+      props: { node: mockNode },
+      global: {
+        plugins: [i18n]
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Open in 3D viewer' }))
+
+    const { showDialog } = useDialogStore()
+    const onClose =
+      vi.mocked(showDialog).mock.calls[0][0].dialogComponentProps?.onClose
+    expect(onClose).toBeDefined()
+    await onClose?.()
+
+    expect(handleViewerClose).toHaveBeenCalledWith(mockNode)
+  })
+})

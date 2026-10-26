@@ -4,12 +4,14 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
-import { reportError } from '@/platform/telemetry/reportError'
+import { createToastId } from '@/types/toastId'
 
 import type { DocOpFailure } from './docFrameClient'
 import type { OpsResultView } from './opSender'
+import { reportLostEdit } from './reportLostEdit'
 
 const NOTICE_LIFE_MS = 10_000
+const NOTICE_ID = createToastId()
 
 function rejectedOp(ops: readonly Op[], failed: DocOpFailure): Op | undefined {
   return ops.find((op) => op.op_id === failed.op_id) ?? ops[failed.index]
@@ -40,6 +42,88 @@ function isRejectedWidgetWrite(
   )
 }
 
+function nodeFieldTarget(nodeId: string | number, field: string): string {
+  const t = i18n.global.t
+  const plain = { escapeParameter: false }
+  return t(
+    'agent.editRejected.targets.nodeField',
+    { id: String(nodeId), field },
+    plain
+  )
+}
+
+function rejectedTarget(op: Op | undefined): string | undefined {
+  const t = i18n.global.t
+  const plain = { escapeParameter: false }
+  switch (op?.op) {
+    case 'set_widget':
+      return nodeFieldTarget(op.node_id, op.widget)
+    case 'add_node':
+      return op.class_type
+    case 'set_node_field':
+      return nodeFieldTarget(op.node_id, op.field)
+    case 'delete_node':
+      return t(
+        'agent.editRejected.targets.node',
+        { id: String(op.node_id) },
+        plain
+      )
+    case 'clear':
+      return t('agent.editRejected.targets.clear')
+    case 'connect':
+    case 'disconnect':
+      return t(
+        'agent.editRejected.targets.link',
+        { id: String(op.link_id) },
+        plain
+      )
+    default:
+      return undefined
+  }
+}
+
+function rejectedOpContext(op: Op | undefined): {
+  nodeId?: string | number
+  classType?: string
+} {
+  switch (op?.op) {
+    case 'set_widget':
+    case 'set_node_field':
+    case 'delete_node':
+      return { nodeId: op.node_id }
+    case 'add_node':
+      return { nodeId: op.node_id, classType: op.class_type }
+    default:
+      return {}
+  }
+}
+
+function withReason(
+  notice: string,
+  target: string | undefined,
+  code: string
+): string {
+  const plain = { escapeParameter: false }
+  if (target && code && code !== 'unspecified')
+    return i18n.global.t(
+      'agent.editRejected.withReason',
+      { notice, target, code },
+      plain
+    )
+  if (target)
+    return i18n.global.t(
+      'agent.editRejected.withReasonTarget',
+      { notice, target },
+      plain
+    )
+  if (!code || code === 'unspecified') return notice
+  return i18n.global.t(
+    'agent.editRejected.withReasonCode',
+    { notice, code },
+    plain
+  )
+}
+
 /**
  * Schema §4 aborts the REMAINDER of a batch, so a rejected result can still
  * carry an applied prefix — which is what `partial` distinguishes.
@@ -56,63 +140,75 @@ function noticeKey(widgetWrite: boolean, partial: boolean): string {
 }
 
 export function createRejectedOpNotifier() {
-  const throttledToasts = new Map<string, ThrottledFunction<() => void>>()
-  const reportedCodes = new Set<string>()
+  const throttledToasts = new Map<
+    string,
+    ThrottledFunction<(description: string) => void>
+  >()
 
-  function reportOnce(
-    code: string,
-    widgetWrite: boolean,
+  function showToast(kind: string, description: string): void {
+    const toast = throttledToasts.get(kind)
+    if (toast) return toast(description)
+    const throttled = throttle(
+      (detail: string) =>
+        useToast().error(i18n.global.t('g.error'), {
+          id: NOTICE_ID,
+          description: detail,
+          duration: NOTICE_LIFE_MS
+        }),
+      NOTICE_LIFE_MS,
+      { edges: ['leading'] }
+    )
+    throttledToasts.set(kind, throttled)
+    throttled(description)
+  }
+
+  function reportRejectedEdit(
+    ops: readonly Op[],
     result: OpsResultView,
-    failed: DocOpFailure | undefined
+    failed: DocOpFailure | undefined,
+    code: string,
+    widgetWrite: boolean
   ): void {
-    if (reportedCodes.has(code)) return
-    reportedCodes.add(code)
-    reportError(
-      new Error(`the agent doc host rejected a human edit (${code})`),
+    const accepted = new Set([...result.applied, ...result.skipped])
+    reportLostEdit(
+      'host_rejected',
+      ops.filter((op) => !accepted.has(op.op_id)),
       {
-        surface: 'agent',
+        code,
+        workflowId: result.workflowId,
+        message: failed?.message,
+        failedIndex: failed?.index,
         errorType: widgetWrite
           ? 'error_applying_agent_widget_edit'
           : 'error_applying_agent_graph_edit',
-        context: { workflowId: result.workflowId, opId: failed?.op_id, code },
-        level: 'warning'
+        ...rejectedOpContext(failed && rejectedOp(ops, failed))
       }
     )
   }
 
-  function throttledToast(detail: string): ThrottledFunction<() => void> {
-    const existing = throttledToasts.get(detail)
-    if (existing) return existing
-    const created = throttle(
-      () => {
-        useToast().error(i18n.global.t('g.error'), {
-          description: detail,
-          duration: NOTICE_LIFE_MS
-        })
-      },
-      NOTICE_LIFE_MS,
-      { edges: ['leading'] }
-    )
-    throttledToasts.set(detail, created)
-    return created
+  function notifyRejected(ops: readonly Op[], result: OpsResultView): void {
+    const { failed } = result
+    const widgetWrite = isRejectedWidgetWrite(ops, failed)
+    const code = failed?.code ?? result.code ?? 'unspecified'
+    reportRejectedEdit(ops, result, failed, code, widgetWrite)
+    const partial = result.applied.length > 0 && failed !== undefined
+    const kind = noticeKey(widgetWrite, partial)
+    const notice = i18n.global.t(kind)
+    const target = failed && rejectedTarget(rejectedOp(ops, failed))
+    showToast(kind, withReason(notice, target, code))
   }
 
   return {
     notify(ops: readonly Op[], result: OpsResultView) {
       if (result.ok) return
-      const { failed } = result
-      const widgetWrite = isRejectedWidgetWrite(ops, failed)
-      const code = failed?.code ?? result.code ?? 'unspecified'
-      reportOnce(code, widgetWrite, result, failed)
-      const partial = result.applied.length > 0 && failed !== undefined
-      throttledToast(i18n.global.t(noticeKey(widgetWrite, partial)))()
+      notifyRejected(ops, result)
     },
-    notifyWidgetWriteRefused() {
-      throttledToast(i18n.global.t('agent.editRejected.widgetWrite'))()
-    },
-    cancel() {
-      for (const throttled of throttledToasts.values()) throttled.cancel()
-      throttledToasts.clear()
+    notifyWidgetWriteRefused(nodeId: string | number, widgetName: string) {
+      const notice = i18n.global.t('agent.editRejected.widgetWrite')
+      showToast(
+        'agent.editRejected.widgetWrite',
+        withReason(notice, nodeFieldTarget(nodeId, widgetName), 'unspecified')
+      )
     }
   }
 }

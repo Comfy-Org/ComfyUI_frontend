@@ -8,7 +8,7 @@ import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -31,7 +31,7 @@ vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingReadRail'),
+  import('@/platform/billing/composables/useBillingReadRail'),
   () => ({
     useBillingReadRail: () => null,
     provideBillingSdkStore: () => {}
@@ -178,6 +178,7 @@ describe('useBillingCapabilities workspace scope mismatch', () => {
         can_edit_workspace: false,
         can_manage_auto_top_up: false,
         can_manage_subscription: false,
+        can_open_plans: false,
         can_run_workflows: false,
         can_upgrade: false
       },

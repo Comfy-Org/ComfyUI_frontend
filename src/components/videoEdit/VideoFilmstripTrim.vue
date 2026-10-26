@@ -201,6 +201,7 @@ const playheadFrame = defineModel<number>('playheadFrame', { required: true })
 
 const emit = defineEmits<{
   scrub: [frame: number]
+  editEnd: []
 }>()
 
 const { t } = useI18n()
@@ -228,7 +229,8 @@ const { startDrag, activeHandle } = useRangeEditor({
   valueMax: frameMax,
   showMidpoint: toRef(() => false),
   contentInsetX,
-  handleCenterOffsetX: toRef(() => HANDLE_WIDTH_PX / 2)
+  handleCenterOffsetX: toRef(() => HANDLE_WIDTH_PX / 2),
+  onEditEnd: () => emit('editEnd')
 })
 
 const scrubMinFrame = computed(() => startFrame.value)

@@ -1,5 +1,5 @@
 <template>
-  <ContextMenuRoot :modal="false">
+  <ContextMenuRoot :modal="false" @update:open="menuOpen = $event">
     <ContextMenuTrigger as-child>
       <div
         ref="workflowTabRef"
@@ -47,8 +47,14 @@
               )
             "
           >
+            <span
+              v-if="isAgentAwaitingApproval"
+              role="img"
+              :aria-label="t('g.agentNeedsApproval')"
+              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-warning"
+            />
             <i
-              v-if="isAgentEditing"
+              v-else-if="isAgentEditing"
               role="img"
               :aria-label="t('g.agentWorking')"
               class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-muted-foreground motion-safe:animate-spin"
@@ -87,7 +93,7 @@
           :class="
             cn(
               'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 text-muted-foreground group-focus-within/tab:visible',
-              isActiveTab && !hasStatusIndicator ? 'visible' : 'invisible',
+              closeButtonVisibility,
               revealsCloseOnHover && 'group-hover/tab:visible'
             )
           "
@@ -104,14 +110,17 @@
         </Button>
       </div>
     </ContextMenuTrigger>
-    <ContextMenuPortal>
+    <ContextMenuPortal :key="Number(menuOpen)">
       <ContextMenuContent :class="cn(menuContentClass, 'min-w-56')">
         <MenuItems :items="contextMenuItems" />
       </ContextMenuContent>
     </ContextMenuPortal>
   </ContextMenuRoot>
   <WorkflowTabPopover
-    ref="popoverRef"
+    v-model:open="popoverOpen"
+    v-model:clicked="popoverClicked"
+    :anchor="workflowTabRef"
+    :hovered="popoverHovered"
     :workflow-filename="workflowOption.workflow.filename"
     :thumbnail-url="thumbnailUrl"
     :is-active-tab="isActiveTab"
@@ -120,12 +129,12 @@
 
 <script setup lang="ts">
 import {
-  ContextMenuContent,
   ContextMenuPortal,
+  ContextMenuContent,
   ContextMenuRoot,
   ContextMenuTrigger
 } from 'reka-ui'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -183,12 +192,15 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+const menuOpen = ref(false)
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
-const popoverRef = ref<InstanceType<typeof WorkflowTabPopover> | null>(null)
+const popoverOpen = ref(false)
+const popoverHovered = ref(false)
+const popoverClicked = ref(false)
 const workflowThumbnail = useWorkflowThumbnail()
 
 // Use computed refs to cache autosave settings
@@ -245,8 +257,12 @@ const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
 
 const tabActivity = useWorkflowTabActivityStore()
 
-const isAgentEditing = computed(
-  () => tabActivity.editingTabPath === workflowOption.workflow.path
+const isAgentAwaitingApproval = computed(() =>
+  tabActivity.awaitingApprovalPaths.has(workflowOption.workflow.path)
+)
+
+const isAgentEditing = computed(() =>
+  tabActivity.editingPaths.has(workflowOption.workflow.path)
 )
 
 // The active tab doesn't badge its own status - the user is already looking
@@ -272,6 +288,7 @@ const workflowStatusLabel = computed(() =>
 
 const hasStatusIndicator = computed(
   () =>
+    isAgentAwaitingApproval.value ||
     isAgentEditing.value ||
     showUnseenAgentDot.value ||
     workflowStatus.value !== undefined ||
@@ -282,40 +299,34 @@ const revealsCloseOnHover = computed(
   () => isActiveTab.value || !compact || !hasStatusIndicator.value
 )
 
+const closeButtonVisibility = computed(() =>
+  isActiveTab.value && !hasStatusIndicator.value ? 'visible' : 'invisible'
+)
+
 const thumbnailUrl = computed(() => {
   return workflowThumbnail.getThumbnail(workflowOption.workflow.key)
 })
 
-// Event handlers that delegate to the popover component
-const handleMouseEnter = (event: Event) => {
-  popoverRef.value?.showPopover(event)
+const handleMouseEnter = () => {
+  popoverClicked.value = false
+  popoverHovered.value = true
 }
 
 const handleMouseLeave = () => {
-  popoverRef.value?.hidePopover()
+  popoverHovered.value = false
 }
 
-const handleClick = (event: Event) => {
-  popoverRef.value?.togglePopover(event)
+const handleClick = () => {
+  if (!popoverOpen.value) popoverClicked.value = true
+  popoverOpen.value = !popoverOpen.value
 }
 
-const closeWorkflows = async (options: WorkflowOption[]) => {
-  for (const opt of options) {
-    if (
-      !(await useWorkflowService().closeWorkflow(opt.workflow, {
-        warnIfUnsaved: !workspaceStore.shiftDown,
-        hint: t('sideToolbar.workflowTab.dirtyCloseHint')
-      }))
-    ) {
-      // User cancelled, or the replacement load failed
-      break
-    }
-  }
-}
-
-const onCloseWorkflow = async (option: WorkflowOption) => {
-  await closeWorkflows([option])
-}
+const onCloseWorkflow = (option: WorkflowOption) =>
+  useWorkflowService().closeWorkflows([option.workflow], {
+    warnIfUnsaved: !workspaceStore.shiftDown,
+    hint: t('sideToolbar.workflowTab.dirtyCloseHint'),
+    initiator: 'user'
+  })
 
 const commandStore = useCommandStore()
 const workflow = computed(() => workflowOption.workflow)
@@ -402,9 +413,5 @@ usePragmaticDroppable(tabGetter, {
       workflowStore.reorderWorkflows(fromIndex, toIndex)
     }
   }
-})
-
-onUnmounted(() => {
-  popoverRef.value?.hidePopover()
 })
 </script>

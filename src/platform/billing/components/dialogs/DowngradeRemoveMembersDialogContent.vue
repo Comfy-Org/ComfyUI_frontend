@@ -1,0 +1,129 @@
+<template>
+  <AppDialogPanel
+    body-class="flex flex-col gap-4 text-sm text-muted-foreground"
+    class="w-full max-w-[400px]"
+    @close="onClose"
+  >
+    <template #title>
+      {{ $t('subscription.downgrade.title', { plan: planName }) }}
+    </template>
+
+    <p class="m-0">
+      {{ bodyText }}
+    </p>
+    <label class="flex flex-col gap-2">
+      {{ $t('subscription.downgrade.confirmationPrompt', { phrase }) }}
+      <Input
+        v-model="typedValue"
+        type="text"
+        :placeholder="phrase"
+        :disabled="isLoading"
+        autofocus
+        @keyup.enter="onConfirmDowngrade"
+      />
+    </label>
+
+    <template #footer>
+      <Button variant="muted-textonly" :disabled="isLoading" @click="onClose">
+        {{ $t('g.cancel') }}
+      </Button>
+      <Button
+        variant="destructive"
+        size="lg"
+        :disabled="!isConfirmed"
+        :loading="isLoading"
+        @click="onConfirmDowngrade"
+      >
+        {{ $t('subscription.downgrade.confirm') }}
+      </Button>
+    </template>
+  </AppDialogPanel>
+</template>
+
+<script setup lang="ts">
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { formatUsdFromCents } from '@/base/credits/comfyCredits'
+import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
+import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
+
+const {
+  planName,
+  planSlug,
+  requiresRemoval = false,
+  requiresReactivation = false,
+  chargeCents = 0,
+  onConfirm
+} = defineProps<{
+  planName: string
+  planSlug: string
+  /** Members are being removed on this change. */
+  requiresRemoval?: boolean
+  /** Subscription is cancelled and this change resumes it; the BE requires
+   *  explicit confirmation of the charge or it rejects the change. */
+  requiresReactivation?: boolean
+  chargeCents?: number
+  onConfirm: (planSlug: string, confirmReactivation: boolean) => Promise<void>
+}>()
+
+const { t } = useI18n()
+const dialogStore = useDialogStore()
+const toast = useToast()
+
+const phrase = t('subscription.downgrade.confirmationPhrase')
+
+const typedValue = ref('')
+const isLoading = ref(false)
+
+// A drift-recovered dialog (see dialogService's onConfirm handler) updates
+// these props in place with corrected values; the typed acknowledgment was
+// for the PRIOR amount/status and must not silently carry forward to a
+// charge the user never actually saw.
+watch([() => requiresReactivation, () => chargeCents], () => {
+  typedValue.value = ''
+})
+
+const isConfirmed = computed(() => typedValue.value === phrase)
+
+const chargeDisplay = computed(
+  () => `$${formatUsdFromCents({ cents: chargeCents })}`
+)
+const bodyText = computed(() => {
+  if (requiresRemoval && requiresReactivation) {
+    return t('subscription.downgrade.bodyRemovalAndReactivation', {
+      amount: chargeDisplay.value
+    })
+  }
+  if (requiresReactivation) {
+    return t('subscription.downgrade.bodyReactivation', {
+      amount: chargeDisplay.value
+    })
+  }
+  return t('subscription.downgrade.body')
+})
+
+function onClose() {
+  if (isLoading.value) return
+  dialogStore.closeDialog({ key: 'downgrade-remove-members' })
+}
+
+async function onConfirmDowngrade() {
+  if (!isConfirmed.value || isLoading.value) return
+  isLoading.value = true
+  try {
+    await onConfirm(planSlug, requiresReactivation)
+    dialogStore.closeDialog({ key: 'downgrade-remove-members' })
+  } catch (error) {
+    toast.error(t('subscription.downgrade.failed'), {
+      description: getErrorMessage(error) ?? t('g.unknownError')
+    })
+  } finally {
+    isLoading.value = false
+  }
+}
+</script>
