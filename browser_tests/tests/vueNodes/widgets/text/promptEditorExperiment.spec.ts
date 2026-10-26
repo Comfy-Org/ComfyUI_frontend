@@ -4,10 +4,13 @@ import {
   comfyExpect as expect,
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
-import type { CapturedTelemetryEvent } from '@e2e/fixtures/hostTelemetryFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import {
+  expandPrompt,
+  promptEditorEvents,
+  promptNodes
+} from '@e2e/fixtures/utils/promptEditorExperiment'
 
 const test = mergeTests(comfyPageFixture, hostTelemetryFixture).extend<{
   promptEditorArm: 'control' | 'panel'
@@ -25,20 +28,6 @@ const test = mergeTests(comfyPageFixture, hostTelemetryFixture).extend<{
     await use(page)
   }
 })
-
-function clipNodes(comfyPage: ComfyPage) {
-  return comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode (Prompt)')
-}
-
-async function expandPrompt(comfyPage: ComfyPage, index: number) {
-  const node = clipNodes(comfyPage).nth(index)
-  await node.getByRole('textbox', { name: 'text' }).hover()
-  await node.getByRole('button', { name: 'Expand' }).click()
-}
-
-function promptEditorEvents(events: CapturedTelemetryEvent[]) {
-  return events.filter(({ event }) => event.startsWith('app:prompt_editor_'))
-}
 
 test.describe(
   'Prompt editor experiment',
@@ -97,7 +86,7 @@ test.describe(
       }) => {
         const panel = comfyPage.page.getByTestId('prompt-panel')
         const editor = panel.getByRole('textbox', { name: 'text' })
-        const nodePrompt = clipNodes(comfyPage)
+        const nodePrompt = promptNodes(comfyPage)
           .nth(0)
           .getByRole('textbox', { name: 'text' })
 
@@ -114,7 +103,7 @@ test.describe(
         })
 
         await test.step('selecting the other prompt node follows it', async () => {
-          const other = clipNodes(comfyPage).nth(1)
+          const other = promptNodes(comfyPage).nth(1)
           await other.getByText('CLIP Text Encode (Prompt)').first().click()
           await expect(editor).toHaveValue(
             await other.getByRole('textbox', { name: 'text' }).inputValue()
