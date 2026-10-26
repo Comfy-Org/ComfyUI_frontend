@@ -9,17 +9,28 @@ import type {
 import type { SlotDirection } from '@/types/slotId'
 
 import type { Point } from '@/lib/litegraph/src/interfaces'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
+import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 
 type LinkEndNode =
   | { readonly kind: 'node'; readonly node: LGraphNode }
   | { readonly kind: 'subgraphInputs'; readonly node: SubgraphInputNode }
   | { readonly kind: 'subgraphOutputs'; readonly node: SubgraphOutputNode }
 
-/** One end of a link: its node, and the index and position of the socket it attaches to. */
 export type LinkEnd = LinkEndNode & {
   readonly slot: number
   readonly position: Point
+}
+
+function renderedSocketPosition(
+  node: LGraphNode,
+  slot: number,
+  side: SlotDirection
+): Point {
+  const isInput = side === 'input'
+  if (litegraph().vueNodesMode) return getSlotPosition(node, slot, isInput)
+  return isInput ? node.getInputPos(slot) : node.getOutputPos(slot)
 }
 
 function inputEnd(
@@ -46,7 +57,7 @@ function inputEnd(
     kind: 'node',
     node: inputNode,
     slot,
-    position: inputNode.getInputPos(slot)
+    position: renderedSocketPosition(inputNode, slot, 'input')
   }
 }
 
@@ -71,11 +82,10 @@ function outputEnd({
     kind: 'node',
     node: outputNode,
     slot,
-    position: outputNode.getOutputPos(slot)
+    position: renderedSocketPosition(outputNode, slot, 'output')
   }
 }
 
-/** The given side of a link, when the socket on that side holds the link. */
 export function getLinkEnd(
   graph: LGraph,
   link: LLink,
