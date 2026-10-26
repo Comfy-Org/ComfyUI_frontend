@@ -64,6 +64,7 @@ import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -893,6 +894,30 @@ describe('AgentPanelRoot onboarding', () => {
     } finally {
       firstRunHolds.value = false
     }
+  })
+
+  it('defers the coach while a global dialog is open, like the desktop sign-in confirm', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-dialog'
+    })
+    const dialogStore = useDialogStore()
+    const dialog = dialogStore.showDialog({
+      component: defineComponent({})
+    })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(
+      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).not.toBeInTheDocument()
+    expect(
+      useTelemetry()!.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'dialog_open' })
+
+    dialogStore.closeDialog({ key: dialog.key })
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
   })
 
   it('stays quiet when App Mode pauses a coach that was already on screen', async () => {

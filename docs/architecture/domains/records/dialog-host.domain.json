@@ -50,14 +50,15 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": ["bounding-boxes", "settings"],
+  "allowedConsumers": ["agent", "bounding-boxes", "settings"],
   "characterizationScenarios": [
     {
       "name": "Global dialog renders stacked dialogs and restores body pointer events on close",
       "checks": [
         "src/components/dialog/GlobalDialog.test.ts",
         "src/components/dialog/GlobalDialog.menu.test.ts",
-        "src/components/dialog/bodyPointerEventsRestore.test.ts"
+        "src/components/dialog/bodyPointerEventsRestore.test.ts",
+        "src/workbench/extensions/agent/AgentPanelRoot.test.ts"
       ]
     },
     {
@@ -85,7 +86,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points; settings is an approved consumer of dialog-host internals, and imports from other classified domains remain subject to cross-domain rules."
+    "Inventory preserves existing exports and runtime behavior without granting public entry points."
   ],
   "deepImports": "inventory"
 }

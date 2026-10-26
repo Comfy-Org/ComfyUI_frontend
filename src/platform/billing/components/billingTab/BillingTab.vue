@@ -8,6 +8,13 @@
       :banner="planCheckout.banner.value"
       @dismiss="planCheckout.dismiss"
     />
+    <BillingTopupCheckoutBanner
+      :banner="topupCheckout.banner.value"
+      :can-top-up="capabilities.canTopUp.value"
+      :add-credits-variant="addCreditsVariant"
+      @dismiss="topupCheckout.dismiss"
+      @add-credits="addCredits('settings_billing_panel')"
+    />
     <BillingParkedBanner
       :parked="capabilities.hasParkedBillingOperation.value"
     />
@@ -44,6 +51,7 @@
         v-else
         :state="planRow"
         :action="action"
+        :sales-variant="salesVariant"
         :can-manage-subscription="capabilities.canManageSubscription.value"
         @open-plan="openPlan"
       />
@@ -57,9 +65,10 @@
       <BillingCreditsCard
         :state="creditsCard"
         :can-top-up="capabilities.canTopUp.value"
+        :add-credits-variant="addCreditsVariant"
         :plan-credit-note="planCreditNote"
         @retry="retryBalance"
-        @add-credits="addCredits"
+        @add-credits="addCredits('credits_panel')"
       />
       <template v-if="flags.autoTopUpEnabled">
         <template v-if="capabilities.canManageAutoTopUp.value">
@@ -113,6 +122,8 @@ import BillingLocalCreditBanner from '@/platform/billing/components/billingTab/B
 import BillingPlanCheckoutBanner from '@/platform/billing/components/billingTab/BillingPlanCheckoutBanner.vue'
 import BillingParkedBanner from '@/platform/billing/components/billingTab/BillingParkedBanner.vue'
 import BillingPausedBanner from '@/platform/billing/components/billingTab/BillingPausedBanner.vue'
+import BillingTopupCheckoutBanner from '@/platform/billing/components/billingTab/BillingTopupCheckoutBanner.vue'
+import { addCreditsEmphasis } from '@/platform/billing/components/billingTab/topupCheckoutBanner'
 import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/billing/components/billingTab/BillingCreditsCard.vue'
@@ -126,18 +137,33 @@ import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useB
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
+import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupCheckoutBanner'
 import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 
 const billing = useBillingContext()
 const capabilities = useBillingCapabilities()
 const { isPaused } = usePausedBanner()
 const planCheckout = usePlanCheckoutBanner()
+const topupCheckout = useTopupCheckoutBanner(
+  () => capabilities.canManageBilling.value
+)
 const suppressCreditBanner = computed(
-  () => isPaused.value || planCheckout.banner.value != null
+  () =>
+    isPaused.value ||
+    planCheckout.banner.value != null ||
+    topupCheckout.banner.value != null
 )
 const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
+const addCreditsVariant = computed(() =>
+  addCreditsEmphasis(
+    creditsCard.value.kind === 'unavailable'
+      ? null
+      : creditsCard.value.availableCents,
+    topupCheckout.banner.value
+  )
+)
 const planCreditNote = useTopUpPlanCreditCopy()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { showSubscriptionDialog } = useSubscriptionPaywall()
@@ -163,8 +189,13 @@ const load = computed(() =>
 
 const action = computed(() =>
   planRowAction(planRow.value, {
-    canOpenPlans: capabilities.canOpenPlans.value
+    canOpenPlans: capabilities.canOpenPlans.value,
+    planKind: capabilities.planKind.value
   })
+)
+
+const salesVariant = computed(() =>
+  billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
 const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
@@ -186,10 +217,10 @@ function openPlan() {
   showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 
-function addCredits() {
-  telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
+function addCredits(source: 'credits_panel' | 'settings_billing_panel') {
+  telemetry?.trackAddApiCreditButtonClicked({ source })
   void showTopUpCreditsDialog({
-    source: paymentIntentSourceForAddCreditsClick('credits_panel')
+    source: paymentIntentSourceForAddCreditsClick(source)
   })
 }
 

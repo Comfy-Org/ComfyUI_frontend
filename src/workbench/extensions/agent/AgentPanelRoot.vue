@@ -29,6 +29,7 @@ import type {
   AgentWorkflowBindSource
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -545,6 +546,7 @@ const agentTabGraph: ComfyWorkflowJSON = {
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 const settingStore = useSettingStore()
+const dialogStore = useDialogStore()
 watch(
   () => canvasStore.canvas?.graph,
   (graph, _previous, onCleanup) => {
@@ -652,7 +654,9 @@ const coachDeferredBy = computed(() =>
     ? 'app_mode'
     : activeTour.value !== null
       ? 'tour_active'
-      : null
+      : dialogStore.dialogStack.length > 0
+        ? 'dialog_open'
+        : null
 )
 const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
 function releaseCoachCompletionWaiters(proceed = true): void {

@@ -206,6 +206,27 @@ describe('useBillingCapabilities', () => {
 
   afterEach(() => scope.stop())
 
+  it('renders plan_kind as received', async () => {
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce({
+      ...capabilitiesResponse(true),
+      plan_kind: 'sales_managed'
+    })
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.planKind.value).toBe('sales_managed')
+  })
+
+  it('leaves plan_kind unset when the snapshot omits it', async () => {
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      capabilitiesResponse(true)
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.planKind.value).toBeNull()
+  })
+
   it.for([
     [
       'allowed',
