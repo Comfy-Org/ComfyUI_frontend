@@ -1,5 +1,6 @@
 import { expect, mergeTests } from '@playwright/test'
-import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
+
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import {
   agentTest,
@@ -11,76 +12,26 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
+import {
+  STAGE_FRAME_TITLES,
+  STAGE_FRAMES_CATALOG,
+  STAGE_FRAMES_EXISTING_NODES,
+  STAGE_FRAMES_INSERT_OPS,
+  STAGE_FRAMES_MESSAGE_ID,
+  STAGE_FRAMES_SAVED_NAME,
+  STAGE_FRAMES_TEMPLATE,
+  STAGE_FRAMES_THREAD_ID,
+  STAGE_FRAMES_WORKFLOW_ID
+} from '@e2e/fixtures/data/agent/agentStageFrames'
+import {
+  readCanvasTextProbe,
+  startCanvasTextProbe
+} from '@e2e/fixtures/utils/canvasTextProbe'
 import { subscribeAgentWorkflow } from '@e2e/fixtures/utils/subscribeAgentWorkflow'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(agentTest, webSocketFixture)
-
-const WORKFLOW_ID = 'b3e7d9c1-0000-4000-8000-000000000947'
-const MESSAGE_ID = 'b3e7d9c1-0000-4000-8000-000000000948'
-const THREAD_ID = 'b3e7d9c1-0000-4000-8000-000000000949'
-
-function note(id: number, pos: [number, number], text: string) {
-  return {
-    id,
-    type: 'MarkdownNote',
-    pos,
-    size: [320, 200],
-    mode: 0,
-    order: 0,
-    flags: {},
-    inputs: [],
-    outputs: [],
-    properties: {},
-    widgets_values: [text]
-  }
-}
-
-const EXISTING_NODES = [note(1, [0, 0], 'Existing node')]
-
-// A two-stage build: each stage is a titled frame around its own nodes.
-const TEMPLATE = {
-  nodes: [
-    note(11, [0, 100], 'Load image'),
-    note(12, [380, 100], 'Describe image'),
-    note(21, [860, 100], 'Prompt from description'),
-    note(22, [1240, 100], 'Generate image')
-  ],
-  links: [],
-  groups: [
-    {
-      id: 1,
-      title: 'Stage 1: describe the input image',
-      bounding: [-20, 20, 740, 300],
-      color: '#3f789e',
-      font_size: 24,
-      flags: {}
-    },
-    {
-      id: 2,
-      title: 'Stage 2: generate from the description',
-      bounding: [840, 20, 740, 300],
-      color: '#b58b2a',
-      font_size: 24,
-      flags: {}
-    }
-  ]
-}
-
-const CATALOG: WidgetCatalog = {
-  types: { MarkdownNote: { widget_order: ['text'] } }
-}
-
-const INSERT_OPS = [
-  {
-    op_id: 'agent-stage-frames-insert-op-0'.padEnd(32, '0'),
-    actor: 'agent:e2e:turn-1',
-    base_version: 1,
-    stamp: [1, 'agent:e2e:turn-1'],
-    op: 'insert_workflow',
-    workflow: TEMPLATE
-  }
-] satisfies Op[]
 
 test.describe(
   'Agent stage frames carried by insert_workflow (PM-947)',
@@ -103,11 +54,11 @@ test.describe(
       await bootAgentApp(page, true, {
         beforeNavigate: async (page) => {
           await mockAgentTurnApi(page, {
-            message_id: MESSAGE_ID,
-            thread_id: THREAD_ID,
-            workflow_id: WORKFLOW_ID
+            message_id: STAGE_FRAMES_MESSAGE_ID,
+            thread_id: STAGE_FRAMES_THREAD_ID,
+            workflow_id: STAGE_FRAMES_WORKFLOW_ID
           })
-          await mockWorkflowPersistence(page, WORKFLOW_ID)
+          await mockWorkflowPersistence(page, STAGE_FRAMES_WORKFLOW_ID)
         }
       })
       await loadIntoBootWorkflow(page, BLANK_WORKFLOW)
@@ -118,24 +69,28 @@ test.describe(
       await subscribeAgentWorkflow({
         agentPanel,
         socket,
-        workflowId: WORKFLOW_ID,
+        workflowId: STAGE_FRAMES_WORKFLOW_ID,
         prompt: 'Build a describe-then-generate workflow with labelled stages'
       })
 
       const host = new HostDoc(
-        WORKFLOW_ID,
-        { nodes: EXISTING_NODES, links: [] },
-        CATALOG
+        STAGE_FRAMES_WORKFLOW_ID,
+        { nodes: STAGE_FRAMES_EXISTING_NODES, links: [] },
+        STAGE_FRAMES_CATALOG
       )
       for (const frame of host.initialSync()) socket.send(JSON.stringify(frame))
       await expect
         .poll(() => page.evaluate(() => window.app!.graph.nodes.length))
-        .toBe(EXISTING_NODES.length)
+        .toBe(STAGE_FRAMES_EXISTING_NODES.length)
 
-      socket.send(JSON.stringify(host.apply(INSERT_OPS)))
+      await startCanvasTextProbe(page, STAGE_FRAME_TITLES)
+      socket.send(JSON.stringify(host.apply(STAGE_FRAMES_INSERT_OPS)))
       await expect
         .poll(() => page.evaluate(() => window.app!.graph.nodes.length))
-        .toBe(EXISTING_NODES.length + TEMPLATE.nodes.length)
+        .toBe(
+          STAGE_FRAMES_EXISTING_NODES.length +
+            STAGE_FRAMES_TEMPLATE.nodes.length
+        )
 
       const readFrames = () =>
         page.evaluate(() => {
@@ -163,23 +118,19 @@ test.describe(
           members: ['Generate image', 'Prompt from description']
         }
       ])
+      await expect
+        .poll(() => readCanvasTextProbe(page))
+        .toEqual(STAGE_FRAME_TITLES)
 
-      // The frames travel with the placed batch and persist in the saved
-      // workflow with the same geometry the canvas shows.
-      const persisted = await page.evaluate(() => {
+      const live = await page.evaluate(() => {
         const graph = window.app!.graph
         const existing = graph.nodes.find(
           (node) => node.widgets?.[0]?.value === 'Existing node'
         )!
         const [ex, ey, ew, eh] = existing.boundingRect
         return {
-          live: Object.fromEntries(
+          geometry: Object.fromEntries(
             graph.groups.map((group) => [group.title, [...group._bounding]])
-          ),
-          saved: Object.fromEntries(
-            graph
-              .serialize()
-              .groups.map((group) => [group.title, [...group.bounding]])
           ),
           overlapsExisting: graph.groups
             .filter((group) => {
@@ -191,8 +142,22 @@ test.describe(
             .map((group) => group.title)
         }
       })
-      expect(persisted.saved).toEqual(persisted.live)
-      expect(persisted.overlapsExisting).toEqual([])
+      expect(live.overlapsExisting).toEqual([])
+
+      const savedRequest = page.waitForRequest(
+        (request) =>
+          request.method() === 'POST' &&
+          decodeURIComponent(new URL(request.url()).pathname).startsWith(
+            '/api/userdata/workflows/'
+          )
+      )
+      await new Topbar(page).saveWorkflowAs(STAGE_FRAMES_SAVED_NAME)
+      const saved = zComfyWorkflow.parse((await savedRequest).postDataJSON())
+      if (!saved.groups) throw new Error('Saved workflow omitted groups')
+      const savedGeometry = Object.fromEntries(
+        saved.groups.map((group) => [group.title, [...group.bounding]])
+      )
+      expect(savedGeometry).toEqual(live.geometry)
     })
   }
 )
