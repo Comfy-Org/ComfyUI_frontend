@@ -70,7 +70,6 @@ type Category =
   | 'e2e-test'
   | 'e2e-video'
   | 'custom-nodes'
-  | 'website'
   | 'storybook'
   | 'billing'
 
@@ -83,7 +82,6 @@ const REQUIRED = [
 ] as const
 const OPTIONAL_PREFIXES = [
   'CI: Playwright Videos',
-  'CI: Website ',
   'CI: Tests Storybook',
   'CI: Billing '
 ]
@@ -132,7 +130,6 @@ export function classify(
       /^(ecosystem-matrix|matrix-detection-proof)( \(|$)/,
       'custom-nodes'
     ],
-    [/^CI: Website /, /./, 'website'],
     [/^CI: Tests Storybook$/, /./, 'storybook'],
     [/^CI: Billing /, /./, 'billing']
   ]
