@@ -2691,7 +2691,8 @@
           "src/components/graph/selectionToolbox/ColorPickerButton.test.ts",
           "src/components/graph/selectionToolbox/ColorPickerButton.vue",
           "src/components/graph/selectionToolbox/ExecuteButton.test.ts",
-          "src/components/graph/selectionToolbox/ExecuteButton.vue"
+          "src/components/graph/selectionToolbox/ExecuteButton.vue",
+          "src/components/graph/selectionToolbox/ToolboxButton.vue"
         ]
       },
       {

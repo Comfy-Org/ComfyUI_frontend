@@ -14,147 +14,97 @@
         <TooltipProvider :delay-duration="1000">
           <div class="flex h-8 gap-1">
             <template v-if="hasLinkSelection">
-              <Button
+              <ToolboxButton
                 v-if="linksHidden"
-                :tooltip="$t('commands.Comfy_Canvas_ShowSelectedLinks.label')"
-                variant="muted-textonly"
-                :aria-label="
-                  $t('commands.Comfy_Canvas_ShowSelectedLinks.label')
-                "
+                :label="$t('commands.Comfy_Canvas_ShowSelectedLinks.label')"
+                icon="icon-[lucide--eye]"
                 data-testid="show-links-button"
                 @click="commandStore.execute('Comfy.Canvas.ShowSelectedLinks')"
-              >
-                <i class="icon-[lucide--eye]" />
-              </Button>
-              <Button
+              />
+              <ToolboxButton
                 v-else
-                :tooltip="$t('commands.Comfy_Canvas_HideSelectedLinks.label')"
-                variant="muted-textonly"
-                :aria-label="
-                  $t('commands.Comfy_Canvas_HideSelectedLinks.label')
-                "
+                :label="$t('commands.Comfy_Canvas_HideSelectedLinks.label')"
+                icon="icon-[lucide--eye-off]"
                 data-testid="hide-links-button"
                 @click="commandStore.execute('Comfy.Canvas.HideSelectedLinks')"
-              >
-                <i class="icon-[lucide--eye-off]" />
-              </Button>
-              <Button
-                :tooltip="$t('commands.Comfy_Canvas_DeleteSelectedLinks.label')"
-                variant="muted-textonly"
-                :aria-label="
-                  $t('commands.Comfy_Canvas_DeleteSelectedLinks.label')
-                "
+              />
+              <ToolboxButton
+                :label="$t('commands.Comfy_Canvas_DeleteSelectedLinks.label')"
+                icon="icon-[lucide--trash-2]"
                 data-testid="delete-links-button"
                 @click="
                   commandStore.execute('Comfy.Canvas.DeleteSelectedLinks')
                 "
-              >
-                <i class="icon-[lucide--trash-2]" />
-              </Button>
+              />
             </template>
             <template v-else>
-              <Button
+              <ToolboxButton
                 v-if="isDeletable"
-                :tooltip="$t('commands.Comfy_Canvas_DeleteSelectedItems.label')"
-                variant="muted-textonly"
-                :aria-label="
-                  $t('commands.Comfy_Canvas_DeleteSelectedItems.label')
-                "
+                :label="$t('commands.Comfy_Canvas_DeleteSelectedItems.label')"
+                icon="icon-[lucide--trash-2]"
                 data-testid="delete-button"
                 @click="
                   commandStore.execute('Comfy.Canvas.DeleteSelectedItems')
                 "
-              >
-                <i class="icon-[lucide--trash-2]" />
-              </Button>
+              />
               <VerticalDivider v-if="canOpenNodeInfo && hasAnySelection" />
-              <Button
+              <ToolboxButton
                 v-if="canOpenNodeInfo"
-                :tooltip="$t('g.info')"
+                :label="$t('g.info')"
+                icon="icon-[lucide--info]"
                 data-testid="info-button"
-                variant="muted-textonly"
-                :aria-label="$t('g.info')"
                 @click="onInfoClick"
-              >
-                <i class="icon-[lucide--info]" />
-              </Button>
+              />
 
               <ColorPickerButton v-if="hasAnySelection" />
               <ArrangeButton v-if="hasMultipleSelection" />
-              <Button
+              <ToolboxButton
                 v-if="hasMultipleSelection"
-                :tooltip="$t('g.frameNodes')"
-                variant="muted-textonly"
-                :aria-label="$t('g.frameNodes')"
+                :label="$t('g.frameNodes')"
+                icon="icon-[lucide--frame]"
                 @click="frameNodes"
-              >
-                <i class="icon-[lucide--frame]" />
-              </Button>
-              <Button
+              />
+              <ToolboxButton
                 v-if="isSingleSubgraph"
-                :tooltip="$t('commands.Comfy_Graph_UnpackSubgraph.label')"
-                variant="muted-textonly"
-                :aria-label="$t('commands.Comfy_Graph_UnpackSubgraph.label')"
+                :label="$t('commands.Comfy_Graph_UnpackSubgraph.label')"
+                icon="icon-[lucide--expand]"
                 data-testid="convert-to-subgraph-button"
                 @click="commandStore.execute('Comfy.Graph.UnpackSubgraph')"
-              >
-                <i class="icon-[lucide--expand]" />
-              </Button>
-              <Button
+              />
+              <ToolboxButton
                 v-else-if="hasAnySelection"
-                :tooltip="$t('commands.Comfy_Graph_ConvertToSubgraph.label')"
-                variant="muted-textonly"
+                :label="$t('commands.Comfy_Graph_ConvertToSubgraph.label')"
+                icon="icon-[lucide--shrink]"
                 size="icon"
-                :aria-label="$t('commands.Comfy_Graph_ConvertToSubgraph.label')"
                 data-testid="convert-to-subgraph-button"
                 @click="commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
-              >
-                <i class="icon-[lucide--shrink]" />
-              </Button>
+              />
               <template v-if="isSingleSubgraph">
-                <Button
-                  :tooltip="
-                    $t('commands.Comfy_Graph_EditSubgraphWidgets.label')
-                  "
-                  variant="muted-textonly"
-                  :aria-label="
-                    $t('commands.Comfy_Graph_EditSubgraphWidgets.label')
-                  "
+                <ToolboxButton
+                  :label="$t('commands.Comfy_Graph_EditSubgraphWidgets.label')"
+                  icon="icon-[lucide--settings-2]"
                   @click="rightSidePanelStore.openPanel('subgraph')"
-                >
-                  <i class="icon-[lucide--settings-2]" />
-                </Button>
-                <Button
-                  :tooltip="$t('commands.Comfy_PublishSubgraph.label')"
-                  variant="muted-textonly"
-                  :aria-label="$t('commands.Comfy_PublishSubgraph.label')"
+                />
+                <ToolboxButton
+                  :label="$t('commands.Comfy_PublishSubgraph.label')"
+                  icon="icon-[lucide--book-open]"
                   @click="commandStore.execute('Comfy.PublishSubgraph')"
-                >
-                  <i class="icon-[lucide--book-open]" />
-                </Button>
+                />
               </template>
-              <Button
+              <ToolboxButton
                 v-if="isSingleImageNode"
-                :tooltip="$t('commands.Comfy_MaskEditor_OpenMaskEditor.label')"
-                variant="muted-textonly"
-                :aria-label="
-                  $t('commands.Comfy_MaskEditor_OpenMaskEditor.label')
-                "
+                :label="$t('commands.Comfy_MaskEditor_OpenMaskEditor.label')"
+                icon="icon-[comfy--mask]"
                 @click="commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')"
-              >
-                <i class="icon-[comfy--mask]" />
-              </Button>
+              />
               <VerticalDivider v-if="hasAnySelection && showBypass" />
 
-              <Button
+              <ToolboxButton
                 v-if="showBypass"
-                :tooltip="
+                :label="
                   $t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label')
                 "
-                variant="muted-textonly"
-                :aria-label="
-                  $t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label')
-                "
+                icon="icon-[lucide--redo-dot]"
                 data-testid="bypass-button"
                 class="hover:bg-secondary"
                 @click="
@@ -162,53 +112,37 @@
                     'Comfy.Canvas.ToggleSelectedNodes.Bypass'
                   )
                 "
-              >
-                <i class="icon-[lucide--redo-dot]" />
-              </Button>
-              <Button
+              />
+              <ToolboxButton
                 v-if="hasAnySelection && isRefreshable"
-                :tooltip="$t('g.refreshNode')"
-                variant="muted-textonly"
-                :aria-label="$t('g.refreshNode')"
+                :label="$t('g.refreshNode')"
+                icon="icon-[lucide--refresh-cw]"
                 data-testid="refresh-button"
                 @click="refreshSelected"
-              >
-                <i class="icon-[lucide--refresh-cw]" />
-              </Button>
-              <Button
+              />
+              <ToolboxButton
                 v-if="hasAny3DNodeSelected"
-                :tooltip="$t('commands.Comfy_3DViewer_Open3DViewer.label')"
-                variant="muted-textonly"
-                :aria-label="$t('commands.Comfy_3DViewer_Open3DViewer.label')"
+                :label="$t('commands.Comfy_3DViewer_Open3DViewer.label')"
+                icon="icon-[lucide--pencil]"
                 @click="commandStore.execute('Comfy.3DViewer.Open3DViewer')"
-              >
-                <i class="icon-[lucide--pencil]" />
-              </Button>
+              />
 
-              <Button
+              <ToolboxButton
                 v-for="command in extensionToolboxCommands"
                 :key="command.id"
-                :tooltip="
+                :label="
                   st(`commands.${normalizeI18nKey(command.id)}.label`, '')
                 "
-                variant="muted-textonly"
-                :aria-label="
-                  st(`commands.${normalizeI18nKey(command.id)}.label`, '')
-                "
+                :icon="command.icon"
                 @click="commandStore.execute(command.id)"
-              >
-                <i :class="command.icon" />
-              </Button>
+              />
               <ExecuteButton v-if="hasOutputNodesSelected" />
-              <Button
-                :tooltip="$t('g.moreOptions')"
+              <ToolboxButton
+                :label="$t('g.moreOptions')"
+                icon="icon-[lucide--more-vertical]"
                 data-testid="more-options-button"
-                variant="muted-textonly"
-                :aria-label="$t('g.moreOptions')"
                 @click="toggleNodeOptions"
-              >
-                <i class="icon-[lucide--more-vertical]" />
-              </Button>
+              />
             </template>
           </div>
         </TooltipProvider>
@@ -220,10 +154,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import Button from '@comfyorg/design-system/button/Button'
 import ArrangeButton from '@/components/graph/selectionToolbox/ArrangeButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
+import ToolboxButton from '@/components/graph/selectionToolbox/ToolboxButton.vue'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useFrameNodes } from '@/composables/graph/useFrameNodes'

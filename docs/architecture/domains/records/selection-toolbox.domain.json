@@ -40,6 +40,10 @@
       "role": "presentation"
     },
     {
+      "path": "src/components/graph/selectionToolbox/ToolboxButton.vue",
+      "role": "presentation"
+    },
+    {
       "path": "src/composables/canvas/**",
       "role": "integration"
     },
