@@ -41,7 +41,6 @@ import type { LinkId } from '@/types/linkId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import {
@@ -1462,7 +1461,6 @@ export class LiveGraphApplier {
       rollback()
       throw error
     }
-    convergeDocumentToLiveValue(widget, value)
   }
 
   private assignWidgetValue(
@@ -1795,15 +1793,6 @@ function writeWidgetValue(
   if (mirrorProperty && property && node.properties[property] !== undefined)
     node.setProperty(property, value)
   return rollback
-}
-
-function convergeDocumentToLiveValue(
-  widget: BaseWidget,
-  documentValue: WidgetValue
-): void {
-  const id = widget.widgetId
-  if (!id || Object.is(widget.value, documentValue)) return
-  withGraphIntentSource('local', () => useWidgetValueStore().announceValue(id))
 }
 
 function applyFlags(node: LGraphNode, flags: INodeFlags): void {

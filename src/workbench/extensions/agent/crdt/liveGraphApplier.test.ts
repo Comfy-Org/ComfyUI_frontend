@@ -2165,19 +2165,22 @@ function envelope(body: OpBody): Op {
 }
 
 describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
-  function rangedSetup() {
-    const fixture = setup({
-      nodes: [
-        {
-          id: 1,
-          type: 'TestRangedWidgets',
-          pos: [0, 0],
-          size: [210, 100],
-          widgets_values: [5, 'euler']
-        }
-      ],
-      links: []
-    })
+  function rangedSetup(deps: Omit<LiveGraphApplierDeps, 'getGraph'> = {}) {
+    const fixture = setup(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'TestRangedWidgets',
+            pos: [0, 0],
+            size: [210, 100],
+            widgets_values: [5, 'euler']
+          }
+        ],
+        links: []
+      },
+      deps
+    )
     fixture.applyCollected()
     const node = fixture.graph.getNodeById(toNodeId(1))
     assert.exists(node)
@@ -2212,68 +2215,67 @@ describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
 
   it.for([
     {
-      name: 'clamps a number above its max and corrects the document',
+      name: 'applies a value inside the range',
+      widget: 'cfg',
+      docValue: 8,
+      live: [8, 'euler']
+    },
+    {
+      name: 'clamps a number above its max',
       widget: 'cfg',
       docValue: 99,
-      live: [10, 'euler'],
-      corrections: [10]
+      live: [10, 'euler']
     },
     {
-      name: 'clamps a number below its min and corrects the document',
+      name: 'clamps a number below its min',
       widget: 'cfg',
       docValue: -3,
-      live: [0, 'euler'],
-      corrections: [0]
+      live: [0, 'euler']
     },
     {
-      name: 'coerces a numeric string and corrects the document',
+      name: 'coerces a numeric string',
       widget: 'cfg',
       docValue: '7',
-      live: [7, 'euler'],
-      corrections: [7]
+      live: [7, 'euler']
     },
     {
-      name: 'refuses a non-numeric string and restores the document',
+      name: 'refuses a non-numeric string',
       widget: 'cfg',
       docValue: 'invalid',
-      live: [5, 'euler'],
-      corrections: [5]
+      live: [5, 'euler']
     },
     {
       name: 'keeps a number finer than its display precision',
       widget: 'cfg',
       docValue: 1.23456,
-      live: [1.23456, 'euler'],
-      corrections: []
+      live: [1.23456, 'euler']
     },
     {
       name: 'keeps a combo value outside its listed values',
       widget: 'sampler',
       docValue: 'heun',
-      live: [5, 'heun'],
-      corrections: []
+      live: [5, 'heun']
     }
-  ] as const)('$name', async ({ widget, docValue, live, corrections }) => {
-    const { node, enqueue, writeDocWidget } = rangedSetup()
+  ] as const)(
+    '$name without minting a document write',
+    async ({ widget, docValue, live }) => {
+      const { node, enqueue, writeDocWidget } = rangedSetup()
 
-    writeDocWidget(widget, docValue)
-    await Promise.resolve()
+      writeDocWidget(widget, docValue)
+      await Promise.resolve()
 
-    expect(node.serialize().widgets_values).toEqual(live)
-    expect(enqueue.mock.calls.flatMap(([ops]) => ops)).toEqual(
-      corrections.map((value) =>
-        expect.objectContaining({
-          op: 'set_widget',
-          node_id: '1',
-          widget,
-          value
-        })
-      )
-    )
-  })
+      expect(node.serialize().widgets_values).toEqual(live)
+      expect(enqueue).not.toHaveBeenCalled()
+    }
+  )
 
   it('reaches the widget callback, onWidgetChanged and the mirrored property with the accepted value', () => {
-    const { node, writeDocWidget } = rangedSetup()
+    const canvas = fromPartial<LGraphCanvas>({
+      graph_mouse: [3, 4],
+      emitBeforeChange: () => {},
+      emitAfterChange: () => {}
+    })
+    const { node, writeDocWidget } = rangedSetup({ getCanvas: () => canvas })
     const widget = node.widgets?.find(({ name }) => name === 'cfg')
     assert.exists(widget)
     const callback = vi.fn()
@@ -2287,9 +2289,9 @@ describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
 
     expect(callback).toHaveBeenCalledExactlyOnceWith(
       10,
-      undefined,
+      canvas,
       node,
-      undefined,
+      [3, 4],
       undefined
     )
     expect(onWidgetChanged).toHaveBeenCalledExactlyOnceWith(
@@ -2299,16 +2301,6 @@ describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
       widget
     )
     expect(node.properties.cfg).toBe(10)
-  })
-
-  it('applies a value inside the range verbatim without minting', async () => {
-    const { node, enqueue, writeDocWidget } = rangedSetup()
-
-    writeDocWidget('cfg', 8)
-    await Promise.resolve()
-
-    expect(node.serialize().widgets_values).toEqual([8, 'euler'])
-    expect(enqueue).not.toHaveBeenCalled()
   })
 })
 
