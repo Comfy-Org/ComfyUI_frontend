@@ -414,20 +414,23 @@ describe('historical workflow restoration', () => {
     }
   )
 
+  const openFailure = new Error('Cannot open')
   it.for([
     {
       opening: 'returns false',
-      open: async () => false
+      open: async () => false,
+      cause: expect.any(Error)
     },
     {
       opening: 'throws',
       open: async (): Promise<never> => {
-        throw new Error('Cannot open')
-      }
+        throw openFailure
+      },
+      cause: openFailure
     }
   ])(
     'reports a failed restore when opening the saved workflow $opening',
-    async ({ open }) => {
+    async ({ open, cause }) => {
       const { selection, workflows, panel, current, warnRestoreFailed } =
         setup()
       workflows.attachWorkflow(
@@ -446,7 +449,7 @@ describe('historical workflow restoration', () => {
       expect(workflows.activeWorkflow?.path).toBe(current.path)
       expect(panel.targetUnavailable).toBe(false)
       expect(warnRestoreFailed).toHaveBeenCalledOnce()
-      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      expect(reportError).toHaveBeenCalledWith(cause, {
         surface: 'agent',
         errorType: 'agent_workflow_restore_failed',
         context: { workflowId: 'wf-saved' }
