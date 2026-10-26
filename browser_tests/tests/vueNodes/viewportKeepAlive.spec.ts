@@ -17,7 +17,6 @@ test.describe(
   { tag: ['@canvas', '@node', '@vue-nodes', '@slow'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow('large-graph-workflow')
       await comfyPage.canvasOps.setScale(1)
       await comfyPage.page.evaluate(() => {
@@ -38,7 +37,7 @@ test.describe(
       await expect(initialNode).toBeVisible()
       const nodeId = await initialNode.getAttribute('data-node-id')
       const initialElement = await initialNode.elementHandle()
-      if (!nodeId || !initialElement) {
+      if (!nodeId) {
         throw new Error('Expected an active Vue node with an id')
       }
       const initialSize = await comfyPage.page.evaluate((id) => {
@@ -63,7 +62,6 @@ test.describe(
       const returnedNode = comfyPage.vueNodes.getNodeLocator(nodeId)
       await expect(returnedNode).toBeVisible()
       const returnedElement = await returnedNode.elementHandle()
-      if (!returnedElement) throw new Error('Expected the Vue node to return')
 
       expect(
         await initialElement.evaluate(
@@ -88,7 +86,6 @@ test.describe(
       test.slow()
       const focusedNode = comfyPage.vueNodes.nodes.first()
       const focusedElement = await focusedNode.elementHandle()
-      if (!focusedElement) throw new Error('Expected an active Vue node')
       await focusedNode.focus()
 
       await setCanvasOffsetX(comfyPage.page, -100_000)
@@ -113,7 +110,6 @@ test.describe(
         .getByTestId('slot-connection-dot')
       await expect(outputSlot).toBeVisible()
       const sourceElement = await sourceNode.elementHandle()
-      if (!sourceElement) throw new Error('Expected a link source node')
 
       await outputSlot.hover()
       await comfyPage.page.mouse.down()
