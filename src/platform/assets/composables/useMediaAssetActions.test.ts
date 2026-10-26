@@ -2181,32 +2181,61 @@ describe('useMediaAssetActions', () => {
       ])
     })
 
-    it('clears a collapsed-card reference when its output is deleted from the expanded stack', async () => {
-      mockResolveOutputAssetItems.mockRestore()
-      vi.mocked(api.getJobAssets).mockResolvedValue({
-        assets: [
-          fromPartial({
-            id: 'output-asset',
-            name: 'ComfyUI_00001_.png',
-            hash: 'blake3:bb12cd34'
-          })
-        ],
-        complete: true
-      })
-      const [group] = unflattenOutputAssets([outputAsset])
-      const { actions, nodes } = await addReferencesTo([group])
-      const groupMetadata = getOutputAssetMetadata(group.user_metadata)
-      assert.exists(groupMetadata)
-      const expanded = await resolveOutputAssetItems(groupMetadata)
-      const child = expanded.find((item) => item.id === 'output-asset')
-      assert.exists(child)
+    it.for([
+      ['output', () => outputAsset, 'runs/2026/bb12cd34.png [output]'],
+      ['temp', () => tempAsset, 'previews/aa7ecf08.png [temp]']
+    ] as const)(
+      'clears a collapsed-card %s reference when its output is deleted from the expanded stack',
+      async ([, deletedAsset, collapsedReference]) => {
+        mockResolveOutputAssetItems.mockRestore()
+        vi.mocked(api.getJobAssets).mockResolvedValue({
+          assets: [
+            fromPartial({
+              id: 'output-asset',
+              name: 'ComfyUI_00001_.png',
+              hash: 'blake3:bb12cd34'
+            }),
+            fromPartial({
+              id: 'temp-asset',
+              name: 'ComfyUI_temp_00001_.png',
+              hash: 'blake3:aa7ecf08'
+            })
+          ],
+          complete: true
+        })
+        const [group] = unflattenOutputAssets([deletedAsset()])
+        const { actions, nodes } = await addReferencesTo([group])
+        const groupMetadata = getOutputAssetMetadata(group.user_metadata)
+        assert.exists(groupMetadata)
+        const expanded = await resolveOutputAssetItems(groupMetadata)
+        const [child] = expanded
+        assert.exists(child)
 
-      await actions.deleteAssets(child)
+        await actions.deleteAssets(child)
 
-      expect(mockDeleteAsset.mock.calls).toEqual([['output-asset']])
-      expect(nodes.map(referenceState)).toEqual([
-        cleared('runs/2026/bb12cd34.png [output]')
-      ])
+        expect(mockDeleteAsset.mock.calls).toEqual([[deletedAsset().id]])
+        expect(nodes.map(referenceState)).toEqual([cleared(collapsedReference)])
+      }
+    )
+
+    it('ignores a stored hash without a stored root in server metadata', async () => {
+      const node = addLoadImageNode('ee55.png [output]')
+      const { actions } = mountMediaActions()
+
+      await actions.deleteAssets(
+        createMockAsset({
+          id: 'server-asset',
+          name: 'server.png',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-2',
+            subfolder: '',
+            storedHash: 'ee55.png'
+          }
+        })
+      )
+
+      expect(referenceState(node)).toEqual(kept('ee55.png [output]'))
     })
 
     it('keeps every reference when the deletion fails', async () => {

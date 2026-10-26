@@ -19,6 +19,7 @@ import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -67,6 +68,12 @@ function widgetValueVariants(
   return compact([name, hash]).map((filename) =>
     createAnnotatedPath(filename, { rootFolder, subfolder })
   )
+}
+
+function storedOutputVariants(metadata: OutputAssetMetadata | null): string[] {
+  const { storedHash, storedType, subfolder } = metadata ?? {}
+  if (typeof storedHash !== 'string' || !isResultItemType(storedType)) return []
+  return widgetValueVariants(undefined, storedType, subfolder, storedHash)
 }
 
 export function useMediaAssetActions() {
@@ -618,12 +625,15 @@ export function useMediaAssetActions() {
         })
         if (childAssets.length > 0) return childAssets
 
-        const variants = widgetValueVariants(
-          asset.name,
-          getAssetType(asset, 'input'),
-          metadata?.subfolder,
-          asset.hash ?? metadata?.storedHash
-        )
+        const variants = [
+          ...widgetValueVariants(
+            asset.name,
+            getAssetType(asset, 'input'),
+            metadata?.subfolder,
+            asset.hash
+          ),
+          ...storedOutputVariants(metadata)
+        ]
         return [
           {
             kind: 'asset',

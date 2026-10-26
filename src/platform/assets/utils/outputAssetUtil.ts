@@ -85,6 +85,7 @@ function mapOutputsToAssetItems({
         nodeId: output.nodeId,
         subfolder: output.subfolder,
         storedHash: output.hash,
+        storedType: output.type,
         executionTimeInSeconds,
         workflow
       }

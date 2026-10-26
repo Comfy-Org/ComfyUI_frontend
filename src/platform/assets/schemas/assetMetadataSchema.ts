@@ -1,4 +1,5 @@
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 /**
@@ -16,6 +17,7 @@ export interface OutputAssetMetadata extends Record<string, unknown> {
   allOutputs?: AugmentedResultItem[]
   assetId?: string
   storedHash?: string
+  storedType?: ResultItemType
 }
 
 /**
