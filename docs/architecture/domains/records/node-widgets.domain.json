@@ -116,6 +116,10 @@
       "role": "integration"
     },
     {
+      "path": "src/extensions/core/widgetFormProof.domWidgets.test.ts",
+      "role": "integration"
+    },
+    {
       "path": "src/extensions/core/widgetInputs.refreshCombo.test.ts",
       "role": "integration"
     },

@@ -2462,6 +2462,7 @@
           "src/extensions/core/customWidgets.ts",
           "src/extensions/core/saveImageExtraOutput.test.ts",
           "src/extensions/core/saveImageExtraOutput.ts",
+          "src/extensions/core/widgetFormProof.domWidgets.test.ts",
           "src/extensions/core/widgetInputs.refreshCombo.test.ts",
           "src/extensions/core/widgetInputs.test.ts",
           "src/extensions/core/widgetInputs.ts",
