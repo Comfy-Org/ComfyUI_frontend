@@ -34,42 +34,43 @@
         <Button
           :tooltip="t('menu.interrupt')"
           tooltip-side="bottom"
-          :variant="isExecutionIdle ? 'secondary' : 'destructive'"
+          :variant="canInterrupt ? 'destructive' : 'secondary'"
           size="icon"
-          :disabled="isExecutionIdle"
+          :disabled="!canInterrupt"
           :aria-label="t('menu.interrupt')"
           @click="cancelCurrentJob"
         >
           <i class="icon-[lucide--x] size-4" />
         </Button>
-        <Button
-          :tooltip="queueToggleLabel"
-          tooltip-side="bottom"
-          variant="secondary"
-          size="md"
-          :aria-pressed="
-            isQueuePanelV2Enabled
-              ? activeSidebarTabId === 'job-history'
-              : queueOverlayExpanded
-          "
-          class="px-3"
-          data-testid="queue-overlay-toggle"
-          @click="toggleQueueOverlay"
-          @contextmenu.stop.prevent="showQueueContextMenu"
-        >
-          <span class="text-sm font-normal tabular-nums">
-            {{ activeJobsLabel }}
-          </span>
-          <Badge
-            v-if="activeJobsCount > 0"
-            data-testid="active-jobs-indicator"
-            variant="dot"
-            severity="default"
-            class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
-          />
-          <span class="sr-only">{{ queueToggleLabel }}</span>
-        </Button>
-        <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
+        <ContextMenu :model="queueContextMenuItems">
+          <Button
+            :tooltip="queueToggleLabel"
+            tooltip-side="bottom"
+            variant="secondary"
+            size="md"
+            :aria-pressed="
+              isQueuePanelV2Enabled
+                ? activeSidebarTabId === 'job-history'
+                : queueOverlayExpanded
+            "
+            class="px-3"
+            data-testid="queue-overlay-toggle"
+            @click="toggleQueueOverlay"
+            @contextmenu.stop
+          >
+            <span class="text-sm font-normal tabular-nums">
+              {{ activeJobsLabel }}
+            </span>
+            <Badge
+              v-if="activeJobsCount > 0"
+              data-testid="active-jobs-indicator"
+              variant="dot"
+              severity="default"
+              class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
+            />
+            <span class="sr-only">{{ queueToggleLabel }}</span>
+          </Button>
+        </ContextMenu>
       </div>
       <FreeTierQuota v-if="!isDocked" />
       <PartnerNodesRunCaption v-if="!isDocked" />
@@ -108,6 +109,7 @@ import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
+import { useInterruptibleJob } from '@/components/queue/useInterruptibleJob'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -143,7 +145,7 @@ const executionStore = useExecutionStore()
 const queueStore = useQueueStore()
 const sidebarTabStore = useSidebarTabStore()
 const { t, n } = useI18n()
-const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
+const { interruptibleJobId, canInterrupt } = useInterruptibleJob()
 const { activeJobsCount } = storeToRefs(queueStore)
 const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
 
@@ -393,7 +395,6 @@ const activeJobsLabel = computed(() => {
     count
   )
 })
-const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const queueContextMenuItems = computed<MenuItem[]>(() => [
   {
     label: t('sideToolbar.queueProgressOverlay.clearQueueTooltip'),
@@ -407,8 +408,9 @@ const queueContextMenuItems = computed<MenuItem[]>(() => [
 ])
 
 const cancelCurrentJob = async () => {
-  if (isExecutionIdle.value) return
-  await commandStore.execute('Comfy.Interrupt')
+  const jobId = interruptibleJobId.value
+  if (!jobId) return
+  await commandStore.execute('Comfy.Interrupt', { metadata: { jobId } })
 }
 const toggleQueueOverlay = () => {
   if (isQueuePanelV2Enabled.value) {
@@ -416,9 +418,6 @@ const toggleQueueOverlay = () => {
     return
   }
   commandStore.execute('Comfy.Queue.ToggleOverlay')
-}
-const showQueueContextMenu = (event: MouseEvent) => {
-  queueContextMenu.value?.show(event)
 }
 const handleClearQueue = async () => {
   const pendingJobIds = queueStore.pendingTasks

@@ -38,3 +38,29 @@ export const Activating: Story = {
     state: { kind: 'activating', planName: 'Pro' }
   }
 }
+export const ContactSales: Story = {
+  args: {
+    action: 'contactSales',
+    salesVariant: 'secondary',
+    state: {
+      kind: 'active',
+      planName: 'Enterprise',
+      cadence: 'yearly',
+      nextInvoice: '2026-11-15T00:00:00Z',
+      scheduledChange: null
+    }
+  }
+}
+
+export const ContactSalesEnded: Story = {
+  args: {
+    action: 'contactSales',
+    salesVariant: 'inverted',
+    state: {
+      kind: 'ended',
+      planName: 'Enterprise',
+      cadence: 'yearly',
+      endedAt: '2026-09-01T00:00:00Z'
+    }
+  }
+}

@@ -8,8 +8,8 @@ import type {
   LGraphNode,
   Vector2
 } from '@/lib/litegraph/src/litegraph'
-import type { MissingModelPipelineResult } from '@/platform/missingModel/types'
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { SettingParams } from '@/platform/settings/types'
 import type {
   ComfyApiWorkflow,
@@ -90,6 +90,11 @@ export interface LoadGraphDataOptions {
  * instance through `useApp()` from `@/scripts/appInstance`; only the
  * composition root imports the class.
  */
+/** The node definitions, or the HTTP status of the server's refusal. */
+export type NodeDefsFetch =
+  | { ok: true; defs: Record<string, ComfyNodeDef> }
+  | { ok: false; status: number }
+
 export interface ComfyApp {
   vueAppReady: boolean
   readonly api: ComfyApi
@@ -153,6 +158,7 @@ export interface ComfyApp {
 
   setup(canvasEl: HTMLCanvasElement): Promise<void>
   getNodeDefs(): Promise<Record<string, ComfyNodeDef>>
+  fetchNodeDefs(): Promise<NodeDefsFetch>
   registerNodes(): Promise<void>
   registerNodeDef(nodeId: string, nodeDef: ComfyNodeDef): Promise<void>
   registerNodesFromDefs(defs: Record<string, ComfyNodeDef>): Promise<void>
@@ -206,7 +212,7 @@ export interface ComfyApp {
   registerExtension(extension: ComfyExtension): void
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]
   collectNodeMenuItems(node: LGraphNode): IContextMenuValue[]
-  reloadNodeDefs(): Promise<void>
+  reloadNodeDefs(defs?: Record<string, ComfyNodeDef>): Promise<boolean>
   refreshComboInNodes(): Promise<void>
   clean(): void
   clientPosToCanvasPos(pos: Vector2): Vector2

@@ -56,6 +56,17 @@ installWorkspaceApiAuth()
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 
+function axiosRejection(status: number, data: unknown) {
+  return {
+    isAxiosError: true,
+    name: 'AxiosError',
+    code: 'ERR_BAD_RESPONSE',
+    message: `Request failed with status code ${status}`,
+    status,
+    response: { status, statusText: '', headers: {}, data }
+  }
+}
+
 describe('workspaceApi', () => {
   beforeEach(() => {
     vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockResolvedValue(
@@ -368,6 +379,51 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('getDeploymentCpuServer() sends GET /workspaces/:id/deployment/cpu-server and reads the step', async () => {
+      const data = { deployment_id: 'dep-1', cpu_server: 'building' }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getDeploymentCpuServer('ws-1')
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment/cpu-server',
+        { headers: AUTH_HEADER, timeout: 15_000 }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getDeploymentCpuServer() rejects a step it does not know instead of reading it as one', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: { cpu_server: 'exists' }
+      })
+
+      await expect(
+        workspaceApi.getDeploymentCpuServer('ws-1')
+      ).rejects.toThrow()
+    })
+
+    it.for([
+      { status: 404, code: 'NOT_FOUND' },
+      { status: 502, code: 'cpu_server_unknown' }
+    ])(
+      'getDeploymentCpuServer() turns a $status into a WorkspaceApiError with code $code',
+      async ({ status, code }) => {
+        mockAxiosInstance.get.mockRejectedValue(
+          axiosRejection(status, { code, message: 'Refused' })
+        )
+
+        await expect(
+          workspaceApi.getDeploymentCpuServer('ws-1')
+        ).rejects.toMatchObject({
+          name: 'WorkspaceApiError',
+          status,
+          code,
+          message: 'Refused',
+          operation: 'getDeploymentCpuServer'
+        })
+      }
+    )
+
     it('pickDeployment() sends PUT /workspaces/:id/deployment with the deployment', async () => {
       mockAxiosInstance.put.mockResolvedValue({})
 
@@ -477,6 +533,56 @@ describe('workspaceApi', () => {
         { headers: AUTH_HEADER }
       )
     })
+
+    it('checkDeploymentCompatibility() sends POST /workspaces/:id/deployments/compatibility with the node types', async () => {
+      const data = {
+        deployments: [
+          { deployment_id: 'dep-1', missing_node_types: [], unknown: false }
+        ],
+        cloud: { missing_node_types: ['Power Lora Loader (rgthree)'] }
+      }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      const result = await workspaceApi.checkDeploymentCompatibility('ws-1', [
+        'KSampler',
+        'Power Lora Loader (rgthree)'
+      ])
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments/compatibility',
+        { node_types: ['KSampler', 'Power Lora Loader (rgthree)'] },
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it.for([
+      {
+        answer: 'a Comfy Cloud answer with no missing list',
+        data: {
+          deployments: [
+            { deployment_id: 'dep-1', missing_node_types: [], unknown: false }
+          ],
+          cloud: {}
+        }
+      },
+      {
+        answer: 'a deployment answer with no unknown flag',
+        data: {
+          deployments: [{ deployment_id: 'dep-1', missing_node_types: [] }],
+          cloud: { missing_node_types: [] }
+        }
+      }
+    ])(
+      'checkDeploymentCompatibility() rejects $answer instead of reading it as runs',
+      async ({ data }) => {
+        mockAxiosInstance.post.mockResolvedValue({ data })
+
+        await expect(
+          workspaceApi.checkDeploymentCompatibility('ws-1', ['KSampler'])
+        ).rejects.toMatchObject({ name: 'ZodError' })
+      }
+    )
   })
 
   describe('member management', () => {

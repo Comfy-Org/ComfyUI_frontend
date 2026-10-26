@@ -232,6 +232,20 @@ export function useFeatureFlags() {
         false
       )
     },
+    get deploymentCompatibilityMarksEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED,
+        remoteConfig.value.deployment_compatibility_marks_enabled,
+        false
+      )
+    },
+    get lateCustomNodesEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.LATE_CUSTOM_NODES_ENABLED,
+        remoteConfig.value.late_custom_nodes_enabled,
+        false
+      )
+    },
     get hostedBillingDestination() {
       return hostedBillingDestination()
     },
