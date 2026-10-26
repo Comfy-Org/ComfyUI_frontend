@@ -517,6 +517,20 @@ describe('refreshRemoteConfig', () => {
       vi.useRealTimers()
     })
 
+    it('stops waiting when the server never names the project, so startup cannot hang', async () => {
+      vi.useFakeTimers()
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockSuccessResponse({ subscription_required: true })
+      )
+
+      const loading = loadRemoteConfigUntilReady()
+      await vi.runAllTimersAsync()
+      await loading
+
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+      vi.useRealTimers()
+    })
+
     it('accepts a 200 that names the dev project through firebase_env', async () => {
       vi.useFakeTimers()
       const serverConfig = { firebase_env: 'dev' as const }

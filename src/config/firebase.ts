@@ -40,7 +40,7 @@ export function getFirebaseConfig(): FirebaseOptions {
 /** Whether {@link getFirebaseConfig} names the project from the server rather than the build. */
 export function hasServerFirebaseConfig(): boolean {
   return (
-    remoteConfig.value.firebase_config !== undefined ||
+    Boolean(remoteConfig.value.firebase_config) ||
     remoteConfig.value.firebase_env === 'dev'
   )
 }

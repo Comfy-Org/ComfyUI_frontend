@@ -4,6 +4,7 @@ import { resolveUnifiedWebSession } from '@comfyorg/account-core/webSessionFlag'
 
 import { hasServerFirebaseConfig } from '@/config/firebase'
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import {
   authenticatedRemoteConfigState,
@@ -256,15 +257,34 @@ export async function refreshRemoteConfig(
 
 const BOOTSTRAP_RETRY_BASE_MS = 1_000
 const BOOTSTRAP_RETRY_MAX_MS = 10_000
+const BOOTSTRAP_UNNAMED_PROJECT_READS = 1
 
 /**
- * Retries the anonymous /features read until the server names the Firebase
- * project, so cloud never starts Firebase on a build-time default.
+ * Retries the anonymous /features read until it loads and, for a server that
+ * names the Firebase project, until that name arrives.
  */
 export async function loadRemoteConfigUntilReady(): Promise<void> {
+  let unnamedProjectReads = 0
   for (let attempt = 0; ; attempt++) {
     await refreshRemoteConfig({ useAuth: false })
-    if (remoteConfigState.value !== 'error' && hasServerFirebaseConfig()) return
+    if (remoteConfigState.value !== 'error') {
+      if (hasServerFirebaseConfig()) return
+      unnamedProjectReads++
+      if (unnamedProjectReads > BOOTSTRAP_UNNAMED_PROJECT_READS) {
+        reportError(
+          new Error(
+            'Startup read answered without naming the Firebase project'
+          ),
+          {
+            surface: 'workspace',
+            errorType: 'startup_remote_config_without_firebase_project',
+            level: 'warning',
+            context: { reads: unnamedProjectReads }
+          }
+        )
+        return
+      }
+    }
     await delay(
       Math.min(BOOTSTRAP_RETRY_BASE_MS * 2 ** attempt, BOOTSTRAP_RETRY_MAX_MS)
     )
