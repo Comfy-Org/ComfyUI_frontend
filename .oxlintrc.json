@@ -513,7 +513,11 @@
       }
     },
     {
-      "files": ["packages/design-system/src/css/**", "tools/devtools/web/**"],
+      "files": [
+        "packages/design-system/src/css/**",
+        "tools/devtools/web/**",
+        "examples/node-api/**/web/*.js"
+      ],
       "rules": {
         "comfy/no-js-extension-imports": "off"
       }
@@ -636,6 +640,9 @@
       "files": ["src/**", "packages/*/src/**"],
       "excludeFiles": [
         "src/config/viteSeo.test.ts",
+        "src/platform/nodeApi/apiDts.test.ts",
+        "src/platform/nodeApi/apiSurface.test.ts",
+        "src/platform/nodeApi/capabilityDoc.test.ts",
         "src/stores/nodeDefStore.frequency.test.ts"
       ],
       "rules": {
