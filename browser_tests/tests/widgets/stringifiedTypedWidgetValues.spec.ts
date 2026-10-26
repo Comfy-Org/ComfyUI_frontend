@@ -20,9 +20,6 @@ test.describe(
         'widgets/stringified_typed_widget_values'
       )
 
-      // The canvas must hold numbers too, not only the queued prompt: a value
-      // coerced only on the way to /api/prompt would still make step arrows
-      // concatenate ("1536" + 128 -> "1536128"), which is the PM-2173 symptom.
       const latent = await comfyPage.nodeOps.getNodeRefById(5)
       const sampler = await comfyPage.nodeOps.getNodeRefById(3)
       expect({
