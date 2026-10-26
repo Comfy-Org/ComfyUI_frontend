@@ -114,6 +114,7 @@ Configuration methods:
 
 - `setTitle(title)`
 - `setCategory(category)`
+- `setConnectionPolicy(policy)`
 - `setExecution(execution, resolve?)`
 - `setSupply(supplier)`
 - `addWidget(def)`
@@ -145,7 +146,16 @@ Related types: `NodeDef`, `NodeDefinition`, `DefSelector`, `NodeCreatedEvent`,
 `ExecutionResult`, `PreviewFrame`, `ConnectionChangeEvent`,
 `PropertyChangeEvent`, `BeforeConnectEvent`, `UnplacedLinkEvent`,
 `PromptInputProjection`, `PromptInputProjector`, `NodeMenuItem`,
-`NodeSubMenuItem`, and `NodeColor`.
+`NodeSubMenuItem`, `NodeColor`, `ConnectionPolicy`, and `ConnectionRule`.
+
+`setConnectionPolicy(policy: ConnectionPolicy | null)` replaces this
+extension's native host-evaluated constraints. It returns `false` for invalid
+data while retaining the previous value; `null` clears it. A `ConnectionRule`
+selects an endpoint's side and slots and allows or refuses matching peers.
+An installed external host disables these native policies and refuses updates;
+definitions containing policy data throw before registration in that mode.
+See [connection policies](./connection-policies.md) for scope, bounds,
+precedence, disposal, and the worker authority prerequisite.
 
 ### Definition data
 
@@ -166,7 +176,8 @@ Related types: `NodeDef`, `NodeDefinition`, `DefSelector`, `NodeCreatedEvent`,
 
 `NodeDefinition` declares a frontend-owned type. It requires `type` and may
 set `title`, `category`, `description`, `inputs`, `outputs`, `widgets`,
-`execution`, `resolve`, and `supply`. It can also declare `onCreated`,
+`execution`, `resolve`, `supply`, and `connectionPolicy`. It can also declare
+`onCreated`,
 `onExecuted`, `onConfigured`, `onConnectionsChanged`, `onPropertyChanged`,
 `onDragOver`, `onDrop`, `onRemoved`, and `onSerialize` callbacks directly.
 It may also declare `onPromptSerialize`, which returns a
