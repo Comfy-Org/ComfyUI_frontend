@@ -49,6 +49,11 @@ the view half of that shared layer lives, and the header quoted above says,
 in the only place it is written down, that the provider-bound part of it
 does not live in the package.
 
+> **Amended (2026-10-26, #21861):** `apps/website`, named above as a consumer,
+> moved to Comfy-Org/comfy-website. That repository keeps locked copies of
+> these packages pinned to a commit of this one, so changes here reach it by
+> sync rather than through this workspace.
+
 ## Decision
 
 1. **Payment presentation is in scope for `@comfyorg/account-ui`**,
