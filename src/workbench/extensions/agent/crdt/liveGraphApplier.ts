@@ -1266,6 +1266,10 @@ export class LiveGraphApplier {
       this.applyHostWidgets(node, widgets, mode)
       return
     }
+    if (Array.isArray(widgets)) {
+      this.applyPositionalWidgets(node, widgets)
+      return
+    }
     const { documentWidgets = widgets, reportMissing = true } = options
     let pending = ordinaryWidgetEntries(node, widgets).filter(isWidgetEntry)
     while (pending.length > 0) {
@@ -1279,6 +1283,30 @@ export class LiveGraphApplier {
         return
       }
       pending = unresolved
+    }
+  }
+
+  /**
+   * A positional list is read against the live widgets one slot at a time,
+   * because a DynamicGroup controller resizes that list and the slots after it
+   * belong to the rows it creates or removes. When the controller does not
+   * reach the document's count, the later slots no longer line up with any
+   * widget, so they are left unapplied rather than written one row off.
+   */
+  private applyPositionalWidgets(node: LGraphNode, widgets: unknown[]): void {
+    let live = serializableWidgets(node)
+    for (
+      let index = 0;
+      index < Math.min(widgets.length, live.length);
+      index++
+    ) {
+      const widget = live[index]
+      const entry: [string, unknown] = [widget.name, widgets[index]]
+      if (!isWidgetEntry(entry)) continue
+      this.applyWidgetRound(node, [entry], widgets)
+      if (!isDynamicGroupController(widget)) continue
+      if (!reachesDynamicGroupRowCount(widget, entry[1])) return
+      live = serializableWidgets(node)
     }
   }
 
@@ -1646,22 +1674,15 @@ function isWidgetEntry(
 
 /**
  * Ordinary node widget values by document name, ordered so Y.Map insertion
- * order cannot decide the outcome (`widgetEntryRank`); a positional list is
- * read in serializable-widget order.
+ * order cannot decide the outcome (`widgetEntryRank`).
  */
 function ordinaryWidgetEntries(
   node: LGraphNode,
-  widgets: NonNullable<DocNode['widgets']>
+  widgets: Record<string, unknown>
 ): [string, unknown][] {
-  if (!Array.isArray(widgets)) {
-    return Object.entries(widgets).sort(
-      ([a], [b]) => widgetEntryRank(node, a) - widgetEntryRank(node, b)
-    )
-  }
-  return serializableWidgets(node).map((widget, index) => [
-    widget.name,
-    widgets[index]
-  ])
+  return Object.entries(widgets).sort(
+    ([a], [b]) => widgetEntryRank(node, a) - widgetEntryRank(node, b)
+  )
 }
 
 function restoreWidgetRecord(
