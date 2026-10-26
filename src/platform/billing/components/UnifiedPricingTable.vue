@@ -680,14 +680,19 @@ const { canManageBilling } = capabilities
 const { updatePayment, isUpdatingPayment, paymentRecoveryLock } =
   usePaymentRecoveryDialog()
 const pastDueNoticeEl = ref<HTMLElement | null>(null)
+// A refusal keeps the notice up until the server stops offering recovery.
+const refusalNoticeActive = ref(false)
 const showPastDueNotice = computed(
   () =>
-    isCloud &&
-    (paymentRecoveryLock.value !== null || outstandingPaymentRefusals > 0)
+    isCloud && (paymentRecoveryLock.value !== null || refusalNoticeActive.value)
 )
+watch(paymentRecoveryLock, (lock) => {
+  if (lock === null) refusalNoticeActive.value = false
+})
 watch(
   () => outstandingPaymentRefusals,
   async () => {
+    refusalNoticeActive.value = true
     await nextTick()
     pastDueNoticeEl.value?.focus()
   }

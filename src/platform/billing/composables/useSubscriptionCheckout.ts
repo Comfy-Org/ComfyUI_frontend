@@ -552,8 +552,11 @@ export function useSubscriptionCheckout(
     }
     if (!requiresRecovery || !isCurrent()) return null
 
+    // The table is hidden on the confirm step, so only the pricing step can
+    // show the notice; elsewhere the toasts stay.
     const showsNotice =
       rendersPastDueNotice &&
+      checkoutStep.value === 'pricing' &&
       hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
     if (showsNotice) outstandingPaymentRefusals.value++
 

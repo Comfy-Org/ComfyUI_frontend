@@ -1167,7 +1167,7 @@ describe('useSubscriptionCheckout', () => {
     })
 
     describe('when the host renders the past-due notice', () => {
-      async function submitRejectedPreviewWithNotice(code: string) {
+      function mountWithNotice() {
         let checkout!: ReturnType<typeof useSubscriptionCheckout>
         render(
           {
@@ -1180,6 +1180,11 @@ describe('useSubscriptionCheckout', () => {
           },
           { global: { plugins: [i18n] } }
         )
+        return checkout
+      }
+
+      async function submitRejectedPreviewWithNotice(code: string) {
+        const checkout = mountWithNotice()
         mockPreviewSubscribe.mockRejectedValueOnce(errorWithCode(code))
         await checkout.handleSubscribeClick({
           tierKey: 'standard',
@@ -1187,6 +1192,38 @@ describe('useSubscriptionCheckout', () => {
         })
         return checkout
       }
+
+      async function confirmRejectedSubscribe() {
+        const checkout = mountWithNotice()
+        await checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+        expect(checkout.checkoutStep.value).toBe('preview')
+        mockSubscribe.mockRejectedValueOnce(
+          errorWithCode('OUTSTANDING_PAYMENT_REQUIRED')
+        )
+        await checkout.handleConfirmTransition()
+        return checkout
+      }
+
+      it('keeps the error toast for a refusal on the confirm step', async () => {
+        mockGetPaymentPortalUrl.mockRejectedValueOnce(new Error('portal down'))
+        const checkout = await confirmRejectedSubscribe()
+
+        expect(checkout.outstandingPaymentRefusals.value).toBe(0)
+        expect(useToast().error).toHaveBeenCalled()
+      })
+
+      it('keeps the popup-blocked toast for a refusal on the confirm step', async () => {
+        mockOpen.mockReturnValueOnce(null)
+        const checkout = await confirmRejectedSubscribe()
+
+        expect(checkout.outstandingPaymentRefusals.value).toBe(0)
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({ kind: 'warning' })
+        ])
+      })
 
       it('counts a typed refusal and skips the popup-blocked toast', async () => {
         mockOpen.mockReturnValueOnce(null)

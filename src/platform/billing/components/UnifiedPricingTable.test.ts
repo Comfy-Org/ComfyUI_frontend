@@ -1206,6 +1206,19 @@ describe('UnifiedPricingTable past-due notice', () => {
     expect(notice).toHaveFocus()
   })
 
+  it('drops a refusal notice once the server stops offering recovery', async () => {
+    const { rerender } = renderComponent()
+    await rerender({ outstandingPaymentRefusals: 1 })
+    expect(screen.getByTestId('pricing-past-due-notice')).toBeTruthy()
+
+    mockPaymentRecoveryLock.value = 'owner'
+    await nextTick()
+    mockPaymentRecoveryLock.value = null
+    await nextTick()
+
+    expect(screen.queryByTestId('pricing-past-due-notice')).toBeNull()
+  })
+
   it('stays hidden off Cloud', () => {
     mockDistributionTypes.isCloud = false
     mockPaymentRecoveryLock.value = 'owner'
