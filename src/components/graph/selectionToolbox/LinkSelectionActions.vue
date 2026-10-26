@@ -66,37 +66,28 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { usePreferredReducedMotion } from '@vueuse/core'
 import { computed, nextTick, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
-import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import type { LinkEnd } from '@/lib/litegraph/src/canvas/linkGeometry'
 import {
   areSelectedLinksHidden,
-  getSelectedLinkDestinations,
-  selectLinkDestination
+  getSelectedLinkDestinations
 } from '@/lib/litegraph/src/canvas/linkSelection'
-import type { LinkArrival } from '@/lib/litegraph/src/canvas/linkSelection'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useLinkDestinationNavigation } from '@/renderer/core/canvas/useLinkDestinationNavigation'
 import { useCommandStore } from '@/stores/commandStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import type { NodeId } from '@/types/nodeId'
-
-const ARRIVAL_TOOLBOX_CLEARANCE = 64
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const linkSelectionStore = useLinkSelectionStore()
 const canvasStore = useCanvasStore()
-const settingStore = useSettingStore()
-const motionPreference = usePreferredReducedMotion()
+const { goToLinkDestination } = useLinkDestinationNavigation()
 const goToControl = useTemplateRef<HTMLSpanElement>('goToControl')
 
 const linksHidden = computed(() => {
@@ -161,40 +152,8 @@ function goToLabel(destination: LinkEnd): string {
 }
 
 async function goTo(nodeId: NodeId) {
-  const canvas = canvasStore.canvas
-  const arrival = canvas?.graph && selectLinkDestination(canvas.graph, nodeId)
-  if (!canvas || !arrival) return
-  frameArrival(canvas, arrival)
+  if (!goToLinkDestination(nodeId)) return
   await nextTick()
   goToControl.value?.querySelector('button')?.focus()
-}
-
-function frameArrival(canvas: LGraphCanvas, { socket, bounds }: LinkArrival) {
-  const viewport = visibleCanvasViewport(canvas)
-  const target: ReadOnlyRect = fitsInView(canvas.ds.scale, bounds, viewport)
-    ? bounds
-    : [socket.x, socket.y, 0, 0]
-  const framing = { zoom: 0, viewport }
-  if (
-    motionPreference.value === 'reduce' ||
-    settingStore.get('Comfy.Appearance.DisableAnimations')
-  ) {
-    canvas.ds.fitToBounds(target, framing)
-    canvas.setDirty(true, true)
-  } else {
-    canvas.animateToBounds(target, framing)
-  }
-}
-
-function fitsInView(
-  scale: number,
-  [, , width, height]: ReadOnlyRect,
-  [, , viewWidth, viewHeight]: ReadOnlyRect
-): boolean {
-  const clearance = 2 * ARRIVAL_TOOLBOX_CLEARANCE
-  return (
-    width * scale <= viewWidth - clearance &&
-    height * scale <= viewHeight - clearance
-  )
 }
 </script>
