@@ -5,6 +5,7 @@ import {
   lateLoadingApplies,
   loadCustomExtensionsWithDeadline
 } from '@/platform/lateCustomNodes/lateLoading'
+import { resolveExtensionHost } from '@/services/extensionHostProvider'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   EXTENSION_FAILURES_TRUNCATED_FIELD,
@@ -73,6 +74,11 @@ async function importCustomExtension(
   const base = api.fileURL(ext)
   const url = retry ? `${base}${base.includes('?') ? '&' : '?'}retry=1` : base
   try {
+    const host = resolveExtensionHost(ext)
+    if (host) {
+      await host.load(ext)
+      return
+    }
     await (late
       ? importNoticingFetchFailure(url, importModule)
       : importModule(url))
