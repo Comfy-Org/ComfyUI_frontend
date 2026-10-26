@@ -33,10 +33,20 @@ export interface ReportErrorOptions {
   errorType: string
   /** Product surface responsible for acting on this failure. */
   surface: Surface
-  fingerprint?: string[]
   tags?: Record<string, string | number | boolean | undefined>
   context?: Record<string, unknown>
   level?: 'warning' | 'error'
+  /**
+   * Overrides Sentry's computed grouping for this report.
+   *
+   * Reach for it when the default grouping puts a failure somewhere it cannot
+   * be found: a merged issue, or a frame-less async rejection that collapses
+   * into a generic bucket with everything else. Sentry-only — Datadog groups on
+   * `errorType`, which lands as the native `error.type`, so it needs no
+   * equivalent. Values must be bounded and free of user data; they become a
+   * durable issue identity.
+   */
+  fingerprint?: string[]
   /**
    * Opt out of the console line for callers that already wrote one — only
    * `assert()`, which logs before any reporter is registered.
@@ -237,7 +247,7 @@ function dispatch(
   options: ReportErrorOptions,
   alreadyDelivered: DeliveryState = NO_DELIVERY
 ): DeliveryState {
-  const { errorType, surface, level } = options
+  const { errorType, surface, level, fingerprint } = options
   const context = definedEntriesOf(options.context)
   const bucket = getFrontendBucket()
   const tags = {
@@ -259,7 +269,7 @@ function dispatch(
         tags,
         context,
         level,
-        options.fingerprint
+        fingerprint
       )
     }
     if (datadogRum) {

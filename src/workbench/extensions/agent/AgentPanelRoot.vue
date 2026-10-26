@@ -31,7 +31,11 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  readWorkflowDraftLineage,
+  useWorkflowService,
+  writeWorkflowDraftLineage
+} from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -136,6 +140,10 @@ import {
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import {
+  agentRequestFailureFingerprint,
+  describeAgentRequestFailure
+} from './services/agent/agentRequestFailure'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
@@ -1085,6 +1093,10 @@ const {
       }
     },
     onReset: graphActivity.resetWorkflow,
+    onLineageConfirmed({ workflowId, lineageSeq }) {
+      const path = bindingStore.tabPathFor(workflowId)
+      if (path) writeWorkflowDraftLineage(path, { workflowId, lineageSeq })
+    },
     onSyncError: (message, code) =>
       toast.error(t('agent.workflowSyncFailedTitle'), {
         description: formatWorkflowSyncErrorDetail(t, message, code)
@@ -1100,7 +1112,12 @@ const {
       return { x, y, width, height }
     }
   },
-  canvasFor: canvasForWorkflow
+  canvasFor: canvasForWorkflow,
+  knownLineageFor(workflowId) {
+    const path = bindingStore.tabPathFor(workflowId)
+    const lineage = path ? readWorkflowDraftLineage(path) : null
+    return lineage?.workflowId === workflowId ? lineage.lineageSeq : null
+  }
 })
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
@@ -1670,11 +1687,24 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
       failure.status === 'failed'
         ? failure.cause
         : new Error('Agent thread list ended before its last page')
+    const diagnostics =
+      failure.status === 'failed'
+        ? describeAgentRequestFailure(error)
+        : undefined
     reportError(error, {
       surface: 'agent',
       errorType: 'agent_thread_list_load_failed',
       tags:
-        failure.status === 'incomplete' ? { reason: failure.reason } : undefined
+        diagnostics ??
+        (failure.status === 'incomplete'
+          ? { reason: failure.reason }
+          : undefined),
+      fingerprint: diagnostics
+        ? agentRequestFailureFingerprint(
+            'agent_thread_list_load_failed',
+            diagnostics
+          )
+        : undefined
     })
     if (uiTreatment === 'error_overlay')
       surfaceAgentError(
@@ -1683,7 +1713,8 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
       )
     trackAgentError('thread_list_load_failed', 'pre_acceptance', uiTreatment, {
       retryable:
-        failure.status === 'failed' && isRetryableRequestFailure(error, false)
+        failure.status === 'failed' && isRetryableRequestFailure(error, false),
+      diagnostics
     })
   }
 })

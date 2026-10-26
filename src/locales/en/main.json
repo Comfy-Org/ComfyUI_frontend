@@ -1587,7 +1587,6 @@
     "Quit": "Quit",
     "Reinstall": "Reinstall",
     "Restart": "Restart",
-    "Open 3D Viewer (Beta) for Selected Node": "Open 3D Viewer (Beta) for Selected Node",
     "Experimental: Browse Model Assets": "Experimental: Browse Model Assets",
     "Browse Templates": "Browse Templates",
     "Copy": "Copy",
@@ -3034,7 +3033,11 @@
       "creditsToReceiveLabel": "Credits to receive",
       "selectAmount": "Select amount",
       "needMore": "Need more?",
-      "contactUs": "Contact us"
+      "contactUs": "Contact us",
+      "paymentProcessingFlyout": "Payment processing. You don't need to pay again.",
+      "paymentProcessingTitle": "A {amount} payment is still processing",
+      "paymentProcessingTitleNoAmount": "A payment is still processing",
+      "paymentProcessingBody": "No need to pay again."
     },
     "creditsAvailable": "Credits available",
     "refreshes": "Refreshes {date}",
@@ -3355,6 +3358,8 @@
     "teamHeaderLearnMore": "Learn more",
     "personalHeader": "Personal plans are for individual use only. {action}",
     "personalHeaderAction": "To add teammates, subscribe to the Team plan.",
+    "pastDueNoticeOwner": "You have an outstanding payment — update your payment method to change plans.",
+    "pastDueNoticeMember": "This workspace has an outstanding payment — ask your workspace owner to update the payment method.",
     "scheduledChangeNotice": "Your plan changes to {plan} on {date}.",
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
@@ -3692,6 +3697,22 @@
         },
         "unknown": {
           "title": "Your plan"
+        }
+      },
+      "topupCheckout": {
+        "creditsApplying": {
+          "body": "Your credits are being added. You won't be charged again.",
+          "title": "Payment received"
+        },
+        "dismiss": "Dismiss",
+        "failed": {
+          "body": "No credits were added. Try again or use a different payment method.",
+          "title": "Your {amount} top-up didn't go through",
+          "titleNoAmount": "Your top-up didn't go through"
+        },
+        "processing": {
+          "body": "Your bank is confirming the payment. Credits are added once it clears, so you don't need to pay again.",
+          "title": "Payment processing"
         }
       },
       "tryAgain": "Try again"
