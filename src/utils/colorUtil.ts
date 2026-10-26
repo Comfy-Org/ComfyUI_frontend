@@ -36,7 +36,7 @@ export function isTransparent(color: string) {
   return false
 }
 
-/** Whether a CSS color string has alpha below 1; non-strings and unparsed colors count as opaque. */
+/** Whether a CSS color may have alpha below 1; an alpha that is not a plain number counts as translucent. */
 export function isTranslucent(color: unknown): boolean {
   if (typeof color !== 'string') return false
 
@@ -55,9 +55,12 @@ export function isTranslucent(color: unknown): boolean {
   if (!functionArgs) return false
 
   const alpha = functionArgs.includes('/')
-    ? functionArgs.split('/').at(1)
+    ? functionArgs.split('/').at(-1)
     : functionArgs.split(',').at(3)
-  return alpha !== undefined && parseCssAlpha(alpha) < 1
+  if (alpha === undefined) return false
+
+  const value = parseCssAlpha(alpha)
+  return !Number.isFinite(value) || value < 1
 }
 
 function parseCssAlpha(value: string): number {

@@ -330,6 +330,11 @@ describe('colorUtil conversions', () => {
       ['hsl(120 50% 50% / .5)', true],
       ['oklch(0.5 0.1 120 / 20%)', true],
       ['oklch(0.5 0.1 120)', false],
+      ['rgb(0 0 0 / none)', true],
+      ['rgb(0 0 0 / calc(0.5))', true],
+      ['rgb(0 0 0 / var(--alpha))', true],
+      ['rgb(calc(255/2) 0 0 / 0.5)', true],
+      ['rgb(calc(255/2) 0 0 / 1)', false],
       ['red', false],
       [5, false],
       [undefined, false]
