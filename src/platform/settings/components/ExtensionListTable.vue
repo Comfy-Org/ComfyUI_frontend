@@ -53,14 +53,14 @@
         </TableCell>
         <TableCell>
           {{ extension.name }}
-          <Badge v-if="extensionStore.isCoreExtension(extension.name)">
-            {{ $t('g.core') }}
-          </Badge>
           <Badge
-            v-else-if="extensionStore.isAgentCreatedExtension(extension)"
+            v-if="extensionStore.isAgentCreatedExtension(extension)"
             severity="info"
           >
             {{ $t('g.createdByAgent') }}
+          </Badge>
+          <Badge v-else-if="extensionStore.isCoreExtension(extension.name)">
+            {{ $t('g.core') }}
           </Badge>
           <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
           <div

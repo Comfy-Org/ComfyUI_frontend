@@ -340,16 +340,14 @@ describe('ExtensionPanel', () => {
     )
     const extensionStore = useExtensionStore()
     extensionStore.registerExtension({ name: 'Manual.Toolbar' })
+    extensionStore.registerExtension({ name: 'agentic.toolbar' })
+    extensionStore.registerExtension({ name: 'agent.cushions.toolbar' })
     extensionStore.registerExtension({
-      name: 'agent.cushions.toolbar',
+      name: 'agent-made.standalone',
       provenance: {
         createdBy: 'comfy-agent',
         summary: 'Adds cushion controls'
       }
-    })
-    extensionStore.registerExtension({
-      name: 'agent-made.standalone',
-      provenance: { createdBy: 'comfy-agent' }
     })
     const storeSettings = vi
       .spyOn(api, 'storeSettings')
@@ -367,6 +365,7 @@ describe('ExtensionPanel', () => {
       screen.queryByRole('switch', { name: 'Manual.Toolbar' })
     ).not.toBeInTheDocument()
 
+    await user.type(screen.getByRole('combobox'), 'cushions')
     await user.click(screen.getByRole('button', { name: 'More Options' }))
     await user.click(
       await screen.findByRole('menuitem', {
@@ -378,11 +377,17 @@ describe('ExtensionPanel', () => {
       'Comfy.Extension.Disabled': ['agent-made.standalone'],
       'Comfy.Extension.DisabledPacks': ['/extensions/cushions/']
     })
+    await user.clear(screen.getByRole('combobox'))
+    await user.click(screen.getByRole('button', { name: 'All' }))
     await vi.waitFor(() =>
       expect(
         screen.getByRole('switch', { name: 'agent-made.standalone' })
       ).not.toBeChecked()
     )
+    expect(screen.getByRole('switch', { name: 'Manual.Toolbar' })).toBeChecked()
+    expect(
+      screen.getByRole('switch', { name: 'agentic.toolbar' })
+    ).toBeChecked()
     expect(
       screen.getByRole('switch', { name: 'agent.cushions.toolbar' })
     ).toBeChecked()
@@ -446,5 +451,19 @@ describe('ExtensionPanel', () => {
     expect(
       screen.queryByRole('switch', { name: 'Manual.Toolbar' })
     ).not.toBeInTheDocument()
+  })
+
+  it('labels a core extension created by Agent as created by Agent', () => {
+    const extensionStore = useExtensionStore()
+    extensionStore.registerExtension({ name: 'agent.cushions.toolbar' })
+    extensionStore.captureCoreExtensions()
+
+    renderPanel()
+
+    expect(
+      within(
+        screen.getByRole('row', { name: /agent\.cushions\.toolbar/ })
+      ).getByText('Created by agent')
+    ).toBeVisible()
   })
 })
