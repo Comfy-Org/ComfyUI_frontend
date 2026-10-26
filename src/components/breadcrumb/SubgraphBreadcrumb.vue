@@ -1,17 +1,12 @@
 <template>
   <div
     data-testid="subgraph-breadcrumb"
-    class="subgraph-breadcrumb -mt-3 flex w-auto items-center pt-4 pl-1 drop-shadow-(--interface-panel-drop-shadow)"
-    :class="{
-      'subgraph-breadcrumb-collapse': collapseTabs,
-      'subgraph-breadcrumb-overflow': overflowingTabs
-    }"
+    :data-collapsed="collapseTabs || undefined"
+    class="flex min-w-30 flex-auto shrink-10000 items-center overflow-hidden drop-shadow-(--interface-panel-drop-shadow)"
     :style="{
-      '--p-breadcrumb-gap': `0px`,
-      '--p-breadcrumb-item-margin': `${ITEM_GAP / 2}px`,
-      '--p-breadcrumb-item-min-width': `${MIN_WIDTH}px`,
-      '--p-breadcrumb-item-padding': `${ITEM_PADDING}px`,
-      '--p-breadcrumb-icon-width': `${ICON_WIDTH}px`
+      '--breadcrumb-item-margin': `${ITEM_GAP / 2}px`,
+      '--breadcrumb-item-min-width': `${MIN_WIDTH}px`,
+      '--breadcrumb-item-padding': `${ITEM_PADDING}px`
     }"
   >
     <WorkflowActionsDropdown
@@ -20,44 +15,64 @@
     />
     <Button
       v-if="isInSubgraph"
-      class="back-button pointer-events-auto ml-1.5 size-8 shrink-0 border border-transparent bg-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
+      class="pointer-events-auto ml-1.5 shrink-0 border border-transparent p-0 transition-all hover:rounded-lg hover:border-border hover:bg-background"
       data-testid="subgraph-breadcrumb-back"
-      text
-      severity="secondary"
-      size="small"
+      variant="muted-textonly"
+      size="icon"
       @click="handleBackClick"
     >
       <i class="icon-[lucide--undo-2]" />
     </Button>
-    <Breadcrumb
-      ref="breadcrumbRef"
-      class="w-fit rounded-lg p-0"
-      :class="{ hidden: !isInSubgraph }"
-      :model="items"
-      :pt="{ item: { class: 'pointer-events-auto' } }"
+    <nav
+      :class="
+        cn(
+          'w-full overflow-hidden rounded-lg bg-transparent p-0',
+          !isInSubgraph && 'hidden'
+        )
+      "
       :aria-label="$t('g.graphNavigation')"
     >
-      <template #item="{ item }">
-        <SubgraphBreadcrumbItem
-          :item="item"
-          :is-active="item.key === activeItemKey"
-        />
-      </template>
-      <template #separator
-        ><span style="transform: scale(1.5)"> / </span></template
+      <ol
+        ref="breadcrumbListRef"
+        :class="
+          cn(
+            'm-0 flex list-none items-center p-0 text-muted-foreground',
+            collapseTabs && '[&>li]:hidden [&>li:nth-last-child(-n+3)]:flex'
+          )
+        "
       >
-    </Breadcrumb>
+        <template v-for="(item, index) in items" :key="item.key">
+          <li
+            data-breadcrumb-item
+            class="pointer-events-auto flex h-8 min-w-[calc(var(--breadcrumb-item-min-width)+1rem)] shrink-10000 items-center overflow-hidden border border-transparent transition-all duration-200 first:shrink-5000 last:shrink hover:rounded-lg hover:border-border hover:bg-background hover:text-foreground has-data-active:min-w-[calc(var(--breadcrumb-item-min-width)+1rem+20px)]"
+          >
+            <SubgraphBreadcrumbItem
+              :item
+              :is-active="item.key === activeItemKey"
+            />
+          </li>
+          <li
+            v-if="index < items.length - 1"
+            data-breadcrumb-separator
+            class="flex border border-transparent px-(--breadcrumb-item-margin)"
+            aria-hidden="true"
+          >
+            <span class="scale-150">/</span>
+          </li>
+        </template>
+      </ol>
+    </nav>
   </div>
 </template>
 
 <script setup lang="ts">
-import Breadcrumb from 'primevue/breadcrumb'
-import Button from 'primevue/button'
-import type { MenuItem } from 'primevue/menuitem'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
+import type { BreadcrumbItem } from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -75,13 +90,12 @@ const ICON_WIDTH = 20
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
 const canvasStore = useCanvasStore()
-const breadcrumbRef = ref<InstanceType<typeof Breadcrumb>>()
+const breadcrumbListRef = ref<HTMLElement | null>(null)
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
 const isBlueprint = computed(() =>
   useSubgraphStore().isSubgraphBlueprint(workflowStore.activeWorkflow)
 )
 const collapseTabs = ref(false)
-const overflowingTabs = ref(false)
 
 const isInSubgraph = computed(() => navigationStore.navigationStack.length > 0)
 
@@ -103,28 +117,30 @@ const home = computed(() => ({
 }))
 
 const items = computed(() => {
-  const items = navigationStore.navigationStack.map<MenuItem>((subgraph) => ({
-    label: subgraph.name,
-    key: `subgraph-${subgraph.id}`,
-    command: () => {
-      useTelemetry()?.trackUiButtonClicked({
-        button_id: 'breadcrumb_subgraph_item_selected',
-        element_group: 'breadcrumb'
-      })
-      const canvas = canvasStore.getCanvas()
-      if (!canvas.graph) throw new TypeError('Canvas has no graph')
+  const items = navigationStore.navigationStack.map<BreadcrumbItem>(
+    (subgraph) => ({
+      label: subgraph.name,
+      key: `subgraph-${subgraph.id}`,
+      command: () => {
+        useTelemetry()?.trackUiButtonClicked({
+          button_id: 'breadcrumb_subgraph_item_selected',
+          element_group: 'breadcrumb'
+        })
+        const canvas = canvasStore.getCanvas()
+        if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
-      canvas.setGraph(subgraph)
-    },
-    updateTitle: (title: string) => {
-      const rootGraph = canvasStore.getCanvas().graph?.rootGraph
-      if (!rootGraph) return
+        canvas.setGraph(subgraph)
+      },
+      updateTitle: (title: string) => {
+        const rootGraph = canvasStore.getCanvas().graph?.rootGraph
+        if (!rootGraph) return
 
-      forEachSubgraphNode(rootGraph, subgraph.id, (node) => {
-        node.title = title
-      })
-    }
-  }))
+        forEachSubgraphNode(rootGraph, subgraph.id, (node) => {
+          node.title = title
+        })
+      }
+    })
+  )
 
   return [home.value, ...items]
 })
@@ -135,39 +151,30 @@ const handleBackClick = () => {
   void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
 }
 
-// Check for overflow on breadcrumb items and collapse/expand the breadcrumb to fit
 let overflowObserver: ReturnType<typeof useOverflowObserver> | undefined
 onMounted(() => {
-  const breadcrumb = breadcrumbRef.value
-  if (!breadcrumb) return
-
-  const root = (breadcrumb as unknown as { $el: HTMLElement }).$el
-  const el = root.querySelector<HTMLElement>('.p-breadcrumb-list')
+  const el = breadcrumbListRef.value
   if (!el) return
 
   overflowObserver = useOverflowObserver(el, {
     onCheck: (isOverflowing) => {
-      overflowingTabs.value = isOverflowing
-
       if (collapseTabs.value) {
-        // Items are currently hidden, check if we can show them
         if (!isOverflowing) {
           const items = [
-            ...el.querySelectorAll('.p-breadcrumb-item')
-          ] as HTMLElement[]
+            ...el.querySelectorAll<HTMLElement>('[data-breadcrumb-item]')
+          ]
 
           if (items.length < 3) return
 
           const itemsWithIcon = items.filter((item) =>
-            item.querySelector('.p-breadcrumb-item-link-icon-visible')
+            item.querySelector('[data-active]')
           ).length
-          const separators = el.querySelectorAll(
-            '.p-breadcrumb-separator'
-          ) as NodeListOf<HTMLElement>
-          const separator = separators[separators.length - 1] as HTMLElement
+          const separators = el.querySelectorAll<HTMLElement>(
+            '[data-breadcrumb-separator]'
+          )
+          const separator = separators[separators.length - 1]
           const separatorWidth = separator.offsetWidth
 
-          // items + separators + gaps + icons
           const itemsWidth =
             (MIN_WIDTH + ITEM_PADDING + ITEM_PADDING) * items.length +
             itemsWithIcon * ICON_WIDTH
@@ -189,101 +196,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => overflowObserver?.dispose())
 
-// If e.g. the workflow name changes, we need to check the overflow again
 onUpdated(() => {
   if (!overflowObserver?.disposed.value) {
     overflowObserver?.checkOverflow()
   }
 })
 </script>
-
-<style scoped>
-.subgraph-breadcrumb:not(:empty) {
-  flex: auto;
-  flex-shrink: 10000;
-  min-width: 120px;
-}
-
-.subgraph-breadcrumb,
-:deep(.p-breadcrumb) {
-  overflow: hidden;
-}
-
-:deep(.p-breadcrumb) {
-  width: 100%;
-  background-color: transparent;
-}
-
-:deep(.p-breadcrumb-item) {
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  height: calc(var(--spacing) * 8);
-  min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem);
-  border: 1px solid transparent;
-  background-color: transparent;
-  transition: all 0.2s;
-  /* Collapse middle items first */
-  flex-shrink: 10000;
-}
-
-:deep(.p-breadcrumb-separator) {
-  border: 1px solid transparent;
-  background-color: transparent;
-  display: flex;
-  padding: 0 var(--p-breadcrumb-item-margin);
-}
-
-:deep(.p-breadcrumb-item-link) {
-  padding: 0
-    calc(var(--p-breadcrumb-item-margin) + var(--p-breadcrumb-item-padding));
-}
-
-:deep(.p-breadcrumb-item:hover) {
-  border-radius: var(--radius-lg);
-  border-color: var(--interface-stroke);
-  background-color: var(--comfy-menu-bg);
-}
-
-:deep(.p-breadcrumb-item:has(.p-breadcrumb-item-link-icon-visible)) {
-  min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem + 20px);
-}
-
-:deep(.p-breadcrumb-item:first-child) {
-  /* Then collapse the root workflow */
-  flex-shrink: 5000;
-
-  .p-breadcrumb-item-link {
-    padding-left: var(--p-breadcrumb-item-padding);
-  }
-}
-
-:deep(.p-breadcrumb-item:last-child) {
-  /* Then collapse the active item */
-  flex-shrink: 1;
-}
-
-:deep(.p-breadcrumb-item-link-menu-visible) {
-  background-color: color-mix(
-    in srgb,
-    var(--fg-color) 10%,
-    var(--comfy-menu-bg)
-  ) !important;
-  color: var(--fg-color);
-}
-</style>
-
-<style>
-.subgraph-breadcrumb-collapse .p-breadcrumb-list {
-  .p-breadcrumb-item,
-  .p-breadcrumb-separator {
-    display: none;
-  }
-
-  .p-breadcrumb-item:nth-last-child(3),
-  .p-breadcrumb-separator:nth-last-child(2),
-  .p-breadcrumb-item:nth-last-child(1) {
-    display: flex;
-  }
-}
-</style>

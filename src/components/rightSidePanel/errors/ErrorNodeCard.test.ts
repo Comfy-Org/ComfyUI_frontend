@@ -1,71 +1,67 @@
-import { createTestingPinia } from '@pinia/testing'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-import ErrorNodeCard from './ErrorNodeCard.vue'
-import type { ErrorCardData } from './types'
-import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+
+import { useTelemetry } from '@/platform/telemetry'
+
+import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
+import { useCommandStore } from '@/stores/commandStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
-const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
-const mockSerialize = vi.fn(() => ({ nodes: [] }))
+import ErrorNodeCard from './ErrorNodeCard.vue'
+import type { ErrorCardData } from './types'
+import { api } from '@/scripts/api'
+
 const mockGenerateErrorReport = vi.fn(
   (_data?: unknown) => '# ComfyUI Error Report\n...'
 )
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getLogs: () => mockGetLogs()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    rootGraph: {
-      serialize: () => mockSerialize()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/utils/errorReportUtil', () => ({
+vi.mock(import('@/utils/errorReportUtil'), () => ({
   generateErrorReport: (data: unknown) => mockGenerateErrorReport(data)
 }))
 
-const mockTrackHelpResourceClicked = vi.fn()
-
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: vi.fn(() => ({
-    trackUiButtonClicked: vi.fn(),
-    trackHelpResourceClicked: mockTrackHelpResourceClicked
-  }))
-}))
-
-const mockExecuteCommand = vi.fn()
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: vi.fn(() => ({
-    execute: mockExecuteCommand
-  }))
-}))
-
-vi.mock('@/composables/useExternalLink', () => ({
-  useExternalLink: vi.fn(() => ({
-    staticUrls: {
-      githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues'
-    }
-  }))
-}))
+vi.mock(import('@/platform/telemetry'))
 
 describe('ErrorNodeCard.vue', () => {
   let i18n: ReturnType<typeof createI18n>
 
   beforeEach(() => {
     cardIdCounter = 0
-    mockGetLogs.mockResolvedValue('mock server logs')
+    vi.mocked(api.getLogs).mockResolvedValue('mock server logs')
     mockGenerateErrorReport.mockReturnValue('# ComfyUI Error Report\n...')
+    vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+    useSystemStatsStore().systemStats = {
+      system: {
+        os: 'Linux',
+        python_version: '3.11.0',
+        embedded_python: false,
+        comfyui_version: '1.0.0',
+        pytorch_version: '2.1.0',
+        ram_total: 32000,
+        ram_free: 16000,
+        argv: ['--listen']
+      },
+      devices: [
+        {
+          name: 'NVIDIA RTX 4090',
+          type: 'cuda',
+          index: 0,
+          vram_total: 24000,
+          vram_free: 12000,
+          torch_vram_total: 24000,
+          torch_vram_free: 12000
+        }
+      ]
+    }
 
     i18n = createI18n({
       legacy: false,
@@ -95,52 +91,16 @@ describe('ErrorNodeCard.vue', () => {
     })
   })
 
-  function renderCard(
-    card: ErrorCardData,
-    options: { initialState?: Record<string, unknown> } = {}
-  ) {
+  function renderCard(card: ErrorCardData) {
     const user = userEvent.setup()
     const onCopyToClipboard = vi.fn()
     const onLocateNode = vi.fn()
     const { container } = render(ErrorNodeCard, {
       props: { card, onCopyToClipboard, onLocateNode },
       global: {
-        plugins: [
-          PrimeVue,
-          i18n,
-          createTestingPinia({
-            createSpy: vi.fn,
-            initialState: options.initialState ?? {
-              systemStats: {
-                systemStats: {
-                  system: {
-                    os: 'Linux',
-                    python_version: '3.11.0',
-                    embedded_python: false,
-                    comfyui_version: '1.0.0',
-                    pytorch_version: '2.1.0',
-                    argv: ['--listen']
-                  },
-                  devices: [
-                    {
-                      name: 'NVIDIA RTX 4090',
-                      type: 'cuda',
-                      vram_total: 24000,
-                      vram_free: 12000,
-                      torch_vram_total: 24000,
-                      torch_vram_free: 12000
-                    }
-                  ]
-                }
-              }
-            }
-          })
-        ],
+        plugins: [i18n, getActivePinia()!],
         stubs: {
-          TransitionCollapse: { template: '<div><slot /></div>' },
-          Button: {
-            template: '<button v-bind="$attrs"><slot /></button>'
-          }
+          TransitionCollapse: { template: '<div><slot /></div>' }
         }
       }
     })
@@ -269,7 +229,7 @@ describe('ErrorNodeCard.vue', () => {
       expect(screen.getByText('Error details')).toBeInTheDocument()
     })
 
-    expect(mockGetLogs).not.toHaveBeenCalled()
+    expect(api.getLogs).not.toHaveBeenCalled()
     expect(mockGenerateErrorReport).not.toHaveBeenCalled()
   })
 
@@ -351,7 +311,7 @@ describe('ErrorNodeCard.vue', () => {
   })
 
   it('generates report with fallback logs when getLogs fails', async () => {
-    mockGetLogs.mockRejectedValue(new Error('Network error'))
+    vi.mocked(api.getLogs).mockRejectedValue(new Error('Network error'))
 
     renderCard(makeRuntimeErrorCard())
 
@@ -413,8 +373,10 @@ describe('ErrorNodeCard.vue', () => {
 
     await user.click(screen.getByRole('button', { name: /Get Help/ }))
 
-    expect(mockExecuteCommand).toHaveBeenCalledWith('Comfy.ContactSupport')
-    expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
+      'Comfy.ContactSupport'
+    )
+    expect(useTelemetry()?.trackHelpResourceClicked).toHaveBeenCalledWith(
       expect.objectContaining({
         resource_type: 'help_feedback',
         source: 'error_dialog'
@@ -463,11 +425,8 @@ describe('ErrorNodeCard.vue', () => {
   })
 
   it('falls back to original details when systemStats is unavailable', async () => {
-    renderCard(makeRuntimeErrorCard(), {
-      initialState: {
-        systemStats: { systemStats: null }
-      }
-    })
+    useSystemStatsStore().systemStats = null
+    renderCard(makeRuntimeErrorCard())
 
     expect(screen.getByText(/Traceback line 1/)).toBeInTheDocument()
 

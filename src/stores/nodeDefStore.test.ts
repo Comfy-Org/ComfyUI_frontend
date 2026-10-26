@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import axios from 'axios'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -9,6 +10,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
 describe('useNodeDefStore', () => {
@@ -388,6 +390,62 @@ describe('useNodeDefStore', () => {
     })
   })
 
+  describe('dynamic combo input ownership', () => {
+    it('returns the live selector for a child owned by its selected option', () => {
+      store.updateNodeDefs([
+        createMockNodeDef({
+          input: {
+            required: {
+              mode: [
+                'COMFY_DYNAMICCOMBO_V3',
+                {
+                  options: [
+                    {
+                      key: 'scale',
+                      inputs: { required: { multiplier: ['FLOAT', {}] } }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        })
+      ])
+      const node = new LGraphNode('TestNode', 'TestNode')
+      node.addWidget('combo', 'mode', 'scale', () => undefined, {
+        values: ['scale']
+      })
+
+      expect(
+        store.getDynamicComboSelectionForInput(node, 'mode.multiplier')
+      ).toEqual({ widget: 'mode', value: 'scale' })
+    })
+
+    it('does not claim a dynamic-group child with a dotted name', () => {
+      store.updateNodeDefs([
+        createMockNodeDef({
+          input: {
+            required: {
+              mode: [
+                'COMFY_DYNAMICGROUP_V3',
+                {
+                  min: 0,
+                  max: 2,
+                  template: { required: { multiplier: ['FLOAT', {}] } }
+                }
+              ]
+            }
+          }
+        })
+      ])
+      const node = new LGraphNode('TestNode', 'TestNode')
+
+      expect(
+        store.getDynamicComboSelectionForInput(node, 'mode.0.multiplier')
+      ).toBeUndefined()
+    })
+  })
+
   describe('performance', () => {
     it('should perform single traversal for multiple filters', () => {
       let filterCallCount = 0
@@ -414,6 +472,20 @@ describe('useNodeDefStore', () => {
 
       // Each node (10) should be checked by each filter (5 test + 2 core = 7 total)
       expect(filterCallCount).toBe(10 * 5)
+    })
+  })
+
+  describe('node frequencies', () => {
+    it('omits frequencies for unavailable node definitions', async () => {
+      store.updateNodeDefs([createMockNodeDef()])
+      vi.spyOn(axios, 'get').mockResolvedValueOnce({
+        data: { TestNode: 10, MissingNode: 9 }
+      })
+
+      const frequencyStore = useNodeFrequencyStore()
+      await frequencyStore.loadNodeFrequencies()
+
+      expect(store.topNodeDefs.map(({ name }) => name)).toEqual(['TestNode'])
     })
   })
 })

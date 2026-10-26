@@ -1,104 +1,53 @@
 <template>
-  <div
-    v-tooltip="{
-      value: t('sideToolbar.labels.menu'),
-      showDelay: 300,
-      hideDelay: 300
-    }"
-    class="comfy-menu-button-wrapper flex shrink-0 cursor-pointer flex-col items-center justify-center p-2 transition-colors"
-    :class="{
-      'comfy-menu-button-active': menuRef?.visible
-    }"
-    @click="onLogoMenuClick($event)"
-  >
-    <div class="grid place-items-center-safe gap-0.5">
-      <i
-        class="col-span-full row-span-full icon-[lucide--chevron-down] size-3 translate-x-4 text-muted-foreground"
-      />
-      <ComfyLogo
-        alt="ComfyUI Logo"
-        class="comfyui-logo col-span-full row-span-full size-4.5"
-        mode="fill"
-      />
-    </div>
-  </div>
-
-  <TieredMenu
-    ref="menuRef"
-    :model="translatedItems"
-    :popup="true"
+  <Menu
+    :items="translatedItems"
     class="comfy-command-menu"
-    @show="onMenuShow"
+    @activate="onMenuItemActivate"
   >
-    <template #item="{ item, props }">
-      <a
-        v-if="item.key !== 'nodes-2.0-toggle'"
-        class="p-menubar-item-link px-4 py-2"
-        v-bind="props.action"
-        :href="item.url"
-        target="_blank"
-        :class="typeof item.class === 'function' ? item.class() : item.class"
-        @mousedown="
-          isZoomCommand(item) ? handleZoomMouseDown(item, $event) : undefined
+    <template #trigger="{ open }">
+      <Button
+        variant="textonly"
+        size="unset"
+        :tooltip="t('sideToolbar.labels.menu')"
+        tooltip-side="right"
+        data-testid="comfy-menu-button"
+        type="button"
+        :aria-label="t('sideToolbar.labels.menu')"
+        :class="
+          cn(
+            'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 flex-col rounded-none p-2 hover:bg-accent',
+            open && 'bg-muted hover:bg-muted'
+          )
         "
-        @click="handleItemClick(item, $event)"
+        @click="onLogoMenuClick"
       >
-        <i
-          v-if="hasActiveStateSiblings(item)"
-          class="p-menubar-item-icon pi pi-check text-sm"
-          :class="{ invisible: !item.comfyCommand?.active?.() }"
-        />
-        <span
-          v-else-if="
-            item.icon && item.comfyCommand?.id !== 'Comfy.NewBlankWorkflow'
-          "
-          class="p-menubar-item-icon text-sm"
-          :class="item.icon"
-        />
-        <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
-        <i
-          v-if="item.comfyCommand?.id === 'Comfy.NewBlankWorkflow'"
-          class="ml-auto"
-          :class="item.icon"
-        />
-        <span
-          v-if="item?.comfyCommand?.keybinding"
-          class="keybinding-tag ml-auto rounded-sm border border-surface p-1 text-xs text-nowrap text-muted"
-        >
-          {{ item.comfyCommand.keybinding.combo.toString() }}
-        </span>
-        <i v-if="item.items" class="pi pi-angle-right ml-auto" />
-      </a>
-      <div
-        v-else
-        class="flex items-center justify-between px-4 py-2"
-        @click.stop="handleNodes2ToggleClick"
-      >
-        <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
-        <Tag severity="info" class="ml-2 text-xs">{{ $t('g.beta') }}</Tag>
-        <Switch
-          :model-value="nodes2Enabled"
-          class="ml-4"
-          :aria-label="item.label"
-          @click.stop
-          @update:model-value="onNodes2ToggleChange"
-        />
-      </div>
+        <div class="grid place-items-center-safe gap-0.5">
+          <i
+            class="col-span-full row-span-full icon-[lucide--chevron-down] size-3 translate-x-4 text-muted-foreground"
+          />
+          <ComfyLogo
+            alt="ComfyUI Logo"
+            class="comfyui-logo col-span-full row-span-full size-4.5"
+            mode="fill"
+          />
+        </div>
+      </Button>
     </template>
-  </TieredMenu>
+  </Menu>
 </template>
 
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
-import Tag from 'primevue/tag'
-import TieredMenu from 'primevue/tieredmenu'
-import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
-import { computed, nextTick, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+import { snakeCase } from 'es-toolkit'
+
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
-import Switch from '@/components/ui/switch/Switch.vue'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingPanelType } from '@/platform/settings/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -106,24 +55,19 @@ import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
+import type { AppMenuItem } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { whileMouseDown } from '@/utils/mouseDownUtil'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const { t } = useI18n()
-const commandStore = useCommandStore()
 const menuItemStore = useMenuItemStore()
+const commandStore = useCommandStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const settingsDialog = useSettingsDialog()
-const managerState = useManagerState()
 const settingStore = useSettingStore()
-
-const menuRef = ref<
-  ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
->(null)
 
 const nodes2Enabled = computed(
   () => settingStore.get('Comfy.VueNodes.Enabled') ?? false
@@ -131,25 +75,52 @@ const nodes2Enabled = computed(
 
 const telemetry = useTelemetry()
 
-function onLogoMenuClick(event: MouseEvent) {
+function onLogoMenuClick() {
   telemetry?.trackUiButtonClicked({
     button_id: 'sidebar_comfy_menu_opened',
     element_group: 'sidebar'
   })
-  menuRef.value?.toggle(event)
 }
 
-const translateMenuItem = (item: MenuItem): MenuItem => {
+const EXTRA_ITEM_BUTTON_IDS: Partial<Record<string, string>> = {
+  'browse-templates': 'comfy_menu_browse_templates_clicked',
+  'manage-extensions': 'comfy_menu_manage_extensions_clicked'
+}
+
+function commandButtonId(commandId: string) {
+  if (commandStore.getCommand(commandId)?.source !== 'System')
+    return 'comfy_menu_extension_command_clicked'
+  return `comfy_menu_${snakeCase(commandId)}_clicked`
+}
+
+function menuItemButtonId(item: AppMenuItem) {
+  if ('commandId' in item) return commandButtonId(item.commandId)
+  if (item.key?.startsWith('theme-')) return 'comfy_menu_theme_clicked'
+  return item.key ? EXTRA_ITEM_BUTTON_IDS[item.key] : undefined
+}
+
+function onMenuItemActivate(item: AppMenuItem) {
+  const buttonId = menuItemButtonId(item)
+  if (!buttonId) return
+  telemetry?.trackUiButtonClicked({
+    button_id: buttonId,
+    element_group: 'comfy_menu'
+  })
+}
+
+const translateMenuItem = (item: AppMenuItem): AppMenuItem => {
   const label = typeof item.label === 'function' ? item.label() : item.label
   const translatedLabel = label
     ? t(`menuLabels.${normalizeI18nKey(label)}`, label)
     : undefined
 
-  return {
-    ...item,
-    label: translatedLabel,
-    items: item.items?.map(translateMenuItem)
-  }
+  return item.items
+    ? {
+        ...item,
+        label: translatedLabel,
+        items: item.items.map(translateMenuItem)
+      }
+    : { ...item, label: translatedLabel }
 }
 
 const showSettings = (defaultPanel?: SettingPanelType) => {
@@ -157,27 +128,24 @@ const showSettings = (defaultPanel?: SettingPanelType) => {
 }
 
 const showManageExtensions = async () => {
-  await managerState.openManager({
+  await useManagerDialog().openManager({
     initialTab: ManagerTab.All,
     showToastOnLegacyError: false
   })
 }
 
 const themeMenuItems = computed(() => {
-  return colorPaletteStore.palettes.map((palette) => ({
+  return colorPaletteStore.palettes.map<MenuItem>((palette) => ({
     key: `theme-${palette.id}`,
     label: palette.name,
-    parentPath: 'theme',
-    comfyCommand: {
-      active: () => colorPaletteStore.activePaletteId === palette.id
-    },
+    checked: () => colorPaletteStore.activePaletteId === palette.id,
     command: async () => {
       await colorPaletteService.loadColorPalette(palette.id)
     }
   }))
 })
 
-const extraMenuItems = computed(() => [
+const extraMenuItems = computed<MenuItem[]>(() => [
   { separator: true },
   {
     key: 'theme',
@@ -186,7 +154,11 @@ const extraMenuItems = computed(() => [
   },
   {
     key: 'nodes-2.0-toggle',
-    label: 'Nodes 2.0'
+    label: 'Nodes 2.0',
+    checked: nodes2Enabled.value,
+    presentation: 'switch',
+    class: 'select-none',
+    command: () => onNodes2ToggleChange(!nodes2Enabled.value)
   },
   { separator: true },
   {
@@ -215,25 +187,20 @@ const extraMenuItems = computed(() => [
   }
 ])
 
-const translatedItems = computed(() => {
+const menuSeparator: MenuItem = { separator: true }
+
+const translatedItems = computed<AppMenuItem[]>(() => {
   const items = menuItemStore.menuItems.map(translateMenuItem)
   let helpIndex = items.findIndex((item) => item.key === 'Help')
   let helpItem: MenuItem | undefined
 
   if (helpIndex !== -1) {
     items[helpIndex].icon = 'mdi mdi-help-circle-outline'
-    // If help is not the last item (i.e. we have extension commands), separate them
     const isLastItem = helpIndex !== items.length - 1
     helpItem = items.splice(
       helpIndex,
       1,
-      ...(isLastItem
-        ? [
-            {
-              separator: true
-            }
-          ]
-        : [])
+      ...(isLastItem ? [menuSeparator] : [])
     )[0]
   }
   helpIndex = items.length
@@ -242,74 +209,11 @@ const translatedItems = computed(() => {
     helpIndex,
     0,
     ...extraMenuItems.value,
-    ...(helpItem
-      ? [
-          {
-            separator: true
-          },
-          helpItem
-        ]
-      : [])
+    ...(helpItem ? [menuSeparator, helpItem] : [])
   )
 
   return items
 })
-
-const onMenuShow = () => {
-  void nextTick(() => {
-    // Force the menu to show submenus on hover
-    if (menuRef.value) {
-      menuRef.value.dirty = true
-    }
-  })
-}
-
-const isZoomCommand = (item: MenuItem) => {
-  return (
-    item.comfyCommand?.id === 'Comfy.Canvas.ZoomIn' ||
-    item.comfyCommand?.id === 'Comfy.Canvas.ZoomOut'
-  )
-}
-
-const handleZoomMouseDown = (item: MenuItem, event: MouseEvent) => {
-  if (item.comfyCommand) {
-    whileMouseDown(
-      event,
-      async () => {
-        await commandStore.execute(item.comfyCommand!.id)
-      },
-      50
-    )
-  }
-}
-
-const handleItemClick = (item: MenuItem, event: MouseEvent) => {
-  // Prevent the menu from closing for zoom commands or commands that have active state
-  if (isZoomCommand(item) || item.comfyCommand?.active) {
-    event.preventDefault()
-    event.stopPropagation()
-    if (item.comfyCommand?.active) {
-      item.command?.({
-        item,
-        originalEvent: event
-      })
-    }
-    return false
-  }
-}
-
-const hasActiveStateSiblings = (item: MenuItem): boolean => {
-  // Check if this item has siblings with active state (either from store or theme items)
-  return (
-    item.parentPath &&
-    (item.parentPath === 'theme' ||
-      menuItemStore.menuItemHasActiveStateChildren[item.parentPath])
-  )
-}
-
-const handleNodes2ToggleClick = () => {
-  return false
-}
 
 const onNodes2ToggleChange = async (value: boolean) => {
   await settingStore.set('Comfy.VueNodes.Enabled', value)
@@ -319,44 +223,3 @@ const onNodes2ToggleChange = async (value: boolean) => {
   })
 }
 </script>
-
-<style scoped>
-.comfy-menu-button-wrapper {
-  width: var(--sidebar-width);
-  height: var(--sidebar-item-height);
-}
-
-.comfy-menu-button-wrapper:hover {
-  background: var(--interface-panel-hover-surface);
-}
-
-.comfy-menu-button-active,
-.comfy-menu-button-active:hover {
-  background: var(--interface-panel-selected-surface);
-}
-
-.keybinding-tag {
-  background: var(--p-content-hover-background);
-  border-color: var(--p-content-border-color);
-  border-style: solid;
-}
-</style>
-
-<style>
-.comfy-command-menu {
-  --p-tieredmenu-item-focus-background: color-mix(
-    in srgb,
-    var(--fg-color) 15%,
-    transparent
-  );
-  --p-tieredmenu-item-active-background: color-mix(
-    in srgb,
-    var(--fg-color) 10%,
-    transparent
-  );
-}
-
-.comfy-command-menu ul {
-  background-color: var(--comfy-menu-bg) !important;
-}
-</style>

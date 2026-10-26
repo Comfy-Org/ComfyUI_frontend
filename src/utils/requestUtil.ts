@@ -1,13 +1,13 @@
-type Params = Record<string, string[] | string | number | boolean>
+type ParamValue = string[] | string | number | boolean
+type Params = Record<string, ParamValue | undefined>
 
-function sortedParams(params: Params = {}): Params {
-  const keys = Object.keys(params)
-    .filter((k) => params[k] !== undefined)
-    .sort()
-  const obj: Params = {}
+function sortedParams(params: Params = {}): Record<string, ParamValue> {
+  const keys = Object.keys(params).sort()
+  const obj: Record<string, ParamValue> = {}
   for (const k of keys) {
     const v = params[k]
-    obj[k] = Array.isArray(v) ? v.toSorted((a, b) => a.localeCompare(b)) : v
+    if (v === undefined) continue
+    obj[k] = Array.isArray(v) ? [...v].sort((a, b) => a.localeCompare(b)) : v
   }
   return obj
 }

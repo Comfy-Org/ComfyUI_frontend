@@ -1,0 +1,60 @@
+{
+  "id": "bottom-panel",
+  "capability": "Bottom panel",
+  "description": "Bottom-panel presentation, core tab registration, and log and command terminals. The keyboard-shortcuts reference belongs to keybindings; generic contribution registries remain in the workbench shell.",
+  "modules": [
+    {
+      "path": "src/components/bottomPanel/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SidebarBottomPanelToggleButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SidebarShortcutsToggleButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/bottomPanelTabs/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/bottomPanelTabs/useLogsTerminal.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/bottomPanelTabs/useTerminal.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": ["keybindings"],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Terminal tabs stream server logs into a shared terminal base",
+      "checks": [
+        "src/components/bottomPanel/tabs/terminal/BaseTerminal.test.ts",
+        "src/components/bottomPanel/tabs/terminal/LogsTerminal.test.ts"
+      ]
+    },
+    {
+      "name": "Core bottom panel tabs keep shortcuts registered and report terminal tab load failures",
+      "checks": [
+        "src/composables/bottomPanelTabs/registerCoreBottomPanelTabs.test.ts"
+      ]
+    },
+    {
+      "name": "The logs terminal loads, streams, and resyncs server logs across reconnects",
+      "checks": [
+        "src/components/bottomPanel/tabs/terminal/LogsTerminal.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

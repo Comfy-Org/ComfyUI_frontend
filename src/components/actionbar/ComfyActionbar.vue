@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full items-center" :class="cn(!isDocked && '-ml-2')">
+  <div :class="cn('flex h-full items-center', !isDocked && '-ml-2')">
     <div
       v-if="isDragging && !isDocked"
       :class="actionbarClass"
@@ -9,15 +9,11 @@
       {{ t('actionbar.dockToTop') }}
     </div>
 
-    <Panel
+    <div
       ref="panelRef"
-      class="pointer-events-auto"
-      :style="style"
+      :style
       :class="panelClass"
-      :pt="{
-        header: { class: 'hidden' },
-        content: { class: isDocked ? 'p-0' : 'p-1' }
-      }"
+      data-testid="actionbar-panel"
     >
       <div class="relative flex items-center gap-2 select-none">
         <span
@@ -29,60 +25,65 @@
             )
           "
         />
-        <Suspense @resolve="comfyRunButtonResolved">
-          <ComfyRunButton v-coachmark="FIRST_RUN_COACH_IDS.runButton" />
-        </Suspense>
+        <DeploymentSwitcher />
+        <div v-coachmark="FIRST_RUN_COACH_IDS.runButton" class="inline-flex">
+          <Suspense @resolve="comfyRunButtonResolved">
+            <ComfyRunButton />
+          </Suspense>
+        </div>
         <Button
-          v-tooltip.bottom="cancelJobTooltipConfig"
-          variant="destructive"
+          :tooltip="t('menu.interrupt')"
+          tooltip-side="bottom"
+          :variant="canInterrupt ? 'destructive' : 'secondary'"
           size="icon"
-          :disabled="isExecutionIdle"
+          :disabled="!canInterrupt"
           :aria-label="t('menu.interrupt')"
           @click="cancelCurrentJob"
         >
           <i class="icon-[lucide--x] size-4" />
         </Button>
-        <Button
-          v-tooltip.bottom="queueHistoryTooltipConfig"
-          variant="secondary"
-          size="md"
-          :aria-pressed="
-            isQueuePanelV2Enabled
-              ? activeSidebarTabId === 'job-history'
-              : queueOverlayExpanded
-          "
-          class="relative px-3"
-          data-testid="queue-overlay-toggle"
-          @click="toggleQueueOverlay"
-          @contextmenu.stop.prevent="showQueueContextMenu"
-        >
-          <span class="text-sm font-normal tabular-nums">
-            {{ activeJobsLabel }}
-          </span>
-          <StatusBadge
-            v-if="activeJobsCount > 0"
-            data-testid="active-jobs-indicator"
-            variant="dot"
-            class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
-          />
-          <span class="sr-only">
-            {{
+        <ContextMenu :model="queueContextMenuItems">
+          <Button
+            :tooltip="queueToggleLabel"
+            tooltip-side="bottom"
+            variant="secondary"
+            size="md"
+            :aria-pressed="
               isQueuePanelV2Enabled
-                ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
-                : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-            }}
-          </span>
-        </Button>
-        <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
+                ? activeSidebarTabId === 'job-history'
+                : queueOverlayExpanded
+            "
+            class="px-3"
+            data-testid="queue-overlay-toggle"
+            @click="toggleQueueOverlay"
+            @contextmenu.stop
+          >
+            <span class="text-sm font-normal tabular-nums">
+              {{ activeJobsLabel }}
+            </span>
+            <Badge
+              v-if="activeJobsCount > 0"
+              data-testid="active-jobs-indicator"
+              variant="dot"
+              severity="default"
+              class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
+            />
+            <span class="sr-only">{{ queueToggleLabel }}</span>
+          </Button>
+        </ContextMenu>
       </div>
       <FreeTierQuota v-if="!isDocked" />
       <PartnerNodesRunCaption v-if="!isDocked" />
-    </Panel>
+    </div>
 
-    <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
+    <Teleport
+      v-if="inlineProgressTarget"
+      :key="isDocked ? 'docked' : 'floating'"
+      :to="inlineProgressTarget"
+    >
       <QueueInlineProgress
         :hidden="shouldHideInlineProgress"
-        :radius-class="cn(isDocked ? 'rounded-[7px]' : 'rounded-[5px]')"
+        radius-class="rounded-xl"
         data-testid="queue-inline-progress"
       />
     </Teleport>
@@ -94,26 +95,25 @@ import {
   useDraggable,
   useEventListener,
   useLocalStorage,
-  unrefElement,
+  useResizeObserver,
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
-import Panel from 'primevue/panel'
 import { computed, nextTick, ref, watch } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
+import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
+import { useInterruptibleJob } from '@/components/queue/useInterruptibleJob'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
-import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
+import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -123,7 +123,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import ComfyRunButton from './ComfyRunButton'
+import ComfyRunButton from './ComfyRunButton/ComfyRunButton.vue'
 
 const { dockedProgressContainer, queueOverlayExpanded = false } = defineProps<{
   /**
@@ -145,7 +145,7 @@ const executionStore = useExecutionStore()
 const queueStore = useQueueStore()
 const sidebarTabStore = useSidebarTabStore()
 const { t, n } = useI18n()
-const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
+const { interruptibleJobId, canInterrupt } = useInterruptibleJob()
 const { activeJobsCount } = storeToRefs(queueStore)
 const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
 
@@ -154,18 +154,14 @@ const visible = computed(() => position.value !== 'Disabled')
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
 
-const panelRef = ref<ComponentPublicInstance | null>(null)
-const panelElement = computed<HTMLElement | null>(() => {
-  const element = unrefElement(panelRef)
-  return element instanceof HTMLElement ? element : null
-})
+const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-const { x, y, style, isDragging } = useDraggable(panelElement, {
+const { x, y, style, isDragging } = useDraggable(panelRef, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
   containerElement: document.body
@@ -182,7 +178,7 @@ watchDebounced(
 
 // Set initial position to bottom center
 const setInitialPosition = () => {
-  const panel = panelElement.value
+  const panel = panelRef.value
   if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
@@ -264,7 +260,7 @@ watch(
 )
 
 const adjustMenuPosition = () => {
-  const panel = panelElement.value
+  const panel = panelRef.value
   if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
@@ -320,6 +316,15 @@ const adjustMenuPosition = () => {
 
 useEventListener(window, 'resize', adjustMenuPosition)
 
+function keepFloatingPanelOnScreen() {
+  const panel = panelRef.value
+  if (!panel || isDocked.value) return
+  x.value = clamp(x.value, 0, window.innerWidth - panel.offsetWidth)
+  y.value = clamp(y.value, 0, window.innerHeight - panel.offsetHeight)
+}
+
+useResizeObserver(panelRef, keepFloatingPanelOnScreen)
+
 // Drop zone state
 const isMouseOverDropZone = ref(false)
 
@@ -345,13 +350,13 @@ const inlineProgressTarget = computed(() => {
     return null
   }
   if (isDocked.value) return dockedProgressContainer ?? null
-  return panelElement.value
+  return panelRef.value
 })
 const shouldHideInlineProgress = computed(
   () => !isQueuePanelV2Enabled.value && queueOverlayExpanded
 )
 watch(
-  panelElement,
+  panelRef,
   (target) => {
     emit('update:progressTarget', target)
   },
@@ -375,16 +380,11 @@ watch(isDragging, (dragging) => {
   }
 })
 
-const cancelJobTooltipConfig = computed(() =>
-  buildTooltipConfig(t('menu.interrupt'))
-)
-const queueHistoryTooltipConfig = computed(() =>
-  buildTooltipConfig(
-    t(
-      isQueuePanelV2Enabled.value
-        ? 'sideToolbar.queueProgressOverlay.viewJobHistory'
-        : 'sideToolbar.queueProgressOverlay.expandCollapsedQueue'
-    )
+const queueToggleLabel = computed(() =>
+  t(
+    isQueuePanelV2Enabled.value
+      ? 'sideToolbar.queueProgressOverlay.viewJobHistory'
+      : 'sideToolbar.queueProgressOverlay.expandCollapsedQueue'
   )
 )
 const activeJobsLabel = computed(() => {
@@ -395,12 +395,11 @@ const activeJobsLabel = computed(() => {
     count
   )
 })
-const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const queueContextMenuItems = computed<MenuItem[]>(() => [
   {
     label: t('sideToolbar.queueProgressOverlay.clearQueueTooltip'),
-    icon: 'icon-[lucide--list-x] text-destructive-background',
-    class: '*:text-destructive-background',
+    icon: 'icon-[lucide--list-x] text-destructive',
+    class: '*:text-destructive',
     disabled: queueStore.pendingTasks.length === 0,
     command: () => {
       void handleClearQueue()
@@ -409,8 +408,9 @@ const queueContextMenuItems = computed<MenuItem[]>(() => [
 ])
 
 const cancelCurrentJob = async () => {
-  if (isExecutionIdle.value) return
-  await commandStore.execute('Comfy.Interrupt')
+  const jobId = interruptibleJobId.value
+  if (!jobId) return
+  await commandStore.execute('Comfy.Interrupt', { metadata: { jobId } })
 }
 const toggleQueueOverlay = () => {
   if (isQueuePanelV2Enabled.value) {
@@ -418,9 +418,6 @@ const toggleQueueOverlay = () => {
     return
   }
   commandStore.execute('Comfy.Queue.ToggleOverlay')
-}
-const showQueueContextMenu = (event: MouseEvent) => {
-  queueContextMenu.value?.show(event)
 }
 const handleClearQueue = async () => {
   const pendingJobIds = queueStore.pendingTasks
@@ -445,9 +442,7 @@ const panelClass = computed(() =>
   cn(
     'actionbar pointer-events-auto',
     isDragging.value && 'pointer-events-none select-none',
-    isDocked.value
-      ? 'static border-none bg-transparent p-0'
-      : ['fixed z-1300 shadow-interface', 'border-interface-stroke']
+    !isDocked.value && 'fixed z-1300 floating-panel'
   )
 )
 </script>

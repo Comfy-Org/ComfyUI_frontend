@@ -1,17 +1,21 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { Bounds } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { Ref } from 'vue'
 
 const cropHolder = vi.hoisted(() => ({
-  state: null as Record<string, unknown> | null
+  state: null as Record<string, unknown> | null,
+  onEditEnd: undefined as (() => void) | undefined
 }))
+
+vi.mock(import('@/scripts/app'))
 
 function createDefaultCropState() {
   return {
@@ -32,14 +36,15 @@ function createDefaultCropState() {
   }
 }
 
-vi.mock('@/composables/useImageCrop', async () => {
+vi.mock<unknown>(import('@/composables/useImageCrop'), async () => {
   return {
     ASPECT_RATIOS: {
       '1:1': 1,
       '4:3': 4 / 3,
       custom: null
     },
-    useImageCrop: () => {
+    useImageCrop: (_nodeId: unknown, options: { onEditEnd?: () => void }) => {
+      cropHolder.onEditEnd = options.onEditEnd
       if (!cropHolder.state) {
         cropHolder.state = createDefaultCropState()
       }
@@ -52,7 +57,7 @@ const upstreamHolder = vi.hoisted(() => ({
   ref: null as Ref<unknown> | null
 }))
 
-vi.mock('@/composables/useUpstreamValue', async () => {
+vi.mock<unknown>(import('@/composables/useUpstreamValue'), async () => {
   const { ref } = await import('vue')
   return {
     useUpstreamValue: () => {
@@ -79,19 +84,10 @@ const i18n = createI18n({
         unlockRatio: 'Unlock aspect ratio',
         custom: 'Custom'
       },
-      boundingBox: { x: 'X', y: 'Y', width: 'Width', height: 'Height' }
+      boundingBox: { x: 'X', y: 'Y', width: 'Width', height: 'Height' },
+      widgetHistory: { undo: 'Undo', redo: 'Redo' }
     }
   }
-})
-
-const ButtonStub = defineComponent({
-  name: 'Button',
-  inheritAttrs: false,
-  template: '<button v-bind="$attrs" type="button"><slot /></button>'
-})
-
-const Passthrough = defineComponent({
-  template: '<div><slot /></div>'
 })
 
 const WidgetBoundingBoxStub = defineComponent({
@@ -101,12 +97,17 @@ const WidgetBoundingBoxStub = defineComponent({
     disabled: { type: Boolean, default: false }
   },
 
-  emits: ['update:modelValue'],
-  template: `<div data-testid="bbox-child"
-    :data-disabled="String(disabled)"
-    :data-model="JSON.stringify(modelValue)"
-    @click="$emit('update:modelValue', { x: 1, y: 2, width: 3, height: 4 })"
-  />`
+  emits: ['update:modelValue', 'editEnd'],
+  template: `<div>
+    <div data-testid="bbox-child"
+      :data-disabled="String(disabled)"
+      :data-model="JSON.stringify(modelValue)"
+      @click="$emit('update:modelValue', { x: 1, y: 2, width: 3, height: 4 })"
+    />
+    <div data-testid="bbox-nudge-x"
+      @click="$emit('update:modelValue', { ...modelValue, x: modelValue.x + 10 }); $emit('editEnd', 'x')"
+    />
+  </div>`
 })
 
 function primeCropState(overrides: Record<string, unknown> = {}) {
@@ -124,6 +125,7 @@ function makeWidget(
     type: 'imagecrop',
     value: { x: 0, y: 0, width: 512, height: 512 },
     options: {},
+    nodeLocatorId: createNodeLocatorId(null, toNodeId('1')),
     ...overrides
   }
 }
@@ -144,12 +146,6 @@ function renderWidget(
     global: {
       plugins: [i18n],
       stubs: {
-        Button: ButtonStub,
-        Select: Passthrough,
-        SelectContent: Passthrough,
-        SelectTrigger: Passthrough,
-        SelectValue: Passthrough,
-        SelectItem: Passthrough,
         WidgetBoundingBox: WidgetBoundingBoxStub
       }
     }
@@ -208,6 +204,38 @@ describe('WidgetImageCrop', () => {
     it('passes disabled=true to the bounding box child when disabled', () => {
       renderWidget(makeWidget({ options: { disabled: true } }))
       expect(screen.getByTestId('bbox-child').dataset.disabled).toBe('true')
+    })
+  })
+
+  describe('Node history', () => {
+    it('undoes and redoes a crop box drag', async () => {
+      primeCropState()
+      const { value } = renderWidget()
+      value.value.x = 50
+      cropHolder.onEditEnd?.()
+      await nextTick()
+      await nextTick()
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: 'Undo' }))
+      expect(value.value).toEqual({ x: 0, y: 0, width: 512, height: 512 })
+
+      await user.click(screen.getByRole('button', { name: 'Redo' }))
+      expect(value.value.x).toBe(50)
+    })
+
+    it('undoes consecutive changes to one number field as a single step', async () => {
+      primeCropState()
+      const { value } = renderWidget()
+      const user = userEvent.setup()
+      await user.click(screen.getByTestId('bbox-nudge-x'))
+      await user.click(screen.getByTestId('bbox-nudge-x'))
+      expect(value.value.x).toBe(20)
+
+      await user.click(screen.getByRole('button', { name: 'Undo' }))
+
+      expect(value.value.x).toBe(0)
+      expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
     })
   })
 

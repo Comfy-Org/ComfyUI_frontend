@@ -1,8 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useUserStore } from '@/stores/userStore'
 
 import UserSelectView from './UserSelectView.vue'
 
@@ -13,21 +14,13 @@ const i18n = createI18n({
 })
 
 const mockRouterPush = vi.hoisted(() => vi.fn())
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRouter: () => ({ push: mockRouterPush })
 }))
 
-const userStoreMock = vi.hoisted(() => ({
-  users: [] as Array<{ userId: string; username: string }>,
-  initialize: vi.fn().mockResolvedValue(undefined),
-  createUser: vi.fn(),
-  login: vi.fn().mockResolvedValue(undefined)
-}))
-vi.mock('@/stores/userStore', () => ({
-  useUserStore: () => userStoreMock
-}))
+let userStoreMock: ReturnType<typeof useUserStore>
 
-vi.mock('@/views/templates/BaseViewTemplate.vue', () => ({
+vi.mock<unknown>(import('@/views/templates/BaseViewTemplate.vue'), () => ({
   default: {
     name: 'BaseViewTemplate',
     template: '<div><slot /></div>'
@@ -37,13 +30,15 @@ vi.mock('@/views/templates/BaseViewTemplate.vue', () => ({
 const mountView = () =>
   render(UserSelectView, {
     global: {
-      plugins: [i18n, PrimeVue]
+      plugins: [i18n]
     }
   })
 
 describe('UserSelectView', () => {
   beforeEach(() => {
-    userStoreMock.users = []
+    userStoreMock = useUserStore()
+    vi.mocked(userStoreMock.initialize).mockResolvedValue(undefined)
+    vi.mocked(userStoreMock.login).mockResolvedValue(undefined)
   })
 
   it('initializes the user store on mount', async () => {
@@ -52,6 +47,14 @@ describe('UserSelectView', () => {
     await waitFor(() =>
       expect(userStoreMock.initialize).toHaveBeenCalledTimes(1)
     )
+  })
+
+  it('names the existing user selector from its label', () => {
+    mountView()
+
+    expect(
+      screen.getByRole('combobox', { name: 'userSelect.existingUser:' })
+    ).toBeInTheDocument()
   })
 
   it('shows an error when login is attempted without a selection', async () => {
@@ -68,7 +71,7 @@ describe('UserSelectView', () => {
 
   it('creates a new user, logs in, and navigates home', async () => {
     const newUser = { userId: 'u1', username: 'bob' }
-    userStoreMock.createUser.mockResolvedValueOnce(newUser)
+    vi.mocked(userStoreMock.createUser).mockResolvedValueOnce(newUser)
     mountView()
 
     await userEvent.type(
@@ -85,7 +88,7 @@ describe('UserSelectView', () => {
   })
 
   it('shows an error when the entered username already exists', async () => {
-    userStoreMock.users = [{ userId: 'u1', username: 'bob' }]
+    Object.assign(userStoreMock, { users: [{ userId: 'u1', username: 'bob' }] })
     mountView()
 
     await userEvent.type(
@@ -99,7 +102,7 @@ describe('UserSelectView', () => {
   })
 
   it('surfaces createUser failures as a login error', async () => {
-    userStoreMock.createUser.mockRejectedValueOnce(new Error('boom'))
+    vi.mocked(userStoreMock.createUser).mockRejectedValueOnce(new Error('boom'))
     mountView()
 
     await userEvent.type(

@@ -1,5 +1,5 @@
 import { isCloud } from '@/platform/distribution/types'
-import type { SystemStats } from '@/schemas/apiSchema'
+import type { SystemStats } from '@/platform/remote/comfyui/types'
 import { formatCommitHash, formatSize } from '@/utils/formatUtil'
 
 const frontendCommit = __COMFYUI_FRONTEND_COMMIT__

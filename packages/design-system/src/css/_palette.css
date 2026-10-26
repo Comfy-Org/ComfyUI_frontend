@@ -4,10 +4,6 @@
   --font-formula: 'PP Formula', 'Inter', sans-serif;
 
   /* Palette Colors */
-  --color-transparency-white-t8: rgb(255 255 255 / 0.08);
-  --color-transparency-white-t20: rgb(255 255 255 / 0.2);
-  --color-transparency-white-t40: rgb(255 255 255 / 0.4);
-
   --color-charcoal-100: #55565e;
   --color-charcoal-200: #494a50;
   --color-charcoal-300: #3c3d42;
@@ -34,6 +30,37 @@
   --color-smoke-700: #a0a0a0;
   --color-smoke-800: #8a8a8a;
 
+  --color-ivory-100: #fdfbfa;
+  --color-ivory-200: #faf9f5;
+  --color-ivory-300: #f0eee6;
+
+  --color-sand-100: #e1ded5;
+  --color-sand-200: #fff7d5;
+  --color-sand-300: #888682;
+  --color-sand-400: #eed7ac;
+
+  --color-azure-300: #78bae9;
+  --color-azure-400: #31b9f4;
+  --color-azure-600: #0b8ce9;
+
+  --color-cobalt-800: #185a8b;
+
+  --color-jade-400: #47e469;
+  --color-jade-600: #00cd72;
+
+  --color-gold-400: #fcbf64;
+  --color-gold-500: #fdab34;
+  --color-gold-600: #fd9903;
+  --color-gold-700: #c77700;
+  --color-gold-800: #8c6a38;
+
+  --color-coral-500: #f75951;
+  --color-coral-600: #e04e48;
+  --color-coral-700: #b33a3a;
+
+  --color-magenta-300: #ceaac9;
+  --color-magenta-700: #6a246a;
+
   /* Plum */
   --color-plum-300: #afa3db;
   --color-plum-400: #8d7fc5;
@@ -59,4 +86,13 @@
   --color-sapphire-700: #172dd7;
   --color-brand-yellow: var(--color-electric-400);
   --color-brand-blue: var(--color-sapphire-700);
+
+  --color-primary-comfy-ink: #211927;
+  --color-primary-comfy-canvas: #c2bfb9;
+  --color-primary-warm-white: #f0efed;
+  --color-primary-warm-gray: #7e7c78;
+
+  --color-ocean-300: #badde8;
+  --color-ocean-600: #2f687a;
+  --color-ocean-900: #253236;
 }

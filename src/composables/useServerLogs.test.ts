@@ -1,23 +1,14 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { useEventListener } from '@vueuse/core'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useServerLogs } from '@/composables/useServerLogs'
-import type { LogsWsMessage } from '@/schemas/apiSchema'
+import type { LogsWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    subscribeLogs: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@vueuse/core', () => ({
-  useEventListener: vi.fn().mockReturnValue(vi.fn())
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
 describe('useServerLogs', () => {
   it('should initialize with empty logs array', () => {
@@ -57,7 +48,7 @@ describe('useServerLogs', () => {
 
     await startListening()
 
-    expect(vi.mocked(useEventListener)).toHaveBeenCalledWith(
+    expect(useEventListener).toHaveBeenCalledWith(
       api,
       'logs',
       expect.any(Function)
@@ -69,20 +60,15 @@ describe('useServerLogs', () => {
 
     await startListening()
 
-    // Get the callback that was registered with useEventListener
-    const eventCallback = vi.mocked(useEventListener).mock.calls[0][2] as (
-      event: CustomEvent<LogsWsMessage>
-    ) => void
+    const message: LogsWsMessage = {
+      entries: [
+        { t: '00:00:00', m: 'Log message 1' },
+        { t: '00:00:00', m: 'Log message 2' }
+      ],
+      size: { cols: 80, row: 24 }
+    }
 
-    // Simulate receiving a log event
-    const mockEvent = new CustomEvent('logs', {
-      detail: fromAny<LogsWsMessage, unknown>({
-        type: 'logs',
-        entries: [{ m: 'Log message 1' }, { m: 'Log message 2' }]
-      })
-    })
-
-    eventCallback(mockEvent)
+    api.dispatchCustomEvent('logs', message)
     await nextTick()
 
     expect(logs.value).toEqual(['Log message 1', 'Log message 2'])
@@ -95,22 +81,16 @@ describe('useServerLogs', () => {
 
     await startListening()
 
-    const eventCallback = vi.mocked(useEventListener).mock.calls[0][2] as (
-      event: CustomEvent<LogsWsMessage>
-    ) => void
+    const message: LogsWsMessage = {
+      entries: [
+        { t: '00:00:00', m: 'Log message 1 dont remove me' },
+        { t: '00:00:00', m: 'remove me' },
+        { t: '00:00:00', m: '' }
+      ],
+      size: { cols: 80, row: 24 }
+    }
 
-    const mockEvent = new CustomEvent('logs', {
-      detail: fromAny<LogsWsMessage, unknown>({
-        type: 'logs',
-        entries: [
-          { m: 'Log message 1 dont remove me' },
-          { m: 'remove me' },
-          { m: '' }
-        ]
-      })
-    })
-
-    eventCallback(mockEvent)
+    api.dispatchCustomEvent('logs', message)
     await nextTick()
 
     expect(logs.value).toEqual(['Log message 1 dont remove me', ''])

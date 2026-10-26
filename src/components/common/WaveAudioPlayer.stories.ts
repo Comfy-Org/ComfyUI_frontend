@@ -21,8 +21,7 @@ export const Default: Story = {
   decorators: [
     (story) => ({
       components: { story },
-      template:
-        '<div class="w-80 rounded-lg bg-base-background p-4"><story /></div>'
+      template: '<div class="w-80 rounded-lg bg-background p-4"><story /></div>'
     })
   ]
 }
@@ -37,8 +36,7 @@ export const BottomAligned: Story = {
   decorators: [
     (story) => ({
       components: { story },
-      template:
-        '<div class="w-80 rounded-lg bg-base-background p-4"><story /></div>'
+      template: '<div class="w-80 rounded-lg bg-background p-4"><story /></div>'
     })
   ]
 }
@@ -54,7 +52,7 @@ export const Expanded: Story = {
     (story) => ({
       components: { story },
       template:
-        '<div class="w-[600px] rounded-2xl bg-base-background/80 p-8 backdrop-blur-sm"><story /></div>'
+        '<div class="w-[600px] rounded-2xl bg-background/80 p-8 backdrop-blur-sm"><story /></div>'
     })
   ]
 }

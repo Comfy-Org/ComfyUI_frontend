@@ -1,11 +1,25 @@
+import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
+import { zErrorResponse } from '@comfyorg/ingest-types/zod'
+
+import { useCurrentUserAccess } from '@/platform/auth/currentUserAccess'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import {
+  SessionRevokedError,
+  revokedCodeOf
+} from '@/platform/auth/session/sessionRevokedError'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
 
 interface InFlightCreateSession {
   ownerUid: string | null
   promise: Promise<void>
+}
+
+class SsoRequiredSessionError extends Error {
+  readonly code = 'SSO_REQUIRED'
 }
 
 let inFlightCreateSession: InFlightCreateSession | null = null
@@ -31,14 +45,22 @@ export const useSessionCookie = () => {
     })
   }
 
-  const readSessionError = async (response: Response): Promise<string> => {
+  const readSessionError = async (response: Response): Promise<Error> => {
     const errorData: unknown = await response.json().catch(() => null)
-    const message = (errorData as { message?: unknown } | null)?.message
-    return typeof message === 'string' ? message : response.statusText
+    const refusal = zErrorResponse.partial().safeParse(errorData).data
+    const text = refusal?.message ?? response.statusText
+    if (isSsoRequiredRefusal(response.status, errorData)) {
+      return new SsoRequiredSessionError(text)
+    }
+    const revokedCode =
+      response.status === 401 ? revokedCodeOf(refusal?.code) : null
+    return revokedCode
+      ? new SessionRevokedError(text, revokedCode)
+      : new Error(text)
   }
 
   const getSessionHeaderOrThrow = async (): Promise<Record<string, string>> => {
-    const authStore = useAuthStore()
+    const authStore = useAuthStoreAccess()
     const firebaseToken = await authStore.getIdToken()
     if (!firebaseToken) {
       throw new Error('No Firebase token available for session creation')
@@ -51,7 +73,7 @@ export const useSessionCookie = () => {
   const performCreateSession = async (
     expectedOwnerUid: string
   ): Promise<void> => {
-    const authStore = useAuthStore()
+    const authStore = useAuthStoreAccess()
     const authHeader = await getSessionHeaderOrThrow()
 
     if ((authStore.currentUser?.uid ?? null) !== expectedOwnerUid) {
@@ -61,7 +83,7 @@ export const useSessionCookie = () => {
     const response = await createSessionWithHeader(authHeader)
 
     if (!response.ok) {
-      throw new Error(await readSessionError(response))
+      throw await readSessionError(response)
     }
   }
 
@@ -85,12 +107,12 @@ export const useSessionCookie = () => {
       ownerUid,
       promise: sessionMutationTail
         .then(async () => {
-          if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
+          if ((useAuthStoreAccess().currentUser?.uid ?? null) !== ownerUid) {
             throw new Error('Session identity changed before creation')
           }
           await performCreateSession(ownerUid)
           confirmedSessionOwnerUid = ownerUid
-          if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
+          if ((useAuthStoreAccess().currentUser?.uid ?? null) !== ownerUid) {
             throw new Error('Session identity changed during creation')
           }
         })
@@ -107,32 +129,58 @@ export const useSessionCookie = () => {
   }
 
   const currentOwnerUidOrThrow = (): string => {
-    const ownerUid = useAuthStore().currentUser?.uid
+    const ownerUid = useAuthStoreAccess().currentUser?.uid
     if (!ownerUid) {
       throw new Error('No authenticated user available for session creation')
     }
     return ownerUid
   }
 
+  const isApiKeyOnWebSession = () =>
+    useFeatureFlags().flags.unifiedWebSessionEnabled &&
+    useCurrentUserAccess().isApiKeyLogin.value
+
   const ensureSessionCookie = async (): Promise<void> => {
-    if (!isCloud) return
+    if (!isCloud || isApiKeyOnWebSession()) return
+    const webSession = useCloudWebSessionStore()
+    if (webSession.start()) return webSession.whenReady()
     await establishSession(currentOwnerUidOrThrow(), false)
   }
 
   const createSession = async (): Promise<void> => {
-    if (!isCloud) return
+    if (!isCloud || isApiKeyOnWebSession()) return
+    if (useCloudWebSessionStore().start()) return
     try {
       await establishSession(currentOwnerUidOrThrow(), true)
     } catch (error) {
-      // The session cookie is the only credential <img>/media loads carry, so
-      // a swallowed creation failure means images break with no other signal.
-      reportError(error, { errorType: 'session_cookie_creation_failure' })
-      console.warn('Failed to create session cookie:', error)
+      if (error instanceof SessionRevokedError) return
+      reportError(error, {
+        surface: 'auth',
+        errorType: 'session_cookie_creation_failure',
+        level: 'warning'
+      })
+    }
+  }
+
+  /** After an interactive sign-in: whether ingest refused its session for SSO. */
+  const sessionRequiresSso = async (): Promise<boolean> => {
+    if (!isCloud || isApiKeyOnWebSession()) return false
+    const webSession = useCloudWebSessionStore()
+    if (webSession.start()) {
+      return (await webSession.whenSessionCreated()) === 'SSO_REQUIRED'
+    }
+    try {
+      await establishSession(currentOwnerUidOrThrow(), false)
+      return false
+    } catch (error) {
+      return error instanceof SsoRequiredSessionError
     }
   }
 
   const createSessionOrThrow = async (): Promise<void> => {
     if (!isCloud) return
+    const webSession = useCloudWebSessionStore()
+    if (webSession.isActive()) return webSession.whenReady()
     await establishSession(currentOwnerUidOrThrow(), true)
   }
 
@@ -142,6 +190,7 @@ export const useSessionCookie = () => {
    */
   const deleteSession = async (): Promise<void> => {
     if (!isCloud) return
+    if (useCloudWebSessionStore().isActive()) return
     confirmedSessionOwnerUid = null
     inFlightCreateSession = null
 
@@ -155,7 +204,7 @@ export const useSessionCookie = () => {
           })
 
           if (!response.ok) {
-            throw new Error(await readSessionError(response))
+            throw await readSessionError(response)
           }
           confirmedSessionOwnerUid = null
         })
@@ -164,14 +213,32 @@ export const useSessionCookie = () => {
         })
       sessionMutationTail = deleteRequest.catch(() => {})
       await deleteRequest
-    } catch (error) {
-      console.warn('Failed to delete session cookie:', error)
+    } catch {
+      // Logout resolves regardless so the client-side sign-out completes, but
+      // a failed DELETE leaves the server-side session cookie alive with no
+      // other signal. The caught error carries the server's message, which can
+      // name the user, so a fixed error is reported in its place.
+      reportError(new Error('Session cookie deletion failed'), {
+        surface: 'auth',
+        errorType: 'auth_session_cookie_delete_failed',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'auth',
+          operation: 'auth',
+          outcome: 'failed'
+        },
+        context: {
+          had_pending_session_mutation: pendingSessionMutations > 0
+        },
+        level: 'error'
+      })
     }
   }
 
   return {
     createSession,
     createSessionOrThrow,
+    sessionRequiresSso,
     ensureSessionCookie,
     deleteSession
   }

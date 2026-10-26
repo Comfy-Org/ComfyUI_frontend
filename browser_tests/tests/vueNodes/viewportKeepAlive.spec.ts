@@ -30,10 +30,6 @@ test.describe(
       await comfyPage.vueNodes.waitForNodes()
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test('detaches nodes and restores the same element without changing graph size', async ({
       comfyPage
     }) => {

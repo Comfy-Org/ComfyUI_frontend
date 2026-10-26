@@ -1,11 +1,16 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+
+import type { CurveData } from './types'
+import WidgetCurve from './WidgetCurve.vue'
 
 const i18n = createI18n({
   legacy: false,
@@ -16,16 +21,19 @@ const i18n = createI18n({
         linear: 'Linear',
         monotone_cubic: 'Smooth',
         step: 'Step'
-      }
+      },
+      widgetHistory: { undo: 'Undo', redo: 'Redo' }
     }
   }
 })
+
+vi.mock(import('@/scripts/app'))
 
 const upstreamHolder = vi.hoisted(() => ({
   ref: null as { value: unknown } | null
 }))
 
-vi.mock('@/composables/useUpstreamValue', async () => {
+vi.mock<unknown>(import('@/composables/useUpstreamValue'), async () => {
   const { ref } = await import('vue')
   return {
     useUpstreamValue: () => {
@@ -36,17 +44,6 @@ vi.mock('@/composables/useUpstreamValue', async () => {
   }
 })
 
-const outputsHolder = vi.hoisted(() => ({
-  nodeOutputs: {} as Record<string, unknown>
-}))
-
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => outputsHolder
-}))
-
-import WidgetCurve from './WidgetCurve.vue'
-import type { CurveData } from './types'
-
 const CurveEditorStub = defineComponent({
   name: 'CurveEditor',
   props: {
@@ -55,35 +52,16 @@ const CurveEditorStub = defineComponent({
     interpolation: { type: String, default: '' },
     histogram: { type: Object, default: null }
   },
-  emits: ['update:modelValue'],
+  emits: ['update:modelValue', 'editEnd'],
   template: `
     <div data-testid="curve-editor"
       :data-disabled="String(disabled)"
       :data-interpolation="interpolation"
       :data-has-histogram="String(!!histogram)"
       :data-points="JSON.stringify(modelValue)"
-      @click="$emit('update:modelValue', [[0,0],[0.5,1],[1,0]])"
+      @click="$emit('update:modelValue', [[0,0],[0.5,1],[1,0]]); $emit('editEnd')"
     />
   `
-})
-
-const SelectStub = defineComponent({
-  name: 'Select',
-  props: { modelValue: { type: String, default: '' } },
-  emits: ['update:modelValue'],
-  template: `
-    <div data-testid="interp-select" :data-value="modelValue">
-      <button
-        data-testid="select-linear"
-        @click="$emit('update:modelValue', 'linear')"
-      >linear</button>
-      <slot />
-    </div>
-  `
-})
-const Passthrough = defineComponent({
-  name: 'SelectPassthrough',
-  template: '<slot />'
 })
 
 function makeWidget(
@@ -100,6 +78,7 @@ function makeWidget(
       interpolation: 'monotone_cubic'
     },
     options: {},
+    nodeLocatorId: createNodeLocatorId(null, toNodeId('1')),
     ...overrides
   } as unknown as SimplifiedWidget<CurveData>
 }
@@ -120,31 +99,27 @@ function renderWidget(
   }
 ) {
   const value = ref<CurveData>(initialModel)
+  const currentWidget = ref(widget)
   const Harness = defineComponent({
     components: { WidgetCurve },
-    setup: () => ({ value, widget }),
-    template: '<WidgetCurve v-model="value" :widget="widget" />'
+    setup: () => ({ value, currentWidget }),
+    template: '<WidgetCurve v-model="value" :widget="currentWidget" />'
   })
   const utils = render(Harness, {
     global: {
       plugins: [i18n],
       stubs: {
-        CurveEditor: CurveEditorStub,
-        Select: SelectStub,
-        SelectContent: Passthrough,
-        SelectTrigger: Passthrough,
-        SelectValue: Passthrough,
-        SelectItem: Passthrough
+        CurveEditor: CurveEditorStub
       }
     }
   })
-  return { ...utils, value }
+  return { ...utils, value, currentWidget }
 }
 
 describe('WidgetCurve', () => {
   beforeEach(() => {
     upstreamHolder.ref = null
-    outputsHolder.nodeOutputs = {}
+    useNodeOutputStore().nodeOutputs = {}
   })
 
   describe('Point forwarding', () => {
@@ -195,18 +170,19 @@ describe('WidgetCurve', () => {
   describe('Interpolation select', () => {
     it('shows the Select when not disabled', () => {
       renderWidget(makeWidget())
-      expect(screen.getByTestId('interp-select')).toBeInTheDocument()
+      expect(screen.getByRole('combobox')).toBeInTheDocument()
     })
 
     it('hides the Select when disabled', () => {
       renderWidget(makeWidget({ options: { disabled: true } }))
-      expect(screen.queryByTestId('interp-select')).toBeNull()
+      expect(screen.queryByRole('combobox')).toBeNull()
     })
 
     it('updates interpolation in v-model when Select emits a change', async () => {
       const { value } = renderWidget(makeWidget())
       const user = userEvent.setup()
-      await user.click(screen.getByTestId('select-linear'))
+      await user.click(screen.getByRole('combobox'))
+      await user.click(await screen.findByRole('option', { name: 'Linear' }))
       expect(value.value.interpolation).toBe('linear')
     })
 
@@ -221,8 +197,67 @@ describe('WidgetCurve', () => {
       }
       const { value } = renderWidget(makeWidget(), original)
       const user = userEvent.setup()
-      await user.click(screen.getByTestId('select-linear'))
+      await user.click(screen.getByRole('combobox'))
+      await user.click(await screen.findByRole('option', { name: 'Linear' }))
       expect(value.value.points).toEqual(original.points)
+    })
+  })
+
+  describe('Node history', () => {
+    const original: CurveData = {
+      points: [
+        [0, 0],
+        [1, 1]
+      ],
+      interpolation: 'monotone_cubic'
+    }
+
+    it('undoes and redoes a point edit', async () => {
+      const { value } = renderWidget(makeWidget(), original)
+      const user = userEvent.setup()
+      await user.click(screen.getByTestId('curve-editor'))
+      const edited = value.value
+
+      await user.click(screen.getByRole('button', { name: 'Undo' }))
+      expect(value.value).toEqual(original)
+
+      await user.click(screen.getByRole('button', { name: 'Redo' }))
+      expect(value.value).toEqual(edited)
+    })
+
+    it('undoes an interpolation change', async () => {
+      const { value } = renderWidget(makeWidget(), original)
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('combobox'))
+      await user.click(await screen.findByRole('option', { name: 'Linear' }))
+
+      await user.click(screen.getByRole('button', { name: 'Undo' }))
+      expect(value.value.interpolation).toBe('monotone_cubic')
+    })
+
+    it('drops edits made before the upstream link replaced the curve', async () => {
+      const upstream: CurveData = {
+        points: [
+          [0, 0.5],
+          [1, 0.5]
+        ],
+        interpolation: 'linear'
+      }
+      const { value, currentWidget } = renderWidget(makeWidget(), original)
+      const user = userEvent.setup()
+      await user.click(screen.getByTestId('curve-editor'))
+      currentWidget.value = makeWidget({ options: { disabled: true } })
+      setUpstream(upstream)
+      await nextTick()
+      await nextTick()
+      currentWidget.value = makeWidget()
+      await nextTick()
+      expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
+
+      await user.click(screen.getByTestId('curve-editor'))
+      await user.click(screen.getByRole('button', { name: 'Undo' }))
+      expect(value.value).toEqual(upstream)
+      expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
     })
   })
 

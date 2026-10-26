@@ -1,3 +1,6 @@
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,58 +8,25 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
+import type { Ref } from 'vue'
 
 import WorkspaceMenuButton from './WorkspaceMenuButton.vue'
 
-const ownerConfig = {
-  showEditWorkspaceMenuItem: true,
-  workspaceMenuAction: 'delete' as const,
-  workspaceMenuDisabledTooltip:
-    'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
-}
-const memberConfig = {
-  showEditWorkspaceMenuItem: false,
-  workspaceMenuAction: null,
-  workspaceMenuDisabledTooltip: null
-}
-const personalConfig = {
-  showEditWorkspaceMenuItem: true,
-  workspaceMenuAction: null,
-  workspaceMenuDisabledTooltip: null
-}
-
-const mockUiConfig = ref<Record<string, unknown>>(ownerConfig)
-const mockCanLeaveWorkspace = ref(false)
-const mockCanManageSubscription = ref(true)
-const mockIsWorkspaceSubscribed = ref(false)
-
-const mockShowLeaveWorkspaceDialog = vi.fn()
-const mockShowDeleteWorkspaceDialog = vi.fn()
-const mockShowEditWorkspaceDialog = vi.fn()
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => ({
-      canLeaveWorkspace: mockCanLeaveWorkspace.value,
-      canManageSubscription: mockCanManageSubscription.value
-    })),
-    uiConfig: mockUiConfig
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingContext'),
+  () => ({
+    useBillingContext: () => ({
+      subscription: computed(() => ({
+        endDate: '2026-08-01T00:00:00Z',
+        isCancelled: false,
+        tier: 'PRO'
+      }))
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    isWorkspaceSubscribed: mockIsWorkspaceSubscribed
-  })
-}))
-
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({
-    showLeaveWorkspaceDialog: mockShowLeaveWorkspaceDialog,
-    showDeleteWorkspaceDialog: mockShowDeleteWorkspaceDialog,
-    showEditWorkspaceDialog: mockShowEditWorkspaceDialog
-  })
-}))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 const i18n = createI18n({
   legacy: false,
@@ -64,126 +34,274 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-const DropdownMenuStub = {
-  props: ['entries'],
-  template:
-    '<div data-testid="menu"><button v-for="entry in entries" :key="entry.label" type="button" :disabled="entry.disabled" @click="entry.command?.()">{{ entry.label }}</button></div>'
+const LEAVE = 'Leave Workspace'
+const DELETE = 'Delete Workspace'
+
+function setLeave(granted: boolean, denial?: string) {
+  useBillingCapabilities().canLeaveWorkspace = computed(() =>
+    receiveServerFact('can_leave_workspace', granted)
+  )
+  useBillingCapabilities().leaveWorkspaceDenial = computed(() => denial)
 }
 
-function renderComponent() {
-  return render(WorkspaceMenuButton, {
-    global: {
-      plugins: [i18n],
-      directives: { tooltip: {} },
-      stubs: { DropdownMenu: DropdownMenuStub, Button: true }
-    }
-  })
+function setDelete(granted: boolean, denial?: string) {
+  useBillingCapabilities().canDeleteWorkspace = computed(() =>
+    receiveServerFact('can_delete_workspace', granted)
+  )
+  useBillingCapabilities().deleteWorkspaceDenial = computed(() => denial)
+}
+
+function hideEdit() {
+  useBillingCapabilities().canEditWorkspace = computed(() =>
+    receiveServerFact('can_edit_workspace', false)
+  )
+}
+
+async function openMenu() {
+  const user = userEvent.setup()
+  render(WorkspaceMenuButton, { global: { plugins: [i18n] } })
+  await user.click(screen.getByRole('button', { name: 'More Options' }))
+  return user
 }
 
 describe('WorkspaceMenuButton', () => {
   beforeEach(() => {
-    mockUiConfig.value = ownerConfig
-    mockCanLeaveWorkspace.value = false
-    mockCanManageSubscription.value = true
-    mockIsWorkspaceSubscribed.value = false
+    setLeave(true)
+    setDelete(true)
   })
 
-  it('lets a member leave and offers no destructive workspace actions', () => {
-    mockUiConfig.value = memberConfig
-    mockCanLeaveWorkspace.value = true
-    mockCanManageSubscription.value = false
-    renderComponent()
+  it('keeps a muted icon unless the header asks for a foreground ghost', () => {
+    render(WorkspaceMenuButton, { global: { plugins: [i18n] } })
 
-    const leave = screen.getByRole('button', { name: 'Leave Workspace' })
-    expect(leave).toBeEnabled()
-    expect(
-      screen.queryByRole('button', { name: 'Delete Workspace' })
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'More Options' })).toHaveClass(
+      'text-muted-foreground'
+    )
   })
 
-  it('lets an additional workspace owner leave and delete', async () => {
-    const user = userEvent.setup()
-    mockCanLeaveWorkspace.value = true
-    renderComponent()
-
-    expect(
-      screen.getByRole('button', { name: 'Leave Workspace' })
-    ).toBeEnabled()
-    expect(
-      screen.getByRole('button', { name: 'Delete Workspace' })
-    ).toBeEnabled()
-
-    await user.click(screen.getByRole('button', { name: 'Delete Workspace' }))
-    expect(mockShowDeleteWorkspaceDialog).toHaveBeenCalledOnce()
-  })
-
-  it('does not expose Delete in a personal workspace', () => {
-    mockUiConfig.value = personalConfig
-    renderComponent()
-
-    expect(
-      screen.queryByRole('button', { name: 'Delete Workspace' })
-    ).not.toBeInTheDocument()
-  })
-
-  it('disables Delete while the additional workspace is subscribed', () => {
-    mockIsWorkspaceSubscribed.value = true
-    renderComponent()
-
-    expect(
-      screen.getByRole('button', { name: 'Delete Workspace' })
-    ).toBeDisabled()
-  })
-
-  it('hides Leave when workspace permission is withheld', () => {
-    renderComponent()
-
-    expect(
-      screen.queryByRole('button', { name: 'Leave Workspace' })
-    ).not.toBeInTheDocument()
-  })
-
-  it('opens the leave dialog when an owner clicks Leave', async () => {
-    const user = userEvent.setup()
-    mockCanLeaveWorkspace.value = true
-    renderComponent()
-
-    await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
-    expect(mockShowLeaveWorkspaceDialog).toHaveBeenCalledOnce()
-  })
-
-  it('rechecks permission before opening the leave dialog', () => {
-    mockCanLeaveWorkspace.value = true
-    renderComponent()
-
-    const leave = screen.getByRole('button', { name: 'Leave Workspace' })
-    mockCanLeaveWorkspace.value = false
-    leave.click()
-
-    expect(mockShowLeaveWorkspaceDialog).not.toHaveBeenCalled()
-  })
-
-  it('rechecks owner permission before opening the delete dialog', () => {
-    renderComponent()
-
-    const deleteWorkspace = screen.getByRole('button', {
-      name: 'Delete Workspace'
+  it('uses a foreground ghost icon when the header asks for it', () => {
+    render(WorkspaceMenuButton, {
+      props: { variant: 'textonly' },
+      global: { plugins: [i18n] }
     })
-    mockCanManageSubscription.value = false
-    deleteWorkspace.click()
 
-    expect(mockShowDeleteWorkspaceDialog).not.toHaveBeenCalled()
+    const button = screen.getByRole('button', { name: 'More Options' })
+    expect(button).toHaveClass('text-foreground', 'bg-transparent')
+    expect(button).not.toHaveClass('text-muted-foreground')
   })
 
-  it('rechecks the subscription lock before opening the delete dialog', () => {
-    renderComponent()
+  it('renders no menu when the server grants nothing it can show', () => {
+    hideEdit()
+    setLeave(false, 'personal_workspace_creator')
+    setDelete(false, 'personal_workspace')
+    render(WorkspaceMenuButton, { global: { plugins: [i18n] } })
 
-    const deleteWorkspace = screen.getByRole('button', {
-      name: 'Delete Workspace'
-    })
-    mockIsWorkspaceSubscribed.value = true
-    deleteWorkspace.click()
-
-    expect(mockShowDeleteWorkspaceDialog).not.toHaveBeenCalled()
+    expect(
+      screen.queryByRole('button', { name: 'More Options' })
+    ).not.toBeInTheDocument()
   })
+
+  it('hides Leave and Delete until capabilities resolve', async () => {
+    hideEdit()
+    useBillingCapabilities().hasResolvedCapabilities = computed(() => false)
+    useBillingCapabilities().canLeaveWorkspace = computed(() =>
+      receiveServerFact('can_leave_workspace', true)
+    )
+    render(WorkspaceMenuButton, { global: { plugins: [i18n] } })
+
+    expect(
+      screen.queryByRole('button', { name: 'More Options' })
+    ).not.toBeInTheDocument()
+  })
+
+  it.for([
+    { label: LEAVE, grant: () => setLeave(true) },
+    { label: DELETE, grant: () => setDelete(true) }
+  ])('enables $label when the server grants it', async ({ label, grant }) => {
+    grant()
+    await openMenu()
+
+    expect(screen.getByRole('menuitem', { name: label })).not.toHaveAttribute(
+      'aria-disabled'
+    )
+  })
+
+  it.for([
+    {
+      denial: 'workspace_creator',
+      tooltip: "You created this workspace, so you can't leave it."
+    },
+    {
+      denial: 'only_owner',
+      tooltip: 'Make another member an owner before you leave this workspace.'
+    },
+    {
+      denial: 'membership_managed_by_directory',
+      tooltip:
+        "Your organization manages this membership, so you can't leave this workspace."
+    },
+    {
+      denial: undefined,
+      tooltip: "You can't leave this workspace right now."
+    }
+  ])(
+    'disables Leave with its reason when the server denies it with $denial',
+    async ({ denial, tooltip }) => {
+      setLeave(false, denial)
+      const user = await openMenu()
+
+      const leave = screen.getByRole('menuitem', { name: LEAVE })
+      expect(leave).toHaveAttribute('aria-disabled', 'true')
+      await user.hover(leave)
+      expect((await screen.findAllByText(tooltip)).length).toBeGreaterThan(0)
+    }
+  )
+
+  it.for(['personal_workspace_creator', 'not_a_member'])(
+    'hides Leave when the server denies it with %s',
+    async (denial) => {
+      setLeave(false, denial)
+      await openMenu()
+
+      expect(
+        screen.queryByRole('menuitem', { name: LEAVE })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    'plan_not_ended',
+    'billing_operation_parked',
+    'billing_operation_in_progress',
+    undefined
+  ])('disables Delete when the server denies it with %s', async (denial) => {
+    setDelete(false, denial)
+    await openMenu()
+
+    expect(screen.getByRole('menuitem', { name: DELETE })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+  })
+
+  it.for([
+    'not_workspace_owner',
+    'personal_workspace',
+    'workspace_sso_attached'
+  ])('hides Delete when the server denies it with %s', async (denial) => {
+    setDelete(false, denial)
+    await openMenu()
+
+    expect(
+      screen.queryByRole('menuitem', { name: DELETE })
+    ).not.toBeInTheDocument()
+  })
+
+  it('lists Edit, Leave and Delete in that order', async () => {
+    await openMenu()
+
+    expect(
+      screen.getAllByRole('menuitem').map((item) => item.textContent.trim())
+    ).toEqual(['Edit workspace details', LEAVE, DELETE])
+  })
+
+  it.for([
+    { canEdit: true, items: ['Edit workspace details', LEAVE] },
+    { canEdit: false, items: [LEAVE] }
+  ])(
+    'renders Edit from can_edit_workspace $canEdit',
+    async ({ canEdit, items }) => {
+      useBillingCapabilities().canEditWorkspace = computed(() =>
+        receiveServerFact('can_edit_workspace', canEdit)
+      )
+      setDelete(false, 'not_workspace_owner')
+      await openMenu()
+
+      expect(
+        screen.getAllByRole('menuitem').map((item) => item.textContent.trim())
+      ).toEqual(items)
+    }
+  )
+
+  it('keeps disabled items in keyboard focus order', async () => {
+    hideEdit()
+    setLeave(false, 'workspace_creator')
+    setDelete(false, 'plan_not_ended')
+    const user = await openMenu()
+
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('menuitem', { name: LEAVE })).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('menuitem', { name: DELETE })).toHaveFocus()
+  })
+
+  it.for([
+    { label: LEAVE, dialog: 'showLeaveWorkspaceDialog' },
+    { label: DELETE, dialog: 'showDeleteWorkspaceDialog' }
+  ] as const)(
+    'opens the $dialog dialog when the server grants it',
+    async ({ label, dialog }) => {
+      const user = await openMenu()
+
+      await user.click(screen.getByRole('menuitem', { name: label }))
+
+      expect(useWorkspaceDialogs()[dialog]).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    {
+      label: LEAVE,
+      dialog: 'showLeaveWorkspaceDialog',
+      deny: () => setLeave(false, 'workspace_creator')
+    },
+    {
+      label: DELETE,
+      dialog: 'showDeleteWorkspaceDialog',
+      deny: () => setDelete(false, 'plan_not_ended')
+    }
+  ] as const)(
+    'does not open the $dialog dialog from a disabled item',
+    async ({ label, dialog, deny }) => {
+      deny()
+      const user = await openMenu()
+
+      await user.click(screen.getByRole('menuitem', { name: label }))
+
+      expect(useWorkspaceDialogs()[dialog]).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    {
+      label: LEAVE,
+      dialog: 'showLeaveWorkspaceDialog',
+      bind: (granted: Ref<boolean>) => {
+        useBillingCapabilities().canLeaveWorkspace = computed(() =>
+          receiveServerFact('can_leave_workspace', granted.value)
+        )
+      }
+    },
+    {
+      label: DELETE,
+      dialog: 'showDeleteWorkspaceDialog',
+      bind: (granted: Ref<boolean>) => {
+        useBillingCapabilities().canDeleteWorkspace = computed(() =>
+          receiveServerFact('can_delete_workspace', granted.value)
+        )
+      }
+    }
+  ] as const)(
+    'rechecks the capability before opening the $dialog dialog',
+    async ({ label, dialog, bind }) => {
+      const granted = ref(true)
+      bind(granted)
+      await openMenu()
+
+      const item = screen.getByRole('menuitem', { name: label })
+      granted.value = false
+      item.click()
+
+      expect(useWorkspaceDialogs()[dialog]).not.toHaveBeenCalled()
+    }
+  )
 })

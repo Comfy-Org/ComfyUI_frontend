@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -10,12 +10,6 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { clearCoachmarks } from './coachmarkRegistry'
 import TourSpotlight from './TourSpotlight.vue'
 import type { SpotlightStep } from './onboardingTours'
-
-vi.mock('@primeuix/utils/zindex', () => ({
-  ZIndex: { set: vi.fn(), clear: vi.fn() }
-}))
-
-import { ZIndex } from '@primeuix/utils/zindex'
 
 const i18n = createI18n({
   legacy: false,
@@ -81,45 +75,36 @@ describe('TourSpotlight', () => {
     expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
   })
 
-  it('claims the modal stack on mount and releases it on unmount', async () => {
-    vi.mocked(ZIndex.set).mockClear()
-    vi.mocked(ZIndex.clear).mockClear()
-
+  it('removes the tour overlay on unmount', async () => {
     const { unmount } = renderSpotlight()
     await nextTick()
     await nextTick()
-    expect(ZIndex.set).toHaveBeenCalled()
+    expect(screen.getByTestId('coach-overlay')).toBeVisible()
 
-    const clearedWhileMounted = vi.mocked(ZIndex.clear).mock.calls.length
     unmount()
-    expect(
-      vi.mocked(ZIndex.clear).mock.calls.length,
-      'an overlay that never releases its entry leaves the modal stack raised'
-    ).toBe(clearedWhileMounted + 1)
+    expect(screen.queryByTestId('coach-overlay')).not.toBeInTheDocument()
   })
 
-  it('re-claims the modal stack per step without leaking entries', async () => {
-    vi.mocked(ZIndex.set).mockClear()
-    vi.mocked(ZIndex.clear).mockClear()
-
+  it('keeps the tour tier when a later overlay opens and the step changes', async () => {
     const { rerender, unmount } = renderSpotlight()
     await nextTick()
     await nextTick()
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const laterLayer = screen.getByTestId('existing-overlay')
 
     await rerender({ step: spotlightStep({ placement: 'left' }) })
     await nextTick()
     await nextTick()
+    expect(screen.getByTestId('coach-overlay')).toHaveClass('z-tour')
 
     unmount()
-    // Sets must pair with clears or entries leak; the +1 is the unmount clear.
-    expect(vi.mocked(ZIndex.clear).mock.calls.length).toBe(
-      vi.mocked(ZIndex.set).mock.calls.length + 1
-    )
-    expect(ZIndex.set).toHaveBeenCalled()
+    expect(laterLayer).toBeInTheDocument()
   })
 
   it('leaves focus, z-order and travel alone when a step renames itself', async () => {
-    vi.mocked(ZIndex.set).mockClear()
     const runState = ref('generating')
     const step: SpotlightStep = {
       kind: 'spotlight',
@@ -140,7 +125,10 @@ describe('TourSpotlight', () => {
 
     const skip = screen.getByRole('button', { name: 'Skip' })
     skip.focus()
-    const raises = vi.mocked(ZIndex.set).mock.calls.length
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
     const travel = screen.getByTestId('coach-card').className
 
     runState.value = 'succeeded'
@@ -155,10 +143,7 @@ describe('TourSpotlight', () => {
       skip,
       'a step renaming itself mid-run must not pull focus off what the user selected'
     ).toHaveFocus()
-    expect(
-      vi.mocked(ZIndex.set).mock.calls.length,
-      'a re-raise per rename leaks a z-index entry every time'
-    ).toBe(raises)
+    expect(screen.getByTestId('coach-overlay')).toHaveClass('z-tour')
     expect(
       screen.getByTestId('coach-card').className,
       'a rename is not a move, so the card must not re-arm its travel'

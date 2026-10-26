@@ -7,19 +7,8 @@ import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
 
 const test = mergeTests(comfyPageFixture, templateApiFixture)
 
-/**
- * End-to-end guard that the templates filter options are on top and clickable.
- *
- * This does NOT reproduce the 1.47.10 stacking bug (#14063, #14131, #14351,
- * #14397): that needed the shared modal counter to have escalated past the
- * dropdown's static z-3000 (reporters saw 7306), whereas a freshly opened
- * dialog only reaches ~1702, so the broken build passes this test. The
- * mechanism is pinned deterministically in useModalLiftedZIndex.test.ts; this
- * covers the user-visible behaviour those unit tests cannot see.
- */
 test.describe('Template filter dropdown stacking', () => {
   test.beforeEach(async ({ comfyPage, templateApi }) => {
-    await comfyPage.settings.setSetting('Comfy.Templates.SelectedModels', [])
     templateApi.configure(
       withTemplates([
         makeTemplate({ name: 'wan-1', title: 'Wan One', models: ['Wan 2.2'] }),

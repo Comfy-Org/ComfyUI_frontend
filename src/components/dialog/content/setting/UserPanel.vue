@@ -2,14 +2,13 @@
   <div class="user-settings-container h-full">
     <div class="flex h-full flex-col">
       <h2 class="mb-2 text-2xl font-bold">{{ $t('userSettings.title') }}</h2>
-      <Divider class="mb-3" />
+      <div class="mt-4 mb-3 border-t" />
 
       <!-- Normal User Panel -->
       <div v-if="isLoggedIn" class="flex flex-col gap-2">
         <UserAvatar
           v-if="userPhotoUrl"
           :photo-url="userPhotoUrl"
-          shape="circle"
           size="large"
         />
 
@@ -17,7 +16,7 @@
           <h3 class="font-medium">
             {{ $t('userSettings.name') }}
           </h3>
-          <div class="text-muted">
+          <div class="text-muted-foreground">
             {{ userDisplayName || $t('userSettings.notSet') }}
           </div>
         </div>
@@ -26,7 +25,7 @@
           <h3 class="font-medium">
             {{ $t('userSettings.email') }}
           </h3>
-          <span class="text-muted">
+          <span class="text-muted-foreground">
             {{ userEmail }}
           </span>
         </div>
@@ -35,39 +34,36 @@
           <h3 class="font-medium">
             {{ $t('userSettings.provider') }}
           </h3>
-          <div class="flex items-center gap-1 text-muted">
+          <div class="flex items-center gap-1 text-muted-foreground">
             <i :class="providerIcon" />
             {{ providerName }}
             <Button
               v-if="isEmailProvider"
-              v-tooltip="{
-                value: $t('userSettings.updatePassword'),
-                showDelay: 300
-              }"
+              :tooltip="$t('userSettings.updatePassword')"
               variant="muted-textonly"
               size="icon-sm"
-              @click="dialogService.showUpdatePasswordDialog()"
+              :aria-label="$t('userSettings.updatePassword')"
+              @click="onUpdatePassword"
             >
               <i class="pi pi-pen-to-square" />
             </Button>
           </div>
         </div>
 
-        <ProgressSpinner
-          v-if="loading"
-          class="mt-4 size-8"
-          style="--pc-spinner-color: #000"
-        />
+        <AppSpinner v-if="loading" class="mt-4 size-8" />
         <div v-else class="mt-4 flex flex-col gap-2">
-          <Button class="w-32" variant="secondary" @click="handleSignOut">
-            <i class="pi pi-sign-out" />
-            {{ $t('auth.signOut.signOut') }}
-          </Button>
+          <div class="flex flex-wrap items-center gap-2">
+            <Button class="w-32" variant="secondary" @click="handleSignOut">
+              <i class="pi pi-sign-out" />
+              {{ $t('auth.signOut.signOut') }}
+            </Button>
+            <SignOutEverywhereButton />
+          </div>
           <i18n-t
             v-if="!isApiKeyLogin"
             keypath="auth.deleteAccount.contactSupport"
             tag="p"
-            class="text-sm text-muted"
+            class="text-sm text-muted-foreground"
           >
             <template #email>
               <a href="mailto:support@comfy.org" class="underline"
@@ -80,16 +76,11 @@
 
       <!-- Login Section -->
       <div v-else class="flex flex-col gap-4">
-        <p class="text-smoke-600">
+        <p class="text-muted-foreground">
           {{ $t('auth.login.title') }}
         </p>
 
-        <Button
-          class="w-52"
-          variant="primary"
-          :loading="loading"
-          @click="handleSignIn"
-        >
+        <Button class="w-52" variant="primary" :loading @click="handleSignIn">
           <i class="pi pi-user" />
           {{ $t('auth.login.signInOrSignUp') }}
         </Button>
@@ -99,20 +90,27 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
-import ProgressSpinner from 'primevue/progressspinner'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import SignOutEverywhereButton from '@/platform/auth/session/components/SignOutEverywhereButton.vue'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 
+const { t } = useI18n()
+const router = useRouter()
 const dialogService = useDialogService()
+const { showUpdatePasswordDialog } = useAuthDialogs()
 const {
   loading,
   isLoggedIn,
   isApiKeyLogin,
   isEmailProvider,
+  needsFirebaseSignIn,
   userDisplayName,
   userEmail,
   userPhotoUrl,
@@ -121,4 +119,23 @@ const {
   handleSignOut,
   handleSignIn
 } = useCurrentUser()
+async function onUpdatePassword() {
+  if (!needsFirebaseSignIn.value) {
+    await showUpdatePasswordDialog()
+    return
+  }
+  const confirmed = await dialogService.confirm({
+    title: t('auth.reauthRequired.title'),
+    message: t('auth.reauthRequired.message')
+  })
+  if (!confirmed) return
+  const { href } = router.resolve({
+    name: 'cloud-login',
+    query: {
+      switchAccount: 'true',
+      previousFullPath: encodeURIComponent(router.currentRoute.value.fullPath)
+    }
+  })
+  window.location.assign(href)
+}
 </script>

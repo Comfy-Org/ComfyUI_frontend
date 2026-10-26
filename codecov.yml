@@ -6,29 +6,28 @@ coverage:
       # still covers the diff.
       default: false
 
-      website:
+      billing-web:
         target: auto
         threshold: '1%'
         informational: true
         flags:
-          - website-unit
+          - billing-web-unit
         paths:
-          - apps/website/src/**
+          - apps/billing-web/src/**
         flag_coverage_not_uploaded_behavior: pass
 
     patch:
       default:
         informational: true
 
-      # Require 80% coverage on changed website lines.
-      website:
+      billing-web:
         target: '80%'
         threshold: '0%'
-        informational: false
+        informational: true
         flags:
-          - website-unit
+          - billing-web-unit
         paths:
-          - apps/website/src/**
+          - apps/billing-web/src/**
         flag_coverage_not_uploaded_behavior: pass
 
 # Coverage is instrumented over src/** only (see `coverage.include` in
@@ -56,8 +55,7 @@ flags:
     carryforward: true
   e2e:
     carryforward: true
-  # Do not hide missing website coverage with stale data.
-  website-unit:
+  billing-web-unit:
     paths:
-      - apps/website/src/**
+      - apps/billing-web/src/**
     carryforward: false

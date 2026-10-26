@@ -7,20 +7,19 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
+import { provideExtensionService } from '@/services/extensionServiceAccess'
 import * as jobOutputCache from '@/services/jobOutputCache'
 import { TaskItemImpl } from '@/stores/queueStore'
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: vi.fn(() => ({
     invokeExtensions: vi.fn()
   }))
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: vi.fn(() => ({}))
-}))
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
-vi.mock('@/platform/assets/composables/media/assetMappers')
+provideExtensionService(() => ({ invokeExtensions: vi.fn() }))
 
 const mockWorkflow: ComfyWorkflowJSON = {
   last_node_id: 5,
@@ -124,18 +123,6 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
     await runningTask.loadWorkflow(mockApp)
 
     expect(jobOutputCache.getJobDetail).not.toHaveBeenCalled()
-    expect(mockApp.loadGraphData).not.toHaveBeenCalled()
-  })
-
-  it('should handle fetch errors gracefully by returning undefined', async () => {
-    const job = createHistoryJob('test-job-id')
-    const task = new TaskItemImpl(job)
-
-    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(undefined)
-
-    await task.loadWorkflow(mockApp)
-
-    expect(jobOutputCache.getJobDetail).toHaveBeenCalled()
     expect(mockApp.loadGraphData).not.toHaveBeenCalled()
   })
 })

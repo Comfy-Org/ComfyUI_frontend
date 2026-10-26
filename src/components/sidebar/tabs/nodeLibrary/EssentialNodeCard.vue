@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'group @container relative flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-lg bg-secondary-background pt-3 pb-2 transition-colors duration-150 select-none hover:bg-secondary-background-hover',
+        'group @container relative flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-lg bg-secondary pt-3 pb-2 transition-colors duration-150 select-none hover:bg-accent',
         nodeDef ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
       )
     "
@@ -18,12 +18,12 @@
     <span
       v-if="tile.partnerLogo"
       aria-hidden="true"
-      class="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-md bg-base-background"
+      class="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-md bg-background"
     >
-      <i :class="cn('size-4 text-smoke-600', tile.partnerLogo)" />
+      <i :class="cn('size-4 text-muted-foreground', tile.partnerLogo)" />
     </span>
     <TextTickerMultiLine
-      class="text-foreground @28:h-9 @28:text-sm/4.5 flex h-7.5 w-full shrink-0 flex-col justify-center px-2 text-center text-xs/3.75 font-normal"
+      class="flex h-7.5 w-full shrink-0 flex-col justify-center px-2 text-center text-xs/3.75 font-normal text-foreground @min-[7rem]:h-9 @min-[7rem]:text-sm/4.5"
       :text="nodeDef?.display_name ?? tile.nodeName"
     />
   </div>

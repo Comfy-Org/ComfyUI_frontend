@@ -1,15 +1,24 @@
-import type { RumBeforeSend, RumErrorEvent } from '@datadog/browser-rum'
+import type {
+  RumActionEvent,
+  RumBeforeSend,
+  RumErrorEvent,
+  RumLongTaskEvent,
+  RumViewEvent
+} from '@datadog/browser-rum'
+
+import { isRumErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
-const RUM_NOISE_HOSTS = [
-  'facebook.com',
-  'px.ads.linkedin.com',
-  'browser-intake-us5-datadoghq.com',
-  'e2.sy-d.io',
-  'google-analytics.com',
-  'googletagmanager.com'
-]
+import {
+  EXTENSION_FAILURES_TRUNCATED_FIELD,
+  EXTENSION_LOAD_ERROR_TYPE,
+  getExtensionFailureSignals
+} from './extensionLoadTelemetry'
+import {
+  redactTelemetryUrls,
+  redactTelemetryValues
+} from './redactTelemetryUrls'
 
 const FIRST_PARTY_EXTENSION_FOLDERS = new Set(['cloud', 'core'])
 
@@ -60,21 +69,30 @@ function isConsoleEchoOfReportedAssertion(event: RumErrorEvent): boolean {
 function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
   if (event.type !== 'error') return true
   if (isConsoleEchoOfReportedAssertion(event)) return false
+  if (hasUnmodifiableUrlMetadata(event)) return false
+  return !isRumErrorNoise(event.error)
+}
 
-  const message = event.error.message
-  if (message.startsWith('intervention:')) return false
-  if (message.includes('ResizeObserver loop')) return false
-
-  const isNetworkNoise =
-    message.includes('csp_violation') || message.includes('Failed to fetch')
-  return (
-    !isNetworkNoise || !RUM_NOISE_HOSTS.some((host) => message.includes(host))
+function hasUnmodifiableUrlMetadata(event: RumErrorEvent): boolean {
+  const values = [
+    event.error.type,
+    ...(event.error.causes ?? []).flatMap((cause) => [
+      cause.type,
+      cause.message,
+      cause.stack
+    ])
+  ]
+  return values.some(
+    (value) => typeof value === 'string' && redactTelemetryUrls(value) !== value
   )
 }
 
 function tagRumErrorOrigin(event: RumErrorEvent): void {
   try {
-    const errorOrigin = classifyRumErrorOrigin(event.error.stack)
+    const context = event.context ?? {}
+    const errorOrigin = isExtensionLoadReport(context)
+      ? classifyExtensionLoadReport(context, event.error.stack)
+      : classifyRumErrorOrigin(event.error.stack)
     const existingErrorContext = event.context?.error
     const errorContext =
       typeof existingErrorContext === 'object' && existingErrorContext !== null
@@ -90,11 +108,116 @@ function tagRumErrorOrigin(event: RumErrorEvent): void {
   }
 }
 
+function redactRumView(event: Parameters<RumBeforeSend>[0]): void {
+  event.view.url = redactTelemetryUrls(event.view.url)
+  if (event.view.referrer) {
+    event.view.referrer = redactTelemetryUrls(event.view.referrer)
+  }
+}
+
+function redactRumAction(event: RumActionEvent): void {
+  if (event.action.target?.name) {
+    event.action.target.name = redactTelemetryUrls(event.action.target.name)
+  }
+}
+
+function redactRumLongTask(event: RumLongTaskEvent): void {
+  for (const script of event.long_task.scripts ?? []) {
+    if (script.source_url) {
+      script.source_url = redactTelemetryUrls(script.source_url)
+    }
+    // A `classic-script` invoker is the script's own `src`, query string included.
+    if (script.invoker) {
+      script.invoker = redactTelemetryUrls(script.invoker)
+    }
+  }
+}
+
+function redactRumViewPerformance(event: RumViewEvent): void {
+  if (event.view.performance?.lcp?.resource_url) {
+    event.view.performance.lcp.resource_url = redactTelemetryUrls(
+      event.view.performance.lcp.resource_url
+    )
+  }
+}
+
+function getExtensionFailureOrigins(
+  context: Record<string, unknown>
+): RumErrorOrigin[] {
+  const failures = context.failures
+  if (!Array.isArray(failures)) return []
+
+  return failures.map((failure: unknown) => {
+    const signals = getExtensionFailureSignals(failure)
+    const origins = signals.map(classifyRumErrorOrigin)
+    return (
+      origins.find((origin) => origin.origin === 'extension') ??
+      origins.find((origin) => origin.origin === 'first_party') ?? {
+        origin: 'third_party'
+      }
+    )
+  })
+}
+
+function classifyExtensionLoadReport(
+  context: Record<string, unknown>,
+  stack?: string
+): RumErrorOrigin {
+  if (context[EXTENSION_FAILURES_TRUNCATED_FIELD] === true) {
+    return { origin: 'first_party' }
+  }
+
+  const origins = getExtensionFailureOrigins(context)
+  const extensionOrigin = origins.find(
+    (origin): origin is Extract<RumErrorOrigin, { origin: 'extension' }> =>
+      origin.origin === 'extension'
+  )
+
+  if (
+    extensionOrigin &&
+    origins.every(
+      (origin) =>
+        origin.origin === 'extension' &&
+        origin.extension === extensionOrigin.extension
+    )
+  ) {
+    return extensionOrigin
+  }
+
+  return origins.length > 0
+    ? { origin: 'first_party' }
+    : classifyRumErrorOrigin(stack)
+}
+
+function isExtensionLoadReport(context: Record<string, unknown>): boolean {
+  return context.error_type === EXTENSION_LOAD_ERROR_TYPE
+}
+
 export const rumBeforeSend: RumBeforeSend = (event) => {
   if (!shouldKeepRumEvent(event)) return false
+  if (event.type === 'resource') {
+    event.resource.url = redactTelemetryUrls(event.resource.url)
+  }
   if (event.type === 'error') {
     fingerprintFirebasePendingPromise(event)
     tagRumErrorOrigin(event)
+    event.error.message = redactTelemetryUrls(event.error.message)
+    if (event.error.stack) {
+      event.error.stack = redactTelemetryUrls(event.error.stack)
+    }
+    if (event.error.handling_stack) {
+      event.error.handling_stack = redactTelemetryUrls(
+        event.error.handling_stack
+      )
+    }
+    if (event.error.resource?.url) {
+      event.error.resource.url = redactTelemetryUrls(event.error.resource.url)
+    }
   }
+  redactRumView(event)
+  if (event.type === 'action') redactRumAction(event)
+  if (event.type === 'long_task') redactRumLongTask(event)
+  if (event.type === 'view') redactRumViewPerformance(event)
+  event.context = redactTelemetryValues(event.context) ?? {}
   return true
 }

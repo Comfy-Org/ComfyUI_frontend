@@ -1,6 +1,65 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { resolvePointerTarget } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import { setRevealedLinks } from '@/lib/litegraph/src/canvas/linkRevealState'
+import {
+  isRerouteVisibleForLinkDrag,
+  resolvePointerTarget
+} from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
+
+describe('isRerouteVisibleForLinkDrag', () => {
+  it('accepts a shared reroute kept visible by a disconnected floating branch', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'MODEL')
+    graph.add(source)
+    const targets = [0, 1].map(() => {
+      const target = new LGraphNode('Target')
+      target.addInput('in', 'MODEL')
+      graph.add(target)
+      return target
+    })
+    const hidden = createTestLink(graph, source, 0, targets[0], 0)
+    const detached = createTestLink(graph, source, 0, targets[1], 0)
+    const shared = graph.createReroute([200, 100], hidden)
+    if (!shared) throw new Error('Missing shared reroute')
+    detached.parentId = shared.id
+    const tail = graph.createReroute([300, 200], detached)
+    if (!tail) throw new Error('Missing floating tail')
+    expect(targets[1].disconnectInput(0, true)).toBe(true)
+    useLinkPresentationStore().patch(graphScopeOf(graph), hidden.id, {
+      hidden: true
+    })
+
+    expect(shared.floatingLinkIds.size).toBe(1)
+    expect(isRerouteVisibleForLinkDrag(graph, shared)).toBe(true)
+  })
+
+  it('rejects only reroutes whose links are all hidden and unrevealed', () => {
+    const graph = new LGraph()
+    const link = new LLink(toLinkId(1), 'MODEL', 1, 0, 2, 0)
+    graph._addLink(link)
+    const scope = graphScopeOf(graph)
+    useLinkPresentationStore().patch(scope, link.id, { hidden: true })
+    const reroute = graph.setReroute({ pos: [0, 0], linkIds: [] })
+    if (!reroute) throw new Error('Failed to create reroute')
+    link.parentId = reroute.id
+
+    expect(isRerouteVisibleForLinkDrag(graph, reroute)).toBe(false)
+
+    const owner = {}
+    setRevealedLinks(scope.rootGraphId, [link.id], owner)
+    expect(isRerouteVisibleForLinkDrag(graph, reroute)).toBe(true)
+
+    setRevealedLinks(scope.rootGraphId, [], owner)
+    useLinkPresentationStore().patch(scope, link.id, { hidden: false })
+    expect(isRerouteVisibleForLinkDrag(graph, reroute)).toBe(true)
+  })
+})
 
 describe('resolvePointerTarget', () => {
   it('returns element from elementFromPoint when available', () => {

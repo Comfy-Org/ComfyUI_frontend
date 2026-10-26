@@ -36,7 +36,7 @@ export function applyFirstWidgetValueToGraph(
     value = transformValue(value)
   }
 
-  const graphMouse: Point = app.canvas?.graph_mouse ?? [0, 0]
+  const graphMouse: Point = app.canvas.graph_mouse
 
   const endpoints: TargetEndpoint[] = [
     ...linked.map(({ targetNodeId, targetSlot }) => ({

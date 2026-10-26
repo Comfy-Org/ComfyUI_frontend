@@ -2,20 +2,18 @@ import { whenever } from '@vueuse/core'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import { computed, ref, toValue } from 'vue'
 
-import { createScriptLoader } from '@/utils/loadExternalScript'
+import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternalScript'
 
 const TYPEFORM_SRC = 'https://embed.typeform.com/next/embed.js'
 const VALID_ID_PATTERN = /^[A-Za-z0-9]+$/
 
-interface TypeformGlobal {
-  load?: () => void
-}
-
 declare global {
   interface Window {
-    tf?: TypeformGlobal
+    tf?: { load?: () => void }
   }
 }
+
+type TypeformGlobal = NonNullable<Window['tf']>
 
 /** Pure validator for Typeform form IDs. Exported so feature sites can
  *  gate rendering before mounting the embed container. */

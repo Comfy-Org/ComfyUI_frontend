@@ -29,7 +29,7 @@ const clickOption = (user: ReturnType<typeof userEvent.setup>, label: string) =>
 const firstSubmitPayload = (
   emitted: Record<string, unknown[]>
 ): Record<string, unknown> | undefined =>
-  (emitted.submit?.[0] as [Record<string, unknown>] | undefined)?.[0]
+  (emitted.submit[0] as [Record<string, unknown>] | undefined)?.[0]
 
 const twoStepSurvey: OnboardingSurvey = {
   version: 1,

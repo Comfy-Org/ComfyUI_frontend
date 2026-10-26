@@ -1,36 +1,39 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import type * as Litegraph from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { DOMWidget } from '@/scripts/domWidget'
+import type { DOMWidget } from '@/types/domWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
 import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { createMarkdownEditor } from '@/renderer/extensions/vueNodes/widgets/composables/markdownEditor'
 
-const { canvasMock } = vi.hoisted(() => ({
+const { canvasMock, reportErrorMock } = vi.hoisted(() => ({
   canvasMock: {
     processMouseDown: vi.fn(),
     processMouseMove: vi.fn(),
     processMouseUp: vi.fn()
-  }
+  },
+  reportErrorMock: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { id: 'root' }, canvas: canvasMock }
 }))
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
-  const actual = await importOriginal<typeof Litegraph>()
-  return { ...actual, resolveNodeRootGraphId: vi.fn(() => 'root') }
-})
-vi.mock('@/stores/widgetValueStore', () => ({
-  useWidgetValueStore: () => ({ getWidget: () => undefined })
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: reportErrorMock
 }))
 
-function createMarkdownWidget(node: LGraphNode) {
+vi.mock(
+  import('@/renderer/extensions/vueNodes/widgets/composables/markdownEditor'),
+  { spy: true }
+)
+
+function createMarkdownWidget(node: LGraphNode, defaultValue = '') {
   const inputSpec: InputSpec = {
     type: 'MARKDOWN',
     name: 'note',
-    default: ''
+    default: defaultValue
   }
   return useMarkdownWidget()(node, inputSpec) as DOMWidget<HTMLElement, string>
 }
@@ -60,6 +63,51 @@ describe('useMarkdownWidget', () => {
     textarea.dispatchEvent(new Event('input', { bubbles: true }))
     textarea.dispatchEvent(new Event('change', { bubbles: true }))
     expect(callback).toHaveBeenCalledTimes(2)
+  })
+
+  it('renders Markdown links and tables', async () => {
+    const node = createMockDOMWidgetNode()
+    const widget = createMarkdownWidget(
+      node,
+      '[Comfy](https://www.comfy.org)\n\n| Name |\n| --- |\n| Comfy |'
+    )
+    onTestFinished(() => widget.onRemove?.())
+
+    await expect
+      .poll(() => widget.element.querySelector('a')?.textContent)
+      .toBe('Comfy')
+    expect(widget.element.querySelector('table')?.textContent).toContain('Name')
+  })
+
+  it('renders text edited before the editor finishes loading', async () => {
+    const node = createMockDOMWidgetNode()
+    const widget = createMarkdownWidget(node, 'default')
+    onTestFinished(() => widget.onRemove?.())
+
+    const textarea = widget.element.querySelector('textarea')!
+    textarea.value = '# Loaded later'
+    textarea.dispatchEvent(new Event('change'))
+
+    await expect
+      .poll(() => widget.element.querySelector('h1')?.textContent)
+      .toBe('Loaded later')
+    expect(widget.element.textContent).not.toContain('default')
+  })
+
+  it('reports an editor that fails to construct', async () => {
+    const error = new Error('schema conflict')
+    vi.mocked(createMarkdownEditor).mockImplementationOnce(() => {
+      throw error
+    })
+    const widget = createMarkdownWidget(createMockDOMWidgetNode())
+    onTestFinished(() => widget.onRemove?.())
+
+    await vi.waitFor(() =>
+      expect(reportErrorMock).toHaveBeenCalledWith(error, {
+        errorType: 'error_loading_markdown_editor',
+        surface: 'platform'
+      })
+    )
   })
 
   it('toggles editing on dblclick/blur and stops keydown propagation', () => {

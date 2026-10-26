@@ -1,4 +1,4 @@
-import type { ITreeSelectWidget } from '../types/widgets'
+import type { ITreeSelectWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
@@ -10,8 +10,6 @@ export class TreeSelectWidget
   extends BaseWidget<ITreeSelectWidget>
   implements ITreeSelectWidget
 {
-  override type = 'treeselect' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(ctx, options, 'TreeSelect')
   }

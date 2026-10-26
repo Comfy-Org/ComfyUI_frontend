@@ -4,27 +4,26 @@ import { useI18n } from 'vue-i18n'
 
 import WidgetDescription from '@/components/builder/WidgetDescription.vue'
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
+import { getLoaderDropIndicator } from '@/components/builder/useLoaderDropIndicator'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
-import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import type { WidgetId } from '@/types/widgetId'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
-import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { draggableItemClass } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { parseImageWidgetValue } from '@/utils/imageUtil'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -47,6 +46,7 @@ const { mobile = false, builderMode = false } = defineProps<{
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
+const templateInputDownloadStore = useTemplateInputDownloadStore()
 const widgetValueStore = useWidgetValueStore()
 const linkStore = useLinkStore()
 const maskEditor = useMaskEditor()
@@ -118,32 +118,13 @@ const mappedSelections = computed((): WidgetEntry[] => {
 })
 
 function getDropIndicator(node: LGraphNode, id: WidgetId) {
-  if (node.type !== 'LoadImage') return undefined
-
-  const stringValue = extractWidgetStringValue(
-    widgetValueStore.getWidget(id)?.value
-  )
-
-  const { filename, subfolder, type } = stringValue
-    ? parseImageWidgetValue(stringValue)
-    : { filename: '', subfolder: '', type: 'input' }
-
-  const buildImageUrl = () => {
-    if (!filename) return undefined
-    const params = new URLSearchParams({ filename, subfolder, type })
-    appendCloudResParam(params, filename)
-    return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
-  }
-
-  const imageUrl = buildImageUrl()
-
-  return {
-    iconClass: 'icon-[lucide--image]',
-    imageUrl,
-    label: mobile ? undefined : t('linearMode.dragAndDropImage'),
-    onClick: () => node.widgets?.[1]?.callback?.(undefined),
-    onMaskEdit: imageUrl ? () => maskEditor.openMaskEditor(node) : undefined
-  }
+  return getLoaderDropIndicator(node, id, {
+    mobile,
+    label: t,
+    onMaskEdit: maskEditor.openMaskEditor,
+    widgetValueStore,
+    previewRevision: templateInputDownloadStore.previewRevision
+  })
 }
 
 function nodeToNodeData(node: LGraphNode, id: WidgetId) {
@@ -182,12 +163,7 @@ defineExpose({ handleDragDrop })
       description
     } in mappedSelections"
     :key
-    :class="
-      cn(
-        builderMode &&
-          'draggable-item drag-handle pointer-events-auto relative cursor-grab [&.is-draggable]:cursor-grabbing'
-      )
-    "
+    :class="cn(builderMode && ['pointer-events-auto', draggableItemClass])"
     :aria-label="
       builderMode
         ? `${action.widget.label ?? action.widget.name} — ${action.node.title}`
@@ -217,11 +193,12 @@ defineExpose({ handleDragDrop })
         {{ action.node.title }}
       </span>
       <div v-else class="flex-1" />
-      <Popover
+      <Menu
         :class="cn('shrink-0', builderMode && 'pointer-events-auto')"
-        :entries="[
+        :items="[
           {
             label: t('g.rename'),
+            // fallow-ignore-next-line css-token-drift
             icon: 'icon-[lucide--pencil]',
             command: () => promptRenameWidget(action.widget, action.node, t)
           },
@@ -232,26 +209,22 @@ defineExpose({ handleDragDrop })
           }
         ]"
       >
-        <template #button>
+        <template #trigger>
           <Button
             variant="textonly"
             size="icon"
             data-testid="widget-actions-menu"
           >
+            <!-- fallow-ignore-next-line css-token-drift -->
             <i class="icon-[lucide--ellipsis]" />
           </Button>
         </template>
-      </Popover>
+      </Menu>
     </div>
     <div
       v-if="description || builderMode"
       data-testid="app-mode-widget-description"
-      :class="
-        cn(
-          'h-5 px-5',
-          description ? 'text-muted-foreground' : 'text-muted-background'
-        )
-      "
+      class="h-5 px-5 text-muted-foreground"
     >
       <WidgetDescription
         :description
@@ -289,7 +262,7 @@ defineExpose({ handleDragDrop })
           :class="
             cn(
               'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
-              nodeData.hasErrors && 'ring-2 ring-node-stroke-error ring-inset'
+              nodeData.hasErrors && 'ring-2 ring-destructive ring-inset'
             )
           "
         />

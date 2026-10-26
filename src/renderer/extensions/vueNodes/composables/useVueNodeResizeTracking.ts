@@ -8,7 +8,9 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
+import type { EffectScope, Ref } from 'vue'
 import {
+  effectScope,
   getCurrentInstance,
   onActivated,
   onDeactivated,
@@ -80,50 +82,42 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
   ['widgets-grid', { dataAttribute: 'widgetsGridNodeId', syncSlots: true }]
 ])
 
-// Elements whose ResizeObserver fired while the tab was hidden
 const deferredElements = new Set<HTMLElement>()
 const elementsNeedingFreshMeasurement = new WeakSet<HTMLElement>()
 const cachedNodeMeasurements = new WeakMap<HTMLElement, CachedNodeMeasurement>()
-const visibility = useDocumentVisibility()
+const trackedElements = new Set<HTMLElement>()
+
+interface ResizeTracking {
+  scope: EffectScope
+  observer: ResizeObserver
+  visibility: Ref<DocumentVisibilityState>
+}
+
+let resizeTracking: ResizeTracking | undefined
 
 function markElementForFreshMeasurement(element: HTMLElement) {
   elementsNeedingFreshMeasurement.add(element)
   cachedNodeMeasurements.delete(element)
 }
 
-watch(visibility, (state) => {
-  if (state !== 'visible' || deferredElements.size === 0) return
-
-  // Re-observe deferred elements to trigger fresh measurements
-  for (const element of deferredElements) {
-    if (element.isConnected) {
-      markElementForFreshMeasurement(element)
-      resizeObserver.observe(element)
-    }
-  }
-  deferredElements.clear()
-})
-
-// Single ResizeObserver instance for all Vue elements
-const resizeObserver = new ResizeObserver((entries) => {
+function measureEntries(
+  entries: ResizeObserverEntry[],
+  { observer, visibility }: ResizeTracking
+) {
   const { linearMode, rootGraphId } = useCanvasStore()
   if (linearMode) return
 
-  // Skip measurements when tab is hidden — bounding rects are unreliable
   if (visibility.value === 'hidden') {
     for (const entry of entries) {
       if (entry.target instanceof HTMLElement) {
         deferredElements.add(entry.target)
-        markElementForFreshMeasurement(entry.target)
-        resizeObserver.unobserve(entry.target)
+        observer.unobserve(entry.target)
       }
     }
     return
   }
 
-  // Canvas is ready when this code runs; no defensive guards needed.
   const conv = useSharedCanvasPositionConversion()
-  // Group updates by type, then flush via each config's handler
   const updatesByType = new Map<string, ElementBoundsUpdate[]>()
   const slotSyncElements = new Map<NodeId, HTMLElement>()
   for (const entry of entries) {
@@ -134,7 +128,6 @@ const resizeObserver = new ResizeObserver((entries) => {
       markElementForFreshMeasurement(element)
       continue
     }
-    // Find which type this element belongs to
     let elementType: string | undefined
     let elementId: string | undefined
 
@@ -155,8 +148,6 @@ const resizeObserver = new ResizeObserver((entries) => {
       continue
     }
 
-    // Use borderBoxSize when available; fall back to contentRect for older engines/tests
-    // Border box is the border included FULL wxh DOM value.
     const borderBox = Array.isArray(entry.borderBoxSize)
       ? entry.borderBoxSize[0]
       : {
@@ -187,9 +178,6 @@ const resizeObserver = new ResizeObserver((entries) => {
       reportedContentSize != null &&
       isSizeEqual(reportedContentSize, measuredSize)
 
-    // ResizeObserver can repeat an unchanged entry (for example after an
-    // initial or changed-size delivery). Skip downstream work only when this
-    // exact element, graph, and node already reported the normalized size.
     if (!hasFreshMeasurementPending && hasMatchingCachedNodeMeasurement) {
       continue
     }
@@ -197,11 +185,6 @@ const resizeObserver = new ResizeObserver((entries) => {
       slotSyncElements.set(nodeId, element)
     }
 
-    // Use existing position from layout store (source of truth) rather than
-    // converting screen-space getBoundingClientRect() back to canvas coords.
-    // The DOM→canvas conversion depends on the current canvas scale/offset,
-    // which can be stale during graph transitions (e.g. entering a subgraph
-    // before fitView runs), producing corrupted positions.
     const existingPos = nodeLayout?.position
     let posX: number
     let posY: number
@@ -246,7 +229,53 @@ const resizeObserver = new ResizeObserver((entries) => {
       syncSlotOffsets(element, rootGraphId, nodeId)
     }
   }
-})
+}
+
+function createResizeTracking(scope: EffectScope): ResizeTracking {
+  const tracking: ResizeTracking = {
+    scope,
+    visibility: useDocumentVisibility(),
+    observer: new ResizeObserver((entries) => measureEntries(entries, tracking))
+  }
+  watch(tracking.visibility, (state) => {
+    if (state !== 'visible' || deferredElements.size === 0) return
+
+    for (const element of deferredElements) {
+      if (element.isConnected) {
+        tracking.observer.observe(element)
+      }
+    }
+    deferredElements.clear()
+  })
+  return tracking
+}
+
+function startResizeTracking() {
+  const scope = effectScope(true)
+  return scope.run(() => createResizeTracking(scope))
+}
+
+function stopResizeTracking() {
+  resizeTracking?.scope.stop()
+  resizeTracking?.observer.disconnect()
+  resizeTracking = undefined
+  trackedElements.clear()
+  deferredElements.clear()
+}
+
+function trackElement(element: HTMLElement) {
+  trackedElements.add(element)
+  resizeTracking ??= startResizeTracking()
+  resizeTracking?.observer.observe(element)
+}
+
+function untrackElement(element: HTMLElement) {
+  if (!trackedElements.delete(element)) return
+  resizeTracking?.observer.unobserve(element)
+  if (trackedElements.size === 0) stopResizeTracking()
+}
+
+import.meta.hot?.dispose(stopResizeTracking)
 
 /**
  * Tracks DOM element size/position changes for a Vue component and syncs to layout store
@@ -287,10 +316,9 @@ export function useVueElementTracking(
 
     trackedElement = element
     dataAttribute = config.dataAttribute
-    // Set the data attribute expected by the RO pipeline for this type
     element.dataset[config.dataAttribute] = appIdentifier
     markElementForFreshMeasurement(element)
-    resizeObserver.observe(element)
+    trackElement(element)
   })
 
   onDeactivated(() => {
@@ -298,24 +326,23 @@ export function useVueElementTracking(
     isDeactivated = true
     markElementForFreshMeasurement(trackedElement)
     deferredElements.delete(trackedElement)
-    resizeObserver.unobserve(trackedElement)
+    untrackElement(trackedElement)
   })
 
   onActivated(() => {
     if (!trackedElement || !isDeactivated) return
     isDeactivated = false
     markElementForFreshMeasurement(trackedElement)
-    resizeObserver.observe(trackedElement)
+    trackElement(trackedElement)
   })
 
   onUnmounted(() => {
     if (!trackedElement || !dataAttribute) return
 
-    // Remove the data attribute and observer
     delete trackedElement.dataset[dataAttribute]
     cachedNodeMeasurements.delete(trackedElement)
     elementsNeedingFreshMeasurement.delete(trackedElement)
     deferredElements.delete(trackedElement)
-    resizeObserver.unobserve(trackedElement)
+    untrackElement(trackedElement)
   })
 }

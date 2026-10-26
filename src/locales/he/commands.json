@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "מחיקת הפריטים הנבחרים"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "מחק קישורים נבחרים"
+  },
   "Comfy_Canvas_FitView": {
     "label": "התאמת התצוגה לצמתים הנבחרים"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "הסתר קישורים נבחרים"
   },
   "Comfy_Canvas_Lock": {
     "label": "נעילת הקנבס"
@@ -82,6 +88,9 @@
   },
   "Comfy_Canvas_SelectAll": {
     "label": "בחירת הכול"
+  },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "הצג קישורים נבחרים"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "הצגה/הסתרה של נראות הקישורים בקנבס"
@@ -230,6 +239,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "תהליך עבודה ריק חדש"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "הפעל מחדש את תהליך ההיכרות"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
@@ -277,9 +289,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "הגדרת כינויי חיפוש לתת-הגרף"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "ניסיוני: הפעלת AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "ביצועי הקנבס"

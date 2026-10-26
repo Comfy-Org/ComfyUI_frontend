@@ -1,0 +1,111 @@
+{
+  "id": "missing-models",
+  "capability": "Missing model detection and download",
+  "description": "Scans workflows for model files that are not installed, verifies them against assets, groups and stores results, fetches model metadata, dispatches downloads (browser, desktop, or model library), and renders the missing-model card and rows.",
+  "modules": [
+    {
+      "path": "src/platform/workflowErrors/missingModel/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/folderPathCache.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/folderPathCache.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/missingModelDownload.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/missingModelDownload.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/missingModelGrouping.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/missingModelGrouping.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/missingModelMetadata.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/missingModelPipeline.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/missingModelPipeline.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/missingModelScan.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/missingModelScan.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/missingModelStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/missingModelStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/missingModelViewUtils.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/missingModelViewUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflowErrors/missingModel/types.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Missing model scan finds, verifies, and groups models absent from the installation",
+      "checks": [
+        "src/platform/workflowErrors/missingModel/missingModelScan.test.ts",
+        "src/platform/workflowErrors/missingModel/missingModelPipeline.test.ts",
+        "src/platform/workflowErrors/missingModel/missingModelGrouping.test.ts",
+        "src/platform/workflowErrors/missingModel/missingModelStore.test.ts",
+        "src/platform/workflowErrors/missingModel/folderPathCache.test.ts"
+      ]
+    },
+    {
+      "name": "Missing model downloads validate sources, fetch metadata, and dispatch per distribution",
+      "checks": [
+        "src/platform/workflowErrors/missingModel/missingModelDownload.test.ts",
+        "src/platform/workflowErrors/missingModel/missingModelViewUtils.test.ts",
+        "src/platform/workflowErrors/missingModel/composables/useMissingModelDownload.test.ts",
+        "src/platform/workflowErrors/missingModel/composables/useMissingModelInteractions.test.ts",
+        "src/platform/workflowErrors/missingModel/components/MissingModelCard.test.ts",
+        "src/platform/workflowErrors/missingModel/components/MissingModelRow.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "missingModelDownload mixes metadata fetching with download dispatch through electron and sidebar stores; that mix and the pure grouping and view helpers importing from application modules remain visible as role-boundary debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

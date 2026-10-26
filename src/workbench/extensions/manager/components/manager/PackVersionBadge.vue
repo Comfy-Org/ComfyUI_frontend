@@ -1,56 +1,61 @@
 <template>
   <div>
-    <div
-      v-tooltip.top="
-        isDisabled ? $t('manager.enablePackToChangeVersion') : null
-      "
-      class="inline-flex items-center gap-1 rounded-2xl py-1 text-xs"
-      :class="{
-        'bg-dialog-surface px-1.5': fill,
-        'cursor-pointer': !isDisabled,
-        'cursor-not-allowed opacity-60': isDisabled
-      }"
-      :aria-haspopup="!isDisabled"
-      :role="isDisabled ? 'text' : 'button'"
-      :tabindex="isDisabled ? -1 : 0"
-      @click="!isDisabled && toggleVersionSelector($event)"
-      @keydown.enter="!isDisabled && toggleVersionSelector($event)"
-      @keydown.space="!isDisabled && toggleVersionSelector($event)"
-    >
-      <i
-        v-if="isUpdateAvailable"
-        class="pi pi-arrow-circle-up text-xs text-blue-600"
-      />
-      <span>{{ installedVersion }}</span>
-      <i v-if="!isDisabled" class="pi pi-chevron-right text-2xs" />
-    </div>
-
     <Popover
-      ref="popoverRef"
-      append-to="body"
-      :pt="{
-        root: {
-          class: 'before:hidden after:hidden [&_.p-popover-arrow]:hidden'
-        },
-        content: { class: 'p-0 shadow-lg' }
-      }"
-      @show="fixPopoverIntoViewport"
+      :open="isVersionSelectorOpen"
+      @update:open="isVersionSelectorOpen = $event && !isDisabled"
     >
-      <PackVersionSelectorPopover
-        :installed-version="installedVersion"
-        :node-pack="nodePack"
-        @cancel="closeVersionSelector"
-        @submit="closeVersionSelector"
-      />
+      <PopoverTrigger as-child>
+        <Button
+          ref="versionAnchor"
+          :tooltip="isDisabled ? $t('manager.enablePackToChangeVersion') : ''"
+          variant="textonly"
+          size="unset"
+          :class="
+            cn(
+              'gap-1 rounded-2xl py-1 text-xs font-normal',
+              fill && 'bg-muted px-1.5',
+              isDisabled && 'cursor-not-allowed opacity-60'
+            )
+          "
+          :aria-haspopup="!isDisabled"
+          :aria-disabled="isDisabled"
+        >
+          <i
+            v-if="isUpdateAvailable"
+            class="pi pi-arrow-circle-up text-xs text-blue-600"
+          />
+          <span>{{ installedVersion }}</span>
+          <i v-if="!isDisabled" class="pi pi-chevron-right text-2xs" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        :collision-padding="8"
+        class="w-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+      >
+        <PackVersionSelectorPopover
+          :installed-version="installedVersion"
+          :node-pack="nodePack"
+          @cancel="closeVersionSelector"
+          @submit="closeVersionSelector"
+        />
+      </PopoverContent>
     </Popover>
   </div>
 </template>
 
 <script setup lang="ts">
-import Popover from 'primevue/popover'
 import { valid as validSemver } from 'semver'
-import { computed, nextTick, ref, watch } from 'vue'
+import { unrefElement } from '@vueuse/core'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
+import { PopoverTrigger } from 'reka-ui'
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackVersionSelectorPopover from '@/workbench/extensions/manager/components/manager/PackVersionSelectorPopover.vue'
 import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
@@ -69,8 +74,13 @@ const {
 }>()
 
 const { isUpdateAvailable } = usePackUpdateStatus(() => nodePack)
-const popoverRef = ref()
-const lastTargetEl = ref<HTMLElement | null>(null)
+const isVersionSelectorOpen = ref(false)
+const versionAnchor =
+  useTemplateRef<InstanceType<typeof Button>>('versionAnchor')
+
+usePopoverViewportDismiss(isVersionSelectorOpen, () =>
+  unrefElement(versionAnchor)
+)
 
 const managerStore = useComfyManagerStore()
 
@@ -92,69 +102,10 @@ const installedVersion = computed(() => {
     : version.slice(0, TRUNCATED_HASH_LENGTH)
 })
 
-const toggleVersionSelector = (event: Event) => {
-  lastTargetEl.value = event.currentTarget as HTMLElement
-  popoverRef.value.toggle(event)
-}
-
 const closeVersionSelector = () => {
-  popoverRef.value.hide()
+  isVersionSelectorOpen.value = false
 }
 
-const fixPopoverIntoViewport = async () => {
-  await nextTick()
-
-  const popoverEl: HTMLElement | undefined =
-    popoverRef.value?.container ?? popoverRef.value?.$el
-  const targetEl = lastTargetEl.value
-  if (!popoverEl || !targetEl) return
-
-  requestAnimationFrame(() => {
-    const boundaryEl =
-      targetEl.closest('.p-dialog') ??
-      targetEl.closest('.manager-dialog') ??
-      targetEl.closest('[role="dialog"]') ??
-      document.documentElement
-
-    const boundary = boundaryEl.getBoundingClientRect()
-    const targetRect = targetEl.getBoundingClientRect()
-
-    popoverEl.style.transform = ''
-
-    const rect = popoverEl.getBoundingClientRect()
-
-    const M = 8 // keep away from dialog edge
-    const GAP = 10
-
-    const spaceBelow = boundary.bottom - targetRect.bottom
-    const spaceAbove = targetRect.top - boundary.top
-
-    // Decide side (below by default; flip to above if needed)
-    const placeAbove = spaceBelow < rect.height + GAP && spaceAbove > spaceBelow
-
-    // 1) Top with a GAP (prevents covering trigger)
-    let top = placeAbove
-      ? targetRect.top - rect.height - GAP
-      : targetRect.bottom + GAP
-
-    // Clamp vertically
-    top = Math.min(top, boundary.bottom - rect.height - M)
-    top = Math.max(top, boundary.top + M)
-
-    // 2) Left (align to trigger, then clamp)
-    let left = targetRect.left
-    left = Math.min(left, boundary.right - rect.width - M)
-    left = Math.max(left, boundary.left + M)
-
-    // Apply position
-    popoverEl.style.top = `${Math.round(top)}px`
-    popoverEl.style.left = `${Math.round(left)}px`
-
-    popoverEl.classList.toggle('p-popover-flipped', placeAbove)
-  })
-}
-
-// If the card is unselected, automatically close the version selector popover
 watch(
   () => isSelected,
   (isSelected, wasSelected) => {

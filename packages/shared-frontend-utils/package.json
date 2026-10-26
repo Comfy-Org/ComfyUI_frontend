@@ -6,18 +6,66 @@
   "keywords": [],
   "type": "module",
   "exports": {
-    "./creditsUtil": "./src/creditsUtil.ts",
-    "./formatUtil": "./src/formatUtil.ts",
-    "./networkUtil": "./src/networkUtil.ts",
-    "./piiUtil": "./src/piiUtil.ts"
+    "./creditsUtil": {
+      "types": "./dist-types/creditsUtil.d.ts",
+      "default": "./src/creditsUtil.ts"
+    },
+    "./formatUtil": {
+      "types": "./dist-types/formatUtil.d.ts",
+      "default": "./src/formatUtil.ts"
+    },
+    "./loadExternalScript": {
+      "types": "./dist-types/loadExternalScript.d.ts",
+      "default": "./src/loadExternalScript.ts"
+    },
+    "./networkUtil": {
+      "types": "./dist-types/networkUtil.d.ts",
+      "default": "./src/networkUtil.ts"
+    },
+    "./nodePricing": {
+      "types": "./dist-types/nodePricing.d.ts",
+      "default": "./src/nodePricing.ts"
+    },
+    "./piiUtil": {
+      "types": "./dist-types/piiUtil.d.ts",
+      "default": "./src/piiUtil.ts"
+    },
+    "./telemetry": {
+      "types": "./dist-types/telemetry.d.ts",
+      "default": "./src/telemetry.ts"
+    },
+    "./templateRanking": {
+      "types": "./dist-types/templateRanking.d.ts",
+      "default": "./src/templateRanking.ts"
+    },
+    "./templateSearch": {
+      "types": "./dist-types/templateSearch.d.ts",
+      "default": "./src/templateSearch.ts"
+    },
+    "./urlSafety": {
+      "types": "./dist-types/urlSafety.d.ts",
+      "default": "./src/urlSafety.ts"
+    }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
+    "test": "vitest run",
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit",
+    "build": "tsc -b tsconfig.declarations.json",
+    "prepack": "pnpm build"
   },
   "dependencies": {
-    "axios": "catalog:"
+    "@comfyorg/object-info-parser": "workspace:*",
+    "@comfyorg/registry-types": "workspace:*",
+    "axios": "catalog:",
+    "es-toolkit": "^1.39.9",
+    "jsonata": "catalog:",
+    "minisearch": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:"
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

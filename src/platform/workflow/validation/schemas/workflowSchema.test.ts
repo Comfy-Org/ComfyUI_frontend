@@ -1,7 +1,10 @@
 import fs from 'fs'
 import { describe, expect, it } from 'vitest'
 
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  validateComfyWorkflow,
+  zClipboardItems
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'
@@ -236,6 +239,86 @@ describe('parseComfyWorkflow', () => {
     await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
   })
 
+  it('validates 0.4 link presentation without a reroute', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.extra = {
+      ...workflow.extra,
+      linkPresentation: {
+        '1': { hidden: true, label: 'Preview' }
+      }
+    }
+
+    const validated = await validateComfyWorkflow(workflow)
+
+    expect(validated?.extra?.linkPresentation).toEqual({
+      '1': { hidden: true, label: 'Preview' }
+    })
+  })
+
+  it.for(['01', '1e0', '1.5', 'NaN', '9007199254740992'])(
+    'rejects noncanonical link presentation key %s',
+    async (linkId) => {
+      const workflow = {
+        ...structuredClone(defaultGraph),
+        extra: { linkPresentation: { [linkId]: { hidden: true } } }
+      }
+
+      await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
+    }
+  )
+
+  function schema1WorkflowWithLink(fields: Record<string, unknown>) {
+    return {
+      version: 1,
+      state: {
+        lastGroupId: 0,
+        lastNodeId: 2,
+        lastLinkId: 1,
+        lastRerouteId: 0
+      },
+      nodes: [],
+      groups: [],
+      links: [
+        {
+          id: 1,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: 'MODEL',
+          ...fields
+        }
+      ]
+    }
+  }
+
+  it('validates visibility fields on schema 1 link objects', async () => {
+    const workflow = schema1WorkflowWithLink({ hidden: true, label: 'Preview' })
+
+    const validated = await validateComfyWorkflow(workflow)
+
+    expect(validated?.links?.[0]).toMatchObject({
+      hidden: true,
+      label: 'Preview'
+    })
+  })
+
+  it('rejects non-boolean hidden in the 0.4 presentation sidecar', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.extra = {
+      ...workflow.extra,
+      linkPresentation: { '1': { hidden: 'yes' } }
+    }
+
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
+  })
+
+  it('rejects a non-string label on schema 1 link objects', async () => {
+    const workflow = schema1WorkflowWithLink({ label: 42 })
+
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
+  })
+
   describe('workflow.nodes.properties.aux_id', () => {
     const validAuxIds = [
       'valid/valid',
@@ -309,5 +392,85 @@ describe('parseComfyWorkflow', () => {
       workflow.nodes[0].properties.ver = ver
       await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
     })
+  })
+})
+
+describe('zClipboardItems', () => {
+  it('normalizes array-like widget values and preserves array slot types', () => {
+    const node = {
+      ...structuredClone(defaultGraph.nodes[0]),
+      inputs: [{ name: 'input', type: ['IMAGE', 'MASK'] }],
+      widgets_values: { 0: 'first', 1: 2, length: 2 }
+    }
+
+    const result = zClipboardItems.safeParse({ nodes: [node] })
+
+    expect(result.success).toBe(true)
+    if (!result.success) throw result.error
+    expect(result.data.nodes?.[0].inputs?.[0].type).toEqual(['IMAGE', 'MASK'])
+    expect(result.data.nodes?.[0].widgets_values).toEqual(['first', 2])
+  })
+
+  it('preserves indices when normalizing sparse widget values', () => {
+    const node = {
+      ...structuredClone(defaultGraph.nodes[0]),
+      widgets_values: { 0: 'first', 2: 'third', length: 3 }
+    }
+
+    const result = zClipboardItems.safeParse({ nodes: [node] })
+
+    expect(result.success).toBe(true)
+    if (!result.success) throw result.error
+    const values = result.data.nodes?.[0].widgets_values
+    expect(values).toHaveLength(3)
+    expect(values?.[0]).toBe('first')
+    expect(1 in (values ?? [])).toBe(false)
+    expect(values?.[2]).toBe('third')
+  })
+
+  test.for([
+    { length: 10_000, accepted: true },
+    { length: 10_001, accepted: false }
+  ])(
+    'accepts sparse widget lengths through the exact limit: $length',
+    ({ length, accepted }) => {
+      const node = {
+        ...structuredClone(defaultGraph.nodes[0]),
+        widgets_values: { 0: 'first', length }
+      }
+
+      expect(zClipboardItems.safeParse({ nodes: [node] }).success).toBe(
+        accepted
+      )
+    }
+  )
+
+  it('preserves named-record widget values as named values', () => {
+    const node = {
+      ...structuredClone(defaultGraph.nodes[0]),
+      widgets_values: { seed: 42, steps: 20 }
+    }
+
+    const result = zClipboardItems.safeParse({ nodes: [node] })
+
+    expect(result.success).toBe(true)
+    if (!result.success) throw result.error
+    expect(result.data.nodes?.[0].widgets_values).toBeUndefined()
+    expect(result.data.nodes?.[0].widgets_values_named).toEqual({
+      seed: 42,
+      steps: 20
+    })
+  })
+
+  it('defaults omitted legacy group and reroute fields', () => {
+    const result = zClipboardItems.safeParse({
+      groups: [{ title: 'Legacy group', bounding: [0, 0, 100, 100] }],
+      reroutes: [{ id: 4, pos: [10, 20] }]
+    })
+
+    expect(result.success).toBe(true)
+    if (!result.success) throw result.error
+    expect(result.data.groups?.[0].id).toBe(-1)
+    expect(result.data.reroutes?.[0].linkIds).toEqual([])
   })
 })

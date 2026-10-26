@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Elimina elementi selezionati"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "Elimina collegamenti selezionati"
+  },
   "Comfy_Canvas_FitView": {
     "label": "Adatta vista ai nodi selezionati"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "Nascondi collegamenti selezionati"
   },
   "Comfy_Canvas_Lock": {
     "label": "Blocca canvas"
@@ -82,6 +88,9 @@
   },
   "Comfy_Canvas_SelectAll": {
     "label": "Seleziona tutto"
+  },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "Mostra collegamenti selezionati"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Canvas: mostra/nascondi collegamenti"
@@ -230,6 +239,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "Nuovo workflow vuoto"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "Ripeti l'onboarding"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
@@ -277,9 +289,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "Imposta alias di ricerca subgraph"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Sperimentale: Abilita AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "Prestazioni canvas"

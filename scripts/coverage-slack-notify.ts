@@ -1,9 +1,20 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { parseArgs } from 'node:util'
+
+import {
+  COVERAGE_METADATA_FILE,
+  readCoverageMetadata
+} from './coverage-metadata'
 
 const TARGET = 80
 const MILESTONE_STEP = 5
 const MIN_DELTA = 0.05
 const BAR_WIDTH = 20
+const UNIT_COVERAGE_DIR = 'coverage'
+const UNIT_BASELINE_DIR = 'temp/coverage-baseline'
+const E2E_COVERAGE_DIR = 'temp/e2e-coverage'
+const E2E_BASELINE_DIR = 'temp/e2e-coverage-baseline'
 
 /** Repo-relative prefixes of the files whose coverage this report is about. */
 const PROJECT_SOURCE = /^(src|packages)\//
@@ -16,12 +27,51 @@ interface CoverageData {
   coveredLines: number
 }
 
+interface CoverageSnapshot {
+  current: CoverageData | null
+  baseline: CoverageData | null
+  currentSha?: string
+  baselineSha?: string
+}
+
+interface ReportContext {
+  prUrl: string
+  prNumber: string
+  author: string
+}
+
+interface CliOptions extends ReportContext {
+  /** Empty unless the unit baseline is further back than the direct parent. */
+  unitSpanFrom: string
+  unitSpanTo: string
+}
+
+type MetricLabel = 'Unit' | 'E2E'
+
+const BASELINE_DESCRIPTION: Record<MetricLabel, string> = {
+  Unit: 'last measured merge',
+  E2E: 'last whole merge'
+}
+
 interface SlackBlock {
   type: 'section'
   text: {
     type: 'mrkdwn'
     text: string
   }
+}
+
+interface SlackPayload {
+  text: string
+  blocks: SlackBlock[]
+}
+
+type Direction = 'up' | 'down' | 'mixed'
+
+const HEADLINE: Record<Direction, { icon: string; text: string }> = {
+  up: { icon: '✅', text: 'Coverage improved!' },
+  down: { icon: '🔻', text: 'Coverage decreased' },
+  mixed: { icon: '↔️', text: 'Coverage changed' }
 }
 
 export function parseLcovContent(content: string): CoverageData | null {
@@ -66,6 +116,57 @@ export function parseLcovContent(content: string): CoverageData | null {
 function parseLcov(filePath: string): CoverageData | null {
   if (!existsSync(filePath)) return null
   return parseLcovContent(readFileSync(filePath, 'utf-8'))
+}
+
+/**
+ * A lost shard drops hits from commonly-loaded code and can remove files only
+ * it exercised, so an incomplete merge is not comparable with a whole one.
+ * Reporting it against a whole baseline invents movement, and storing it
+ * invents the movement back. Absent or unreadable metadata is therefore
+ * treated as incomplete: the artifact has to prove it is whole before its
+ * number is published.
+ *
+ * The baseline is held to the same bar, and must prove itself separately:
+ * baselines stored before this gate existed carry no metadata at all, and
+ * were saved from partial merges. Withholding one costs a single run of
+ * silence, after which this run's own artifact becomes the baseline.
+ *
+ * Because incomplete merges never become baselines, a vetted baseline can be
+ * several merges behind. It carries the commit it measured so the report can
+ * say so rather than implying one PR caused the whole movement.
+ */
+function readE2eSnapshot(): CoverageSnapshot {
+  const metadata = readCoverageMetadata(
+    join(E2E_COVERAGE_DIR, COVERAGE_METADATA_FILE)
+  )
+  if (metadata?.complete !== true) return { current: null, baseline: null }
+
+  const baseline = readCoverageMetadata(
+    join(E2E_BASELINE_DIR, COVERAGE_METADATA_FILE)
+  )
+  const baselineIsWhole = baseline?.complete === true
+
+  return {
+    current: parseLcov(join(E2E_COVERAGE_DIR, 'coverage.lcov')),
+    baseline: baselineIsWhole
+      ? parseLcov(join(E2E_BASELINE_DIR, 'coverage.lcov'))
+      : null,
+    currentSha: metadata.sourceSha,
+    baselineSha: baselineIsWhole ? baseline.sourceSha : undefined
+  }
+}
+
+function readUnitSnapshot(spanFrom: string, spanTo: string): CoverageSnapshot {
+  return {
+    current: parseLcov(join(UNIT_COVERAGE_DIR, 'lcov.info')),
+    baseline: parseLcov(join(UNIT_BASELINE_DIR, 'lcov.info')),
+    currentSha: spanTo || undefined,
+    baselineSha: spanFrom || undefined
+  }
+}
+
+function shortSha(sha: string): string {
+  return sha.slice(0, 7)
 }
 
 function progressBar(percentage: number): string {
@@ -124,23 +225,25 @@ function buildMilestoneBlock(label: string, milestone: number): SlackBlock {
   }
 }
 
-function parseArgs(argv: string[]): {
-  prUrl: string
-  prNumber: string
-  author: string
-} {
-  let prUrl = ''
-  let prNumber = ''
-  let author = ''
+function parseOptions(argv: string[]): CliOptions {
+  const { values } = parseArgs({
+    args: argv,
+    options: {
+      'pr-url': { type: 'string', default: '' },
+      'pr-number': { type: 'string', default: '' },
+      author: { type: 'string', default: '' },
+      'unit-span-from': { type: 'string', default: '' },
+      'unit-span-to': { type: 'string', default: '' }
+    }
+  })
 
-  for (const arg of argv) {
-    if (arg.startsWith('--pr-url=')) prUrl = arg.slice('--pr-url='.length)
-    else if (arg.startsWith('--pr-number='))
-      prNumber = arg.slice('--pr-number='.length)
-    else if (arg.startsWith('--author=')) author = arg.slice('--author='.length)
+  return {
+    prUrl: values['pr-url'],
+    prNumber: values['pr-number'],
+    author: values.author,
+    unitSpanFrom: values['unit-span-from'],
+    unitSpanTo: values['unit-span-to']
   }
-
-  return { prUrl, prNumber, author }
 }
 
 function formatCoverageRow(
@@ -152,89 +255,119 @@ function formatCoverageRow(
   return `*${label}:*  ${formatPct(baseline.percentage)} → ${formatPct(current.percentage)}  (${formatDelta(delta)})`
 }
 
-function main() {
-  const { prUrl, prNumber, author } = parseArgs(process.argv.slice(2))
+interface ReportedMetric {
+  label: MetricLabel
+  current: CoverageData
+  baseline: CoverageData
+  delta: number
+  currentSha?: string
+  baselineSha?: string
+}
 
-  const unitCurrent = parseLcov('coverage/lcov.info')
-  const unitBaseline = parseLcov('temp/coverage-baseline/lcov.info')
-  const e2eCurrent = parseLcov('temp/e2e-coverage/coverage.lcov')
-  const e2eBaseline = parseLcov('temp/e2e-coverage-baseline/coverage.lcov')
+function reportable(
+  label: MetricLabel,
+  { current, baseline, currentSha, baselineSha }: CoverageSnapshot
+): ReportedMetric | null {
+  if (current === null || baseline === null) return null
+  const delta = current.percentage - baseline.percentage
+  if (Math.abs(delta) < MIN_DELTA) return null
+  return { label, current, baseline, delta, currentSha, baselineSha }
+}
 
-  const unitDelta =
-    unitCurrent !== null && unitBaseline !== null
-      ? unitCurrent.percentage - unitBaseline.percentage
-      : 0
+function direction(deltas: number[]): Direction {
+  if (deltas.every((delta) => delta > 0)) return 'up'
+  if (deltas.every((delta) => delta < 0)) return 'down'
+  return 'mixed'
+}
 
-  const e2eDelta =
-    e2eCurrent !== null && e2eBaseline !== null
-      ? e2eCurrent.percentage - e2eBaseline.percentage
-      : 0
+/**
+ * Names the commits a delta actually spans. Silent unless the baseline
+ * identifies itself, so nothing is claimed that cannot be shown.
+ */
+function spanNote(metric: ReportedMetric): string | null {
+  if (metric.baselineSha === undefined) return null
 
-  const unitImproved = unitDelta >= MIN_DELTA
-  const e2eImproved = e2eDelta >= MIN_DELTA
+  const through =
+    metric.currentSha === undefined
+      ? ''
+      : ` through \`${shortSha(metric.currentSha)}\``
+  return `_${metric.label} coverage compared against \`${shortSha(metric.baselineSha)}\` (${BASELINE_DESCRIPTION[metric.label]})${through}; this span may cover several merges._`
+}
 
-  if (!unitImproved && !e2eImproved) {
-    process.exit(0)
-  }
+function progressLine(label: string, data: CoverageData): string {
+  return `\`${progressBar(data.percentage)}\` ${formatPct(data.percentage)} ${label} → ${TARGET}% target`
+}
 
-  const blocks: SlackBlock[] = []
+function milestoneBlock(
+  label: string,
+  { current, baseline }: CoverageSnapshot
+): SlackBlock | null {
+  if (current === null || baseline === null) return null
+  const milestone = crossedMilestone(baseline.percentage, current.percentage)
+  return milestone === null ? null : buildMilestoneBlock(label, milestone)
+}
 
-  const summaryLines: string[] = []
-  summaryLines.push(
-    `✅ *Coverage improved!* — <${prUrl}|PR #${prNumber}> by <https://github.com/${author}|${author}>`
+export function buildPayload(
+  unit: CoverageSnapshot,
+  e2e: CoverageSnapshot,
+  context: ReportContext
+): SlackPayload | null {
+  const reported = [reportable('Unit', unit), reportable('E2E', e2e)].filter(
+    (metric) => metric !== null
   )
+
+  if (reported.length === 0) return null
+
+  const { icon, text } = HEADLINE[direction(reported.map((m) => m.delta))]
+
+  const summaryLines: string[] = [
+    `${icon} *${text}* — <${context.prUrl}|PR #${context.prNumber}> by <https://github.com/${context.author}|${context.author}>`,
+    ''
+  ]
+
+  for (const metric of reported) {
+    summaryLines.push(
+      formatCoverageRow(metric.label, metric.current, metric.baseline)
+    )
+  }
+
   summaryLines.push('')
 
-  if (unitImproved) {
-    summaryLines.push(formatCoverageRow('Unit', unitCurrent!, unitBaseline!))
-  }
+  if (unit.current) summaryLines.push(progressLine('unit', unit.current))
+  if (e2e.current) summaryLines.push(progressLine('e2e', e2e.current))
 
-  if (e2eImproved) {
-    summaryLines.push(formatCoverageRow('E2E', e2eCurrent!, e2eBaseline!))
-  }
+  const spans = reported.map(spanNote).filter((note) => note !== null)
+  if (spans.length > 0) summaryLines.push('', ...spans)
 
-  summaryLines.push('')
-
-  if (unitCurrent) {
-    summaryLines.push(
-      `\`${progressBar(unitCurrent.percentage)}\` ${formatPct(unitCurrent.percentage)} unit → ${TARGET}% target`
-    )
-  }
-  if (e2eCurrent) {
-    summaryLines.push(
-      `\`${progressBar(e2eCurrent.percentage)}\` ${formatPct(e2eCurrent.percentage)} e2e → ${TARGET}% target`
-    )
-  }
-
-  blocks.push({
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: summaryLines.join('\n')
+  const blocks: SlackBlock[] = [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: summaryLines.join('\n')
+      }
     }
-  })
+  ]
 
-  if (unitCurrent && unitBaseline) {
-    const milestone = crossedMilestone(
-      unitBaseline.percentage,
-      unitCurrent.percentage
-    )
-    if (milestone !== null) {
-      blocks.push(buildMilestoneBlock('Unit test', milestone))
-    }
-  }
+  const unitMilestone = milestoneBlock('Unit test', unit)
+  if (unitMilestone) blocks.push(unitMilestone)
 
-  if (e2eCurrent && e2eBaseline) {
-    const milestone = crossedMilestone(
-      e2eBaseline.percentage,
-      e2eCurrent.percentage
-    )
-    if (milestone !== null) {
-      blocks.push(buildMilestoneBlock('E2E test', milestone))
-    }
-  }
+  const e2eMilestone = milestoneBlock('E2E test', e2e)
+  if (e2eMilestone) blocks.push(e2eMilestone)
 
-  const payload = { text: 'Coverage improved!', blocks }
+  return { text, blocks }
+}
+
+function main() {
+  const options = parseOptions(process.argv.slice(2))
+
+  const payload = buildPayload(
+    readUnitSnapshot(options.unitSpanFrom, options.unitSpanTo),
+    readE2eSnapshot(),
+    options
+  )
+  if (payload === null) process.exit(0)
+
   process.stdout.write(JSON.stringify(payload))
 }
 

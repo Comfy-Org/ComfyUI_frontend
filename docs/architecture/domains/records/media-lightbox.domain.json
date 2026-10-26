@@ -1,0 +1,25 @@
+{
+  "id": "media-lightbox",
+  "capability": "Result media lightbox",
+  "description": "The full-screen lightbox that browses result items from jobs, assets, and agent replies, with image, video, audio, and text result viewers. Job, asset, and agent stores remain with their records.",
+  "modules": [
+    {
+      "path": "src/components/sidebar/tabs/queue/**",
+      "role": "presentation"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Media lightbox navigates result items and renders each media type",
+      "checks": ["src/components/sidebar/tabs/queue/MediaLightbox.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

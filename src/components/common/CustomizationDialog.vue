@@ -1,5 +1,5 @@
 <template>
-  <Dialog v-model:open="visible" :modal="false">
+  <Dialog v-model:open="visible">
     <DialogPortal>
       <DialogOverlay />
       <DialogContent size="md" :aria-labelledby="titleId">
@@ -7,29 +7,35 @@
           <DialogTitle :id="titleId">
             {{ $t('g.customizeFolder') }}
           </DialogTitle>
-          <DialogClose />
+          <DialogClose :aria-label="$t('g.close')" />
         </DialogHeader>
         <div class="flex flex-col gap-4 px-4 py-2">
           <div class="flex flex-col gap-2">
             <label for="customization-icon" class="text-sm font-medium">
               {{ $t('g.icon') }}
             </label>
-            <SelectButton
+            <ToggleGroup
               id="customization-icon"
-              v-model="selectedIcon"
-              :options="iconOptions"
-              option-label="name"
-              data-key="value"
+              v-model="selectedIconValue"
+              type="single"
+              :allow-empty="false"
+              class="justify-start"
             >
-              <template #option="slotProps">
+              <ToggleGroupItem
+                v-for="option in iconOptions"
+                :key="option.value"
+                :value="option.value"
+                :aria-label="option.name"
+                class="p-2"
+              >
                 <i
-                  :class="['pi', slotProps.option.value, 'mr-2']"
+                  :class="cn('pi text-lg', option.value)"
                   :style="{ color: finalColor }"
                 />
-              </template>
-            </SelectButton>
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
-          <hr class="border-t border-border-subtle" />
+          <hr class="border-t border-border/50" />
           <div class="flex flex-col gap-2">
             <label for="customization-color" class="text-sm font-medium">
               {{ $t('g.color') }}
@@ -57,7 +63,6 @@
 </template>
 
 <script setup lang="ts">
-import SelectButton from 'primevue/selectbutton'
 import { ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -71,7 +76,9 @@ import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 
@@ -114,17 +121,18 @@ const defaultIcon = iconOptions.find(
   (option) => option.value === nodeBookmarkStore.defaultBookmarkIcon
 )
 
-const selectedIcon = ref(defaultIcon ?? iconOptions[0])
+const selectedIconValue = ref((defaultIcon ?? iconOptions[0]).value)
 const finalColor = ref(initialColor || nodeBookmarkStore.defaultBookmarkColor)
 
 const resetCustomization = () => {
-  selectedIcon.value =
-    iconOptions.find((option) => option.value === initialIcon) ?? iconOptions[0]
+  selectedIconValue.value =
+    iconOptions.find((option) => option.value === initialIcon)?.value ??
+    iconOptions[0].value
   finalColor.value = initialColor || nodeBookmarkStore.defaultBookmarkColor
 }
 
 const confirmCustomization = () => {
-  emit('confirm', selectedIcon.value.value, finalColor.value)
+  emit('confirm', selectedIconValue.value, finalColor.value)
   visible.value = false
 }
 
@@ -138,13 +146,3 @@ watch(
   { immediate: true }
 )
 </script>
-
-<style scoped>
-.p-selectbutton .p-button {
-  padding: 0.5rem;
-}
-
-.p-selectbutton .p-button .pi {
-  font-size: 1.5rem;
-}
-</style>

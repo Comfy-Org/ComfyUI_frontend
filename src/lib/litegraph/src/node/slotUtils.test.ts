@@ -1,8 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeOutputSlot } from '@/lib/litegraph/src/types/slots'
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toLinkId } from '@/types/linkId'
@@ -31,8 +29,6 @@ function createConnectedGraph(linkIds: number[]) {
 }
 
 describe('outputAsSerialisable', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('serialises the links leaving the slot, ascending by id', () => {
     const { source } = createConnectedGraph([10, 2])
 

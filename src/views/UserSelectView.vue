@@ -2,31 +2,31 @@
   <BaseViewTemplate dark>
     <main
       id="comfy-user-selection"
-      class="relative min-w-84 rounded-lg bg-(--comfy-menu-bg) p-5 px-10 shadow-lg"
+      class="relative min-w-84 rounded-lg bg-background p-5 px-10 shadow-lg"
     >
       <h1 class="my-2.5 mb-7 font-normal">ComfyUI</h1>
       <div class="flex w-full flex-col items-center">
         <div class="flex w-full flex-col gap-2">
           <label for="new-user-input">{{ $t('userSelect.newUser') }}:</label>
-          <InputText
+          <Input
             id="new-user-input"
             v-model="newUsername"
             :placeholder="$t('userSelect.enterUsername')"
             @keyup.enter="login"
           />
         </div>
-        <Divider />
+        <div class="my-4 w-full border-t" />
         <div class="flex w-full flex-col gap-2">
-          <label for="existing-user-select"
+          <label id="existing-user-label" for="existing-user-select"
             >{{ $t('userSelect.existingUser') }}:</label
           >
-          <Select
-            v-model="selectedUser"
+          <AppSingleSelect
+            id="existing-user-select"
+            v-model="selectedUserId"
+            aria-labelledby="existing-user-label"
             class="w-full"
-            input-id="existing-user-select"
-            :options="userStore.users"
-            option-label="username"
-            :placeholder="$t('userSelect.selectUser')"
+            :options="userOptions"
+            :label="$t('userSelect.selectUser')"
             :disabled="createNewUser"
           />
           <Message v-if="error" severity="error">
@@ -42,14 +42,13 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Select from 'primevue/select'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
+import Message from '@/components/ui/message/Message.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import type { User } from '@/stores/userStore'
 import { useUserStore } from '@/stores/userStore'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
@@ -57,7 +56,16 @@ import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 const userStore = useUserStore()
 const router = useRouter()
 
-const selectedUser = ref<User | null>(null)
+const selectedUserId = ref<string>()
+const selectedUser = computed<User | undefined>(() =>
+  userStore.users.find((user) => user.userId === selectedUserId.value)
+)
+const userOptions = computed(() =>
+  userStore.users.map(({ userId, username }) => ({
+    name: username,
+    value: userId
+  }))
+)
 const newUsername = ref('')
 const loginError = ref('')
 

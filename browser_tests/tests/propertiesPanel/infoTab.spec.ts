@@ -4,6 +4,7 @@ import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Properties panel - Info tab', () => {
   let panel: PropertiesPanelHelper
@@ -32,7 +33,7 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
 
   function addAdvancedDynamicComboInput(objectInfo: ObjectInfoResponse) {
     const nodeInfo = objectInfo[NODE_TYPE]
-    if (!nodeInfo?.input) {
+    if (!nodeInfo.input) {
       throw new Error(`Missing object_info entry for ${NODE_TYPE}`)
     }
 
@@ -80,7 +81,6 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
       // (used by selectNodes) actually lands on the node instead of the
       // toolbar. See BuilderSelectHelper.selectInputWidget for the same pattern.
       const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle(NODE_TITLE)
-      if (!nodeRef) throw new Error(`Node ${NODE_TITLE} not found`)
       await nodeRef.centerOnNode()
 
       await comfyPage.nodeOps.selectNodes([NODE_TITLE])
@@ -95,7 +95,8 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
         await expect(
           panel.contentArea.getByRole('cell', { name: ADVANCED_INPUT_TOOLTIP })
         ).toBeVisible()
-        await expect(panel.contentArea).toHaveScreenshot(
+        await expectElementScreenshot(
+          panel.contentArea,
           'info-tab-dynamic-combo-advanced-input.png'
         )
       } finally {

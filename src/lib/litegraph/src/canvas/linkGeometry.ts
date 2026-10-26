@@ -1,0 +1,53 @@
+import type { LGraph, LLink } from '@/lib/litegraph/src/types/entityRegistry'
+
+import type { Point } from '@/lib/litegraph/src/interfaces'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
+import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
+import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+
+export function getLinkEndpointPositions(
+  graph: LGraph,
+  link: LLink
+): [Point, Point] | undefined {
+  const resolved = link.resolve(graph)
+  const { subgraphInput, inputNode, input } = resolved
+  if (subgraphInput) {
+    if (!inputNode || !input || !subgraphInput.linkIds.includes(link.id)) {
+      return
+    }
+
+    const endPos = litegraph().vueNodesMode
+      ? getSlotPosition(inputNode, link.target_slot, true)
+      : inputNode.getInputPos(link.target_slot)
+    return [subgraphInput.pos, endPos]
+  }
+
+  const { subgraphOutput, outputNode, output } = resolved
+  if (subgraphOutput) {
+    if (!outputNode || !output || subgraphOutput.linkIds[0] !== link.id) {
+      return
+    }
+
+    const startPos = litegraph().vueNodesMode
+      ? getSlotPosition(outputNode, link.origin_slot, false)
+      : outputNode.getOutputPos(link.origin_slot)
+    return [startPos, subgraphOutput.pos]
+  }
+
+  if (
+    !inputNode ||
+    !input ||
+    inputLinkId(graph, inputNode.id, link.target_slot) !== link.id
+  )
+    return
+  if (!outputNode || !output) return
+
+  const endPos: Point = litegraph().vueNodesMode
+    ? getSlotPosition(inputNode, link.target_slot, true)
+    : inputNode.getInputPos(link.target_slot)
+  const startPos: Point = litegraph().vueNodesMode
+    ? getSlotPosition(outputNode, link.origin_slot, false)
+    : outputNode.getOutputPos(link.origin_slot)
+
+  return [startPos, endPos]
+}

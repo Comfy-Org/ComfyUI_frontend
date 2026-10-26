@@ -13,7 +13,7 @@ const mockCreateInterpolator = vi.hoisted(() =>
   })
 )
 
-vi.mock('@/components/curve/curveUtils', () => ({
+vi.mock(import('@/components/curve/curveUtils'), () => ({
   createInterpolator: mockCreateInterpolator
 }))
 
@@ -59,6 +59,7 @@ interface HarnessOptions {
   points?: CurvePoint[]
   interpolation?: CurveInterpolation
   svg?: SVGSVGElement | null
+  onEditEnd?: () => void
 }
 
 interface Harness {
@@ -83,7 +84,12 @@ const mountCurveEditor = (opts: HarnessOptions = {}): Harness => {
   let api: ReturnType<typeof useCurveEditor> | undefined
   const TestComponent = defineComponent({
     setup() {
-      api = useCurveEditor({ svgRef, modelValue, interpolation })
+      api = useCurveEditor({
+        svgRef,
+        modelValue,
+        interpolation,
+        onEditEnd: opts.onEditEnd
+      })
       return () => null
     }
   })
@@ -286,6 +292,49 @@ describe('useCurveEditor', () => {
       )
 
       expect(harness.modelValue.value).toHaveLength(2)
+    })
+  })
+
+  describe('edit end', () => {
+    const threePoints: CurvePoint[] = [
+      [0, 0],
+      [0.5, 0.5],
+      [1, 1]
+    ]
+
+    it('reports once when a drag finishes', () => {
+      const onEditEnd = vi.fn()
+      harness = mountCurveEditor({ points: threePoints, onEditEnd })
+
+      harness.api.handleSvgPointerDown(
+        createPointerEvent('pointerdown', { clientX: 0.5, clientY: 0.5 })
+      )
+      harness.svgRef.value!.dispatchEvent(
+        createPointerEvent('pointermove', { clientX: 0.6, clientY: 0.4 })
+      )
+      expect(onEditEnd).not.toHaveBeenCalled()
+
+      harness.svgRef.value!.dispatchEvent(createPointerEvent('pointerup'))
+      expect(onEditEnd).toHaveBeenCalledOnce()
+    })
+
+    it.for([
+      { case: 'a point is removed', points: threePoints, calls: 1 },
+      {
+        case: 'removal is refused',
+        points: [
+          [0, 0],
+          [1, 1]
+        ] satisfies CurvePoint[],
+        calls: 0
+      }
+    ])('reports $calls time(s) when $case', ({ points, calls }) => {
+      const onEditEnd = vi.fn()
+      harness = mountCurveEditor({ points, onEditEnd })
+
+      harness.api.startDrag(0, createPointerEvent('pointerdown', { button: 2 }))
+
+      expect(onEditEnd).toHaveBeenCalledTimes(calls)
     })
   })
 
