@@ -492,10 +492,10 @@ describe('VirtualGrid loading more when the rendered list shrinks', () => {
     },
     {
       behavior:
-        'requests the next page when a longer page still does not fill the viewport',
+        'requests the next page when multiple rows still do not fill the viewport',
       canLoadMore: true,
-      nextCount: 120,
-      nextScrollHeight: 80,
+      nextCount: 6,
+      nextScrollHeight: 200,
       calls: 1
     }
   ])(
