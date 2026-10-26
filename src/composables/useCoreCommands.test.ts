@@ -11,13 +11,16 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { app } from '@/scripts/app'
 import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -528,6 +531,46 @@ describe('useCoreCommands', () => {
       expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
       expect(app.canvas.setDirty).not.toHaveBeenCalled()
       expect([...app.canvas.selectedItems]).toEqual([selectedItem])
+    })
+  })
+
+  describe('Hide/Show Links on Selected Nodes', () => {
+    it('hides the links of the nodes inside a selected group', async () => {
+      const graph = new LGraph()
+      const source = createTestNode(graph, [], ['number'])
+      const target = createTestNode(graph, ['number'])
+      const link = source.connect(0, target, 0)
+      if (!link) throw new Error('connect failed')
+      const group = new LGraphGroup()
+      graph.add(group)
+      group.resizeTo([source, target])
+      group.recomputeInsideNodes()
+      const { graph: previousGraph, selectedItems: previousSelection } =
+        app.canvas
+      Object.assign(app.canvas, {
+        graph,
+        selectedItems: new Set([group]),
+        emitBeforeChange: vi.fn(),
+        emitAfterChange: vi.fn()
+      })
+
+      try {
+        await useCoreCommands()
+          .find((cmd) => cmd.id === 'Comfy.Canvas.ToggleSelectedNodes.Links')!
+          .function()
+
+        expect(
+          useLinkPresentationStore().getPresentation(
+            graphScopeOf(graph),
+            link.id
+          )?.hidden
+        ).toBe(true)
+      } finally {
+        Object.assign(app.canvas, {
+          graph: previousGraph,
+          selectedItems: previousSelection
+        })
+      }
     })
   })
 

@@ -46,7 +46,6 @@ import {
   useCanvasStore,
   useTitleEditorStore
 } from '@/renderer/core/canvas/canvasStore'
-import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -126,7 +125,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const dialogStore = useDialogStore()
   const maskEditorStore = useMaskEditorStore()
 
-  const { getSelectedNodes, toggleSelectedNodesMode } =
+  const { getSelectedNodes, getSelectedNodesShallow, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
@@ -691,7 +690,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.60.0',
       mutatesGraph: true,
       function: () => {
-        toggleNodeLinks(app.canvas, selectedCanvasNodes(app.canvas))
+        toggleNodeLinks(app.canvas, getSelectedNodesShallow())
       }
     },
     {
