@@ -75,6 +75,86 @@ function serializingWidgets(widgets: readonly IBaseWidget[]): IBaseWidget[] {
 }
 
 /**
+ * The values, only if they are the positional array THIS process produced. Else the refusal.
+ *
+ * Identity, deliberately, not deep equality. A subclass or extension that rebuilt an
+ * equal-looking array did so from a source we cannot see, and a coincidental match is not
+ * evidence. This is the check that catches `SubgraphNode` and the packs that override
+ * `serialize` to write values after `super` returns.
+ */
+function ourPositionalValues(
+  values: unknown,
+  producedValues: unknown
+): unknown[] | WidgetFormRefusal {
+  if (!Array.isArray(values)) return 'values_not_positional'
+  if (producedValues === undefined || values !== producedValues)
+    return 'values_replaced'
+  return values
+}
+
+/**
+ * The widgets whose values we can prove we wrote, or a refusal.
+ *
+ * This half is entirely about PROVENANCE — who produced the array — and knows nothing about
+ * widget names. Kept apart from {@link addressableOrder} so the two kinds of reasoning cannot
+ * be read as one: a value we did not write is unknowable, while a value we wrote but cannot
+ * address is merely undescribable.
+ */
+function provenValues(
+  widgets: readonly IBaseWidget[] | undefined,
+  values: unknown,
+  producedValues: unknown,
+  options: { serializeWidgets?: boolean; replayed?: boolean }
+): IBaseWidget[] | WidgetFormProof {
+  // A replayed payload carries whatever shape some other frontend wrote, and the widget list
+  // beside it may be synthesised placeholders: an unregistered node type gets widgets named
+  // `UNKNOWN`, `UNKNOWN_1`, ... from its stored values. A form built there would be
+  // syntactically valid, authoritative to every consumer, and meaningless. Refuse first, so
+  // no later check can accidentally accept it.
+  if (options.replayed) return refuse('replayed_serialization')
+
+  // No values were written. A form with no array to describe is not a weaker claim than
+  // usual — it is a claim about nothing, and `order` would be read as authoritative.
+  if (!widgets?.length || !options.serializeWidgets)
+    return refuse('widgets_not_serialized')
+
+  const ours = ourPositionalValues(values, producedValues)
+  if (!Array.isArray(ours)) return refuse(ours)
+
+  const serializing = serializingWidgets(widgets)
+  // Reachable even with an untouched array: a widget mutated its own `serialize` flag
+  // between the write and this check, or `widgets` was spliced in between.
+  if (serializing.length !== ours.length) return refuse('length_mismatch')
+  return serializing
+}
+
+/**
+ * The order those widgets declare, or a refusal.
+ *
+ * This half is entirely about NAMES as addresses, and assumes provenance is already settled.
+ */
+function addressableOrder(
+  serializing: readonly IBaseWidget[]
+): WidgetFormProof {
+  const order: string[] = []
+  const seen = new Set<string>()
+  for (const widget of serializing) {
+    const name = widget.name
+    if (typeof name !== 'string' || name.length === 0)
+      return refuse('unnameable_widget')
+    // `serialiseWidgetValues` builds its named projection with `defineProperty`, so a repeat
+    // silently overwrites the earlier value and the two become one key. An `order` array
+    // would keep both and promise an address for each, but the document rejects the second
+    // (`name#1` is an unknown widget there). Promising an address that does not resolve is
+    // worse than declining to describe the node.
+    if (seen.has(name)) return refuse('duplicate_widget_name')
+    seen.add(name)
+    order.push(name)
+  }
+  return { provable: true, refusal: null, order }
+}
+
+/**
  * Prove — or refuse to prove — that `serialised.widgets_values` describes `widgets`.
  *
  * @param widgets the node's live widget list at serialization time
@@ -99,56 +179,16 @@ export function proveWidgetForm(
   producedValues: unknown,
   options: { serializeWidgets?: boolean; replayed?: boolean } = {}
 ): WidgetFormProof {
-  // A replayed payload carries whatever shape some other frontend wrote, and the widget list
-  // beside it may be synthesised placeholders: an unregistered node type gets widgets named
-  // `UNKNOWN`, `UNKNOWN_1`, ... from its stored values. A form built there would be
-  // syntactically valid, authoritative to every consumer, and meaningless. Refuse first, so
-  // no later check can accidentally accept it.
-  if (options.replayed || serialised.has_errors)
-    return refuse('replayed_serialization')
-
-  if (!widgets?.length || !options.serializeWidgets) {
-    // No values were written. A form with no array to describe is not a weaker claim than
-    // usual — it is a claim about nothing, and `order` would be read as authoritative.
-    return refuse('widgets_not_serialized')
-  }
-
-  const values = serialised.widgets_values
-  if (producedValues === undefined || values !== producedValues) {
-    // Identity, deliberately, not deep equality. A subclass or extension that rebuilt an
-    // equal-looking array did so from a source we cannot see, and a coincidental match is
-    // not evidence. This is the check that catches `SubgraphNode` and the packs that
-    // override `serialize` to write values after `super` returns.
-    return refuse(
-      Array.isArray(values) ? 'values_replaced' : 'values_not_positional'
-    )
-  }
-  if (!Array.isArray(values)) return refuse('values_not_positional')
-
-  const serializing = serializingWidgets(widgets)
-  if (serializing.length !== values.length) {
-    // Reachable even with an untouched array: a widget mutated its own `serialize` flag
-    // between the write and this check, or `widgets` was spliced in between.
-    return refuse('length_mismatch')
-  }
-
-  const order: string[] = []
-  const seen = new Set<string>()
-  for (const widget of serializing) {
-    const name = widget.name
-    if (typeof name !== 'string' || name.length === 0)
-      return refuse('unnameable_widget')
-    // `serialiseWidgetValues` builds its named projection with `defineProperty`, so a repeat
-    // silently overwrites the earlier value and the two become one key. An `order` array
-    // would keep both and promise an address for each, but the document rejects the second
-    // (`name#1` is an unknown widget there). Promising an address that does not resolve is
-    // worse than declining to describe the node.
-    if (seen.has(name)) return refuse('duplicate_widget_name')
-    seen.add(name)
-    order.push(name)
-  }
-
-  return { provable: true, refusal: null, order }
+  const proven = provenValues(
+    widgets,
+    serialised.widgets_values,
+    producedValues,
+    {
+      ...options,
+      replayed: options.replayed || serialised.has_errors
+    }
+  )
+  return Array.isArray(proven) ? addressableOrder(proven) : proven
 }
 
 /**
