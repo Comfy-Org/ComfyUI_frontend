@@ -36,36 +36,26 @@ export function isTransparent(color: string) {
   return false
 }
 
-/** Whether a CSS color may have alpha below 1; an alpha that is not a plain number counts as translucent. */
-export function isTranslucent(color: unknown): boolean {
+/** Whether a CSS color is certainly opaque: hex, or plain-number rgb(a)/hsl(a) with alpha 1. */
+export function isOpaqueColor(color: unknown): boolean {
   if (typeof color !== 'string') return false
 
   const normalized = color.trim().toLowerCase()
-  if (normalized === 'transparent') return true
+  if (/^#(?:[\da-f]{3}f?|[\da-f]{6}(?:ff)?)$/.test(normalized)) return true
 
-  const hexAlpha = normalized.match(
-    /^#(?:[\da-f]{3}([\da-f])|[\da-f]{6}([\da-f]{2}))$/
-  )
-  if (hexAlpha) {
-    const [, short, long] = hexAlpha
-    return parseInt(short ? short + short : long, 16) < 255
-  }
+  const args = normalized.match(/^(?:rgba?|hsla?)\(([^()]*)\)$/)?.[1]
+  if (args === undefined) return false
 
-  const functionArgs = normalized.match(/^[a-z-]+\((.*)\)$/)?.[1]
-  if (!functionArgs) return false
-
-  const alpha = functionArgs.includes('/')
-    ? functionArgs.split('/').at(-1)
-    : functionArgs.split(',').at(3)
-  if (alpha === undefined) return false
-
-  const value = parseCssAlpha(alpha)
-  return !Number.isFinite(value) || value < 1
+  const [channels, ...slashAlpha] = args.split('/')
+  const alpha = slashAlpha.at(0) ?? channels.split(',').at(3)
+  return alpha === undefined || parseStrictAlpha(alpha) >= 1
 }
 
-function parseCssAlpha(value: string): number {
+function parseStrictAlpha(value: string): number {
   const trimmed = value.trim()
-  return trimmed.endsWith('%') ? parseFloat(trimmed) / 100 : parseFloat(trimmed)
+  return trimmed.endsWith('%')
+    ? Number(trimmed.slice(0, -1)) / 100
+    : Number(trimmed)
 }
 
 export function rgbToHsl({ r, g, b }: RGB): HSL {

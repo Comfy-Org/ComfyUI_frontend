@@ -314,7 +314,7 @@ import {
   locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { isTranslucent, isTransparent } from '@/utils/colorUtil'
+import { isOpaqueColor, isTransparent } from '@/utils/colorUtil'
 
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
@@ -515,7 +515,7 @@ const shapeClass = computed(() =>
 
 const hasTranslucentSurface = computed(() =>
   [nodeData.color, nodeData.bgcolor].some(
-    (color) => !!color && isTranslucent(color)
+    (color) => !!color && !isOpaqueColor(color)
   )
 )
 
