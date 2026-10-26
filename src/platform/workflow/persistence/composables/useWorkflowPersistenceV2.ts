@@ -32,10 +32,8 @@ import {
 import { PERSIST_DEBOUNCE_MS } from '@/platform/workflow/persistence/base/draftTypes'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import {
-  clearAllWorkspaceStorage,
   completeWorkflowLogoutTransition,
-  prepareWorkflowLogoutTransition,
-  registerWorkflowPersistenceFlush
+  registerWorkflowPersistence
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
@@ -59,7 +57,7 @@ export function useWorkflowPersistenceV2() {
   const draftStore = useWorkflowDraftStoreV2()
   const tabState = useWorkflowTabState()
   const toast = useToast()
-  const { onUserLogout, onUserResolved } = useCurrentUser()
+  const { onUserResolved } = useCurrentUser()
   const teamWorkspaceStore = useTeamWorkspaceStore()
   let stopWorkspaceReadinessWatcher: (() => void) | undefined
 
@@ -138,18 +136,23 @@ export function useWorkflowPersistenceV2() {
     debouncedPersist.flush()
   }
 
-  const unregisterPersistenceFlush = registerWorkflowPersistenceFlush(
-    flushPendingPersistence
-  )
   window.addEventListener('pagehide', flushPendingPersistence)
 
-  onUserLogout(() => {
-    if (!isCloud) return
-    stopPendingWorkspaceReadinessWatcher()
-    debouncedPersist.cancel()
-    prepareWorkflowLogoutTransition()
-    clearAllWorkspaceStorage()
+  // `resolvedUserInfo` reports the auth state this window observes, not an
+  // action this window took, and Firebase's browserLocalPersistence syncs that
+  // state between windows over `storage` events: when another window removes
+  // the shared `firebase:authUser:*` record, this window sees its user drop to
+  // null without anyone having signed out. Explicit sign-out sites clear shared
+  // storage and broadcast intent; registering here fences and clears on that
+  // intent, never on an observed null user.
+  const unregisterPersistence = registerWorkflowPersistence({
+    flush: flushPendingPersistence,
+    cancel() {
+      stopPendingWorkspaceReadinessWatcher()
+      debouncedPersist.cancel()
+    }
   })
+
   onUserResolved(() => {
     if (!isCloud) return
     stopPendingWorkspaceReadinessWatcher()
@@ -315,7 +318,7 @@ export function useWorkflowPersistenceV2() {
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
     window.removeEventListener('pagehide', flushPendingPersistence)
-    unregisterPersistenceFlush()
+    unregisterPersistence()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()
   })
