@@ -57,6 +57,7 @@ const {
   editableWorkflowId,
   hasWorkflowTarget = false,
   workflowSelecting = false,
+  openingChat = false,
   getMentionNodes = () => []
 } = defineProps<{
   streaming?: boolean
@@ -72,6 +73,7 @@ const {
   editableWorkflowId?: string
   hasWorkflowTarget?: boolean
   workflowSelecting?: boolean
+  openingChat?: boolean
   getMentionNodes?: () => SelectedNode[]
 }>()
 const emit = defineEmits<{
@@ -141,7 +143,13 @@ watch(
 )
 const { workflowReferences } = composer
 const placeholderLabel = computed(() =>
-  t(skills.enabled ? 'agent.placeholder' : 'agent.placeholderWithoutSkills')
+  t(
+    openingChat
+      ? 'agent.openingChat'
+      : skills.enabled
+        ? 'agent.placeholder'
+        : 'agent.placeholderWithoutSkills'
+  )
 )
 const showPlaceholderHint = computed(
   () => !composer.draft.value && !composer.prompt.value.references.length
@@ -252,6 +260,7 @@ function onEditorSelectionChange(): void {
 }
 
 const SKILL_DESCRIPTION_ID = 'agent-skill-description'
+const REFERENCE_MENU_ID = 'agent-reference-menu'
 const {
   describedSkill,
   requestDescription,
@@ -319,6 +328,10 @@ function stopRunOnEscape(event: KeyboardEvent): void {
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
+  if (openingChat) {
+    event.preventDefault()
+    return
+  }
   requestKeyboardDescription(event)
   if (handleMentionKeydown(event)) return
   if (event.key === 'Enter') onEnter(event)
@@ -409,9 +422,10 @@ const primaryActionAriaDisabled = computed(() =>
 )
 const primaryActionDisabled = computed(
   () =>
-    !running.value &&
-    !sendBlockedReason.value &&
-    (workflowSelecting || !composer.canSend.value)
+    openingChat ||
+    (!running.value &&
+      !sendBlockedReason.value &&
+      (workflowSelecting || !composer.canSend.value))
 )
 const skillSearchHint = computed(() =>
   skillQueryEmpty.value ? t('agent.typeToSearch') : undefined
@@ -426,6 +440,7 @@ const primaryActionShortcut = computed(() =>
 )
 
 function onPrimaryAction(): void {
+  if (openingChat) return
   if (running.value) emit('stop', 'button')
   else composer.submit()
 }
@@ -433,6 +448,15 @@ function onPrimaryAction(): void {
 const composerContainerRef = useTemplateRef<HTMLDivElement>(
   'composerContainerRef'
 )
+
+function focusAllowsComposerStop(): boolean {
+  const active = document.activeElement
+  return (
+    active === null ||
+    active === document.body ||
+    composerContainerRef.value?.contains(active) === true
+  )
+}
 
 // The prompt editor only forwards `keydown` while it (the ProseMirror
 // contenteditable) itself has focus, so pressing Escape after submitting via
@@ -465,16 +489,16 @@ const composerContainerRef = useTemplateRef<HTMLDivElement>(
 // full-screen overlay pre-empt everything else. This handler only ever runs
 // when none of those more specific handlers claimed the event first.
 function handleEscapeOverride(event: KeyboardEvent): boolean {
-  if (event.key !== 'Escape' || !running.value || event.isComposing)
+  if (
+    openingChat ||
+    event.key !== 'Escape' ||
+    !running.value ||
+    event.isComposing
+  )
     return false
   if (event.defaultPrevented) return false
 
-  const active = document.activeElement
-  const focusedElsewhere =
-    active !== null &&
-    active !== document.body &&
-    !composerContainerRef.value?.contains(active)
-  if (focusedElsewhere) return false
+  if (!focusAllowsComposerStop()) return false
 
   event.preventDefault()
   if (!event.repeat) emit('stop', 'escape')
@@ -526,7 +550,7 @@ defineExpose({
   >
     <div
       v-if="mentionVisible"
-      id="agent-reference-menu"
+      :id="REFERENCE_MENU_ID"
       ref="mentionListRef"
       data-testid="agent-reference-menu"
       role="menu"
@@ -631,6 +655,7 @@ defineExpose({
               :model-value="composer.prompt.value"
               :label="placeholderLabel"
               :expanded="mentionVisible"
+              :reference-menu-id="REFERENCE_MENU_ID"
               :active-descendant="activeMentionDescendant"
               :search-hint="skillSearchHint"
               :history-epoch="composer.promptEpoch.value"
