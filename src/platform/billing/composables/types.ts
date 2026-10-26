@@ -26,6 +26,12 @@ import type {
 /** `unknown` until the active workspace has loaded; no billing call may be made yet. */
 export type BillingType = 'legacy' | 'workspace' | 'unknown'
 
+export type WorkspaceStatusReadOutcome = {
+  kind: 'published' | 'failed'
+  workspaceId: string | undefined
+  transitionGeneration: number
+}
+
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
 export type SubscriptionCheckoutSelection =
@@ -195,6 +201,7 @@ export type CancelRail = Exclude<BillingType, 'unknown'>
 export interface BillingContext
   extends BillingState, Omit<BillingActions, 'cancelSubscription'> {
   type: ComputedRef<BillingType>
+  workspaceStatusReadOutcome: ComputedRef<WorkspaceStatusReadOutcome | null>
   /** True only if a fresh workspace status read was published for this context. */
   refreshWorkspaceStatusFresh: () => Promise<boolean>
   cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<CancelRail>

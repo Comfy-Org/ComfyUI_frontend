@@ -306,6 +306,22 @@ describe('useBillingContext', () => {
     expect(context.renewalInvoice.value).toStrictEqual(invoice)
   })
 
+  it('exposes the latest workspace status publication and failure', async () => {
+    mockBillingRail.value = 'stripe'
+    const context = useBillingContext()
+
+    await context.refreshWorkspaceStatusFresh()
+    expect(context.workspaceStatusReadOutcome.value?.kind).toBe('published')
+
+    vi.mocked(workspaceApi.getBillingStatus).mockRejectedValueOnce(
+      new Error('status unavailable')
+    )
+    await expect(context.refreshWorkspaceStatusFresh()).rejects.toThrow(
+      'status unavailable'
+    )
+    expect(context.workspaceStatusReadOutcome.value?.kind).toBe('failed')
+  })
+
   it('provides balance info from legacy billing', () => {
     mockBillingRail.value = 'legacy_stripe'
     const { balance } = useBillingContext()

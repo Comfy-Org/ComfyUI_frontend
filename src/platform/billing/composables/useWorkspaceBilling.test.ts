@@ -727,6 +727,10 @@ describe('useWorkspaceBilling', () => {
 
       await expect(billing.refreshStatusFresh()).resolves.toBe(true)
       expect(billing.subscription.value?.tier).toBe('CREATOR')
+      expect(billing.statusReadOutcome.value).toMatchObject({
+        kind: 'published',
+        workspaceId: 'workspace-1'
+      })
     })
 
     it('does not verify stale funds when a newer status read fails', async () => {
@@ -748,6 +752,34 @@ describe('useWorkspaceBilling', () => {
 
       await expect(olderRead).resolves.toBe(false)
       expect(billing.subscription.value?.agentScopedHasFunds).toBeUndefined()
+      expect(billing.statusReadOutcome.value).toMatchObject({
+        kind: 'failed',
+        workspaceId: 'workspace-1'
+      })
+    })
+
+    it('ignores a status response after identity changes back to the same workspace', async () => {
+      const delayedStatus = createDeferred<BillingStatusResponse>()
+      mockWorkspaceApi.getBillingStatus.mockReturnValueOnce(
+        delayedStatus.promise
+      )
+      const billing = setupBilling()
+      const workspaceStore = useTeamWorkspaceStore()
+      const originalGeneration = workspaceStore.workspaceTransitionGeneration
+
+      const read = billing.refreshStatusFresh()
+      workspaceStore.resetForIdentityChange()
+      Object.assign(workspaceStore, {
+        activeWorkspace: { id: 'workspace-1' }
+      })
+      expect(workspaceStore.workspaceTransitionGeneration).toBe(
+        originalGeneration + 1
+      )
+      delayedStatus.resolve(activeStatus)
+
+      await expect(read).resolves.toBe(false)
+      expect(billing.subscription.value).toBeNull()
+      expect(billing.statusReadOutcome.value).toBeNull()
     })
 
     it('surfaces a team credit stop from the status response', async () => {

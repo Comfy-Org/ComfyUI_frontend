@@ -197,6 +197,7 @@ const {
   tier: subscriptionTier,
   type: billingType,
   billingStatus,
+  workspaceStatusReadOutcome,
   canAccessSubscriptionFeatures,
   fetchStatus: refreshBillingStatus,
   refreshWorkspaceStatusFresh,
@@ -1651,7 +1652,7 @@ const localGrantScope = computed(() =>
     ? consentIdentity.value
     : null
 )
-const { arm: localGrantArm, rereadIfFailed: rereadLocalGrantArm } =
+const { arm: localGrantArm, rereadOnUserEvent: rereadLocalGrantArm } =
   useLocalAgentGrant(localGrantScope)
 const dismissedLocalFreeNoticeScope = ref<string | null>(null)
 const verifiedLocalGrantStatusScope = ref<string | null>(null)
@@ -1699,7 +1700,6 @@ async function readLocalGrantStatus(
       verifiedLocalGrantStatusScope.value = scope
       return
     }
-    verifiedLocalGrantStatusScope.value = null
   }
 }
 
@@ -1731,6 +1731,20 @@ watch(
   },
   { immediate: true }
 )
+watch(workspaceStatusReadOutcome, (outcome) => {
+  const scope = localGrantScope.value
+  if (
+    scope === null ||
+    billingType.value !== 'workspace' ||
+    outcome === null ||
+    outcome.workspaceId !== workspaceStore.activeWorkspace?.id ||
+    outcome.transitionGeneration !==
+      workspaceStore.workspaceTransitionGeneration
+  )
+    return
+  verifiedLocalGrantStatusScope.value =
+    outcome.kind === 'published' ? scope : null
+})
 const latestEntryHasError = computed(() => {
   const latestEntry = conversationEntries.value.at(-1)
   return (

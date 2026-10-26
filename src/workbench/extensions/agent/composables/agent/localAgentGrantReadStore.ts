@@ -19,7 +19,12 @@ type ArmReadState =
       scope: string
       lastRequestedAt: number
     }
-  | { phase: 'resolved'; scope: string; arm: LocalAgentGrantArm }
+  | {
+      phase: 'resolved'
+      scope: string
+      arm: LocalAgentGrantArm
+      lastRequestedAt: number
+    }
 
 const AUTOMATIC_RETRY_DELAY_MS = 2_000
 const USER_RETRY_COOLDOWN_MS = 30_000
@@ -113,7 +118,12 @@ export const useLocalAgentGrantReadStore = defineStore(
       const request = readArm(requestController.signal).then((outcome) => {
         if (requestGeneration !== generation || currentScope !== scope) return
         if (outcome.kind === 'resolved') {
-          state.value = { phase: 'resolved', scope, arm: outcome.arm }
+          state.value = {
+            phase: 'resolved',
+            scope,
+            arm: outcome.arm,
+            lastRequestedAt
+          }
         } else {
           if (outcome.retryable && !automaticRetryUsed) {
             state.value = {
@@ -140,10 +150,12 @@ export const useLocalAgentGrantReadStore = defineStore(
       })
     }
 
-    function rereadIfFailed(): void {
+    function rereadOnUserEvent(): void {
       const current = state.value
       if (
-        (current.phase !== 'failed' && current.phase !== 'retryScheduled') ||
+        (current.phase !== 'failed' &&
+          current.phase !== 'retryScheduled' &&
+          (current.phase !== 'resolved' || current.arm !== 'unknown')) ||
         pending !== null ||
         performance.now() - current.lastRequestedAt < USER_RETRY_COOLDOWN_MS
       )
@@ -154,7 +166,7 @@ export const useLocalAgentGrantReadStore = defineStore(
 
     function setScope(nextScope: string | null): void {
       if (nextScope === currentScope) {
-        rereadIfFailed()
+        rereadOnUserEvent()
         return
       }
       generation++
@@ -178,6 +190,6 @@ export const useLocalAgentGrantReadStore = defineStore(
 
     onScopeDispose(() => setScope(null))
 
-    return { state, arm, setScope, rereadIfFailed }
+    return { state, arm, setScope, rereadOnUserEvent }
   }
 )

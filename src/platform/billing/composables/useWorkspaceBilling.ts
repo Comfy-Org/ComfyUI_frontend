@@ -6,6 +6,7 @@ import {
   shallowRef,
   watch
 } from 'vue'
+import type { Ref } from 'vue'
 
 import type {
   BillingClient,
@@ -57,7 +58,8 @@ import type {
   BillingPortalOutcome,
   BillingRefreshOptions,
   BillingState,
-  SubscriptionInfo
+  SubscriptionInfo,
+  WorkspaceStatusReadOutcome
 } from '@/platform/billing/composables/types'
 
 export class CancellationScopeChangedError extends Error {
@@ -195,6 +197,7 @@ function seatCapacityFrom(status: BillingStatusResponse): SeatCapacity | null {
  */
 export type WorkspaceBilling = BillingState &
   BillingActions & {
+    statusReadOutcome: Readonly<Ref<WorkspaceStatusReadOutcome | null>>
     /** True only when a fresh status read published into this workspace. */
     refreshStatusFresh: () => Promise<boolean>
     /**
@@ -216,6 +219,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const error = ref<string | null>(null)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
+  const statusReadOutcome = shallowRef<WorkspaceStatusReadOutcome | null>(null)
   let adoption: Promise<boolean> = Promise.resolve(false)
   const seatCapacity = shallowRef<SeatCapacity | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
@@ -361,11 +365,13 @@ export function useWorkspaceBilling(): WorkspaceBilling {
 
   function isStaleStatusRead(
     requestId: number,
-    workspaceId: string | undefined
+    workspaceId: string | undefined,
+    transitionGeneration: number
   ): boolean {
     return (
       requestId !== latestBillingReadIds.status ||
-      workspaceId !== workspaceStore.activeWorkspace?.id
+      workspaceId !== workspaceStore.activeWorkspace?.id ||
+      transitionGeneration !== workspaceStore.workspaceTransitionGeneration
     )
   }
 
@@ -380,6 +386,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     adoption = Promise.resolve(false)
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
+    const transitionGeneration = workspaceStore.workspaceTransitionGeneration
     const rail: BillingReadRail | null = useBillingReadRail()
     isLoading.value = true
     error.value = null
@@ -387,20 +394,34 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       const status = rail
         ? await readOnRail(() => rail.readStatus(options), 'getBillingStatus')
         : await workspaceApi.getBillingStatus()
-      if (status === undefined || isStaleStatusRead(requestId, workspaceId))
+      if (
+        status === undefined ||
+        isStaleStatusRead(requestId, workspaceId, transitionGeneration)
+      )
         return false
 
       seatCapacity.value = seatCapacityFrom(status)
       statusData.value = status
+      statusReadOutcome.value = {
+        kind: 'published',
+        workspaceId,
+        transitionGeneration
+      }
       if (workspaceId && status.billing_rail) {
         workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
       }
       adoption = resumePendingOperation(status)
       return true
     } catch (err) {
-      if (isStaleStatusRead(requestId, workspaceId)) return false
+      if (isStaleStatusRead(requestId, workspaceId, transitionGeneration))
+        return false
       error.value =
         err instanceof Error ? err.message : 'Failed to fetch billing status'
+      statusReadOutcome.value = {
+        kind: 'failed',
+        workspaceId,
+        transitionGeneration
+      }
       throw err
     } finally {
       if (requestId === latestBillingReadIds.status) isLoading.value = false
@@ -860,6 +881,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   return {
     // State
     isInitialized,
+    statusReadOutcome,
     subscription,
     balance,
     plans,

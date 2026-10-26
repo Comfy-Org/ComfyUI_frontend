@@ -138,6 +138,11 @@ function useBillingContextInternal(): BillingContext {
   const subscription = computed<SubscriptionInfo | null>(() =>
     toValue(activeContext.value.subscription)
   )
+  const workspaceStatusReadOutcome = computed(() =>
+    type.value === 'workspace'
+      ? toValue(getWorkspaceBilling().statusReadOutcome)
+      : null
+  )
 
   const balance = computed<BalanceInfo | null>(() =>
     toValue(activeContext.value.balance)
@@ -447,6 +452,7 @@ function useBillingContextInternal(): BillingContext {
 
   return {
     type,
+    workspaceStatusReadOutcome,
     isInitialized,
     subscription,
     balance,

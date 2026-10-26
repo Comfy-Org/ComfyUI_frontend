@@ -220,7 +220,10 @@ describe('useLocalAgentGrant', () => {
   })
 
   it('retries a temporary failure once after two seconds and then stops', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout'],
+      shouldAdvanceTime: false
+    })
     onTestFinished(() => {
       vi.useRealTimers()
     })
@@ -242,7 +245,10 @@ describe('useLocalAgentGrant', () => {
   })
 
   it('rereads after the cooldown on reopening, without resetting the retry budget', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout'],
+      shouldAdvanceTime: false
+    })
     onTestFinished(() => {
       vi.useRealTimers()
     })
@@ -268,24 +274,68 @@ describe('useLocalAgentGrant', () => {
     const reopened = start(scope)
     await vi.waitFor(() => expect(reopened.arm.value).toBe('treatment'))
     expect(fetch).toHaveBeenCalledTimes(3)
-    reopened.rereadIfFailed()
+    reopened.rereadOnUserEvent()
     expect(fetch).toHaveBeenCalledTimes(3)
   })
 
-  it('does not retry a successful unknown assignment', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  it('rereads a successful unknown on reopening after the cooldown without automatic retry', async () => {
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout'],
+      shouldAdvanceTime: false
+    })
     onTestFinished(() => {
       vi.useRealTimers()
     })
-    vi.mocked(fetch).mockResolvedValueOnce(Response.json({}))
+    const clock = vi.spyOn(performance, 'now').mockReturnValue(0)
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(Response.json({}))
+      .mockResolvedValueOnce(
+        Response.json({ agent_gratis_local_arm: 'treatment' })
+      )
     const { arm, scope, stop } = start()
 
     await setImmediate()
     await vi.advanceTimersByTimeAsync(60_000)
-    stop()
-    start(scope)
-    expect(arm.value).toBe('unknown')
     expect(fetch).toHaveBeenCalledOnce()
+    expect(arm.value).toBe('unknown')
+    stop()
+    clock.mockReturnValue(29_999)
+    const early = start(scope)
+    expect(fetch).toHaveBeenCalledOnce()
+    early.stop()
+    clock.mockReturnValue(30_000)
+    const reopened = start(scope)
+    await vi.waitFor(() => expect(reopened.arm.value).toBe('treatment'))
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not replenish automatic retry after a reopened failed read', async () => {
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout'],
+      shouldAdvanceTime: false
+    })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const clock = vi.spyOn(performance, 'now')
+    clock.mockReturnValueOnce(0).mockReturnValueOnce(2_000)
+    vi.mocked(fetch)
+      .mockRejectedValueOnce(new TypeError('offline'))
+      .mockRejectedValueOnce(new TypeError('offline'))
+      .mockRejectedValueOnce(new TypeError('offline'))
+    const { scope, stop } = start()
+
+    await setImmediate()
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    stop()
+    clock.mockReturnValue(32_000)
+    const reopened = start(scope)
+    await setImmediate()
+    expect(reopened.arm.value).toBe('unknown')
+    expect(fetch).toHaveBeenCalledTimes(3)
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(fetch).toHaveBeenCalledTimes(3)
   })
 
   it.for([
@@ -295,7 +345,10 @@ describe('useLocalAgentGrant', () => {
     },
     { label: 'malformed', response: () => new Response('{') }
   ])('does not automatically retry a $label response', async ({ response }) => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout'],
+      shouldAdvanceTime: false
+    })
     onTestFinished(() => {
       vi.useRealTimers()
     })
@@ -310,7 +363,10 @@ describe('useLocalAgentGrant', () => {
   })
 
   it('cancels a scheduled retry when the account scope changes', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout'],
+      shouldAdvanceTime: false
+    })
     onTestFinished(() => {
       vi.useRealTimers()
     })
@@ -331,7 +387,10 @@ describe('useLocalAgentGrant', () => {
   })
 
   it('does not retry an aborted request after the store is disposed', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout'],
+      shouldAdvanceTime: false
+    })
     onTestFinished(() => {
       vi.useRealTimers()
     })
@@ -345,8 +404,10 @@ describe('useLocalAgentGrant', () => {
     )
     const { arm } = start()
     await setImmediate()
+    const signal = vi.mocked(fetch).mock.calls[0][1]?.signal
 
     useLocalAgentGrantReadStore().$dispose()
+    expect(signal?.aborted).toBe(true)
     await setImmediate()
     await vi.advanceTimersByTimeAsync(2_000)
 

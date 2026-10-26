@@ -7,6 +7,7 @@ import type { useBillingContext as realUseBillingContext } from '@/platform/bill
 function createBillingContextMock(): BillingContext {
   return {
     type: computed(() => 'legacy'),
+    workspaceStatusReadOutcome: computed(() => null),
     isInitialized: ref(false),
     isLoading: ref(false),
     error: ref(null),

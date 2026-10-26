@@ -57,6 +57,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import type { WorkspaceStatusReadOutcome } from '@/platform/billing/composables/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -273,6 +274,8 @@ const paywallBilling = vi.hoisted(() => ({
   fetchBalance: vi.fn<() => Promise<void>>()
 }))
 const paywallBillingType = ref<'workspace' | 'legacy'>('workspace')
+const paywallStatusReadOutcome = ref<WorkspaceStatusReadOutcome | null>(null)
+let paywallLatestStatusReadId = 0
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
 const paywallAgentScopedHasFunds = ref<boolean | undefined>()
@@ -347,7 +350,7 @@ beforeEach(() => {
   distribution.isDesktop = false
   vi.mocked(useLocalAgentGrant).mockReturnValue({
     arm: ref('unknown'),
-    rereadIfFailed: vi.fn()
+    rereadOnUserEvent: vi.fn()
   })
   agentSocket = createFakeAgentSocket()
   agentSocket.send.mockImplementation((frame) => {
@@ -408,11 +411,34 @@ beforeEach(() => {
       ),
       tier: computed(() => paywallBilling.tier),
       type: computed(() => paywallBillingType.value),
+      workspaceStatusReadOutcome: computed(
+        () => paywallStatusReadOutcome.value
+      ),
       billingStatus: computed(() => paywallBilling.status),
       canAccessSubscriptionFeatures: computed(() => paywallBilling.isActive),
       fetchStatus: paywallBilling.fetchStatus,
       refreshWorkspaceStatusFresh: async () => {
-        await paywallBilling.fetchStatus({ fresh: true })
+        const readId = ++paywallLatestStatusReadId
+        try {
+          await paywallBilling.fetchStatus({ fresh: true })
+        } catch (error) {
+          if (readId === paywallLatestStatusReadId)
+            paywallStatusReadOutcome.value = {
+              kind: 'failed',
+              workspaceId: useTeamWorkspaceStore().activeWorkspace?.id,
+              transitionGeneration:
+                useTeamWorkspaceStore().workspaceTransitionGeneration
+            }
+          throw error
+        }
+        if (readId !== paywallLatestStatusReadId) return false
+        if (paywallBilling.statusPublished)
+          paywallStatusReadOutcome.value = {
+            kind: 'published',
+            workspaceId: useTeamWorkspaceStore().activeWorkspace?.id,
+            transitionGeneration:
+              useTeamWorkspaceStore().workspaceTransitionGeneration
+          }
         return paywallBilling.statusPublished
       },
       fetchBalance: paywallBilling.fetchBalance
@@ -533,6 +559,8 @@ beforeEach(() => {
   paywallBilling.status = 'paid'
   paywallBilling.isActive = true
   paywallBilling.statusPublished = true
+  paywallLatestStatusReadId = 0
+  paywallStatusReadOutcome.value = null
   paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallBilling.fetchBalance.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
@@ -815,7 +843,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
     const arm = ref(assignment)
     vi.mocked(useLocalAgentGrant).mockReturnValue({
       arm,
-      rereadIfFailed: vi.fn()
+      rereadOnUserEvent: vi.fn()
     })
     return arm
   }
@@ -933,6 +961,78 @@ describe('AgentPanelRoot Local grant messaging', () => {
 
     expect(await screen.findByText('Try agent chat for free.')).toBeVisible()
     expect(paywallBilling.fetchStatus).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps a verified Local banner while two status reads are superseded', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByText('Try agent chat for free.')
+    activateThread()
+    paywallBilling.statusPublished = false
+
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('local-superseded-refresh')
+    conversation.startTurn(turnId)
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th-active', usage: null }
+      })
+    )
+
+    await waitFor(() =>
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledTimes(3)
+    )
+    await setImmediate()
+    expect(screen.getByText('Try agent chat for free.')).toBeVisible()
+
+    paywallHasFunds.value = false
+    paywallAgentScopedHasFunds.value = false
+    paywallStatusReadOutcome.value = {
+      kind: 'published',
+      workspaceId: useTeamWorkspaceStore().activeWorkspace?.id,
+      transitionGeneration:
+        useTeamWorkspaceStore().workspaceTransitionGeneration
+    }
+    expect(
+      await screen.findByTestId('agent-credits-exhausted-paywall')
+    ).toBeVisible()
+    expect(screen.queryByText('Try agent chat for free.')).toBeNull()
+  })
+
+  it('hides a verified Local banner when the latest replacement status read fails', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByText('Try agent chat for free.')
+    activateThread()
+    paywallBilling.statusPublished = false
+
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('local-status-failed-after-supersession')
+    conversation.startTurn(turnId)
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th-active', usage: null }
+      })
+    )
+
+    await waitFor(() =>
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledTimes(3)
+    )
+    expect(screen.getByText('Try agent chat for free.')).toBeVisible()
+    paywallStatusReadOutcome.value = {
+      kind: 'failed',
+      workspaceId: useTeamWorkspaceStore().activeWorkspace?.id,
+      transitionGeneration:
+        useTeamWorkspaceStore().workspaceTransitionGeneration
+    }
+    await waitFor(() =>
+      expect(screen.queryByText('Try agent chat for free.')).toBeNull()
+    )
+    expect(screen.queryByTestId('agent-credits-exhausted-paywall')).toBeNull()
   })
 
   it('shows the Local standing paywall after status settles even if balance is stalled', async () => {
@@ -1252,10 +1352,10 @@ describe('AgentPanelRoot Local grant messaging', () => {
   })
 
   it('checks a failed Local arm read on Send without waiting for its result', async () => {
-    const rereadIfFailed = vi.fn()
+    const rereadOnUserEvent = vi.fn()
     vi.mocked(useLocalAgentGrant).mockReturnValue({
       arm: ref('unknown'),
-      rereadIfFailed
+      rereadOnUserEvent
     })
     const bodies = mockMessagesEndpoint('wf-local')
     workflowStore.activeWorkflow = addTab('workflows/current.json')
@@ -1263,7 +1363,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
 
     await sendFromComposer('Build a workflow')
 
-    expect(rereadIfFailed).toHaveBeenCalledOnce()
+    expect(rereadOnUserEvent).toHaveBeenCalledOnce()
     await vi.waitFor(() => expect(bodies).toHaveLength(1))
   })
 

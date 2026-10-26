@@ -12,5 +12,5 @@ export function useLocalAgentGrant(scope: MaybeRefOrGetter<string | null>) {
     flush: 'sync'
   })
   const arm: Readonly<Ref<LocalAgentGrantArm>> = storeToRefs(store).arm
-  return { arm, rereadIfFailed: store.rereadIfFailed }
+  return { arm, rereadOnUserEvent: store.rereadOnUserEvent }
 }
