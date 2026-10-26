@@ -143,6 +143,7 @@ describe('useCanvasStore', () => {
       await nextTick()
       canvas.select(node)
       expect(store.selectedItems).toContain(node)
+      canvas.onSelectionChange = vi.fn()
 
       let stillSelectedInOnRemoved: boolean | undefined
       node.onRemoved = () => {
@@ -165,6 +166,7 @@ describe('useCanvasStore', () => {
       expect(selectionStore.selectedKeys(scope)).toEqual([])
       expect([...canvas.selectedItems]).toEqual([])
       expect(replacement.selected).toBeFalsy()
+      expect(canvas.onSelectionChange).not.toHaveBeenCalled()
     })
   })
 
