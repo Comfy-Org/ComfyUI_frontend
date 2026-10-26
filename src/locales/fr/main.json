@@ -4288,12 +4288,6 @@
     "uploadJsonFile": "Téléverser un fichier JSON"
   },
   "selectionToolbox": {
-    "linkDestinations": {
-      "goTo": "Aller à {node}",
-      "goToLinkedNode": "Aller à un nœud lié",
-      "subgraphInputs": "Entrées du sous-graphe",
-      "subgraphOutputs": "Sorties du sous-graphe"
-    },
     "Bypass Group Nodes": "Contourner les nœuds de groupe",
     "Set Group Nodes to Always": "Définir les nœuds de groupe sur Toujours",
     "Set Group Nodes to Never": "Définir les nœuds de groupe sur Jamais",

@@ -4288,12 +4288,6 @@
     "uploadJsonFile": "上傳JSON檔案"
   },
   "selectionToolbox": {
-    "linkDestinations": {
-      "goTo": "前往 {node}",
-      "goToLinkedNode": "前往相連的節點",
-      "subgraphInputs": "子圖輸入",
-      "subgraphOutputs": "子圖輸出"
-    },
     "Bypass Group Nodes": "繞過群組節點",
     "Set Group Nodes to Always": "將群組節點設為總是",
     "Set Group Nodes to Never": "將群組節點設為永不",

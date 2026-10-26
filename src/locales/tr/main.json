@@ -4288,12 +4288,6 @@
     "uploadJsonFile": "JSON Dosyası Yükle"
   },
   "selectionToolbox": {
-    "linkDestinations": {
-      "goTo": "{node} düğümüne git",
-      "goToLinkedNode": "Bağlı bir düğüme git",
-      "subgraphInputs": "Alt grafik girdileri",
-      "subgraphOutputs": "Alt grafik çıktıları"
-    },
     "Bypass Group Nodes": "Bypass Group Nodes",
     "Set Group Nodes to Always": "Set Group Nodes to Always",
     "Set Group Nodes to Never": "Set Group Nodes to Never",

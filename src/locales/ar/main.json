@@ -4288,12 +4288,6 @@
     "uploadJsonFile": "رفع ملف JSON"
   },
   "selectionToolbox": {
-    "linkDestinations": {
-      "goTo": "الانتقال إلى {node}",
-      "goToLinkedNode": "الانتقال إلى عقدة مرتبطة",
-      "subgraphInputs": "مُدخلات الرسم الفرعي",
-      "subgraphOutputs": "مُخرجات الرسم الفرعي"
-    },
     "Bypass Group Nodes": "تجاوز عقد المجموعة",
     "Set Group Nodes to Always": "تعيين عقد المجموعة إلى دائمًا",
     "Set Group Nodes to Never": "تعيين عقد المجموعة إلى أبدًا",
