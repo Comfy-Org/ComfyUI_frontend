@@ -1,5 +1,5 @@
-import { expect, mergeTests } from '@playwright/test';
-import type { WebSocketRoute } from '@playwright/test';
+import { expect, mergeTests } from '@playwright/test'
+import type { WebSocketRoute } from '@playwright/test'
 
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
