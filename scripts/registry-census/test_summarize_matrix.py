@@ -39,6 +39,12 @@ def row(pack: str, **over: object) -> dict:
         'driveTypes': {},
         'hookErrors': [],
         'ops': {'load': {'err': '', 'sig': '{}', 'depr': '', 'desync': ''}},
+        'formAgreement': {
+            'graph': {'KSampler#3': 'provable', 'VAEDecode#8':
+                      'widgets_not_serialized'},
+            'driven': {},
+            'needsForm': [],
+        },
     }
     base.update(over)
     return base
@@ -160,8 +166,102 @@ class Criteria(unittest.TestCase):
     def test_ungated_row_fields_are_labelled_telemetry(self) -> None:
         report = '\n'.join(sm.evaluate(population(), {}).lines)
         self.assertIn('telemetry only', report)
-        for field in ('newTypes', 'driveTypes'):
+        for field in ('newTypes', 'driveTypes', 'formAgreement'):
             self.assertIn(field, report)
+
+
+def form_agreement(
+    graph: dict | None = None,
+    driven: dict | None = None,
+    needs_form: list | None = None,
+) -> dict:
+    return {
+        'graph': graph if graph is not None else {'KSampler#3': 'provable'},
+        'driven': driven or {},
+        'needsForm': needs_form or [],
+    }
+
+
+class WidgetFormAgreement(unittest.TestCase):
+    """formAgreement is TELEMETRY: counted and printed, never gated.
+
+    A refusal is the predicate working, so a floor would fail the run for an
+    ecosystem behaving exactly as documented.
+    """
+
+    def test_refusals_are_counted_by_reason(self) -> None:
+        rows = population(10)
+        rows[0]['formAgreement'] = form_agreement(
+            {'KSampler#3': 'values_replaced'}
+        )
+        rows[1]['formAgreement'] = form_agreement(
+            {'KSampler#3': 'values_not_positional'}, needs_form=['KSampler#3']
+        )
+        v = sm.evaluate(rows, {})
+        report = '\n'.join(v.lines)
+        self.assertEqual(v.code, 0, report)
+        self.assertIn('widget form agreement', report)
+        self.assertIn('values_replaced', report)
+        self.assertIn('values_not_positional', report)
+        self.assertIn('8 of 10', report)
+
+    def test_a_pack_with_no_values_to_describe_is_not_a_refusal(self) -> None:
+        rows = population(4)
+        for r in rows:
+            r['formAgreement'] = form_agreement(
+                {'VAEDecode#8': 'widgets_not_serialized'}
+            )
+        report = '\n'.join(sm.evaluate(rows, {}).lines)
+        self.assertRegex(
+            report, r'packs with no refusal anywhere\s+4 of 4\s+\(100\.0%\)'
+        )
+        self.assertRegex(report, r'4\s+widgets_not_serialized')
+
+    def test_pack_node_types_are_counted_apart_from_the_workflow(self) -> None:
+        rows = population(4)
+        rows[0]['formAgreement'] = form_agreement(
+            driven={'PackNode': 'duplicate_widget_name'}
+        )
+        rows[1]['formAgreement'] = form_agreement(driven={'Other': 'provable'})
+        report = '\n'.join(sm.evaluate(rows, {}).lines)
+        self.assertIn("packs' own node types", report)
+        self.assertIn('1 of 2 provable', report)
+        self.assertIn('duplicate_widget_name', report)
+        self.assertRegex(report, r'packs registering their own node types\s+2')
+
+    def test_missing_field_withholds_rather_than_reading_vacuously(
+        self,
+    ) -> None:
+        rows = population(4)
+        del rows[0]['formAgreement']
+        v = sm.evaluate(rows, {})
+        self.assertEqual(v.code, 2)
+        self.assertIn('ROW SCHEMA DRIFT', '\n'.join(v.lines))
+        self.assertIn('formAgreement', '\n'.join(v.lines))
+
+    def test_a_failed_measurement_is_named_not_averaged(self) -> None:
+        rows = population(4)
+        rows[0]['formAgreement'] = {
+            'graph': {},
+            'driven': {},
+            'needsForm': [],
+            'err': 'TypeError: boom',
+        }
+        v = sm.evaluate(rows, {})
+        report = '\n'.join(v.lines)
+        self.assertEqual(v.code, 0, report)
+        # Out of the denominator entirely: it has no verdict either way.
+        self.assertRegex(
+            report, r'packs with no refusal anywhere\s+3 of 3\s+\(100\.0%\)'
+        )
+        self.assertRegex(report, r'packs the measurement failed on\s+1')
+        self.assertIn('pack-000', report)
+
+    def test_malformed_field_does_not_crash_the_verdict(self) -> None:
+        rows = population(4)
+        rows[0]['formAgreement'] = {'graph': 'not-a-dict', 'driven': None}
+        v = sm.evaluate(rows, {})
+        self.assertEqual(v.code, 0, v.lines)
 
 
 class HarnessGates(unittest.TestCase):

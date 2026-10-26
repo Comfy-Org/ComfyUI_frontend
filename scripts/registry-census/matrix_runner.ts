@@ -16,7 +16,13 @@ import type {
   LGraphNode,
   Point
 } from '@/lib/litegraph/src/litegraph'
+import type { WidgetFormRefusal } from '@/lib/litegraph/src/widgets/widgetFormProof'
+import {
+  needsFormButHasNone,
+  proveWidgetForm
+} from '@/lib/litegraph/src/widgets/widgetFormProof'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -71,6 +77,185 @@ interface OpRecord {
   desync: string
   dispatching: boolean
   note: string
+}
+
+/**
+ * One node's outcome: provable, one of the predicate's own refusals, or a
+ * state only this harness can reach. Typed as the real union so a refusal the
+ * predicate adds or renames breaks this file rather than quietly widening the
+ * histogram with a string nothing reads.
+ */
+type FormVerdict =
+  | 'provable'
+  | WidgetFormRefusal
+  | (typeof HARNESS_VERDICT)[keyof typeof HARNESS_VERDICT]
+
+/**
+ * Whether each node's `widgets_values` could be PROVEN to be the array core
+ * produced from `node.widgets`, which is the gate for emitting
+ * `widgets_values_form` (`proveWidgetForm`).
+ */
+interface FormAgreement {
+  /** `type#id` -> verdict, over the battery graph as the pack left it. */
+  graph: Record<string, FormVerdict>
+  /** The pack's OWN registered node types, freshly created -> verdict. */
+  driven: Record<string, FormVerdict>
+  /** Keys from either map whose values are object-shaped with no form. */
+  needsForm: string[]
+  /** Set only when the measurement itself failed; the maps are then empty. */
+  err?: string
+}
+
+/** `onSerialize` never fired, as distinct from firing with no values. */
+const NOT_CAPTURED = Symbol('widgets_values not captured')
+
+/** A verdict this harness produced rather than the predicate. */
+const HARNESS_VERDICT = {
+  /** `node.serialize()` threw, so there is no payload to prove anything about. */
+  threw: '!serialize_threw',
+  /** `LiteGraph.createNode` returned null for a type the pack registered. */
+  uncreatable: '!createNode_null',
+  /**
+   * Not provable and no refusal named. The predicate's type permits it and
+   * its code does not produce it, so this firing means the two have drifted.
+   */
+  unnamed: '!no_refusal_named'
+} as const
+
+/**
+ * Serialize one node and prove (or refuse) its widget form.
+ *
+ * `proveWidgetForm` needs the array `serialiseWidgetValues` returned BEFORE
+ * the extension serialize hook ran — identity is the whole proof — and that
+ * array is only ever handed to one thing outside `LGraphNode`: the node's own
+ * `onSerialize`, which `runExtensionSerializeHook` calls with the payload
+ * itself (`const view = canonical`). So a chained `onSerialize` is the seam,
+ * and it is a faithful one in both directions:
+ *
+ * - It cannot manufacture a pass. The post-hook identity is read from the
+ *   returned payload, so anything that replaces `widgets_values` after the
+ *   capture — a pack's own `onSerialize` running after ours, a `serialize`
+ *   override writing after `super`, `SubgraphNode.serializeFromStoreState`
+ *   rebuilding from `inputs` — still refuses.
+ * - It cannot manufacture a refusal. Installing a hook does force the hook
+ *   path for a node that would otherwise have returned early, but that path
+ *   leaves a JSON-cloneable `widgets_values` alone: the post-hook writeback
+ *   skips cloneable values, and the one `Object.assign` that could overwrite
+ *   the field draws from `readExtensionFields`, which excludes every
+ *   canonical field by construction.
+ *
+ * The capture runs after every gated operation, and a node with no widget
+ * values never reaches the hook at all (the `last_serialization` shell path
+ * returns first), which is why `replayed` is passed explicitly.
+ */
+function proveNodeForm(node: LGraphNode): {
+  verdict: FormVerdict
+  needsForm: boolean
+} {
+  const descriptor = Object.getOwnPropertyDescriptor(node, 'onSerialize')
+  const inherited = node.onSerialize
+  // A sentinel rather than a boolean flag: `undefined` is a legitimate
+  // captured value (a node whose hook ran with no widgets_values), and the
+  // two have to stay distinguishable.
+  let produced: unknown = NOT_CAPTURED
+  node.onSerialize = function (serialised: ISerialisedNode) {
+    produced = serialised.widgets_values
+    inherited?.call(this, serialised)
+  }
+
+  let serialised: ISerialisedNode
+  try {
+    serialised = node.serialize()
+  } catch {
+    return { verdict: HARNESS_VERDICT.threw, needsForm: false }
+  } finally {
+    if (descriptor) Object.defineProperty(node, 'onSerialize', descriptor)
+    else Reflect.deleteProperty(node, 'onSerialize')
+  }
+
+  const captured = produced !== NOT_CAPTURED
+  const proof = proveWidgetForm(
+    node.widgets,
+    serialised,
+    captured ? produced : undefined,
+    {
+      serializeWidgets: node.serialize_widgets,
+      // The shell path returns the stored payload before the hook, so a
+      // missed capture there is the replay itself, not an absent producer.
+      replayed: !captured && !!node.last_serialization
+    }
+  )
+  return {
+    verdict: proof.provable
+      ? 'provable'
+      : (proof.refusal ?? HARNESS_VERDICT.unnamed),
+    needsForm: needsFormButHasNone(serialised)
+  }
+}
+
+/**
+ * Prove one of the pack's OWN node types, created fresh.
+ *
+ * Re-created rather than measured inside the drive loop, which adds and then
+ * removes each type: reusing those nodes would read one the loop had already
+ * disconnected and detached.
+ */
+function proveFreshPackNode(
+  graph: LGraph,
+  type: string,
+  createNode: (type: string) => LGraphNode | null
+): { verdict: FormVerdict; needsForm: boolean } {
+  try {
+    const node = createNode(type)
+    if (!node) return { verdict: HARNESS_VERDICT.uncreatable, needsForm: false }
+    node.pos = [1400, 100]
+    graph.add(node)
+    const proof = proveNodeForm(node)
+    graph.remove(node)
+    return proof
+  } catch {
+    // Creating, adding or removing a pack's own node type is pack code
+    // running, and driveTypes already measures that. Here it only means the
+    // form verdict is unobtainable.
+    return { verdict: HARNESS_VERDICT.threw, needsForm: false }
+  }
+}
+
+/**
+ * The form verdict for every node the battery exercised, and for the pack's
+ * own node types created fresh.
+ *
+ * Telemetry: a population number for how much of the registry a minimal
+ * `widgets_values_form` producer would actually cover. Never gated — a
+ * refusal is the designed outcome for most of these shapes, so a floor here
+ * would fail the run for the predicate working.
+ *
+ * Total, so that a telemetry channel cannot cost the row: the caller writes
+ * the result straight into the row, and an escaping throw there would leave
+ * the write-ahead stub in place — and stub rate IS a gated criterion.
+ */
+function measureFormAgreement(
+  graph: LGraph,
+  packTypes: string[],
+  createNode: (type: string) => LGraphNode | null
+): FormAgreement {
+  const agreement: FormAgreement = { graph: {}, driven: {}, needsForm: [] }
+  try {
+    for (const node of graph._nodes) {
+      const key = `${node.type}#${String(node.id)}`
+      const { verdict, needsForm } = proveNodeForm(node)
+      agreement.graph[key] = verdict
+      if (needsForm) agreement.needsForm.push(key)
+    }
+    for (const type of packTypes) {
+      const { verdict, needsForm } = proveFreshPackNode(graph, type, createNode)
+      agreement.driven[type] = verdict
+      if (needsForm) agreement.needsForm.push(type)
+    }
+  } catch (e) {
+    agreement.err = errMsg(e)
+  }
+  return agreement
 }
 
 const COMBO = (o: string[]): InputSpec => [o, {}]
@@ -671,6 +856,14 @@ export async function runPack(
   row.storeReadErrors = storeReadErrors
   row.hookErrors = [...new Set(hookErrors)].slice(0, 20)
   row.vueNodesMode = LiteGraph.vueNodesMode
+
+  // Last of all, for two reasons beyond `measureFormAgreement`'s own
+  // containment. The capture seam cannot reach a gated operation, and
+  // `hookErrors` is already read off, so re-instantiating a pack's node types
+  // here cannot add to a gated channel.
+  row.formAgreement = measureFormAgreement(graph, newTypes.slice(0, 8), (t) =>
+    LiteGraph.createNode(t)
+  )
 
   fs.writeFileSync(rowPath, JSON.stringify(row))
 }

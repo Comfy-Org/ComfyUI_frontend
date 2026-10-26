@@ -187,9 +187,56 @@ Only a strict majority withholds it as a harness failure. Shard jobs check
 harness integrity only (every built spec wrote its row; vitest's own exit
 code is ignored because pack code leaks unhandled rejections).
 
-**Telemetry, recorded but never gating:** `newTypes`, `driveTypes`, per-op
-`sig` / `depr`, extension counts, no-JS skip counts. The report labels these
-explicitly. A number that is printed is not thereby a number that gates.
+**Telemetry, recorded but never gating:** `newTypes`, `driveTypes`,
+`formAgreement`, per-op `sig` / `depr`, extension counts, no-JS skip counts.
+The report labels these explicitly. A number that is printed is not thereby a
+number that gates.
+
+### `formAgreement` — would a widget form cover this population?
+
+A ComfyUI workflow stores widget values positionally in `widgets_values` and
+stores nothing that says what the positions mean, so the frontend, comfy-cli
+and the cloud doc-host each reconstruct that schema independently and drift.
+`widgets_values_form` is the fix: a per-node `{ order: [...] }` a consumer
+addresses the node through, consulting no catalog. `proveWidgetForm`
+(`src/lib/litegraph/src/widgets/widgetFormProof.ts`) is the gate on emitting one,
+and the rule is deliberately one-sided — emit only where core can PROVE the
+final `widgets_values` is the array it produced from `node.widgets`, because
+no form keeps today's imperfect-but-loud catalog behaviour while a WRONG form
+is authoritative and misplaces values silently.
+
+`formAgreement` is the population number for that gate, and the matrix is the
+only instrument that can produce one: deriving an order breaks on exactly the
+mutations this harness already performs (`wSplice`, `wReorder`, `wConvert`,
+`wPushPojo`, `wPushForeignClass`) and on packs that write `widgets_values`
+after `super.serialize()` returns. Two maps per row, because they answer
+different questions — `graph` is the standard workflow after the battery
+mauled it, so it measures whether pack code breaks the proof on nodes the
+frontend owns; `driven` is the pack's OWN registered node types, which is the
+number that decides coverage. Values are `proveWidgetForm`'s own refusal
+names, or `provable`, or a `!`-prefixed state only the harness can reach
+(`!serialize_threw`, `!createNode_null`). `needsForm` lists the nodes
+`needsFormButHasNone` identifies: object-shaped values with no form, the
+population a form would rescue and that nothing else can count.
+
+**Read the verdicts against these caveats, which are the harness's, not the
+predicate's:**
+
+- `proveWidgetForm` needs the array `serialiseWidgetValues` produced BEFORE
+  the extension serialize hook — identity is the whole proof — and core hands
+  that array to exactly one thing outside `LGraphNode`: the node's own
+  `onSerialize`. So the runner chains one on, and that forces the hook path
+  for a node that would otherwise have returned early. It cannot manufacture
+  either answer (see `proveNodeForm`), but it is a seam and not the production
+  call site; a producer landing inside `serializeFromStoreState` should be
+  measured again from there.
+- The measurement runs last, after every gated operation, so the seam cannot
+  reach a gated channel. It therefore reads the battery's end state, not a
+  pristine graph.
+- `driven` is capped at the same first 8 types as `driveTypes`, and a pack
+  that registers its node types from a hook this harness does not drive
+  (`setup`, `addCustomNodeDefs`) contributes none at all. A pack with an empty
+  `driven` map is unmeasured there, not covered.
 
 Packs execute under real timers: the matrix config assigns `setupFiles`
 explicitly, keeping `vitest.setup.ts` (environment globals) and dropping

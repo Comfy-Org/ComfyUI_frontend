@@ -81,10 +81,12 @@ EXPECTED_ROW_KEYS = (
     'storeReadErrors',
     'newTypes',
     'driveTypes',
+    'formAgreement',
 )
 
 TELEMETRY = (
-    'newTypes, driveTypes, per-op sig/depr, extension counts, no-JS skips'
+    'newTypes, driveTypes, formAgreement, per-op sig/depr, extension counts,'
+    ' no-JS skips'
 )
 
 
@@ -109,6 +111,112 @@ def _named(packs: list[str], limit: int = 10) -> str:
     shown = ', '.join(packs[:limit])
     return shown + (f' (+{len(packs) - limit} more)'
                     if len(packs) > limit else '')
+
+
+def _pct(part: int, whole: int) -> str:
+    return f'{part / whole * 100:5.1f}%' if whole else '  n/a'
+
+
+def form_agreement_report(done: list[dict]) -> list[str]:
+    """Would a `widgets_values_form` producer cover this population?
+
+    TELEMETRY, never gated, and the reason is not caution: most refusals are
+    the predicate doing its job. `proveWidgetForm` emits a form only where
+    core can prove `widgets_values` is the array it produced from
+    `node.widgets`, because a wrong form is authoritative and misplaces values
+    silently while no form just keeps today's catalogue behaviour. A floor
+    here would fail the run for a pack legitimately replacing its own values.
+
+    Two populations, counted separately because they answer different
+    questions. `graph` is the standard workflow after the battery mauled it,
+    so it measures whether PACK CODE breaks the proof on nodes the frontend
+    owns. `driven` is each pack's OWN node classes, which is the number that
+    decides coverage.
+    """
+    verdicts: Counter = Counter()
+    driven: Counter = Counter()
+    packs_all_provable = 0
+    packs_with_refusal: list[str] = []
+    packs_with_driven = 0
+    needs_form_packs: list[str] = []
+    unmeasured: list[str] = []
+    for r in done:
+        agreement = r.get('formAgreement')
+        if not isinstance(agreement, dict):
+            continue
+        if agreement.get('err'):
+            # The measurement itself failed, so this pack has no verdict in
+            # either direction. Named rather than folded into a rate: a rising
+            # count here is the channel breaking, not the ecosystem moving.
+            unmeasured.append(str(r.get('pack')))
+            continue
+        graph = agreement.get('graph')
+        graph = graph if isinstance(graph, dict) else {}
+        own = agreement.get('driven')
+        own = own if isinstance(own, dict) else {}
+        verdicts.update(str(v) for v in graph.values())
+        driven.update(str(v) for v in own.values())
+        if own:
+            packs_with_driven += 1
+        # A node with no values to describe is not a coverage gap, so the
+        # per-pack verdict ignores it: the question is whether anything a pack
+        # did made a describable node undescribable.
+        refused = sorted(
+            {
+                str(v)
+                for v in (*graph.values(), *own.values())
+                if v not in ('provable', 'widgets_not_serialized')
+            }
+        )
+        if refused:
+            packs_with_refusal.append(f'{r.get("pack")} [{",".join(refused)}]')
+        else:
+            packs_all_provable += 1
+        if agreement.get('needsForm'):
+            needs_form_packs.append(str(r.get('pack')))
+
+    nodes = sum(verdicts.values())
+    if not nodes and not driven:
+        return ['', 'widget form agreement: no rows carried a verdict']
+
+    measured = len(done) - len(unmeasured)
+    out = ['', 'widget form agreement (telemetry - see form_agreement_report):']
+    out.append(
+        f'  {"packs with no refusal anywhere":38s}'
+        f' {packs_all_provable:5d} of {measured}'
+        f'  ({_pct(packs_all_provable, measured)})'
+    )
+    if unmeasured:
+        out.append(
+            f'  {"packs the measurement failed on":38s}'
+            f' {len(unmeasured):5d}   {_named(sorted(unmeasured))}'
+        )
+    for label, tally, population in (
+        ('standard workflow nodes', verdicts, nodes),
+        ("packs' own node types", driven, sum(driven.values())),
+    ):
+        provable = tally['provable']
+        out.append(
+            f'  {label:38s} {provable:5d} of {population} provable'
+            f'  ({_pct(provable, population)})'
+        )
+        for verdict, n in tally.most_common():
+            if verdict == 'provable':
+                continue
+            out.append(f'      {n:5d}  {verdict}')
+    out.append(
+        f'  {"packs with object-shaped values, no form":38s}'
+        f' {len(needs_form_packs):5d}'
+    )
+    if needs_form_packs:
+        out.append(f'      {_named(sorted(needs_form_packs))}')
+    out.append(
+        f'  {"packs registering their own node types":38s}'
+        f' {packs_with_driven:5d}'
+    )
+    if packs_with_refusal:
+        out.append(f'  refused somewhere: {_named(sorted(packs_with_refusal))}')
+    return out
 
 
 def evaluate(
@@ -301,6 +409,7 @@ def evaluate(
         lines.append('most common operation errors:')
         for msg, n in err_msgs.most_common(8):
             lines.append(f'  {n:4d}x {msg}')
+    lines.extend(form_agreement_report(done))
     lines.append('')
     lines.append(f'telemetry only - recorded, never gated: {TELEMETRY}')
 
