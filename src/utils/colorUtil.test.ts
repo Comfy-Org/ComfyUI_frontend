@@ -9,6 +9,7 @@ import {
   hsbToRgb,
   hsvaToHex,
   intToHex,
+  isTranslucent,
   isTransparent,
   luminance,
   normalizeHex,
@@ -299,6 +300,30 @@ describe('colorUtil conversions', () => {
     it('returns false for fully opaque hex colors', () => {
       expect(isTransparent('#ff0000')).toBe(false)
       expect(isTransparent('#ff0000ff')).toBe(false)
+    })
+  })
+
+  describe('isTranslucent', () => {
+    it.for([
+      ['transparent', true],
+      [' Transparent ', true],
+      ['#abc0', true],
+      ['#abc8', true],
+      ['#abcf', false],
+      ['#abc', false],
+      ['#ffffff08', true],
+      ['#ffffff00', true],
+      ['#ffffffff', false],
+      ['#ffffff', false],
+      ['rgba(0, 0, 0, 0)', true],
+      ['rgba(255, 0, 0, 0.5)', true],
+      ['rgba(255, 0, 0, 1)', false],
+      ['rgb(255, 0, 0)', false],
+      ['hsla(120, 50%, 50%, 0)', true],
+      ['hsl(120, 50%, 50%)', false],
+      ['red', false]
+    ] as const)('%s → %s', ([color, expected]) => {
+      expect(isTranslucent(color)).toBe(expected)
     })
   })
 

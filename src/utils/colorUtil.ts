@@ -36,6 +36,18 @@ export function isTransparent(color: string) {
   return false
 }
 
+/** Whether a hex, rgb(a) or hsl(a) color, or `transparent`, has alpha below 1. */
+export function isTranslucent(color: string): boolean {
+  const normalized = color.trim().toLowerCase()
+  if (normalized === 'transparent') return true
+
+  const format = identifyColorFormat(normalized)
+  if (!format) return false
+
+  const hsla = parseToHSLA(normalized, format)
+  return isHSLA(hsla) && hsla.a < 1
+}
+
 export function rgbToHsl({ r, g, b }: RGB): HSL {
   r /= 255
   g /= 255
