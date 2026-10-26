@@ -728,7 +728,7 @@ test.describe('Model playground', () => {
     modelsAccount
   }) => {
     await page.goto(MODEL_PATH)
-    const run = page.getByRole('link', { name: 'Run', exact: true })
+    const run = page.getByRole('link', { name: 'Sign in to run', exact: true })
     await expect(run).toHaveAttribute('href', /\/login\/\?returnTo=/)
     const prompt = 'a capybara in a trench coat'
     await page

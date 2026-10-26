@@ -486,7 +486,7 @@ test('keeps Run on screen beside a workflow form taller than the window', async 
 
   const run = page.getByTestId('workflow-run-footer')
   await expect(
-    run.getByRole('link', { name: 'Run', exact: true })
+    run.getByRole('link', { name: 'Sign in to run', exact: true })
   ).toBeVisible()
   await page
     .getByRole('heading', { name: 'Input', exact: true })

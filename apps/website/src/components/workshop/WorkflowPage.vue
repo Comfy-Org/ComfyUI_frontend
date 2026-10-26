@@ -103,7 +103,7 @@ function captureWorkflowDownload() {
         {{ model.summary }}
       </p>
       <div
-        v-if="downloadUrl || cloudHref"
+        v-if="cloudHref"
         class="mt-6 flex flex-wrap items-center gap-2"
         data-testid="workflow-actions"
       >
