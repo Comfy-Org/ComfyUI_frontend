@@ -13,7 +13,7 @@ interface TextEditorOptions {
   nodeTitle?: string
   readOnly: () => boolean
   onEdit: (text: string) => void
-  textareaAttributes?: TextareaHTMLAttributes
+  textareaAttributes?: () => TextareaHTMLAttributes
 }
 
 export function showTextEditor({
@@ -47,7 +47,7 @@ export function showTextEditor({
       onEdit: (value: string) => {
         isEdited = true
         onEdit(value)
-        void useWorkflowStore().activeWorkflow?.changeTracker.refreshModifiedState()
+        useWorkflowStore().activeWorkflow?.changeTracker.markModified()
       }
     },
     dialogComponentProps: {
@@ -56,8 +56,10 @@ export function showTextEditor({
       maximizable: true,
       onRemoved: () => {
         isOpen = false
-        if (isEdited)
-          useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+        if (!isEdited) return
+        const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
+        changeTracker?.captureCanvasState()
+        changeTracker?.updateModified()
       }
     }
   })

@@ -86,6 +86,7 @@
 
 <script setup lang="ts">
 import { refAutoReset } from '@vueuse/core'
+import { omit } from 'es-toolkit'
 import { computed, onBeforeUnmount, ref, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -171,7 +172,10 @@ function openTextEditor() {
     nodeTitle,
     readOnly: () => isReadOnly.value,
     onEdit: (text) => (modelValue.value = text),
-    textareaAttributes: { ...filteredProps.value, placeholder }
+    textareaAttributes: () => ({
+      ...omit(filteredProps.value, ['disabled']),
+      placeholder
+    })
   })
 }
 

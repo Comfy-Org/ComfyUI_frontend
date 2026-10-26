@@ -10,7 +10,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
 
 const captureCanvasState = vi.fn()
-const refreshModifiedState = vi.fn()
+const markModified = vi.fn()
+const updateModified = vi.fn()
 
 function renderDialogHost() {
   return render(GlobalDialog, { global: { plugins: [i18n] } })
@@ -33,7 +34,7 @@ function openEditor(
 
 beforeEach(() => {
   useWorkflowStore().activeWorkflow = fromPartial({
-    changeTracker: { captureCanvasState, refreshModifiedState }
+    changeTracker: { captureCanvasState, markModified, updateModified }
   })
 })
 
@@ -95,6 +96,7 @@ describe('showTextEditor', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     expect(captureCanvasState).toHaveBeenCalledOnce()
+    expect(updateModified).toHaveBeenCalledOnce()
   })
 
   it('marks the workflow modified while typing without recording undo history', async () => {
@@ -104,7 +106,7 @@ describe('showTextEditor', () => {
 
     await user.type(await screen.findByRole('textbox'), 'xxx')
 
-    expect(refreshModifiedState).toHaveBeenCalledTimes(3)
+    expect(markModified).toHaveBeenCalledTimes(3)
     expect(captureCanvasState).not.toHaveBeenCalled()
   })
 
@@ -199,16 +201,21 @@ describe('showTextEditor', () => {
     expect(onEdit).toHaveBeenLastCalledWith(composed)
   })
 
-  it('applies the textarea attributes it is given', async () => {
+  it('keeps the textarea attributes in step with the widget while it is open', async () => {
+    const maxlength = ref(12)
     renderDialogHost()
     openEditor({
-      textareaAttributes: { maxlength: 12, placeholder: 'Describe the scene' }
+      textareaAttributes: () => ({
+        maxlength: maxlength.value,
+        placeholder: 'Describe the scene'
+      })
     })
-
     const editor = await screen.findByRole('textbox')
-
-    expect(editor).toHaveAttribute('maxlength', '12')
     expect(editor).toHaveAttribute('placeholder', 'Describe the scene')
+
+    maxlength.value = 4
+
+    await waitFor(() => expect(editor).toHaveAttribute('maxlength', '4'))
   })
 
   it('closes the dialog it opened, and not one opened after it', async () => {

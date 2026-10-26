@@ -504,11 +504,29 @@ describe('WidgetTextarea expand to editor', () => {
 
   it("keeps the widget's native textarea limits in the editor", async () => {
     const options = { multiline: true, maxlength: 12 }
-    renderWithDialogHost({ options })
+    const { view } = renderWithDialogHost({ options })
+    const { editor } = await openEditor()
+    expect(editor).toHaveAttribute('maxlength', '12')
+
+    const changed = { multiline: true, maxlength: 4 }
+    await view.rerender({
+      widget: createMockWidget({
+        value: 'a portrait',
+        name: 'text',
+        options: changed
+      })
+    })
+
+    expect(editor).toHaveAttribute('maxlength', '4')
+  })
+
+  it('opens a disabled widget read-only with its text still selectable', async () => {
+    renderWithDialogHost({ options: { disabled: true } })
 
     const { editor } = await openEditor()
 
-    expect(editor).toHaveAttribute('maxlength', '12')
+    expect(editor).toHaveAttribute('readonly')
+    expect(editor).toBeEnabled()
   })
 
   it('closes the dialog when the widget unmounts', async () => {

@@ -55,7 +55,7 @@ export interface WorkflowChangeTracker {
   restore(): void
   updateModified(previousState?: ComfyWorkflowJSON): void
   captureCanvasState(): void
-  refreshModifiedState(): Promise<void>
+  markModified(): void
   checkState(): void
   updateState(
     source: ComfyWorkflowJSON[],

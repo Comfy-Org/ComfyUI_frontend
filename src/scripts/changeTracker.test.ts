@@ -494,26 +494,70 @@ describe('ChangeTracker', () => {
     })
   })
 
-  describe('refreshModifiedState', () => {
-    it('marks the workflow modified from the canvas without moving the undo point', async () => {
+  describe('markModified', () => {
+    it('marks the workflow modified without reading the canvas or moving the undo point', () => {
       const initial = createState(1)
       const tracker = createTracker(initial)
       const workflow = useWorkflowStore().activeWorkflow
       assert.exists(workflow)
       vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
-      const changed = createState(2)
-      mockCanvasState(changed)
 
-      void tracker.refreshModifiedState()
-      await vi.runAllTimersAsync()
+      tracker.markModified()
 
       expect(workflow.isModified).toBe(true)
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
         'graphChanged',
-        changed
+        initial
       )
+      expect(app.rootGraph.serialize).not.toHaveBeenCalled()
       expect(tracker.activeState).toEqual(initial)
       expect(tracker.undoQueue).toEqual([])
+    })
+
+    it('lets the next capture clear the flag when the edit came back to the saved state', () => {
+      const initial = createState(1)
+      const tracker = createTracker(initial)
+      const workflow = useWorkflowStore().activeWorkflow
+      assert.exists(workflow)
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      mockCanvasState(structuredClone(initial))
+      tracker.markModified()
+
+      tracker.captureCanvasState()
+      tracker.updateModified()
+
+      expect(workflow.isModified).toBe(false)
+      expect(tracker.undoQueue).toEqual([])
+    })
+
+    it.for([
+      {
+        name: 'its workflow is not the active one',
+        block: () => {
+          useWorkflowStore().activeWorkflow = null
+        }
+      },
+      {
+        name: 'a graph is loading',
+        block: () => {
+          ChangeTracker.isLoadingGraph = true
+        }
+      }
+    ])('leaves the workflow alone when $name', ({ block }) => {
+      const tracker = createTracker(createState(1))
+      const workflow = useWorkflowStore().activeWorkflow
+      assert.exists(workflow)
+      workflow.isModified = false
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      block()
+
+      tracker.markModified()
+
+      expect(workflow.isModified).toBe(false)
+      expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+        'graphChanged',
+        expect.anything()
+      )
     })
   })
 

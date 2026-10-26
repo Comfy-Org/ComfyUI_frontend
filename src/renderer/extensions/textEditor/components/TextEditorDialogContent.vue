@@ -1,7 +1,7 @@
 <template>
   <Textarea
     ref="textareaRef"
-    v-bind="attributes"
+    v-bind="attributes()"
     :model-value="readText()"
     :aria-label="label"
     :readonly="readOnly()"
@@ -24,13 +24,13 @@ const {
   label,
   readOnly,
   onEdit,
-  attributes = {}
+  attributes = () => ({})
 } = defineProps<{
   readText: () => string
   label: string
   readOnly: () => boolean
   onEdit: (text: string) => void
-  attributes?: TextareaHTMLAttributes
+  attributes?: () => TextareaHTMLAttributes
 }>()
 
 const textareaRef = useTemplateRef('textareaRef')
