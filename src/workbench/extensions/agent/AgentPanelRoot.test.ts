@@ -814,35 +814,38 @@ describe('AgentPanelRoot Local grant messaging', () => {
     return arm
   }
 
+  it('shows free use for treatment with confirmed Agent-scoped funds', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByText('Try agent chat for free.')).toBeVisible()
+    expect(screen.queryByText('Agent chats use credits.')).toBeNull()
+    expect(useFreeUsePlacement).not.toHaveBeenCalled()
+  })
+
   it.for([
-    { arm: 'treatment', scoped: true, free: 1, credits: 0 },
-    { arm: 'treatment', scoped: false, free: 0, credits: 0 },
-    { arm: 'treatment', scoped: undefined, free: 0, credits: 0 },
-    { arm: 'control', scoped: true, free: 0, credits: 1 },
-    { arm: 'control', scoped: false, free: 0, credits: 1 },
-    { arm: 'control', scoped: undefined, free: 0, credits: 1 },
-    { arm: 'unknown', scoped: true, free: 0, credits: 0 }
+    { arm: 'treatment', scoped: false, credits: 0 },
+    { arm: 'treatment', scoped: undefined, credits: 0 },
+    { arm: 'control', scoped: true, credits: 1 },
+    { arm: 'control', scoped: false, credits: 1 },
+    { arm: 'control', scoped: undefined, credits: 1 },
+    { arm: 'unknown', scoped: true, credits: 0 }
   ] satisfies {
     arm: LocalAgentGrantArm
     scoped: boolean | undefined
-    free: number
     credits: number
   }[])(
-    'renders $arm with scoped funds $scoped without inferring an allowance',
-    async ({ arm, scoped, free, credits }) => {
+    'withholds free use for $arm with scoped funds $scoped',
+    async ({ arm, scoped, credits }) => {
       assignArm(arm)
       paywallAgentScopedHasFunds.value = scoped
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       await screen.findByRole('textbox')
-      if (free > 0) await screen.findByText('Try agent chat for free.')
-      else
-        await waitFor(() =>
-          expect(paywallBilling.fetchStatus).toHaveBeenCalled()
-        )
+      await waitFor(() => expect(paywallBilling.fetchStatus).toHaveBeenCalled())
+      await setImmediate()
 
-      expect(screen.queryAllByText('Try agent chat for free.')).toHaveLength(
-        free
-      )
+      expect(screen.queryByText('Try agent chat for free.')).toBeNull()
       expect(screen.queryAllByText('Agent chats use credits.')).toHaveLength(
         credits
       )
@@ -853,6 +856,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
   it('waits for a successful status read before claiming free funds', async () => {
     assignArm('treatment')
     paywallAgentScopedHasFunds.value = true
+    const statusError = new Error('status unavailable')
     let settleStatus!: (error?: Error) => void
     paywallBilling.fetchStatus.mockReturnValueOnce(
       new Promise<void>((resolve, reject) => {
@@ -864,11 +868,30 @@ describe('AgentPanelRoot Local grant messaging', () => {
     await screen.findByRole('textbox')
 
     expect(screen.queryByText('Try agent chat for free.')).toBeNull()
-    settleStatus(new Error('status unavailable'))
-    await nextTick()
+    settleStatus(statusError)
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(statusError, {
+        surface: 'agent',
+        errorType: 'error_refreshing_agent_billing_status'
+      })
+    )
     expect(screen.queryByText('Try agent chat for free.')).toBeNull()
     expect(paywallBilling.fetchBalance).toHaveBeenCalledExactlyOnceWith({
       fresh: true
+    })
+  })
+
+  it('reports a failed balance read while retaining a verified funded status', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    const balanceError = new Error('balance unavailable')
+    paywallBilling.fetchBalance.mockRejectedValueOnce(balanceError)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByText('Try agent chat for free.')).toBeVisible()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(balanceError, {
+      surface: 'agent',
+      errorType: 'error_refreshing_agent_billing_balance'
     })
   })
 
@@ -884,6 +907,52 @@ describe('AgentPanelRoot Local grant messaging', () => {
     expect(paywallBilling.fetchBalance).toHaveBeenCalledExactlyOnceWith({
       fresh: true
     })
+    expect(reportError).not.toHaveBeenCalledWith(expect.anything(), {
+      surface: 'agent',
+      errorType: 'error_refreshing_agent_billing_status'
+    })
+  })
+
+  it('does not report rejected reads from a replaced consent scope', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    let rejectStaleStatus!: (error: Error) => void
+    let rejectStaleBalance!: (error: Error) => void
+    paywallBilling.fetchStatus.mockReturnValueOnce(
+      new Promise<void>((_resolve, reject) => {
+        rejectStaleStatus = reject
+      })
+    )
+    paywallBilling.fetchBalance.mockReturnValueOnce(
+      new Promise<void>((_resolve, reject) => {
+        rejectStaleBalance = reject
+      })
+    )
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await waitFor(() =>
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledTimes(1)
+    )
+
+    Object.assign(useAgentConsentStore(), {
+      identity: 'account-b/workspace-b/1'
+    })
+    expect(await screen.findByText('Try agent chat for free.')).toBeVisible()
+
+    const staleStatusError = new Error('old status failed')
+    const staleBalanceError = new Error('old balance failed')
+    rejectStaleStatus(staleStatusError)
+    rejectStaleBalance(staleBalanceError)
+    await setImmediate()
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      staleStatusError,
+      expect.anything()
+    )
+    expect(reportError).not.toHaveBeenCalledWith(
+      staleBalanceError,
+      expect.anything()
+    )
+    expect(screen.getByText('Try agent chat for free.')).toBeVisible()
   })
 
   it('rechecks the same consent scope when billing returns to workspace', async () => {
@@ -1026,29 +1095,35 @@ describe('AgentPanelRoot Local grant messaging', () => {
     }
   )
 
-  it.for([
-    { remote: false, free: 1, placementCalls: 0 },
-    { remote: true, free: 0, placementCalls: 1 }
-  ])(
-    'keeps Desktop 2 remote=$remote grant eligibility separate from onboarding',
-    async ({ remote, free, placementCalls }) => {
-      distribution.isDesktop = false
-      vi.stubGlobal('__comfyDesktop2', { isRemote: () => remote })
-      vi.stubGlobal('__comfyDesktop2Remote', !remote)
-      assignArm('treatment')
-      paywallAgentScopedHasFunds.value = true
-      render(AgentPanelRoot, { global: { plugins: [i18n] } })
-      await screen.findByRole('textbox')
-      if (free > 0) await screen.findByText('Try agent chat for free.')
+  it('shows Local grant on Desktop 2 local host', async () => {
+    distribution.isDesktop = false
+    vi.stubGlobal('__comfyDesktop2', { isRemote: () => false })
+    vi.stubGlobal('__comfyDesktop2Remote', true)
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-      expect(screen.queryAllByText('Try agent chat for free.')).toHaveLength(
-        free
-      )
-      expect(useFreeUsePlacement).toHaveBeenCalledTimes(placementCalls)
-      const scope = vi.mocked(useLocalAgentGrant).mock.calls[0]?.[0]
-      expect(toValue(scope)).toBe(remote ? null : 'account-a/workspace-a/0')
-    }
-  )
+    expect(await screen.findByText('Try agent chat for free.')).toBeVisible()
+    expect(useFreeUsePlacement).not.toHaveBeenCalled()
+    const scope = vi.mocked(useLocalAgentGrant).mock.calls[0]?.[0]
+    expect(toValue(scope)).toBe('account-a/workspace-a/0')
+  })
+
+  it('withholds Local grant on Desktop 2 remote host', async () => {
+    distribution.isDesktop = false
+    vi.stubGlobal('__comfyDesktop2', { isRemote: () => true })
+    vi.stubGlobal('__comfyDesktop2Remote', false)
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    await setImmediate()
+
+    expect(screen.queryByText('Try agent chat for free.')).toBeNull()
+    expect(useFreeUsePlacement).toHaveBeenCalledOnce()
+    const scope = vi.mocked(useLocalAgentGrant).mock.calls[0]?.[0]
+    expect(toValue(scope)).toBeNull()
+  })
 
   it('removes the free notice when consent scope is invalidated', async () => {
     assignArm('treatment')

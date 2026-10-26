@@ -705,6 +705,22 @@ describe('useWorkspaceBilling', () => {
       expect(billing.subscription.value?.planSlug).toBe('pro-monthly')
     })
 
+    it('does not reject when a failed fresh status was replaced by a newer read', async () => {
+      const olderStatus = createDeferred<BillingStatusResponse>()
+      mockWorkspaceApi.getBillingStatus
+        .mockReturnValueOnce(olderStatus.promise)
+        .mockResolvedValueOnce(activeStatus)
+      const billing = setupBilling()
+
+      const olderRead = billing.refreshStatusFresh()
+      await billing.fetchStatus()
+      olderStatus.reject(new Error('old status failed'))
+
+      await expect(olderRead).resolves.toBe(false)
+      expect(billing.error.value).toBeNull()
+      expect(billing.subscription.value?.tier).toBe('CREATOR')
+    })
+
     it('reports publication only for an adopted fresh status', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
       const billing = setupBilling()
@@ -839,6 +855,22 @@ describe('useWorkspaceBilling', () => {
       olderBalance.resolve(zeroBalance)
       await olderRequest
 
+      expect(billing.balance.value?.amountMicros).toBe(5_000_000)
+    })
+
+    it('does not reject when a failed fresh balance was replaced by a newer read', async () => {
+      const olderBalance = createDeferred<typeof zeroBalance>()
+      mockWorkspaceApi.getBillingBalance
+        .mockReturnValueOnce(olderBalance.promise)
+        .mockResolvedValueOnce(positiveBalance)
+      const billing = setupBilling()
+
+      const olderRead = billing.fetchBalance({ fresh: true })
+      await billing.fetchBalance()
+      olderBalance.reject(new Error('old balance failed'))
+
+      await expect(olderRead).resolves.toBeUndefined()
+      expect(billing.error.value).toBeNull()
       expect(billing.balance.value?.amountMicros).toBe(5_000_000)
     })
   })

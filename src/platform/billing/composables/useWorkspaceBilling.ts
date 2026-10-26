@@ -398,10 +398,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       adoption = resumePendingOperation(status)
       return true
     } catch (err) {
-      if (requestId === latestBillingReadIds.status) {
-        error.value =
-          err instanceof Error ? err.message : 'Failed to fetch billing status'
-      }
+      if (isStaleStatusRead(requestId, workspaceId)) return false
+      error.value =
+        err instanceof Error ? err.message : 'Failed to fetch billing status'
       throw err
     } finally {
       if (requestId === latestBillingReadIds.status) isLoading.value = false
@@ -429,10 +428,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         balanceData.value = balance
       }
     } catch (err) {
-      if (requestId === latestBillingReadIds.balance) {
-        error.value =
-          err instanceof Error ? err.message : 'Failed to fetch balance'
-      }
+      if (requestId !== latestBillingReadIds.balance) return
+      error.value =
+        err instanceof Error ? err.message : 'Failed to fetch balance'
       throw err
     } finally {
       if (requestId === latestBillingReadIds.balance) isLoading.value = false

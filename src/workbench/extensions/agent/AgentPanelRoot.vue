@@ -1673,14 +1673,25 @@ function refreshLocalGrantBilling(scope: string): void {
   void Promise.allSettled([
     refreshWorkspaceStatusFresh(),
     refreshBillingBalance({ fresh: true })
-  ]).then(([status]) => {
+  ]).then(([status, balance]) => {
     if (
-      readId === localGrantBillingReadId &&
-      localGrantScope.value === scope &&
-      billingType.value === 'workspace' &&
-      status.status === 'fulfilled' &&
-      status.value
+      readId !== localGrantBillingReadId ||
+      localGrantScope.value !== scope ||
+      billingType.value !== 'workspace'
     )
+      return
+
+    if (status.status === 'rejected')
+      reportError(status.reason, {
+        surface: 'agent',
+        errorType: 'error_refreshing_agent_billing_status'
+      })
+    if (balance.status === 'rejected')
+      reportError(balance.reason, {
+        surface: 'agent',
+        errorType: 'error_refreshing_agent_billing_balance'
+      })
+    if (status.status === 'fulfilled' && status.value)
       verifiedLocalGrantStatusScope.value = scope
   })
 }
