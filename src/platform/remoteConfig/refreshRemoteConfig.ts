@@ -2,6 +2,7 @@ import { delay } from 'es-toolkit'
 
 import { resolveUnifiedWebSession } from '@comfyorg/account-core/webSessionFlag'
 
+import { hasServerFirebaseConfig } from '@/config/firebase'
 import { isCloud } from '@/platform/distribution/types'
 
 import {
@@ -257,13 +258,13 @@ const BOOTSTRAP_RETRY_BASE_MS = 1_000
 const BOOTSTRAP_RETRY_MAX_MS = 10_000
 
 /**
- * Retries the anonymous /features read until it loads, so cloud never starts
- * Firebase on build-time defaults that may name the wrong project.
+ * Retries the anonymous /features read until the server names the Firebase
+ * project, so cloud never starts Firebase on a build-time default.
  */
 export async function loadRemoteConfigUntilReady(): Promise<void> {
   for (let attempt = 0; ; attempt++) {
     await refreshRemoteConfig({ useAuth: false })
-    if (remoteConfigState.value !== 'error') return
+    if (remoteConfigState.value !== 'error' && hasServerFirebaseConfig()) return
     await delay(
       Math.min(BOOTSTRAP_RETRY_BASE_MS * 2 ** attempt, BOOTSTRAP_RETRY_MAX_MS)
     )
