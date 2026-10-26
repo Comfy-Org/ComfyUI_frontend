@@ -242,6 +242,36 @@ describe('agent CRDT follower on a DynamicGroup inside a subgraph', () => {
     ])
   })
 
+  it('restores the kept value on retry when an interior DynamicGroup row regrew but its field failed', () => {
+    const state = startFollower(1)
+    deliver(state, [interiorWrite(2, 'rows', 2)], 2)
+    deliver(state, [interiorWrite(3, 'rows.1.strength', 0.7)], 3)
+    deliver(state, [interiorWrite(4, 'rows', 1)], 4)
+    const instance = state.graph.getNodeById(toNodeId(1))
+    assert.instanceOf(instance, SubgraphNode)
+    const interior = instance.subgraph.getNodeById(toNodeId(INTERIOR_ID))
+    assert.exists(interior)
+    interior.onWidgetChanged = (name) => {
+      if (name === 'rows.1.strength') throw new Error('callback failed')
+    }
+
+    deliver(state, [interiorWrite(5, 'rows', 2)], 5)
+    expect(state.adapter.hasPendingFailure('workflow')).toBe(true)
+    interior.onWidgetChanged = undefined
+
+    expect(state.adapter.retryFailed('workflow')).toMatchObject({
+      failureCount: 0
+    })
+    expect(state.adapter.hasPendingFailure('workflow')).toBe(false)
+    expect(interiorValues(state.graph, 1)).toEqual([
+      'head',
+      2,
+      0.5,
+      0.7,
+      'tail'
+    ])
+  })
+
   it('refuses an interior DynamicGroup resize on a definition shared by several instances', () => {
     const state = startFollower(2)
     const before = Y.encodeStateAsUpdate(state.hostDoc)

@@ -524,6 +524,31 @@ describe('LiveGraphApplier with the real change tracker', () => {
     ])
   })
 
+  it('restores the kept value on a replayed frame when a DynamicGroup row regrew but its field failed', () => {
+    const { graph, node, doc, collector } = twoRowFollower()
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    applyRowCount(doc, 1, 2)
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    node.onWidgetChanged = (name) => {
+      if (name === 'rows.1.strength') throw new Error('callback failed')
+    }
+
+    applyRowCount(doc, 2, 3)
+    const regrow = collector.take()
+    expect(applier.applyChanges(doc, regrow, CONTEXT).failureCount).toBe(1)
+    node.onWidgetChanged = undefined
+
+    expect(applier.applyChanges(doc, regrow, CONTEXT).failureCount).toBe(0)
+    expect(node.serialize().widgets_values).toEqual([
+      'head',
+      2,
+      0.5,
+      0.7,
+      'tail'
+    ])
+  })
+
   it('leaves visible DynamicGroup rows alone on a remote row count change', () => {
     const { graph, node, doc, collector } = twoRowFollower()
     const applier = new LiveGraphApplier({ getGraph: () => graph })
