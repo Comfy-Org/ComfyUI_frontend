@@ -1283,7 +1283,7 @@ describe('DeploymentSwitcher', () => {
       )
     })
 
-    it('lists the current row under Run on, then the rows that run it, then the rest, and names missing nodes on hover and in the row description', async () => {
+    it('lists the current row under Running on, then the rows that run it, then the rest, and names missing nodes on hover and in the row description', async () => {
       mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
         deployments: [
           { deployment_id: D2, missing_node_types: [], unknown: false },
@@ -1312,7 +1312,7 @@ describe('DeploymentSwitcher', () => {
         'KSampler',
         'Power Lora Loader (rgthree)'
       ])
-      expect(rowsIn('Run on')).toEqual(['deployment-row-cloud'])
+      expect(rowsIn('Running on')).toEqual(['deployment-row-cloud'])
       expect(rowsIn('Incompatible environments')).toEqual([
         `deployment-row-${D1}`,
         `deployment-row-${D9}`
@@ -1370,7 +1370,7 @@ describe('DeploymentSwitcher', () => {
       await openList(user)
 
       await waitFor(() =>
-        expect(rowsIn('Run on')).toEqual([`deployment-row-${D2}`])
+        expect(rowsIn('Running on')).toEqual([`deployment-row-${D2}`])
       )
       expect(
         screen.queryByRole('group', { name: 'Compatible environments' })

@@ -26,15 +26,16 @@ interface DeploymentRow {
 }
 
 interface DeploymentSection {
-  key: 'runOn' | 'compatible' | 'incompatible'
+  key: 'runOn' | 'current' | 'compatible' | 'incompatible'
   label: string
   rows: DeploymentRow[]
 }
 
 /**
  * The Run on menu's rows: the one this browser runs on, then Comfy Cloud,
- * then the deployments. Once a compatibility check splits them, the rest are
- * grouped by whether they run the open workflow.
+ * then the deployments. Once a compatibility check splits them, the current
+ * row sits alone under Running on and the rest are grouped by whether they
+ * run the open workflow.
  */
 export function useDeploymentRows() {
   const { t, locale } = useI18n()
@@ -109,13 +110,22 @@ export function useDeploymentRows() {
       rows,
       (row) => row.value === pickedValue.value
     )
-    const runOn = t('deploymentSwitcher.runOn')
     if (rows.every(runsWorkflow) || !rows.some(runsWorkflow)) {
-      return [{ key: 'runOn', label: runOn, rows: [...current, ...others] }]
+      return [
+        {
+          key: 'runOn',
+          label: t('deploymentSwitcher.runOn'),
+          rows: [...current, ...others]
+        }
+      ]
     }
     const [compatible, incompatible] = partition(others, runsWorkflow)
     const groups: DeploymentSection[] = [
-      { key: 'runOn', label: runOn, rows: current },
+      {
+        key: 'current',
+        label: t('deploymentSwitcher.runningOn'),
+        rows: current
+      },
       {
         key: 'compatible',
         label: t('deploymentSwitcher.compatibleEnvironments'),

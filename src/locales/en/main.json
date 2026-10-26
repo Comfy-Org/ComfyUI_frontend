@@ -4050,6 +4050,7 @@
   },
   "deploymentSwitcher": {
     "runOn": "Run on",
+    "runningOn": "Running on",
     "comfyCloud": "Comfy Cloud",
     "deployment": "{build} v{version}",
     "unnamedDeployment": "Deployment {id}",
