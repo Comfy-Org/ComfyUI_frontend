@@ -8,8 +8,29 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 type ReferencePath = ReturnType<typeof parseAnnotatedPath>
 
-function toReferenceKey({ filepath, rootFolder }: ReferencePath): string {
-  return JSON.stringify([rootFolder, filepath])
+const LONGEST_ANNOTATION = '[output]'
+
+function readAnnotationRoot(suffix: string): string | undefined {
+  const annotation = suffix.trim()
+  if (!annotation || annotation.length > LONGEST_ANNOTATION.length) return
+  const { filepath, rootFolder } = parseAnnotatedPath(annotation)
+  return filepath ? undefined : rootFolder
+}
+
+function referencesPath(value: string, deleted: ReferencePath): boolean {
+  if (value === deleted.filepath) {
+    const parsed = parseAnnotatedPath(value)
+    return (
+      parsed.filepath === deleted.filepath &&
+      parsed.rootFolder === deleted.rootFolder
+    )
+  }
+  if (!value.startsWith(deleted.filepath) || /\s$/.test(deleted.filepath))
+    return false
+  return (
+    readAnnotationRoot(value.slice(deleted.filepath.length)) ===
+    deleted.rootFolder
+  )
 }
 
 /** Matches widget values naming the same root folder and path as a deleted value. */
@@ -19,11 +40,9 @@ export function createDeletedValueMatcher(
   const deletedPaths = [...deletedValues].map((value) =>
     parseAnnotatedPath(value)
   )
-  const deletedKeys = new Set(deletedPaths.map(toReferenceKey))
   return (value) =>
     typeof value === 'string' &&
-    deletedPaths.some(({ filepath }) => value.startsWith(filepath)) &&
-    deletedKeys.has(toReferenceKey(parseAnnotatedPath(value)))
+    deletedPaths.some((deleted) => referencesPath(value, deleted))
 }
 
 /** Clears the canvas and Vue preview state of every node referencing a deleted value. */
