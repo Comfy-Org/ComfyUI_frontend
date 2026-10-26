@@ -1214,7 +1214,8 @@ describe('useSubscriptionDialog', () => {
                 id: 'team_700',
                 credits: 147_700,
                 usd: 700,
-                discountedUsd: 630
+                discountedUsd: 630,
+                periodChargeUsd: { monthly: 665, yearly: 7560 }
               },
               billingCycle: 'yearly',
               isChange: true

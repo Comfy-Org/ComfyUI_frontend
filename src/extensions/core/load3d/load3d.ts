@@ -1,6 +1,5 @@
 import { nextTick } from 'vue'
 
-import Load3D from '@/extensions/core/load3d/components/Load3D.vue'
 import Load3DViewerContent from '@/extensions/core/load3d/components/Load3dViewerContent.vue'
 import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import {
@@ -22,29 +21,20 @@ import type {
 } from '@comfyorg/viewport3d/load3d/interfaces'
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
-import {
-  LOAD3D_NONE_MODEL,
-  SUPPORTED_EXTENSIONS_ACCEPT
-} from '@comfyorg/viewport3d/load3d/constants'
+import { findNumericWidget } from '@/extensions/core/load3d/findNumericWidget'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
 import type { Model3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import { readModel3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import type {
-  INumericWidget,
-  IStringWidget
-} from '@/lib/litegraph/src/types/widgets'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   NodeExecutionOutput,
   NodeOutputWith
 } from '@/platform/remote/comfyui/execution/types'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
@@ -56,212 +46,15 @@ const MAX_STALE_CAPTURE_RETRIES = 2
 type Load3dPreviewOutput = NodeOutputWith<{
   result?: [string?, CameraState?, string?, Matrix?, Matrix?]
 }>
-import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { api } from '@/scripts/api'
 import { ComfyApp, app } from '@/scripts/app'
-import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isLoad3dNode } from '@/utils/litegraphUtil'
 import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
-const inputSpecLoad3D: CustomInputSpec = {
-  name: 'image',
-  type: 'Load3D',
-  isPreview: false
-}
-
-const inputSpecPreview3D: CustomInputSpec = {
-  name: 'image',
-  type: 'Preview3D',
-  isPreview: true
-}
-
-async function handleModelUpload(files: FileList, node: LGraphNode) {
-  if (!files.length) return
-
-  const modelWidget = node.widgets?.find((w) => w.name === 'model_file') as
-    | IStringWidget
-    | undefined
-
-  try {
-    const resourceFolder = (node.properties['Resource Folder'] as string) || ''
-
-    const subfolder = resourceFolder.trim()
-      ? `3d/${resourceFolder.trim()}`
-      : '3d'
-
-    const uploadPath = await Load3dUtils.uploadFile(files[0], subfolder)
-
-    if (!uploadPath) {
-      useToast().warning(t('toastMessages.fileUploadFailed'))
-      return
-    }
-
-    const modelUrl = api.apiURL(
-      Load3dUtils.getResourceURL(
-        ...Load3dUtils.splitFilePath(uploadPath),
-        'input'
-      )
-    )
-
-    useLoad3d(node).waitForLoad3d(async (load3d) => {
-      try {
-        reportLoadModelOutcome(await load3d.loadModel(modelUrl))
-      } catch {
-        useToast().warning(t('toastMessages.failedToLoadModel'))
-      }
-    })
-
-    if (uploadPath && modelWidget) {
-      if (!modelWidget.options.values?.includes(uploadPath)) {
-        modelWidget.options.values?.push(uploadPath)
-      }
-
-      modelWidget.value = uploadPath
-    }
-
-    markLoad3dSceneDirty(node)
-  } catch (error) {
-    console.error('Model upload failed:', error)
-    useToast().warning(t('toastMessages.fileUploadFailed'))
-  }
-}
-
-async function handleResourcesUpload(files: FileList, node: LGraphNode) {
-  if (!files.length) return
-
-  try {
-    const resourceFolder = (node.properties['Resource Folder'] as string) || ''
-
-    const subfolder = resourceFolder.trim()
-      ? `3d/${resourceFolder.trim()}`
-      : '3d'
-
-    await Load3dUtils.uploadMultipleFiles(files, subfolder)
-    markLoad3dSceneDirty(node)
-  } catch (error) {
-    console.error('Extra resources upload failed:', error)
-    useToast().warning(t('toastMessages.extraResourcesUploadFailed'))
-  }
-}
-
-function createFileInput(
-  accept: string,
-  multiple: boolean = false
-): HTMLInputElement {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = accept
-  input.multiple = multiple
-  input.style.display = 'none'
-  return input
-}
-
 export const load3dExtension: ComfyExtension = {
   name: 'Comfy.Load3D',
-  settings: [
-    {
-      id: 'Comfy.Load3D.ShowGrid',
-      category: ['3D', 'Scene', 'Initial Grid Visibility'],
-      name: 'Initial Grid Visibility',
-      tooltip:
-        'Controls whether the grid is visible by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation.',
-      type: 'boolean',
-      defaultValue: true,
-      experimental: true
-    },
-    {
-      id: 'Comfy.Load3D.BackgroundColor',
-      category: ['3D', 'Scene', 'Initial Background Color'],
-      name: 'Initial Background Color',
-      tooltip:
-        'Controls the default background color of the 3D scene. This setting determines the background appearance when a new 3D widget is created, but can be adjusted individually for each widget after creation.',
-      type: 'color',
-      defaultValue: '282828',
-      experimental: true
-    },
-    {
-      id: 'Comfy.Load3D.CameraType',
-      category: ['3D', 'Camera', 'Initial Camera Type'],
-      name: 'Initial Camera Type',
-      tooltip:
-        'Controls whether the camera is perspective or orthographic by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation.',
-      type: 'combo',
-      options: ['perspective', 'orthographic'],
-      defaultValue: 'perspective',
-      experimental: true
-    },
-    {
-      id: 'Comfy.Load3D.LightIntensity',
-      category: ['3D', 'Light', 'Initial Light Intensity'],
-      name: 'Initial Light Intensity',
-      tooltip:
-        'Sets the default brightness level of lighting in the 3D scene. This value determines how intensely lights illuminate objects when a new 3D widget is created, but can be adjusted individually for each widget after creation.',
-      type: 'number',
-      defaultValue: 3,
-      experimental: true
-    },
-    {
-      id: 'Comfy.Load3D.LightIntensityMaximum',
-      category: ['3D', 'Light', 'Light Intensity Maximum'],
-      name: 'Light Intensity Maximum',
-      tooltip:
-        'Sets the maximum allowable light intensity value for 3D scenes. This defines the upper brightness limit that can be set when adjusting lighting in any 3D widget.',
-      type: 'number',
-      defaultValue: 10,
-      experimental: true
-    },
-    {
-      id: 'Comfy.Load3D.LightIntensityMinimum',
-      category: ['3D', 'Light', 'Light Intensity Minimum'],
-      name: 'Light Intensity Minimum',
-      tooltip:
-        'Sets the minimum allowable light intensity value for 3D scenes. This defines the lower brightness limit that can be set when adjusting lighting in any 3D widget.',
-      type: 'number',
-      defaultValue: 1,
-      experimental: true
-    },
-    {
-      id: 'Comfy.Load3D.LightAdjustmentIncrement',
-      category: ['3D', 'Light', 'Light Adjustment Increment'],
-      name: 'Light Adjustment Increment',
-      tooltip:
-        'Controls the increment size when adjusting light intensity in 3D scenes. A smaller step value allows for finer control over lighting adjustments, while a larger value results in more noticeable changes per adjustment.',
-      type: 'slider',
-      attrs: {
-        min: 0.1,
-        max: 1,
-        step: 0.1
-      },
-      defaultValue: 0.5,
-      experimental: true
-    },
-    {
-      id: 'Comfy.Load3D.3DViewerEnable',
-      category: ['3D', '3DViewer', 'Enable'],
-      name: 'Enable 3D Viewer (Beta)',
-      tooltip:
-        'Enables the 3D Viewer (Beta) for selected nodes. This feature allows you to visualize and interact with 3D models directly within the full size 3d viewer.',
-      type: 'boolean',
-      defaultValue: true,
-      experimental: true
-    },
-    {
-      id: 'Comfy.Load3D.PLYEngine',
-      category: ['3D', 'PointCloud', 'Point Cloud Engine'],
-      name: 'Point Cloud Engine',
-      tooltip:
-        'Select the engine for loading point cloud PLY files. "threejs" uses the native Three.js PLYLoader (handles binary + ASCII, mesh-capable). "fastply" uses an optimized parser for ASCII PLY files. 3D Gaussian Splat PLYs are detected automatically and always rendered via sparkjs regardless of this setting.',
-      type: 'combo',
-      options: ['threejs', 'fastply'],
-      defaultValue: 'threejs',
-      migrateDeprecatedValue: (value) =>
-        value === 'sparkjs' ? 'threejs' : value,
-      experimental: true
-    }
-  ],
   commands: [
     {
       id: 'Comfy.3DViewer.Open3DViewer',
@@ -294,82 +87,6 @@ export const load3dExtension: ComfyExtension = {
       }
     }
   ],
-  getCustomWidgets() {
-    const VIEWPORT_STATE_NODES = new Set([
-      'Preview3DAdvanced',
-      'Save3DAdvanced',
-      'PreviewGaussianSplat',
-      'PreviewPointCloud',
-      'SaveGaussianSplat',
-      'SavePointCloud'
-    ])
-    return {
-      LOAD_3D(node) {
-        const { comfyClass } = node.constructor
-        const inputName =
-          comfyClass && VIEWPORT_STATE_NODES.has(comfyClass)
-            ? 'viewport_state'
-            : 'image'
-        const hasModelFileWidget = node.widgets?.some(
-          (w) => w.name === 'model_file'
-        )
-        if (hasModelFileWidget) {
-          const fileInput = createFileInput(SUPPORTED_EXTENSIONS_ACCEPT, false)
-
-          node.properties['Resource Folder'] = ''
-
-          fileInput.onchange = async () => {
-            await handleModelUpload(fileInput.files!, node)
-          }
-
-          node.addWidget('button', 'upload 3d model', 'upload3dmodel', () => {
-            fileInput.click()
-          })
-
-          const resourcesInput = createFileInput('*', true)
-
-          resourcesInput.onchange = async () => {
-            await handleResourcesUpload(resourcesInput.files!, node)
-            resourcesInput.value = ''
-          }
-
-          node.addWidget(
-            'button',
-            'upload extra resources',
-            'uploadExtraResources',
-            () => {
-              resourcesInput.click()
-            }
-          )
-
-          node.addWidget('button', 'clear', 'clear', () => {
-            const modelWidget = node.widgets?.find(
-              (w) => w.name === 'model_file'
-            )
-            if (modelWidget) {
-              modelWidget.value = LOAD3D_NONE_MODEL
-            }
-            markLoad3dSceneDirty(node)
-          })
-        }
-
-        const widget = new ComponentWidgetImpl({
-          node: node,
-          name: inputName,
-          component: Load3D,
-          inputSpec: { ...inputSpecLoad3D, name: inputName },
-          options: { hideInPanel: true }
-        })
-
-        widget.type = 'load3D'
-
-        addWidget(node, widget)
-
-        return { widget }
-      }
-    }
-  },
-
   getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
     // Only show menu items for Load3D nodes
     if (node.constructor.comfyClass !== 'Load3D') return []
@@ -393,12 +110,8 @@ export const load3dExtension: ComfyExtension = {
 
     useLoad3d(node).onLoad3dReady((load3d) => {
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-      const width = node.widgets?.find(
-        (w): w is INumericWidget => w.name === 'width' && w.type === 'number'
-      )
-      const height = node.widgets?.find(
-        (w): w is INumericWidget => w.name === 'height' && w.type === 'number'
-      )
+      const width = findNumericWidget(node.widgets, 'width')
+      const height = findNumericWidget(node.widgets, 'height')
       if (!modelWidget || !width || !height) return
 
       const cameraConfig = node.properties['Camera Config'] as
@@ -562,17 +275,6 @@ function applyPreview3DOutput(
 export const preview3DExtension: ComfyExtension = {
   name: 'Comfy.Preview3D',
 
-  async beforeRegisterNodeDef(
-    _nodeType: typeof LGraphNode,
-    nodeData: ComfyNodeDef
-  ) {
-    if ('Preview3D' === nodeData.name) {
-      const input = (nodeData.input ??= {})
-      const required = (input.required ??= {})
-      required.image = ['PREVIEW_3D']
-    }
-  },
-
   onNodeOutputsUpdated(
     nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
   ) {
@@ -597,26 +299,6 @@ export const preview3DExtension: ComfyExtension = {
     if (load3d.isSplatModel()) return []
 
     return createExportMenuItems(load3d)
-  },
-
-  getCustomWidgets() {
-    return {
-      PREVIEW_3D(node) {
-        const widget = new ComponentWidgetImpl({
-          node,
-          name: inputSpecPreview3D.name,
-          component: Load3D,
-          inputSpec: inputSpecPreview3D,
-          options: { hideInPanel: true }
-        })
-
-        widget.type = 'load3D'
-
-        addWidget(node, widget)
-
-        return { widget }
-      }
-    }
   },
 
   async nodeCreated(node: LGraphNode) {

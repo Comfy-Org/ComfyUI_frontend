@@ -29,8 +29,8 @@ export const searchInputSizeConfig = {
   },
   md: {
     icon: 'size-4',
-    iconPos: 'left-2.5',
-    inputPl: 'pl-8',
+    iconPos: 'left-3',
+    inputPl: 'pl-7',
     inputText: 'text-xs',
     clearPos: 'left-2.5'
   },

@@ -16,7 +16,7 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
-import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
+import { mockEmptyAgentThreadList } from '@e2e/fixtures/utils/agentThreadList'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -271,9 +271,7 @@ class Load3dAgentHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    await page.route('**/api/agent/threads?*', (route) =>
-      route.fulfill(jsonRoute(emptyAgentThreadList()))
-    )
+    await mockEmptyAgentThreadList(page)
     await page.route('**/api/agent/threads/*/messages', (route) =>
       route.fulfill(jsonRoute([]))
     )
