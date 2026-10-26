@@ -1,4 +1,5 @@
 import { useToast } from '@/components/ui/toast/toastStore'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { provideBillingDialogs } from '@/platform/billing/subscription/composables/billingDialogsAccess'
 import { render } from '@testing-library/vue'
@@ -1243,6 +1244,21 @@ describe('useSubscriptionCheckout', () => {
 
         expect(checkout.outstandingPaymentRefusals.value).toBe(1)
         expect(useToast().error).not.toHaveBeenCalled()
+      })
+
+      it('keeps the toast when the user cannot use the notice action', async () => {
+        useBillingCapabilities().canManageBilling = computed(() =>
+          receiveServerFact('can_manage_billing', false)
+        )
+        mockOpen.mockReturnValueOnce(null)
+        const checkout = await submitRejectedPreviewWithNotice(
+          'OUTSTANDING_PAYMENT_REQUIRED'
+        )
+
+        expect(checkout.outstandingPaymentRefusals.value).toBe(0)
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({ kind: 'warning' })
+        ])
       })
 
       it('keeps the existing toast for other recovery codes', async () => {

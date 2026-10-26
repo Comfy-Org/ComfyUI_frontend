@@ -155,8 +155,12 @@ export function useSubscriptionCheckout(
     subscription
   } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const { canSubscribeSelfServe, canChangeSeats, canDowngradeToPersonal } =
-    useBillingCapabilities()
+  const {
+    canSubscribeSelfServe,
+    canChangeSeats,
+    canDowngradeToPersonal,
+    canManageBilling
+  } = useBillingCapabilities()
   const { permissions, canReactivatePlan } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
@@ -526,6 +530,12 @@ export function useSubscriptionCheckout(
     return { url, billingClient: 'legacy' }
   }
 
+  // The notice offers its retry action only to users who can manage billing.
+  function noticeCanRender(): boolean {
+    if (!canManageBilling.value) return false
+    return rendersPastDueNotice && checkoutStep.value === 'pricing'
+  }
+
   async function recoverOutstandingPayment(
     error: unknown,
     isCurrent: () => boolean = () => true
@@ -553,9 +563,7 @@ export function useSubscriptionCheckout(
     // The table is hidden on the confirm step, so only the pricing step can
     // show the notice; elsewhere the toasts stay.
     const showsNotice =
-      rendersPastDueNotice &&
-      checkoutStep.value === 'pricing' &&
-      hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
+      noticeCanRender() && hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
     if (showsNotice) outstandingPaymentRefusals.value++
 
     const portal = createBillingPortalReporter(telemetry, 'payment_recovery')

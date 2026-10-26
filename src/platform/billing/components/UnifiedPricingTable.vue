@@ -460,6 +460,7 @@ import {
 } from '@/platform/telemetry/billingActionNames'
 import type { PlanAction } from '@comfyorg/ingest-types'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
@@ -676,17 +677,24 @@ watch(
 )
 
 const { canManageBilling } = capabilities
-const { updatePayment, isUpdatingPayment, paymentRecoveryLock } =
-  usePaymentRecoveryDialog()
+const {
+  updatePayment,
+  isUpdatingPayment,
+  paymentRecoveryLock,
+  refreshCapabilities
+} = usePaymentRecoveryDialog()
 const pastDueNoticeEl = ref<HTMLElement | null>(null)
-// A refusal keeps the notice up until the server stops offering recovery.
+// A refusal keeps the notice up until the user returns from paying, after
+// which the refreshed server lock decides.
 const refusalNoticeActive = ref(false)
 const showPastDueNotice = computed(
   () =>
     isCloud && (paymentRecoveryLock.value !== null || refusalNoticeActive.value)
 )
-watch(paymentRecoveryLock, (lock) => {
-  if (lock === null) refusalNoticeActive.value = false
+useEventListener(window, 'focus', () => {
+  if (!refusalNoticeActive.value) return
+  refusalNoticeActive.value = false
+  void refreshCapabilities()
 })
 watch(
   () => outstandingPaymentRefusals,

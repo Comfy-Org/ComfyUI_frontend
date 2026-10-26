@@ -75,6 +75,7 @@ const mockPermissions = ref({
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 const mockApiPlans = vi.hoisted(() => ({ value: [] as Plan[] }))
 const mockUpdatePayment = vi.hoisted(() => vi.fn())
+const mockRefreshCapabilities = vi.hoisted(() => vi.fn())
 const mockPaymentRecoveryLock = ref<'owner' | 'member' | null>(null)
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
@@ -96,7 +97,7 @@ vi.mock(
       updatePayment: mockUpdatePayment,
       isUpdatingPayment: computed(() => false),
       paymentRecoveryLock: computed(() => mockPaymentRecoveryLock.value),
-      refreshCapabilities: vi.fn()
+      refreshCapabilities: mockRefreshCapabilities
     })
   })
 )
@@ -1211,17 +1212,16 @@ describe('UnifiedPricingTable past-due notice', () => {
     expect(notice).toHaveFocus()
   })
 
-  it('drops a refusal notice once the server stops offering recovery', async () => {
+  it('clears a refusal notice when the user returns and the lock is null', async () => {
     const { rerender } = renderComponent()
     await rerender({ outstandingPaymentRefusals: 1 })
     expect(screen.getByTestId('pricing-past-due-notice')).toBeTruthy()
 
-    mockPaymentRecoveryLock.value = 'owner'
-    await nextTick()
-    mockPaymentRecoveryLock.value = null
+    window.dispatchEvent(new Event('focus'))
     await nextTick()
 
     expect(screen.queryByTestId('pricing-past-due-notice')).toBeNull()
+    expect(mockRefreshCapabilities).toHaveBeenCalledOnce()
   })
 
   it('stays hidden off Cloud', () => {
