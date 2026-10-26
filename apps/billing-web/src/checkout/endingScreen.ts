@@ -116,7 +116,7 @@ export type EndingScreen =
       readonly code: string
       readonly receipt?: BillingOperationReceipt
     }
-  | { readonly kind: 'unconfirmed'; readonly code: string }
+  | { readonly kind: 'unconfirmed'; readonly code?: string }
   | {
       readonly kind: 'refused'
       readonly code: string
@@ -157,7 +157,9 @@ export function endingOf(page: CheckoutPage): EndingScreen | undefined {
         code: PLAN_UNAVAILABLE_CODE[page.reason]
       }
     case 'unconfirmed':
-      return { kind: 'unconfirmed', code: page.operationId }
+      return page.operationId === undefined
+        ? { kind: 'unconfirmed' }
+        : { kind: 'unconfirmed', code: page.operationId }
     case 'waiting':
       return waitingEnding(page)
     case 'terminal':

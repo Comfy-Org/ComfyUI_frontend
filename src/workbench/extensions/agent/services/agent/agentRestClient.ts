@@ -30,6 +30,12 @@ import { refusedAttachmentsMessage } from '@/workbench/extensions/agent/utils/at
 import { withAgentAuth } from './agentAuth'
 
 import {
+  agentRequestFailureFingerprint,
+  describeAgentRequestFailure,
+  rememberAgentRequestFailure
+} from './agentRequestFailure'
+import type { AgentRequestFailureDiagnostics } from './agentRequestFailure'
+import {
   RENDERED_ASK_KINDS,
   zAgentAnswerReceipt,
   zAgentCancelAccepted,
@@ -115,6 +121,7 @@ interface AuthRejection {
   credential: ReportedAuthCredential
   body: unknown
   message: string
+  diagnostics: AgentRequestFailureDiagnostics
 }
 
 function reportAuthRejection({
@@ -123,7 +130,8 @@ function reportAuthRejection({
   authScheme,
   credential,
   body,
-  message
+  message,
+  diagnostics
 }: AuthRejection): boolean {
   let backendTags: AuthRejectionTags
   try {
@@ -135,7 +143,18 @@ function reportAuthRejection({
     reportError(new Error(AUTH_REJECTED_MESSAGE), {
       surface: 'agent',
       errorType: 'agent_api_auth_rejected',
-      tags: { operation, status, authScheme, credential, ...backendTags },
+      tags: {
+        operation,
+        status,
+        authScheme,
+        credential,
+        ...backendTags,
+        ...diagnostics
+      },
+      fingerprint: agentRequestFailureFingerprint(
+        'agent_api_auth_rejected',
+        diagnostics
+      ),
       level: 'warning'
     })
     return true
@@ -557,6 +576,7 @@ export function createAgentRestClient() {
   async function toApiError(
     response: Response,
     operation: AgentApiOperation,
+    route: string,
     authScheme: ReportedAuthScheme,
     credential: ReportedAuthCredential
   ): Promise<AgentApiError> {
@@ -575,12 +595,15 @@ export function createAgentRestClient() {
     // method not allowed) arrived with no failing endpoint and no record of
     // which auth path was taken, so it couldn't be diagnosed. Reporting both
     // here means the next occurrence can be.
-    const apiError = new AgentApiError(
-      message,
-      response.status,
-      body,
-      retryAfterSeconds,
-      operation
+    const apiError = rememberAgentRequestFailure(
+      new AgentApiError(
+        message,
+        response.status,
+        body,
+        retryAfterSeconds,
+        operation
+      ),
+      route
     )
     if (
       isAuthRejectionStatus(response.status) &&
@@ -590,7 +613,8 @@ export function createAgentRestClient() {
         authScheme,
         credential,
         body,
-        message: backendMessage ?? ''
+        message: backendMessage ?? '',
+        diagnostics: describeAgentRequestFailure(apiError)
       })
     ) {
       // Callers still receive the backend text for the UI, but their generic
@@ -630,7 +654,13 @@ export function createAgentRestClient() {
       try {
         return {
           ok: false,
-          cause: await toApiError(response, operation, authScheme, credential)
+          cause: await toApiError(
+            response,
+            operation,
+            route,
+            authScheme,
+            credential
+          )
         }
       } catch (cause) {
         return { ok: false, cause }
@@ -661,7 +691,7 @@ export function createAgentRestClient() {
     schema: z.ZodType<T>
   ): Promise<T> {
     const result = await requestResult(operation, route, init, schema)
-    if (!result.ok) throw result.cause
+    if (!result.ok) throw rememberAgentRequestFailure(result.cause, route)
     return result.value
   }
 
@@ -693,15 +723,23 @@ export function createAgentRestClient() {
     do {
       const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
       const separator = path.includes('?') ? '&' : '?'
+      const route = `${path}${separator}limit=${LIST_PAGE_SIZE}${after}`
       const result = await requestResult(
         operation,
-        `${path}${separator}limit=${LIST_PAGE_SIZE}${after}`,
+        route,
         { method: 'GET', signal },
         schema
       )
       if (signal?.aborted) return { ok: false, cause: signal.reason }
       if (!result.ok)
-        return paginationFailure(result, items, retainItemsOnFailure)
+        return paginationFailure(
+          {
+            ok: false,
+            cause: rememberAgentRequestFailure(result.cause, route)
+          },
+          items,
+          retainItemsOnFailure
+        )
       const page = result.value
       items.push(...itemsOf(page))
       hasMore = page.pagination.has_more

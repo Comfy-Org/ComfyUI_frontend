@@ -15,6 +15,7 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
@@ -83,7 +84,8 @@ export class HostDoc {
   constructor(
     private readonly workflowId: string,
     seed: WorkflowJSON,
-    private readonly catalog: WidgetCatalog
+    private readonly catalog: WidgetCatalog,
+    private readonly lineageSeq = 1
   ) {
     this.doc = mint(seed, catalog)
   }
@@ -133,8 +135,9 @@ export class HostDoc {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: this.workflowId,
         ok: true,
-        seq: this.seq
-      }
+        seq: this.seq,
+        ...(this.lineageSeq !== 0 && { lineage_seq: this.lineageSeq })
+      } satisfies DocSubscribedData
     }
   }
 
@@ -316,6 +319,7 @@ export class HostDoc {
         workflow_id: this.workflowId,
         ok: rejected === undefined,
         seq: this.seq,
+        lineage_seq: this.lineageSeq,
         applied,
         skipped,
         ...(rejected && {
@@ -350,10 +354,11 @@ export class HostDoc {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: this.workflowId,
         seq: this.seq,
+        lineage_seq: this.lineageSeq,
         update_b64: toBase64(update),
         actor,
         op_ids: opIds
-      }
+      } satisfies DocUpdateData
     }
   }
 }
