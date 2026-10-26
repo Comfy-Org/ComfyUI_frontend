@@ -64,6 +64,7 @@ export interface ClientDocFrame {
   workflowId: string | null
   tab: string | null
   stateVector: string | null
+  knownLineageSeq: number | null
   /** `op:node_id` per op for a `doc_ops` frame; empty otherwise. */
   ops: string[]
   opIds: string[]
@@ -77,6 +78,7 @@ interface ParsedClientDocFrame {
   workflowId: string | null
   tab: string | null
   stateVector: string | null
+  knownLineageSeq: number | null
   opsResult: ParsedWireBatch
 }
 
@@ -119,12 +121,15 @@ function parseClientDocFrame(
 ): ParsedClientDocFrame | null {
   const envelope = docFrameEnvelope(raw)
   if (!envelope) return null
-  const { workflow_id, tab, state_vector_b64, ops } = envelope.data
+  const { workflow_id, tab, state_vector_b64, known_lineage_seq, ops } =
+    envelope.data
   return {
     type: envelope.type,
     workflowId: stringOrNull(workflow_id),
     tab: stringOrNull(tab),
     stateVector: stringOrNull(state_vector_b64),
+    knownLineageSeq:
+      typeof known_lineage_seq === 'number' ? known_lineage_seq : null,
     opsResult: parseWireOps(ops)
   }
 }
@@ -188,6 +193,12 @@ export class AgentFollowerHostSocket {
             status: { exec_info: { queue_remaining: 0 } },
             sid
           }
+        })
+      )
+      socket.send(
+        JSON.stringify({
+          type: 'feature_flags',
+          data: { agent: { state: 'ready' } }
         })
       )
     })
@@ -263,6 +274,7 @@ export class AgentFollowerHostSocket {
       workflowId: frame.workflowId,
       tab: frame.tab,
       stateVector: frame.stateVector,
+      knownLineageSeq: frame.knownLineageSeq,
       ops: ops.map((op) => opLabel(op)),
       opIds: ops.map((op) => op.op_id),
       writers: ops.map(claimedWriter),

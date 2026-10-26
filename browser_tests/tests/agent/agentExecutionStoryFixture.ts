@@ -9,7 +9,7 @@ import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentExecutionHelper } from '@e2e/fixtures/helpers/AgentExecutionHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
-import { MultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/MultiAutogrowRealignHarness'
+import { AgentMultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/AgentMultiAutogrowRealignHarness'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import {
   MESSAGE_ID,
@@ -71,7 +71,7 @@ class AgentExecutionStoryHelper extends AgentExecutionHelper {
 }
 
 interface AgentExecutionStoryRig {
-  harness: MultiAutogrowRealignHarness
+  harness: AgentMultiAutogrowRealignHarness
   execution: AgentExecutionStoryHelper
 }
 
@@ -87,7 +87,7 @@ export const agentExecutionStoryTest = agentTest.extend<{
   rig: AgentExecutionStoryRig
 }>({
   rig: async ({ page }, use) => {
-    const harness = new MultiAutogrowRealignHarness(page)
+    const harness = new AgentMultiAutogrowRealignHarness(page)
     await harness.setUp({ settings: { 'Comfy.Queue.QPOV2': false } })
     const execution = new AgentExecutionStoryHelper(page, harness.hostSocket)
     await execution.install()
@@ -107,7 +107,7 @@ export const agentExecutionStoryTest = agentTest.extend<{
  * follower, and the workflow the agent would run is visible on the canvas.
  */
 export async function startStoryTurn(
-  harness: MultiAutogrowRealignHarness,
+  harness: AgentMultiAutogrowRealignHarness,
   text: string
 ): Promise<void> {
   // `harness.agentPanel.composer`, not a hand-rolled locator: the composer's
@@ -127,7 +127,7 @@ export async function startStoryTurn(
 
 /** Ends the live turn from the host and waits for the panel to go idle. */
 export async function settleStoryTurn(
-  harness: MultiAutogrowRealignHarness
+  harness: AgentMultiAutogrowRealignHarness
 ): Promise<void> {
   harness.hostSocket.send({
     type: 'agent_message_done',

@@ -246,12 +246,9 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       const askId = `${MESSAGE_ID}:call-${selection}`
       const answeredRequests: Array<{ url: string; selected: string[] }> = []
       let releaseAnswer = (): void => {}
-      const answerCanFinish =
-        selection === 'cancel'
-          ? new Promise<void>((resolve) => {
-              releaseAnswer = resolve
-            })
-          : Promise.resolve()
+      const answerCanFinish = new Promise<void>((resolve) => {
+        releaseAnswer = resolve
+      })
       await page.route(
         '**/api/agent/threads/*/asks/*/answer',
         async (route) => {
@@ -300,10 +297,6 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       await expect(action).toBeVisible()
       await action.click()
 
-      test.fail(
-        selection === 'run',
-        'The run approval card remains visible after its turn completes, but its action no longer reaches the answer endpoint. The cancel path reaches it again since the agent events socket landed.'
-      )
       await expect
         .poll(() => answeredRequests)
         .toEqual([
