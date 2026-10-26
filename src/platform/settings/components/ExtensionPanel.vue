@@ -293,7 +293,7 @@ const disableThirdPartyExtensions = async () => {
   await updateExtensionStatus()
 }
 
-const disableAgentExtensions = async () => {
+async function disableAgentExtensions() {
   extensionStore.agentExtensions.forEach((ext) => {
     if (extensionStore.isExtensionReadOnly(ext.name)) return
 
