@@ -5563,6 +5563,74 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toHaveLength(1)
   })
 
+  it('(g39b) a drop and reconnect during the POST cannot silently confirm which answer won', async () => {
+    let accept: (receipt: AgentAnswerAccepted) => void = () => {}
+    const rest = fakeRest({
+      answerAsk: vi.fn(
+        () =>
+          new Promise<AgentAnswerAccepted>((resolve) => {
+            accept = resolve
+          })
+      )
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+    await session.sendMessage('go')
+    emit(runApproval('msg-1'))
+
+    const answered = session.answerAsk('turn-1:call-1', { selected: ['run'] })
+    status(false)
+    status(true)
+    accept({ status: 'answered', selected: [] })
+    await answered
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_winner_unconfirmed'
+    })
+    expect(session.notices.value).toEqual([
+      {
+        level: 'error',
+        text: enMessages.agent.runApproval.answerAcceptedUnconfirmed
+      }
+    ])
+  })
+
+  it('(g39c) a first open during the POST tracks the accepted answer instead of reporting it', async () => {
+    let accept: (receipt: AgentAnswerAccepted) => void = () => {}
+    const rest = fakeRest({
+      answerAsk: vi.fn(
+        () =>
+          new Promise<AgentAnswerAccepted>((resolve) => {
+            accept = resolve
+          })
+      )
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('go')
+    emit(runApproval('msg-1'))
+
+    const answered = session.answerAsk('turn-1:call-1', { selected: ['run'] })
+    status(true)
+    accept({ status: 'answered', selected: [] })
+    await answered
+
+    expect(session.notices.value).toEqual([])
+
+    status(false)
+
+    expect(session.notices.value).toEqual([
+      {
+        level: 'error',
+        text: enMessages.agent.runApproval.answerAcceptedUnconfirmed
+      }
+    ])
+  })
+
   it('(g38) a remount does not restore an ask the prior session retired', async () => {
     vi.useFakeTimers()
     try {

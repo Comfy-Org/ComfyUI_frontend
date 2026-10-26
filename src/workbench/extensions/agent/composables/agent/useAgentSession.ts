@@ -1764,10 +1764,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordAskAnswer(askId, normalizedAnswer, currentThreadId)
     conversationStore.setAskAnswering(askId, true)
     const answerChannelEpoch = resolutionChannelEpoch
-    const answerStartedWithoutResolutionChannel = connection !== 'live'
+    const answerStartedBeforeFirstOpen = connection === 'initial'
+    const answerStartedDropped = connection === 'dropped'
+    const resolutionChannelDropped = () =>
+      answerStartedDropped || resolutionChannelEpoch !== answerChannelEpoch
     const resolutionChannelWasLost = () =>
-      answerStartedWithoutResolutionChannel ||
-      resolutionChannelEpoch !== answerChannelEpoch
+      answerStartedBeforeFirstOpen || resolutionChannelDropped()
     try {
       const receipt = await sendAnswer(currentThreadId, askId, normalizedAnswer)
       return commitAskReceipt({
@@ -1776,7 +1778,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         currentThreadId,
         receipt,
         runApprovalAnswer,
-        resolutionChannelWasLost
+        resolutionChannelDropped
       })
     } catch (error) {
       if (answeringAskIds.value.has(askId))
@@ -1797,21 +1799,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
     currentThreadId,
     receipt,
     runApprovalAnswer,
-    resolutionChannelWasLost
+    resolutionChannelDropped
   }: {
     askId: string
     answer: AgentAnswerRequest
     currentThreadId: string
     receipt: AgentAnswerReceipt
     runApprovalAnswer: boolean
-    resolutionChannelWasLost: () => boolean
+    resolutionChannelDropped: () => boolean
   }): boolean {
     if (!receiptNamesCommittedAnswer(receipt, runApprovalAnswer))
       return commitStatusOnlyAskReceipt({
         askId,
         answer,
         currentThreadId,
-        resolutionChannelWasLost
+        resolutionChannelDropped
       })
     const committed = toAskResolution(receipt)
     conversationStore.clearAskAwaitingResolution(askId)
@@ -1844,24 +1846,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
     askId,
     answer,
     currentThreadId,
-    resolutionChannelWasLost
+    resolutionChannelDropped
   }: {
     askId: string
     answer: AgentAnswerRequest
     currentThreadId: string
-    resolutionChannelWasLost: () => boolean
+    resolutionChannelDropped: () => boolean
   }): boolean {
-    const channelWasLost = resolutionChannelWasLost()
+    const channelDropped = resolutionChannelDropped()
     const resolutionStillPending =
       conversationStore.submittedAskAnswer(askId) !== undefined
     if (resolutionStillPending)
-      reportAcceptedRecoveredAnswer(askId, connection === 'dropped')
+      reportAcceptedRecoveredAnswer(askId, channelDropped)
     recordDeliveredAsk(askId)
     conversationStore.commitAsk(askId, currentThreadId, { status: 'retired' })
-    if (
-      resolutionStillPending &&
-      (!channelWasLost || connection === 'initial')
-    ) {
+    if (resolutionStillPending && !channelDropped) {
       conversationStore.recordAskAnswer(askId, answer, currentThreadId)
       conversationStore.markAskAwaitingResolution(askId, 'accepted')
     }
