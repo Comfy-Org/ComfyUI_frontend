@@ -452,6 +452,7 @@ describe('useKeybindingPresetService', () => {
 
       const service = await getPresetService()
       service.applyPreset(preset)
+      expect(store.isCurrentPresetModified).toBe(false)
       store.addDefaultKeybinding(
         new KeybindingImpl({ commandId: 'late.insert', combo })
       )

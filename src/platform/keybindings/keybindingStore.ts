@@ -42,16 +42,21 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
   const isCurrentPresetModified = computed(() => {
     const newBindings = keybindingValues(userKeybindings.value)
-    const unsetBindings = getUserUnsetKeybindingValues()
 
     if (currentPresetName.value === 'default') {
-      return newBindings.length > 0 || unsetBindings.length > 0
+      return (
+        newBindings.length > 0 ||
+        keybindingValues(userUnsetKeybindings.value).length > 0
+      )
     }
 
     if (!savedPresetSerialized.value) return false
 
     const currentNew = newBindings.map(serializeBinding).sort().join('|')
-    const currentUnset = unsetBindings.map(serializeBinding).sort().join('|')
+    const currentUnset = getUserUnsetKeybindingValues()
+      .map(serializeBinding)
+      .sort()
+      .join('|')
 
     return (
       currentNew !== savedPresetSerialized.value.savedNew ||
@@ -152,9 +157,12 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   }
 
   function addUserUnsetKeybinding(keybinding: KeybindingImpl) {
-    const serializedCombo = keybinding.combo.serialize()
-    if (defaultKeybindings.value[serializedCombo]?.equals(keybinding)) {
-      addKeybinding(userUnsetKeybindings, keybinding, { existOk: true })
+    const registeredDefault =
+      defaultKeybindings.value[keybinding.combo.serialize()]
+    if (registeredDefault) {
+      if (registeredDefault.equals(keybinding)) {
+        addKeybinding(userUnsetKeybindings, keybinding, { existOk: true })
+      }
       return
     }
     if (pendingUnsetKeybindings.value.some((unset) => unset.equals(keybinding)))
