@@ -395,11 +395,14 @@ Listed keys include the requested logical folder: `list('MyPack.presets')`
 returns keys such as `MyPack.presets/portrait`. Pass each returned key unchanged
 to `get()` or `remove()`; do not add the folder again.
 
-Names and namespaces are logical keys within the host-selected user/pack scope.
-Keep a dotted prefix for grouping and do not include `..`. Choosing another
-pack's name does not select its data: the host adds the physical namespace from
-trusted identity and returns only logical names. The same key used by two packs
-is isolated. A pack never supplies a user identity or physical storage prefix.
+Ordinary local ComfyUI stores these documents for the selected user. Keep a
+stable dotted pack prefix to avoid collisions and do not include `..`. These
+prefixes are a naming convention, not an isolation boundary between extensions
+running in the same page.
+
+An isolated host can additionally bind the storage namespace to trusted pack
+identity. In that mode, choosing another pack's name does not select its data;
+the host adds the physical namespace and returns logical names only.
 
 Secure Nodes hosts that have not implemented this isolation reject pack storage
 RPCs. A dotted key alone does not make shared user data safe to expose.
