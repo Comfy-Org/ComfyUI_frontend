@@ -161,3 +161,81 @@ the registration boundary instead of adding it to renderer inner loops.
 Bevy's [ECS callback example](https://bevy.org/examples/ecs-entity-component-system/callbacks/)
 shows a related behavior boundary: a component holds a registered system ID,
 and the ECS runs that system on demand.
+
+---
+
+## Amended (2026-10-26): a per-node widget form is emitted only where it can be _proven_
+
+`widgets_values_form` is a per-node declaration of which widgets serialize and in what order
+(`comfy-multi-player` schema amendment A24). A node carrying one is addressed through that form
+and **consults no widget catalog on any leg**. That makes the error asymmetry total:
+
+- A node with **no** form keeps today's catalog behaviour, which is imperfect but visible — a
+  name that does not resolve is refused loudly.
+- A node with a **wrong** form is authoritative. Values are misplaced silently and nothing
+  downstream has anything left to disagree with.
+
+So the rule is not "derive the order from `node.widgets`". It is:
+
+> **Emit a form only where core can prove the final `widgets_values` is the array it itself
+> produced from `node.widgets`. Where it cannot prove that, emit nothing.**
+
+Deriving is a guess dressed as a declaration; proving is not. `proveWidgetForm`
+(`src/lib/litegraph/src/node/widgetFormProof.ts`) is that predicate, and it returns an order
+**only** alongside `provable: true` — never a partial order beside a refusal.
+
+### Why deriving does not work, measured
+
+The obvious implementation — derive after `runExtensionSerializeHook`, since that hook sees the
+final values — is wrong for two independent reasons.
+
+**`LGraphNode.serialize` is not the last writer.** `SubgraphNode.serializeFromStoreState` calls
+`super.serializeFromStoreState(state)` — hook included — and _then_ replaces `widgets_values`
+from `this.inputs` filtered to those carrying a `widgetId`, or deletes it. That is a different
+collection from `node.widgets` (promoted widgets are linked inputs, per
+[ADR-SUBGRAPH-PROMOTION-0009](SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md)),
+so a form written at the end of the base method is already stale when the subclass returns. The
+proof catches this on **array identity**, deliberately not deep equality: a rebuilt
+equal-looking array came from a source core cannot see, and a coincidental match is not evidence.
+
+**`node.widgets` is a public JavaScript API that extensions mutate**, as the ADR body above
+already describes. Shipping packs splice it, truncate it (`this.widgets.length = n`), reorder
+it, and replace it wholesale during `onNodeCreated`; `this.serialize_widgets = false` appears in
+the low hundreds of repositories. None of that is a defect to fix — it is the contract this ADR
+documents — so the form has to tolerate it rather than assume it away.
+
+### The flag trap, which is the most likely way to get this wrong
+
+Three predicates look interchangeable and are deliberately different:
+
+| predicate                            | effect on `widgets_values`                    |
+| ------------------------------------ | --------------------------------------------- |
+| `widget.serialize === false`         | **excluded** — the only one that governs it   |
+| `widget.options.serialize === false` | **not excluded**; affects the API prompt only |
+| either false                         | neither; governs promotion and preview        |
+
+`addWidget` does not hoist the options-bag flag onto the widget, so a widget flagged only there
+**does occupy a positional slot.** That is why every `KSampler` serializes 7 values
+(`control_after_generate`) and every `LoadImage` serializes 2 (its upload button). A form built
+from `options.serialize` is one slot short on both, and both lengths are pinned as literals in
+`widgetFormProof.test.ts` so the mistake cannot land twice.
+
+### Refusals, each a measured shape
+
+`replayed_serialization` · `widgets_not_serialized` · `values_replaced` ·
+`values_not_positional` · `length_mismatch` · `duplicate_widget_name` · `unnameable_widget`
+
+Two are worth calling out. **`replayed_serialization`** covers an unregistered node type, whose
+payload is replayed verbatim and never reaches the hook, and whose widgets are _synthesised from
+the stored values_ with names `UNKNOWN`, `UNKNOWN_1`, … A form there would be syntactically
+valid, authoritative, and meaningless, so it is refused before any other check can accept it.
+**`duplicate_widget_name`** covers two serializing widgets sharing a name: the named projection
+collapses them via `defineProperty`, and the document rejects the second address outright, so
+listing both would promise an address that does not resolve.
+
+### Scope
+
+This amendment adds the predicate and a diagnostic (`needsFormButHasNone`, which identifies
+object-shaped values with no form — the population a form would rescue and that nothing can
+currently count). **Nothing emits a form yet.** The producer is deliberately a later change, so
+the predicate can be landed, measured against the custom-node ecosystem, and trusted first.
