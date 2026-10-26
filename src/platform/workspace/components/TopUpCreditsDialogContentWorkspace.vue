@@ -715,6 +715,7 @@ function openTopupVerification() {
 }
 
 function showAmountStep() {
+  stopPayRetryOnCardReturn()
   checkoutRecovery.value = null
   step.value = 'amount'
 }
@@ -877,9 +878,19 @@ function isNoPaymentMethodRefusal(error: unknown): boolean {
 
 let unmounted = false
 let stopDefaultCardReturnRefresh: (() => void) | null = null
+let checkoutScope: AbortController | null = null
+watch(
+  () => workspaceStore.workspaceTransitionGeneration,
+  () => {
+    checkoutScope?.abort()
+    stopPayRetryOnCardReturn()
+  },
+  { flush: 'sync' }
+)
 onUnmounted(() => {
   unmounted = true
-  stopDefaultCardReturnRefresh?.()
+  checkoutScope?.abort()
+  stopPayRetryOnCardReturn()
 })
 
 function watchCheckoutCompletion() {
@@ -904,24 +915,50 @@ function watchCheckoutCompletion() {
   })
 }
 
-function refreshOnDefaultCardReturn() {
+function stopPayRetryOnCardReturn() {
   stopDefaultCardReturnRefresh?.()
+  stopDefaultCardReturnRefresh = null
+}
+
+function armPayRetryAfterNextDeparture() {
+  stopPayRetryOnCardReturn()
+  const arm = () => {
+    stopPayRetryOnCardReturn()
+    armPayRetryOnCardReturn()
+  }
+  const onVisibility = () => {
+    if (document.visibilityState === 'hidden') arm()
+  }
+  window.addEventListener('blur', arm)
+  document.addEventListener('visibilitychange', onVisibility)
+  stopDefaultCardReturnRefresh = () => {
+    window.removeEventListener('blur', arm)
+    document.removeEventListener('visibilitychange', onVisibility)
+  }
+}
+
+function armPayRetryOnCardReturn() {
+  stopPayRetryOnCardReturn()
+  const launchedGeneration = workspaceStore.workspaceTransitionGeneration
   stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
-    const [paymentMethods] = await Promise.allSettled([
-      workspaceApi.listSavedPaymentMethods(),
-      fetchStatus(),
-      fetchBalance(),
-      billingCapabilities.refresh()
-    ])
-    if (
-      paymentMethods.status !== 'fulfilled' ||
-      !paymentMethods.value.some((method) => method.is_default)
-    ) {
+    const stop = stopDefaultCardReturnRefresh
+    stopDefaultCardReturnRefresh = null
+    stop?.()
+    if (step.value !== 'confirm') return
+    if (workspaceStore.workspaceTransitionGeneration !== launchedGeneration) {
       return
     }
-    stopDefaultCardReturnRefresh?.()
-    stopDefaultCardReturnRefresh = null
-    checkoutRecovery.value = null
+    const attempt = purchaseAttempt
+    await handleBuy()
+    if (unmounted) return
+    if (workspaceStore.workspaceTransitionGeneration !== launchedGeneration) {
+      return
+    }
+    if (checkoutRecovery.value === 'refused') {
+      armPayRetryAfterNextDeparture()
+      return
+    }
+    if (purchaseAttempt === attempt) armPayRetryOnCardReturn()
   })
 }
 
@@ -945,7 +982,7 @@ async function setDefaultCard() {
       return
     }
     portalTab.navigate(url)
-    refreshOnDefaultCardReturn()
+    armPayRetryOnCardReturn()
   } catch {
     reportDefaultCardPortalFailure(portalTab)
   } finally {
@@ -955,7 +992,7 @@ async function setDefaultCard() {
 
 function followBlockedDefaultCardLink() {
   step.value = 'confirm'
-  refreshOnDefaultCardReturn()
+  armPayRetryOnCardReturn()
 }
 
 function reportDefaultCardPortalFailure(portalTab: BillingTab | null) {
@@ -1003,14 +1040,17 @@ async function openCheckoutInReservedTab(): Promise<
     step.value = 'checkoutBlocked'
     return 'blocked'
   }
+  const scope = new AbortController()
+  checkoutScope = scope
   loading.value = true
   try {
     if (!balance.value) await Promise.allSettled([fetchBalance()])
     const checkoutUrl = await createHostedCheckout(
       payAmount.value * 100,
-      returnUrl
+      returnUrl,
+      scope.signal
     )
-    if (unmounted) {
+    if (unmounted || scope.signal.aborted) {
       checkoutTab.close()
       return 'abandoned'
     }
@@ -1020,8 +1060,9 @@ async function openCheckoutInReservedTab(): Promise<
   } catch (error) {
     checkoutTab.close()
     console.error('Hosted top-up checkout failed to open', error)
-    return unmounted ? 'abandoned' : 'failed'
+    return unmounted || scope.signal.aborted ? 'abandoned' : 'failed'
   } finally {
+    if (checkoutScope === scope) checkoutScope = null
     loading.value = false
   }
 }

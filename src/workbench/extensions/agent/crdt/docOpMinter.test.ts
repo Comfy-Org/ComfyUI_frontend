@@ -33,7 +33,12 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createUuidv4 } from '@/utils/uuid'
 
-import { attachDocOpMinter, wireNodeSnapshot } from './docOpMinter'
+import {
+  PROMOTED_WRITE_CATCH_UP_DEADLINE_MS,
+  PROMOTED_WRITE_RETRY_MS,
+  attachDocOpMinter,
+  wireNodeSnapshot
+} from './docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
@@ -214,7 +219,10 @@ describe('attachDocOpMinter', () => {
   let docInputNames: DocOpMinterDeps['docInputNames']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
   let mayWrite: boolean
+  let graphAvailable: boolean
+  let unbound: boolean
   let refusals: Array<[string, string]>
+  let seededPromotedDocs: Set<ReturnType<typeof mint>>
 
   beforeEach(() => {
     graph = new LGraph()
@@ -225,13 +233,16 @@ describe('attachDocOpMinter', () => {
     docInputNames = () => null
     docPromotedWidgets = () => null
     mayWrite = true
+    graphAvailable = true
+    unbound = false
     refusals = []
+    seededPromotedDocs = new Set()
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
       enqueue: (operations) => minted.push(...operations),
-      getGraph: () => graph,
-      boundRootGraphId: () => rootGraphId,
+      getGraph: () => (graphAvailable ? graph : null),
+      boundRootGraphId: () => (unbound ? null : rootGraphId),
       docInputNames: (nodeId) => docInputNames(nodeId),
       docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
       mayWritePromotedHost: () => mayWrite,
@@ -240,7 +251,12 @@ describe('attachDocOpMinter', () => {
     })
   })
 
-  afterEach(() => minter.detach())
+  afterEach(() => {
+    minter.detach()
+    for (const doc of seededPromotedDocs) {
+      if (!doc.isDestroyed) doc.destroy()
+    }
+  })
 
   describe('mints one op per graph command', () => {
     it.for([
@@ -765,6 +781,7 @@ describe('attachDocOpMinter', () => {
       hostNode.widgets_values = hostWidgetValues
     }
     const doc = mint(serialized, CATALOG)
+    seededPromotedDocs.add(doc)
     docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
     return { host, doc }
   }
@@ -1034,15 +1051,6 @@ describe('attachDocOpMinter', () => {
         })
         host.widgets[1].value = 'misplaced'
       }
-    },
-    {
-      name: 'a host the document cannot vouch for yet',
-      errorType: 'agent_crdt_promoted_widget_doc_not_synced',
-      widgetName: 'text',
-      act: (host: ReturnType<typeof createTestSubgraphNode>) => {
-        mayWrite = false
-        host.widgets[1].value = 'too early'
-      }
     }
   ])(
     'reports and notifies a refused write to $name',
@@ -1061,6 +1069,368 @@ describe('attachDocOpMinter', () => {
       doc.destroy()
     }
   )
+
+  describe('PM-2003: a promoted write made while the document is catching up', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+    })
+
+    it('is held without a notice and minted once the document catches up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'randomized'
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'set_widget',
+          node_id: host.id,
+          widget: 'text',
+          value: 'randomized',
+          promoted: expect.objectContaining({ value_index: 1 })
+        })
+      ])
+      expect(refusals).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+      doc.destroy()
+    })
+
+    it('mints the latest value once when the same widget changes again before catch-up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'first'
+      host.widgets[1].value = 'second'
+      await afterFlush()
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toHaveLength(1)
+      const [write] = minted
+      assert(write.op === 'set_widget')
+      expect(write.value).toBe('second')
+      expect(write.promoted?.host_widgets_values[1]).toBe('second')
+      doc.destroy()
+    })
+
+    it('is superseded by a newer write to the same widget made after catch-up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'held'
+      await afterFlush()
+      mayWrite = true
+      host.widgets[1].value = 'newer'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['newer'])
+      doc.destroy()
+    })
+
+    it('carries every held sibling in the host values once caught up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[0].value = 'prefix edit'
+      host.widgets[1].value = 'text edit'
+      await afterFlush()
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted.map((op) => op.op === 'set_widget' && op.widget)).toEqual([
+        'prefix',
+        'text'
+      ])
+      const last = minted.at(-1)
+      assert(last?.op === 'set_widget')
+      expect(last.promoted?.host_widgets_values).toEqual([
+        'prefix edit',
+        'text edit'
+      ])
+      doc.destroy()
+    })
+
+    it('is refused with one notice when the document never catches up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'never synced'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS - 1)
+      expect(refusals).toEqual([])
+
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_doc_not_synced'
+        })
+      )
+      doc.destroy()
+    })
+
+    it('is checked against the caught-up layout, not the one it was made against', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'misplaced'
+      await afterFlush()
+      docPromotedWidgets = () => ({
+        valueCount: 2,
+        declaredNames: ['text', 'prefix'],
+        promotedNames: ['text', 'prefix']
+      })
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_order_drift'
+        })
+      )
+      doc.destroy()
+    })
+
+    it('is refused, not minted into another workflow, when the bound workflow changes first', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'for the old workflow'
+      await afterFlush()
+      rootGraphId = toRootGraphId(createUuidv4())
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_workflow_changed'
+        })
+      )
+      doc.destroy()
+    })
+
+    it('still lands when the catch-up arrives after one ack-timeout retry', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'slow relay'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(15_500)
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['slow relay'])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('is superseded by a newer write made while the document is unbound', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'older'
+      await afterFlush()
+      bound = false
+      host.widgets[1].value = 'newer'
+      await afterFlush()
+      bound = true
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('is dropped when the catch-up replaced the value on the canvas', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'human value'
+      await afterFlush()
+      withGraphIntentSource('agent-remote', () => {
+        host.widgets[1].value = 'agent value'
+      })
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('is refused when a transient document unbind outlasts the catch-up deadline', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'for a closed chat'
+      await afterFlush()
+      bound = false
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_doc_not_synced'
+        })
+      )
+      expect(vi.getTimerCount()).toBe(0)
+      doc.destroy()
+    })
+
+    it('keeps waiting while the graph is briefly unavailable', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'during a load'
+      await afterFlush()
+      graphAvailable = false
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      expect(refusals).toEqual([])
+      graphAvailable = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['during a load'])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('keeps waiting through a moment when the document is unbound', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'across a resend'
+      await afterFlush()
+      bound = false
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      bound = true
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['across a resend'])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('lands when the catch-up answers the last subscribe retry', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'third attempt'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(40_000)
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['third attempt'])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('keeps the first deadline when a newer write replaces a held one', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'first'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(
+        PROMOTED_WRITE_CATCH_UP_DEADLINE_MS - 1_000
+      )
+      host.widgets[1].value = 'second'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(1_000 + PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      doc.destroy()
+    })
+
+    it('is refused when the graph stays unavailable past the deadline', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'graph gone'
+      await afterFlush()
+      graphAvailable = false
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(vi.getTimerCount()).toBe(0)
+
+      graphAvailable = true
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      expect(minted).toEqual([])
+      doc.destroy()
+    })
+
+    it('is dropped silently at once when the chat unbinds the workflow', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'for a closed chat'
+      await afterFlush()
+      bound = false
+      unbound = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(vi.getTimerCount()).toBe(0)
+      bound = true
+      unbound = false
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('is dropped silently on detach', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'held'
+      await afterFlush()
+      expect(vi.getTimerCount()).toBe(1)
+      minter.detach()
+      expect(vi.getTimerCount()).toBe(0)
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+  })
 
   it('still mints for a host the caught-up document does not hold yet', async () => {
     const { host, doc } = seedPromotedHost()

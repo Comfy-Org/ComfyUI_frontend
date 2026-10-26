@@ -3,11 +3,14 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { provideBillingDialogs } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
 import { render } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 
 import type { BillingOperationRecordView } from '@/platform/workspace/billing/sdk/operationRecordView'
 import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
-import type { SubscriptionRailOutcome } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import type {
+  SettledSubscribeResponse,
+  SubscriptionRailOutcome
+} from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { billingOperation } from './billingOperationTestUtils'
 import type { BillingOperation } from './billingOperationTestUtils'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -4398,6 +4401,136 @@ describe('useSubscriptionCheckout', () => {
 
       resolveOperation(billingOperation({ status: 'pending' }))
       await payment
+    })
+
+    describe('on the SDK rail, whose subscribe resolves only once the operation settles', () => {
+      type Checkout = Awaited<ReturnType<typeof setupWithApprovedPreview>>
+      const PARKED_ON_CARD: RailOperation = {
+        opId: 'op-parked',
+        kind: 'subscription',
+        status: 'pending',
+        workspaceId: 'workspace-1',
+        actionUrl: 'https://checkout.stripe.com/c/pay/cs_test',
+        phase: 'awaiting_payment_method',
+        authenticationState: null,
+        isAuthenticating: false,
+        canRetryAuthentication: false,
+        errorMessage: null,
+        cancelable: false
+      }
+      const SETTLED: SettledSubscribeResponse = {
+        status: 'subscribed',
+        billing_op_id: 'op-parked',
+        requiredPayment: true
+      }
+
+      function selectPersonal(checkout: Checkout) {
+        checkout.selectedTierKey.value = 'standard'
+        checkout.selectedBillingCycle.value = 'yearly'
+      }
+
+      function holdSubscribe(): () => void {
+        let settle!: (response: SettledSubscribeResponse) => void
+        mockSubscribe.mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              settle = resolve
+            })
+        )
+        return () => settle(SETTLED)
+      }
+
+      async function setupOnRail(parked?: RailOperation) {
+        const rail = reactive(railStub({ subscriptionActionOperation: parked }))
+        mockSubscriptionRail.value = rail
+        return { rail, checkout: await setupWithApprovedPreview() }
+      }
+
+      it.for([
+        {
+          plan: 'personal',
+          select: selectPersonal,
+          submit: (checkout: Checkout) => checkout.handleAddCreditCard()
+        },
+        {
+          plan: 'team',
+          select: (checkout: Checkout) =>
+            checkout.handleSubscribeTeamClick({
+              stop: {
+                id: 'team_700',
+                usd: 700,
+                credits: 147_700,
+                discountedUsd: 665
+              },
+              billingCycle: 'yearly'
+            }),
+          submit: (checkout: Checkout) => checkout.handleTeamSubscribe()
+        }
+      ])(
+        'releases the submit-busy state once the $plan checkout parks on the customer',
+        async ({ select, submit }) => {
+          const { rail, checkout } = await setupOnRail()
+          await select(checkout)
+          const settle = holdSubscribe()
+
+          const payment = submit(checkout)
+          await vi.waitFor(() => expect(mockSubscribe).toHaveBeenCalledOnce())
+          expect(checkout.isSubscribing.value).toBe(true)
+
+          rail.subscriptionActionOperation = PARKED_ON_CARD
+          await nextTick()
+
+          expect(checkout.parkedCheckoutRecovery.value).toBe(true)
+          expect(checkout.isSubscribing.value).toBe(false)
+          expect(checkout.isPolling.value).toBe(false)
+
+          mockSubscribe.mockResolvedValueOnce(SETTLED)
+          await submit(checkout)
+          expect(mockSubscribe).toHaveBeenCalledTimes(2)
+
+          settle()
+          await payment
+        }
+      )
+
+      it('releases a resubmit of a parked checkout that gets the same hosted step back', async () => {
+        const { rail, checkout } = await setupOnRail(PARKED_ON_CARD)
+        selectPersonal(checkout)
+        const settle = holdSubscribe()
+
+        const payment = checkout.handleAddCreditCard()
+        await vi.waitFor(() => expect(mockSubscribe).toHaveBeenCalledOnce())
+        expect(checkout.isSubscribing.value).toBe(true)
+
+        rail.subscriptionActionOperation = { ...PARKED_ON_CARD }
+        await nextTick()
+
+        expect(checkout.isSubscribing.value).toBe(false)
+
+        settle()
+        await payment
+      })
+
+      it('keeps a newer attempt busy when the parked attempt before it settles', async () => {
+        const { rail, checkout } = await setupOnRail()
+        selectPersonal(checkout)
+        const settleFirst = holdSubscribe()
+        const first = checkout.handleAddCreditCard()
+        await vi.waitFor(() => expect(mockSubscribe).toHaveBeenCalledOnce())
+        rail.subscriptionActionOperation = PARKED_ON_CARD
+        await nextTick()
+
+        const settleSecond = holdSubscribe()
+        const second = checkout.handleAddCreditCard()
+        await vi.waitFor(() => expect(mockSubscribe).toHaveBeenCalledTimes(2))
+        settleFirst()
+        await first
+
+        expect(checkout.isSubscribing.value).toBe(true)
+
+        settleSecond()
+        await second
+      })
     })
 
     it("does not let a finished attempt release a newer attempt's lock", async () => {
