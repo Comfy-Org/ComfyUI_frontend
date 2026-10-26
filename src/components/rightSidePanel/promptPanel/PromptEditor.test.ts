@@ -194,17 +194,17 @@ describe('PromptEditor', () => {
   })
 
   it.for([
-    { typed: 'x', captures: 1 },
-    { typed: '', captures: 0 }
+    { keys: 'x', captures: 1 },
+    { keys: '{Shift}', captures: 0 }
   ])(
-    'records $captures undo steps when focus leaves after typing "$typed"',
-    async ({ typed, captures }) => {
+    'records $captures undo steps when focus leaves after pressing $keys',
+    async ({ keys, captures }) => {
       const user = userEvent.setup()
       renderEditor()
       const promptPanelStore = usePromptPanelStore()
 
       await user.click(screen.getByRole('textbox', { name: 'text' }))
-      if (typed) await user.keyboard(typed)
+      await user.keyboard(keys)
       expect(promptPanelStore.isEditorFocused).toBe(true)
       await user.click(document.body)
 

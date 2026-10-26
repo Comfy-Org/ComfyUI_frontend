@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
@@ -9,19 +9,16 @@ import PromptPanel from '@/components/rightSidePanel/promptPanel/PromptPanel.vue
 import { i18n } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
-const telemetry = vi.hoisted(() => ({
-  trackPromptEditorOpened: vi.fn(),
-  trackPromptEditorClosed: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => telemetry
-}))
+const telemetry = vi.mocked(useTelemetry)()
+assert.exists(telemetry)
 
 function addNode(
   graph: ReturnType<typeof createTestRootGraph>,
@@ -176,7 +173,7 @@ describe('PromptPanel', () => {
     )
     await screen.findByRole('button', { name: 'Restore dialog' })
     const negative = addNode(graph, 'Negative', 'blurry')
-    if (!negative.widget) throw new Error('The negative node has no prompt')
+    assert.exists(negative.widget)
 
     promptPanelStore.follow({ node: negative.node, widget: negative.widget })
 
@@ -207,7 +204,7 @@ describe('PromptPanel', () => {
     render(GlobalDialog, { global: { plugins: [i18n] } })
     const { promptPanelStore } = renderOpenPanel()
     const target = promptPanelStore.target
-    if (!target) throw new Error('The panel has no prompt')
+    assert.exists(target)
     target.widget.disabled = true
 
     await userEvent.click(
