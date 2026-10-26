@@ -16,11 +16,7 @@
   },
 
   // Runtime entry points fallow cannot infer.
-  "entry": [
-    "examples/node-api/**/web/*.js",
-    "index.html",
-    "src/main.ts"
-  ],
+  "entry": ["examples/node-api/**/web/*.js", "index.html", "src/main.ts"],
 
   // Keep tooling and test roots reachable without treating their imports as
   // production runtime dependencies.
