@@ -13,12 +13,6 @@ interface TextEditorOptions {
   onEdit: (text: string) => void
 }
 
-/**
- * Opens the shared text editor dialog on the text `readText` returns, kept in
- * sync while it is open. Each edit goes to `onEdit`, and closing
- * after an edit records one undo step. Returns a close function that only
- * closes the dialog this call opened.
- */
 export function showTextEditor({
   readText,
   widgetLabel,
