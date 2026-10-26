@@ -15,7 +15,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 import { usePlanCheckoutBanner } from './usePlanCheckoutBanner'
 

@@ -11,7 +11,6 @@ import {
 import { recordDevEvent } from './devPanelLog'
 
 vi.mock(import('./devPanelLog'), () => ({ recordDevEvent: vi.fn() }))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-1'
 const GAVE_UP_REPORT = {

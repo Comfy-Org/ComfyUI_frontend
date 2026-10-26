@@ -15,7 +15,6 @@ import { useBillingAutoTopUpCard } from './useBillingAutoTopUpCard'
 
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 async function switchBillingScope(actorId: string, workspaceId: string) {
   stubFirebaseAuthHarness()

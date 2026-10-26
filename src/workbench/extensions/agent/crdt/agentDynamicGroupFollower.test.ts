@@ -54,7 +54,6 @@ vi.mock(import('@/scripts/api'), () => ({
     removeEventListener: vi.fn()
   })
 }))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class DynamicGroupTest extends LGraphNode {
   constructor() {

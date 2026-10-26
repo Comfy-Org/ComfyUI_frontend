@@ -7,6 +7,7 @@ import { TooltipProvider } from 'reka-ui'
 import { shallowReactive } from 'vue'
 import type { Plugin } from 'vue'
 
+import './vitest.mocks.setup'
 import './vitest.network.setup'
 
 import { appTooltipProviderDefaults } from '@/components/ui/tooltip/tooltipConfig'

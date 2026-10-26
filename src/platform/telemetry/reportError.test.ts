@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
 
+vi.unmock(import('@/platform/telemetry/reportError'))
+
 const captureException = vi.fn()
 const isEnabled = vi.fn()
 const addError = vi.fn()

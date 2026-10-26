@@ -33,7 +33,6 @@ import { useBillingContext as useSharedBillingContext } from '@/platform/billing
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   is_active: true,

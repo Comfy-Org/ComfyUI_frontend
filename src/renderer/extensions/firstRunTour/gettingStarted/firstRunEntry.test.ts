@@ -69,7 +69,6 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock<unknown>(
   import('@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'),
   () => ({

@@ -31,8 +31,6 @@ import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const WORKFLOW_ID = 'wf-1'
 
 class SocketTransport extends EventTarget implements DocFrameTransport {

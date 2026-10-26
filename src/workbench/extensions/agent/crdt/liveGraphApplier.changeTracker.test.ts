@@ -58,7 +58,6 @@ vi.mock(import('@/scripts/app'), () => ({
   })
 }))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSource extends LGraphNode {
   constructor() {
