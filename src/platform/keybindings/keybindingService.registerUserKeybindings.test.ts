@@ -55,4 +55,46 @@ describe('keybindingService - registerUserKeybindings', () => {
       keybindingStore.getKeybindingByCommandId('Comfy.Test.Registered')
     ).toBeUndefined()
   })
+
+  it('applies an unset to a binding registered after the user bindings load', () => {
+    const combo = { key: 'd', ctrl: false, alt: false, shift: false }
+    useSettingStore().settingValues['Comfy.Keybinding.UnsetBindings'] = [
+      { commandId: 'LateExtension.Insert', combo }
+    ]
+
+    useKeybindingService().registerUserKeybindings()
+    const keybindingStore = useKeybindingStore()
+    keybindingStore.addDefaultKeybinding(
+      new KeybindingImpl({ commandId: 'LateExtension.Insert', combo })
+    )
+
+    expect(
+      keybindingStore.getKeybindingByCommandId('LateExtension.Insert')
+    ).toBeUndefined()
+  })
+
+  it('saves back an unset whose binding has not registered', async () => {
+    const settingStore = useSettingStore()
+    vi.mocked(settingStore.setMany).mockResolvedValue(undefined)
+    const unset = {
+      commandId: 'DisabledExtension.Run',
+      combo: { key: 'r', ctrl: true, alt: false, shift: false }
+    }
+    settingStore.settingValues['Comfy.Keybinding.UnsetBindings'] = [unset]
+
+    const keybindingService = useKeybindingService()
+    keybindingService.registerUserKeybindings()
+    await keybindingService.persistUserKeybindings()
+
+    expect(settingStore.setMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'Comfy.Keybinding.UnsetBindings': [
+          expect.objectContaining({
+            commandId: unset.commandId,
+            combo: expect.objectContaining({ key: 'r', ctrl: true })
+          })
+        ]
+      })
+    )
+  })
 })
