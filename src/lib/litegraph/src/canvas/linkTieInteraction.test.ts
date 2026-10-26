@@ -73,6 +73,32 @@ function tiedCanvas() {
   return { canvas, graph, link, origin, scope, tie }
 }
 
+function twoTiedLinksWithReroutes(rerouted: number) {
+  const graph = new LGraph()
+  const origin = addNode(graph, 'Origin', 0, 0)
+  const target = addNode(graph, 'Target', 300, 0)
+  origin.addOutput('a', '*')
+  origin.addOutput('b', '*')
+  target.addInput('a', '*')
+  target.addInput('b', '*')
+  const links = [0, 1].map((slot) => {
+    const link = origin.connect(slot, target, slot)
+    assert.exists(link)
+    return link
+  })
+  const canvas = createCanvas(graph)
+  canvas.visible_area.set([-100, -100, 1000, 800])
+  useLinkTieStore().addTie(graphScopeOf(graph), {
+    pos: TIE_AT,
+    angle: TIE_ANGLE,
+    linkIds: links.map((link) => link.id)
+  })
+  for (const link of links.slice(0, rerouted)) {
+    graph.createReroute([150, 200], link)
+  }
+  return { canvas, graph }
+}
+
 function drawCtx(): CanvasRenderingContext2D {
   return createMockCanvasRenderingContext2D({
     translate: vi.fn(),
@@ -246,28 +272,7 @@ describe('tie visibility', () => {
   ])(
     'with $rerouted of two tied links rerouted, shows the tie: $shown',
     ({ rerouted, shown }) => {
-      const graph = new LGraph()
-      const origin = addNode(graph, 'Origin', 0, 0)
-      const target = addNode(graph, 'Target', 300, 0)
-      for (const slot of ['a', 'b']) {
-        origin.addOutput(slot, '*')
-        target.addInput(slot, '*')
-      }
-      const links = [0, 1].map((slot) => {
-        const link = origin.connect(slot, target, slot)
-        assert.exists(link)
-        return link
-      })
-      const canvas = createCanvas(graph)
-      canvas.visible_area.set([-100, -100, 1000, 800])
-      useLinkTieStore().addTie(graphScopeOf(graph), {
-        pos: TIE_AT,
-        angle: TIE_ANGLE,
-        linkIds: links.map((link) => link.id)
-      })
-      for (const link of links.slice(0, rerouted)) {
-        graph.createReroute([150, 200], link)
-      }
+      const { canvas, graph } = twoTiedLinksWithReroutes(rerouted)
       const ctx = drawCtx()
 
       canvas.drawConnections(ctx)
