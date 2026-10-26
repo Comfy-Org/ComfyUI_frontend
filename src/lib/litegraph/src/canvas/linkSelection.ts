@@ -29,7 +29,6 @@ interface LinkSelectionHost extends LinkMutationHost {
   graph: LGraph | null
 }
 
-/** Where a jump lands: the socket whose links it selected, and the bounds of that socket's node. */
 export interface LinkArrival {
   readonly socket: Point
   readonly bounds: ReadOnlyRect
@@ -236,7 +235,6 @@ export function getSelectedLinkDestinations(graph: LGraph): LinkEnd[] {
   )
 }
 
-/** Selects the links of the socket that a jump to the node lands on, as a click on that socket would. */
 export function selectLinkDestination(
   graph: LGraph,
   nodeId: NodeId
