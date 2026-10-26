@@ -28,11 +28,6 @@
 
 </div>
 
-The comfy.org website and Hub are maintained in
-[Comfy-Org/comfy-website](https://github.com/Comfy-Org/comfy-website).
-The former `apps/website` copy has been removed from this repository; shared
-packages used by the website remain here.
-
 ## Release Schedule
 
 The project follows a structured release process for each minor version, consisting of three distinct phases:
