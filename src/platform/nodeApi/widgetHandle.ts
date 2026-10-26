@@ -522,7 +522,7 @@ export function createWidgetHandles(
             | undefined)
         : w.value
       return serializedValue(w, 'prompt', base)
-    } as IBaseWidget['serializeValue']
+    }
     w.serializeWorkflowValue = () =>
       serializedValue(
         w,
