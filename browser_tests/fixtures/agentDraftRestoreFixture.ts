@@ -66,3 +66,17 @@ export async function seedAgentDraftLineage(
     draftStore.reset()
   })
 }
+
+export async function readAgentDraftLineage(
+  page: Page
+): Promise<DraftPayloadV2['lineage'] | null> {
+  return page.evaluate(() => {
+    const path = (window.app!.extensionManager as WorkspaceStore).workflow
+      .activeWorkflow?.path
+    const draftStore = document
+      .getElementById('vue-app')
+      ?.__vue_app__?.config.globalProperties.$pinia._s.get('workflowDraftV2')
+    if (!path || !draftStore) throw new Error('no active workflow draft')
+    return draftStore.getDraft(path)?.lineage ?? null
+  })
+}

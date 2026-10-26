@@ -1,5 +1,5 @@
 import { mint, readSchemaVersion } from '@comfyorg/comfy-multi-player'
-import type { DocUpdateData } from '@comfyorg/ingest-types'
+import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
@@ -73,8 +73,9 @@ describe('useAgentCrdtFollower over a live graph', () => {
         v: 1,
         workflow_id: WORKFLOW_ID,
         ok: true,
-        seq: 1
-      })
+        seq: 1,
+        lineage_seq: 1
+      } satisfies DocSubscribedData)
       deliver('doc_update', {
         v: 1,
         workflow_id: WORKFLOW_ID,
@@ -123,8 +124,9 @@ describe('useAgentCrdtFollower over a live graph', () => {
         v: 1,
         workflow_id: WORKFLOW_ID,
         ok: true,
-        seq: 1
-      })
+        seq: 1,
+        lineage_seq: 1
+      } satisfies DocSubscribedData)
       deliver('doc_update', {
         v: 1,
         workflow_id: WORKFLOW_ID,

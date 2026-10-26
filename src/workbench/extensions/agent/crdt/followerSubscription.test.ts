@@ -87,7 +87,7 @@ function docUpdateFrame(
   update: Uint8Array,
   workflowId = WORKFLOW_ID,
   seq = 1,
-  lineageSeq = 1
+  lineageSeq = 0
 ) {
   return {
     v: 1,

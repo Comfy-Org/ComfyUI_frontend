@@ -130,7 +130,7 @@ describe('doc frame numeric domains', () => {
         parseServerDocFrame(sequencedFrame('doc_subscribed', seq))
       ).toEqual({
         type: 'doc_subscribed',
-        data: { workflowId: 'wf-1', ok: true }
+        data: { workflowId: 'wf-1', ok: true, lineageSeq: 0 }
       })
     }
   )
@@ -139,7 +139,7 @@ describe('doc frame numeric domains', () => {
     const frame = parseServerDocFrame(unsequencedSubscribedFrame())
     expect(frame).toEqual({
       type: 'doc_subscribed',
-      data: { workflowId: 'wf-1', ok: true }
+      data: { workflowId: 'wf-1', ok: true, lineageSeq: 0 }
     })
     expect(frame?.data).not.toHaveProperty('seq')
   })

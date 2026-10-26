@@ -4,7 +4,7 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import type { DocUpdateData } from '@comfyorg/ingest-types'
+import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
 import { render } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -140,7 +140,13 @@ describe('a human-added node across a tab switch', () => {
   }
 
   function deliverCatchUp(host: Y.Doc, seq: number): void {
-    deliver('doc_subscribed', { v: 1, workflow_id: WORKFLOW_ID, ok: true, seq })
+    deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq,
+      lineage_seq: 1
+    } satisfies DocSubscribedData)
     deliver('doc_update', {
       v: 1,
       workflow_id: WORKFLOW_ID,

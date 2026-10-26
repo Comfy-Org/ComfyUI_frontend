@@ -1,6 +1,6 @@
 import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { DocResetData } from '@comfyorg/ingest-types'
-import { zDocUpdateData } from '@comfyorg/ingest-types/zod'
+import { zDocSubscribedData, zDocUpdateData } from '@comfyorg/ingest-types/zod'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
@@ -319,18 +319,29 @@ function parseDocReseedResult(
   }
 }
 
+// The generated contract defines an accepted ack's omitted lineage_seq as
+// lineage 0, which is what the host's omitempty encoding sends for a
+// document whose lineage began at 0.
+function parseSubscribedLineage(value: unknown): number | null {
+  const parsed = zDocSubscribedData.shape.lineage_seq.safeParse(value)
+  if (!parsed.success) return null
+  return parsed.data === undefined ? 0 : parseSequence(parsed.data)
+}
+
 function parseDocSubscribed(
   workflowId: string,
   ok: boolean,
   data: WireData
-): DocSubscribed {
+): DocSubscribed | null {
+  const lineageSeq = ok ? parseSubscribedLineage(data.lineage_seq) : undefined
+  if (lineageSeq === null) return null
   const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
   const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
   return {
     workflowId,
     ok,
     ...(isSequence(data.seq) && { seq: data.seq }),
-    ...(isSequence(data.lineage_seq) && { lineageSeq: data.lineage_seq }),
+    ...(lineageSeq !== undefined && { lineageSeq }),
     ...(isSequence(data.expected_seq) && { expectedSeq: data.expected_seq }),
     ...(code !== undefined && { code }),
     ...(message !== undefined && { message })
@@ -406,13 +417,11 @@ function parseDocUpdateFrame(
 
 const serverFrameParsers: ServerFrameParsers = {
   doc_update: parseDocUpdateFrame,
-  doc_subscribed: (workflowId, data) =>
-    typeof data.ok === 'boolean'
-      ? {
-          type: 'doc_subscribed',
-          data: parseDocSubscribed(workflowId, data.ok, data)
-        }
-      : null,
+  doc_subscribed: (workflowId, data) => {
+    if (typeof data.ok !== 'boolean') return null
+    const subscribed = parseDocSubscribed(workflowId, data.ok, data)
+    return subscribed && { type: 'doc_subscribed', data: subscribed }
+  },
   doc_ops_result: (workflowId, data) => {
     if (typeof data.ok !== 'boolean') return null
     const applied = parseOptionalStringArray(data.applied)

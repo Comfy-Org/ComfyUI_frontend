@@ -1,11 +1,15 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { seedAgentDraftLineage } from '@e2e/fixtures/agentDraftRestoreFixture'
+import {
+  readAgentDraftLineage,
+  seedAgentDraftLineage
+} from '@e2e/fixtures/agentDraftRestoreFixture'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   agentTest as test,
@@ -23,6 +27,9 @@ const MESSAGE_ID = 'cae77e1f-643c-46e8-9579-7671578cf223'
 const STALE_NODE_ID = 951
 const RESTORED_LINEAGE = 4
 const CURRENT_LINEAGE = 9
+// Documents minted before lineage tracking sit at lineage 0, which the host's
+// omitempty ack encodes by omitting lineage_seq.
+const PRE_TRACKING_LINEAGE = 0
 const EMPTY_HOST_SEED: WorkflowJSON = { nodes: [], links: [] }
 const EMPTY_CATALOG: WidgetCatalog = { types: {} }
 const RESTORED_GRAPH: ComfyWorkflowJSON = {
@@ -56,14 +63,16 @@ test.describe(
   () => {
     test.describe.configure({ timeout: 120_000 })
 
-    test('replaces a restored canvas when the host reports another lineage', async ({
-      page
-    }) => {
+    async function restoreAndSubscribe(
+      page: Page,
+      hostLineageSeq: number,
+      restoredLineage: { workflowId: string; lineageSeq: number }
+    ) {
       const host = new HostDoc(
         WORKFLOW_ID,
         EMPTY_HOST_SEED,
         EMPTY_CATALOG,
-        CURRENT_LINEAGE
+        hostLineageSeq
       )
       const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
       await hostSocket.install()
@@ -81,7 +90,12 @@ test.describe(
               thread_id: THREAD_ID,
               workflow_id: WORKFLOW_ID
             },
-            () => seedAgentDraftLineage(page, WORKFLOW_ID, RESTORED_LINEAGE)
+            () =>
+              seedAgentDraftLineage(
+                page,
+                restoredLineage.workflowId,
+                restoredLineage.lineageSeq
+              )
           )
           await mockWorkflowPersistence(page, WORKFLOW_ID)
         }
@@ -96,12 +110,36 @@ test.describe(
       await panel.sendMessage('Inspect this restored workflow.')
 
       await expect.poll(() => hostSocket.subscribeCount()).toBeGreaterThan(0)
+      return { hostSocket, nodes }
+    }
+
+    test('replaces a restored canvas when the host reports another lineage', async ({
+      page
+    }) => {
+      const { hostSocket, nodes } = await restoreAndSubscribe(
+        page,
+        CURRENT_LINEAGE,
+        { workflowId: WORKFLOW_ID, lineageSeq: RESTORED_LINEAGE }
+      )
       expect(
         hostSocket
           .clientDocFrames()
           .find((frame) => frame.type === 'doc_subscribe')?.knownLineageSeq
       ).toBe(RESTORED_LINEAGE)
       await expect(nodes.getNodeLocator(String(STALE_NODE_ID))).toHaveCount(0)
+    })
+
+    test('records the pre-tracking lineage an accepted ack omits', async ({
+      page
+    }) => {
+      await restoreAndSubscribe(page, PRE_TRACKING_LINEAGE, {
+        workflowId: 'retired-workflow',
+        lineageSeq: RESTORED_LINEAGE
+      })
+
+      await expect
+        .poll(() => readAgentDraftLineage(page))
+        .toEqual({ workflowId: WORKFLOW_ID, lineageSeq: PRE_TRACKING_LINEAGE })
     })
   }
 )

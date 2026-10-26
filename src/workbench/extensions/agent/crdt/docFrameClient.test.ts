@@ -278,6 +278,44 @@ describe('doc frame client', () => {
     expect(resets).toEqual([{ workflowId: 'wf-1', seq: 9, lineageSeq: 8 }])
   })
 
+  it('replaces a restored follower when an accepted ack omits lineage 0', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    const bridge = new LayoutFollowerBridge(client)
+    const resets: unknown[] = []
+    bridge.addEventListener('doc_reset', (event) => {
+      if (event instanceof CustomEvent) resets.push(event.detail)
+    })
+
+    bridge.subscribe('wf-1', 4)
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 9
+    })
+
+    expect(resets).toEqual([{ workflowId: 'wf-1', seq: 9, lineageSeq: 0 }])
+  })
+
+  it('rejects an accepted doc_subscribed whose lineage_seq is malformed', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-1', ok: true, lineage_seq: 'retired' }
+      })
+    ).toBeNull()
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-1', ok: false, code: 'forbidden' }
+      })
+    ).toEqual({
+      type: 'doc_subscribed',
+      data: { workflowId: 'wf-1', ok: false, code: 'forbidden' }
+    })
+  })
+
   it('keeps a seq-0 or absent-seq doc_subscribed ok ack as a valid baseline', () => {
     // The relay's DocSubscribedFrame uses `json:"seq,omitempty"`, so a fresh
     // (unminted) doc acked at seq 0 arrives with `seq` absent. Both shapes are
@@ -289,7 +327,7 @@ describe('doc frame client', () => {
       })
     ).toEqual({
       type: 'doc_subscribed',
-      data: { workflowId: 'wf-1', ok: true, seq: 0 }
+      data: { workflowId: 'wf-1', ok: true, seq: 0, lineageSeq: 0 }
     })
     const absent = parseServerDocFrame({
       type: 'doc_subscribed',
@@ -297,7 +335,7 @@ describe('doc frame client', () => {
     })
     expect(absent).toEqual({
       type: 'doc_subscribed',
-      data: { workflowId: 'wf-1', ok: true }
+      data: { workflowId: 'wf-1', ok: true, lineageSeq: 0 }
     })
     expect(absent?.data).not.toHaveProperty('seq')
   })
