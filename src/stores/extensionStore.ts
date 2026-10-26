@@ -51,7 +51,6 @@ export const useExtensionStore = defineStore('extension', () => {
   const agentExtensions = computed(() =>
     extensions.value.filter(isAgentCreatedExtension)
   )
-  const hasAgentExtensions = computed(() => agentExtensions.value.length > 0)
 
   const isExtensionInstalled = (name: string) => name in extensionByName.value
 
@@ -211,7 +210,6 @@ export const useExtensionStore = defineStore('extension', () => {
     loadDisabledExtensionNames,
     captureCoreExtensions,
     isCoreExtension,
-    hasThirdPartyExtensions,
-    hasAgentExtensions
+    hasThirdPartyExtensions
   }
 })
