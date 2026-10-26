@@ -287,33 +287,35 @@ describe('remote DynamicGroup row count reports', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it.for([
-    { type: 'AboveMaxDynamicGroup', value: 4 },
-    { type: 'HugeDynamicGroup', value: 1e9 }
-  ])(
-    'refuses a remote row count of $value above max without adding rows',
-    ({ type, value }) => {
-      const { node, rows, setRows } = remoteGroup(type)
-      const add = vi.spyOn(node, 'addCustomWidget').mockImplementation(() => {
-        throw new Error('Unexpected row allocation')
-      })
+  it('applies a remote row count above max', () => {
+    const { rows, setRows } = remoteGroup('AboveMaxDynamicGroup')
 
-      expect(setRows(value)).toBe(1)
-      expect(add).not.toHaveBeenCalled()
-      expect(rows.value).toBe(1)
-      expect(vi.mocked(reportError).mock.calls).toEqual([
-        [
-          expect.objectContaining({
-            message: 'Remote DynamicGroup row count did not apply'
-          }),
-          expect.objectContaining({
-            errorType: 'agent_graph_dynamic_group_rows_mismatch',
-            context: { requested: value, actual: 1 }
-          })
-        ]
-      ])
-    }
-  )
+    expect(setRows(4)).toBe(0)
+    expect(rows.value).toBe(4)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('refuses a remote row count above the allocation bound without adding rows', () => {
+    const { node, rows, setRows } = remoteGroup('HugeDynamicGroup')
+    const add = vi.spyOn(node, 'addCustomWidget').mockImplementation(() => {
+      throw new Error('Unexpected row allocation')
+    })
+
+    expect(setRows(1e9)).toBe(1)
+    expect(add).not.toHaveBeenCalled()
+    expect(rows.value).toBe(1)
+    expect(vi.mocked(reportError).mock.calls).toEqual([
+      [
+        expect.objectContaining({
+          message: 'Remote DynamicGroup row count did not apply'
+        }),
+        expect.objectContaining({
+          errorType: 'agent_graph_dynamic_group_rows_mismatch',
+          context: { requested: 1e9, actual: 1 }
+        })
+      ]
+    ])
+  })
 
   function restoredGroup(type: string, count: number) {
     const group = remoteGroup(type)
@@ -351,22 +353,12 @@ describe('remote DynamicGroup row count reports', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('refuses a remote row count that grows a restored group further above max', () => {
+  it('applies a remote row count that grows a restored group further above max', () => {
     const { rows, setRows } = restoredGroup('RestoredDynamicGroup', 4)
 
-    expect(setRows(5)).toBe(1)
-    expect(rows.value).toBe(4)
-    expect(vi.mocked(reportError).mock.calls).toEqual([
-      [
-        expect.objectContaining({
-          message: 'Remote DynamicGroup row count did not apply'
-        }),
-        expect.objectContaining({
-          errorType: 'agent_graph_dynamic_group_rows_mismatch',
-          context: { requested: 5, actual: 4 }
-        })
-      ]
-    ])
+    expect(setRows(5)).toBe(0)
+    expect(rows.value).toBe(5)
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('reports a remote row count the live group did not reach, once per node type', () => {

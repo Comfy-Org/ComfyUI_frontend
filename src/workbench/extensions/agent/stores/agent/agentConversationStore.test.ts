@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick, watch } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { reportError } from '@/platform/telemetry/reportError'
 
 import type {
@@ -18,6 +21,7 @@ import type {
 import type { AssistantMessage } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import { askIdOf } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
+import type { TurnTab } from './agentConversationStore'
 import { useAgentConversationStore } from './agentConversationStore'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -1120,6 +1124,64 @@ describe('useAgentConversationStore', () => {
         })
       ])
       expect(store.activeTurnId).toBe('assistant-message-1')
+    })
+
+    it('keeps a background question answered and its tab working after a stale refetch', () => {
+      const workflow = fromPartial<LoadedComfyWorkflow>({
+        path: 'workflows/a.json',
+        instanceId: 'workflow-a'
+      })
+      useWorkflowStore().attachWorkflow(workflow, 0)
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.setTurnTabResolver(() => ({
+        status: 'known',
+        workflowInstanceId: workflow.instanceId
+      }))
+      store.hydrate(askUserTranscript())
+      store.stashActiveTurn()
+      store.setThreadId('th-other')
+      store.hydrate([])
+      store.retireAsk(
+        'turn-1:call-1',
+        { status: 'answered', selected: [], otherText: 'watercolor' },
+        'th'
+      )
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+      store.resumeBackgroundTurn()
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: { ...pendingAskUser, thread_id: 'th' }
+        })
+      )
+
+      expect(store.messages).toHaveLength(1)
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({
+          askId: 'turn-1:call-1',
+          resolution: {
+            status: 'answered',
+            selected: [],
+            otherText: 'watercolor'
+          }
+        })
+      ])
+      expect(store.activeTurnId).toBe('assistant-message-1')
+      expect(store.isStreaming).toBe(true)
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+
+      store.ingest(done('assistant-message-1'))
+
+      expect(store.isStreaming).toBe(false)
+      expect(store.turnTabs).toEqual([])
     })
   })
 
@@ -2526,5 +2588,236 @@ describe('useAgentConversationStore', () => {
         })
       )
     })
+  })
+
+  describe('turn tabs', () => {
+    type Store = ReturnType<typeof useAgentConversationStore>
+
+    function openTab(path: string): LoadedComfyWorkflow {
+      const tab = fromPartial<LoadedComfyWorkflow>({ path, instanceId: path })
+      tab.unload = vi.fn()
+      tab.rename = vi.fn(async (newPath: string) =>
+        Object.assign(tab, { path: newPath })
+      )
+      const workflowStore = useWorkflowStore()
+      workflowStore.attachWorkflow(tab, workflowStore.openWorkflows.length)
+      return tab
+    }
+
+    function knownTab(path: string): TurnTab {
+      return { status: 'known', workflowInstanceId: path }
+    }
+
+    function storeWithTurnOn(tab: TurnTab, stashed: boolean): Store {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.setTurnTabResolver(() => tab)
+      store.startTurn(T1)
+      store.setTurnTabResolver(() => ({ status: 'unknown' }))
+      if (stashed) {
+        store.stashActiveTurn()
+        store.setThreadId('th-other')
+        store.hydrate([])
+      }
+      return store
+    }
+
+    function completedTabs(store: Store): string[] {
+      const tabs: string[] = []
+      store.onTurnCompleted((path) => tabs.push(path))
+      return tabs
+    }
+
+    function spinningPaths(store: Store): string[] {
+      return store.turnTabs.map(({ path }) => path)
+    }
+
+    it('keeps a turn on its tab while it moves to the background and back', () => {
+      openTab('workflows/a.json')
+      const store = storeWithTurnOn(knownTab('workflows/a.json'), true)
+      expect(store.activeTurnTabPath).toBeNull()
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+
+      store.setThreadId('th')
+      store.hydrate([])
+      store.resumeBackgroundTurn()
+
+      expect(store.activeTurnTabPath).toBe('workflows/a.json')
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+    })
+
+    const recovered = (ending: 'completed' | 'failed') => (store: Store) =>
+      store.settleTurn({ threadId: 'th', messageId: T1 }, undefined, ending)
+
+    const endings = [
+      {
+        ending: 'its done frame',
+        open: (store: Store) => store.ingest(done('t1')),
+        background: (store: Store) => store.ingest(done('t1')),
+        completes: true
+      },
+      {
+        ending: 'a completed recovery',
+        open: recovered('completed'),
+        background: recovered('completed'),
+        completes: true
+      },
+      {
+        ending: 'a failed recovery',
+        open: recovered('failed'),
+        background: recovered('failed'),
+        completes: false
+      },
+      {
+        ending: 'a malformed done frame',
+        open: (store: Store) => store.abortActiveTurn(),
+        background: (store: Store) => store.settleBackgroundTurn(T1),
+        completes: false
+      },
+      {
+        ending: 'the session stopping',
+        open: (store: Store) => store.abortActiveTurn(),
+        background: (store: Store) => store.dropBackgroundTurns(),
+        completes: false
+      }
+    ]
+
+    it.for(
+      endings.flatMap((row) =>
+        (['open', 'background'] as const).map((chat) => ({
+          ...row,
+          chat,
+          end: row[chat]
+        }))
+      )
+    )(
+      'ends a $chat turn through $ending (completed: $completes)',
+      ({ chat, end, completes }) => {
+        openTab('workflows/a.json')
+        const store = storeWithTurnOn(
+          knownTab('workflows/a.json'),
+          chat === 'background'
+        )
+        const completed = completedTabs(store)
+
+        end(store)
+
+        expect(store.turnTabs).toEqual([])
+        expect(completed).toEqual(completes ? ['workflows/a.json'] : [])
+      }
+    )
+
+    it('keeps a known tab when a refetch re-adopts the same live turn', () => {
+      openTab('workflows/a.json')
+      openTab('workflows/b.json')
+      const store = storeWithTurnOn(knownTab('workflows/a.json'), false)
+      store.moveTurnToTab(T1, 'workflows/b.json')
+
+      store.hydrate([
+        historyRow(1, 'user', 'turn-1', 'go', 'u1'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 't1'),
+          status: 'streaming'
+        }
+      ])
+
+      expect(store.activeTurnId).toBe(T1)
+      expect(spinningPaths(store)).toEqual(['workflows/b.json'])
+    })
+
+    it('reports a background turn as completed once when its done frame repeats', () => {
+      openTab('workflows/a.json')
+      const store = storeWithTurnOn(knownTab('workflows/a.json'), true)
+      const completed = completedTabs(store)
+
+      store.ingest(done('t1'))
+      store.ingest(done('t1'))
+
+      expect(completed).toEqual(['workflows/a.json'])
+    })
+
+    it.for([false, true])(
+      'stops awaiting approval once the ask is being answered (stashed: %s)',
+      (stashed) => {
+        openTab('workflows/a.json')
+        const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
+
+        store.ingest(runApproval('t1', 'ask-1'))
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: true }
+        ])
+
+        store.setAskAnswering('ask-1', true)
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: false }
+        ])
+
+        store.setAskAnswering('ask-1', false)
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: true }
+        ])
+
+        store.retireAsk('ask-1', { status: 'retired' }, 'th')
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: false }
+        ])
+      }
+    )
+
+    it.for([false, true])(
+      'follows the tab of a live turn through a move, a rename and a close (stashed: %s)',
+      async (stashed) => {
+        openTab('workflows/a.json')
+        const other = openTab('workflows/b.json')
+        const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
+        const workflowStore = useWorkflowStore()
+
+        store.moveTurnToTab(T1, 'workflows/b.json')
+        expect(spinningPaths(store)).toEqual(['workflows/b.json'])
+
+        await workflowStore.renameWorkflow(other, 'workflows/renamed.json')
+        expect(spinningPaths(store)).toEqual(['workflows/renamed.json'])
+
+        await workflowStore.closeWorkflow(other)
+        expect(spinningPaths(store)).toEqual([])
+      }
+    )
+
+    const adoptions: { tab: TurnTab; before: string[]; after: string[] }[] = [
+      { tab: { status: 'unknown' }, before: [], after: ['workflows/b.json'] },
+      {
+        tab: { status: 'guessed', workflowInstanceId: 'workflows/a.json' },
+        before: ['workflows/a.json'],
+        after: ['workflows/b.json']
+      },
+      {
+        tab: { status: 'known', workflowInstanceId: 'workflows/a.json' },
+        before: ['workflows/a.json'],
+        after: ['workflows/a.json']
+      },
+      { tab: { status: 'none' }, before: [], after: [] }
+    ]
+
+    it.for(
+      adoptions.flatMap((row) =>
+        [false, true].map((stashed) => ({ ...row, stashed }))
+      )
+    )(
+      "adopts the thread's workflow tab for a $tab.status tab (stashed: $stashed)",
+      ({ tab, before, after, stashed }) => {
+        openTab('workflows/a.json')
+        openTab('workflows/b.json')
+        const store = storeWithTurnOn(tab, stashed)
+        expect(spinningPaths(store)).toEqual(before)
+
+        store.adoptThreadTab('th', 'workflows/b.json')
+
+        expect(spinningPaths(store)).toEqual(after)
+      }
+    )
   })
 })

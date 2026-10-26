@@ -29,7 +29,8 @@ import type {
 } from '@e2e/fixtures/agentWireFrame'
 
 const SUBSCRIBE_TIMEOUT = 15_000
-const COMFY_SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
+/** The sid the fake ComfyUI reports on its first `status` frame. */
+export const COMFY_SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 
 /**
  * ComfyUI execution frames the fake host can emit alongside doc and agent
@@ -63,6 +64,7 @@ export interface ClientDocFrame {
   workflowId: string | null
   tab: string | null
   stateVector: string | null
+  knownLineageSeq: number | null
   /** `op:node_id` per op for a `doc_ops` frame; empty otherwise. */
   ops: string[]
   opIds: string[]
@@ -76,6 +78,7 @@ interface ParsedClientDocFrame {
   workflowId: string | null
   tab: string | null
   stateVector: string | null
+  knownLineageSeq: number | null
   opsResult: ParsedWireBatch
 }
 
@@ -118,12 +121,15 @@ function parseClientDocFrame(
 ): ParsedClientDocFrame | null {
   const envelope = docFrameEnvelope(raw)
   if (!envelope) return null
-  const { workflow_id, tab, state_vector_b64, ops } = envelope.data
+  const { workflow_id, tab, state_vector_b64, known_lineage_seq, ops } =
+    envelope.data
   return {
     type: envelope.type,
     workflowId: stringOrNull(workflow_id),
     tab: stringOrNull(tab),
     stateVector: stringOrNull(state_vector_b64),
+    knownLineageSeq:
+      typeof known_lineage_seq === 'number' ? known_lineage_seq : null,
     opsResult: parseWireOps(ops)
   }
 }
@@ -155,6 +161,8 @@ export class AgentFollowerHostSocket {
     this.resolveSubscribed = resolve
   })
 
+  private fixedSid: string | undefined
+
   constructor(
     private readonly page: Page,
     private readonly workflowId: string,
@@ -163,14 +171,21 @@ export class AgentFollowerHostSocket {
     private readonly hostUpdateSink?: HostUpdateSink
   ) {}
 
+  /** Pins the `status` sid; `''` models a socket with no id. */
+  reportSocketSid(sid: string): this {
+    this.fixedSid = sid
+    return this
+  }
+
   async install(): Promise<void> {
     await this.page.routeWebSocket(/\/ws/, (socket) => {
       this.comfySocket = socket
       this.comfyConnections += 1
       const sid =
-        this.comfyConnections === 1
+        this.fixedSid ??
+        (this.comfyConnections === 1
           ? COMFY_SOCKET_SID
-          : `${COMFY_SOCKET_SID}-${this.comfyConnections}`
+          : `${COMFY_SOCKET_SID}-${this.comfyConnections}`)
       socket.send(
         JSON.stringify({
           type: 'status',
@@ -178,6 +193,12 @@ export class AgentFollowerHostSocket {
             status: { exec_info: { queue_remaining: 0 } },
             sid
           }
+        })
+      )
+      socket.send(
+        JSON.stringify({
+          type: 'feature_flags',
+          data: { agent: { state: 'ready' } }
         })
       )
     })
@@ -253,6 +274,7 @@ export class AgentFollowerHostSocket {
       workflowId: frame.workflowId,
       tab: frame.tab,
       stateVector: frame.stateVector,
+      knownLineageSeq: frame.knownLineageSeq,
       ops: ops.map((op) => opLabel(op)),
       opIds: ops.map((op) => op.op_id),
       writers: ops.map(claimedWriter),
