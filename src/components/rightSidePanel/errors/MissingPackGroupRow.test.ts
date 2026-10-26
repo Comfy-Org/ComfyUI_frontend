@@ -439,8 +439,8 @@ describe('MissingPackGroupRow', () => {
       },
       {
         name: 'the cause as logged',
-        pack: { ...nvidiaVfx, cause: "No module named 'cv2'" },
-        text: "Not supported on this build: No module named 'cv2'"
+        pack: { ...nvidiaVfx, cause: 'bad <module>: a/b & missing' },
+        text: 'Not supported on this build: bad <module>: a/b & missing'
       },
       {
         name: 'only that, with no cause logged',
