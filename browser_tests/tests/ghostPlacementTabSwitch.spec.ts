@@ -36,7 +36,6 @@ for (const mode of ['litegraph', 'vue'] as const) {
         const { searchBoxV2 } = comfyPage
         const { topbar } = comfyPage.menu
 
-        // Tab 0 is workflow A (default graph); tab 1 is a new blank workflow B.
         await topbar.openBlankWorkflows(1)
         await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
         await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
@@ -65,7 +64,6 @@ for (const mode of ['litegraph', 'vue'] as const) {
         })
 
         await test.step('A node placed afterwards in B survives a tab round trip', async () => {
-          // A plain canvas click, as a user would make before searching again.
           await comfyPage.page.mouse.click(SEARCH_POSITION.x, SEARCH_POSITION.y)
           await searchBoxV2.addNode('KSampler', { position: SEARCH_POSITION })
           await expect

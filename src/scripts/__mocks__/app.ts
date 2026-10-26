@@ -5,7 +5,6 @@ import { shallowRef } from 'vue'
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
-import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
 import type {
   ANIM_PREVIEW_WIDGET as realAnimationWidget,
   ComfyApp as RealComfyApp,
@@ -226,7 +225,7 @@ function createState(): AppState {
         draggingCanvas: false,
         readOnly: false,
         selectOnly: false,
-        hoveringOver: CanvasItem.Nothing,
+        hoveringOver: 0,
         shouldSetCursor: true,
         selectionChanged: false,
         ghostNodeId: null
