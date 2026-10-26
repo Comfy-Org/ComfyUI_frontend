@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ModelThumbnailResult } from '@/extensions/core/load3d/components/modelThumbnail'
 import { i18n } from '@/i18n'
@@ -101,6 +101,26 @@ function deferred<T>(): {
       settle(value)
     }
   }
+}
+
+function closeModelViewerDialog(): void {
+  const dialog = vi.mocked(useDialogStore().showDialog).mock.calls.at(-1)?.[0]
+  const onClose = dialog?.dialogComponentProps?.onClose
+  assert(
+    typeof onClose === 'function',
+    'the last showDialog call carries an onClose handler'
+  )
+  onClose()
+}
+
+async function expectBusyRetryAtSeconds(
+  delaySeconds: number,
+  callsBeforeRetry: number
+): Promise<void> {
+  await vi.advanceTimersByTimeAsync(delaySeconds * 1000 - 1)
+  expect(generateModelThumbnail).toHaveBeenCalledTimes(callsBeforeRetry)
+  await vi.advanceTimersByTimeAsync(1)
+  expect(generateModelThumbnail).toHaveBeenCalledTimes(callsBeforeRetry + 1)
 }
 
 describe('ReplyAssetGroup', () => {
@@ -282,7 +302,7 @@ describe('ReplyAssetGroup', () => {
     expect(generateModelThumbnail).toHaveBeenCalledOnce()
   })
 
-  it('stops retrying when the renderer queue stays busy', async () => {
+  it('caps a sustained busy queue at ten generator calls', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     generateModelThumbnail.mockResolvedValue({ status: 'busy' })
     renderGroup([model])
@@ -290,9 +310,6 @@ describe('ReplyAssetGroup', () => {
 
     await vi.runAllTimersAsync()
 
-    // The initial attempt plus MAX_THUMBNAIL_BUSY_RETRIES. The backoff is
-    // exponential and capped at eight minutes, so this covers a longer busy
-    // period than a flat ladder of the same length would.
     expect(generateModelThumbnail).toHaveBeenCalledTimes(10)
   })
 
@@ -353,10 +370,7 @@ describe('ReplyAssetGroup', () => {
 
     findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
     await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
-    const dialog = vi.mocked(useDialogStore().showDialog).mock.calls.at(-1)?.[0]
-    const onClose = dialog?.dialogComponentProps?.onClose
-    if (typeof onClose !== 'function') throw new Error('Expected onClose')
-    onClose()
+    closeModelViewerDialog()
     await vi.advanceTimersByTimeAsync(0)
 
     expect(vi.getTimerCount()).toBe(0)
@@ -398,13 +412,15 @@ describe('ReplyAssetGroup', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(generateModelThumbnail).toHaveBeenCalledOnce()
 
-    const retryDelays = [2, 4, 8, 16, 32, 64, 128, 256, 480]
-    for (const [index, delaySeconds] of retryDelays.entries()) {
-      await vi.advanceTimersByTimeAsync(delaySeconds * 1000 - 1)
-      expect(generateModelThumbnail).toHaveBeenCalledTimes(index + 1)
-      await vi.advanceTimersByTimeAsync(1)
-      expect(generateModelThumbnail).toHaveBeenCalledTimes(index + 2)
-    }
+    await expectBusyRetryAtSeconds(2, 1)
+    await expectBusyRetryAtSeconds(4, 2)
+    await expectBusyRetryAtSeconds(8, 3)
+    await expectBusyRetryAtSeconds(16, 4)
+    await expectBusyRetryAtSeconds(32, 5)
+    await expectBusyRetryAtSeconds(64, 6)
+    await expectBusyRetryAtSeconds(128, 7)
+    await expectBusyRetryAtSeconds(256, 8)
+    await expectBusyRetryAtSeconds(480, 9)
 
     expect(findServerPreviewUrl).toHaveBeenCalledOnce()
     expect(vi.getTimerCount()).toBe(0)
@@ -526,10 +542,7 @@ describe('ReplyAssetGroup', () => {
     await vi.waitFor(() => expect(findServerPreviewUrl).toHaveBeenCalled())
     await vi.waitFor(() => expect(vi.getTimerCount()).toBe(1))
     await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
-    const dialog = vi.mocked(useDialogStore().showDialog).mock.calls.at(-1)?.[0]
-    const onClose = dialog?.dialogComponentProps?.onClose
-    if (typeof onClose !== 'function') throw new Error('Expected onClose')
-    onClose()
+    closeModelViewerDialog()
     await vi.advanceTimersByTimeAsync(0)
     const callsBeforeUnmount = findServerPreviewUrl.mock.calls.length
     expect(vi.getTimerCount()).toBe(1)
@@ -548,10 +561,7 @@ describe('ReplyAssetGroup', () => {
     await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
 
     findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
-    const dialog = vi.mocked(useDialogStore().showDialog).mock.calls.at(-1)?.[0]
-    const onClose = dialog?.dialogComponentProps?.onClose
-    if (typeof onClose !== 'function') throw new Error('Expected onClose')
-    onClose()
+    closeModelViewerDialog()
 
     const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
     expect(thumb).toHaveAttribute('src', 'https://x/mesh_preview.png')
@@ -566,10 +576,7 @@ describe('ReplyAssetGroup', () => {
     const [, , initialSignal] = generateModelThumbnail.mock.calls[0]
 
     await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
-    const dialog = vi.mocked(useDialogStore().showDialog).mock.calls.at(-1)?.[0]
-    const onClose = dialog?.dialogComponentProps?.onClose
-    if (typeof onClose !== 'function') throw new Error('Expected onClose')
-    onClose()
+    closeModelViewerDialog()
 
     expect(initialSignal?.aborted).toBe(true)
     await vi.advanceTimersByTimeAsync(2_000)
@@ -584,10 +591,7 @@ describe('ReplyAssetGroup', () => {
 
     const refresh = deferred<string | null>()
     findServerPreviewUrl.mockReturnValueOnce(refresh.promise)
-    const dialog = vi.mocked(useDialogStore().showDialog).mock.calls.at(-1)?.[0]
-    const onClose = dialog?.dialogComponentProps?.onClose
-    if (typeof onClose !== 'function') throw new Error('Expected onClose')
-    onClose()
+    closeModelViewerDialog()
     await rerender({ assets: [audio] })
 
     refresh.resolve('https://x/mesh_preview.png')

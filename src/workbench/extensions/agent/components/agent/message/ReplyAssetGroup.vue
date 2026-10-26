@@ -81,7 +81,6 @@ const galleryItems = computed(() =>
 )
 const galleryIndex = ref(-1)
 
-// Preserve controller identity inside Vue's deeply reactive state record.
 type ThumbnailState =
   | {
       phase: 'loading'
@@ -139,18 +138,14 @@ onBeforeUnmount(() => {
   }
 })
 
-/**
- * Whether an offscreen render can resolve `url` at all. The Load3D loader
- * resolves model data through the `filename` query, so a URL without one is
- * terminally unrenderable rather than transiently failing — retrying it would
- * spend the whole budget on work that cannot succeed.
- */
-function canRenderOffscreen(url: string): boolean {
+function hasLoaderResolvableFilename(url: string): boolean {
   return new URL(url, window.location.origin).searchParams.has('filename')
 }
 
-/** Whether `url`'s current entry is still the `loading` strand owned by `controller`. */
-function owns(url: string, controller: AbortController): boolean {
+function ownsCurrentLoadingStrand(
+  url: string,
+  controller: AbortController
+): boolean {
   const state = thumbnailState.value[url]
   return state?.phase === 'loading' && state.controller === controller
 }
@@ -191,7 +186,7 @@ function loadModelThumbnail(
       )
     )
     .catch(() => {
-      if (!mounted || !owns(url, controller)) return
+      if (!mounted || !ownsCurrentLoadingStrand(url, controller)) return
       scheduleThumbnailRetry(url, filename, attempts, busyAttempts)
     })
 }
@@ -201,7 +196,7 @@ async function handlePreviewLookup(
   preview: string | null
 ): Promise<void> {
   const { url, filename, controller, attempts, busyAttempts } = load
-  if (!mounted || !owns(url, controller)) return
+  if (!mounted || !ownsCurrentLoadingStrand(url, controller)) return
   if (preview) {
     thumbnailState.value[url] = { phase: 'ready', src: preview }
     return
@@ -214,12 +209,12 @@ async function handlePreviewLookup(
     })
     return
   }
-  if (!canRenderOffscreen(url)) {
+  if (!hasLoaderResolvableFilename(url)) {
     thumbnailState.value[url] = { phase: 'gaveUp' }
     return
   }
   const result = await generateModelThumbnail(url, filename, controller.signal)
-  if (!mounted || !owns(url, controller)) return
+  if (!mounted || !ownsCurrentLoadingStrand(url, controller)) return
   publishThumbnailResult(load, result)
 }
 
