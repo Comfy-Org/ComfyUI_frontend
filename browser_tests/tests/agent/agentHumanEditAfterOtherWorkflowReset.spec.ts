@@ -20,10 +20,8 @@ test.describe(
     test('keeps the original workflow mint cursor before its resubscribe is acknowledged', async ({
       agentConversation
     }) => {
-
-      const { recordedWorkflowId, firstBaseVersion } = await test.step(
-        'Edit the original workflow and record its wire version',
-        async () => {
+      const { recordedWorkflowId, firstBaseVersion } =
+        await test.step('Edit the original workflow and record its wire version', async () => {
           await agentConversation.runTurns()
           const recordedWorkflowId = agentConversation.conversation.workflow.id
           const firstNodeId = await agentConversation.addNodeOfType(
@@ -40,8 +38,7 @@ test.describe(
               firstNodeId
             )
           return { recordedWorkflowId, firstBaseVersion }
-        }
-      )
+        })
 
       await test.step('Reset the other workflow', async () => {
         await agentConversation.activateEmptyWorkflow(
