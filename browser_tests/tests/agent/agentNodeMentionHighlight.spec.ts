@@ -124,7 +124,41 @@ for (const mode of renderModes) {
           await agentPanel.composer.press('Escape')
           await expect(nodeMention).toHaveCount(0)
           await comfyPage.nextFrame()
-          await expectEmphasized(false)
+          try {
+            await expectEmphasized(false)
+          } finally {
+            await test
+              .info()
+              .attach('idle.png', { body: idleNode, contentType: 'image/png' })
+            await test
+              .info()
+              .attach('after-escape.png', {
+                body: await screenshotNode(),
+                contentType: 'image/png'
+              })
+            await test.info().attach('state.json', {
+              contentType: 'application/json',
+              body: JSON.stringify(
+                await comfyPage.page.evaluate(() => {
+                  const el =
+                    document.querySelector<HTMLElement>('[data-node-id]')
+                  if (!el) return null
+                  const cs = getComputedStyle(el)
+                  return {
+                    className: el.className,
+                    opacity: cs.opacity,
+                    filter: cs.filter,
+                    boxShadow: cs.boxShadow,
+                    outline: cs.outline,
+                    overlay: !!el.querySelector(
+                      '[data-testid="node-state-outline-overlay"]'
+                    ),
+                    dpr: window.devicePixelRatio
+                  }
+                })
+              )
+            })
+          }
         })
       })
     }

@@ -12,7 +12,7 @@
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        hasOpaqueNodeColors ? ['shadow-xl', shapeClass] : 'drop-shadow-lg',
+        hasOpaqueNodeColors ? ['drop-shadow-lg', shapeClass] : 'drop-shadow-lg',
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
