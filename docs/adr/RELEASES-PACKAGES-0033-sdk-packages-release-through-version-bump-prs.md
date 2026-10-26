@@ -34,6 +34,11 @@ Platform, installing from npm rather than from this workspace. It joined the
 tables once #17929 gave it a `dist` build and #17932 cut the two workspace
 dependencies that were never going to be published.
 
+> **Amended (2026-10-26, #21861):** `apps/website` moved to
+> Comfy-Org/comfy-website, which keeps locked copies of the workspace packages
+> pinned to a commit of this repository instead of installing the npm
+> artifacts. It no longer imports from this workspace.
+
 The consumer that forces the question is Platform (platform.comfy.org), a
 separate repository with no pnpm workspace link into this one. It installs
 these packages from the registry like any third party, so the version a
