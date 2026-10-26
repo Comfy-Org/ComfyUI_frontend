@@ -5,7 +5,10 @@
  * server for the actor that asked, so the response is cached under the scope it
  * was resolved for and no plan is filtered, ranked, or priced here.
  */
-import { zGetBillingPlansResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zGetBillingPlansResponse,
+  zPlanFeatureItem
+} from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
 import type { BillingResult, BillingTransport } from './billingContracts'
@@ -51,6 +54,26 @@ export interface PlansReaderOptions {
   readonly now?: () => number
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function filterUnreadableFeatureItems(plan: unknown): unknown {
+  if (!isRecord(plan) || !Array.isArray(plan.feature_items)) return plan
+  return {
+    ...plan,
+    feature_items: plan.feature_items.filter(
+      (item) => zPlanFeatureItem.safeParse(item).success
+    )
+  }
+}
+
+/** Display metadata cannot make an otherwise valid purchase catalog unreadable. */
+function filterUnreadablePlanFeatures(body: unknown): unknown {
+  if (!isRecord(body) || !Array.isArray(body.plans)) return body
+  return { ...body, plans: body.plans.map(filterUnreadableFeatureItems) }
+}
+
 export function createPlansReader(options: PlansReaderOptions): PlansReader {
   const { transport, scopeSource, now = Date.now } = options
 
@@ -62,7 +85,8 @@ export function createPlansReader(options: PlansReaderOptions): PlansReader {
     transport,
     scopeSource,
     route: PLANS_ROUTE,
-    parse: (body) => zGetBillingPlansResponse.safeParse(body),
+    parse: (body) =>
+      zGetBillingPlansResponse.safeParse(filterUnreadablePlanFeatures(body)),
     timeoutMs: (readOptions) => readOptions?.timeoutMs,
     project: ({ data }, scope) => ({
       status: 'ok',
