@@ -12,7 +12,11 @@
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        hasTranslucentSurface ? 'drop-shadow-lg' : ['shadow-node', shapeClass],
+        'drop-shadow-lg',
+        !hasTranslucentSurface && [
+          'firefox:shadow-node firefox:filter-none',
+          firefoxShadowShapeClass
+        ],
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
@@ -510,6 +514,14 @@ const shapeClass = computed(() =>
     box: '',
     card: 'rounded-tl-xl rounded-br-xl',
     default: 'rounded-xl'
+  })
+)
+
+const firefoxShadowShapeClass = computed(() =>
+  shapeVariantClass(nodeData.shape, {
+    box: '',
+    card: 'firefox:rounded-tl-xl firefox:rounded-br-xl',
+    default: 'firefox:rounded-xl'
   })
 )
 
