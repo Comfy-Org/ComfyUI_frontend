@@ -24,10 +24,6 @@ import {
   STAGE_FRAMES_THREAD_ID,
   STAGE_FRAMES_WORKFLOW_ID
 } from '@e2e/fixtures/data/agent/agentStageFrames'
-import {
-  readCanvasTextProbe,
-  startCanvasTextProbe
-} from '@e2e/fixtures/utils/canvasTextProbe'
 import { subscribeAgentWorkflow } from '@e2e/fixtures/utils/subscribeAgentWorkflow'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -83,7 +79,24 @@ test.describe(
         .poll(() => page.evaluate(() => window.app!.graph.nodes.length))
         .toBe(STAGE_FRAMES_EXISTING_NODES.length)
 
-      await startCanvasTextProbe(page, STAGE_FRAME_TITLES)
+      const canvasTextProbeKey = '__comfyE2eCanvasTextProbe'
+      await page.evaluate(
+        ({ expectedTexts, key }) => {
+          const context = window.app!.canvas.bgcanvas.getContext('2d')
+          if (!context) throw new Error('Canvas context unavailable')
+          const expected = new Set(expectedTexts)
+          const observed: string[] = []
+          const original = context.fillText.bind(context)
+          Reflect.set(window, key, observed)
+          context.fillText = (text, x, y, maxWidth) => {
+            if (expected.has(text) && !observed.includes(text))
+              observed.push(text)
+            if (maxWidth === undefined) return original(text, x, y)
+            return original(text, x, y, maxWidth)
+          }
+        },
+        { expectedTexts: STAGE_FRAME_TITLES, key: canvasTextProbeKey }
+      )
       socket.send(JSON.stringify(host.apply(STAGE_FRAMES_INSERT_OPS)))
       await expect
         .poll(() => page.evaluate(() => window.app!.graph.nodes.length))
@@ -119,7 +132,15 @@ test.describe(
         }
       ])
       await expect
-        .poll(() => readCanvasTextProbe(page))
+        .poll(() =>
+          page.evaluate((key) => {
+            const observed: unknown = Reflect.get(window, key)
+            if (!Array.isArray(observed)) return []
+            return observed.filter(
+              (text): text is string => typeof text === 'string'
+            )
+          }, canvasTextProbeKey)
+        )
         .toEqual(STAGE_FRAME_TITLES)
 
       const live = await page.evaluate(() => {
