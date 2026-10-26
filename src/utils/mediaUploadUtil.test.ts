@@ -46,7 +46,6 @@ describe('mediaUploadUtil', () => {
   })
 
   it('treats an untyped extensionless file as a video on video routes', () => {
-    // Browsers leave File.type empty when the name has no extension.
     expect(isExtensionlessVideo(new File([], 'clip'))).toBe(false)
     expect(isExtensionlessVideoUpload(new File([], 'clip'))).toBe(true)
     expect(
