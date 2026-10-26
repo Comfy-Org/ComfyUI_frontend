@@ -4963,6 +4963,7 @@
       {
         "from": "extension-runtime/integration",
         "allow": [
+          "webcam-capture/integration/public",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/infrastructure",
