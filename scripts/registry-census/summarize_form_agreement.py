@@ -50,7 +50,6 @@ EMIT_SUBSTITUTED = (
 )
 EMIT_DISAGREE = ('emitDisagree:keyOrder',)
 DECLINE = (
-    'declineDefinitionUnavailable',
     'declineLayoutDependent',
     'declineVirtualNode',
     'declineUnclosed:noOrder',

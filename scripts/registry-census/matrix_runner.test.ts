@@ -193,6 +193,56 @@ describe('matrix runner', () => {
       'No disagreeing form in this population'
     )
   })
+
+  it(
+    'measures a disagreeing frontend-only node without a definition',
+    { timeout: 30_000 },
+    async () => {
+      outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
+      vi.stubEnv('MATRIX_OUT', outputDir)
+      vi.stubEnv('MATRIX_VUE', '')
+      const nodeType = 'matrix-driven-form-disagreement'
+
+      await runPack(
+        'driven-form-disagreement',
+        {
+          entry: async () => {
+            LiteGraph.registerNodeType(
+              nodeType,
+              class DrivenFormDisagreementNode extends LGraphNode {
+                constructor() {
+                  super('DrivenFormDisagreement')
+                  this.addWidget('number', 'first', 1, 'first')
+                  this.addWidget('number', 'second', 2, 'second')
+                  this.onSerialize = (data) => {
+                    data.widgets_values_named = { second: 2, first: 1 }
+                  }
+                }
+              }
+            )
+          }
+        },
+        ['entry'],
+        'driven-form-disagreement'
+      )
+
+      const row: unknown = JSON.parse(
+        fs.readFileSync(
+          path.join(outputDir, 'driven-form-disagreement.json'),
+          'utf8'
+        )
+      )
+      expect(row).toMatchObject({
+        formNodes: expect.arrayContaining([
+          expect.objectContaining({
+            t: nodeType,
+            v: 'emitDisagree:keyOrder',
+            src: 'driven'
+          })
+        ])
+      })
+    }
+  )
 })
 
 describe('form/values agreement channel', () => {
@@ -279,6 +329,16 @@ describe('form/values agreement channel', () => {
         delete data.widgets_values_named
       },
       expected: 'noNamed'
+    },
+    {
+      name: 'orphan named key is ignored',
+      pack: 'form-orphan',
+      onSerialize(data: Record<string, unknown>) {
+        const named = data.widgets_values_named
+        if (isRecord(named))
+          data.widgets_values_named = { ...named, orphan: 'ignored' }
+      },
+      expected: 'emitAgree'
     }
   ])('$name', async ({ pack, onSerialize, expected }) => {
     const ksamplers = await run(pack, onSerialize)

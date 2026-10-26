@@ -218,7 +218,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Merge shard rows
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           path: matrix-shards
           pattern: widget-form-rows-shard-*

@@ -208,18 +208,13 @@ function sameOrder(a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((name, i) => name === b[i])
 }
 
-function valueWidgetKeys(
-  live: IBaseWidget[],
-  named: object
-): { values: string[]; orphanKeys: number } {
+function valueWidgetKeys(live: IBaseWidget[], named: object): string[] {
   const values: string[] = []
-  let orphanKeys = 0
   for (const name of Object.keys(named)) {
     const widget = live.find((w) => w.name === name)
-    if (!widget) orphanKeys++
-    else if (isValueWidget(widget)) values.push(name)
+    if (isValueWidget(widget)) values.push(name)
   }
-  return { values, orphanKeys }
+  return values
 }
 
 function layoutDependsOnValues(inputs: Record<string, { type?: unknown }>) {
@@ -257,7 +252,6 @@ function noProjectionVerdict(
 function emittedFormVerdict(
   order: string[],
   keyOrder: string[],
-  orphanKeys: number,
   a: number | string,
   serialisable: number
 ): string {
@@ -265,7 +259,6 @@ function emittedFormVerdict(
     Object.fromEntries(order.map((n) => [n, true]))
   )
   if (!sameOrder(keyOrder, canonicalOrder)) return 'emitDisagree:keyOrder'
-  if (orphanKeys) return 'declineUnclosed:residueKeys'
   return agreementVerdict(a, serialisable)
 }
 
@@ -293,13 +286,12 @@ function classifyFormNode(
   if (noProjection) return at(noProjection)
   if (node.isVirtualNode) return at('declineVirtualNode')
 
-  const { values, orphanKeys } = valueWidgetKeys(live, named as object)
+  const values = valueWidgetKeys(live, named as object)
   const order = live.map((w) => w.name).filter((name) => values.includes(name))
   const o = order.length
   const k = values.length
 
-  const inputs = defInputs(node)
-  if (inputs === null) return at('declineDefinitionUnavailable', o, k)
+  const inputs = defInputs(node) ?? {}
   if (layoutDependsOnValues(inputs)) return at('declineLayoutDependent', o, k)
   const unclosed = unclosedReason(order, values)
   if (unclosed) return at(unclosed, o, k)
@@ -308,11 +300,7 @@ function classifyFormNode(
     values.includes(name)
   )
   const serialisable = live.filter((w) => w.serialize !== false).length
-  return at(
-    emittedFormVerdict(order, keyOrder, orphanKeys, a, serialisable),
-    o,
-    k
-  )
+  return at(emittedFormVerdict(order, keyOrder, a, serialisable), o, k)
 }
 
 function measureFormAgreement(
