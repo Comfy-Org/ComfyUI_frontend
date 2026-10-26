@@ -27,6 +27,8 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { useApp } from '@/scripts/appInstance'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
+import { nodeTypesMayStillArrive } from '@/platform/lateCustomNodes/lateNodeTypes'
+import { showPlaceholdersAsWaiting } from '@/platform/lateCustomNodes/waitingNodes'
 import { useAppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -971,8 +973,10 @@ export const useWorkflowService = () => {
     const { missingNodeTypes, missingModelCandidates, missingMediaCandidates } =
       wf.pendingWarnings ?? {}
 
-    // Always sync missing nodes store (clear when empty).
-    if (
+    if (nodeTypesMayStillArrive()) {
+      const rootGraph = useApp().rootGraphOrUndefined
+      if (rootGraph) showPlaceholdersAsWaiting(rootGraph)
+    } else if (
       missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes ?? []) &&
       !options?.silent
     ) {

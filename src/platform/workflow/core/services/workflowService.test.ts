@@ -25,6 +25,8 @@ import {
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { nodeTypesMayStillArrive } from '@/platform/lateCustomNodes/lateNodeTypes'
+import { showPlaceholdersAsWaiting } from '@/platform/lateCustomNodes/waitingNodes'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
@@ -90,6 +92,9 @@ function makeWorkflowDataWithId(id: string): ComfyWorkflowJSON {
 vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/scripts/app'))
+
+vi.mock(import('@/platform/lateCustomNodes/lateNodeTypes'))
+vi.mock(import('@/platform/lateCustomNodes/waitingNodes'))
 
 const storeThumbnailMock = vi.hoisted(() => vi.fn())
 
@@ -187,6 +192,18 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledWith([])
+    })
+
+    it('shows nodes as waiting, not missing, while late custom node packs may still add the types', () => {
+      vi.mocked(nodeTypesMayStillArrive).mockReturnValue(true)
+      const workflow = createWorkflow({ missingNodeTypes: ['LatePackNode'] })
+
+      useWorkflowService().showPendingWarnings(workflow)
+
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).not.toHaveBeenCalled()
+      expect(showPlaceholdersAsWaiting).toHaveBeenCalledWith(app.rootGraph)
     })
 
     it('should surface missing nodes and cache warnings', () => {
