@@ -507,6 +507,45 @@ describe('useWidgetSelectItems', () => {
       })
     }
 
+    function makeGroupedJobAsset(
+      jobId: string,
+      filenames: readonly [string, ...string[]]
+    ): AssetItem {
+      const name = filenames[0]
+      return fromPartial({
+        id: jobId,
+        name,
+        preview_url: `/api/view?filename=${name}&type=output`,
+        tags: ['output'],
+        user_metadata: {
+          jobId,
+          nodeId: '5',
+          subfolder: '',
+          outputCount: filenames.length,
+          allOutputs: filenames.map((filename) => ({
+            filename,
+            subfolder: '',
+            type: 'output',
+            nodeId: '5',
+            mediaType: 'images'
+          }))
+        }
+      })
+    }
+
+    function resolvedFromMetadata(meta: {
+      jobId: string
+      allOutputs?: readonly { filename: string }[]
+    }): AssetItem[] {
+      return (meta.allOutputs ?? []).map((output) =>
+        makeResolvedOutput(`${meta.jobId}-${output.filename}`, output.filename)
+      )
+    }
+
+    async function flushQueuedPromises() {
+      for (let i = 0; i < 8; i += 1) await Promise.resolve()
+    }
+
     it('shows all outputs after resolving multi-output jobs', async () => {
       mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-1', 'preview.png', '5', 3)
@@ -1008,6 +1047,171 @@ describe('useWidgetSelectItems', () => {
         'out1c.png [output]',
         'out2a.png [output]',
         'out2b.png [output]'
+      ])
+    })
+
+    it('shows outputs loaded on a later asset page of the same job', async () => {
+      const firstPage: readonly [string, ...string[]] = [
+        'batch_001.png',
+        'batch_002.png'
+      ]
+      const bothPages: readonly [string, ...string[]] = [
+        'batch_001.png',
+        'batch_002.png',
+        'batch_003.png'
+      ]
+      mockResolveOutputAssetItems.mockImplementation(async (meta) =>
+        resolvedFromMetadata(meta)
+      )
+      mockMediaAssets.items.value = [
+        makeGroupedJobAsset('job-paged', firstPage)
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+
+      await vi.waitFor(() => {
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([
+          'batch_001.png [output]',
+          'batch_002.png [output]'
+        ])
+      })
+
+      mockMediaAssets.items.value = [
+        makeGroupedJobAsset('job-paged', bothPages)
+      ]
+
+      await vi.waitFor(() => {
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([
+          'batch_001.png [output]',
+          'batch_002.png [output]',
+          'batch_003.png [output]'
+        ])
+      })
+    })
+
+    it('does not resolve again when the same job is re-emitted with the same output count', async () => {
+      const filenames: readonly [string, ...string[]] = [
+        'batch_001.png',
+        'batch_002.png'
+      ]
+      mockResolveOutputAssetItems.mockImplementation(async (meta) =>
+        resolvedFromMetadata(meta)
+      )
+      mockMediaAssets.items.value = [
+        makeGroupedJobAsset('job-paged', filenames)
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+
+      await vi.waitFor(() => {
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([
+          'batch_001.png [output]',
+          'batch_002.png [output]'
+        ])
+      })
+      expect(mockResolveOutputAssetItems).toHaveBeenCalledTimes(1)
+
+      mockMediaAssets.items.value = [
+        makeGroupedJobAsset('job-paged', filenames)
+      ]
+      await flushQueuedPromises()
+
+      expect(mockResolveOutputAssetItems).toHaveBeenCalledTimes(1)
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'batch_001.png [output]',
+        'batch_002.png [output]'
+      ])
+    })
+
+    it('keeps shown outputs until a grown job and a new job both finish resolving', async () => {
+      mockResolveOutputAssetItems.mockImplementation(async (meta) =>
+        resolvedFromMetadata(meta)
+      )
+      mockMediaAssets.items.value = [
+        makeGroupedJobAsset('job-paged', ['a.png', 'b.png'])
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined)
+        })
+      )
+      filterSelected.value = 'outputs'
+
+      await vi.waitFor(() => {
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([
+          'a.png [output]',
+          'b.png [output]'
+        ])
+      })
+
+      let resolveGrown!: (items: AssetItem[]) => void
+      let resolveNew!: (items: AssetItem[]) => void
+      mockResolveOutputAssetItems.mockImplementation(
+        async (meta: { jobId: string }) => {
+          if (meta.jobId === 'job-paged') {
+            return new Promise<AssetItem[]>((resolve) => {
+              resolveGrown = resolve
+            })
+          }
+          return new Promise<AssetItem[]>((resolve) => {
+            resolveNew = resolve
+          })
+        }
+      )
+
+      mockMediaAssets.items.value = [
+        makeGroupedJobAsset('job-paged', ['a.png', 'b.png', 'c.png']),
+        makeGroupedJobAsset('job-new', ['d.png', 'e.png'])
+      ]
+      await nextTick()
+
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'a.png [output]',
+        'b.png [output]',
+        'd.png [output]'
+      ])
+
+      resolveNew([
+        makeResolvedOutput('job-new-d.png', 'd.png'),
+        makeResolvedOutput('job-new-e.png', 'e.png')
+      ])
+      await flushQueuedPromises()
+
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'a.png [output]',
+        'b.png [output]',
+        'd.png [output]'
+      ])
+
+      resolveGrown([
+        makeResolvedOutput('job-paged-a.png', 'a.png'),
+        makeResolvedOutput('job-paged-b.png', 'b.png'),
+        makeResolvedOutput('job-paged-c.png', 'c.png')
+      ])
+
+      await vi.waitFor(() => {
+        expect(dropdownItems.value).toHaveLength(5)
+      })
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'a.png [output]',
+        'b.png [output]',
+        'c.png [output]',
+        'd.png [output]',
+        'e.png [output]'
       ])
     })
   })
