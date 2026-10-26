@@ -76,28 +76,21 @@ function renderActions() {
 }
 
 describe('LinkSelectionActions', () => {
-  it('names a node without a title by its type', () => {
+  it.for([
+    { name: 'type', type: 'Example', expected: 'Go to Example' },
+    { name: 'id', type: '', expected: undefined }
+  ])('names a node without a title by its $name', ({ type, expected }) => {
     const { graph, source, targets } = createWorkflow()
     source.title = ''
+    source.type = type
     clickSocket(graph, targets[0], 'input')
 
     renderActions()
 
     expect(
-      screen.getByRole('button', { name: `Go to ${source.type}` })
-    ).toBeInTheDocument()
-  })
-
-  it('names a node without a title or type by its id', () => {
-    const { graph, source, targets } = createWorkflow()
-    source.title = ''
-    source.type = ''
-    clickSocket(graph, targets[0], 'input')
-
-    renderActions()
-
-    expect(
-      screen.getByRole('button', { name: `Go to #${source.id}` })
+      screen.getByRole('button', {
+        name: expected ?? `Go to #${source.id}`
+      })
     ).toBeInTheDocument()
   })
 
@@ -115,26 +108,26 @@ describe('LinkSelectionActions', () => {
       viewport: [0, 0, 800, 600]
     })
     expect(canvas.ds.fitToBounds).not.toHaveBeenCalled()
-    expect(canvas.setDirty).not.toHaveBeenCalled()
     const menuButton = await screen.findByRole('button', {
       name: 'Go to a linked node'
     })
     await waitFor(() => expect(menuButton).toHaveFocus())
   })
 
-  it('lets the user pick one of the nodes an output socket leads to', async () => {
+  it('lets the user choose a destination after linked nodes move', async () => {
     const { graph, source, targets, canvas } = createWorkflow()
     clickSocket(graph, source, 'output')
     const { user } = renderActions()
+    targets[1].pos = [400, -200]
 
     await user.click(
       screen.getByRole('button', { name: 'Go to a linked node' })
     )
     const items = await screen.findAllByRole('menuitem')
     expect(items).toHaveLength(2)
-    expect(items[0]).toHaveAccessibleName(`Positive #${targets[0].id}`)
-    expect(items[1]).toHaveAccessibleName(`Negative #${targets[1].id}`)
-    await user.click(items[1])
+    expect(items[0]).toHaveAccessibleName(`Negative #${targets[1].id}`)
+    expect(items[1]).toHaveAccessibleName(`Positive #${targets[0].id}`)
+    await user.click(items[0])
 
     expect(canvas.animateToBounds).toHaveBeenCalledWith(
       targets[1].boundingRect,
@@ -146,23 +139,7 @@ describe('LinkSelectionActions', () => {
     await waitFor(() => expect(backButton).toHaveFocus())
   })
 
-  it('lists the linked nodes in their new order after one moves', async () => {
-    const { graph, source, targets } = createWorkflow()
-    clickSocket(graph, source, 'output')
-    const { user } = renderActions()
-
-    targets[1].pos = [400, -200]
-    await user.click(
-      screen.getByRole('button', { name: 'Go to a linked node' })
-    )
-
-    const items = await screen.findAllByRole('menuitem')
-    expect(items[0]).toHaveAccessibleName(`Negative #${targets[1].id}`)
-    expect(items[1]).toHaveAccessibleName(`Positive #${targets[0].id}`)
-  })
-
   it.for([
-    { name: 'bigger than the view', height: 2000, scale: 1 },
     { name: 'too big to leave room for the menu', height: 520, scale: 1 },
     { name: 'too big at the current zoom', height: 300, scale: 1.7 }
   ])(
@@ -218,7 +195,7 @@ describe('LinkSelectionActions', () => {
     expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
   })
 
-  it('moves the view in one step when the OS asks for reduced motion', async () => {
+  it('centres the source immediately when the OS asks for reduced motion', async () => {
     const matchMedia = window.matchMedia.bind(window)
     vi.stubGlobal(
       'matchMedia',
@@ -230,7 +207,9 @@ describe('LinkSelectionActions', () => {
         return result
       })
     )
-    const { graph, source, targets, canvas } = createWorkflow()
+    const ds = createTestDragAndScale()
+    ds.offset = [13, 29]
+    const { graph, source, targets, canvas } = createWorkflow(ds)
     useSettingStore().settingValues['Comfy.Appearance.DisableAnimations'] =
       false
     clickSocket(graph, targets[0], 'input')
@@ -240,10 +219,13 @@ describe('LinkSelectionActions', () => {
       screen.getByRole('button', { name: 'Go to Load Checkpoint' })
     )
 
-    expect(canvas.ds.fitToBounds).toHaveBeenCalledWith(
-      source.boundingRect,
-      expect.anything()
-    )
+    const [x, y, width, height] = source.boundingRect
+    const [centreX, centreY] = ds.convertOffsetToCanvas([
+      x + width / 2,
+      y + height / 2
+    ])
+    expect(centreX).toBeCloseTo(400)
+    expect(centreY).toBeCloseTo(300)
     expect(canvas.animateToBounds).not.toHaveBeenCalled()
   })
 

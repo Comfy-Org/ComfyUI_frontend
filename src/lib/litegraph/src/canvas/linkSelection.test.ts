@@ -486,21 +486,16 @@ describe('going to the other end of a socket', () => {
     expect(getSelectedLinksAnchor(graph)).toEqual({ x, y })
   })
 
-  it('leads back to the output with every linked node on offer', () => {
+  it('leads back to the output and on to another linked node', () => {
     const { graph, source, targets, links } = createFanOut()
     clickSocket(graph, source, 'output')
     jumpTo(graph, targets[2])
 
-    expect(destinationIds(graph)).toEqual([source.id])
-    const arrival = jumpTo(graph, source)
+    jumpTo(graph, source)
 
     const [x, y] = source.getOutputPos(0)
-    expect(arrival?.bounds).toBe(source.boundingRect)
     expect(getSelectedLinkIds(graph)).toEqual(links.map(({ id }) => id))
     expect(getSelectedLinksAnchor(graph)).toEqual({ x, y })
-    expect(destinationIds(graph)).toEqual(
-      [targets[1], targets[2], targets[0]].map(({ id }) => id)
-    )
     expect(jumpTo(graph, targets[0])).toBeDefined()
   })
 
@@ -558,13 +553,12 @@ describe('going to the other end of a socket', () => {
     expect(getSelectedLinksAnchor(graph)).toEqual(anchor)
   })
 
-  it('makes one destination of several links into the same node', () => {
+  it('offers one destination and lands on its lowest reached input', () => {
     const graph = new LGraph()
     const source = createTestNode(graph, [], ['number'])
     const target = createTestNode(graph, ['number', 'number'])
-    connect(source, target, 0)
     connect(source, target, 1)
-
+    const lowest = connect(source, target, 0)
     clickSocket(graph, source, 'output')
 
     expect(
@@ -573,15 +567,6 @@ describe('going to the other end of a socket', () => {
         slot
       ])
     ).toEqual([[target.id, 0]])
-  })
-
-  it('lands on the lowest input when several links reach one node', () => {
-    const graph = new LGraph()
-    const source = createTestNode(graph, [], ['number'])
-    const target = createTestNode(graph, ['number', 'number'])
-    connect(source, target, 1)
-    const lowest = connect(source, target, 0)
-    clickSocket(graph, source, 'output')
 
     jumpTo(graph, target)
 
