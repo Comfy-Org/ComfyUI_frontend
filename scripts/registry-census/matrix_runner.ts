@@ -337,7 +337,8 @@ function recordFormAgreement(
   nodes: LGraphNode[],
   serialised: { nodes: ISerialisedNode[] },
   defInputs: DefInputs,
-  driven: FormRow[]
+  driven: FormRow[],
+  measurementErrors: string[]
 ): void {
   try {
     const byId = new Map<string, ISerialisedNode>()
@@ -349,9 +350,13 @@ function recordFormAgreement(
     row.formNodes = formNodes
     const counts: Record<string, number> = {}
     for (const r of formNodes) counts[r.v] = (counts[r.v] ?? 0) + 1
-    row.formAgreement = counts
+    row.formAgreement = measurementErrors.length
+      ? { ...counts, harnessError: measurementErrors.join(' | ') }
+      : counts
   } catch (e) {
-    row.formAgreement = { harnessError: errMsg(e) }
+    row.formAgreement = {
+      harnessError: [...measurementErrors, errMsg(e)].join(' | ')
+    }
     row.formNodes = driven
   }
 }
@@ -800,6 +805,7 @@ export async function runPack(
   // ---- drive the pack's OWN frontend-registered node types --------------
   const driven: Record<string, string> = {}
   const formDriven: FormRow[] = []
+  const formMeasurementErrors: string[] = []
   const selectedTypes = newTypes.slice(0, MAX_DRIVEN_TYPES_PER_PACK)
   row.driveTypesOmitted = newTypes.length - selectedTypes.length
   for (const t of selectedTypes) {
@@ -850,7 +856,9 @@ export async function runPack(
             )
           )
         } catch (e) {
-          parts.push(`form=THREW ${errMsg(e).slice(0, 40)}`)
+          const message = errMsg(e)
+          parts.push(`form=THREW ${message.slice(0, 40)}`)
+          formMeasurementErrors.push(`${t}: ${message}`)
         }
       } finally {
         graph.remove(n)
@@ -867,7 +875,14 @@ export async function runPack(
   await op('serialize', () => {
     const serialised = graph.serialize()
     row.serialized = S(serialised)
-    recordFormAgreement(row, graph._nodes, serialised, defInputs, formDriven)
+    recordFormAgreement(
+      row,
+      graph._nodes,
+      serialised,
+      defInputs,
+      formDriven,
+      formMeasurementErrors
+    )
   })
   await op('reload', () => {
     const g2 = new LGraph()

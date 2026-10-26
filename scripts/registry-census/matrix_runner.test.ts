@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -9,6 +10,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { runPack } from './matrix_runner'
 
 const initialVueNodesMode = LiteGraph.vueNodesMode
+const reporter = path.join(import.meta.dirname, 'summarize_form_agreement.py')
 let outputDir = ''
 
 afterEach(() => {
@@ -128,6 +130,68 @@ describe('matrix runner', () => {
     expect(row.newTypes).toEqual(nodeTypes)
     expect(Object.keys(row.driveTypes ?? {})).toEqual(nodeTypes.slice(0, 64))
     expect(row.driveTypesOmitted).toBe(1)
+  })
+
+  it('reports a driven measurement failure instead of a clean conclusion', async () => {
+    outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
+    vi.stubEnv('MATRIX_OUT', outputDir)
+    vi.stubEnv('MATRIX_VUE', '')
+    const nodeType = 'matrix-driven-measurement-failure'
+
+    await runPack(
+      'driven-measurement-failure',
+      {
+        entry: async () => {
+          LiteGraph.registerNodeType(
+            nodeType,
+            class DrivenMeasurementFailureNode extends LGraphNode {
+              constructor() {
+                super('DrivenMeasurementFailure')
+                const widget = this.addWidget('number', 'value', 1, 'value')
+                this.onSerialize = (data) => {
+                  data.widgets_values_named = { value: 1 }
+                  Object.defineProperty(widget, 'name', {
+                    configurable: true,
+                    get() {
+                      throw new Error('driven-measurement-name')
+                    }
+                  })
+                }
+              }
+            }
+          )
+        }
+      },
+      ['entry'],
+      'driven-measurement-failure'
+    )
+
+    const row: unknown = JSON.parse(
+      fs.readFileSync(
+        path.join(outputDir, 'driven-measurement-failure.json'),
+        'utf8'
+      )
+    )
+    expect(row).toMatchObject({
+      formAgreement: {
+        harnessError: expect.stringContaining('driven-measurement-name')
+      }
+    })
+
+    const result = spawnSync('python3', [reporter], {
+      encoding: 'utf8',
+      env: { ...process.env, MATRIX_OUT: outputDir }
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('recorded a measurement error')
+    expect(result.stdout).toContain('driven-measurement-name')
+    expect(result.stdout).toContain(
+      'measurement errors or unknown verdicts prevent a clean conclusion'
+    )
+    expect(result.stdout).not.toContain(
+      'No disagreeing form in this population'
+    )
   })
 })
 
