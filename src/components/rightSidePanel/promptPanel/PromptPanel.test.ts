@@ -50,7 +50,8 @@ beforeEach(() => {
   useWorkflowStore().activeWorkflow = fromPartial({
     changeTracker: {
       captureCanvasState: vi.fn(),
-      refreshModifiedState: vi.fn()
+      markModified: vi.fn(),
+      updateModified: vi.fn()
     }
   })
 })

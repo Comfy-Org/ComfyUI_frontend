@@ -62,7 +62,7 @@ const text = computed({
     isEdited = true
     setWidgetValue(target.node, target.widget, value)
     promptPanelStore.recordInput()
-    void useWorkflowStore().activeWorkflow?.changeTracker.refreshModifiedState()
+    useWorkflowStore().activeWorkflow?.changeTracker.markModified()
   }
 })
 
@@ -70,7 +70,9 @@ function endEditSession() {
   promptPanelStore.isEditorFocused = false
   if (!isEdited) return
   isEdited = false
-  useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+  const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
+  changeTracker?.captureCanvasState()
+  changeTracker?.updateModified()
 }
 
 function takeRequestedFocus() {

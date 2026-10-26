@@ -12,7 +12,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'
 
 const captureCanvasState = vi.fn()
-const refreshModifiedState = vi.fn()
+const markModified = vi.fn()
+const updateModified = vi.fn()
 
 function createTarget(options: Record<string, unknown> = {}) {
   const graph = createTestRootGraph()
@@ -54,7 +55,7 @@ async function mountEditorAfterRender(options: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   useWorkflowStore().activeWorkflow = fromPartial({
-    changeTracker: { captureCanvasState, refreshModifiedState }
+    changeTracker: { captureCanvasState, markModified, updateModified }
   })
 })
 
@@ -189,7 +190,7 @@ describe('PromptEditor', () => {
 
     await user.type(screen.getByRole('textbox', { name: 'text' }), 'xyz')
 
-    expect(refreshModifiedState).toHaveBeenCalledTimes(3)
+    expect(markModified).toHaveBeenCalledTimes(3)
     expect(captureCanvasState).not.toHaveBeenCalled()
   })
 
@@ -210,6 +211,7 @@ describe('PromptEditor', () => {
 
       expect(promptPanelStore.isEditorFocused).toBe(false)
       expect(captureCanvasState).toHaveBeenCalledTimes(captures)
+      expect(updateModified).toHaveBeenCalledTimes(captures)
     }
   )
 })
