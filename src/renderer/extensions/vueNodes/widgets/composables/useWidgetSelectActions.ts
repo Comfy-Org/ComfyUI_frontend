@@ -66,7 +66,6 @@ interface UseWidgetSelectActionsOptions {
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
   locatorId?: MaybeRefOrGetter<NodeLocatorId | undefined>
-  /** Set when the widget only accepts video uploads. */
   videoOnly?: MaybeRefOrGetter<boolean>
 }
 

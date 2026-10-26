@@ -197,8 +197,6 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
   test('rejects an extensionless video that the browser gives no MIME type', async ({
     comfyPage
   }, testInfo) => {
-    // Browsers derive File.type from the extension, so a real video renamed
-    // without one arrives with an empty type on every upload route.
     const extensionlessVideoPath = testInfo.outputPath('extensionless')
     await copyFile(assetPath('plain_video.mp4'), extensionlessVideoPath)
 
