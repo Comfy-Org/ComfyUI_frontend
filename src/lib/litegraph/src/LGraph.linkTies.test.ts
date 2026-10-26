@@ -5,9 +5,12 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode, Positionable } from '@/lib/litegraph/src/litegraph'
-import { remapLinkReferences } from '@/lib/litegraph/src/linkDeduplication'
+import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Positionable } from '@/lib/litegraph/src/litegraph'
+import {
+  realignInputLinkSlots,
+  remapLinkReferences
+} from '@/lib/litegraph/src/linkDeduplication'
 import {
   createTestRootGraph,
   enableSubgraphNodeCreation
@@ -162,5 +165,77 @@ describe('link tie lifecycle', () => {
     ])
     expect(subgraph.asSerialisable().extra.linkTies).toHaveLength(1)
     expect(interiorIds).toHaveLength(2)
+  })
+})
+
+describe('link tie recreation flows', () => {
+  it('remaps ties on boundary links to their replacements when converting', () => {
+    const graph = createTestRootGraph()
+    onTestFinished(enableSubgraphNodeCreation(graph))
+    const { target } = tiedPair(graph)
+
+    const { node } = graph.convertToSubgraph(new Set<Positionable>([target]))
+
+    const replacements = [...graph.links.values()]
+      .filter((link) => link.target_id === node.id)
+      .map((link) => link.id)
+    expect(replacements).toHaveLength(2)
+    expect(tiesOf(graph)).toEqual([
+      { id: 1, pos: [120, 40], angle: 0.5, linkIds: replacements }
+    ])
+  })
+
+  it('brings interior ties back, offset with the nodes, when unpacking', () => {
+    const graph = createTestRootGraph()
+    onTestFinished(enableSubgraphNodeCreation(graph))
+    const { origin, target } = tiedPair(graph)
+    const { node } = graph.convertToSubgraph(
+      new Set<Positionable>([origin, target])
+    )
+
+    graph.unpackSubgraph(node)
+
+    const unpackedOrigin = graph.nodes.find(
+      (candidate) => candidate.outputs.length === 2
+    )
+    if (!unpackedOrigin) throw new Error('Expected the unpacked origin node')
+    const [tie] = tiesOf(graph)
+    expect(tiesOf(graph)).toHaveLength(1)
+    expect(tie.linkIds).toEqual(
+      unpackedOrigin.outputs.flatMap((output) => output.links ?? [])
+    )
+    expect([
+      tie.pos[0] - unpackedOrigin.pos[0],
+      tie.pos[1] - unpackedOrigin.pos[1]
+    ]).toEqual([120 - origin.pos[0], 40 - origin.pos[1]])
+  })
+
+  it('drops a link removed by input slot realignment from its tie', () => {
+    const graph = createTestRootGraph()
+    const source = createTestNode(graph, [], ['number'])
+    const target = new LGraphNode('Target')
+    for (const name of ['p', 'q', 'r']) target.addInput(name, 'number')
+    graph.add(target)
+    const squatter = connect(source, target, 0)
+    const blocked = source.connect(0, target, 1)
+    const free = source.connect(0, target, 2)
+    if (!blocked || !free) throw new Error('Failed to connect test links')
+    useLinkTieStore().addTie(graphScopeOf(graph), {
+      pos: [0, 0],
+      angle: 0,
+      linkIds: [squatter.id, blocked.id]
+    })
+    const nodeData = target.serialize()
+    nodeData.inputs = [
+      { name: 'no_such_input', type: 'number', link: squatter.id },
+      { name: 'p', type: 'number', link: blocked.id },
+      { name: 'q', type: 'number', link: free.id }
+    ]
+
+    realignInputLinkSlots(graph, [[target.id, nodeData]])
+
+    expect(graph.links.has(squatter.id)).toBe(false)
+    expect(tiesOf(graph).map((tie) => tie.linkIds)).toEqual([[blocked.id]])
+    expect(graph.serialize().extra?.linkTies?.[0].linkIds).toEqual([blocked.id])
   })
 })

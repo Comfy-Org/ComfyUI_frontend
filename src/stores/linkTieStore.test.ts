@@ -43,13 +43,29 @@ describe('useLinkTieStore', () => {
     })
     store.addTie(graphA, { pos: [0, 0], angle: 0, linkIds: [B] })
 
-    const released = store.releaseLinks(graphA, [B])
+    store.releaseLinks(graphA, [B])
 
-    expect(released).toEqual([
-      { ...shared, linkIds: [B] },
-      expect.objectContaining({ linkIds: [B] })
-    ])
     expect(store.getTies(graphA)).toEqual([{ ...shared, linkIds: [A, C] }])
+  })
+
+  it('indexes ties by the links they hold, following every change', () => {
+    const store = useLinkTieStore()
+    const first = store.addTie(graphA, {
+      pos: [0, 0],
+      angle: 0,
+      linkIds: [A, B]
+    })
+    const second = store.addTie(graphA, { pos: [5, 5], angle: 0, linkIds: [B] })
+
+    store.moveTie(graphA, first.id, [9, 9])
+    store.releaseLinks(graphA, [A])
+    const byLink = store.getTiesByLink(graphA)
+
+    expect(byLink.get(A)).toBeUndefined()
+    expect(byLink.get(B)).toEqual([
+      { ...first, pos: [9, 9], linkIds: [B] },
+      second
+    ])
   })
 
   it('clears every graph under a root', () => {

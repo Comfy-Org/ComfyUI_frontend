@@ -2,8 +2,9 @@ import { vi } from 'vitest'
 
 class RecordedPath2D implements Pick<
   Path2D,
-  'moveTo' | 'lineTo' | 'bezierCurveTo' | 'quadraticCurveTo' | 'arc'
+  'moveTo' | 'lineTo' | 'bezierCurveTo' | 'quadraticCurveTo' | 'arc' | 'addPath'
 > {
+  addPath(): void {}
   moveTo(): void {}
   lineTo(): void {}
   bezierCurveTo(): void {}

@@ -87,6 +87,18 @@ export function routeThroughTies(
   })
 }
 
+/** Points that bound a drawn route: segment ends and the tie-side control points. */
+export function tieRouteExtent(segments: readonly LinkTieSegment[]): Point[] {
+  return segments.flatMap(
+    ({ a, b, startControl = [0, 0], endControl = [0, 0] }): Point[] => [
+      a,
+      [a[0] + startControl[0], a[1] + startControl[1]],
+      [b[0] + endControl[0], b[1] + endControl[1]],
+      b
+    ]
+  )
+}
+
 /** The topmost tie whose strap contains the point, widened by `pad`. */
 export function findLinkTieAt(
   ties: readonly LinkTie[],

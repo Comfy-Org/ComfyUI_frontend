@@ -1,4 +1,4 @@
-# ADR-ECS-LINK-TIES-0049: Link Ties Are a Link Sidecar Store
+# ADR-LINK-TIES-0049: Link Ties Are a Link Sidecar Store
 
 Date: 2026-10-26
 
@@ -33,9 +33,11 @@ with no chain at all.
    (`GraphScope`), the same partitioning as
    [ADR-ECS-LINK-PRESENTATION-0028](ECS-LINK-PRESENTATION-0028-link-presentation-store-ownership.md).
    A tie is plain data: `{ id: LinkTieId, pos, angle, linkIds }`. Tie ids are
-   branded and unique within their owning graph. Behaviour lives in pure
-   functions (`linkTieGeometry.ts`) and a small canvas adapter
-   (`linkTieInteraction.ts`). No entity class gains a field or a method.
+   branded and unique within their owning graph. Each mutation also rebuilds an
+   index from link id to ties, so a draw pass resolves the graph's ties once
+   and an untied link costs one map lookup. Behaviour lives in pure functions
+   (`linkTieGeometry.ts`) and a small canvas adapter (`linkTieInteraction.ts`).
+   No entity class gains a field or a method.
 
 2. The wire format is `extra.linkTies: { id, pos, angle, linkIds }[]` on the
    root graph and on each subgraph definition, in both schema 0.4 and
@@ -45,28 +47,42 @@ with no chain at all.
    ignore the ties, and keep the field when they save.
 
 3. Ties follow link topology:
-   - Unregistering a link releases it from its ties; a tie left with no links
-     is deleted.
+   - Every boundary that removes link topology releases the link's sidecars
+     (presentation and tie membership) together: link unregistration, link
+     replacement, and the atomic removal in input slot realignment. A
+     registration that lost a collision removes nothing.
    - Loading drops link ids that do not exist.
    - `remapLinkReferences` remaps `extra.linkTies` with every other link
      reference, so reminted link ids keep their ties.
    - Copy serializes the ties restricted to the copied links; paste maps them
      through the paste's link id map and offsets them with the pasted items.
    - Converting to a subgraph moves the part of each tie that holds interior
-     links into the new definition, before the originals are removed.
+     links into the new definition and remaps boundary links to the parent
+     links that replace them. Unpacking maps the definition's ties through the
+     unpack link id map, offsets them with the unpacked nodes, and maps parent
+     ties on the wrapper's links to the links that replace them.
 
 4. Rendering stays in the canvas link pass. A link without reroutes is split
    into one segment per tie it passes through; tie ends use `CENTER`
-   directions and control points along the tie, as reroute segments do. The
-   output-side segment is drawn last so it keeps the link's hit path, and the
-   link's polyline is the concatenation of its segments, so marquee selection
-   and the tie stroke see the whole drawn link.
+   directions and control points along the tie, as reroute segments do.
+   Culling uses the segment ends and tie control points, so a ribbon stays
+   drawn while its tie is on screen. After the segments draw, the link gets one
+   `Path2D` and one polyline for the whole route, so pointer hit testing,
+   marquee selection, and the tie stroke see the whole drawn link. Ties are
+   neither drawn nor hit-tested while links are hidden.
 
-5. The gesture is a held key plus a drag. Holding Z arms the canvas, tracked in
-   `processKey` the way Space panning is; a primary press while armed claims
-   `CanvasPointer` callbacks before target resolution. Ties are a pointer
-   target ahead of links: dragging a tie moves it, double-clicking removes it,
-   and a stroke that crosses a tie cuts it instead of creating one.
+5. The gesture is a held key plus a drag. Holding Z arms the canvas: the canvas
+   tracks the key in `processKey` the way it tracks Space panning, and
+   `GraphCanvas.vue` forwards Z from focused Vue nodes, skipping editable
+   controls. Window blur, a visibility change, and unbinding the canvas disarm
+   it. A primary press with no other modifier claims `CanvasPointer` callbacks
+   before target resolution; in Vue nodes mode the press is forwarded to the
+   canvas before a node can start its own drag. Ties are a pointer target
+   ahead of links: a drag past the click threshold moves a tie, a
+   double-click removes it, and a stroke that crosses a tie cuts it instead of
+   creating one. Moves follow `CanvasPointer` drag classification, as
+   [ADR-CANVAS-GESTURE-0029](CANVAS-GESTURE-0029-pointer-gesture-state-machine.md)
+   requires.
 
 ## Alternatives considered
 
@@ -88,12 +104,14 @@ with no chain at all.
 
 ## Consequences
 
-- Ties survive save, load, undo, copy and paste, and subgraph conversion.
-  Undo needs no new code: change tracking snapshots the serialized graph.
+- Ties survive save, load, undo, copy and paste, and converting to and
+  unpacking a subgraph. Undo needs no new code: change tracking snapshots the
+  serialized graph.
 - Links that pass through reroutes cannot be tied.
 - A link reconnected between the same two slots gets a new id and leaves its
-  ties. Unpacking a subgraph does not carry ties out yet.
+  ties.
 - Moving the nodes at both ends of a tie does not move the tie, because ties
   are not part of the selection.
-- Every new link-recreation path must transfer ties explicitly, as it must
-  transfer presentation.
+- Rotation, colours, and a tie menu are not part of this decision.
+- Every new path that recreates or removes links must carry or release ties
+  explicitly, as it must for presentation.

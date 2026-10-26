@@ -13,6 +13,7 @@ import {
   routeThroughTies,
   strokeHits,
   tieFromStroke,
+  tieRouteExtent,
   tiesCrossedByStroke
 } from './linkTieGeometry'
 
@@ -91,6 +92,14 @@ describe('routeThroughTies', () => {
       [100, 0],
       [200, 0]
     ])
+  })
+})
+
+describe('tieRouteExtent', () => {
+  it('reaches a tie far outside the box of the link endpoints', () => {
+    const extent = tieRouteExtent(route([tie(1, [150, 900], [A])], A))
+
+    expect(Math.max(...extent.map(([, y]) => y))).toBeGreaterThanOrEqual(900)
   })
 })
 

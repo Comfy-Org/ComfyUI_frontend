@@ -185,6 +185,10 @@ import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/w
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import {
+  isLinkTieStroke,
+  trackLinkTieKey
+} from '@/lib/litegraph/src/canvas/linkTieInteraction'
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -698,8 +702,21 @@ useEventListener(
 
 function forwardPointerDownPanEvent(e: PointerEvent) {
   collapseOutsideSelectionOnPrimaryPointerDown(e)
+  if (comfyApp.canvas && isLinkTieStroke(comfyApp.canvas, e)) {
+    canvasInteractions.forwardEventToCanvas(e)
+    return
+  }
   forwardPanEvent(e, isMiddlePointerInput)
 }
+
+function forwardLinkTieKeyEvent(e: KeyboardEvent) {
+  const canvas = comfyApp.canvas
+  if (!canvas || e.target === canvas.canvas || shouldIgnoreCopyPaste(e.target))
+    return
+  trackLinkTieKey(canvas, e)
+}
+
+useEventListener(document, 'keydown', forwardLinkTieKeyEvent)
 
 function forwardPointerMovePanEvent(e: PointerEvent) {
   forwardPanEvent(e, isMiddleButtonHeld)

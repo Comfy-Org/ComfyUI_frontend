@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { reactive } from 'vue'
+import { markRaw, reactive } from 'vue'
 
 import type {
   GraphScope,
@@ -10,17 +10,33 @@ import type { LinkId } from '@/types/linkId'
 import { toLinkTieId } from '@/types/linkTie'
 import type { LinkTie, LinkTieDraft, LinkTieId } from '@/types/linkTie'
 
-const NO_TIES: readonly LinkTie[] = []
+interface OwnedTies {
+  readonly ties: readonly LinkTie[]
+  readonly byLink: ReadonlyMap<LinkId, readonly LinkTie[]>
+}
 
-/** Each tie cut down to the links that pass `keep`; ties left empty are dropped. */
-export function restrictLinkTies(
+const NO_TIES: OwnedTies = { ties: [], byLink: new Map() }
+
+function indexTies(ties: readonly LinkTie[]): OwnedTies {
+  const byLink = new Map<LinkId, LinkTie[]>()
+  for (const tie of ties) {
+    for (const linkId of tie.linkIds) {
+      const onLink = byLink.get(linkId)
+      if (onLink) onLink.push(tie)
+      else byLink.set(linkId, [tie])
+    }
+  }
+  return markRaw({ ties, byLink })
+}
+
+/** Each tie with its links replaced by `relink(linkId)`; ties left without links are dropped. */
+export function relinkLinkTies(
   ties: readonly LinkTie[],
-  keep: (linkId: LinkId) => boolean
+  relink: (linkId: LinkId) => readonly LinkId[]
 ): LinkTie[] {
   return ties.flatMap((tie) => {
-    const linkIds = tie.linkIds.filter(keep)
-    if (!linkIds.length) return []
-    return [linkIds.length === tie.linkIds.length ? tie : { ...tie, linkIds }]
+    const linkIds = [...new Set(tie.linkIds.flatMap(relink))]
+    return linkIds.length ? [{ ...tie, linkIds }] : []
   })
 }
 
@@ -29,19 +45,29 @@ export function restrictLinkTies(
  * source of `extra.linkTies` in the wire format.
  */
 export const useLinkTieStore = defineStore('linkTie', () => {
-  const roots = reactive(
-    new Map<RootGraphId, Map<OwningGraphId, readonly LinkTie[]>>()
-  )
+  const roots = reactive(new Map<RootGraphId, Map<OwningGraphId, OwnedTies>>())
+
+  function owned(scope: GraphScope): OwnedTies {
+    return roots.get(scope.rootGraphId)?.get(scope.owningGraphId) ?? NO_TIES
+  }
 
   function getTies(scope: GraphScope): readonly LinkTie[] {
-    return roots.get(scope.rootGraphId)?.get(scope.owningGraphId) ?? NO_TIES
+    return owned(scope).ties
+  }
+
+  /** The graph's ties indexed by the links they hold. */
+  function getTiesByLink(
+    scope: GraphScope
+  ): ReadonlyMap<LinkId, readonly LinkTie[]> {
+    return owned(scope).byLink
   }
 
   function setTies(scope: GraphScope, ties: readonly LinkTie[]): void {
     const owners = roots.get(scope.rootGraphId)
-    if (ties.length && owners) owners.set(scope.owningGraphId, ties)
+    const entry = indexTies(ties)
+    if (ties.length && owners) owners.set(scope.owningGraphId, entry)
     else if (ties.length)
-      roots.set(scope.rootGraphId, new Map([[scope.owningGraphId, ties]]))
+      roots.set(scope.rootGraphId, new Map([[scope.owningGraphId, entry]]))
     else owners?.delete(scope.owningGraphId)
     if (owners?.size === 0) roots.delete(scope.rootGraphId)
   }
@@ -72,20 +98,15 @@ export const useLinkTieStore = defineStore('linkTie', () => {
     )
   }
 
-  /** Takes the links out of their ties and returns the part of each tie that held them. */
-  function releaseLinks(
-    scope: GraphScope,
-    linkIds: Iterable<LinkId>
-  ): LinkTie[] {
-    const released = new Set(linkIds)
-    const ties = getTies(scope)
-    const taken = restrictLinkTies(ties, (id) => released.has(id))
-    if (taken.length)
-      setTies(
-        scope,
-        restrictLinkTies(ties, (id) => !released.has(id))
-      )
-    return taken
+  /** Takes the links out of their ties, dropping ties left empty. */
+  function releaseLinks(scope: GraphScope, linkIds: Iterable<LinkId>): void {
+    const { byLink, ties } = owned(scope)
+    const released = new Set([...linkIds].filter((id) => byLink.has(id)))
+    if (!released.size) return
+    setTies(
+      scope,
+      relinkLinkTies(ties, (id) => (released.has(id) ? [] : [id]))
+    )
   }
 
   function clearGraph(rootGraphId: RootGraphId): void {
@@ -93,11 +114,12 @@ export const useLinkTieStore = defineStore('linkTie', () => {
   }
 
   function clearOwner(scope: GraphScope): void {
-    setTies(scope, NO_TIES)
+    setTies(scope, [])
   }
 
   return {
     getTies,
+    getTiesByLink,
     setTies,
     addTie,
     moveTie,

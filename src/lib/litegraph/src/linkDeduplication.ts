@@ -21,6 +21,7 @@ import type {
   SerialisableGraph,
   SerialisableLLink
 } from './types/serialisation'
+import { releaseLinkSidecars } from './linkSidecars'
 import { NodeSlotType } from './types/globalEnums'
 
 type ConfiguredGraph = (ISerialisedGraph | SerialisableGraph) &
@@ -350,6 +351,10 @@ export function realignInputLinkSlots(
         continue
       }
       successfulPasses++
+      releaseLinkSidecars(
+        graphScopeOf(graph),
+        removals.map((link) => link.id)
+      )
 
       for (const { connection, link } of removedConnections) {
         link.disconnect(graph)
