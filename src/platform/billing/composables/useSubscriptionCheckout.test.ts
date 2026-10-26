@@ -1146,6 +1146,18 @@ describe('useSubscriptionCheckout', () => {
       }
     )
 
+    it('re-reads capabilities when the user returns from the recovery portal', async () => {
+      await submitRejectedPreview('OUTSTANDING_PAYMENT_REQUIRED')
+      expect(useBillingCapabilities().refresh).not.toHaveBeenCalled()
+
+      window.dispatchEvent(new Event('focus'))
+
+      await vi.waitFor(() =>
+        expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+      )
+      expect(mockFetchStatus).toHaveBeenCalledOnce()
+    })
+
     it('warns when the billing portal popup is blocked', async () => {
       mockOpen.mockReturnValueOnce(null)
       const checkout = await submitRejectedPreview(
@@ -1164,6 +1176,125 @@ describe('useSubscriptionCheckout', () => {
           title: 'Warning'
         })
       ])
+    })
+
+    describe('when the host renders the past-due notice', () => {
+      function mountWithNotice(rendersNotice = true) {
+        let checkout!: ReturnType<typeof useSubscriptionCheckout>
+        render(
+          {
+            setup() {
+              checkout = useSubscriptionCheckout(emit, undefined, {
+                rendersPastDueNotice: () => rendersNotice
+              })
+              return () => null
+            }
+          },
+          { global: { plugins: [i18n] } }
+        )
+        return checkout
+      }
+
+      async function submitRejectedPreviewWithNotice(code: string) {
+        const checkout = mountWithNotice()
+        mockPreviewSubscribe.mockRejectedValueOnce(errorWithCode(code))
+        await checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+        return checkout
+      }
+
+      async function confirmRejectedSubscribe() {
+        const checkout = mountWithNotice()
+        await checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+        expect(checkout.checkoutStep.value).toBe('preview')
+        mockSubscribe.mockRejectedValueOnce(
+          errorWithCode('OUTSTANDING_PAYMENT_REQUIRED')
+        )
+        await checkout.handleConfirmTransition()
+        return checkout
+      }
+
+      it('keeps the error toast for a refusal on the confirm step', async () => {
+        mockGetPaymentPortalUrl.mockRejectedValueOnce(new Error('portal down'))
+        const checkout = await confirmRejectedSubscribe()
+
+        expect(checkout.outstandingPaymentRefusals.value).toBe(0)
+        expect(useToast().error).toHaveBeenCalled()
+      })
+
+      it('keeps the popup-blocked toast for a refusal on the confirm step', async () => {
+        mockOpen.mockReturnValueOnce(null)
+        const checkout = await confirmRejectedSubscribe()
+
+        expect(checkout.outstandingPaymentRefusals.value).toBe(0)
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({ kind: 'warning' })
+        ])
+      })
+
+      it('counts a typed refusal and skips the popup-blocked toast', async () => {
+        mockOpen.mockReturnValueOnce(null)
+        const checkout = await submitRejectedPreviewWithNotice(
+          'OUTSTANDING_PAYMENT_REQUIRED'
+        )
+
+        expect(checkout.outstandingPaymentRefusals.value).toBe(1)
+        expect(useToast().toasts).toEqual([])
+      })
+
+      it('counts a typed refusal and skips the error toast when the portal fails', async () => {
+        mockGetPaymentPortalUrl.mockRejectedValueOnce(new Error('portal down'))
+        const checkout = await submitRejectedPreviewWithNotice(
+          'OUTSTANDING_PAYMENT_REQUIRED'
+        )
+
+        expect(checkout.outstandingPaymentRefusals.value).toBe(1)
+        expect(useToast().error).not.toHaveBeenCalled()
+      })
+
+      it('keeps the toast when the host reports no owner action', async () => {
+        const checkout = mountWithNotice(false)
+        mockOpen.mockReturnValueOnce(null)
+        mockPreviewSubscribe.mockRejectedValueOnce(
+          errorWithCode('OUTSTANDING_PAYMENT_REQUIRED')
+        )
+        await checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+
+        expect(checkout.outstandingPaymentRefusals.value).toBe(1)
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({ kind: 'warning' })
+        ])
+      })
+
+      it('keeps the existing toast for other recovery codes', async () => {
+        mockOpen.mockReturnValueOnce(null)
+        const checkout = await submitRejectedPreviewWithNotice(
+          'SUBSCRIPTION_PAYMENT_REQUIRED'
+        )
+
+        expect(checkout.outstandingPaymentRefusals.value).toBe(0)
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({ kind: 'warning' })
+        ])
+      })
+
+      it('still toasts on hosts without the notice', async () => {
+        mockGetPaymentPortalUrl.mockRejectedValueOnce(new Error('portal down'))
+        const checkout = await submitRejectedPreview(
+          'OUTSTANDING_PAYMENT_REQUIRED'
+        )
+
+        expect(checkout.outstandingPaymentRefusals.value).toBe(1)
+        expect(useToast().error).toHaveBeenCalled()
+      })
     })
 
     it('opens the portal and arms the focus refresh when the retry action is clicked', async () => {

@@ -3351,6 +3351,8 @@
     "teamHeaderLearnMore": "Learn more",
     "personalHeader": "Personal plans are for individual use only. {action}",
     "personalHeaderAction": "To add teammates, subscribe to the Team plan.",
+    "pastDueNoticeOwner": "You have an outstanding payment — update your payment method to change plans.",
+    "pastDueNoticeMember": "This workspace has an outstanding payment — ask your workspace owner to update the payment method.",
     "scheduledChangeNotice": "Your plan changes to {plan} on {date}.",
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
