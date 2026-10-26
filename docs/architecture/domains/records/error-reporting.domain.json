@@ -126,7 +126,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": ["ingest-api"],
-  "allowedConsumers": ["agent"],
+  "allowedConsumers": ["agent", "workflow-persistence"],
   "characterizationScenarios": [
     {
       "name": "reportError routes each failure once to the sinks enabled for the distribution and host",

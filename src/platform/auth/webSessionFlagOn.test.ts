@@ -86,7 +86,6 @@ import { createDisposablePinia } from '@/testing/pinia'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
-import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import {
@@ -1335,10 +1334,10 @@ describe('live updates and media on the shared web session', () => {
     const workspaceAuth = useWorkspaceAuthStore()
 
     await workspaceAuth.switchWorkspace('ws-team')
-    expect(getWorkspaceId()).toBe('ws-team')
+    expect(useTeamWorkspaceStore().activeWorkspaceId).toBe('ws-team')
 
     await workspaceAuth.switchWorkspace('ws-personal')
-    expect(getWorkspaceId()).toBe('personal')
+    expect(useTeamWorkspaceStore().activeWorkspaceId).toBe('personal')
   })
 
   it('opens the socket on the cookie and reconnects it into each workspace without minting a token', async () => {

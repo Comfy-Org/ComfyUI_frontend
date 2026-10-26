@@ -800,7 +800,8 @@
     "error-reporting",
     "extension-runtime",
     "workbench-shell",
-    "workflow-management"
+    "workflow-management",
+    "workflow-persistence"
   ],
   "allowedConsumers": [],
   "characterizationScenarios": [

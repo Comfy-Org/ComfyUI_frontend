@@ -222,6 +222,14 @@ export const useAuthStore = defineStore('auth', () => {
   const sessionOnlyRequests = (): WebSessionRequests | undefined =>
     sessionOnlyUser.value ? webSessionRequests() : undefined
 
+  function currentUserIdentity(): string | null {
+    return isDesktopHostSignedIn()
+      ? (desktopHostUser.value?.id ?? null)
+      : (sessionUser.value?.id ??
+          currentUser.value?.uid ??
+          useApiKeyAuthStore().getApiKey())
+  }
+
   function getShareAuthMetadata() {
     const shareId = getPreservedQueryParam(
       PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
@@ -249,8 +257,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
     if (identityChanged) {
       clearOnboardingReplay(previousUserId)
-      useTeamWorkspaceStore().resetForIdentityChange()
       invalidateRemoteConfig()
+      if (!isCloud) useTeamWorkspaceStore().resetForIdentityChange()
     }
 
     // A direct account switch (A -> B, or sign-out) must re-handshake the
@@ -274,7 +282,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   firebaseIdentity.onUserChanged((user) => {
-    resetAccountState(currentUser.value?.uid ?? null, user?.uid ?? null)
+    resetAccountState(
+      currentUserIdentity(),
+      user?.uid ?? sessionUser.value?.id ?? useApiKeyAuthStore().getApiKey()
+    )
 
     currentUser.value = user
     isInitialized.value = true
@@ -473,16 +484,8 @@ export const useAuthStore = defineStore('auth', () => {
     Record<string, string>
   > | null> => (await webSessionResourceHeader()) ?? (await getUserAuthHeader())
 
-  const currentUserIdentity = (): string | null =>
-    isDesktopHostSignedIn()
-      ? (desktopHostUser.value?.id ?? null)
-      : (sessionUser.value?.id ??
-        currentUser.value?.uid ??
-        useApiKeyAuthStore().getApiKey())
-
   const currentUserCredentialIdentity = (): string | null =>
     currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
-
   /**
    * Response data from a user-scoped endpoint belongs to the identity that
    * asked for it. A 200 bypasses the recovery guards in
@@ -1014,7 +1017,7 @@ export const useAuthStore = defineStore('auth', () => {
     return currentUser.value?.uid === user?.uid ? token : undefined
   }
 
-  const logout = async (): Promise<void> =>
+  const logout = async (expectedIdentity?: string | null): Promise<void> =>
     executeAuthAction(async () => {
       await revokePartnerNodeLogin()
       const signsOutDesktopHost = isDesktopHostSignedIn()
@@ -1027,6 +1030,11 @@ export const useAuthStore = defineStore('auth', () => {
         signsOutDesktopHost ||
         (flags.ssoEnabled && flags.unifiedWebSessionEnabled)
       await useCloudWebSessionStore().signOut()
+      if (
+        expectedIdentity !== undefined &&
+        currentUserIdentity() !== expectedIdentity
+      )
+        return
       if (currentUser.value) await firebaseIdentity.signOut()
       const apiKeyStore = useApiKeyAuthStore()
       if (dropsStoredApiKey && apiKeyStore.getApiKey() !== null) {

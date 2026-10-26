@@ -4158,6 +4158,7 @@
           "workbench-shell/domain",
           "workflow-management/domain",
           "design-system/domain/outer-1",
+          "workflow-persistence/domain/outer-1",
           "unclassified"
         ]
       },
@@ -4187,10 +4188,13 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "workflow-persistence/infrastructure",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -4220,10 +4224,13 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "workflow-persistence/infrastructure",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -4258,7 +4265,9 @@
           "error-reporting/application/outer-1",
           "extension-runtime/presentation/outer-1",
           "workflow-management/presentation/outer-1",
+          "workflow-persistence/domain/outer-1",
           "workbench-shell/presentation/outer-2",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -4300,6 +4309,8 @@
           "workflow-management/infrastructure",
           "workflow-management/presentation",
           "workflow-management/integration",
+          "workflow-persistence/infrastructure",
+          "workflow-persistence/integration",
           "agent/integration/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
@@ -4309,7 +4320,9 @@
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
           "workflow-management/presentation/outer-1",
+          "workflow-persistence/domain/outer-1",
           "workbench-shell/presentation/outer-2",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -4327,7 +4340,12 @@
       },
       {
         "from": "app-host/domain",
-        "allow": ["app-host/domain", "app-host/domain/outer-1", "unclassified"]
+        "allow": [
+          "app-host/domain",
+          "app-host/domain/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "app-host/application",
@@ -4335,7 +4353,10 @@
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
+          "workflow-persistence/infrastructure",
           "app-host/domain/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -4345,7 +4366,10 @@
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
+          "workflow-persistence/infrastructure",
           "app-host/domain/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -4358,6 +4382,8 @@
           "app-host/presentation",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -4371,8 +4397,12 @@
           "app-host/infrastructure",
           "app-host/presentation",
           "app-host/integration",
+          "workflow-persistence/infrastructure",
+          "workflow-persistence/integration",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -4458,8 +4488,11 @@
       {
         "from": "authentication/domain",
         "allow": [
-          "ingest-api/domain/public",
           "authentication/domain",
+          "cloud/domain",
+          "cloud/domain/outer-1",
+          "ingest-api/domain/public",
+          "workflow-persistence/domain/outer-1",
           "unclassified"
         ]
       },
@@ -4471,7 +4504,17 @@
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
+          "cloud/domain",
+          "cloud/application",
+          "cloud/infrastructure",
+          "workflow-persistence/infrastructure",
           "authentication/infrastructure/outer-1",
+          "cloud/domain/outer-1",
+          "cloud/application/outer-1",
+          "cloud/infrastructure/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
+          "cloud/application/outer-3",
           "unclassified"
         ]
       },
@@ -4483,7 +4526,17 @@
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
+          "cloud/domain",
+          "cloud/application",
+          "cloud/infrastructure",
+          "workflow-persistence/infrastructure",
           "authentication/infrastructure/outer-1",
+          "cloud/domain/outer-1",
+          "cloud/application/outer-1",
+          "cloud/infrastructure/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
+          "cloud/application/outer-3",
           "unclassified"
         ]
       },
@@ -4495,6 +4548,15 @@
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
+          "cloud/domain",
+          "cloud/application",
+          "cloud/presentation",
+          "cloud/domain/outer-1",
+          "cloud/application/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "cloud/presentation/outer-2",
+          "workflow-persistence/application/outer-2",
+          "cloud/application/outer-3",
           "unclassified"
         ]
       },
@@ -4510,7 +4572,21 @@
           "authentication/infrastructure",
           "authentication/presentation",
           "authentication/integration",
+          "cloud/domain",
+          "cloud/application",
+          "cloud/infrastructure",
+          "cloud/presentation",
+          "cloud/integration",
+          "workflow-persistence/infrastructure",
+          "workflow-persistence/integration",
           "authentication/infrastructure/outer-1",
+          "cloud/domain/outer-1",
+          "cloud/application/outer-1",
+          "cloud/infrastructure/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "cloud/presentation/outer-2",
+          "workflow-persistence/application/outer-2",
+          "cloud/application/outer-3",
           "unclassified"
         ]
       },
@@ -6854,7 +6930,22 @@
       {
         "from": "workflow-persistence/infrastructure",
         "allow": [
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "workflow-persistence/infrastructure",
+          "workspace/domain",
+          "workspace/application",
+          "workspace/infrastructure",
+          "app-host/domain/outer-1",
+          "authentication/infrastructure/outer-1",
+          "error-reporting/application/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "unclassified"
@@ -6863,8 +6954,30 @@
       {
         "from": "workflow-persistence/integration",
         "allow": [
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "app-host/presentation",
+          "app-host/integration",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "authentication/presentation",
+          "authentication/integration",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "workflow-persistence/infrastructure",
           "workflow-persistence/integration",
+          "workspace/domain",
+          "workspace/application",
+          "workspace/infrastructure",
+          "workspace/presentation",
+          "workspace/integration",
+          "app-host/domain/outer-1",
+          "app-host/presentation/outer-1",
+          "authentication/infrastructure/outer-1",
+          "error-reporting/application/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "unclassified"
@@ -6936,6 +7049,7 @@
           "ingest-api/domain/public",
           "server-facts/domain/public",
           "workspace/domain",
+          "workflow-persistence/domain/outer-1",
           "unclassified"
         ]
       },
@@ -6945,9 +7059,12 @@
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
           "server-facts/domain/public",
+          "workflow-persistence/infrastructure",
           "workspace/domain",
           "workspace/application",
           "workspace/infrastructure",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -6957,9 +7074,12 @@
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
           "server-facts/domain/public",
+          "workflow-persistence/infrastructure",
           "workspace/domain",
           "workspace/application",
           "workspace/infrastructure",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -6971,6 +7091,8 @@
           "workspace/domain",
           "workspace/application",
           "workspace/presentation",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -6980,11 +7102,15 @@
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
           "server-facts/domain/public",
+          "workflow-persistence/infrastructure",
+          "workflow-persistence/integration",
           "workspace/domain",
           "workspace/application",
           "workspace/infrastructure",
           "workspace/presentation",
           "workspace/integration",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -7026,6 +7152,8 @@
           "workflow-management/infrastructure",
           "workflow-management/presentation",
           "workflow-management/integration",
+          "workflow-persistence/infrastructure",
+          "workflow-persistence/integration",
           "agent/integration/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
@@ -7035,7 +7163,9 @@
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
           "workflow-management/presentation/outer-1",
+          "workflow-persistence/domain/outer-1",
           "workbench-shell/presentation/outer-2",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -7050,7 +7180,12 @@
       },
       {
         "from": "app-host/domain/outer-1",
-        "allow": ["app-host/domain", "app-host/domain/outer-1", "unclassified"]
+        "allow": [
+          "app-host/domain",
+          "app-host/domain/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "app-host/presentation/outer-1",
@@ -7061,6 +7196,8 @@
           "app-host/presentation",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
           "unclassified"
         ]
       },
@@ -7110,7 +7247,17 @@
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
+          "cloud/domain",
+          "cloud/application",
+          "cloud/infrastructure",
+          "workflow-persistence/infrastructure",
           "authentication/infrastructure/outer-1",
+          "cloud/domain/outer-1",
+          "cloud/application/outer-1",
+          "cloud/infrastructure/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "workflow-persistence/application/outer-2",
+          "cloud/application/outer-3",
           "unclassified"
         ]
       },
@@ -7803,7 +7950,15 @@
       },
       {
         "from": "workflow-persistence/domain/outer-1",
-        "allow": ["workflow-persistence/domain/outer-1", "unclassified"]
+        "allow": [
+          "app-host/domain",
+          "authentication/domain",
+          "error-reporting/domain",
+          "workspace/domain",
+          "app-host/domain/outer-1",
+          "workflow-persistence/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "workflow-sharing/application/outer-1",
@@ -7938,7 +8093,22 @@
       {
         "from": "workflow-persistence/application/outer-2",
         "allow": [
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "workflow-persistence/infrastructure",
+          "workspace/domain",
+          "workspace/application",
+          "workspace/infrastructure",
+          "app-host/domain/outer-1",
+          "authentication/infrastructure/outer-1",
+          "error-reporting/application/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "unclassified"

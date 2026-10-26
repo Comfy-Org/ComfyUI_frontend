@@ -59,6 +59,7 @@ export class AgentPanel {
   public readonly workflowPicker: Locator
   public readonly workflowSwitch: Locator
   public readonly workSummary: Locator
+  public readonly userMessages: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -139,6 +140,7 @@ export class AgentPanel {
       .getByTestId('suggested-prompts')
       .getByRole('button', { includeHidden: true })
     this.userMessageBubbles = this.root.getByTestId('user-message-bubble')
+    this.userMessages = this.userMessageBubbles
     this.workflowPicker = this.root.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })

@@ -46,6 +46,7 @@ import {
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -1101,6 +1102,28 @@ describe('useAuthStore', () => {
       await expect(store.logout()).rejects.toThrow('Network error')
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
+    })
+
+    it('does not sign out a replacement identity after web-session logout', async () => {
+      let releaseWebSessionSignOut!: () => void
+      const webSessionSignOut = new Promise<void>((resolve) => {
+        releaseWebSessionSignOut = resolve
+      })
+      const cloudWebSessionStore = useCloudWebSessionStore()
+      vi.spyOn(cloudWebSessionStore, 'signOut').mockReturnValueOnce(
+        webSessionSignOut
+      )
+      vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+
+      const logout = store.logout('test-user-id')
+      await vi.waitFor(() =>
+        expect(cloudWebSessionStore.signOut).toHaveBeenCalledOnce()
+      )
+      authStateCallback({ ...mockUser, uid: 'replacement-user-id' })
+      releaseWebSessionSignOut()
+      await logout
+
+      expect(firebaseAuth.signOut).not.toHaveBeenCalled()
     })
   })
 
@@ -2379,6 +2402,26 @@ describe('useAuthStore', () => {
       expect(mockResetSocket).toHaveBeenCalledTimes(1)
     })
 
+    it('does not invalidate workspace state for an unchanged API-key session', () => {
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue('api-key-a')
+      authStateCallback(null)
+      const clearWorkspaceContext = vi.spyOn(
+        useWorkspaceAuthStore(),
+        'clearWorkspaceContext'
+      )
+      const resetWorkspace = vi.spyOn(
+        useTeamWorkspaceStore(),
+        'resetForIdentityChange'
+      )
+      clearWorkspaceContext.mockClear()
+      resetWorkspace.mockClear()
+
+      authStateCallback(null)
+
+      expect(clearWorkspaceContext).not.toHaveBeenCalled()
+      expect(resetWorkspace).not.toHaveBeenCalled()
+    })
+
     it('clears an onboarding replay on a direct account switch', () => {
       requestOnboardingReplay(mockUser.uid)
 
@@ -2853,7 +2896,11 @@ describe('store construction order', () => {
   it('building the workspace store first subscribes its port and mints once Firebase delivers on its microtask', async () => {
     const port = replayIdentityPort(() => mockUser)
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
-      (_, callback) => port.register(callback as IdentityObserver)
+      (_, callback) => {
+        if (typeof callback !== 'function')
+          throw new TypeError('Expected a function identity observer')
+        return port.register(callback)
+      }
     )
 
     const workspaceAuth = useWorkspaceAuthStore()
@@ -2865,5 +2912,21 @@ describe('store construction order', () => {
     ).toBe(2)
     await expect(workspaceAuth.mintAtLogin()).resolves.toBe(true)
     expect(workspaceAuth.getUnifiedToken()).toBe('construction-token')
+  })
+
+  it('observes a user replayed synchronously during store construction', () => {
+    const port = replayIdentityPort(() => mockUser, 'sync')
+    vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
+      (_, callback) => {
+        if (typeof callback !== 'function')
+          throw new TypeError('Expected a function identity observer')
+        return port.register(callback)
+      }
+    )
+
+    const store = useAuthStore()
+
+    expect(store.currentUser).toEqual(mockUser)
+    expect(store.isInitialized).toBe(true)
   })
 })

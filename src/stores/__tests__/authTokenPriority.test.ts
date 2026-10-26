@@ -394,7 +394,7 @@ describe('auth token priority chain', () => {
       ).toHaveBeenCalledOnce()
       expect(
         useTeamWorkspaceStore().resetForIdentityChange
-      ).toHaveBeenCalledOnce()
+      ).not.toHaveBeenCalled()
       expect(useWorkspaceAuthStore().mintAtLogin).toHaveBeenCalledOnce()
       expect(
         vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext).mock

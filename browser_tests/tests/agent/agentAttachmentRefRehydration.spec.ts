@@ -8,6 +8,7 @@ import { zAgentTurnAccepted } from '@comfyorg/ingest-types/zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import {
@@ -23,7 +24,9 @@ import {
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
-const THREAD_KEY = StorageKeys.agentThread('personal')
+const THREAD_KEY = StorageKeys.agentThread(
+  unsafeStorageScope('test-user-e2e:ws-personal')
+)
 
 /** PM-1643 / PM-717 item 3: persisted attachment presentation after reload. */
 test.describe.configure({ timeout: 120_000 })

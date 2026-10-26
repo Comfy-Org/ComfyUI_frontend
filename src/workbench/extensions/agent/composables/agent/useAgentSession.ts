@@ -17,11 +17,12 @@ import type {
   AgentThreadStartSource,
   AgentWorkflowBindSource
 } from '@/platform/telemetry/types'
-import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
+  clearLegacyAgentStorage,
+  getStorageIdentity,
+  getStorageScope
+} from '@/platform/workflow/persistence/base/storageIO'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
@@ -403,8 +404,16 @@ const turnStartedAt = new Map<TurnId, number>()
  * reach the continuation that acks. One owner: armed while a send is in
  * flight, consumed exactly once at ack.
  */
-let sendInFlight = false
+interface SendInFlight {
+  owner: string | null
+}
+
+let sendInFlight: SendInFlight | null = null
 let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
+
+function hasCurrentOwnerSend(): boolean {
+  return sendInFlight?.owner === getStorageIdentity()
+}
 
 function consumeStopPendingAck() {
   const pending = stopPendingAck
@@ -456,6 +465,14 @@ function disownsWorkflow(error: unknown): boolean {
   )
 }
 
+function isCurrentStorageContinuation(
+  generation: number,
+  currentGeneration: number,
+  owner: string | null
+): boolean {
+  return generation === currentGeneration && owner === getStorageIdentity()
+}
+
 function parseTurnInProgress(error: unknown) {
   if (!(error instanceof AgentApiError) || error.status !== 409)
     return undefined
@@ -474,8 +491,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
     refreshCredentialDuringTurns = false,
     workflow
   } = deps
-  const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
   clearLegacyAgentStorage()
+
+  function readStoredThread(): string | null {
+    const scope = getStorageScope()
+    return scope ? localStorage.getItem(StorageKeys.agentThread(scope)) : null
+  }
+
+  function writeStoredThread(threadId: string): void {
+    const scope = getStorageScope()
+    if (scope) localStorage.setItem(StorageKeys.agentThread(scope), threadId)
+  }
+
+  function removeStoredThread(): void {
+    const scope = getStorageScope()
+    if (scope) localStorage.removeItem(StorageKeys.agentThread(scope))
+  }
 
   const conversationStore = useAgentConversationStore()
   const sendGateStore = useAgentSendGateStore()
@@ -603,13 +634,52 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let unsubscribeStatus: (() => void) | null = null
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
-  const recoveringTurns = new Map<string, AbortController>()
+  interface TurnRecovery {
+    controller: AbortController
+    ownerGeneration: number
+  }
+
+  interface TurnRecoveryContext {
+    sessionGeneration: number
+    ownerGeneration: number
+  }
+
+  const recoveringTurns = new Map<string, TurnRecovery>()
+  let storageOwnerGeneration = 0
+  let observedStorageOwner = getStorageIdentity()
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
   }
 
   const malformedStreamReports = new Map<TurnId | null, boolean>()
+
+  function transitionStorageOwner(currentOwner = getStorageIdentity()): void {
+    if (currentOwner === observedStorageOwner) return
+    observedStorageOwner = currentOwner
+    storageOwnerGeneration++
+    for (const recovery of recoveringTurns.values()) recovery.controller.abort()
+    recoveringTurns.clear()
+    loadGeneration++
+    readyThreadId.value = null
+    promptEditState.value = { phase: 'idle' }
+    conversationStore.resetForStorageOwnerTransition()
+    boundWorkflowId.value = null
+    rememberedWorkflowId = null
+    notices.value = []
+    pendingThreadSource.value = 'first_open'
+    reportedWorkflowBind = null
+    pendingWorkflowBind = null
+    turnStartedAt.clear()
+    sendInFlight = null
+    stopPendingAck = null
+    sending.value = false
+    connection = 'initial'
+    malformedStreamReports.clear()
+    snapshotTurns.clear()
+  }
+
+  let stopStorageOwnerWatcher: (() => void) | null = null
 
   function trackMalformedStreamEvent(
     cause: ZodError,
@@ -639,10 +709,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflow?.initialize?.(hasThread)
     // The binding only outlives a remount together with its thread: a page
     // with no surviving thread has no resumed turn the binding could serve.
-    if (
-      conversationStore.threadId === null &&
-      localStorage.getItem(threadStorageKey) === null
-    ) {
+    if (conversationStore.threadId === null && readStoredThread() === null) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
     }
@@ -650,14 +717,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function start({ restore = true }: { restore?: boolean } = {}): void {
     stopped = false
+    transitionStorageOwner()
+    stopStorageOwnerWatcher ??= watch(
+      getStorageIdentity,
+      transitionStorageOwner,
+      { flush: 'sync' }
+    )
     readyThreadId.value = null
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
     const surviving = conversationStore.threadId
     const stored =
-      conversationStore.messages.length === 0
-        ? localStorage.getItem(threadStorageKey)
-        : null
+      conversationStore.messages.length === 0 ? readStoredThread() : null
     const initialThreadId = surviving ?? stored
     initializeWorkflowContext(initialThreadId !== null)
     unsubscribe = events.subscribe(onRaw)
@@ -949,8 +1020,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (error instanceof AgentApiError && error.status === 404) {
       if (conversationStore.threadId === threadId)
         conversationStore.setThreadId(null)
-      if (localStorage.getItem(threadStorageKey) === threadId)
-        localStorage.removeItem(threadStorageKey)
+      if (readStoredThread() === threadId) removeStoredThread()
       return false
     }
     const diagnostics = describeAgentRequestFailure(error)
@@ -980,8 +1050,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
-    for (const recovery of recoveringTurns.values()) recovery.abort()
+    for (const recovery of recoveringTurns.values()) recovery.controller.abort()
     recoveringTurns.clear()
+    stopStorageOwnerWatcher?.()
+    stopStorageOwnerWatcher = null
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
@@ -1223,7 +1295,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       'agent_thread_activated_callback_failed'
     )
     runAcceptedTurnSideEffect(
-      () => localStorage.setItem(threadStorageKey, ack.thread_id),
+      () => writeStoredThread(ack.thread_id),
       'agent_thread_persistence_failed'
     )
     if (adoptWorkflow)
@@ -1307,9 +1379,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
    */
   function releaseDisownedWorkflow(
     sent: WorkflowTurnContext | undefined,
-    error: unknown
+    error: unknown,
+    storageOwnerAtSend: string | null
   ): void {
-    if (sent?.id === undefined || !disownsWorkflow(error)) return
+    if (
+      sent?.id === undefined ||
+      !disownsWorkflow(error) ||
+      storageOwnerAtSend !== getStorageIdentity()
+    )
+      return
     bindingStore.unbindWorkflow(sent.id)
     workflow?.disowned?.(sent.id)
     if (boundWorkflowId.value === sent.id) boundWorkflowId.value = null
@@ -1345,68 +1423,116 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return adoptedActiveTurn
   }
 
-  async function performSend(
-    text: string,
-    attachments?: SentAttachment[],
-    tags?: SentTag[],
-    workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string,
+  interface SendRequest {
+    text: string
+    attachments?: SentAttachment[]
+    tags?: SentTag[]
+    workflowReferences?: WorkflowReference[]
+    selectionWorkflowId?: () => string | undefined
+    clientMessageId?: string
     onAccepted?: () => void
-  ): Promise<boolean> {
+  }
+
+  interface SendAttempt {
+    request: SendRequest
+    generation: number
+    skillScopeAtSend: string
+    storageOwnerAtSend: string | null
+    threadAtSend: string
+    originContext: WorkflowTurnContext | undefined
+    sentContext: WorkflowTurnContext | undefined
+    accepted: boolean
+    isCurrent: () => boolean
+  }
+
+  function createSendAttempt(request: SendRequest): SendAttempt {
     const generation = loadGeneration
-    const skillScopeAtSend = skillPacks.scope
-    const threadAtSend = conversationStore.threadId ?? 'new'
-    const originContext = workflow?.current()
+    const storageOwnerAtSend = getStorageIdentity()
+    return {
+      request,
+      generation,
+      skillScopeAtSend: skillPacks.scope,
+      storageOwnerAtSend,
+      threadAtSend: conversationStore.threadId ?? 'new',
+      originContext: workflow?.current(),
+      sentContext: undefined,
+      accepted: false,
+      isCurrent: () =>
+        isCurrentStorageContinuation(
+          generation,
+          loadGeneration,
+          storageOwnerAtSend
+        )
+    }
+  }
+
+  async function postSendAttempt(attempt: SendAttempt): Promise<boolean> {
+    const { request } = attempt
     const origin: TurnOrigin =
-      originContext === undefined ? null : { tabPath: originContext.tabPath }
-    let sentContext: WorkflowTurnContext | undefined
-    let accepted = false
+      attempt.originContext === undefined
+        ? null
+        : { tabPath: attempt.originContext.tabPath }
+    await prepareWorkflow()
+    if (!attempt.isCurrent()) return false
+    const workflowContext = workflow?.current(origin)
+    if (workflowTargetChanged(attempt.originContext, workflowContext)) {
+      recordUnavailableTarget(request.text)
+      return false
+    }
+    attempt.sentContext = workflowContext
+    const ack = await postTurn(
+      attempt.threadAtSend,
+      request.text,
+      origin,
+      workflowContext,
+      request.attachments,
+      request.tags,
+      request.workflowReferences,
+      request.selectionWorkflowId,
+      request.clientMessageId
+    )
+    attempt.accepted = true
+    if (
+      !observeAcceptedTurn(attempt.generation, request.onAccepted) ||
+      !attempt.isCurrent()
+    )
+      return false
+    acceptTurn(
+      ack,
+      request.text,
+      workflowContext,
+      request.attachments,
+      request.tags,
+      request.workflowReferences,
+      attempt.skillScopeAtSend
+    )
+    return true
+  }
+
+  async function performSend(request: SendRequest): Promise<boolean> {
+    const attempt = createSendAttempt(request)
     try {
-      await prepareWorkflow()
-      if (generation !== loadGeneration) return false
-      const wfContext = workflow?.current(origin)
-      if (workflowTargetChanged(originContext, wfContext)) {
-        recordUnavailableTarget(text)
-        return false
-      }
-      sentContext = wfContext
-      const ack = await postTurn(
-        threadAtSend,
-        text,
-        origin,
-        wfContext,
-        attachments,
-        tags,
-        workflowReferences,
-        selectionWorkflowId,
-        clientMessageId
-      )
-      accepted = true
-      if (!observeAcceptedTurn(generation, onAccepted)) return false
-      acceptTurn(
-        ack,
-        text,
-        wfContext,
-        attachments,
-        tags,
-        workflowReferences,
-        skillScopeAtSend
-      )
-      return true
+      return await postSendAttempt(attempt)
     } catch (error) {
-      // Before the generation guard: the binding store is page-global and
-      // persisted, so a refusal that lands after newChat()/loadThread() has
-      // moved on still has to release, or the dead id survives the reload.
-      releaseDisownedWorkflow(sentContext, error)
-      if (generation !== loadGeneration) return false
+      releaseDisownedWorkflow(
+        attempt.sentContext,
+        error,
+        attempt.storageOwnerAtSend
+      )
+      if (!attempt.isCurrent()) return false
       const reattached = await reattachRefusedTurn(
         error,
-        threadAtSend,
-        generation
+        attempt.threadAtSend,
+        attempt.generation
       )
-      if (generation !== loadGeneration) return false
-      recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
+      if (!attempt.isCurrent()) return false
+      recordCurrentSendError(
+        error,
+        request.text,
+        attempt.accepted,
+        reattached,
+        attempt.threadAtSend
+      )
       return false
     }
   }
@@ -1439,6 +1565,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     clientMessageId?: string,
     onAccepted?: () => void
   ): Promise<boolean> {
+    transitionStorageOwner()
     if (sending.value) {
       conversationStore.recordFailedSend(
         nextLocalErrorId(),
@@ -1448,12 +1575,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return false
     }
     promptEditState.value = { phase: 'idle' }
+    const sendSlot = {
+      owner: getStorageIdentity()
+    }
     sending.value = true
     const releaseSendGate = sendGateStore.begin()
-    sendInFlight = true
+    sendInFlight = sendSlot
     stopPendingAck = null
     try {
-      const sent = await performSend(
+      const sent = await performSend({
         text,
         attachments,
         tags,
@@ -1461,13 +1591,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
         selectionWorkflowId,
         clientMessageId,
         onAccepted
-      )
+      })
       if (!sent) stopPendingAck = null
       return sent
     } finally {
-      sending.value = false
       releaseSendGate()
-      sendInFlight = false
+      if (sendInFlight === sendSlot) {
+        sending.value = false
+        sendInFlight = null
+      }
     }
   }
 
@@ -1521,13 +1653,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * arrives after the turn settled and a newer send took the active slot is
    * discarded instead of overwriting the newer transport.
    */
-  async function reconcileSnapshotTurn(turnId: TurnId): Promise<void> {
+  async function reconcileSnapshotTurn(
+    turnId: TurnId,
+    isCurrentStop: () => boolean
+  ): Promise<void> {
     const threadId = conversationStore.threadId
     if (threadId !== null)
       await Promise.race([
         hydrateFromServer(
           threadId,
           () =>
+            isCurrentStop() &&
             conversationStore.threadId === threadId &&
             conversationStore.activeTurnId === turnId
         ),
@@ -1535,6 +1671,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           setTimeout(resolve, RECONCILE_TIMEOUT_MS)
         )
       ])
+    if (!isCurrentStop()) return
     if (conversationStore.activeTurnId === turnId)
       conversationStore.abortActiveTurn()
     snapshotTurns.delete(turnId)
@@ -1553,7 +1690,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function handleStopFailure(
     error: unknown,
-    turnId: TurnId
+    turnId: TurnId,
+    isCurrentStop: () => boolean
   ): Promise<void> {
     if (abandonedStop(turnId)) {
       releaseStoppingPhase(turnId)
@@ -1569,9 +1707,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // -- the state this whole change exists to remove.
     if ((status === 404 || status === 409) && snapshotTurns.has(turnId)) {
       try {
-        await reconcileSnapshotTurn(turnId)
+        await reconcileSnapshotTurn(turnId, isCurrentStop)
       } finally {
-        releaseStoppingPhase(turnId)
+        if (isCurrentStop()) releaseStoppingPhase(turnId)
       }
       return
     }
@@ -1587,13 +1725,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   async function stopTurn(method?: AgentStopMethod): Promise<void> {
+    const generation = loadGeneration
+    const storageOwnerAtStop = getStorageIdentity()
+    const isCurrentStop = () =>
+      isCurrentStorageContinuation(
+        generation,
+        loadGeneration,
+        storageOwnerAtStop
+      )
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
       // The POST has not acked yet; remember the intent and cancel on ack.
       // sendInFlight, not this instance's sending: the panel that posted may
       // have been remounted, and the stop arrives through the new instance.
-      if (sendInFlight) stopPendingAck = { method }
+      if (hasCurrentOwnerSend()) stopPendingAck = { method }
       return
     }
     if (isStoppingTurn(turnId)) return
@@ -1604,9 +1750,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
     try {
       await rest.cancelMessage(threadId, turnId)
+      if (!isCurrentStop()) return
       trackCommittedStop(stopMetadata)
     } catch (error) {
-      await handleStopFailure(error, turnId)
+      if (!isCurrentStop()) return
+      await handleStopFailure(error, turnId, isCurrentStop)
     }
   }
 
@@ -1614,6 +1762,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     askId: string,
     answer: AgentAnswerRequest
   ): Promise<boolean> {
+    const generation = loadGeneration
+    const storageOwnerAtAnswer = getStorageIdentity()
+    const isCurrentAnswer = () =>
+      isCurrentStorageContinuation(
+        generation,
+        loadGeneration,
+        storageOwnerAtAnswer
+      )
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
       reportError(new Error('agent ask answered with no thread to send on'), {
@@ -1628,12 +1784,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordAskAnswer(askId, answer)
     conversationStore.setAskAnswering(askId, true)
     try {
-      const receipt = await sendAnswer(currentThreadId, askId, answer)
+      const receipt = await sendAnswer(
+        currentThreadId,
+        askId,
+        answer,
+        isCurrentAnswer
+      )
+      if (!receipt || !isCurrentAnswer()) return false
       const committed = toAskResolution(receipt)
       reportSupersededAnswer(askId, receipt)
       conversationStore.commitAsk(askId, currentThreadId, committed)
       return true
     } catch (error) {
+      if (!isCurrentAnswer()) return false
       if (answeringAskIds.value.has(askId))
         handleAnswerFailure(error, askId, currentThreadId)
       return false
@@ -1702,9 +1865,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function sendAnswer(
     threadId: string,
     askId: string,
-    answer: AgentAnswerRequest
-  ): Promise<AgentAnswerReceipt> {
+    answer: AgentAnswerRequest,
+    isCurrentAnswer: () => boolean
+  ): Promise<AgentAnswerReceipt | null> {
     for (let attempt = 0; ; attempt++) {
+      if (!isCurrentAnswer()) return null
       try {
         return await rest.answerAsk(threadId, askId, answer)
       } catch (error) {
@@ -1737,7 +1902,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rememberedWorkflowId = null
     pendingWorkflowBind = null
     malformedStreamReports.clear()
-    localStorage.removeItem(threadStorageKey)
+    removeStoredThread()
     pendingThreadSource.value = source ?? null
   }
 
@@ -1746,6 +1911,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     isNavigationCurrent: () => boolean = () => true,
     { keepOpenChatUntilLoaded = false } = {}
   ): Promise<boolean> {
+    transitionStorageOwner()
+    const storageOwnerAtLoad = getStorageIdentity()
     const load = {
       generation: loadGeneration,
       stashedTurn: false,
@@ -1753,7 +1920,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     const isLoadCurrent = () =>
       load.generation === loadGeneration &&
-      ownedGeneration === sessionGeneration
+      ownedGeneration === sessionGeneration &&
+      storageOwnerAtLoad === getStorageIdentity()
     const isCurrent = () => isLoadCurrent() && isNavigationCurrent()
     const outlivedItsNavigation = () =>
       load.switched &&
@@ -1783,7 +1951,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
     const opened = hydrated && isCurrent()
     if (opened || outlivedItsNavigation()) {
-      localStorage.setItem(threadStorageKey, threadId)
+      writeStoredThread(threadId)
       onThreadActivated?.(threadId)
       conversationStore.resumeBackgroundTurn()
     }
@@ -1978,20 +2146,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function reconcileTurn(turn: LiveTurn): Promise<void> {
     observeSkillTurn(turn)
     const key = recoveryKey(turn)
-    const recovery = new AbortController()
+    const recovery: TurnRecovery = {
+      controller: new AbortController(),
+      ownerGeneration: storageOwnerGeneration
+    }
     recoveringTurns.set(key, recovery)
     const deadline = setTimeout(
-      () => recovery.abort(),
+      () => recovery.controller.abort(),
       TURN_RECOVERY_DEADLINE_MS
     )
     try {
-      await recoverTurn(turn, ownedGeneration, recovery.signal)
+      await recoverTurn(
+        turn,
+        {
+          sessionGeneration: ownedGeneration,
+          ownerGeneration: recovery.ownerGeneration
+        },
+        recovery.controller.signal
+      )
     } catch (error) {
       // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
       // would land as an `unhandledrejection` the session never sees. Abort is
       // the expected end of a cancelled job; anything else is an unexpected
       // settlement or storage failure and goes through the module's reporter.
-      if (!recovery.signal.aborted)
+      if (!recovery.controller.signal.aborted)
         reportError(error, {
           surface: 'agent',
           errorType: 'failure_recovering_agent_turn'
@@ -2004,15 +2182,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function recoverTurn(
     turn: LiveTurn,
-    generation: number,
+    context: TurnRecoveryContext,
     signal: AbortSignal
   ): Promise<void> {
     let consecutiveThreadMissing = 0
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
-      if (!isTurnLive(turn, generation)) return
+      if (!isTurnLive(turn, context)) return
       const outcome = await fetchTurnOutcome(turn, signal)
-      if (!isTurnLive(turn, generation)) return
+      if (!isTurnLive(turn, context)) return
       consecutiveThreadMissing =
         outcome.kind === 'thread-missing' ? consecutiveThreadMissing + 1 : 0
       if (outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2)
@@ -2021,9 +2199,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function isTurnLive(turn: LiveTurn, generation: number): boolean {
+  function isTurnLive(turn: LiveTurn, context: TurnRecoveryContext): boolean {
     return (
-      generation === sessionGeneration &&
+      context.sessionGeneration === sessionGeneration &&
+      context.ownerGeneration === storageOwnerGeneration &&
       conversationStore
         .liveTurns()
         .some(
@@ -2115,7 +2294,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onThreadActivated?.(null)
     boundWorkflowId.value = null
     rememberedWorkflowId = null
-    localStorage.removeItem(threadStorageKey)
+    if (readStoredThread() === turn.threadId) removeStoredThread()
   }
 
   const isSending = computed(() => sending.value)

@@ -182,7 +182,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["authentication"],
   "characterizationScenarios": [
     {
       "name": "Cloud onboarding routes gate users through sign-in, survey, and post-auth redirects",

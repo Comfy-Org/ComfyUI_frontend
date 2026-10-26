@@ -7,6 +7,7 @@ import type {
   OpenPathsPointer
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const CUSTOM_NODE_BLANK_WORKFLOW_PATH =
@@ -24,7 +25,7 @@ const CUSTOM_NODE_BLANK_GRAPH: ComfyWorkflowJSON = {
 }
 
 export async function installCustomNodeBlankStartup(page: Page): Promise<void> {
-  const workspaceId = 'personal'
+  const workspaceId = unsafeStorageScope('personal')
   const path = CUSTOM_NODE_BLANK_WORKFLOW_PATH
   const draftKey = StorageKeys.draftKey(path)
   const updatedAt = Date.now()

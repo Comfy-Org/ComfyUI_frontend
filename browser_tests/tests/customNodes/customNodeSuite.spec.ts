@@ -5,6 +5,7 @@ import type {
   OpenPathsPointer
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -16,11 +17,12 @@ test('preseeds a restorable blank workflow before first boot', async ({
 }) => {
   const path = 'workflows/Custom Nodes E2E Blank Workflow.json'
   const draftKey = StorageKeys.draftKey(path)
+  const scope = unsafeStorageScope('personal')
   const keys = {
-    index: StorageKeys.draftIndex('personal'),
-    payload: StorageKeys.draftPayload(path, 'personal'),
-    active: StorageKeys.lastActivePath('personal'),
-    open: StorageKeys.lastOpenPaths('personal')
+    index: StorageKeys.draftIndex(scope),
+    payload: StorageKeys.draftPayload(path, scope),
+    active: StorageKeys.lastActivePath(scope),
+    open: StorageKeys.lastOpenPaths(scope)
   }
   await installCustomNodeBlankStartup(page)
   await page.route('http://guard.test/', (route) =>

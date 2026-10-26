@@ -1152,6 +1152,10 @@ export const useAgentConversationStore = defineStore(
 
     function reset(): void {
       disposeActiveAndSettledTransports()
+      for (const askId of askResolutionWatchdogs.keys())
+        clearAskResolutionWatchdog(askId)
+      submittedAskAnswers.clear()
+      answeringAskIds.value = new Set()
       messages.value = []
       userTexts.value = new Map()
       userTags.value = new Map()
@@ -1173,6 +1177,11 @@ export const useAgentConversationStore = defineStore(
       undeliverableAskReporter.reset()
       departedTurns.clear()
       clearActive()
+    }
+
+    function resetForStorageOwnerTransition(): void {
+      retiredAsks.clear()
+      reset()
     }
 
     function reapplyRetiredAsks(
@@ -1433,6 +1442,7 @@ export const useAgentConversationStore = defineStore(
       historySkillNames,
       settleTurn,
       reset,
+      resetForStorageOwnerTransition,
       hydrate
     }
   }
