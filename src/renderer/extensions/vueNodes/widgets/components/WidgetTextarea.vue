@@ -93,13 +93,10 @@ import Button from '@comfyorg/design-system/button/Button'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
-import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
-import { resolveNode } from '@/utils/litegraphUtil'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
@@ -110,11 +107,11 @@ const actionButtonClass =
 
 const {
   widget,
-  nodeId,
+  nodeTitle,
   placeholder = ''
 } = defineProps<{
   widget: SimplifiedWidget<string>
-  nodeId?: NodeId
+  nodeTitle?: string
   placeholder?: string
 }>()
 
@@ -165,20 +162,16 @@ async function handleCopy() {
   })
 }
 
-const canvasStore = useCanvasStore()
 let closeTextEditor: (() => void) | undefined
 
 function openTextEditor() {
-  const node =
-    nodeId === undefined
-      ? undefined
-      : resolveNode(nodeId, canvasStore.currentGraph ?? undefined)
   closeTextEditor = showTextEditor({
     readText: () => text.value,
     widgetLabel: displayName.value,
-    nodeTitle: node?.title,
+    nodeTitle,
     readOnly: () => isReadOnly.value,
-    onEdit: (text) => (modelValue.value = text)
+    onEdit: (text) => (modelValue.value = text),
+    textareaAttributes: { ...filteredProps.value, placeholder }
   })
 }
 

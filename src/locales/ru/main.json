@@ -5473,7 +5473,7 @@
     "logoProviderSeparator": " & "
   },
   "textEditor": {
-    "characterCount": "{count} символов | {count} символ | {count} символов",
+    "characterCount": "{count} симв.",
     "expand": "Развернуть",
     "title": "{widget} · {node}"
   },

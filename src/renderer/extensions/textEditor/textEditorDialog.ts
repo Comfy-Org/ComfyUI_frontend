@@ -1,3 +1,5 @@
+import type { TextareaHTMLAttributes } from 'vue'
+
 import { t } from '@/i18n'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import TextEditorDialogContent from '@/renderer/extensions/textEditor/components/TextEditorDialogContent.vue'
@@ -11,6 +13,7 @@ interface TextEditorOptions {
   nodeTitle?: string
   readOnly: () => boolean
   onEdit: (text: string) => void
+  textareaAttributes?: TextareaHTMLAttributes
 }
 
 export function showTextEditor({
@@ -18,7 +21,8 @@ export function showTextEditor({
   widgetLabel,
   nodeTitle,
   readOnly,
-  onEdit
+  onEdit,
+  textareaAttributes
 }: TextEditorOptions): () => void {
   const dialogStore = useDialogStore()
   dialogStore.closeDialog({ key: TEXT_EDITOR_DIALOG_KEY })
@@ -39,9 +43,11 @@ export function showTextEditor({
       readText,
       label: widgetLabel,
       readOnly,
+      attributes: textareaAttributes,
       onEdit: (value: string) => {
         isEdited = true
         onEdit(value)
+        void useWorkflowStore().activeWorkflow?.changeTracker.refreshModifiedState()
       }
     },
     dialogComponentProps: {

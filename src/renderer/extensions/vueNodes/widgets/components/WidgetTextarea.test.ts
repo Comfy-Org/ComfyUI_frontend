@@ -1,4 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import {
   fireEvent,
   render,
@@ -7,14 +6,10 @@ import {
   within
 } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -224,27 +219,22 @@ describe('WidgetTextarea Value Binding', () => {
     })
 
     it('marks the button as copied for two seconds instead of showing a toast', async () => {
-      vi.useFakeTimers()
-      try {
-        mockCopyToClipboard.mockResolvedValue(true)
-        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-        renderComponent(createTextareaWidget('test value'), 'test value')
+      mockCopyToClipboard.mockResolvedValue(true)
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      renderComponent(createTextareaWidget('test value'), 'test value')
 
-        await user.click(
-          screen.getByRole('button', { name: 'g.copyToClipboard' })
-        )
-        await vi.advanceTimersByTimeAsync(0)
+      await user.click(
+        screen.getByRole('button', { name: 'g.copyToClipboard' })
+      )
+      await vi.advanceTimersByTimeAsync(0)
 
-        expect(screen.getByRole('button', { name: 'g.copied' })).toBeVisible()
+      expect(screen.getByRole('button', { name: 'g.copied' })).toBeVisible()
 
-        await vi.advanceTimersByTimeAsync(2000)
+      await vi.advanceTimersByTimeAsync(2000)
 
-        expect(
-          screen.getByRole('button', { name: 'g.copyToClipboard' })
-        ).toBeVisible()
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(
+        screen.getByRole('button', { name: 'g.copyToClipboard' })
+      ).toBeVisible()
     })
 
     it('keeps the copy label when copying fails', async () => {
@@ -419,21 +409,9 @@ describe('WidgetTextarea contextmenu', () => {
 })
 
 describe('WidgetTextarea expand to editor', () => {
-  const captureCanvasState = vi.fn()
-
-  beforeEach(() => {
-    useWorkflowStore().activeWorkflow = fromPartial({
-      changeTracker: { captureCanvasState }
-    })
-  })
-
   function renderWithDialogHost(
     widgetOverrides: Partial<SimplifiedWidget<string>> = {}
   ) {
-    const graph = createTestRootGraph()
-    const node = new LGraphNode('CLIP Text Encode')
-    graph.add(node)
-    useCanvasStore().currentGraph = graph
     const onUpdateModelValue = vi.fn()
     render(GlobalDialog, { global: { plugins: [i18n] } })
     const view = render(WidgetTextarea, {
@@ -443,7 +421,7 @@ describe('WidgetTextarea expand to editor', () => {
           name: 'text',
           ...widgetOverrides
         }),
-        nodeId: node.id,
+        nodeTitle: 'CLIP Text Encode',
         modelValue: 'a portrait',
         'onUpdate:modelValue': onUpdateModelValue
       },
@@ -524,15 +502,13 @@ describe('WidgetTextarea expand to editor', () => {
     expect(onUpdateModelValue).not.toHaveBeenCalled()
   })
 
-  it('records one undo step when the dialog closes after an edit', async () => {
-    renderWithDialogHost()
+  it("keeps the widget's native textarea limits in the editor", async () => {
+    const options = { multiline: true, maxlength: 12 }
+    renderWithDialogHost({ options })
 
     const { editor } = await openEditor()
-    await userEvent.type(editor, 'abc')
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
 
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    expect(captureCanvasState).toHaveBeenCalledOnce()
+    expect(editor).toHaveAttribute('maxlength', '12')
   })
 
   it('closes the dialog when the widget unmounts', async () => {

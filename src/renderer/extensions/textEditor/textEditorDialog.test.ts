@@ -10,6 +10,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
 
 const captureCanvasState = vi.fn()
+const refreshModifiedState = vi.fn()
 
 function renderDialogHost() {
   return render(GlobalDialog, { global: { plugins: [i18n] } })
@@ -32,7 +33,7 @@ function openEditor(
 
 beforeEach(() => {
   useWorkflowStore().activeWorkflow = fromPartial({
-    changeTracker: { captureCanvasState }
+    changeTracker: { captureCanvasState, refreshModifiedState }
   })
 })
 
@@ -94,6 +95,17 @@ describe('showTextEditor', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     expect(captureCanvasState).toHaveBeenCalledOnce()
+  })
+
+  it('marks the workflow modified while typing without recording undo history', async () => {
+    const user = userEvent.setup()
+    renderDialogHost()
+    openEditor()
+
+    await user.type(await screen.findByRole('textbox'), 'xxx')
+
+    expect(refreshModifiedState).toHaveBeenCalledTimes(3)
+    expect(captureCanvasState).not.toHaveBeenCalled()
   })
 
   it('records no undo step when closed without typing', async () => {
@@ -168,15 +180,35 @@ describe('showTextEditor', () => {
     }
   )
 
-  it('follows edits made to the text elsewhere while it is open', async () => {
+  it('keeps the text and caret of an IME composition when the text changes elsewhere', async () => {
     const source = ref('a portrait')
     renderDialogHost()
-    openEditor({ readText: () => source.value })
+    const { onEdit } = openEditor({ readText: () => source.value })
+    const editor = await screen.findByRole<HTMLTextAreaElement>('textbox')
+    const composed = 'a portrait仮'
+
+    editor.dispatchEvent(createEvent.compositionStart(editor))
+    editor.value = composed
+    source.value = 'a cat'
+    await nextTick()
+    await nextTick()
+    const caret = editor.selectionStart
+    editor.dispatchEvent(createEvent.compositionEnd(editor))
+
+    expect(caret).toBe(composed.length)
+    expect(onEdit).toHaveBeenLastCalledWith(composed)
+  })
+
+  it('applies the textarea attributes it is given', async () => {
+    renderDialogHost()
+    openEditor({
+      textareaAttributes: { maxlength: 12, placeholder: 'Describe the scene' }
+    })
+
     const editor = await screen.findByRole('textbox')
 
-    source.value = 'a landscape'
-
-    await waitFor(() => expect(editor).toHaveValue('a landscape'))
+    expect(editor).toHaveAttribute('maxlength', '12')
+    expect(editor).toHaveAttribute('placeholder', 'Describe the scene')
   })
 
   it('closes the dialog it opened, and not one opened after it', async () => {

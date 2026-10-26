@@ -362,57 +362,63 @@ describe('ChangeTracker', () => {
       })
     })
 
-    it.for([
-      { textEditorOpen: false, captured: true },
-      { textEditorOpen: true, captured: false }
-    ])(
-      'captures canvas changes on mouseup when the text editor is open: $textEditorOpen',
-      ({ textEditorOpen, captured }) => {
-        const events = new EventTarget()
+    describe('text editor session', () => {
+      let events: EventTarget
+
+      beforeEach(() => {
+        events = new EventTarget()
+        const documentEvents = new EventTarget()
         vi.spyOn(window, 'addEventListener').mockImplementation(
           (type, listener, options) =>
             events.addEventListener(type, listener, options)
         )
+        vi.spyOn(document, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            documentEvents.addEventListener(type, listener, options)
+        )
+        vi.spyOn(LiteGraph.LGraphCanvas.prototype, 'processMouseUp')
+        vi.spyOn(LiteGraph.LGraphCanvas.prototype, 'prompt')
+        vi.spyOn(LiteGraph.ContextMenu.prototype, 'close')
         ChangeTracker.init()
-        const initial = createState(1)
+      })
+
+      it('captures canvas changes on mouseup without the text editor', () => {
+        const tracker = createTracker(createState(1))
         const changed = createState(2)
-        const tracker = createTracker(initial)
         mockCanvasState(changed)
-        if (textEditorOpen)
-          useDialogStore().showDialog({
-            key: TEXT_EDITOR_DIALOG_KEY,
-            component: {}
-          })
 
         events.dispatchEvent(new MouseEvent('mouseup'))
 
-        expect(tracker.activeState).toEqual(captured ? changed : initial)
-      }
-    )
-
-    it('still records a queue-time change while the text editor dialog is open', () => {
-      ChangeTracker.init()
-      const initial = createState(1)
-      const changed = createState(2)
-      const tracker = createTracker(initial)
-      mockCanvasState(changed)
-      useDialogStore().showDialog({
-        key: TEXT_EDITOR_DIALOG_KEY,
-        component: {}
+        expect(tracker.activeState).toEqual(changed)
       })
-      const onPromptQueued = vi
-        .mocked(api.addEventListener)
-        .mock.calls.find(([type]) => type === 'promptQueued')?.[1]
-      if (typeof onPromptQueued !== 'function')
-        throw new Error('ChangeTracker registered no promptQueued listener')
 
-      onPromptQueued(
-        new CustomEvent('promptQueued', {
-          detail: { number: 1, batchCount: 1 }
+      it('does not checkpoint mouseup while the text editor is open', () => {
+        const initial = createState(1)
+        const tracker = createTracker(initial)
+        mockCanvasState(createState(2))
+        useDialogStore().showDialog({
+          key: TEXT_EDITOR_DIALOG_KEY,
+          component: {}
         })
-      )
 
-      expect(tracker.activeState).toEqual(changed)
+        events.dispatchEvent(new MouseEvent('mouseup'))
+
+        expect(tracker.activeState).toEqual(initial)
+      })
+
+      it('still records a queue-time change while the text editor is open', () => {
+        const tracker = createTracker(createState(1))
+        const changed = createState(2)
+        mockCanvasState(changed)
+        useDialogStore().showDialog({
+          key: TEXT_EDITOR_DIALOG_KEY,
+          component: {}
+        })
+
+        api.dispatchCustomEvent('promptQueued', { number: 1, batchCount: 1 })
+
+        expect(tracker.activeState).toEqual(changed)
+      })
     })
 
     it.for([
@@ -485,6 +491,29 @@ describe('ChangeTracker', () => {
 
       expect(dispatchedEventNames()).toContain('autoQueueGraphChanged')
       expect(tracker.activeState.nodes).toHaveLength(2)
+    })
+  })
+
+  describe('refreshModifiedState', () => {
+    it('marks the workflow modified from the canvas without moving the undo point', async () => {
+      const initial = createState(1)
+      const tracker = createTracker(initial)
+      const workflow = useWorkflowStore().activeWorkflow
+      assert.exists(workflow)
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      const changed = createState(2)
+      mockCanvasState(changed)
+
+      void tracker.refreshModifiedState()
+      await vi.runAllTimersAsync()
+
+      expect(workflow.isModified).toBe(true)
+      expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+        'graphChanged',
+        changed
+      )
+      expect(tracker.activeState).toEqual(initial)
+      expect(tracker.undoQueue).toEqual([])
     })
   })
 

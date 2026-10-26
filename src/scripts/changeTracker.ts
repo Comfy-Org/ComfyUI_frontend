@@ -558,6 +558,28 @@ export class ChangeTracker implements WorkflowChangeTracker {
     this.updateModified(previousState)
   }, 50)
 
+  /**
+   * Updates the modified flag from the live canvas without adding undo history.
+   */
+  refreshModifiedState = useDebounceFn(() => {
+    if (
+      this !== useWorkflowStore().activeWorkflow?.changeTracker ||
+      ChangeTracker.isLoadingGraph
+    )
+      return
+
+    const currentState = clone(
+      useApp().rootGraph.serialize()
+    ) as ComfyWorkflowJSON
+    const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
+    if (workflow)
+      workflow.isModified = !ChangeTracker.graphEqual(
+        this.initialState,
+        currentState
+      )
+    api.dispatchCustomEvent('graphChanged', currentState)
+  }, 300)
+
   /** @deprecated Use {@link captureCanvasState} instead. */
   checkState() {
     if (!ChangeTracker._checkStateWarned) {
@@ -723,11 +745,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
       }
     })
 
-    const isTextEditorOpen = () =>
-      dialogStore.isDialogOpen(TEXT_EDITOR_DIALOG_KEY)
-
     window.addEventListener('mouseup', () => {
-      if (isTextEditorOpen()) return
+      if (dialogStore.isDialogOpen(TEXT_EDITOR_DIALOG_KEY)) return
       captureState()
     })
 
