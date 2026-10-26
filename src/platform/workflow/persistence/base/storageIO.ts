@@ -8,7 +8,8 @@ import type {
   ActivePathPointer,
   DraftIndexV2,
   DraftPayloadV2,
-  OpenPathsPointer,StorageScope
+  OpenPathsPointer,
+  StorageScope
 } from './draftTypes'
 import { ref } from 'vue'
 import { StorageKeys, resolveStorageScope } from './storageKeys'

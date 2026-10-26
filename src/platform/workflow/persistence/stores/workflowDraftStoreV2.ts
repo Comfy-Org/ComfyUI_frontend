@@ -14,7 +14,8 @@ import { useApp } from '@/scripts/appInstance'
 import type {
   DraftIndexV2,
   DraftLineage,
-  DraftPayloadV2,StorageScope
+  DraftPayloadV2,
+  StorageScope
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import {
