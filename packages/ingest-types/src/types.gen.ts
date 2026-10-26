@@ -132,6 +132,20 @@ export type WorkspaceDeployment = {
 }
 
 /**
+ * Which step the CPU server of the deployment this browser's editor runs on is on.
+ */
+export type WorkspaceDeploymentCpuServer = {
+  /**
+   * none: the deployment gets no CPU server (Comfy Cloud, a deployment that is stopping, stop_failed, stopped or failed, or a Release with no route list or no pack route in it), so stop asking. A route list ingest could not read, or a status it does not know, is the 502, never none. creating: none yet, and setting one up takes seconds (a Modal deployment, or one on its way up). building: none yet, and Modal builds the Release's image first, which can take minutes the first time (RunPod). created: the CPU server exists; it may still be starting ComfyUI, which this does not say.
+   */
+  cpu_server: 'none' | 'creating' | 'building' | 'created'
+  /**
+   * The deployment the answer is about. Absent when the editor runs on Comfy Cloud.
+   */
+  deployment_id?: string
+}
+
+/**
  * Present only for can_delete_workspace denied with plan_ending when all live subscription rows carry a known future cancel_at. This is guidance, not a promise that deletion will succeed at that time; writes recheck.
  */
 export type WorkspaceDeletionDenialParams = {
@@ -887,6 +901,17 @@ export type TeamCreditStopPrice = {
    * Pre-discount (struck-through) price in cents
    */
   list_price_cents: number
+  /**
+   * What one billing period at this stop is charged, in cents: one month
+   * for monthly, the whole year for yearly. This is the amount the
+   * checkout quotes and Stripe invoices; show it as the billed total.
+   * Do not derive it as price_cents x 12: on some yearly stops the
+   * charge is a cent or two higher because Stripe rounds the per-credit
+   * line before applying the discount (yearly team_700 is 756001, not
+   * 756000).
+   *
+   */
+  period_charge_cents: number
   /**
    * Post-discount (bold) price in cents
    */
@@ -4983,6 +5008,37 @@ export type Cccjson = {
   [key: string]: unknown
 }
 
+export type CccCreatorsPage = {
+  items: Array<CccCreatorSummary>
+  next_cursor?: string
+}
+
+export type CccCreatorSummary = {
+  avatar_url: string
+  display_name: string
+  username: string
+  workflow_count: number
+}
+
+export type CccCreatorProfile = {
+  /**
+   * Empty when the creator has no safe https avatar
+   */
+  avatar_url: string
+  bio: string
+  display_name: string
+  links: Array<CccCreatorLink>
+  username: string
+}
+
+export type CccCreatorLink = {
+  label: string
+  /**
+   * An https URL
+   */
+  url: string
+}
+
 export type CccCheckedReviewReceipt = {
   publish_enabled: boolean
   receipt_version: 1
@@ -6649,11 +6705,12 @@ export type BillingBalanceResponse = {
  * Every field is required. On every save, disabled included,
  * threshold_credits and reload_credits must be positive whole credits
  * and a non-null monthly_budget_cents must be positive. When enabled is
- * true, monthly_budget_cents must also be non-null and at most
- * max_monthly_budget_cents, reload_credits must be at least
+ * true, a non-null monthly_budget_cents must be at most
+ * max_monthly_budget_cents; a null one means no owner limit and is
+ * stored as max_monthly_budget_cents. reload_credits must be at least
  * min_reload_credits and greater than threshold_credits, and one reload
  * must cost no more than the budget. A save with enabled false accepts a
- * null budget and skips the enabled-only rules.
+ * null budget, stores it as null, and skips the enabled-only rules.
  *
  */
 export type AutoReloadSettingsRequest = {
@@ -6954,7 +7011,7 @@ export type AgentToolCallFrame = {
 }
 
 /**
- * The `data` of an agent_tool_call WebSocket event: one tool invocation's lifecycle. Mirrors `$defs.agent_tool_call.data` in services/agent/api/agent_events.schema.json, which also states the presence rules: the document correlation fields appear only on a terminal (success or error) frame, workflow_id and op_ids appear together, and doc_seq and doc_lineage_seq appear together and only with both of them. This schema leaves those rules out on purpose. A oneOf over closed variants could express them, but it would turn the generated frontend type into a union the consumer cannot extend field by field. The producer enforces them instead: the Publisher omits incomplete correlation, and TestToolCallEmissionsSatisfyBothContracts validates every emitted shape against the canonical schema. Consumers treat correlation as advisory and use it only when workflow_id and op_ids are both present on a terminal frame. TestToolCallFrameMatchesContract holds the two definitions to the same fields and constraints.
+ * The `data` of an agent_tool_call WebSocket event: one tool invocation's lifecycle. Mirrors `$defs.agent_tool_call.data` in services/agent/api/agent_events.schema.json, which also states the presence rules: the document correlation fields appear only on a terminal (success or error) frame, workflow_id and op_ids appear together, doc_seq and doc_lineage_seq appear together and only with both of them, and job_id and job_workflow_id appear together only on a terminal run frame when a job was submitted. This schema leaves those rules out on purpose. A oneOf over closed variants could express them, but it would turn the generated frontend type into a union the consumer cannot extend field by field. The producer enforces them instead: the Publisher omits incomplete correlation, and TestToolCallEmissionsSatisfyBothContracts validates every emitted shape against the canonical schema. Consumers treat correlation as advisory and use it only when workflow_id and op_ids are both present on a terminal frame. TestToolCallFrameMatchesContract holds the two definitions to the same fields and constraints.
  */
 export type AgentToolCallData = {
   /**
@@ -6967,6 +7024,14 @@ export type AgentToolCallData = {
   doc_seq?: number
   duration_ms?: number
   error_code?: string
+  /**
+   * Terminal run frame with a submitted job only. The job (prompt_id) this call submitted. Present with job_workflow_id, including when a later step made the run observation an error.
+   */
+  job_id?: string
+  /**
+   * Terminal run frame with a submitted job only. The workflow the job was submitted for, so the client can attribute the job's execution events to that workflow's tab. Present with job_id.
+   */
+  job_workflow_id?: string
   message_id: string
   /**
    * Terminal success or error only. The semantic operations whose effects are carried by published doc_update frames for this call.
@@ -16024,6 +16089,10 @@ export type ListCccWebsiteCardsData = {
     modality?: Array<string>
     provider?: Array<string>
     capability?: Array<string>
+    /**
+     * Only Live public cards credited to this creator username (case-insensitive)
+     */
+    author?: string
   }
   url: '/api/v1/catalog/cards'
 }
@@ -16056,6 +16125,71 @@ export type ListCccWebsiteCardsResponses = {
 
 export type ListCccWebsiteCardsResponse =
   ListCccWebsiteCardsResponses[keyof ListCccWebsiteCardsResponses]
+
+export type ListCccCreatorsData = {
+  body?: never
+  path?: never
+  query?: {
+    limit?: number
+    cursor?: string
+  }
+  url: '/api/v1/catalog/creators'
+}
+
+export type ListCccCreatorsErrors = {
+  /**
+   * Invalid or unsupported query or cursor
+   */
+  400: unknown
+  /**
+   * Catalog unavailable
+   */
+  503: unknown
+}
+
+export type ListCccCreatorsResponses = {
+  /**
+   * One page of creators
+   */
+  200: CccCreatorsPage
+}
+
+export type ListCccCreatorsResponse =
+  ListCccCreatorsResponses[keyof ListCccCreatorsResponses]
+
+export type GetCccCreatorData = {
+  body?: never
+  path: {
+    username: string
+  }
+  query?: never
+  url: '/api/v1/catalog/creators/{username}'
+}
+
+export type GetCccCreatorErrors = {
+  /**
+   * Unsupported query parameter
+   */
+  400: unknown
+  /**
+   * No creator with a Live public workflow has this username
+   */
+  404: unknown
+  /**
+   * Catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccCreatorResponses = {
+  /**
+   * Public creator profile
+   */
+  200: CccCreatorProfile
+}
+
+export type GetCccCreatorResponse =
+  GetCccCreatorResponses[keyof GetCccCreatorResponses]
 
 export type GetCatalogDocsData = {
   body?: never
@@ -16573,19 +16707,20 @@ export type RestoreCccItemVersionResponse =
   RestoreCccItemVersionResponses[keyof RestoreCccItemVersionResponses]
 
 export type UploadCccMediaData = {
-  body: {
+  body: unknown & {
     /**
      * Optional case-sensitive editorial batch label; not identity or approval.
      */
     change_id?: string
     expected_draft_rev: number
-    file: Blob | File
+    file?: Blob | File
     /**
      * Safe contextual filename/path; normally entity-slug/filename.
      */
     name: string
     originating_entity_uid: string
     role: string
+    upload_token?: string
   }
   headers: {
     'Idempotency-Key': string
@@ -16700,15 +16835,16 @@ export type DeleteCccMediaResponse =
   DeleteCccMediaResponses[keyof DeleteCccMediaResponses]
 
 export type ReplaceCccMediaFileData = {
-  body: {
+  body: unknown & {
     /**
      * Optional case-sensitive editorial batch label; not identity or approval.
      */
     change_id?: string
     expected_draft_rev: number
     expected_revision_uid: string
-    file: Blob | File
+    file?: Blob | File
     name: string
+    upload_token?: string
   }
   headers: {
     'Idempotency-Key': string
@@ -16767,6 +16903,49 @@ export type ReplaceCccMediaFileResponses = {
 
 export type ReplaceCccMediaFileResponse =
   ReplaceCccMediaFileResponses[keyof ReplaceCccMediaFileResponses]
+
+export type RequestCccUploadUrlData = {
+  body: Cccjson
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/media/upload-url'
+}
+
+export type RequestCccUploadUrlErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Unsupported filename, invalid hash or empty/oversized file
+   */
+  422: Cccjson
+  /**
+   * Direct-upload storage or catalog unavailable
+   */
+  503: unknown
+}
+
+export type RequestCccUploadUrlError =
+  RequestCccUploadUrlErrors[keyof RequestCccUploadUrlErrors]
+
+export type RequestCccUploadUrlResponses = {
+  /**
+   * Expiring private upload URL, token and required request headers
+   */
+  200: Cccjson
+}
+
+export type RequestCccUploadUrlResponse =
+  RequestCccUploadUrlResponses[keyof RequestCccUploadUrlResponses]
 
 export type PublishCccDraftData = {
   body: Cccjson
@@ -19373,6 +19552,58 @@ export type PickWorkspaceDeploymentResponses = {
 
 export type PickWorkspaceDeploymentResponse =
   PickWorkspaceDeploymentResponses[keyof PickWorkspaceDeploymentResponses]
+
+export type GetWorkspaceDeploymentCpuServerData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployment/cpu-server'
+}
+
+export type GetWorkspaceDeploymentCpuServerErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Workspace not found, or the caller is not a member
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `code` is `cpu_server_unknown`: the deployment or its Release's route list could not be read, the deployment's status is not one ingest knows (or is empty), or platform-gateway gave no answer ingest knows. Not an answer about the CPU server; ask again.
+   */
+  502: ErrorResponse
+}
+
+export type GetWorkspaceDeploymentCpuServerError =
+  GetWorkspaceDeploymentCpuServerErrors[keyof GetWorkspaceDeploymentCpuServerErrors]
+
+export type GetWorkspaceDeploymentCpuServerResponses = {
+  /**
+   * Which step the deployment's CPU server is on
+   */
+  200: WorkspaceDeploymentCpuServer
+}
+
+export type GetWorkspaceDeploymentCpuServerResponse =
+  GetWorkspaceDeploymentCpuServerResponses[keyof GetWorkspaceDeploymentCpuServerResponses]
 
 export type ListWorkspaceDeploymentsData = {
   body?: never

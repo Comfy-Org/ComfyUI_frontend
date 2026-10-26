@@ -255,7 +255,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/KeybindingPanel.vue')
+      () => import('@/platform/keybindings/components/KeybindingPanel.vue')
     )
   }
 
@@ -411,6 +411,10 @@ export function useSettingUI(
     void skillPacksStore.startFlagGate()
   })
 
+  const unifiedBillingSettingsEnabled = computed(
+    () => flags.unifiedBillingSettingsEnabled
+  )
+
   return {
     panels,
     activeCategory,
@@ -418,6 +422,7 @@ export function useSettingUI(
     groupedMenuTreeNodes,
     settingCategories,
     navGroups,
+    unifiedBillingSettingsEnabled,
     findCategoryByKey,
     findPanelByKey
   }

@@ -123,14 +123,13 @@ describe('BillingLocalCreditBanner', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('renders nothing on cloud', () => {
+  it('renders nothing on cloud without an active plan', () => {
     arrange({
       isCloud: true,
       subscription: {
         ...personalSubscription,
-        hasFunds: false,
-        isCancelled: true,
-        endDate: '2026-08-01T00:00:00Z'
+        isActive: false,
+        hasFunds: false
       },
       balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
     })
@@ -138,7 +137,29 @@ describe('BillingLocalCreditBanner', () => {
     expect(
       screen.queryByTestId('billing-local-credit-banner')
     ).not.toBeInTheDocument()
-    expect(screen.queryByText('Subscription paused')).not.toBeInTheDocument()
+  })
+
+  it('shows out of credits on an active cloud plan', () => {
+    arrange({
+      isCloud: true,
+      subscription: { ...personalSubscription, hasFunds: false },
+      renewalDate: '2026-10-01T00:00:00Z'
+    })
+
+    expect(screen.getByTestId('billing-local-credit-banner')).toHaveTextContent(
+      'Out of credits'
+    )
+  })
+
+  it('shows low credits on an active cloud plan', () => {
+    arrange({
+      isCloud: true,
+      balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
+    })
+
+    expect(screen.getByTestId('billing-local-credit-banner')).toHaveTextContent(
+      'Credits are low'
+    )
   })
 
   it.for([
@@ -229,6 +250,8 @@ describe('BillingLocalCreditBanner', () => {
       expect(
         screen.getAllByRole('button').map((button) => button.textContent.trim())
       ).toEqual(buttons)
+      expect(screen.getByRole('button', { name: 'Dismiss' })).toHaveClass('h-8')
+      expect(screen.getByRole('status')).toHaveClass('rounded-xl', 'p-3')
       expect(banner).not.toHaveTextContent('credits refill')
     }
   )
