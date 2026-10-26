@@ -425,49 +425,65 @@ describe('late custom node loading', () => {
     vi.spyOn(useSubgraphNavigationStore(), 'updateHash').mockResolvedValue()
     const store = useWorkflowStore()
     const previous = store.createNewTemporary('previous.json', SAVED_STATE)
-    const next = store.createNewTemporary('next.json', SAVED_STATE)
-    previous.adoptGraph(new LGraph())
+    const next = new ComfyWorkflow({
+      path: 'workflows/next.json',
+      modified: 0,
+      size: JSON.stringify(SAVED_STATE).length
+    })
+    const previousGraph = new LGraph()
+    previous.adoptGraph(previousGraph)
+    app.activateRootGraph(previousGraph)
     store.attachWorkflow(previous, 0)
     store.attachWorkflow(next, 1)
     store.activeWorkflow = await previous.load()
-    const loadedNext = await next.load()
-    next.content = null
-    let finishFetch = () => {}
-    const fetched = new Promise<void>((resolve) => {
+    let graphLoadTail = Promise.resolve()
+    vi.mocked(app.enqueueGraphLoad).mockImplementation((operation) => {
+      const result = graphLoadTail.then(operation)
+      graphLoadTail = result.then(() => {})
+      return result
+    })
+    let finishFetch = (_response: Response) => {}
+    const fetched = new Promise<Response>((resolve) => {
       finishFetch = resolve
     })
-    let beginLoading = () => {}
-    const loading = new Promise<void>((resolve) => {
-      beginLoading = resolve
+    let beginFetch = () => {}
+    const fetching = new Promise<void>((resolve) => {
+      beginFetch = resolve
     })
-    vi.spyOn(next, 'load').mockImplementation(async () => {
-      beginLoading()
-      await fetched
-      next.content = JSON.stringify(SAVED_STATE)
-      return loadedNext
+    vi.spyOn(api, 'getUserData').mockImplementationOnce(() => {
+      beginFetch()
+      return fetched
     })
     vi.mocked(app.loadGraphData).mockImplementation(
-      async (_data, _clean, _restoreView, workflow) => {
-        assert(workflow instanceof ComfyWorkflow)
-        workflow.adoptGraph(new LGraph())
-        store.activeWorkflow = await workflow.load()
-        return true
-      }
+      async (_data, _clean, _restoreView, workflow) =>
+        app.enqueueGraphLoad(async () => {
+          assert(workflow instanceof ComfyWorkflow)
+          const graph = new LGraph()
+          workflow.adoptGraph(graph)
+          app.activateRootGraph(graph)
+          await store.openWorkflow(workflow)
+          return true
+        })
     )
     serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
     const opening = service.openWorkflow(next)
-    await loading
+    await fetching
+    expect(next.isLoaded).toBe(false)
+    expect(store.activeWorkflow.path).toBe(previous.path)
 
     await startEditor()
     await vi.advanceTimersByTimeAsync(1_000)
-    finishFetch()
+    expect(isRegistered('A')).toBe(true)
+    expect(next.isLoaded).toBe(false)
+    finishFetch(Response.json(SAVED_STATE))
     await opening
     await vi.advanceTimersByTimeAsync(0)
+    expect(store.activeWorkflow.path).toBe(next.path)
     await service.openWorkflow(previous)
 
-    expect(
-      vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
-    ).toEqual([next, next, previous])
+    expect(store.activeWorkflow.path).toBe(previous.path)
+    expect(previous.graph).not.toBe(previousGraph)
+    expect(app.rootGraph).toBe(previous.graph)
   })
 
   it('reports a late script that failed', async () => {

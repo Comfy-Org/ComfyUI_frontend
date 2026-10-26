@@ -370,10 +370,13 @@ export const useWorkflowService = () => {
     if (workflow) {
       const baseline = workflow.changeTracker.initialState
       const wasModified = workflow.isModified
-      await openWorkflow(workflow, {
-        force: true,
-        isCurrent: () => workflowStore.activeWorkflow === workflow
-      })
+      if (
+        !(await openWorkflow(workflow, {
+          force: true,
+          isCurrent: () => workflowStore.activeWorkflow === workflow
+        }))
+      )
+        return
       workflow.changeTracker.initialState = baseline
       workflow.isModified = wasModified
     }
@@ -387,7 +390,10 @@ export const useWorkflowService = () => {
       const loaded = await retained.load()
       const baseline = loaded.changeTracker.initialState
       const wasModified = loaded.isModified
-      await useApp().loadGraphData(loaded.activeState, true, true, retained)
+      await useApp().loadGraphData(loaded.activeState, true, true, retained, {
+        deferWarnings: true,
+        skipAssetScans: true
+      })
       loaded.changeTracker.initialState = baseline
       loaded.isModified = wasModified
     }
@@ -487,16 +493,6 @@ export const useWorkflowService = () => {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           return false
         }
-        const loadFromRemote = !workflow.isLoaded
-        const wasModified = workflow.isModified
-        if (loadFromRemote) {
-          await workflow.load()
-        }
-        if (options.isCurrent?.() === false) {
-          if (loadFromRemote) discardSupersededLoad(workflow, wasModified)
-          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
-          return false
-        }
 
         if (
           workflow.graph &&
@@ -511,6 +507,17 @@ export const useWorkflowService = () => {
           if (options.initiator === 'user')
             workflowStore.reportUserActivation(workflow)
           return true
+        }
+
+        const loadFromRemote = !workflow.isLoaded
+        const wasModified = workflow.isModified
+        if (loadFromRemote) {
+          await workflow.load()
+        }
+        if (options.isCurrent?.() === false) {
+          if (loadFromRemote) discardSupersededLoad(workflow, wasModified)
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
         }
 
         workflow.changeTracker?.prepareForSave()

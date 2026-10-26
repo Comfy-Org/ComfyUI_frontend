@@ -34,6 +34,7 @@ import { showPlaceholdersAsWaiting } from '@/platform/lateCustomNodes/waitingNod
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
+import { api } from '@/scripts/api'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -567,6 +568,54 @@ describe('useWorkflowService', () => {
       )
     })
 
+    it.for([
+      {
+        phase: 'waiting in the graph queue',
+        arrange: () => {
+          vi.mocked(app.enqueueGraphLoad).mockImplementation(
+            async (operation) => {
+              next.unload()
+              return operation()
+            }
+          )
+        }
+      },
+      {
+        phase: 'running beforeLoadGraph',
+        arrange: () => {
+          useExtensionStore().registerExtension({
+            name: 'Test.UnloadDuringSwitch',
+            beforeLoadGraph: () => next.unload()
+          })
+        }
+      }
+    ])(
+      'refetches a tab unloaded while $phase instead of configuring defaults',
+      async ({ arrange }) => {
+        const fetched = makeWorkflowData({ note: 'updated remote content' })
+        vi.spyOn(api, 'getUserData').mockResolvedValue(
+          new Response(JSON.stringify(fetched))
+        )
+        arrange()
+
+        await expect(useWorkflowService().openWorkflow(next)).resolves.toBe(
+          true
+        )
+
+        expect(app.activateRootGraph).not.toHaveBeenCalled()
+        expect(app.loadGraphData).toHaveBeenCalledWith(
+          fetched,
+          true,
+          true,
+          next,
+          expect.objectContaining({
+            deferWarnings: true,
+            skipAssetScans: false
+          })
+        )
+      }
+    )
+
     it('reconfigures when late types invalidate a live switch already queued', async () => {
       const graph = next.graph
       assert(graph)
@@ -702,6 +751,28 @@ describe('useWorkflowService', () => {
         ])
 
         expect(useWorkflowStore().activeWorkflow?.path).toBe(next.path)
+      })
+
+      it('keeps edits captured by a switch that supersedes a reload', async () => {
+        const saved = makeWorkflowData({ note: 'saved previous tab' })
+        previous.changeTracker = new ChangeTracker(previous, saved)
+        previous.adoptGraph(app.rootGraph)
+        previous.isModified = false
+        next.adoptGraph(app.createRootGraph())
+        useWorkflowStore().attachWorkflow(previous, 0)
+        useWorkflowStore().attachWorkflow(next, 1)
+        app.rootGraph.extra.note = 'new edit before switch'
+
+        await Promise.all([
+          useWorkflowService().reloadCurrentWorkflow(),
+          useWorkflowService().openWorkflow(next)
+        ])
+
+        expect(useWorkflowStore().activeWorkflow?.path).toBe(next.path)
+        expect(previous.isModified).toBe(true)
+        expect(previous.changeTracker.activeState.extra).toEqual(
+          expect.objectContaining({ note: 'new edit before switch' })
+        )
       })
     })
 
@@ -1086,7 +1157,8 @@ describe('useWorkflowService', () => {
         edited,
         true,
         true,
-        retained
+        retained,
+        { deferWarnings: true, skipAssetScans: true }
       )
       expect(app.activateRootGraph).not.toHaveBeenCalled()
       expect(workflowStore.activeWorkflow.path).toBe(retained.path)

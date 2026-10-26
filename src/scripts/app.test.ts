@@ -121,6 +121,7 @@ import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { zeroUuid } from '@/utils/uuid'
+import { graphsAwaitingNodeTypes } from '@/platform/lateCustomNodes/lateNodeTypes'
 import type { importA1111 } from './pnginfo'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>
@@ -725,6 +726,49 @@ describe('ComfyApp', () => {
       expect(owned.subgraphs.has(subgraph.id)).toBe(true)
       expect(active.subgraphs.has(subgraph.id)).toBe(false)
       expect(app.rootGraph).toBe(active)
+    })
+
+    it('reuses a successfully reconfigured waiting graph on the next workflow switch', async () => {
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      const previousCanvas = singletonApp.canvas
+      const previousCanvasElement = singletonApp.canvasElRef.value
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+        singletonApp.canvas = previousCanvas
+        singletonApp.canvasElRef.value = previousCanvasElement
+      })
+      Reflect.set(singletonApp, 'rootGraphInternal', new LGraph())
+      singletonApp.canvas = mockCanvas
+      singletonApp.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(mockCanvas, 'ds', createTestDragAndScale())
+      const workflowService = await useRealWorkflowService()
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/waiting.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const graph = new LGraph()
+      workflow.adoptGraph(graph)
+      const data = createWorkflowGraphData()
+      const tracker = markRaw(new ChangeTracker(workflow, data))
+      workflow.changeTracker = tracker
+      graphsAwaitingNodeTypes.add(graph)
+
+      await expect(
+        singletonApp.loadGraphData(data, false, false, workflow, {
+          skipAssetScans: true
+        })
+      ).resolves.toBe(true)
+      const configure = vi.spyOn(graph, 'configure')
+      const reset = vi.spyOn(tracker, 'reset')
+
+      await expect(workflowService.openWorkflow(workflow)).resolves.toBe(true)
+
+      expect(singletonApp.rootGraph).toBe(graph)
+      expect(configure).not.toHaveBeenCalled()
+      expect(reset).not.toHaveBeenCalled()
     })
 
     it.for([

@@ -207,7 +207,9 @@ afterLoadGraph
 Each open workflow keeps its own `LGraph`, so switching to a tab whose graph
 is already loaded shows that instance without rebuilding its nodes. The
 `configure`-phase hooks above (`beforeConfigureGraph`, `nodeCreated`,
-`loadedGraphNode`, `afterConfigureGraph`) do not run. Extensions that refresh
+`loadedGraphNode`, `afterConfigureGraph`) do not run. The first switch to a
+background tab retained across late custom node registration also runs the
+configure-phase hooks to rebuild its nodes. Extensions that refresh
 per-graph DOM or Vue state when the visible graph changes should do so in
 `afterLoadGraph`, which runs on both the first load and every later switch.
 
