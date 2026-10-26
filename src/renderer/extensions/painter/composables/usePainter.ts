@@ -44,6 +44,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
   const isDirty = ref(false)
   let canvasMask = ''
+  let pendingMaskImage: HTMLImageElement | null = null
 
   const cursorVisible = ref(false)
 
@@ -413,6 +414,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
     isDrawing = true
     isDirty.value = true
+    pendingMaskImage = null
     snapshotBrush()
     strokeProcessor = new StrokeProcessor(Math.max(1, strokeBrush!.radius / 2))
     strokeProcessor.addPoint(point)
@@ -512,6 +514,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     if (!el || !ctx) return
     ctx.clearRect(0, 0, el.width, el.height)
     isDirty.value = true
+    pendingMaskImage = null
     canvasMask = ''
     modelValue.value = ''
   }
@@ -521,6 +524,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     const ctx = getCtx()
     if (!el || !ctx) return
     ctx.clearRect(0, 0, el.width, el.height)
+    pendingMaskImage = null
     canvasMask = ''
   }
 
@@ -707,10 +711,14 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
     const url = api.apiURL('/view?' + params.toString())
     const img = new Image()
+    pendingMaskImage = img
+    const isStillWanted = () =>
+      pendingMaskImage === img && modelValue.value === requestedMask
     img.crossOrigin = 'anonymous'
     img.onload = () => {
       const el = canvasEl.value
-      if (!el || modelValue.value !== requestedMask) return
+      if (!el || !isStillWanted()) return
+      pendingMaskImage = null
       canvasWidth.value = img.naturalWidth
       canvasHeight.value = img.naturalHeight
       el.width = img.naturalWidth
@@ -721,7 +729,9 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       isDirty.value = false
     }
     img.onerror = () => {
-      if (modelValue.value === requestedMask) modelValue.value = ''
+      if (!isStillWanted()) return
+      pendingMaskImage = null
+      modelValue.value = ''
     }
     img.src = url
   }

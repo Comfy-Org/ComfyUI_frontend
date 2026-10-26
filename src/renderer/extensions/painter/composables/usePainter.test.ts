@@ -23,10 +23,12 @@ import { usePainter } from './usePainter'
 vi.mock(import('@vueuse/core'), { spy: true })
 
 vi.mock<unknown>(import('@comfyorg/mask-editor/StrokeProcessor'), () => ({
-  StrokeProcessor: vi.fn(() => ({
-    addPoint: vi.fn(() => []),
-    endStroke: vi.fn(() => [])
-  }))
+  StrokeProcessor: vi.fn(
+    class {
+      addPoint = vi.fn(() => [])
+      endStroke = vi.fn(() => [])
+    }
+  )
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -653,20 +655,25 @@ describe('usePainter', () => {
           size.height = next
           drawn = []
         },
+        getBoundingClientRect: () =>
+          fromPartial<DOMRect>({
+            left: 0,
+            top: 0,
+            width: size.width,
+            height: size.height
+          }),
         getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(() =>
-          fromPartial<CanvasRenderingContext2D>({
-            clearRect: () => {
+          paintingContext({
+            clear: () => {
               drawn = []
             },
-            drawImage: fromAny<CanvasRenderingContext2D['drawImage'], unknown>(
-              (image: unknown) => {
-                drawn.push(
-                  ...(canvases.get(toRaw(image))?.() ?? [
-                    { image, width: size.width, height: size.height }
-                  ])
-                )
-              }
-            )
+            draw: (image) => {
+              drawn.push(
+                ...(canvases.get(toRaw(image))?.() ?? [
+                  { image, width: size.width, height: size.height }
+                ])
+              )
+            }
           })
         )
       })
@@ -675,6 +682,23 @@ describe('usePainter', () => {
     }
 
     const canvases = new Map<unknown, () => DrawnImage[]>()
+
+    function paintingContext(surface: {
+      clear: () => void
+      draw: (image: unknown) => void
+    }) {
+      const gradient = { addColorStop: () => {} }
+      const ignored = () => gradient
+      const drawing: Record<string, unknown> = {
+        clearRect: surface.clear,
+        drawImage: surface.draw,
+        fill: () => surface.draw('brush stroke')
+      }
+      return new Proxy(drawing, {
+        get: (target, key) =>
+          typeof key === 'string' && key in target ? target[key] : ignored
+      })
+    }
 
     function stubImages(naturalSize = 512) {
       const images: { onload: () => void }[] = []
@@ -757,6 +781,21 @@ describe('usePainter', () => {
       await nextTick()
 
       expect(contents()).toEqual([])
+    })
+
+    it('keeps a stroke drawn while a restored mask is still loading', async () => {
+      const images = stubImages()
+      const { painter, modelValue, contents } = mountWithCanvas()
+      modelValue.value = 'painter/restored.png [temp]'
+      await nextTick()
+
+      painter.handlePointerDown(
+        new PointerEvent('pointerdown', { button: 0, clientX: 10, clientY: 10 })
+      )
+      images[0].onload()
+
+      expect(contents().map(({ image }) => image)).not.toContain(images[0])
+      expect(contents().map(({ image }) => image)).toContain('brush stroke')
     })
 
     it('ignores a mask load that a newer mask overtook', async () => {
