@@ -465,8 +465,8 @@ export const workspaceApi = {
   },
 
   /**
-   * The custom node packs the build of this browser's deployment could not
-   * load, and why; empty on Comfy Cloud.
+   * The packs the build of the Release this browser's deployment runs now
+   * could not load, and why, with that Release's id; empty on Comfy Cloud.
    * GET /api/release/unsupported-packs
    */
   async getReleaseUnsupportedPacks(): Promise<ReleaseUnsupportedPacks> {
