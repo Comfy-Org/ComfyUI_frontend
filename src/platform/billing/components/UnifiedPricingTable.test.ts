@@ -10,6 +10,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type {
   BillingSubscriptionStatus,
   Plan
@@ -72,6 +73,8 @@ const mockPermissions = ref({
 })
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 const mockApiPlans = vi.hoisted(() => ({ value: [] as Plan[] }))
+const mockUpdatePayment = vi.hoisted(() => vi.fn())
+const mockPaymentRecoveryLock = ref<'owner' | 'member' | null>(null)
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
@@ -80,6 +83,17 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+
+vi.mock<unknown>(
+  import('@/platform/billing/composables/usePaymentRecoveryDialog'),
+  () => ({
+    usePaymentRecoveryDialog: () => ({
+      updatePayment: mockUpdatePayment,
+      isUpdatingPayment: ref(false),
+      paymentRecoveryLock: computed(() => mockPaymentRecoveryLock.value)
+    })
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -108,6 +122,8 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   mockApiPlans.value = []
+  mockPaymentRecoveryLock.value = null
+  mockUpdatePayment.mockReset()
   const billingContext = useBillingContext()
   billingContext.plans = computed(() => mockApiPlans.value)
   billingContext.currentPlanSlug = computed(() => mockCurrentPlanSlug.value)
@@ -1104,5 +1120,98 @@ describe('UnifiedPricingTable plan-scope availability', () => {
     expect(
       screen.queryByRole('button', { name: 'Change to Standard Yearly' })
     ).toBeNull()
+  })
+})
+
+describe('UnifiedPricingTable past-due notice', () => {
+  const OWNER_COPY =
+    'You have an outstanding payment \u2014 update your payment method to change plans.'
+  const MEMBER_COPY =
+    'This workspace has an outstanding payment \u2014 ask your workspace owner to update the payment method.'
+
+  beforeEach(() => {
+    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canReactivate = computed(() => true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
+    useBillingCapabilities().canManageBilling = computed(() =>
+      receiveServerFact('can_manage_billing', true)
+    )
+
+    mockSubscription.value = { tier: 'STANDARD', duration: 'ANNUAL' }
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+    mockDistributionTypes.isCloud = true
+    mockApiPlans.value = standardYearlyCatalog({ action: 'subscribe' })
+  })
+
+  it('shows the owner notice with an Update payment action', async () => {
+    const user = userEvent.setup()
+    mockPaymentRecoveryLock.value = 'owner'
+
+    renderComponent()
+
+    expect(screen.getByRole('status').textContent).toContain(OWNER_COPY)
+    await user.click(screen.getByRole('button', { name: 'Update payment' }))
+    expect(mockUpdatePayment).toHaveBeenCalledOnce()
+  })
+
+  it('hides the notice when no payment recovery is offered', () => {
+    renderComponent()
+
+    expect(screen.queryByTestId('pricing-past-due-notice')).toBeNull()
+    expect(screen.getByText(/Based on this template/)).toBeTruthy()
+  })
+
+  it('shows copy without an action to non-owners', () => {
+    useBillingCapabilities().canManageBilling = computed(() =>
+      receiveServerFact('can_manage_billing', false)
+    )
+    mockPaymentRecoveryLock.value = 'member'
+
+    renderComponent()
+
+    expect(screen.getByRole('status').textContent).toContain(MEMBER_COPY)
+    expect(screen.queryByRole('button', { name: 'Update payment' })).toBeNull()
+  })
+
+  it('keeps plan CTAs enabled with their normal labels', () => {
+    mockPaymentRecoveryLock.value = 'owner'
+
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Creator Yearly' })
+    ).toBeEnabled()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Pro Yearly' })
+    ).toBeEnabled()
+  })
+
+  it('shows and focuses the notice when a checkout refusal arrives', async () => {
+    const { rerender } = renderComponent()
+    expect(screen.queryByTestId('pricing-past-due-notice')).toBeNull()
+
+    await rerender({ outstandingPaymentRefusals: 1 })
+    await nextTick()
+
+    const notice = screen.getByTestId('pricing-past-due-notice')
+    expect(notice).toHaveFocus()
+  })
+
+  it('stays hidden off Cloud', () => {
+    mockDistributionTypes.isCloud = false
+    mockPaymentRecoveryLock.value = 'owner'
+
+    renderComponent()
+
+    expect(screen.queryByTestId('pricing-past-due-notice')).toBeNull()
   })
 })

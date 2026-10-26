@@ -351,7 +351,38 @@
 
     <div class="mt-auto flex min-h-14 items-center justify-center pt-4 text-sm">
       <div
-        v-if="showScheduledPlanChange"
+        v-if="showPastDueNotice"
+        ref="pastDueNoticeEl"
+        role="status"
+        tabindex="-1"
+        data-testid="pricing-past-due-notice"
+        class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background outline-none"
+      >
+        <i
+          class="icon-[lucide--info] size-4 shrink-0 bg-background"
+          aria-hidden="true"
+        />
+        <span>
+          {{
+            t(
+              canManageBilling
+                ? 'subscription.pastDueNoticeOwner'
+                : 'subscription.pastDueNoticeMember'
+            )
+          }}
+        </span>
+        <button
+          v-if="canManageBilling"
+          type="button"
+          class="cursor-pointer border-none bg-transparent p-0 font-inter text-sm font-bold text-background hover:opacity-80 disabled:cursor-default disabled:opacity-60"
+          :disabled="isUpdatingPayment"
+          @click="updatePayment"
+        >
+          {{ t('subscription.paymentRecovery.ownerCta') }}
+        </button>
+      </div>
+      <div
+        v-else-if="showScheduledPlanChange"
         role="status"
         class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
       >
@@ -429,7 +460,7 @@ import {
 } from '@/platform/telemetry/billingActionNames'
 import type { PlanAction } from '@comfyorg/ingest-types'
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -460,6 +491,7 @@ import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { formatSubscriptionDate } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
@@ -470,12 +502,15 @@ interface Props {
   loadingTier?: CheckoutTierKey | null
   /** Initial plan scope. */
   initialPlanMode?: 'personal' | 'team'
+  /** Bumped each time checkout is refused for an outstanding payment. */
+  outstandingPaymentRefusals?: number
 }
 
 const {
   isLoading,
   loadingTier = null,
-  initialPlanMode = 'personal'
+  initialPlanMode = 'personal',
+  outstandingPaymentRefusals = 0
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -639,6 +674,23 @@ watch(
     if (!canSelect) planMode.value = 'team'
   },
   { immediate: true }
+)
+
+const { canManageBilling } = capabilities
+const { updatePayment, isUpdatingPayment, paymentRecoveryLock } =
+  usePaymentRecoveryDialog()
+const pastDueNoticeEl = ref<HTMLElement | null>(null)
+const showPastDueNotice = computed(
+  () =>
+    isCloud &&
+    (paymentRecoveryLock.value !== null || outstandingPaymentRefusals > 0)
+)
+watch(
+  () => outstandingPaymentRefusals,
+  async () => {
+    await nextTick()
+    pastDueNoticeEl.value?.focus()
+  }
 )
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)

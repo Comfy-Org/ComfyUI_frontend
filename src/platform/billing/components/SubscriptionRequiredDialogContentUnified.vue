@@ -49,6 +49,7 @@
       :initial-plan-mode="initialPlanMode"
       :is-loading="isLoadingPreview || isResubscribing"
       :loading-tier="loadingTier"
+      :outstanding-payment-refusals="outstandingPaymentRefusals"
       @subscribe="handleSubscribeClick"
       @resubscribe="handleResubscribe"
       @subscribe-team="handleSubscribeTeamClick"
@@ -164,6 +165,7 @@ const {
   isLoadingPreview,
   loadingTier,
   isSubscribing,
+  outstandingPaymentRefusals,
   isResubscribing,
   previewData,
   reactivationRequired,
@@ -188,7 +190,9 @@ const {
   handleConfirmTransition,
   handleTeamSubscribe,
   handleResubscribe
-} = useSubscriptionCheckout(emit, paymentIntentSource)
+} = useSubscriptionCheckout(emit, paymentIntentSource, {
+  rendersPastDueNotice: true
+})
 
 onMounted(() => {
   if (!initialCheckout) return
