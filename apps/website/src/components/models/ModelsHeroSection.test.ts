@@ -6,7 +6,8 @@ import ModelsHeroSection from './ModelsHeroSection.vue'
 describe('ModelsHeroSection', () => {
   it.for([
     { locale: 'en', title: 'Flux in ComfyUI' },
-    { locale: 'zh-CN', title: 'ComfyUI 中的 Flux' }
+    { locale: 'zh-CN', title: 'ComfyUI 中的 Flux' },
+    { locale: 'ja', title: 'ComfyUIのFlux' }
   ] as const)(
     'places the brand where the $locale title puts it',
     ({ locale, title }) => {
@@ -23,6 +24,7 @@ describe('ModelsHeroSection', () => {
         new RegExp(`^${title}$`),
         { normalizeWhitespace: false }
       )
+      expect(screen.getByText('ComfyUI')).toBeInTheDocument()
     }
   )
 })
