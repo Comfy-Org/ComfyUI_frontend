@@ -1,6 +1,7 @@
 import { z } from 'astro/zod'
 
 import { MODALITIES, USE_CASES } from './models-catalogue'
+import { RESOLUTIONS } from '@/lib/workshop/resolution'
 
 const presentationSchema = z.object({
   slug: z.string(),
@@ -21,8 +22,10 @@ const presentationSchema = z.object({
     ])
     .optional(),
   capabilities: z.array(z.string()),
+  resolutions: z.array(z.enum(RESOLUTIONS)).optional(),
   creditsPerRun: z.number().optional(),
   priceUsdFrom: z.number().optional(),
+  priceEstimate: z.string().optional(),
   thumbnailUrl: z.string().optional(),
   thumbnailLabel: z.string().optional(),
   thumbnail: z
@@ -53,6 +56,13 @@ export const workflowModelSchema = presentationSchema.extend({
   categoryLabel: z.object({ en: z.string(), 'zh-CN': z.string() }).optional(),
   categoryOrder: z.number().optional(),
   categoryHighlight: z.boolean().optional(),
+  categoryAliases: z.array(z.string()).optional(),
+  section: z.string().optional(),
+  sectionLabel: z.object({ en: z.string(), 'zh-CN': z.string() }).optional(),
+  sectionOrder: z.number().optional(),
+  sections: z.array(z.string()).optional(),
+  sectionNames: z.array(z.string()).optional(),
+  inputKinds: z.array(z.enum(MODALITIES)).optional(),
   models: z.array(z.string()).optional(),
   author: z.string().optional()
 })

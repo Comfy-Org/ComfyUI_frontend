@@ -113,6 +113,20 @@ async function uploadInput(
   return uploadFile(source, signal)
 }
 
+export function workflowRunsHere(
+  model: Pick<
+    WorkflowWorkshopModelDetail,
+    'type' | 'incompleteReason' | 'workflow'
+  >
+): boolean {
+  return (
+    model.type === 'CLOUD' &&
+    !model.incompleteReason &&
+    !!model.workflow.cloud &&
+    model.workflow.runsOnHub !== false
+  )
+}
+
 export async function prepareWorkflowRender(
   model: WorkflowWorkshopModelDetail,
   inputs: FormValues,
@@ -120,7 +134,7 @@ export async function prepareWorkflowRender(
   uploadFile?: WorkflowMediaUploader
 ): Promise<WorkflowRunRequest> {
   signal.throwIfAborted()
-  if (model.type !== 'CLOUD' || model.incompleteReason || !model.workflow.cloud)
+  if (!workflowRunsHere(model))
     throw new WorkshopWorkflowError('definition_incompatible')
   const initial = initialWorkshopPageState(model)
   const values = { ...initial.values, ...inputs }

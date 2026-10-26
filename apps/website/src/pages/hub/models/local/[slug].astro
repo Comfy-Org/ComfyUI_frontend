@@ -3,9 +3,12 @@ import type { GetStaticPaths } from 'astro'
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
 import ModelHeroSection from '@/components/models/ModelHeroSection.vue'
+import ModelFileTrail from '@/components/workshop/ModelFileTrail.vue'
+import ModelFileUsedBy from '@/components/workshop/ModelFileUsedBy.vue'
 import { LOCAL_MODELS_PATH, localModels } from '@/config/local-models'
 import { getModelBySlug } from '@/config/models'
 import { buildModelLlmsLinks } from '@/config/model-llms'
+import { hubWorkflowsUsingFile } from '@/config/workshop-page-content'
 import {
   absoluteUrl,
   jsonLdId,
@@ -21,6 +24,7 @@ export const getStaticPaths: GetStaticPaths = () => {
 
 const { slug } = Astro.params
 const model = getModelBySlug(slug as string)!
+const usedBy = hubWorkflowsUsingFile(model.slug)
 
 const { displayName } = model
 
@@ -67,17 +71,18 @@ const whatIsRest = whatIsBacklinkUrl
   mainEntityId={softwareId}
   breadcrumbs={[
     {
-      name: Astro.locals.t('breadcrumb.home'),
-      url: absoluteUrl(Astro.site, '/')
+      name: Astro.locals.t('workshop.catalogue.eyebrow'),
+      url: absoluteUrl(Astro.site, '/hub/')
     },
     {
-      name: Astro.locals.t('models.breadcrumb.models'),
-      url: absoluteUrl(Astro.site, `${LOCAL_MODELS_PATH}/`)
+      name: Astro.locals.t('workshop.model.breadcrumb'),
+      url: absoluteUrl(Astro.site, '/hub/models/')
     },
     { name: displayName }
   ]}
   extraJsonLd={[software, faqPage]}
 >
+  <ModelFileTrail name={displayName} client:load />
   <div class="mx-auto flex max-w-7xl justify-end px-6 pt-6 lg:px-8">
     <div class="relative" id="llms-wrap" data-md={llms.mdPath}>
       <button
@@ -143,6 +148,7 @@ const whatIsRest = whatIsBacklinkUrl
     hubSlug={model.hubSlug}
     workflowCount={model.workflowCount}
     directory={model.directory}
+    localFile
   />
 
   <section class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
@@ -185,6 +191,8 @@ const whatIsRest = whatIsBacklinkUrl
   <section>
     {/* TODO: shared HowComfyWorks component */}
   </section>
+
+  {usedBy.length > 0 && <ModelFileUsedBy workflows={usedBy} client:idle />}
 
   <FAQSplit01
     heading={Astro.locals.t('models.faq.heading')}

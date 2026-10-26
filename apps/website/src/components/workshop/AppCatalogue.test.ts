@@ -5,86 +5,82 @@ import { describe, expect, it } from 'vitest'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 import AppCatalogue from './AppCatalogue.vue'
 
-function appsOf(count: number): CatalogueApp[] {
+function appsOf(count: number, prefix = 'app'): CatalogueApp[] {
   return Array.from({ length: count }, (_, index) => ({
-    key: `app-${index}`,
-    name: `App ${index}`,
+    key: `${prefix}-${index}`,
+    name: `${prefix} ${index}`,
     task: `Task ${index}`,
-    href: `/apps/${index}`
+    href: `/apps/${prefix}-${index}/`
   }))
 }
 
 describe('AppCatalogue', () => {
-  it.for([
-    { count: 2, browseAll: 0 },
-    { count: 8, browseAll: 0 },
-    { count: 9, browseAll: 1 }
-  ])(
-    'offers Browse all apps only when $count apps outgrow the shelf',
-    ({ count, browseAll }) => {
-      render(AppCatalogue, { props: { apps: appsOf(count) } })
-      expect(
-        within(screen.getByTestId('app-shelf')).getAllByRole('link')
-      ).toHaveLength(Math.min(count, 8))
-      expect(
-        screen.queryAllByRole('button', { name: /Browse all apps/ })
-      ).toHaveLength(browseAll)
-    }
-  )
+  it('lists every open app, then the ones coming soon, in one grid', () => {
+    render(AppCatalogue, {
+      props: { apps: appsOf(2, 'open'), upcoming: appsOf(9, 'soon') }
+    })
+    const grid = screen.getByRole('list', { name: 'Apps' })
 
-  it.for([
-    {
-      locale: 'en',
-      initial: 'C',
-      mark: 'Comfy app',
-      browseAll: 'Browse all apps'
-    },
-    {
-      locale: 'zh-CN',
-      initial: 'C',
-      mark: 'Comfy 应用',
-      browseAll: '浏览全部应用'
-    }
-  ] as const)(
-    'labels the cards in $locale on the shelf and in the full catalogue',
-    async ({ locale, initial, mark, browseAll }) => {
-      const user = userEvent.setup()
-      const markText = (container: HTMLElement) =>
-        within(container)
-          .getAllByTestId('model-card-provider')
-          .map((element) => element.textContent.trim())
-      render(AppCatalogue, { props: { apps: appsOf(9), locale } })
+    expect(within(grid).getAllByRole('listitem')).toHaveLength(11)
+    expect(within(grid).getAllByRole('link')).toHaveLength(2)
+    expect(
+      within(grid)
+        .getAllByTestId('workshop-app-card')
+        .map((card) => card.dataset.soon ?? 'open')
+    ).toEqual([...Array(2).fill('open'), ...Array(9).fill('true')])
+    expect(screen.queryByRole('button')).toBeNull()
+  })
 
-      expect(markText(screen.getByTestId('app-shelf'))).toEqual(
-        Array(8).fill(`${initial}${mark}`)
-      )
-
-      await user.click(screen.getByRole('button', { name: browseAll }))
-      expect(markText(screen.getByTestId('app-search-results'))).toEqual(
-        Array(9).fill(`${initial}${mark}`)
-      )
-    }
-  )
-
-  it('opens every app and leads back to the shelf', async () => {
+  it('shows twelve apps at a time, coming-soon ones last', async () => {
     const user = userEvent.setup()
-    const { emitted } = render(AppCatalogue, { props: { apps: appsOf(9) } })
+    render(AppCatalogue, {
+      props: { apps: appsOf(10, 'open'), upcoming: appsOf(6, 'soon') }
+    })
+    const cards = () =>
+      within(screen.getByRole('list', { name: 'Apps' })).getAllByTestId(
+        'workshop-app-card'
+      )
+    expect(cards()).toHaveLength(12)
+    expect(cards().at(-1)?.dataset.soon).toBe('true')
 
-    await user.click(screen.getByRole('button', { name: /Browse all apps/ }))
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'All apps 9' })
-    ).toBeVisible()
-    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
-    expect(
-      within(screen.getByTestId('app-search-results')).getAllByRole('link')
-    ).toHaveLength(9)
+    await user.click(screen.getByRole('button', { name: 'Show more' }))
+    expect(cards()).toHaveLength(16)
+    expect(screen.queryByRole('button', { name: 'Show more' })).toBeNull()
+  })
 
-    await user.click(screen.getByTestId('section-back'))
-    expect(screen.getByTestId('app-shelf')).toBeVisible()
-    expect(emitted<[boolean]>('section').map(([value]) => value)).toEqual([
-      false,
-      true,
-      false
-    ])
+  it.for([
+    { locale: 'en', mark: 'Comfy' },
+    { locale: 'zh-CN', mark: 'Comfy' }
+  ] as const)('labels every card in $locale', ({ locale, mark }) => {
+    render(AppCatalogue, {
+      props: { apps: appsOf(2, 'open'), upcoming: appsOf(1, 'soon'), locale }
+    })
+    expect(
+      screen
+        .getAllByTestId('model-card-provider')
+        .map((element) => element.textContent.trim())
+    ).toEqual(Array(3).fill(mark))
+  })
+
+  it('puts no featured app ahead of the list', () => {
+    render(AppCatalogue, { props: { apps: appsOf(2) } })
+    expect(screen.queryByTestId('app-featured')).toBeNull()
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
+  })
+
+  it('says what each open app makes under its summary', () => {
+    render(AppCatalogue, {
+      props: {
+        apps: [
+          {
+            key: 'apps/reshoot',
+            name: 'Re-shoot a video',
+            task: 'Re-frame a shot',
+            href: '/hub/apps/reshoot/'
+          }
+        ]
+      }
+    })
+    expect(screen.getByRole('link')).toHaveTextContent('Video · MiniMax H3')
   })
 })

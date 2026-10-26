@@ -60,6 +60,7 @@ const baseRoutes = {
   nanoBanana: '/nano-banana/',
   brand: '/brand/',
   // The hub catalogue. `workshop` keeps its old name.
+  hubExplore: '/hub/',
   workshop: '/hub/models/',
   hubWorkflows: '/hub/workflows/',
   hubApps: '/hub/apps/',
@@ -94,8 +95,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
-// workshop, hubWorkflows, hubApps, workshopSignIn, cinematicStudio, reshoot,
-// openjutsu: English only. Every locale links the one catalogue.
+// hubExplore, workshop, hubWorkflows, hubApps, workshopSignIn, cinematicStudio,
+// reshoot, openjutsu: English only. Every locale links the one catalogue.
 //
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
 // built from a single English-language caption track — a "translated" watch
@@ -112,6 +113,7 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'enterpriseMsa',
   'models',
   'minimaxLicenseProfessionalRequest',
+  'hubExplore',
   'workshop',
   'hubWorkflows',
   'hubApps',
@@ -143,6 +145,7 @@ const LOCALE_INVARIANT_EXTRA_PATHS = [
   '/platform/serverless-animation',
   '/signup',
   '/workshop',
+  '/hub',
   '/hub/models',
   '/hub/workflows',
   '/hub/apps',
@@ -212,6 +215,8 @@ export const externalLinks = {
   routerApiKeys:
     'https://platform.comfy.org/profile/api-keys?onboarding=router',
   blog: 'https://blog.comfy.org/',
+  gallerySubmit:
+    'https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview',
   cloud: 'https://cloud.comfy.org',
   cloudLogin: 'https://cloud.comfy.org/cloud/login',
   cloudSignup: 'https://cloud.comfy.org/cloud/signup',

@@ -12,19 +12,33 @@ const app: CatalogueApp = {
 }
 
 describe('WorkshopAppCard', () => {
-  it('links to the app and names it and what it makes', () => {
-    render(WorkshopAppCard, { props: { app } })
-    const link = screen.getByRole('link')
+  it('opens the app in a new tab and names it and what it makes', () => {
+    render(WorkshopAppCard, { props: { app, meta: 'Video · MiniMax H3' } })
+    const link = screen.getByRole('link', { name: /opens in a new tab/ })
     expect(link).toHaveAttribute('href', '/cinematic-studio?app=reshoot')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener')
+    expect(screen.getByTestId('app-card-status')).toHaveTextContent('Open')
     expect(
       screen.getByRole('heading', { name: 'Re-shoot a video' })
     ).toBeVisible()
     expect(screen.getByTestId('app-card-task')).toHaveTextContent(
       'Re-shoot from any angle'
     )
+    expect(link).toHaveTextContent('Video · MiniMax H3')
   })
 
-  it('reads its name under the artwork, never over it', () => {
+  it('shows an app without a page as coming soon, and opens nothing', () => {
+    render(WorkshopAppCard, { props: { app: { ...app, href: undefined } } })
+    expect(screen.queryByRole('link')).toBeNull()
+    expect(screen.getByTestId('workshop-app-card')).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+    expect(screen.getByTestId('app-card-status')).toHaveTextContent('Soon')
+  })
+
+  it('reads its name and status under the artwork, never over it', () => {
     render(WorkshopAppCard, {
       props: {
         app: { ...app, thumbnail: { url: '/images/app.jpg', kind: 'image' } }
@@ -36,31 +50,40 @@ describe('WorkshopAppCard', () => {
       'A name over the artwork covers the picture it is naming'
     ).toBeNull()
     expect(
+      within(screen.getByTestId('app-card-artwork')).queryByTestId(
+        'app-card-status'
+      ),
+      'A status over the artwork covers the title baked into it'
+    ).toBeNull()
+    expect(
       screen.getByRole('heading', { name: 'Re-shoot a video' })
     ).toBeVisible()
   })
 
-  it('marks an app with the logo its name matches', () => {
-    render(WorkshopAppCard, {
-      props: { app: { ...app, name: 'Seedance Studio' } }
-    })
-    const mark = screen.getByTestId('model-card-provider')
+  it.for(['Seedance Studio', 'Re-shoot a video'])(
+    'marks %s with the Comfy logo over its artwork',
+    (name) => {
+      render(WorkshopAppCard, { props: { app: { ...app, name } } })
+      const mark = screen.getByTestId('model-card-provider')
 
-    expect(mark).toHaveTextContent('Comfy app')
-    expect(within(mark).getByTestId('model-card-provider-logo')).toHaveStyle({
-      maskImage: 'url(/icons/ai-models/bytedance.svg)'
-    })
-    expect(within(mark).queryByText('C', { exact: true })).toBeNull()
-  })
-
-  it('marks an app with the initial when no logo matches', () => {
-    render(WorkshopAppCard, { props: { app } })
-    const mark = screen.getByTestId('model-card-provider')
-
-    expect(mark).toHaveTextContent('Comfy app')
-    expect(within(mark).queryByTestId('model-card-provider-logo')).toBeNull()
-    expect(within(mark).getByText('C', { exact: true })).toBeInTheDocument()
-  })
+      expect(mark).toHaveTextContent('Comfy')
+      expect(within(mark).getByTestId('model-card-provider-logo')).toHaveStyle({
+        maskImage: 'url(/icons/logomark.svg)'
+      })
+      expect(within(mark).queryByText('C', { exact: true })).toBeNull()
+      expect(mark).toBeVisible()
+      expect(
+        within(screen.getByTestId('app-card-artwork')).getByTestId(
+          'model-card-provider'
+        )
+      ).toHaveClass('top-4', 'right-4')
+      expect(
+        within(screen.getByTestId('app-card-meta')).getByTestId(
+          'app-card-status'
+        )
+      ).toBeVisible()
+    }
+  )
 
   it.for([
     {
@@ -79,9 +102,15 @@ describe('WorkshopAppCard', () => {
       poster: '/media/app.jpg',
       placeholder: 0
     },
+    {
+      thumbnail: { url: '/media/app.mp4', kind: 'video' },
+      media: 'VIDEO',
+      poster: null,
+      placeholder: 1
+    },
     { thumbnail: undefined, media: undefined, poster: null, placeholder: 1 }
   ] as const)(
-    'shows $media artwork, or the initial without any',
+    'shows $media artwork, with the initial wherever no picture is ready',
     ({ thumbnail, media, placeholder, poster }) => {
       render(WorkshopAppCard, { props: { app: { ...app, thumbnail } } })
       const artwork = screen.queryByTestId('model-card-media')

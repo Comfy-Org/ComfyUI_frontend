@@ -21,7 +21,6 @@ import {
   filterWorkshopModels,
   parseCatalogSearch,
   isRouterModel,
-  sortOrdersFor,
   sortWorkshopModels,
   splitTask,
   summaryFor,
@@ -218,7 +217,7 @@ describe('filterWorkshopModels facets', () => {
 })
 
 describe('sortWorkshopModels', () => {
-  it('orders by popularity, name or price without mutating the input', () => {
+  it('orders by popularity or name without mutating the input', () => {
     const priced = fixture.map((model, index) => ({
       ...model,
       creditsPerRun: index === 2 ? undefined : (index + 1) * 10
@@ -230,16 +229,6 @@ describe('sortWorkshopModels', () => {
       'Mystery'
     ])
     expect(names(sortWorkshopModels(priced, 'name'))).toEqual([
-      'Flux',
-      'Kling AI',
-      'Mystery'
-    ])
-    expect(names(sortWorkshopModels(priced, 'priceAsc'))).toEqual([
-      'Kling AI',
-      'Flux',
-      'Mystery'
-    ])
-    expect(names(sortWorkshopModels(priced, 'priceDesc'))).toEqual([
       'Flux',
       'Kling AI',
       'Mystery'
@@ -257,18 +246,6 @@ describe('sortWorkshopModels', () => {
     expect(
       sortWorkshopModels(list, 'popular').map((model) => model.slug)
     ).toEqual([first, second, 'never-run'])
-  })
-})
-
-describe('sortOrdersFor', () => {
-  it('withholds the price orders while no model carries a price', () => {
-    expect(sortOrdersFor(fixture)).toEqual(['popular', 'name'])
-  })
-
-  it('offers them again as soon as one model does', () => {
-    expect(
-      sortOrdersFor([{ ...fixture[0], creditsPerRun: 10 }, ...fixture.slice(1)])
-    ).toEqual(['popular', 'name', 'priceAsc', 'priceDesc'])
   })
 })
 

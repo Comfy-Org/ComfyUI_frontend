@@ -25,8 +25,7 @@ const {
   statusLabel,
   canStart,
   refreshOutput,
-  analytics,
-  visible = true
+  analytics
 } = defineProps<{
   model: WorkflowWorkshopModelDetail
   state: WorkflowState
@@ -36,7 +35,6 @@ const {
   canStart: boolean
   refreshOutput: (id: string) => Promise<void> | undefined
   analytics?: WorkshopRunAnalytics
-  visible?: boolean
 }>()
 const emit = defineEmits<{ retry: []; retryDelivery: [] }>()
 const now = useNow({ interval: 1000 })
@@ -123,9 +121,9 @@ const automaticRefreshes = new Set<string>()
 const delivery = useWorkshopDelivery()
 let deliveryRunId: string | undefined
 watch(
-  () => [state, analytics, visible] as const,
+  () => [state, analytics] as const,
   () => {
-    if (!visible || state.phase !== 'settled') {
+    if (state.phase !== 'settled') {
       delivery.cancel()
       return
     }
@@ -213,6 +211,7 @@ function captureDownload(kind: RunOutput['kind']) {
     :retry-disabled="!canStart"
     :cancelled-message="t('workshop.workflow.cancelled')"
     refreshable
+    compact
     @retry="emit('retry')"
     @buy-credits="requestWorkshopBuyCredits"
     @refresh="refreshUrl"

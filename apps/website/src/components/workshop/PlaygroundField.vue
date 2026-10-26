@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown } from '@lucide/vue'
-import { useEventListener, useResizeObserver } from '@vueuse/core'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -248,42 +247,6 @@ function stringValue(): string {
   return typeof value === 'string' ? value : ''
 }
 
-const promptBox = useTemplateRef<HTMLTextAreaElement>('promptBox')
-
-/**
- * How tall the box may grow. A prompt can run to hundreds of words, and a box
- * that followed one to the end would bury the rest of the form below the fold,
- * so it takes at most this share of the window and scrolls whatever is left.
- */
-const WINDOW_SHARE = 0.6
-
-function promptBoxCeiling() {
-  if (typeof window === 'undefined') return Number.POSITIVE_INFINITY
-  return window.innerHeight * WINDOW_SHARE
-}
-
-function fitPromptBox() {
-  const box = promptBox.value
-  if (!box) return
-  box.style.height = 'auto'
-  // `height` is the border box here; `scrollHeight` leaves the borders out.
-  const borders = box.offsetHeight - box.clientHeight
-  const content = box.scrollHeight + borders
-  box.style.height = `${Math.min(content, promptBoxCeiling())}px`
-}
-
-// Width only: a narrower box wraps the same text onto more lines, while the
-// height this sets must not feed back into the observer.
-const promptBoxWidth = ref(0)
-useResizeObserver(promptBox, ([entry]) => {
-  promptBoxWidth.value = entry.contentRect.width
-})
-useEventListener('resize', fitPromptBox)
-
-watch([promptBox, stringValue, promptBoxWidth], fitPromptBox, {
-  flush: 'post'
-})
-
 // Painting the filled part ourselves keeps the track identical across browsers,
 // which accent-color does not.
 function sliderFill(field: {
@@ -446,7 +409,6 @@ function booleanValue(fallback = false): boolean {
     <textarea
       v-else-if="field.kind === 'text' && field.multiline"
       :id="`field-${field.name}`"
-      ref="promptBox"
       :value="stringValue()"
       :placeholder="field.placeholder"
       :minlength="field.minLength"
@@ -456,7 +418,7 @@ function booleanValue(fallback = false): boolean {
       :aria-describedby="describedBy"
       :data-testid="`field-${field.name}`"
       rows="5"
-      :class="cn(inputClass, 'min-h-32 resize-none py-3')"
+      :class="cn(inputClass, 'min-h-32 resize-y overflow-y-auto py-3')"
       @input="onText"
     />
     <input

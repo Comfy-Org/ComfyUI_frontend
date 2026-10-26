@@ -29,9 +29,7 @@ const { t } = translationsFor(locale)
 const sort = defineModel<SortOrder>({ required: true })
 const labels = computed<Record<SortOrder, TranslationKey>>(() => ({
   popular: recommended ? 'workshop.sort.recommended' : 'workshop.sort.popular',
-  name: 'workshop.sort.name',
-  priceAsc: 'workshop.sort.priceAsc',
-  priceDesc: 'workshop.sort.priceDesc'
+  name: 'workshop.sort.name'
 }))
 </script>
 

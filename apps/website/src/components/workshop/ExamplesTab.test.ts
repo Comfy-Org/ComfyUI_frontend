@@ -124,6 +124,25 @@ it('asks a video example for a frame it can paint before playback', () => {
   )
 })
 
+it('sizes a lone example like one card of a full gallery', () => {
+  const sizing = (count: number) => {
+    const { unmount } = render(ExamplesTab, {
+      props: {
+        galleryLabel: 'Model',
+        examples: Array.from({ length: count }, (_, index) =>
+          example({ id: `e${index}`, title: `Example ${index}` })
+        )
+      }
+    })
+    const item = screen.getAllByTestId('example-item')[0].className
+    const gallery = screen.getByRole('list').className
+    unmount()
+    return { item, gallery }
+  }
+
+  expect(sizing(1)).toEqual(sizing(4))
+})
+
 it('refuses a pick while the form it would fill is busy', async () => {
   const user = userEvent.setup()
   const preset = example({ id: 'busy', title: 'Busy' })

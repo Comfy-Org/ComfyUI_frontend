@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { translationsFor } from '@/i18n/translations'
-import { ArrowUpRight } from '@lucide/vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { externalLinks } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { captureWorkshopEvent } from '@/scripts/posthog'
@@ -29,18 +29,21 @@ function captureClick() {
 </script>
 
 <template>
-  <a
+  <Button
+    as="a"
     :href="repo ?? externalLinks.githubOrg"
     target="_blank"
     rel="noopener noreferrer"
-    class="inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-transparency-white-t20 bg-transparency-white-t4 px-3.5 text-sm font-medium text-primary-warm-white transition hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+    variant="outline"
+    size="sm"
     @click="captureClick"
   >
-    <span
-      class="size-4 icon-mask mask-[url('/icons/social/github.svg')]"
-      aria-hidden="true"
-    />
+    <template #prepend>
+      <span
+        class="size-4 icon-mask mask-[url('/icons/social/github.svg')]"
+        aria-hidden="true"
+      />
+    </template>
     {{ repo ? t('cinematic.repo.view') : t('cinematic.repo.org') }}
-    <ArrowUpRight class="size-3.5" aria-hidden="true" />
-  </a>
+  </Button>
 </template>

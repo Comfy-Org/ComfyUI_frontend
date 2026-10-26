@@ -153,6 +153,30 @@ describe('getMainNavigation', () => {
   })
 
   it.for([
+    {
+      locale: 'en',
+      exploreLink: {
+        label: 'Explore the Hub',
+        intro: 'Try in the browser, call by API, or take it into ComfyUI',
+        href: '/hub/'
+      }
+    },
+    {
+      locale: 'zh-CN',
+      exploreLink: {
+        label: '探索 Hub',
+        intro: '在浏览器中试用、通过 API 调用，或导入 ComfyUI',
+        href: '/hub/'
+      }
+    }
+  ] as const)(
+    'links the Hub menu to the Hub home, for $locale',
+    ({ locale, exploreLink }) => {
+      expect(hubOf(getMainNavigation(locale)).exploreLink).toEqual(exploreLink)
+    }
+  )
+
+  it.for([
     { reshoot: true, apps: ['Cinematic Studio', 'Re-shoot'] },
     { reshoot: false, apps: ['Cinematic Studio'] }
   ])(
@@ -168,6 +192,7 @@ describe('getMainNavigation', () => {
   it('links every Hub entry to a page the site builds', () => {
     const hub = hubOf(getMainNavigation('en', ALL_SECTIONS))
     const built = new Set([
+      '/hub/',
       '/hub/models/',
       '/hub/workflows/',
       '/hub/apps/',
@@ -180,10 +205,11 @@ describe('getMainNavigation', () => {
         ...column.items.map(({ href }) => href),
         column.allLink?.href
       ]),
-      hub.featured?.cta.href
+      hub.featured?.cta.href,
+      hub.exploreLink?.href
     ]
 
-    expect(hrefs).toHaveLength(14)
+    expect(hrefs).toHaveLength(15)
     expect(hrefs.filter((href) => !href || !built.has(href))).toEqual([])
   })
 

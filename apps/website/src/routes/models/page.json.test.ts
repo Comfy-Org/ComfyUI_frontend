@@ -26,7 +26,10 @@ it('serves a canonical page as JSON without the redundant form', async () => {
   expect(body).toMatchObject({
     kind: 'page',
     model: { slug: modelSlug, execution: preparedPage.model.execution },
-    related: preparedPage.related.map(({ slug, href }) => ({ slug, href }))
+    providerModels: preparedPage.providerModels.map(({ slug, href }) => ({
+      slug,
+      href
+    }))
   })
   expect(body).not.toHaveProperty('model.form')
 })

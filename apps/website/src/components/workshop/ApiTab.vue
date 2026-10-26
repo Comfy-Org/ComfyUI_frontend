@@ -1,10 +1,7 @@
 <script setup lang="ts">
+import { ArrowUpRight } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import Button from '@/components/ui/button/Button.vue'
-import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { apiKeysLink, externalLinks } from '@/config/routes'
 import type { FileValue, FormValues } from '@/config/workshop-playground'
 import { schemaForModel } from '@/config/workshop-playground'
@@ -12,22 +9,16 @@ import { formForContract } from '@/config/workshop-contract'
 import { workshopExampleFile } from '@/config/workshop-example-file'
 import { shouldRehostWorkshopUrl } from '@/config/workshop-url-input'
 import type { SnippetFile, SnippetLanguage } from '@/config/models-snippets'
-import {
-  SNIPPET_LANGUAGES,
-  buildSnippet,
-  hasOmittedCurlFiles
-} from '@/config/models-snippets'
+import { buildSnippet, hasOmittedCurlFiles } from '@/config/models-snippets'
 import type { WorkshopContract } from '@/config/workshop-contract'
 import { prepareWorkshopRouterInput } from '@/config/workshop-request'
 import { WorkshopRouterError } from '@/config/workshop-router-errors'
 import { workshopIdempotencyKey } from '@/config/workshop-snippets'
 import { workspaceLinkedHref } from '@/config/workshop-workspace-link'
 import type { Locale } from '@/i18n/translations'
-import { useTablist } from '@/composables/useTablist'
 import { translationsFor } from '@/i18n/translations'
-import type { CodeLang } from '@/lib/highlight'
-import ApiFacts from './ApiFacts.vue'
-import HighlightedCode from './HighlightedCode.vue'
+import ModelApiSteps from './ModelApiSteps.vue'
+import ModelSnippetPanel from './ModelSnippetPanel.vue'
 import SectionHeading from './SectionHeading.vue'
 
 const {
@@ -35,13 +26,15 @@ const {
   values,
   workspaceId,
   locale = 'en',
-  modelSlug
+  modelSlug,
+  docsHref
 } = defineProps<{
   contract?: WorkshopContract
   values: FormValues
   workspaceId?: string
   locale?: Locale
   modelSlug?: string
+  docsHref?: string
 }>()
 const { t } = translationsFor(locale)
 
@@ -55,10 +48,6 @@ const apiKeyHref = computed(() =>
 )
 
 const language = ref<SnippetLanguage>('python')
-const { onKeydown: onLanguageKeydown } = useTablist(
-  () => SNIPPET_LANGUAGES,
-  language
-)
 const request = ref<{
   body: Readonly<Record<string, unknown>>
   files: readonly SnippetFile[]
@@ -192,149 +181,52 @@ const showFileNotice = computed(() => {
     ? hasOmittedCurlFiles(body, files)
     : hasLocalFiles.value
 })
-const showLocalFilesFact = computed(
-  () => language.value !== 'curl' && hasLocalFiles.value
+
+const endpoint = computed(() =>
+  contract ? `POST /v2/models/${contract.id}` : undefined
 )
-
-const languageLabel: Record<SnippetLanguage, string> = {
-  python: 'Python',
-  typescript: 'TypeScript',
-  curl: 'cURL'
-}
-const highlightLanguage = {
-  python: 'python',
-  typescript: 'typescript',
-  curl: 'shell'
-} satisfies Record<SnippetLanguage, CodeLang>
-
-const facts = computed(() => [
-  ...(contract
-    ? [
-        {
-          label: t('workshop.api.needsEndpoint'),
-          value: `POST /v2/models/${contract.id}`,
-          mono: true,
-          copyLabel: t('workshop.api.copyEndpoint')
-        }
-      ]
-    : []),
-  {
-    label: t('workshop.api.needsKey'),
-    value: 'COMFY_API_KEY',
-    mono: true
-  },
-  ...(showLocalFilesFact.value
-    ? [
-        {
-          label: t('workshop.api.needsFiles'),
-          value: t('workshop.api.filesRead')
-        }
-      ]
-    : [])
-])
 </script>
 
 <template>
-  <section class="flex flex-col gap-6" data-testid="api-tab">
-    <SectionHeading
-      class="lg:max-w-[calc(100%-25.75rem)]"
-      :title="t('workshop.api.heading')"
-      :subtitle="t('workshop.api.body')"
-    />
-
-    <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
-      <div
-        class="flex w-full flex-col gap-3 lg:sticky lg:top-24 lg:w-95 lg:shrink-0"
+  <div class="flex flex-col gap-8" data-testid="api-tab">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-1">
+      <SectionHeading
+        title-id="api-heading"
+        :title="t('workshop.api.heading')"
+        :subtitle="t('workshop.api.body')"
+      />
+      <a
+        :href="docsHref ?? externalLinks.docsComfyRouter"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary-comfy-yellow transition-opacity hover:opacity-80"
+        data-testid="model-docs-link"
       >
-        <Button
-          as="a"
-          :href="apiKeyHref"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="w-full justify-center"
-          data-testid="api-get-key"
-          @click="emit('getKey')"
-        >
-          {{ t('workshop.api.getKey') }}
-        </Button>
-        <ApiFacts
-          :where="t('workshop.api.runsOnRouter')"
-          :rows="facts"
-          :locale="locale"
-        />
-      </div>
+        {{ t('hubPages.workflow.apiDocs') }}
+        <span class="sr-only">{{ t('workshop.workflow.opensInNewTab') }}</span>
+        <ArrowUpRight class="size-4" aria-hidden="true" />
+      </a>
+    </div>
 
-      <div class="flex min-w-0 flex-1 flex-col gap-4">
-        <div
+    <div class="flex flex-col gap-8 lg:gap-6">
+      <ModelApiSteps
+        :api-key-href="apiKeyHref"
+        :endpoint="endpoint"
+        :locale="locale"
+        @get-key="emit('getKey')"
+      />
+
+      <div class="flex min-w-0 flex-col gap-4">
+        <ModelSnippetPanel
           v-if="snippet"
-          class="overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4"
-        >
-          <div
-            class="flex items-center justify-between border-b border-transparency-white-t8 px-3 py-2"
-          >
-            <div
-              role="tablist"
-              :aria-label="t('workshop.api.heading')"
-              class="flex gap-1"
-              @keydown="onLanguageKeydown"
-            >
-              <button
-                v-for="option in SNIPPET_LANGUAGES"
-                :id="`snippet-tab-${option}`"
-                :key="option"
-                type="button"
-                role="tab"
-                :aria-selected="language === option"
-                aria-controls="snippet-panel"
-                :tabindex="language === option ? 0 : -1"
-                :data-testid="`snippet-${option}`"
-                :class="
-                  cn(
-                    'cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold tracking-wider uppercase transition-colors',
-                    language === option
-                      ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-                      : 'text-primary-comfy-canvas hover:bg-transparency-white-t8 hover:text-primary-warm-white'
-                  )
-                "
-                @click="language = option"
-              >
-                {{ languageLabel[option] }}
-              </button>
-            </div>
-            <CopyTextButton
-              :value="snippet"
-              :label="t('workshop.api.copy')"
-              :copied-label="t('workshop.api.copied')"
-              @click="emit('copy', language)"
-            />
-          </div>
-          <p
-            v-if="showFileNotice"
-            role="note"
-            class="px-6 pt-4 text-sm text-primary-warm-gray"
-          >
-            {{
-              t(
-                language === 'curl'
-                  ? 'workshop.api.filesOmitted'
-                  : 'workshop.api.localFiles'
-              )
-            }}
-          </p>
-          <pre
-            id="snippet-panel"
-            role="tabpanel"
-            :aria-labelledby="`snippet-tab-${language}`"
-            tabindex="0"
-            class="overflow-x-auto bg-primary-comfy-ink p-6 font-mono text-sm/relaxed text-primary-warm-white"
-            data-testid="snippet"
-          ><HighlightedCode
-              :code="snippet"
-              :language="highlightLanguage[language]"
-            /></pre>
-        </div>
+          v-model:language="language"
+          :snippet="snippet"
+          :file-notice="showFileNotice"
+          :locale="locale"
+          @copy="emit('copy', $event)"
+        />
 
-        <p v-if="!snippet" role="status" class="text-sm text-primary-warm-gray">
+        <p v-else role="status" class="text-sm text-primary-warm-gray">
           {{
             t(
               unavailable
@@ -343,18 +235,7 @@ const facts = computed(() => [
             )
           }}
         </p>
-
-        <a
-          :href="externalLinks.docsComfyRouter"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex min-h-11 items-center gap-2 self-start text-sm font-medium text-primary-comfy-yellow hover:text-primary-warm-white"
-          data-testid="api-docs"
-        >
-          {{ t('workshop.api.docs') }}
-          <span aria-hidden="true">↗</span>
-        </a>
       </div>
     </div>
-  </section>
+  </div>
 </template>

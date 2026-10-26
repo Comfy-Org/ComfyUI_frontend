@@ -110,15 +110,18 @@ describe('WorkshopModelsGrid analytics', () => {
     expect(events('hub_search_performed')).toHaveLength(1)
   })
 
-  it('reports the use case and sort a visitor picks', async () => {
+  it('reports the use case a visitor leaves and the sort they pick', async () => {
+    history.replaceState(null, '', '/models/?useCase=edit-images')
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-
-    await user.click(screen.getByRole('button', { name: 'Use cases' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Edit images 1' })
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'Image' })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
     )
+
+    await user.click(screen.getByRole('tab', { name: 'All' }))
     await user.click(screen.getByRole('button', { name: 'Sort' }))
     await user.click(
       await screen.findByRole('menuitemradio', { name: 'Name A to Z' })
@@ -130,8 +133,8 @@ describe('WorkshopModelsGrid analytics', () => {
         properties: {
           surface: 'models',
           filter: 'use_case',
-          value: 'edit-images',
-          previous_value: 'all'
+          value: 'all',
+          previous_value: 'edit-images'
         }
       },
       {
@@ -155,31 +158,10 @@ describe('WorkshopModelsGrid analytics', () => {
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
-  it('reports a model opened from the featured banner', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
-
-    await user.click(screen.getByTestId('featured-slide-link'))
-
-    expect(events('hub_item_clicked')).toEqual([
-      {
-        name: 'hub_item_clicked',
-        properties: {
-          surface: 'models',
-          kind: 'model',
-          slug: 'kling-ai',
-          source: 'featured_banner',
-          position: 0
-        }
-      }
-    ])
-  })
-
   it('reports a model opened from the results grid', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Browse all models' }))
     await user.click(
       within(screen.getByTestId('workshop-models-grid')).getAllByRole('link')[1]
     )

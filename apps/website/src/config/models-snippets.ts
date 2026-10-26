@@ -3,6 +3,9 @@ import {
   WORKSHOP_ROUTER_BASE_URL
 } from './workshop-env'
 
+/** The pip command the model snippets are written against. */
+export const MODEL_SDK_INSTALL = 'pip install comfy-sdk==0.2.0'
+
 export type SnippetLanguage = 'python' | 'typescript' | 'curl'
 
 export const SNIPPET_LANGUAGES: readonly SnippetLanguage[] = [
@@ -243,7 +246,7 @@ function pythonImports(needs: {
   binary: boolean
 }): string[] {
   return [
-    '# Python 3.10+: pip install comfy-sdk==0.2.0',
+    `# Python 3.10+: ${MODEL_SDK_INSTALL}`,
     'import asyncio',
     'import os',
     ...(needs.sdk ? ['from comfy_sdk import AsyncComfy'] : []),

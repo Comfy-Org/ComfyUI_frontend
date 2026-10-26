@@ -1,21 +1,28 @@
 [
   {
-    "id": "videos",
-    "label": { "en": "Create & edit videos", "zh-CN": "创作与编辑视频" },
-    "highlight": "workflows/image-to-video"
+    "id": "image-to-image",
+    "label": { "en": "Image to image", "zh-CN": "图生图" },
+    "highlight": "workflows/edit-selected-region",
+    "aliases": ["cleanup"]
   },
   {
-    "id": "characters",
-    "label": { "en": "Animate characters", "zh-CN": "让角色动起来" },
-    "highlight": "workflows/motion-transfer"
+    "id": "image-to-video",
+    "label": { "en": "Image to video", "zh-CN": "图生视频" },
+    "highlight": "workflows/image-to-video",
+    "aliases": ["videos"]
   },
   {
-    "id": "product",
+    "id": "reference-to-video",
     "label": {
-      "en": "Create product photos & ads",
-      "zh-CN": "制作产品照片与广告"
+      "en": "Text & reference to video",
+      "zh-CN": "文本与参考生视频"
     },
-    "highlight": "workflows/change-material"
+    "highlight": "workflows/video-from-references"
+  },
+  {
+    "id": "video-to-video",
+    "label": { "en": "Video to video", "zh-CN": "视频生视频" },
+    "highlight": "workflows/motion-transfer"
   },
   {
     "id": "upscale",
@@ -23,8 +30,23 @@
     "highlight": "workflows/upscale-and-restore"
   },
   {
-    "id": "cleanup",
-    "label": { "en": "Edit & clean up photos", "zh-CN": "编辑与修整照片" },
-    "highlight": "workflows/edit-selected-region"
+    "id": "audio",
+    "label": { "en": "Audio & speech", "zh-CN": "音频与语音" },
+    "highlight": "workflows/talking-character"
+  },
+  {
+    "id": "characters",
+    "label": { "en": "Characters & game assets", "zh-CN": "角色与游戏素材" },
+    "highlight": "workflows/character-turnaround"
+  },
+  {
+    "id": "product",
+    "label": { "en": "Product & ads", "zh-CN": "产品与广告" },
+    "highlight": "workflows/product-in-scene"
+  },
+  {
+    "id": "tools",
+    "label": { "en": "Control & tools", "zh-CN": "控制与工具" },
+    "highlight": "workflows/remove-background"
   }
 ]

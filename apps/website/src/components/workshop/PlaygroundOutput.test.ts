@@ -46,6 +46,20 @@ describe('PlaygroundOutput', () => {
     expect(panel).not.toHaveClass('min-h-96')
   })
 
+  it('keeps a compact panel to a fixed height and shows the media whole', () => {
+    render(PlaygroundOutput, {
+      props: {
+        now: 0,
+        compact: true,
+        state: { status: 'example', output: output('example') }
+      }
+    })
+    const media = screen.getByTestId('output-media')
+    expect(media).toHaveClass('h-72', 'sm:h-80', 'lg:h-100')
+    expect(media).not.toHaveClass('aspect-video')
+    expect(screen.getByRole('img')).toHaveClass('object-contain')
+  })
+
   it('uses a signed download without buffering media and refreshes an expired link', async () => {
     const user = userEvent.setup()
     const media = {

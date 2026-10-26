@@ -122,7 +122,11 @@ export const workshopDisplaySchema = workshopDisplaySourceSchema
     description: z.string().optional(),
     inputs: z.record(z.string(), workshopInputDefinitionSchema).optional(),
     template: workshopTemplateSchema.optional(),
+    /** `false` for a node graph that only runs in ComfyUI, never on its page. */
+    runsOnHub: z.boolean().optional(),
     category: z.string().min(1).optional(),
+    section: z.string().min(1).optional(),
+    sections: z.array(z.string().min(1)).min(1).optional(),
     recommendedRank: z.number().int().nonnegative().optional(),
     useCase: workshopUseCaseSchema,
     withheldContent: z

@@ -48,11 +48,18 @@ export type NavFeatured = {
   variants?: Record<string, NavFeaturedVariant>
 }
 
+type NavExploreLink = {
+  label: string
+  intro: string
+  href: string
+}
+
 export type NavItem =
   | {
       label: string
       columns: NavColumn[]
       featured?: NavFeatured
+      exploreLink?: NavExploreLink
       analyticsId: string
       activePathPrefix?: string
       badge?: 'new'
@@ -64,6 +71,7 @@ export type NavItem =
       badge?: 'new'
       columns?: never
       featured?: never
+      exploreLink?: never
       activePathPrefix?: never
     }
 
@@ -95,6 +103,11 @@ export function getMainNavigation(
       label: t('nav.workshop'),
       analyticsId: 'hub',
       activePathPrefix: '/hub/',
+      exploreLink: {
+        label: t('nav.hubExplore'),
+        intro: t('nav.hubExploreHint'),
+        href: routes.hubExplore
+      },
       featured: {
         analyticsId: 'seedance-2-5',
         imageSrc:

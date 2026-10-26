@@ -1,0 +1,1342 @@
+[
+  {
+    "slug": "z-image-turbo-bf16",
+    "name": "Z Image Turbo BF16",
+    "provider": "Tongyi",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/basic_switch_node-1.webp"
+  },
+  {
+    "slug": "wan2-1-vace-14b-fp16",
+    "name": "Wan2.1 Vace 14B FP16",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "edit-videos",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_sirolim_seamless_loop-1.webp"
+  },
+  {
+    "slug": "qwen-image-edit-2511-bf16",
+    "name": "Qwen Image Edit 2511 BF16",
+    "provider": "Qwen",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image-qwen_image_edit_2511_lora_inflation-1.webp"
+  },
+  {
+    "slug": "qwen-image-edit-2509-fp8-e4m3fn",
+    "name": "Qwen Image Edit 2509 FP8 e4m3fn",
+    "provider": "Qwen",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image_edit_2509-1.webp"
+  },
+  {
+    "slug": "qwen-image-fp8-e4m3fn",
+    "name": "Qwen Image FP8 e4m3fn",
+    "provider": "Qwen",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image-1.webp"
+  },
+  {
+    "slug": "ltx-2-3-22b-dev-fp8",
+    "name": "Ltx 2.3 22b Dev FP8",
+    "provider": "Lightricks",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_image_speech_to_video-1.webp"
+  },
+  {
+    "slug": "wan2-2-i2v-low-noise-14b-fp8-scaled",
+    "name": "Wan2.2 I2v Low Noise 14B FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_rob_split_stack_qwen_multi_wan22-1.webp"
+  },
+  {
+    "slug": "wan2-2-i2v-high-noise-14b-fp8-scaled",
+    "name": "Wan2.2 I2v High Noise 14B FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_rob_split_stack_qwen_multi_wan22-1.webp"
+  },
+  {
+    "slug": "flux2-dev-fp8mixed",
+    "name": "Flux2 Dev fp8mixed",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2-1.webp"
+  },
+  {
+    "slug": "sd-xl-base-1-0",
+    "name": "Sd Xl Base 1.0",
+    "provider": "Stability AI",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_sdxl_simple-1.webp"
+  },
+  {
+    "slug": "ltx-2-19b-dev-fp8",
+    "name": "Ltx 2 19b Dev FP8",
+    "provider": "Lightricks",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_canny_to_video-1.webp"
+  },
+  {
+    "slug": "ltx-2-19b-distilled",
+    "name": "Ltx 2 19b Distilled",
+    "provider": "Lightricks",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_canny_to_video-1.webp"
+  },
+  {
+    "slug": "capybara-v0-1",
+    "name": "Capybara V0.1",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/Image_capybara_v0_1_image_edit-1.webp"
+  },
+  {
+    "slug": "anima-base-v1-0",
+    "name": "Anima Base V1.0",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_anima_base_v1-1.webp"
+  },
+  {
+    "slug": "qwen-image-2512-fp8-e4m3fn",
+    "name": "Qwen Image 2512 FP8 e4m3fn",
+    "provider": "Qwen",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_Image_2512-1.webp"
+  },
+  {
+    "slug": "sd3-5-large-fp8-scaled",
+    "name": "Sd3.5 Large FP8 scaled",
+    "provider": "Stability AI",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/sd3.5_large_blur-1.webp"
+  },
+  {
+    "slug": "ltx-2-3-22b-distilled-fp8",
+    "name": "Ltx 2.3 22b Distilled FP8",
+    "provider": "Lightricks",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_ltx2_3_ic_lora_ingredients-1.webp"
+  },
+  {
+    "slug": "wan2-1-vace-1-3b-fp16",
+    "name": "Wan2.1 Vace 1.3B FP16",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_vace_14B_ref2v-1.webp"
+  },
+  {
+    "slug": "flux1-dev",
+    "name": "Flux1 Dev",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux_dev_checkpoint_example-1.webp"
+  },
+  {
+    "slug": "flux-2-klein-base-4b-fp8",
+    "name": "Flux 2 Klein Base 4b FP8",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2_klein_image_edit_4b_base-1.webp"
+  },
+  {
+    "slug": "flux-2-klein-base-9b-fp8",
+    "name": "Flux 2 Klein Base 9b FP8",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2_klein_image_edit_9b_base-1.webp"
+  },
+  {
+    "slug": "ltx-2-3-22b-dev",
+    "name": "Ltx 2.3 22b Dev",
+    "provider": "Lightricks",
+    "modality": "video",
+    "useCase": "edit-videos",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_ltx2_3_lora_remove_subtitles_from_video-1.webp"
+  },
+  {
+    "slug": "wan2-2-animate-14b-fp8-e4m3fn-scaled-kj",
+    "name": "Wan2 2 Animate 14B FP8 e4m3fn scaled KJ",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "edit-videos",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_purz_wan22_animate_auto_character_replace-1.webp"
+  },
+  {
+    "slug": "wan21-wanmove-fp8-scaled-e4m3fn-kj",
+    "name": "Wan21 WanMove FP8 scaled e4m3fn KJ",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_rob_wan_ati_motion_control-1.webp"
+  },
+  {
+    "slug": "ltx-2-5-22b-distilled-transformer-comfy-int8-convrot",
+    "name": "Ltx 2.5 22b Distilled Transformer Comfy INT8 Convrot",
+    "provider": "Lightricks",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_flf2v-1.webp"
+  },
+  {
+    "slug": "minimax-h3-fl2va-pruned-int8-convrot",
+    "name": "Minimax H3 Fl2va Pruned INT8 Convrot",
+    "provider": "MiniMax",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
+  },
+  {
+    "slug": "flux1-dev-fp8",
+    "name": "Flux1 Dev FP8",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux1_dev_uso_reference_image_gen-1.webp"
+  },
+  {
+    "slug": "flux1-fill-dev",
+    "name": "Flux1 Fill Dev",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux_fill_inpaint_example-1.webp"
+  },
+  {
+    "slug": "krea2-turbo-int8-convrot",
+    "name": "Krea2 Turbo INT8 Convrot",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_krea2_turbo_int8_image_style_reference-1.webp"
+  },
+  {
+    "slug": "mage-flow-int8-convrot",
+    "name": "Mage Flow INT8 Convrot",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_mage_flow_t2i_int8-1.webp"
+  },
+  {
+    "slug": "omnigen2-fp16",
+    "name": "Omnigen2 FP16",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_omnigen2_image_edit-1.webp"
+  },
+  {
+    "slug": "sd-xl-refiner-1-0",
+    "name": "Sd Xl Refiner 1.0",
+    "provider": "Stability AI",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/sdxl_refiner_prompt_example-1.webp"
+  },
+  {
+    "slug": "wan2-1-i2v-ati-14b-fp8-e4m3fn",
+    "name": "Wan2 1 I2V ATI 14B FP8 e4m3fn",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template-Animation_Trajectory_Control_Wan_ATI-1.webp"
+  },
+  {
+    "slug": "realismbystableyogi-v4lcm",
+    "name": "RealismByStableYogi V4LCM",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_animate_diff_loops-1.webp"
+  },
+  {
+    "slug": "seedvr2-3b-int8-convrot",
+    "name": "Seedvr2 3b INT8 Convrot",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": ["upscale"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_seedvr2_3b_int8_upscale_image-1.webp"
+  },
+  {
+    "slug": "wan2-2-bernini-r-high-noise-fp8-scaled",
+    "name": "Wan2.2 Bernini R High Noise FP8 scaled",
+    "provider": "Wan",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_bernini_r_image_editing-1.webp"
+  },
+  {
+    "slug": "wan2-2-bernini-r-low-noise-fp8-scaled",
+    "name": "Wan2.2 Bernini R Low Noise FP8 scaled",
+    "provider": "Wan",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_bernini_r_image_editing-1.webp"
+  },
+  {
+    "slug": "hunyuanvideo1-5-1080p-sr-distilled-fp16",
+    "name": "Hunyuanvideo1.5 1080p Sr Distilled FP16",
+    "provider": "Tencent",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_hunyuan_video_1.5_720p_i2v-1.webp"
+  },
+  {
+    "slug": "hunyuan-3d-v2-1",
+    "name": "Hunyuan 3d V2.1",
+    "provider": "Tencent",
+    "modality": "3d",
+    "useCase": "3d",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_hunyuan3d-v2.1-1.webp"
+  },
+  {
+    "slug": "hunyuan3d-dit-v2-fp16",
+    "name": "Hunyuan3d Dit V2 FP16",
+    "provider": "Tencent",
+    "modality": "3d",
+    "useCase": "3d",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_hunyuan3d_image_to_model-1.webp"
+  },
+  {
+    "slug": "hunyuan3d-dit-v2-mv-fp16",
+    "name": "Hunyuan3d Dit V2 Mv FP16",
+    "provider": "Tencent",
+    "modality": "3d",
+    "useCase": "3d",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_hunyuan3d_multiview_to_model-1.webp"
+  },
+  {
+    "slug": "hunyuan3d-dit-v2-mv-turbo-fp16",
+    "name": "Hunyuan3d Dit V2 Mv Turbo FP16",
+    "provider": "Tencent",
+    "modality": "3d",
+    "useCase": "3d",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_hunyuan3d_multiview_to_model_turbo-1.webp"
+  },
+  {
+    "slug": "trellis-2-int8-convrot",
+    "name": "Trellis 2 INT8 Convrot",
+    "modality": "3d",
+    "useCase": "3d",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_pixal3d_trellis2_image_to_model-1.webp"
+  },
+  {
+    "slug": "pixal3d-int8-convrot",
+    "name": "Pixal3d INT8 Convrot",
+    "modality": "3d",
+    "useCase": "3d",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_pixal3d_trellis2_image_to_model-1.webp"
+  },
+  {
+    "slug": "triposplat-fp16",
+    "name": "Triposplat FP16",
+    "modality": "3d",
+    "useCase": "3d",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_triposplat_image_to_gaussian_splat-1.webp"
+  },
+  {
+    "slug": "acestep-v1-5-xl-base-bf16",
+    "name": "Acestep V1.5 Xl Base BF16",
+    "modality": "audio",
+    "useCase": "audio",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/audio_ace_step1_5_xl_base-1.webp"
+  },
+  {
+    "slug": "acestep-v1-5-xl-sft-bf16",
+    "name": "Acestep V1.5 Xl Sft BF16",
+    "modality": "audio",
+    "useCase": "audio",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/audio_ace_step1_5_xl_sft-1.webp"
+  },
+  {
+    "slug": "acestep-v1-5-xl-turbo-bf16",
+    "name": "Acestep V1.5 Xl Turbo BF16",
+    "modality": "audio",
+    "useCase": "audio",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/audio_ace_step1_5_xl_turbo-1.webp"
+  },
+  {
+    "slug": "minimax-music3-dit-fp16",
+    "name": "Minimax Music3 Dit FP16",
+    "provider": "MiniMax",
+    "modality": "audio",
+    "useCase": "audio",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/audio_minimax_music_3-1.webp"
+  },
+  {
+    "slug": "stable-audio-3-medium",
+    "name": "Stable Audio 3 Medium",
+    "provider": "Stability AI",
+    "modality": "audio",
+    "useCase": "audio",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/audio_stable_audio_3_medium-1.webp"
+  },
+  {
+    "slug": "stable-audio-3-medium-base",
+    "name": "Stable Audio 3 Medium Base",
+    "provider": "Stability AI",
+    "modality": "audio",
+    "useCase": "audio",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/audio_stable_audio_3_medium_base-1.webp"
+  },
+  {
+    "slug": "stable-audio-open-1-0",
+    "name": "Stable Audio Open 1.0",
+    "provider": "Stability AI",
+    "modality": "audio",
+    "useCase": "audio",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/audio_stable_audio_example-1.webp"
+  },
+  {
+    "slug": "flux1-krea-dev-fp8-scaled",
+    "name": "Flux1 Krea Dev FP8 scaled",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux1_krea_dev-1.webp"
+  },
+  {
+    "slug": "flux1-canny-dev",
+    "name": "Flux1 Canny Dev",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux_canny_model_example-1.webp"
+  },
+  {
+    "slug": "flux1-dev-kontext-fp8-scaled",
+    "name": "Flux1 Dev Kontext FP8 scaled",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux_kontext_dev_basic-1.webp"
+  },
+  {
+    "slug": "flux1-schnell-fp8",
+    "name": "Flux1 Schnell FP8",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux_schnell-1.webp"
+  },
+  {
+    "slug": "flux1-schnell",
+    "name": "Flux1 Schnell",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux_schnell_full_text_to_image-1.webp"
+  },
+  {
+    "slug": "hidream-e1-1-bf16",
+    "name": "Hidream E1 1 BF16",
+    "provider": "HiDream",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/hidream_e1_1-1.webp"
+  },
+  {
+    "slug": "hidream-e1-full-bf16",
+    "name": "Hidream E1 Full BF16",
+    "provider": "HiDream",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/hidream_e1_full-1.webp"
+  },
+  {
+    "slug": "hidream-i1-dev-fp8",
+    "name": "Hidream I1 Dev FP8",
+    "provider": "HiDream",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/hidream_i1_dev-1.webp"
+  },
+  {
+    "slug": "hidream-i1-fast-fp8",
+    "name": "Hidream I1 Fast FP8",
+    "provider": "HiDream",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/hidream_i1_fast-1.webp"
+  },
+  {
+    "slug": "hidream-i1-full-fp8",
+    "name": "Hidream I1 Full FP8",
+    "provider": "HiDream",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/hidream_i1_full-1.webp"
+  },
+  {
+    "slug": "hunyuan-video-t2v-720p-bf16",
+    "name": "Hunyuan Video T2v 720p BF16",
+    "provider": "Tencent",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/hunyuan_video_text_to_video-1.webp"
+  },
+  {
+    "slug": "anima-preview3-base",
+    "name": "Anima Preview3 Base",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_anima_preview-1.webp"
+  },
+  {
+    "slug": "boogu-image-edit-fp8-scaled",
+    "name": "Boogu Image Edit FP8 scaled",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_boogu_image_0_1_edit-1.webp"
+  },
+  {
+    "slug": "boogu-image-edit-int8-convrot",
+    "name": "Boogu Image Edit INT8 Convrot",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_boogu_image_0_1_edit_int8-1.webp"
+  },
+  {
+    "slug": "boogu-image-turbo-fp8-scaled",
+    "name": "Boogu Image Turbo FP8 scaled",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_boogu_image_0_1_turbo_t2i-1.webp"
+  },
+  {
+    "slug": "chroma-radiance-x0",
+    "name": "Chroma Radiance X0",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_chroma1_radiance_text_to_image-1.webp"
+  },
+  {
+    "slug": "chroma1-hd-fp8mixed",
+    "name": "Chroma1 HD fp8mixed",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_chroma_text_to_image-1.webp"
+  },
+  {
+    "slug": "chrono-edit-14b-fp16",
+    "name": "Chrono Edit 14B FP16",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_chrono_edit_14B-1.webp"
+  },
+  {
+    "slug": "ernie-image",
+    "name": "Ernie Image",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_ernie_image-1.webp"
+  },
+  {
+    "slug": "ernie-image-turbo",
+    "name": "Ernie Image Turbo",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_ernie_image_turbo-1.webp"
+  },
+  {
+    "slug": "firered-image-edit-1-1-transformer",
+    "name": "FireRed Image Edit 1.1 Transformer",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_firered_image_edit1_1-1.webp"
+  },
+  {
+    "slug": "flux-1-fill-dev-onereward-transformer-fp8",
+    "name": "Flux.1 Fill Dev OneReward Transformer FP8",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux.1_fill_dev_OneReward-1.webp"
+  },
+  {
+    "slug": "flux-2-klein-9b-kv-fp8",
+    "name": "Flux 2 Klein 9b Kv FP8",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2_klein_9b_kv_image_edit-1.webp"
+  },
+  {
+    "slug": "flux-2-klein-4b-fp8",
+    "name": "Flux 2 Klein 4b FP8",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2_klein_image_edit_4b_distilled-1.webp"
+  },
+  {
+    "slug": "flux-2-klein-9b-fp8",
+    "name": "Flux 2 Klein 9b FP8",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2_klein_image_edit_9b_distilled-1.webp"
+  },
+  {
+    "slug": "flux-2-klein-base-4b",
+    "name": "Flux 2 Klein Base 4b",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2_klein_text_to_image-1.webp"
+  },
+  {
+    "slug": "flux-2-klein-4b",
+    "name": "Flux 2 Klein 4b",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2_klein_text_to_image-1.webp"
+  },
+  {
+    "slug": "hidream-o1-image-bf16",
+    "name": "Hidream O1 Image BF16",
+    "provider": "HiDream",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_hidream_o1-1.webp"
+  },
+  {
+    "slug": "hidream-o1-image-dev-fp8-scaled",
+    "name": "Hidream O1 Image Dev FP8 scaled",
+    "provider": "HiDream",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_hidream_o1_dev-1.webp"
+  },
+  {
+    "slug": "ideogram4-fp8-scaled",
+    "name": "Ideogram4 FP8 scaled",
+    "provider": "Ideogram",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_ideogram4_t2i-1.webp"
+  },
+  {
+    "slug": "ideogram4-unconditional-fp8-scaled",
+    "name": "Ideogram4 Unconditional FP8 scaled",
+    "provider": "Ideogram",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_ideogram4_t2i-1.webp"
+  },
+  {
+    "slug": "ideogram4-int8-convrot",
+    "name": "Ideogram4 INT8 Convrot",
+    "provider": "Ideogram",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_ideogram4_t2i_int8-1.webp"
+  },
+  {
+    "slug": "ideogram4-unconditional-int8-convrot",
+    "name": "Ideogram4 Unconditional INT8 Convrot",
+    "provider": "Ideogram",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_ideogram4_t2i_int8-1.webp"
+  },
+  {
+    "slug": "joyai-image-edit-int8-convrot",
+    "name": "Joyai Image Edit INT8 Convrot",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_joyai_image_edit-1.webp"
+  },
+  {
+    "slug": "kandinsky5lite-t2i",
+    "name": "Kandinsky5lite T2i",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_kandinsky5_t2i-1.webp"
+  },
+  {
+    "slug": "krea2-turbo-fp8-scaled",
+    "name": "Krea2 Turbo FP8 scaled",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_krea2_turbo_t2i-1.webp"
+  },
+  {
+    "slug": "lens-bf16",
+    "name": "Lens BF16",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_lens_t2i-1.webp"
+  },
+  {
+    "slug": "lens-turbo-bf16",
+    "name": "Lens Turbo BF16",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_lens_turbo_t2i-1.webp"
+  },
+  {
+    "slug": "longcat-image-edit-bf16",
+    "name": "Longcat Image Edit BF16",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_longcat_image_edit-1.webp"
+  },
+  {
+    "slug": "longcat-image-bf16",
+    "name": "Longcat Image BF16",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_longcat_text_to_image-1.webp"
+  },
+  {
+    "slug": "mage-flow-edit-int8-convrot",
+    "name": "Mage Flow Edit INT8 Convrot",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_mage_flow_edit_int8-1.webp"
+  },
+  {
+    "slug": "mage-flow-edit-turbo-int8-convrot",
+    "name": "Mage Flow Edit Turbo INT8 Convrot",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_mage_flow_edit_turbo_int8-1.webp"
+  },
+  {
+    "slug": "netayumev35-pretrained-all-in-one",
+    "name": "NetaYumev35 Pretrained All In One",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_netayume_lumina_t2i-1.webp"
+  },
+  {
+    "slug": "newbie-image-exp0-1-bf16",
+    "name": "NewBie Image Exp0.1 BF16",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_newbieimage_exp0_1-t2i-1.webp"
+  },
+  {
+    "slug": "ovis-image-bf16",
+    "name": "Ovis Image BF16",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_ovis_text_to_image-1.webp"
+  },
+  {
+    "slug": "pixeldit-1300m-1024px-bf16",
+    "name": "Pixeldit 1300m 1024px BF16",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_pixeldit_t2i-1.webp"
+  },
+  {
+    "slug": "qwen-image-edit-fp8-e4m3fn",
+    "name": "Qwen Image Edit FP8 e4m3fn",
+    "provider": "Qwen",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image_edit-1.webp"
+  },
+  {
+    "slug": "qwen-image-edit-2511-int8-convrot",
+    "name": "Qwen Image Edit 2511 INT8 Convrot",
+    "provider": "Qwen",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image_edit_2511_int8-1.webp"
+  },
+  {
+    "slug": "qwen-image-layered-bf16",
+    "name": "Qwen Image Layered BF16",
+    "provider": "Qwen",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image_layered-1.webp"
+  },
+  {
+    "slug": "qwen-image-layered-control-bf16",
+    "name": "Qwen Image Layered Control BF16",
+    "provider": "Qwen",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image_layered_control-1.webp"
+  },
+  {
+    "slug": "wan2-1-i2v-480p-14b-fp16",
+    "name": "Wan2.1 I2v 480p 14B FP16",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_to_video_wan-1.webp"
+  },
+  {
+    "slug": "z-image-bf16",
+    "name": "Z Image BF16",
+    "provider": "Tongyi",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_z_image-1.webp"
+  },
+  {
+    "slug": "z-image-int8-convrot",
+    "name": "Z Image INT8 Convrot",
+    "provider": "Tongyi",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_z_image_int8-1.webp"
+  },
+  {
+    "slug": "z-image-turbo-int8-convrot",
+    "name": "Z Image Turbo INT8 Convrot",
+    "provider": "Tongyi",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_z_image_turbo_int8-1.webp"
+  },
+  {
+    "slug": "ltx-video-2b-v0-9-5",
+    "name": "Ltx Video 2b V0.9.5",
+    "provider": "Lightricks",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/ltxv_image_to_video-1.webp"
+  },
+  {
+    "slug": "ltx-video-2b-v0-9",
+    "name": "Ltx Video 2b V0.9",
+    "provider": "Lightricks",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/ltxv_text_to_video-1.webp"
+  },
+  {
+    "slug": "sd-xl-turbo-1-0-fp16",
+    "name": "Sd Xl Turbo 1.0 FP16",
+    "provider": "Stability AI",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/sdxlturbo_example-1.webp"
+  },
+  {
+    "slug": "ltx-2-3-22b-dev-transformer-only-bf16",
+    "name": "Ltx 2.3 22b Dev Transformer Only BF16",
+    "provider": "Lightricks",
+    "modality": "video",
+    "useCase": "edit-videos",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_ltx2_3_obscura_remova_lora_remove_object_from_video-1.webp"
+  },
+  {
+    "slug": "flux-2-klein-9b",
+    "name": "Flux 2 Klein 9b",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "useCase": "edit-images",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_doc_workbox_klein_9b_image_extend-1.webp"
+  },
+  {
+    "slug": "juggernaut-xl-v9-rundiffusionphoto-v2",
+    "name": "Juggernaut XL V9 RunDiffusionPhoto V2",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": ["upscale"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_hellorob_facegen_skindetail_upscale-1.webp"
+  },
+  {
+    "slug": "wan2-1-vace-module-14b-bf16",
+    "name": "Wan2 1 VACE Module 14B BF16",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "edit-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_shane_video_restyle-1.webp"
+  },
+  {
+    "slug": "wan2-1-t2v-1-3b-fp16",
+    "name": "Wan2.1 T2v 1.3B FP16",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/text_to_video_wan-1.webp"
+  },
+  {
+    "slug": "svd-xt",
+    "name": "Svd Xt",
+    "provider": "Stability AI",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/txt_to_image_to_video-1.webp"
+  },
+  {
+    "slug": "juggernautxl-v9rdphoto2lightning",
+    "name": "JuggernautXL V9Rdphoto2Lightning",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": ["upscale"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_image_upscale_supir-1.webp"
+  },
+  {
+    "slug": "pid-flux1-1024-to-4096-4step-bf16",
+    "name": "Pid Flux1 1024 To 4096 4step BF16",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": ["upscale"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_pid_latent_upscale_dit-1.webp"
+  },
+  {
+    "slug": "seedvr2-7b-int8-convrot",
+    "name": "Seedvr2 7b INT8 Convrot",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": ["upscale"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_seedvr2_7b_int8_upscale_image-1.webp"
+  },
+  {
+    "slug": "void-pass2",
+    "name": "Void Pass2",
+    "modality": "video",
+    "useCase": "edit-videos",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_void_video_inpainting-1.webp"
+  },
+  {
+    "slug": "void-pass1",
+    "name": "Void Pass1",
+    "modality": "video",
+    "useCase": "edit-videos",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_void_video_inpainting-1.webp"
+  },
+  {
+    "slug": "causal-forcing-framewise",
+    "name": "Causal Forcing Framewise",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_causal_forcing_i2v-1.webp"
+  },
+  {
+    "slug": "humo-17b-fp8-e4m3fn",
+    "name": "Humo 17B FP8 e4m3fn",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_humo-1.webp"
+  },
+  {
+    "slug": "hunyuanvideo1-5-720p-i2v-fp16",
+    "name": "Hunyuanvideo1.5 720p I2v FP16",
+    "provider": "Tencent",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_hunyuan_video_1.5_720p_i2v-1.webp"
+  },
+  {
+    "slug": "hunyuanvideo1-5-720p-t2v-fp16",
+    "name": "Hunyuanvideo1.5 720p T2v FP16",
+    "provider": "Tencent",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_hunyuan_video_1.5_720p_t2v-1.webp"
+  },
+  {
+    "slug": "kandinsky5lite-i2v-5s",
+    "name": "Kandinsky5lite I2v 5s",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_kandinsky5_i2v-1.webp"
+  },
+  {
+    "slug": "kandinsky5lite-t2v-sft-5s",
+    "name": "Kandinsky5lite T2v Sft 5s",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_kandinsky5_t2v-1.webp"
+  },
+  {
+    "slug": "ltx-2-19b-dev",
+    "name": "Ltx 2 19b Dev",
+    "provider": "Lightricks",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_i2v_lora-1.webp"
+  },
+  {
+    "slug": "ltx-2-19b-distilled-transformer-only-bf16",
+    "name": "Ltx 2 19b Distilled Transformer Only BF16",
+    "provider": "Lightricks",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx_2_audio_to_video-1.webp"
+  },
+  {
+    "slug": "minimax-h3-ref2va-pruned-int8-convrot",
+    "name": "Minimax H3 Ref2va Pruned INT8 Convrot",
+    "provider": "MiniMax",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_r2v-1.webp"
+  },
+  {
+    "slug": "wan2-1-t2v-14b-fp8-scaled",
+    "name": "Wan2.1 T2v 14B FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2.1_alpha_t2v_14B-1.webp"
+  },
+  {
+    "slug": "wan2-1-fun-camera-v1-1-1-3b-bf16",
+    "name": "Wan2.1 Fun Camera V1.1 1.3B BF16",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2.1_fun_camera_v1.1_1.3B-1.webp"
+  },
+  {
+    "slug": "wan2-1-fun-camera-v1-1-14b-bf16",
+    "name": "Wan2.1 Fun Camera V1.1 14B BF16",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2.1_fun_camera_v1.1_14B-1.webp"
+  },
+  {
+    "slug": "wan2-1-14b-scail-2-fp16",
+    "name": "Wan2.1 14B SCAIL 2 FP16",
+    "provider": "Wan",
+    "modality": "image",
+    "useCase": "generate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan21_scail2_character_replacement-1.webp"
+  },
+  {
+    "slug": "wan2-1-14b-scail-2-int8-convrot",
+    "name": "Wan2.1 14B SCAIL 2 INT8 Convrot",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan21_scail2_character_replacement_int8-1.webp"
+  },
+  {
+    "slug": "wan2-1-i2v-14b-480p-fp8-e4m3fn-scaled-kj",
+    "name": "Wan2 1 I2V 14B 480p FP8 e4m3fn scaled KJ",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_1_infinitetalk-1.webp"
+  },
+  {
+    "slug": "wan2-2-fun-camera-high-noise-14b-fp8-scaled",
+    "name": "Wan2.2 Fun Camera High Noise 14B FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "edit-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_14B_fun_camera-1.webp"
+  },
+  {
+    "slug": "wan2-2-fun-camera-low-noise-14b-fp8-scaled",
+    "name": "Wan2.2 Fun Camera Low Noise 14B FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "edit-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_14B_fun_camera-1.webp"
+  },
+  {
+    "slug": "wan2-2-fun-control-high-noise-14b-fp8-scaled",
+    "name": "Wan2.2 Fun Control High Noise 14B FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "edit-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_14B_fun_control-1.webp"
+  },
+  {
+    "slug": "wan2-2-fun-control-low-noise-14b-fp8-scaled",
+    "name": "Wan2.2 Fun Control Low Noise 14B FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "edit-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_14B_fun_control-1.webp"
+  },
+  {
+    "slug": "wan2-2-fun-inpaint-high-noise-14b-fp8-scaled",
+    "name": "Wan2.2 Fun Inpaint High Noise 14B FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_14B_fun_inpaint-1.webp"
+  },
+  {
+    "slug": "wan2-2-fun-inpaint-low-noise-14b-fp8-scaled",
+    "name": "Wan2.2 Fun Inpaint Low Noise 14B FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_14B_fun_inpaint-1.webp"
+  },
+  {
+    "slug": "wan2-2-s2v-14b-fp8-scaled",
+    "name": "Wan2.2 S2v 14B FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_14B_s2v-1.webp"
+  },
+  {
+    "slug": "wan2-2-t2v-low-noise-14b-fp8-scaled",
+    "name": "Wan2.2 T2v Low Noise 14B FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_14B_t2v-1.webp"
+  },
+  {
+    "slug": "wan2-2-t2v-high-noise-14b-fp8-scaled",
+    "name": "Wan2.2 T2v High Noise 14B FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_14B_t2v-1.webp"
+  },
+  {
+    "slug": "wan2-2-fun-control-5b-bf16",
+    "name": "Wan2.2 Fun Control 5B BF16",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_5B_fun_control-1.webp"
+  },
+  {
+    "slug": "wan2-2-fun-inpaint-5b-bf16",
+    "name": "Wan2.2 Fun Inpaint 5B BF16",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_5B_fun_inpaint-1.webp"
+  },
+  {
+    "slug": "wan2-2-ti2v-5b-fp16",
+    "name": "Wan2.2 Ti2v 5B FP16",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_5B_ti2v-1.webp"
+  },
+  {
+    "slug": "wan-animate-2-int8-convrot",
+    "name": "Wan Animate 2 INT8 Convrot",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_animate2-1.webp"
+  },
+  {
+    "slug": "wan-animate-2-distill-int8-convrot",
+    "name": "Wan Animate 2 Distill INT8 Convrot",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_animate2_distilled-1.webp"
+  },
+  {
+    "slug": "wan2-2-dancer-14b-global-fp8-scaled",
+    "name": "Wan2.2 Dancer 14b Global FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_dancer-1.webp"
+  },
+  {
+    "slug": "wan2-2-dancer-14b-local-fp8-scaled",
+    "name": "Wan2.2 Dancer 14b Local FP8 scaled",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_dancer-1.webp"
+  },
+  {
+    "slug": "wan2-1-flf2v-720p-14b-fp16",
+    "name": "Wan2.1 Flf2v 720p 14B FP16",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "animate-images",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/wan2.1_flf2v_720_f16-1.webp"
+  },
+  {
+    "slug": "wan2-1-fun-control-1-3b-bf16",
+    "name": "Wan2.1 Fun Control 1.3B BF16",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "edit-videos",
+    "tasks": [],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/wan2.1_fun_control-1.webp"
+  },
+  {
+    "slug": "wan2-1-fun-inp-1-3b-bf16",
+    "name": "Wan2.1 Fun Inp 1.3B BF16",
+    "provider": "Wan",
+    "modality": "video",
+    "useCase": "generate-videos",
+    "tasks": ["edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/wan2.1_fun_inp-1.webp"
+  }
+]

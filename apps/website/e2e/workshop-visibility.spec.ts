@@ -18,7 +18,7 @@ test('public HTML excludes catalogue and playground markup', async ({
     expect(response.ok()).toBe(true)
     const html = await response.text()
     expect(html).not.toMatch(
-      /data-testid="(?:workshop-search|model-discovery|model-hero|model-detail)"/
+      /data-testid="(?:workshop-search|home-hub-banner|model-hero|model-detail)"/
     )
     if (path === '/hub/models/') {
       expect(html).not.toContain('noindex')
@@ -73,7 +73,7 @@ test('shows model content without Run when PostHog is unavailable', async ({
 }) => {
   const accountRequests = recordAccountRequests(context)
   await page.goto('/')
-  await expect(page.getByTestId('model-discovery')).toHaveCount(0)
+  await expect(page.getByTestId('home-hub-banner')).toHaveCount(0)
   await expect(
     page.getByRole('link', { name: 'Sign in', exact: true })
   ).toHaveCount(0)

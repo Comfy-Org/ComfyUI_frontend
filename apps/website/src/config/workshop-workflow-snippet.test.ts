@@ -13,6 +13,7 @@ import { initialWorkshopPageState } from './workshop-page-state'
 import { urlUploadField } from './workshop-playground'
 import { workflowDetailsBySlug } from './workshop-workflow-content'
 import {
+  snippetGraphFold,
   workflowCurl,
   workflowPython,
   workflowSdkPlan,
@@ -151,5 +152,35 @@ describe('workflow API snippets', () => {
     expect(args).toContain('X-API-Key: YOUR_API_KEY\n')
     expect(args).toContain('/api/prompt')
     expect(args).not.toContain('base64')
+  })
+
+  it.for(
+    [...workflowDetailsBySlug.values()].flatMap((model) => {
+      const request = workflowSnippetRequest(model, {})
+      const plan = workflowSdkPlan(model, {}, request)
+      return [
+        { slug: model.slug, language: 'Python', code: workflowPython(plan) },
+        {
+          slug: model.slug,
+          language: 'TypeScript',
+          code: workflowTypeScript(plan)
+        },
+        { slug: model.slug, language: 'cURL', code: workflowCurl(request) }
+      ]
+    })
+  )('folds the graph out of the $language snippet for $slug', ({ code }) => {
+    const lines = code.split('\n')
+    const fold = snippetGraphFold(lines)
+    assert(fold, 'no graph found to fold')
+
+    expect(lines[fold.start - 2]).toMatch(/\{$/)
+    expect(lines[fold.end]).toMatch(/^\}/)
+    expect(lines.slice(fold.start, fold.end).join('\n')).toContain(
+      '"class_type"'
+    )
+  })
+
+  it('leaves a snippet with no graph unfolded', () => {
+    expect(snippetGraphFold(['import os', 'print(1)'])).toBeUndefined()
   })
 })

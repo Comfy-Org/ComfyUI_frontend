@@ -60,7 +60,7 @@ test('Beeble displays readable options while the API keeps its native values', a
     alpha.getByRole('option', { name: 'Fill', exact: true })
   ).toHaveCount(1)
   await alpha.selectOption({ label: 'Fill' })
-  await page.getByRole('tab', { name: 'API', exact: true }).click()
+  await page.getByTestId('model-path-api').click()
   await expect(page.getByTestId('snippet')).toContainText('fill')
 })
 
@@ -90,7 +90,7 @@ test('HeyGen offers named language and locale choices and uses the supported voi
   await expect(
     page.getByRole('textbox', { name: 'Voice ID', exact: true })
   ).toHaveCount(0)
-  await page.getByRole('tab', { name: 'API', exact: true }).click()
+  await page.getByTestId('model-path-api').click()
   await expect(page.getByTestId('snippet')).toContainText('fr-FR')
   await expect(page.getByTestId('snippet')).toContainText(
     'd2f4f24783d04e22ab49ee8fdc3715e0'

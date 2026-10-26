@@ -13,14 +13,17 @@
     }
   },
   "workshop": {
+    "file": {
+      "usedBy": "Workflows that use it"
+    },
     "meta": {
       "title": "Browse Models - Comfy",
-      "description": "Browse and run the latest AI image, video and audio models on Comfy."
+      "description": "Browse the latest AI image, video and audio models on Comfy: run them here, call them by API or download them."
     },
     "hero": {
       "eyebrow": "Models",
       "heading": "ComfyUI models",
-      "subtitle": "What will you make next? Try the latest AI models with your own ideas, right in your browser."
+      "subtitle": "Find the latest AI models. Run many of them right here, call them by API or download them."
     },
     "search": {
       "label": "Search models, providers, and categories",
@@ -47,7 +50,7 @@
       "resize": "Drag to resize the filters",
       "text": "Text",
       "other": "Other",
-      "label": "Filter",
+      "label": "Filters",
       "filterBy": "Filter by…",
       "sectionLabel": "Filter by",
       "back": "All filters",
@@ -59,7 +62,10 @@
       "runsOn": "Runs on {model}",
       "outputGroup": "Output",
       "capabilityGroup": "Capabilities",
-      "search": "Search…"
+      "search": "Search…",
+      "inputGroup": "Input",
+      "inputChip": "{media} input",
+      "outputChip": "{media} output"
     },
     "result": "{count} model",
     "results": "{count} models",
@@ -72,7 +78,6 @@
     "showMore": "Show more models",
     "model": {
       "breadcrumb": "Models",
-      "back": "Back to all models",
       "backTo": "Back to {category}",
       "inputs": "Model inputs",
       "select": "Select an option",
@@ -90,6 +95,7 @@
         "leadNoSummary": "{who}.",
         "cta": "Run it in your browser or call it via API.",
         "ctaShort": "Run it in your browser or via API.",
+        "ctaApi": "Call it via API.",
         "price": "Typical cost: {credits} credits per {unit}.",
         "priceNoUnit": "Typical cost: {credits} credits.",
         "title": "{name} API & Playground - Comfy",
@@ -106,7 +112,6 @@
         "details": "Details"
       },
       "relatedProvider": "More from {provider}",
-      "browseAllShort": "Browse all",
       "versions": "{n} versions",
       "deprecated": "Deprecated",
       "deprecatedBody": "This model is being retired.",
@@ -119,7 +124,23 @@
       "priceNoteLabel": "How this price is estimated",
       "incomplete": "Incomplete",
       "notSupported": "Run not yet supported",
-      "missingInputSchema": "We do not know this model's inputs yet, so it cannot be run or called from code. Everything else on this page still works."
+      "missingInputSchema": "We do not know this model's inputs yet, so it cannot be run or called from code. Everything else on this page still works.",
+      "paths": {
+        "label": "Ways to use this model",
+        "cloud": "Open in Cloud",
+        "api": "Use via API"
+      },
+      "usedBy": "Workflows that use {name}",
+      "providerTable": {
+        "subtitle": "Compare {provider}'s other models. Price is the default setting; resolution and duration show the full range each model offers.",
+        "model": "Model",
+        "price": "Price",
+        "resolution": "Resolution",
+        "duration": "Duration",
+        "durationRange": "{min} – {max}s",
+        "durationOne": "{n}s",
+        "durationUpTo": "up to {max}s"
+      }
     },
     "title": "Models",
     "task": {
@@ -186,10 +207,7 @@
     },
     "sections": {
       "featured": "Featured",
-      "seeAll": "See all ({n})",
       "otherFormats": "Other formats",
-      "back": "Back to all categories",
-      "browseAll": "Browse all models",
       "allModels": "All models",
       "scrollBack": "Scroll back",
       "scrollForward": "Scroll forward",
@@ -201,12 +219,16 @@
       "generateImages": "Generate images",
       "editImages": "Edit images",
       "generateVideos": "Generate videos",
-      "animateImages": "Image to video",
+      "animateImages": "Animate images",
       "editVideos": "Edit videos",
       "3d": "3D",
-      "audio": "Audio",
+      "audio": "Audio & speech",
       "text": "Text",
       "more": "More categories"
+    },
+    "useCaseOption": {
+      "generate": "Generate",
+      "edit": "Edit"
     },
     "input": {
       "title": "Input"
@@ -255,8 +277,6 @@
       "label": "Sort",
       "popular": "Most popular",
       "name": "Name A to Z",
-      "priceAsc": "Price: low to high",
-      "priceDesc": "Price: high to low",
       "recommended": "Recommended"
     },
     "form": {
@@ -315,7 +335,7 @@
     },
     "card": {
       "partnerNode": "Partner node",
-      "comfyApp": "Comfy app",
+      "comfyApp": "Comfy",
       "runs": "{n} runs",
       "creditsPerRun": "credits / run",
       "from": "from",
@@ -494,27 +514,15 @@
     },
     "api": {
       "heading": "Call this model from your code",
-      "body": "Call Comfy Router with your Playground inputs. Set COMFY_API_KEY and check any local file paths before running.",
+      "body": "Sends your Playground inputs to Comfy Router.",
+      "stepRunBody": "Calls Comfy Router at this endpoint with your COMFY_API_KEY.",
       "filesOmitted": "cURL cannot carry your uploaded files, so this snippet is incomplete. Use Python or TypeScript instead.",
       "localFiles": "Files are loaded and Base64-encoded when you run the code. Set the paths to your local files.",
       "copy": "Copy snippet",
       "inputInvalid": "Fill in the Playground inputs to generate a request.",
       "mappingUnavailable": "We have not verified this request against the Router yet. Check the docs before you rely on it.",
       "copied": "Copied",
-      "getKey": "Get API key",
-      "downloadGraph": "Download the API graph",
-      "docs": "Router docs",
-      "needs": "What you need",
-      "needsEndpoint": "Endpoint",
-      "needsKey": "Key",
-      "needsFiles": "Your files",
-      "runsOnRouter": "Comfy Router",
-      "runsOnCloud": "Comfy Cloud",
-      "filesRead": "Read from the paths in the code when it runs",
-      "filesUploaded": "Uploaded before the call, then read from their urls",
-      "copyEndpoint": "Copy endpoint",
-      "runsOn": "Runs on",
-      "filesSdk": "Uploaded by the code from their urls"
+      "copyEndpoint": "Copy endpoint"
     },
     "hub": {
       "title": "Browse models",
@@ -558,7 +566,9 @@
       "loadMore": "Load more",
       "empty": "No workflows match your filters",
       "emptyHint": "Try removing some filters",
-      "showing": "Showing {shown} of {total} workflows"
+      "showing": "Showing {shown} of {total} workflows",
+      "showingOf": "Showing {shown} of {total}",
+      "showMore": "Show more"
     },
     "workflow": {
       "by": "by {author}",
@@ -573,14 +583,12 @@
       "graph": "Workflow",
       "graphNote": "The node graph behind this deployment is read-only here. Open it on comfy.org or download the JSON to edit it in ComfyUI.",
       "openComfy": "Open on comfy.org",
-      "download": "Download workflow JSON",
-      "downloadShort": "Download Workflow",
+      "downloadShort": "Download",
       "ratings": "Ratings & comments",
       "related": "Related workflows",
       "relatedAll": "Browse all",
       "cloneCta": "Run on your machine",
       "templateBy": "Template by {author}",
-      "sections": "Workflow sections",
       "graphAlt": "The nodes of this workflow and the links between them",
       "graphHint": "Read-only · drag to pan",
       "graphLoading": "Loading the graph",
@@ -598,9 +606,18 @@
       "inside": "Inside the workflow",
       "previewHint": "A read-only preview of the source template. Open it in Cloud to explore the nodes and make changes.",
       "fullPreview": "Open full-size workflow preview",
-      "apiHint": "The request below uses the same prepared graph and settings as the Playground. Each submission can start a paid run; do not automatically retry a submission whose outcome is unknown.",
-      "apiNote": "Needs a paid Cloud plan and credits.",
-      "apiDocs": "API documentation",
+      "apiTitle": "Use this workflow in your code",
+      "apiLead": "Sends this workflow's graph and your inputs to Comfy Cloud.",
+      "apiStepKeyBody": "Needs a paid Cloud plan with credits.",
+      "apiStepSdk": "Install the SDK",
+      "apiStepSdkBody": "Python 3.10+. Also on npm as {'@'}comfyorg/sdk.",
+      "apiStepRun": "Run it",
+      "apiStepRunBody": "Run the code. It uploads your files and saves the outputs.",
+      "apiLanguage": "Code language",
+      "apiCopyInstall": "Copy install command",
+      "apiShowGraph": "Show full graph JSON",
+      "apiHideGraph": "Hide full graph JSON",
+      "apiGraphNodes": "{count} node | {count} nodes",
       "apiSteps": "The whole call, step by step",
       "apiUploads": "Upload media first",
       "apiUploadGrant": "POST /api/inputs/upload-url with {'{'}\"content_type\":\"image/png\"{'}'} on the Cloud origin, using your workspace credential.",
@@ -634,25 +651,52 @@
       "connectionLost": "The run could not be checked. Reconnect to recover its current status.",
       "lostContact": "This page lost contact with the run. It may still be running on Cloud and using credits. Reconnect to see its current status.",
       "browserUnavailable": "Running workflows from this page is not available yet.",
-      "tryCloud": "Try in Cloud",
-      "explore": "Explore the possibilities"
+      "explore": "Explore the possibilities",
+      "tryIt": "Try it",
+      "paths": "Ways to use this workflow",
+      "downloadWorkflow": "Download workflow",
+      "apiPath": "API",
+      "filesNeeded": "Files it needs",
+      "filesNote": "Put each file in the folder shown, inside your ComfyUI folder.",
+      "noFiles": "It loads no model files, so there is nothing to download.",
+      "downloadFile": "Download {name}",
+      "runsWhere": "Where to run it",
+      "onCloud": "Comfy Cloud",
+      "onMachine": "Your machine",
+      "cloudReady": "Nothing to download — Comfy Cloud already has every file.",
+      "cloudOpen": "Open it in Comfy Cloud to run it.",
+      "requiresCustomNodes": "Requires custom nodes",
+      "runsComfyUI": "Runs in ComfyUI",
+      "fileType": {
+        "checkpoint": "Checkpoint",
+        "diffusionModel": "Diffusion model",
+        "lora": "LoRA",
+        "vae": "VAE",
+        "textEncoder": "Text encoder",
+        "clipVision": "CLIP vision",
+        "controlnet": "ControlNet",
+        "upscaler": "Upscaler",
+        "audioEncoder": "Audio encoder",
+        "backgroundRemoval": "Background removal"
+      },
+      "opensInNewTab": "(opens in a new tab)",
+      "tryCloud": "Try in Cloud"
     },
     "catalogue": {
       "apps": "Apps",
       "eyebrow": "Hub",
       "categories": "Categories",
       "show": "Browse",
-      "workflowsSubtitle": "Turn your ideas into finished results with multi-step workflows powered by AI models.",
-      "appsSubtitle": "Take on bigger ideas with apps that bring multiple workflows together.",
+      "workflowsSubtitle": "Download one or run it in Comfy Cloud, then change any step.",
+      "appsSubtitle": "Ready-made tools, one job each. No nodes, no setup.",
       "noWorkflows": "No workflows match your search and filters.",
-      "backToWorkflows": "Back to workflows",
       "allWorkflows": "All workflows",
-      "browseAllWorkflows": "Browse all workflows",
       "searchWorkflows": "Search workflows…",
       "showWorkflows": "Show {n} workflows",
       "heading": "ComfyUI models",
       "directory": "All models by provider",
-      "directoryCount": "{count} models"
+      "directoryCount": "{count} models",
+      "categoriesLabel": "Workflow categories"
     },
     "assets": {
       "title": "Your assets",
@@ -668,6 +712,194 @@
       "cancelError": "Could not request cancellation. Your generation may still be running."
     },
     "cinematic": {},
+    "space": {
+      "createHint": "Use a ready-made tool",
+      "customizeHint": "Control the process",
+      "buildHint": "Put it in your product with APIs"
+    },
+    "explore": {
+      "subtitle": "Pick an app, remix a workflow or call a model.",
+      "searchLabel": "Search the Hub",
+      "searchPlaceholder": "Try “relight”, “upscale” or a model name",
+      "popularTitle": "Popular",
+      "resultsFor": "Results for “{query}”",
+      "empty": "Nothing matches yet.",
+      "clear": "Clear search",
+      "workflowPill": "Workflow",
+      "kindApp": "App",
+      "kindModel": "Model",
+      "doors": "Browse by format",
+      "doorApps": "Apps",
+      "appsHint": "Upload, click, done. No nodes, no setup.",
+      "doorWorkflows": "Workflows",
+      "workflowsHint": "Open the graph and change any step.",
+      "modelsTitle": "Models",
+      "modelsHint": "Call the latest models through one API.",
+      "communityTitle": "From the community",
+      "communityHeading": "See what people make with Comfy",
+      "communityBody": "Real work from the community, made in ComfyUI.",
+      "communityShare": "Share yours",
+      "modelsIntent": "Run or call any model",
+      "workflowsIntent": "Download and remix",
+      "appsIntent": "Make it in one click",
+      "doorModelPromptLake": "Alpine lake at blue hour",
+      "doorModelPromptRowboat": "Rowboat on a tropical lagoon",
+      "doorModelRun": "Run",
+      "doorAppControlFocal": "Focal length",
+      "doorAppControlRotation": "Rotation",
+      "doorAppGenerate": "Generate",
+      "doorWorkflowStep": "Relight",
+      "doorWorkflowLight": "light",
+      "doorWorkflowStrength": "strength",
+      "doorWorkflowSave": "Save Image",
+      "useCasesTitle": "Browse by what you want to make"
+    },
+    "explorer": {
+      "tabs": {
+        "label": "Model categories",
+        "all": "All",
+        "image": "Image",
+        "video": "Video",
+        "audio": "Audio",
+        "3d": "3D",
+        "edit": "Edit",
+        "upscale": "Upscale",
+        "llm": "LLM",
+        "groups": {
+          "type": "Type",
+          "task": "Task"
+        }
+      },
+      "allModelsLink": "Browse open weights",
+      "filter": {
+        "label": "How you use it",
+        "run": "Run here",
+        "api": "API"
+      },
+      "badge": {
+        "run": "Run",
+        "api": "API"
+      },
+      "compare": {
+        "label": "Compare",
+        "toggle": "Compare {name}",
+        "full": "You can compare up to 4 models",
+        "trayLabel": "Models to compare",
+        "remove": "Remove {name} from compare",
+        "open": "Compare {count} model | Compare {count} models",
+        "openShort": "Compare {count}",
+        "addSlot": "Add a model",
+        "picked": "{count} of {max}",
+        "clear": "Clear",
+        "provider": "Provider",
+        "task": "What it does",
+        "access": "How you use it",
+        "try": "Try {name}",
+        "tryShort": "Try",
+        "viewTitle": "Compare {count} models",
+        "upTo": "up to {max}",
+        "add": "Add model",
+        "copyLink": "Copy link",
+        "copied": "Link copied",
+        "api": "API",
+        "apiFor": "{name} API",
+        "samePrompt": "Same prompt, every model",
+        "samePromptNote": "Each row gave every model the same prompt. Made with Magnific, which runs these same models.",
+        "promptTypes": "Prompt types",
+        "prompt": "Prompt",
+        "noSample": "No sample for this prompt",
+        "sampleAlt": "{model} output for: {prompt}",
+        "types": {
+          "all": "All",
+          "portraits": "Portraits",
+          "product": "Product",
+          "illustration": "Illustration",
+          "typography": "Typography",
+          "fusion": "Fusion & detail"
+        }
+      }
+    },
+    "featured": {
+      "new": "New",
+      "tryModel": "Try model",
+      "openWorkflow": "Open workflow",
+      "openWorkflowNamed": "Open workflow {name}",
+      "comfyWorkflow": "Comfy workflow",
+      "workflowsLabel": "Featured workflows"
+    },
+    "modelsHub": {
+      "subtitle": "Call the latest models through one API, try them here first or download open weights for ComfyUI.",
+      "getApiKey": "Get an API key",
+      "latestLaunch": "Latest launch",
+      "access": {
+        "heading": "Choose how you access models",
+        "openTitle": "Open weights",
+        "openBody": "Download the files and run them on your own machine in ComfyUI.",
+        "openCta": "Browse open weights",
+        "partnerTitle": "Partner models & API",
+        "partnerBody": "Run them here or call them from your code with one API key.",
+        "apiDocs": "API docs"
+      },
+      "family": {
+        "eyebrow": "Model family",
+        "title": "Explore model families",
+        "openVersion": "{name} (open)",
+        "versionsLabel": "Releases in the {name} family",
+        "wanTitle": "The Wan family",
+        "wanDescription": "Open and hosted video models from Alibaba.",
+        "wanExplore": "Explore the Wan family"
+      },
+      "back": {
+        "search": "results for “{query}”",
+        "tab": {
+          "image": "Image models",
+          "video": "Video models",
+          "audio": "Audio models",
+          "3d": "3D models",
+          "edit": "Edit models",
+          "upscale": "Upscale models",
+          "llm": "Language models"
+        },
+        "access": {
+          "run": "Models you can run here",
+          "api": "Models with an API"
+        }
+      }
+    },
+    "resolution": {
+      "label": "Resolution",
+      "all": "All resolutions"
+    },
+    "preview": {
+      "label": "Preview controls",
+      "community": "From the community",
+      "workflowsModalityTask": "Hub: workflows by modality › task",
+      "fullCatalogueMock": "Hub: full catalogue mock (Workflows)"
+    },
+    "taskSidebar": {
+      "typeLabel": "Browse by type",
+      "imageToVideo": "Image to video"
+    },
+    "modalityTasks": {
+      "control": "Control",
+      "motionTransfer": "Motion transfer",
+      "lipSync": "Lip sync",
+      "speech": "Speech & voice",
+      "music": "Music & sound",
+      "fromImage": "From image",
+      "fromText": "From text"
+    },
+    "workflowCollections": {
+      "label": "Collections",
+      "gameAssets": "Game assets",
+      "architecture": "Architecture",
+      "storyboards": "Storyboards",
+      "anime": "Anime & comics"
+    },
+    "workflowGoals": {
+      "characters": "Characters",
+      "product": "Product & ads"
+    },
     "videoTrim": {
       "title": "Trim video",
       "description": "Choose the part to use. It can be {min} to {max} seconds long.",
@@ -906,14 +1138,29 @@
     "prev": "Previous featured workflow",
     "next": "Next featured workflow"
   },
-  "modelDiscovery": {
-    "label": "HUB",
-    "heading": "The latest,\nready to run",
-    "subtitle": "Right in your browser. Nothing to install, nothing to set up.",
-    "rowLabel": "Model providers",
-    "browse": "Browse all models",
-    "workflowRowLabel": "Workflows",
-    "browseWorkflows": "Browse all workflows"
+  "homeHub": {
+    "eyebrow": "Comfy Hub",
+    "heading": "Everything you need to make it",
+    "subtitle": "Partner models, ready-made workflows and one-click apps. Right in your browser.",
+    "explore": "Explore the Hub",
+    "sections": "Hub sections",
+    "entries": {
+      "apps": {
+        "title": "Apps",
+        "line": "Upload, click, done. No nodes, no setup.",
+        "seeAll": "See all apps"
+      },
+      "workflows": {
+        "title": "Workflows",
+        "line": "Run it in Comfy Cloud, then change any step.",
+        "seeAll": "See all workflows"
+      },
+      "models": {
+        "title": "Models",
+        "line": "Call the latest models through one API.",
+        "seeAll": "See all models"
+      }
+    }
   },
   "modelRelease": {
     "eyebrow": "New Model Release",
@@ -2359,7 +2606,6 @@
     "comfyCloud": "Comfy Cloud",
     "comfyEnterprise": "Comfy Enterprise",
     "managedBuilds": "Managed Builds",
-    "comfyHub": "Comfy Workflows",
     "fdct": "Forward Deployed Creatives",
     "gallery": "Gallery",
     "learning": "Learning",
@@ -2394,10 +2640,6 @@
     "mcpServer": "Comfy MCP",
     "supportedModels": "Supported Models",
     "colFeatures": "Features",
-    "colPrograms": "Programs",
-    "colConnect": "Connect",
-    "colMore": "More",
-    "reddit": "Reddit",
     "x": "X",
     "instagram": "Instagram",
     "linkedin": "LinkedIn",
@@ -2407,9 +2649,6 @@
     "featuredProductsAlt": "Gemini Omni 1.1 Flash video: cavemen meet the future",
     "featuredProductsCta": "EXPLORE NOW",
     "featuredProductsCtaAria": "Explore the Gemini Omni 1.1 Flash release",
-    "featuredCommunityTitle": "Product Photography",
-    "featuredCommunityAlt": "Product Photography workflow demo image",
-    "featuredCommunityCtaAria": "Watch the Product Photography demo",
     "featuredCompanyTitle": "Customer story: Black Math",
     "featuredCompanyAlt": "Black Math customer story image",
     "featuredEnterpriseAlt": "MiniMax commercial license video",
@@ -2418,27 +2657,6 @@
     "developerPlatform": "Developer Platform",
     "comfyRouter": "Comfy Router",
     "workshop": "Hub",
-    "hubModels": "Models",
-    "hubModelsDescription": "Run the latest AI models",
-    "hubSeedream5Pro": "Seedream 5.0 Pro",
-    "hubSeedance25": "Seedance 2.5",
-    "hubNanoBanana2": "Nano Banana 2",
-    "hubGptImage2": "GPT Image 2",
-    "hubAllModels": "All models",
-    "hubWorkflows": "Workflows",
-    "hubWorkflowsDescription": "Ready-made recipes for a task",
-    "hubImageToVideo": "Image to video",
-    "hubVideoFromReferences": "Video from references",
-    "hubMotionTransfer": "Motion transfer",
-    "hubEditSelectedRegion": "Edit selected region",
-    "hubAllWorkflows": "All workflows",
-    "hubApps": "Apps",
-    "hubAppsDescription": "Full tools built on Comfy",
-    "reshoot": "Re-shoot",
-    "hubAllApps": "All apps",
-    "featuredHubAlt": "Seedance 2.5 video: animals carry balloons spelling SEEDANCE 2.5 across a rainy street",
-    "featuredHubCta": "Try now",
-    "featuredHubCtaAria": "Try Seedance 2.5 reference to video in the Hub",
     "signIn": "Sign in",
     "signOut": "Log out",
     "accountMenu": "Account menu",
@@ -2473,7 +2691,33 @@
     "colAutomate": "Automate",
     "colBuild": "Build",
     "colResources": "Resources",
-    "colUpdates": "Updates"
+    "colUpdates": "Updates",
+    "hubApps": "Apps",
+    "hubAllApps": "All apps",
+    "reshoot": "Re-shoot",
+    "hubWorkflows": "Workflows",
+    "hubAllWorkflows": "All workflows",
+    "hubModels": "Models",
+    "hubSeedream5Pro": "Seedream 5.0 Pro",
+    "hubSeedance25": "Seedance 2.5",
+    "hubNanoBanana2": "Nano Banana 2",
+    "hubGptImage2": "GPT Image 2",
+    "hubAllModels": "All models",
+    "comfyHub": "Comfy Workflows",
+    "colConnect": "Connect",
+    "reddit": "Reddit",
+    "featuredHubAlt": "Seedance 2.5 video: animals carry balloons spelling SEEDANCE 2.5 across a rainy street",
+    "featuredHubCta": "Try now",
+    "featuredHubCtaAria": "Try Seedance 2.5 reference to video in the Hub",
+    "hubAppsDescription": "Full tools built on Comfy",
+    "hubEditSelectedRegion": "Edit selected region",
+    "hubImageToVideo": "Image to video",
+    "hubModelsDescription": "Run the latest AI models",
+    "hubMotionTransfer": "Motion transfer",
+    "hubVideoFromReferences": "Video from references",
+    "hubWorkflowsDescription": "Ready-made recipes for a task",
+    "hubExplore": "Explore the Hub",
+    "hubExploreHint": "Try in the browser, call by API, or take it into ComfyUI"
   },
   "breadcrumb": {
     "agent": "Comfy Agent",
@@ -3427,7 +3671,8 @@
       "cloudCta": "RUN ON CLOUD",
       "tutorialCta": "VIEW TUTORIAL",
       "blogLink": "Read blog post",
-      "workflowCount": "{count} workflows use this model"
+      "workflowCount": "{count} workflows use this model",
+      "downloadForComfy": "Download for ComfyUI"
     },
     "whatIs": {
       "heading": "What is {name}?",
@@ -5358,7 +5603,6 @@
       "portrait": "Old fisherman on an overcast pier",
       "train": "Night train window at blue hour"
     },
-    "lead": "Direct every shot. Pick the camera, lens, light and grade, and get film-grade frames from any model.",
     "camera": {
       "body": "Body",
       "lens": "Lens",
@@ -5537,7 +5781,6 @@
     "edit": "Edit",
     "credit": "Built on Cseti's CrossView-Warp LoRA and node",
     "pick": {
-      "lead": "Re-shoot any video from any angle. Move the camera anywhere, no reshoot day needed.",
       "drop": "Drop a video here",
       "upload": "Upload a video",
       "exampleMeta": "Try it without uploading anything",
@@ -5727,102 +5970,26 @@
     "play": "Play",
     "pause": "Pause"
   },
-  "openjutsu": {
-    "title": "Openjutsu",
-    "panel": "Swap settings",
-    "closed": "Openjutsu is not open yet",
-    "unavailable": "Openjutsu is not available right now. Try again later.",
-    "signIn": "Sign in to run a swap.",
-    "video": {
-      "add": "Upload video",
-      "limits": "MP4 or MOV · up to 15 s is used",
-      "remove": "Remove video",
-      "restore": "Undo remove video"
+  "hubPages": {
+    "apps": {
+      "open": "Open",
+      "soon": "Soon",
+      "opensInNewTab": "(opens in a new tab)"
     },
-    "target": {
-      "heading": "Extra direction (optional)",
-      "placeholder": "Optional: add character details or fix the last take, e.g. darker jacket, keep the glasses, less smiling.",
-      "empty": "No extra direction",
-      "anyone": "the person"
+    "appShell": {
+      "home": "Comfy home"
     },
-    "seed": {
-      "shuffle": "Pick a random seed",
-      "placeholder": "Random seed"
+    "explore": {
+      "models": "{count} model | {count} models",
+      "workflows": "{count} workflow | {count} workflows",
+      "apps": "{count} app | {count} apps",
+      "kinds": "Results by kind"
     },
-    "trim": {
-      "first": "Using the first {seconds} s",
-      "part": "Using {from}–{to} s",
-      "change": "Change",
-      "changeLabel": "Change the part used"
-    },
-    "needs": {
-      "video": "Add a video to start",
-      "character": "Add a character image"
-    },
-    "generate": {
-      "note": "The original sound is kept on the result. Each run also makes a first-frame image, charged separately.",
-      "busy": "Swapping. You can set up the next take meanwhile."
-    },
-    "phase": {
-      "uploading": "Uploading your files",
-      "starting": "Starting a server",
-      "queued": "Waiting for a server",
-      "running": "Swapping the character",
-      "fetching": "Fetching the result",
-      "elapsed": "{time} elapsed"
-    },
-    "take": {
-      "name": "Take {n}",
-      "source": "Source video",
-      "reuse": "Use these settings",
-      "retry": "Back to settings",
-      "detail": "Replaced {target}"
-    },
-    "examples": {
-      "title": "Start with an example",
-      "singer": {
-        "place": "Home studio",
-        "character": "Disco diva"
-      },
-      "boxer": {
-        "place": "Old gym",
-        "character": "Comfy fan"
-      },
-      "painter": {
-        "place": "Painter's studio",
-        "character": "Ronin"
-      },
-      "cowboy": {
-        "place": "Desert canyon",
-        "character": "Robot"
-      },
-      "failed": "That example could not be loaded. Try again, or add your own video."
-    },
-    "error": {
-      "swap": "The swap did not finish. Try again, or try a shorter part."
-    },
-    "sample": {
-      "banner": "Sample mode: this page is answering itself. No model runs and nothing is charged.",
-      "result": "Sample result: this is your own clip handed back unchanged, to show where a real swap will appear."
-    },
-    "size": {
-      "label": "Quality",
-      "768p": "768p · Sharper",
-      "480p": "480p · Faster"
-    },
-    "run": "Swap character",
-    "tools": "Result views",
-    "sheet": {
-      "expand": "Show swap settings",
-      "collapse": "Hide swap settings"
-    },
-    "compare": {
-      "slider": "Drag to compare the source and the result"
-    },
-    "peek": {
-      "seconds": "{seconds} s"
-    },
-    "noscript": "Openjutsu needs JavaScript to run."
+    "workflow": {
+      "moreLikeThis": "More like this",
+      "getApiKey": "Get an API key",
+      "apiDocs": "API docs"
+    }
   },
   "changelog": {
     "meta": {
@@ -5836,111 +6003,6 @@
     "loading": "Loading the latest release notes…",
     "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
     "retry": "Try again"
-  },
-  "eventChallenge": {
-    "name": "Open Source Higgsfield",
-    "banner": {
-      "label": "Open Source Higgsfield:",
-      "line": "Build an app by 10/30. Win up to $10K.",
-      "cta": "LEARN MORE"
-    },
-    "description": "Higgsfield said they’d open source their platform. Let’s help. You have two weeks to rebuild their most popular apps and more with ComfyUI.",
-    "submit": "Submit your entry",
-    "signup": "Sign up now",
-    "signupCredits": "First 200 signups get free credits",
-    "how": "How to enter",
-    "winnersFeatured": "All winner submissions will be featured on comfy.org/hub with credit.",
-    "examples": "You’ve seen the outputs. Now build the apps",
-    "examplesBody": "Start with a recognizable output: a performance effect, a cinematic camera move, or a music-video transformation. Build a working app that makes it easy for someone else to create their own. These are inspiration prompts for your entry.",
-    "enter": "How to enter",
-    "enterLead": "Create your favorite app and more with ComfyUI, running it wherever you like. Submission deadline is October 30.",
-    "enterSignupTitle": "Sign up",
-    "enterSignupBody": "The first 200 signups get free credits to use.",
-    "enterSignupLink": "Sign up here",
-    "enterSignupCta": "Sign up",
-    "enterRequirementsTitle": "App requirements",
-    "enterPrepareTitle": "Prepare your submission",
-    "enterSubmitTitle": "Submit",
-    "enterSubmitBody": "Submit by October 30. Final winners will be announced November 6.",
-    "enterIntro": "Every submission must include:",
-    "requirement1": "Your work must be built with ComfyUI. Run it however you like: entirely local, Comfy Cloud, the <a href=\"/platform/\" class=\"text-primary-comfy-yellow underline\">Developer Platform</a>, Comfy Router, the <a href=\"{sdkDocsHref}\" target=\"_blank\" class=\"text-primary-comfy-yellow underline\">Comfy SDK</a>, or any mix of them",
-    "requirement2": "Your repo must include an open-source license and enough setup detail that someone else can run it on their own machine",
-    "requirement3": "Any other tools, models, or techniques you want to combine with it are fair game and must be explained in your demo video",
-    "requirement4": "All submissions must be lawful, SFW, and must not contain unlicensed IP or likenesses",
-    "requirement5": "By submitting, you agree to allow ComfyUI, Runpod, LTX, Black Forest Labs, and MiniMax to feature your work with credit across our channels",
-    "requirement6": "One submission per person",
-    "enterRepo": "GitHub repo",
-    "enterRepoBody": "Your app code, workflow files, an open-source license, and instructions to run it locally.",
-    "enterDemo": "Demo video",
-    "enterDemoBody": "Two minutes max, in case we can’t get it running ourselves.",
-    "enterLink": "A link to try it",
-    "enterLinkBody": "Optional, but strongly encouraged: the deployed app or endpoint.",
-    "enterSocial": "Social post",
-    "enterSocialBody": "Link to your demo video on Reddit, X, IG, LI, YT, or TikTok tagging #OpenSourceHiggsfield",
-    "timelineNightsTitle": "Build Nights",
-    "timelineNightsDate": "10/28 – 10/29",
-    "timelineNightsBody": "SF 10/28 · LA 10/29. Register above.",
-    "prizes": "Prizes & Categories",
-    "partners": "Partners",
-    "prizeMainLabel": "Main prizes",
-    "prizeOverall": "Best Overall",
-    "prizeOverallAward": "$10,000",
-    "prizeOverallBody": "Best overall build. Every entry is automatically considered.",
-    "prizeInnovative": "Most Innovative",
-    "prizeInnovativeBody": "An app that’s never been done, novel custom node packs or uses of ComfyUI. Demo video must explain why the submission is innovative.",
-    "prizeViral": "Most Viral",
-    "prizeViralBody": "Delightful to use and made to be shared.",
-    "prizeOpenWeights": "Open Weights Only",
-    "prizeOpenWeightsBody": "No partner nodes or closed-source APIs, open-weights models only.",
-    "prizeRunnerUp": "10 Runner Ups",
-    "prizeRunnerUpAward": "$250 in Comfy Credits",
-    "prizeBonusLabel": "OSS Ecosystem Bonuses",
-    "prizeLtx": "VFX Workflow Built with LTX",
-    "prizeLtxAward": "$2,000 cash",
-    "prizeLtxBody": "LTX must be the core video model in the workflow to qualify.",
-    "prizeFlux": "Built with FLUX",
-    "prizeFluxAward": "$1,000 / $500 / $250 in Flux API credits",
-    "prizeFluxBody": "FLUX 3 must be the core model in the workflow to qualify.",
-    "prizeMinimax": "Built with MiniMax H3",
-    "prizeMinimaxAward": "$1,000 in API credits",
-    "prizeMinimaxBody": "MiniMax H3 must be the core model in the workflow to qualify.",
-    "totalPrize": "$25,000",
-    "totalPrizeCaption": "total worth in prizes",
-    "shareImageAlt": "Open Source Higgsfield: $25,000 in prizes",
-    "gpu": "GeForce RTX 5090",
-    "details": "The details",
-    "timeline": "Timeline",
-    "submitNav": "Submit your entry",
-    "timelineSignupDate": "10/15",
-    "timelineSignupBody": "Registration opens for the online competition.",
-    "timelineSignupTitle": "Signups open",
-    "timelineWindowTitle": "Build",
-    "timelineWindowDate": "10/15 – 10/30",
-    "timelineWindowBody": "Submission window closes: October 30 · 9am PT.",
-    "timelineWinnerDate": "11/6",
-    "timelineWinnerTitle": "Winners announced",
-    "timelineWinnerBody": "Winning entries are featured on comfy.org/hub with credit.",
-    "meetupHeading": "Build together IRL",
-    "meetupBody": "Bring your laptop and join the Comfy team and community for building, demos, and meeting the people behind the workflows.",
-    "meetupCta": "Register",
-    "meetupSfTitle": "Comfy Build Night: San Francisco",
-    "meetupSfBody": "Hosted by the Comfy team.",
-    "meetupSfLocation": "Frontier Tower, San Francisco, CA",
-    "meetupSfDate": "October 28, 2026",
-    "meetupLaTitle": "Comfy Build Night: Los Angeles",
-    "meetupLaBody": "In partnership with AI On The Lot.",
-    "meetupLaLocation": "Los Angeles, CA",
-    "meetupLaDate": "October 29, 2026",
-    "closing": "Show us what you built.",
-    "questions": "Q & A",
-    "faqDemo": "Do I need a polished demo video?",
-    "faqDemoBody": "We’re judging the work, not your video editing or quality. The best demo shows your work in action with an explanation of how it was built.",
-    "faqEvent": "Do I have to attend a Build Night?",
-    "faqEventBody": "The online competition and the Build Nights are separate. Use the submission form to enter the competition and register for a Build Night above.",
-    "faqLicense": "Does my repo need a license?",
-    "faqLicenseBody": "Yes. Publish your app code with an open-source license and setup instructions. You may use partner models; only the Open Weights Only category requires open-weights models with no partner nodes or closed-source APIs.",
-    "faqBonus": "Can I win a main prize and a bonus prize?",
-    "faqBonusBody": "Each entry is eligible for both a main category and a model-provider bonus category."
   },
   "vfx": {
     "meta": {
@@ -6122,6 +6184,208 @@
       "enterprise": "VIEW ENTERPRISE DETAILS",
       "licensing": "MINIMAX LICENSING"
     }
+  },
+  "openjutsu": {
+    "title": "Openjutsu",
+    "panel": "Swap settings",
+    "closed": "Openjutsu is not open yet",
+    "unavailable": "Openjutsu is not available right now. Try again later.",
+    "signIn": "Sign in to run a swap.",
+    "video": {
+      "add": "Upload video",
+      "limits": "MP4 or MOV · up to 15 s is used",
+      "remove": "Remove video",
+      "restore": "Undo remove video"
+    },
+    "target": {
+      "heading": "Extra direction (optional)",
+      "placeholder": "Optional: add character details or fix the last take, e.g. darker jacket, keep the glasses, less smiling.",
+      "empty": "No extra direction",
+      "anyone": "the person"
+    },
+    "seed": {
+      "shuffle": "Pick a random seed",
+      "placeholder": "Random seed"
+    },
+    "trim": {
+      "first": "Using the first {seconds} s",
+      "part": "Using {from}–{to} s",
+      "change": "Change",
+      "changeLabel": "Change the part used"
+    },
+    "needs": {
+      "video": "Add a video to start",
+      "character": "Add a character image"
+    },
+    "generate": {
+      "note": "The original sound is kept on the result. Each run also makes a first-frame image, charged separately.",
+      "busy": "Swapping. You can set up the next take meanwhile."
+    },
+    "phase": {
+      "uploading": "Uploading your files",
+      "starting": "Starting a server",
+      "queued": "Waiting for a server",
+      "running": "Swapping the character",
+      "fetching": "Fetching the result",
+      "elapsed": "{time} elapsed"
+    },
+    "take": {
+      "name": "Take {n}",
+      "source": "Source video",
+      "reuse": "Use these settings",
+      "retry": "Back to settings",
+      "detail": "Replaced {target}"
+    },
+    "examples": {
+      "title": "Start with an example",
+      "singer": {
+        "place": "Home studio",
+        "character": "Disco diva"
+      },
+      "boxer": {
+        "place": "Old gym",
+        "character": "Comfy fan"
+      },
+      "painter": {
+        "place": "Painter's studio",
+        "character": "Ronin"
+      },
+      "cowboy": {
+        "place": "Desert canyon",
+        "character": "Robot"
+      },
+      "failed": "That example could not be loaded. Try again, or add your own video."
+    },
+    "error": {
+      "swap": "The swap did not finish. Try again, or try a shorter part."
+    },
+    "sample": {
+      "banner": "Sample mode: this page is answering itself. No model runs and nothing is charged.",
+      "result": "Sample result: this is your own clip handed back unchanged, to show where a real swap will appear."
+    },
+    "size": {
+      "label": "Quality",
+      "768p": "768p · Sharper",
+      "480p": "480p · Faster"
+    },
+    "run": "Swap character",
+    "tools": "Result views",
+    "sheet": {
+      "expand": "Show swap settings",
+      "collapse": "Hide swap settings"
+    },
+    "compare": {
+      "slider": "Drag to compare the source and the result"
+    },
+    "peek": {
+      "seconds": "{seconds} s"
+    },
+    "noscript": "Openjutsu needs JavaScript to run."
+  },
+  "eventChallenge": {
+    "name": "Open Source Higgsfield",
+    "banner": {
+      "label": "Open Source Higgsfield:",
+      "line": "Build an app by 10/30. Win up to $10K.",
+      "cta": "LEARN MORE"
+    },
+    "description": "Higgsfield said they’d open source their platform. Let’s help. You have two weeks to rebuild their most popular apps and more with ComfyUI.",
+    "submit": "Submit your entry",
+    "signup": "Sign up now",
+    "signupCredits": "First 200 signups get free credits",
+    "how": "How to enter",
+    "winnersFeatured": "All winner submissions will be featured on comfy.org/hub with credit.",
+    "examples": "You’ve seen the outputs. Now build the apps",
+    "examplesBody": "Start with a recognizable output: a performance effect, a cinematic camera move, or a music-video transformation. Build a working app that makes it easy for someone else to create their own. These are inspiration prompts for your entry.",
+    "enter": "How to enter",
+    "enterLead": "Create your favorite app and more with ComfyUI, running it wherever you like. Submission deadline is October 30.",
+    "enterSignupTitle": "Sign up",
+    "enterSignupBody": "The first 200 signups get free credits to use.",
+    "enterSignupLink": "Sign up here",
+    "enterSignupCta": "Sign up",
+    "enterRequirementsTitle": "App requirements",
+    "enterPrepareTitle": "Prepare your submission",
+    "enterSubmitTitle": "Submit",
+    "enterSubmitBody": "Submit by October 30. Final winners will be announced November 6.",
+    "enterIntro": "Every submission must include:",
+    "requirement1": "Your work must be built with ComfyUI. Run it however you like: entirely local, Comfy Cloud, the <a href=\"/platform/\" class=\"text-primary-comfy-yellow underline\">Developer Platform</a>, Comfy Router, the <a href=\"{sdkDocsHref}\" target=\"_blank\" class=\"text-primary-comfy-yellow underline\">Comfy SDK</a>, or any mix of them",
+    "requirement2": "Your repo must include an open-source license and enough setup detail that someone else can run it on their own machine",
+    "requirement3": "Any other tools, models, or techniques you want to combine with it are fair game and must be explained in your demo video",
+    "requirement4": "All submissions must be lawful, SFW, and must not contain unlicensed IP or likenesses",
+    "requirement5": "By submitting, you agree to allow ComfyUI, Runpod, LTX, Black Forest Labs, and MiniMax to feature your work with credit across our channels",
+    "requirement6": "One submission per person",
+    "enterRepo": "GitHub repo",
+    "enterRepoBody": "Your app code, workflow files, an open-source license, and instructions to run it locally.",
+    "enterDemo": "Demo video",
+    "enterDemoBody": "Two minutes max, in case we can’t get it running ourselves.",
+    "enterLink": "A link to try it",
+    "enterLinkBody": "Optional, but strongly encouraged: the deployed app or endpoint.",
+    "enterSocial": "Social post",
+    "enterSocialBody": "Link to your demo video on Reddit, X, IG, LI, YT, or TikTok tagging #OpenSourceHiggsfield",
+    "timelineNightsTitle": "Build Nights",
+    "timelineNightsDate": "10/28 – 10/29",
+    "timelineNightsBody": "SF 10/28 · LA 10/29. Register above.",
+    "prizes": "Prizes & Categories",
+    "partners": "Partners",
+    "prizeMainLabel": "Main prizes",
+    "prizeOverall": "Best Overall",
+    "prizeOverallAward": "$10,000",
+    "prizeOverallBody": "Best overall build. Every entry is automatically considered.",
+    "prizeInnovative": "Most Innovative",
+    "prizeInnovativeBody": "An app that’s never been done, novel custom node packs or uses of ComfyUI. Demo video must explain why the submission is innovative.",
+    "prizeViral": "Most Viral",
+    "prizeViralBody": "Delightful to use and made to be shared.",
+    "prizeOpenWeights": "Open Weights Only",
+    "prizeOpenWeightsBody": "No partner nodes or closed-source APIs, open-weights models only.",
+    "prizeRunnerUp": "10 Runner Ups",
+    "prizeRunnerUpAward": "$250 in Comfy Credits",
+    "prizeBonusLabel": "OSS Ecosystem Bonuses",
+    "prizeLtx": "VFX Workflow Built with LTX",
+    "prizeLtxAward": "$2,000 cash",
+    "prizeLtxBody": "LTX must be the core video model in the workflow to qualify.",
+    "prizeFlux": "Built with FLUX",
+    "prizeFluxAward": "$1,000 / $500 / $250 in Flux API credits",
+    "prizeFluxBody": "FLUX 3 must be the core model in the workflow to qualify.",
+    "prizeMinimax": "Built with MiniMax H3",
+    "prizeMinimaxAward": "$1,000 in API credits",
+    "prizeMinimaxBody": "MiniMax H3 must be the core model in the workflow to qualify.",
+    "totalPrize": "$25,000",
+    "totalPrizeCaption": "total worth in prizes",
+    "shareImageAlt": "Open Source Higgsfield: $25,000 in prizes",
+    "gpu": "GeForce RTX 5090",
+    "details": "The details",
+    "timeline": "Timeline",
+    "submitNav": "Submit your entry",
+    "timelineSignupDate": "10/15",
+    "timelineSignupBody": "Registration opens for the online competition.",
+    "timelineSignupTitle": "Signups open",
+    "timelineWindowTitle": "Build",
+    "timelineWindowDate": "10/15 – 10/30",
+    "timelineWindowBody": "Submission window closes: October 30 · 9am PT.",
+    "timelineWinnerDate": "11/6",
+    "timelineWinnerTitle": "Winners announced",
+    "timelineWinnerBody": "Winning entries are featured on comfy.org/hub with credit.",
+    "meetupHeading": "Build together IRL",
+    "meetupBody": "Bring your laptop and join the Comfy team and community for building, demos, and meeting the people behind the workflows.",
+    "meetupCta": "Register",
+    "meetupSfTitle": "Comfy Build Night: San Francisco",
+    "meetupSfBody": "Hosted by the Comfy team.",
+    "meetupSfLocation": "Frontier Tower, San Francisco, CA",
+    "meetupSfDate": "October 28, 2026",
+    "meetupLaTitle": "Comfy Build Night: Los Angeles",
+    "meetupLaBody": "In partnership with AI On The Lot.",
+    "meetupLaLocation": "Los Angeles, CA",
+    "meetupLaDate": "October 29, 2026",
+    "closing": "Show us what you built.",
+    "questions": "Q & A",
+    "faqDemo": "Do I need a polished demo video?",
+    "faqDemoBody": "We’re judging the work, not your video editing or quality. The best demo shows your work in action with an explanation of how it was built.",
+    "faqEvent": "Do I have to attend a Build Night?",
+    "faqEventBody": "The online competition and the Build Nights are separate. Use the submission form to enter the competition and register for a Build Night above.",
+    "faqLicense": "Does my repo need a license?",
+    "faqLicenseBody": "Yes. Publish your app code with an open-source license and setup instructions. You may use partner models; only the Open Weights Only category requires open-weights models with no partner nodes or closed-source APIs.",
+    "faqBonus": "Can I win a main prize and a bonus prize?",
+    "faqBonusBody": "Each entry is eligible for both a main category and a model-provider bonus category."
   },
   "krea3": {
     "meta": {

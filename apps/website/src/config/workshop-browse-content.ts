@@ -19,6 +19,8 @@ import { modelSummary } from '@/lib/workshop/model-summary'
 import { providerName } from '@/lib/workshop/provider-name'
 import { modelOrderRank } from './workshop-model-order'
 import { hubModelHref } from './hub-models'
+import { workshopContract } from './workshop-contract-catalog'
+import { resolutionsIn } from '@/lib/workshop/resolution'
 import {
   isWorkshopModelDisabled,
   workshopModelAvailability
@@ -221,6 +223,11 @@ export function modelSummaryFor(
     : undefined
 }
 
+function resolutionsFor(catalogId: string) {
+  const resolutions = resolutionsIn(workshopContract(catalogId)?.inputSchema)
+  return resolutions.length ? { resolutions } : {}
+}
+
 const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
   ({ entry, overlay, binding, record }) => {
     const useCases = [
@@ -264,6 +271,7 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
       task: taskForUseCases(useCases),
       useCases,
       capabilities: entry.tags,
+      ...resolutionsFor(record.catalogId),
       ...(thumbnail
         ? {
             thumbnailUrl: thumbnail.url,

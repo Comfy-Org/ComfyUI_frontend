@@ -1,7 +1,7 @@
 import everforestDark from 'shiki/themes/everforest-dark.mjs'
 import { describe, expect, it } from 'vitest'
 
-import { highlightInline, highlightTokens } from './highlight'
+import { highlightInline, highlightLines, highlightTokens } from './highlight'
 
 const COMFY_INK = '#211927'
 
@@ -53,9 +53,20 @@ describe('highlightInline', () => {
     expect(new Set(colors).size).toBeGreaterThan(1)
   })
 
+  it('splits the tokens into the source lines', () => {
+    const code = 'import os\n\nprint(os.name)'
+
+    expect(
+      highlightLines(code, 'python')?.map((line) =>
+        line.map((token) => token.content).join('')
+      )
+    ).toEqual(code.split('\n'))
+  })
+
   it('skips highlighting for oversized payloads', () => {
     expect(highlightInline('x'.repeat(129 * 1024), 'json')).toBeNull()
     expect(highlightTokens('界'.repeat(44 * 1024), 'json')).toBeNull()
+    expect(highlightLines('x'.repeat(129 * 1024), 'json')).toBeNull()
   })
 
   it('keeps every token color readable against Comfy ink', () => {

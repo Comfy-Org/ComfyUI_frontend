@@ -44,7 +44,7 @@ for (const path of PAGES) {
         .first()
         .waitFor()
     if (path === '/hub/models/')
-      await page.getByTestId('workshop-hero').waitFor()
+      await page.getByTestId('models-hub-hero').waitFor()
     await page.evaluate(() => document.fonts.ready)
 
     const gaps = await page.evaluate(() => {

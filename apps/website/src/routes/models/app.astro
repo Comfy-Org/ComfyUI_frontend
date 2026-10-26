@@ -43,6 +43,7 @@ const models = app === 'openjutsu' ? [] : await cinematicModels()
   description={model.summary ?? Astro.locals.t('cinematic.meta.description')}
   ogImage={modelOgImage(model)}
   noindex
+  bare
 >
   {app === 'openjutsu' ? (
     <OpenjutsuPage model={model} client:load />

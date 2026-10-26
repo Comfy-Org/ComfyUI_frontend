@@ -37,6 +37,7 @@ for (const viewport of viewports) {
     if (viewport.desktopNavigation) {
       await expect(desktopLinks).toBeVisible()
       const hub = desktopLinks.getByRole('button', { name: 'Hub', exact: true })
+      await waitForIsland(page, hub)
       await hub.click()
       await expect(
         navigation
@@ -54,6 +55,7 @@ for (const viewport of viewports) {
     } else {
       await expect(desktopLinks).toBeHidden()
       await expect(menuButton).toBeVisible()
+      await waitForIsland(page, menuButton)
       await menuButton.click()
       const menu = page.getByRole('dialog', { name: 'Menu' })
       await expect(menu).toBeVisible()

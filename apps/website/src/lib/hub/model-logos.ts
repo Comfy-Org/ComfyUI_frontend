@@ -54,6 +54,9 @@ const LOGO_MATCHERS: [RegExp, string][] = Object.entries(MODEL_TO_LOGO).map(
   ]
 )
 
+/** The Comfy mark that labels every app card. */
+export const COMFY_LOGO_PATH = '/icons/logomark.svg'
+
 export function getLogoPath(name: string): string | null {
   const normalized = name.trim()
   const slug = MODEL_TO_LOGO[normalized]
