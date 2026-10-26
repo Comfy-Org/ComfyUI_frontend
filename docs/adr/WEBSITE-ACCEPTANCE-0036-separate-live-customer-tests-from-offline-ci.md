@@ -55,4 +55,4 @@ GPU runner is unnecessary because providers perform generation remotely.
 ## Notes
 
 - [Golden-path QA plan](https://app.notion.com/p/comfy-org/Workshop-Models-Golden-Paths-QA-Test-Cases-3e26d73d3650812c9b01f0b7ea21d70e)
-- [Operational setup and coverage boundary](../../apps/website/acceptance/README.md)
+- [Operational setup and coverage boundary](https://github.com/Comfy-Org/comfy-website/blob/main/apps/website/acceptance/README.md)
