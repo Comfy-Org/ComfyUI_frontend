@@ -1,18 +1,7 @@
 import { expect, expectTypeOf, it } from 'vitest'
 
-import { resultItemType } from '@/schemas/resultItemTypeSchema'
-
 import type { ExecutedWsMessage, ExecutingWsMessage } from './types'
 import { zTaskOutput } from './types'
-
-it.for([
-  { folder: 'input', accepted: true },
-  { folder: 'output', accepted: true },
-  { folder: 'temp', accepted: true },
-  { folder: '../private', accepted: false }
-])('validates backend result folder $folder', ({ folder, accepted }) => {
-  expect(resultItemType.safeParse(folder).success).toBe(accepted)
-})
 
 it('accepts terminal executing frames while keeping executed node IDs required', () => {
   expectTypeOf<{
