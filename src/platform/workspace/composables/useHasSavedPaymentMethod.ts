@@ -10,7 +10,10 @@ import { useBillingReadRail } from '@/platform/workspace/composables/useBillingR
 async function listSavedPaymentMethods(): Promise<SavedPaymentMethod[] | null> {
   const rail = useBillingReadRail()
   if (rail === null) return workspaceApi.listSavedPaymentMethods()
-  return (await readOnRail(rail.readPaymentMethods)) ?? null
+  return (
+    (await readOnRail(rail.readPaymentMethods, 'listSavedPaymentMethods')) ??
+    null
+  )
 }
 
 /**
