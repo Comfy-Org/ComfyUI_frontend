@@ -2,7 +2,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { Settings } from '@/platform/settings/types'
 
 test.use({
   initialSettings: {
@@ -14,14 +13,6 @@ let packRequested = false
 
 test.beforeEach(async ({ page }) => {
   packRequested = false
-  await page.route('**/api/settings', async (route) => {
-    if (route.request().method() !== 'GET') return route.fallback()
-    await route.fulfill({
-      json: {
-        'Comfy.Extension.DisabledPacks': ['/extensions/agent-cushions/']
-      } satisfies Partial<Settings>
-    })
-  })
   await page.route('**/extensions', (route) =>
     route.fulfill({
       json: ['/extensions/agent-cushions/main.js']
