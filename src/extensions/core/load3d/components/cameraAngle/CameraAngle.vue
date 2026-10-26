@@ -87,7 +87,6 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
-import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -115,7 +114,7 @@ import type {
   CameraAngleViewMode
 } from '@comfyorg/viewport3d/cameraAngle/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -124,7 +123,7 @@ const { widget } = defineProps<{
   widget: SimplifiedWidget
 }>()
 
-const node = ref<LGraphNode | null>(null)
+const node = useLiveGraphNode(resolveOwnerNode)
 
 const { t } = useI18n()
 const shell = useTemplateRef<InstanceType<typeof ViewportWidgetShell>>('shell')
@@ -148,7 +147,7 @@ const {
   viewMode,
   previewVisible,
   prompt
-} = useCameraAngle(node as Ref<LGraphNode | null>, {
+} = useCameraAngle(node, {
   faceLabels: () => ({
     back: t('cameraAngle.faces.back'),
     left: t('cameraAngle.faces.left'),
@@ -227,8 +226,6 @@ function selectPreset(field: CameraAngleField, key: unknown) {
   if (term) setField(field, term.preset)
 }
 
-const canvasStore = useCanvasStore()
-
 function resolveOwnerNode(): LGraphNode | null {
   const locatorId = widget.nodeLocatorId
   const graph = app.rootGraphOrUndefined
@@ -237,12 +234,12 @@ function resolveOwnerNode(): LGraphNode | null {
 
 onMounted(() => {
   watch(
-    () => canvasStore.rootGraphId,
-    () => {
+    node,
+    (current) => {
       const container = shell.value?.container
-      if (node.value || !container) return
-      node.value = resolveOwnerNode()
-      if (node.value) initialize(container)
+      if (!container) return
+      if (current) initialize(container)
+      else cleanup()
     },
     { immediate: true }
   )

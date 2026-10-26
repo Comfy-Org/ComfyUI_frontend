@@ -1,4 +1,8 @@
-import { applyOps, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  nodesMap,
+  OPAQUE_WIDGETS_KEY
+} from '@comfyorg/comfy-multi-player'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
 import {
@@ -643,6 +647,54 @@ describe('LiveGraphApplier with the real change tracker', () => {
     expect(
       follower.getNodeById(toNodeId(1))?.serialize().widgets_values
     ).toEqual(['head', 0, 'tail'])
+  })
+
+  describe('a positional widget update that resizes a DynamicGroup', () => {
+    function updatedFrom(next: unknown[]) {
+      const { doc, collector } = followedDoc(
+        {
+          nodes: [
+            {
+              id: 1,
+              type: 'DynamicGroupTest',
+              pos: [0, 0],
+              size: [210, 100],
+              widgets_values: ['head', 2, 0.1, 0.2, 'tail']
+            }
+          ],
+          links: []
+        },
+        { types: {} }
+      )
+      const follower = new LGraph()
+      const applier = new LiveGraphApplier({ getGraph: () => follower })
+      applier.applyChanges(doc, collector.take(), CONTEXT)
+      doc.transact(() => {
+        const entry = nodesMap(doc).get('1')
+        assert(entry instanceof Y.Map)
+        entry.set(OPAQUE_WIDGETS_KEY, next)
+      })
+      const result = applier.applyChanges(doc, collector.take(), CONTEXT)
+      return {
+        failureCount: result.failureCount,
+        values: follower.getNodeById(toNodeId(1))?.serialize().widgets_values
+      }
+    }
+
+    it.for<[string, unknown[]]>([
+      ['grows', ['head', 3, 0.1, 0.2, 0.3, 'new tail']],
+      ['grows above max', ['head', 4, 0.1, 0.2, 0.3, 0.4, 'new tail']],
+      ['shrinks', ['head', 1, 0.1, 'new tail']]
+    ])('lands later values on the rows it %s', ([, next]) => {
+      expect(updatedFrom(next)).toEqual({ failureCount: 0, values: next })
+    })
+
+    it('leaves later values unapplied when the count is refused', () => {
+      expect(updatedFrom(['head', 1e9, 'new tail'])).toEqual({
+        failureCount: 1,
+        values: ['head', 2, 0.1, 0.2, 'tail']
+      })
+    })
   })
 
   it('aborts an over-bound positional restore before trailing values shift', () => {

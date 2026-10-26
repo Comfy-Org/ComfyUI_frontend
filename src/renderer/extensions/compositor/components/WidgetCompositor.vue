@@ -70,6 +70,7 @@ import {
   hasCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import { useCompositorPsdDownload } from '@/renderer/extensions/compositor/composables/useCompositorPsdDownload'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
@@ -86,10 +87,9 @@ const { exporting, downloadPsd } = useCompositorPsdDownload()
 const naturalSize = ref<{ w: number; h: number } | null>(null)
 const outputUrl = ref<string | null>(null)
 
-const litegraphNode = computed(() => {
-  if (!nodeId || !app.canvas.graph) return null
-  return app.canvas.graph.getNodeById(nodeId) ?? null
-})
+const litegraphNode = useLiveGraphNode(() =>
+  nodeId ? app.canvas.graph?.getNodeById(nodeId) : null
+)
 
 function updateOutputUrl(): void {
   const node = litegraphNode.value
@@ -103,6 +103,7 @@ watch(() => nodeOutputStore.nodeOutputs, updateOutputUrl, {
   immediate: true
 })
 watch(() => nodeOutputStore.nodePreviewImages, updateOutputUrl, { deep: true })
+watch(litegraphNode, updateOutputUrl)
 
 const previewUrl = computed(() => {
   const node = litegraphNode.value
