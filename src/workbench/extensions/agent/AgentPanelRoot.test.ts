@@ -7503,6 +7503,66 @@ describe('AgentPanelRoot history', () => {
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
+  it('records the status and path of a thread-list failure on both sinks', async () => {
+    executionErrors.showErrorOverlay.mockClear()
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(reportError).mockClear()
+    respondToFetch(threadListRoute, () => json(401, {}))
+
+    renderWithSelectedTarget()
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error_class: 'thread_list_load_failed',
+          retryable: false,
+          request_path: '/agent/threads',
+          request_status: 401,
+          request_error: 'AgentApiError'
+        })
+      )
+    )
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed',
+      tags: {
+        request_path: '/agent/threads',
+        request_status: 401,
+        request_error: 'AgentApiError'
+      },
+      fingerprint: [
+        'agent-request-failure',
+        'agent_thread_list_load_failed',
+        '/agent/threads',
+        'AgentApiError'
+      ]
+    })
+  })
+
+  it('records a thread-list request that never reached the server', async () => {
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(reportError).mockClear()
+    respondToFetch(threadListRoute, () =>
+      Promise.reject(new TypeError('Failed to fetch'))
+    )
+
+    renderWithSelectedTarget()
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error_class: 'thread_list_load_failed',
+          retryable: true,
+          request_path: '/agent/threads',
+          request_error: 'TypeError'
+        })
+      )
+    )
+    expect(
+      vi.mocked(telemetry.trackAgentError).mock.calls.at(-1)?.[0]
+    ).not.toHaveProperty('request_status')
+  })
+
   it('keeps the loaded chat list and reports a non-retryable failure when a refresh ends before its last page', async () => {
     respondToFetch(threadListRoute, () =>
       json(
@@ -10856,10 +10916,22 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await vi.waitFor(() =>
       expect(telemetry.trackAgentError).toHaveBeenCalledWith(
-        expect.objectContaining({ error_class: 'history_load_failed' })
+        expect.objectContaining({
+          error_class: 'history_load_failed',
+          // FE-3200: attributed at the REST boundary, so it names the request
+          // that actually failed rather than the one the `catch` sits under —
+          // `hydrateFromServer` wraps three of them.
+          request_path: '/agent/threads/{threadId}/messages',
+          request_status: 500,
+          request_error: 'AgentApiError'
+        })
       )
     )
     expect(useAgentChatHistoryStore().activeId).toBeNull()
+    // The stored thread id did not ride along into the route it reported.
+    expect(
+      JSON.stringify(vi.mocked(telemetry.trackAgentError).mock.calls)
+    ).not.toContain('th-history')
   })
 
   it('toasts a startup restoration failure that lands while history is open without a selection', async () => {
