@@ -20,7 +20,11 @@
       "role": "application"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/composables/media/useRetryableMediaSrc.ts",
+    "src/composables/useTextFileContent.ts"
+  ],
+  "publicConsumers": "all",
   "allowedDependencies": [],
   "allowedConsumers": [],
   "characterizationScenarios": [
@@ -34,7 +38,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
+    "Existing exports and behavior stay stable. All domains may import the listed public entry points subject to role rules; internal imports remain restricted."
   ],
   "deepImports": "inventory"
 }

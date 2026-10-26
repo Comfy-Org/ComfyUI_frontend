@@ -47,6 +47,7 @@ export const domainRecordSchema = z
       .array(z.object({ path: sourcePath, role: z.enum(ROLES) }).strict())
       .min(1),
     publicEntryPoints: uniqueList(sourcePath),
+    publicConsumers: z.literal('all').optional(),
     allowedDependencies: uniqueList(text),
     allowedConsumers: uniqueList(text),
     characterizationScenarios: z

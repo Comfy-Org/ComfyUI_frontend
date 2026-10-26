@@ -134,8 +134,11 @@ describe('loadArchitectureConfiguration', () => {
 })
 
 describe('runArchitecture', () => {
-  it('passes after update writes the boundaries config', () => {
-    const root = createRepository()
+  it.for([
+    { name: 'restricted', overrides: {} },
+    { name: 'shared', overrides: { publicConsumers: 'all' } }
+  ])('validates $name public APIs after generation', ({ overrides }) => {
+    const root = createRepository(overrides)
     expect(runArchitecture(root, 'update')).toEqual({
       errors: [],
       warnings: []

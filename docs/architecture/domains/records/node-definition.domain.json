@@ -24,10 +24,18 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"],
+  "publicEntryPoints": [
+    "src/schemas/nodeDefSchema.ts",
+    "src/schemas/nodeDef/nodeDefSchemaV2.ts"
+  ],
+  "publicConsumers": "all",
   "allowedDependencies": [],
   "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [
+    {
+      "name": "Public V1 schemas accept backend definitions that migrate into the public V2 contract",
+      "checks": ["src/schemas/nodeDefSchema.test.ts"]
+    },
     {
       "name": "V1 node definitions migrate to V2 and input spec trees report diagnostics within bounds",
       "checks": [
@@ -47,7 +55,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior. nodeDefSchemaV2 is the only public entry point and graph-model its only approved consumer; other cross-module imports remain inherited debt."
+    "Existing exports and runtime behavior stay stable. All domains may import the listed V1 and V2 schema entry points subject to role rules; internal imports remain restricted."
   ],
   "deepImports": "inventory"
 }

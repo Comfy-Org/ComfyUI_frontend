@@ -12,10 +12,18 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/platform/serverFacts/serverFact.ts",
+    "src/platform/serverFacts/pendingServerFact.ts"
+  ],
+  "publicConsumers": "all",
   "allowedDependencies": [],
   "allowedConsumers": [],
   "characterizationScenarios": [
+    {
+      "name": "Local state may withhold a server fact but never grant it",
+      "checks": ["src/platform/serverFacts/serverFact.test.ts"]
+    },
     {
       "name": "pendingServerFact returns its value and requires a backend ticket id",
       "checks": ["src/platform/serverFacts/pendingServerFact.test.ts"]

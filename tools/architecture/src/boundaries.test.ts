@@ -132,6 +132,44 @@ describe('buildBoundaries', () => {
       allowed: true
     },
     {
+      name: 'shared public APIs need no reciprocal domain permission',
+      records: [images({ publicConsumers: 'all' }), editor()],
+      from: 'src/editor/app/a.ts',
+      to: 'src/images/app/index.ts',
+      allowed: true
+    },
+    {
+      name: 'shared public APIs keep role restrictions',
+      records: [images({ publicConsumers: 'all' }), editor()],
+      from: 'src/editor/model/a.ts',
+      to: 'src/images/app/index.ts',
+      allowed: false
+    },
+    {
+      name: 'sharing public APIs does not share enforced internals',
+      records: [images({ publicConsumers: 'all' }), editor()],
+      from: 'src/editor/app/a.ts',
+      to: 'src/images/app/store.ts',
+      allowed: false
+    },
+    {
+      name: 'sharing public APIs does not share inventory internals',
+      records: [
+        images({ publicConsumers: 'all', deepImports: 'inventory' }),
+        editor()
+      ],
+      from: 'src/editor/app/a.ts',
+      to: 'src/images/app/store.ts',
+      allowed: false
+    },
+    {
+      name: 'shared libraries gain no access to consumer internals',
+      records: [images({ publicConsumers: 'all' }), editor()],
+      from: 'src/images/app/index.ts',
+      to: 'src/editor/app/a.ts',
+      allowed: false
+    },
+    {
       name: 'an approved domain may not deep-import an enforced domain',
       records: approved,
       from: 'src/editor/app/a.ts',

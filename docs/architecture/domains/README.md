@@ -61,12 +61,20 @@ allow:
 - imports from a domain into another domain's public entry points, when the
   consumer lists the producer in `allowedDependencies`, the producer lists the
   consumer in `allowedConsumers`, and role direction allows it;
+- imports into a producer's public entry points from any domain when the
+  producer declares `publicConsumers: "all"`, subject to the same role direction;
 - imports from unclassified code into any public entry point;
 - imports from any zone into unclassified code.
 
 `deepImports: "inventory"` opens a domain's internal zones to unclassified code
 and approved consumers. `deepImports: "enforced"` limits outside callers to
 public entry points.
+
+Use `publicConsumers: "all"` for shared libraries whose public contracts are
+intended for any feature. It does not grant access to their internal files,
+approve their outgoing dependencies, or let domain logic import UI components.
+Omitting it keeps reciprocal domain approval. List public files explicitly;
+tests, stories, and implementation helpers do not become public with a component.
 
 The pre-push hook and the `CI: Fallow` job run `fallow audit` with the
 `new-only` gate, so only newly introduced violations fail. Existing violations

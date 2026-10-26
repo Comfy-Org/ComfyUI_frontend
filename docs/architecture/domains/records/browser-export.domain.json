@@ -16,7 +16,11 @@
       "role": "infrastructure"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/base/common/downloadUtil.ts",
+    "src/composables/useCopyToClipboard.ts"
+  ],
+  "publicConsumers": "all",
   "allowedDependencies": [],
   "allowedConsumers": [],
   "characterizationScenarios": [
@@ -31,7 +35,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Existing exports and behavior stay stable. All domains may import the listed public entry points subject to role rules; internal imports remain restricted."
   ],
   "deepImports": "inventory"
 }

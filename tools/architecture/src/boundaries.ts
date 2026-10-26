@@ -106,6 +106,7 @@ function allowedTargets(source: Zone, zones: Zone[]): string[] {
       (target) =>
         roles.includes(target.role) &&
         (target.domain === source.domain ||
+          (target.isPublic && target.domain.publicConsumers === 'all') ||
           (permits(source.domain, target.domain) &&
             reachableFromOutside(target)))
     )

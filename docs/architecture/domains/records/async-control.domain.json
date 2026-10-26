@@ -4,6 +4,10 @@
   "description": "Shared technical module for paged asynchronous work, cancellation, animation-frame coalescing, and idle scheduling. These utilities control when work runs; feature-specific fetches and stores remain external.",
   "modules": [
     {
+      "path": "src/base/common/async.test.ts",
+      "role": "application"
+    },
+    {
       "path": "src/base/common/async.ts",
       "role": "application"
     },
@@ -28,10 +32,19 @@
       "role": "application"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/base/common/async.ts",
+    "src/utils/pagedList.ts",
+    "src/utils/rafBatch.ts"
+  ],
+  "publicConsumers": "all",
   "allowedDependencies": [],
   "allowedConsumers": [],
   "characterizationScenarios": [
+    {
+      "name": "Idle scheduling runs deferred work and supports cancellation with native and fallback scheduling",
+      "checks": ["src/base/common/async.test.ts"]
+    },
     {
       "name": "Asynchronous work control preserves its existing behavior",
       "checks": ["src/utils/pagedList.test.ts", "src/utils/rafBatch.test.ts"]
@@ -39,7 +52,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
+    "Existing exports and behavior stay stable. All domains may import the listed public entry points subject to role rules; internal imports remain restricted."
   ],
   "deepImports": "inventory"
 }
