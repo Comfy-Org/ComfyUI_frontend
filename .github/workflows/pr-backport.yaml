@@ -160,10 +160,10 @@ jobs:
           PR_NUMBER: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number
             || github.event.pull_request.number }}
+          REQUESTED_TARGETS: ${{ steps.targets.outputs.targets }}
         run: |
           set -euo pipefail
 
-          REQUESTED_TARGETS="${{ steps.targets.outputs.targets }}"
           if [ -z "$REQUESTED_TARGETS" ]; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "pending-targets=" >> $GITHUB_OUTPUT
@@ -189,6 +189,19 @@ jobs:
 
             if [ "$FORCE_RERUN" = true ]; then
               PENDING+=("$target")
+              continue
+            fi
+
+            MERGED_PR=$(
+              gh pr list \
+                --state merged \
+                --head "${BACKPORT_BRANCH}" \
+                --base "${target}" \
+                --json number \
+                --jq 'if length > 0 then .[0].number else "" end'
+            )
+            if [ -n "$MERGED_PR" ]; then
+              SKIPPED+=("${target} (merged PR #${MERGED_PR})")
               continue
             fi
 
@@ -222,7 +235,7 @@ jobs:
           if [ -z "$PENDING_JOINED" ]; then
             echo "skip=true" >> $GITHUB_OUTPUT
             if [ -n "$SKIPPED_JOINED" ]; then
-              echo "::warning::Backport branches exist: ${SKIPPED_JOINED}"
+              echo "::warning::All backport targets already handled: ${SKIPPED_JOINED}"
             fi
           else
             echo "skip=false" >> $GITHUB_OUTPUT
