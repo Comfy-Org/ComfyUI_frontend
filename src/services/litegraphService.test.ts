@@ -14,7 +14,6 @@ import { useWidgetStore } from '@/stores/widgetStore'
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
 
-/** Creates a minimal v1 node definition for input-ordering tests. */
 function createNodeDefV1(
   overrides: Partial<ComfyNodeDefV1> = {}
 ): ComfyNodeDefV1 {
