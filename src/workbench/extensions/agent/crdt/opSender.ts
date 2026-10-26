@@ -18,8 +18,9 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import type { DocOp } from '@/scripts/apiDocFrames'
 
-import type { DocOp, DocOpsResult } from './docFrameClient'
+import type { DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import {
   chunkWireOps,

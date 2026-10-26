@@ -18,9 +18,19 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
 
-  send(frame: string): boolean {
-    this.sent.push(frame)
+  sendDocFrame(
+    frame: Parameters<DocFrameTransport['sendDocFrame']>[0]
+  ): boolean {
+    this.sent.push(JSON.stringify(frame))
     return true
+  }
+
+  registerFrameHandler(type: string, handler: (data: unknown) => void) {
+    const listener = (event: Event) => {
+      if (event instanceof CustomEvent) handler(event.detail)
+    }
+    this.addEventListener(type, listener)
+    return () => this.removeEventListener(type, listener)
   }
 
   receive(type: string, data: unknown): void {
@@ -272,6 +282,7 @@ describe('layout follower bridge: stale-schema reseed', () => {
       v: 1,
       workflow_id: 'wf-1',
       seq: 1,
+      lineage_seq: 0,
       update_b64: encodeBase64(
         Y.encodeStateAsUpdate(mint({ nodes: [], links: [] }, { types: {} }))
       )

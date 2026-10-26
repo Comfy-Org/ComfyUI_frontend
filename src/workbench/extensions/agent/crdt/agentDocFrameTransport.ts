@@ -1,4 +1,5 @@
 import type { AgentEventSocket } from '@/workbench/extensions/agent/services/agent/agentEventSource'
+import { reportError } from '@/platform/telemetry/reportError'
 import { SERVER_DOC_FRAME_TYPES } from './docFrameCodes'
 import type { DocFrameTransport } from './docFrameClient'
 
@@ -28,15 +29,26 @@ export function createAgentDocFrameTransport(
   }
 
   return {
-    send(frame) {
-      return source.send(frame)
+    sendDocFrame(frame) {
+      let serialized: string
+      try {
+        serialized = JSON.stringify(frame)
+      } catch {
+        reportError(new Error('Failed to serialize agent document frame'), {
+          surface: 'agent',
+          errorType: 'failure_sending_agent_doc_frame'
+        })
+        return false
+      }
+      return source.send(serialized)
     },
-    addEventListener(type, listener) {
+    registerFrameHandler(type, handler) {
       tap()
+      const listener = (event: Event) => {
+        if (event instanceof CustomEvent) handler(event.detail)
+      }
       target.addEventListener(type, listener)
-    },
-    removeEventListener(type, listener) {
-      target.removeEventListener(type, listener)
+      return () => target.removeEventListener(type, listener)
     },
     onSocketOpen(listener) {
       return source.onStatus((live) => {

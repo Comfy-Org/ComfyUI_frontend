@@ -144,6 +144,7 @@ describe('a human-added node across a tab switch', () => {
       v: 1,
       workflow_id: WORKFLOW_ID,
       seq,
+      lineage_seq: 1,
       actor: 'agent:comfy:host',
       update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
     })
@@ -164,6 +165,7 @@ describe('a human-added node across a tab switch', () => {
       v: 1,
       workflow_id: WORKFLOW_ID,
       seq,
+      lineage_seq: 1,
       actor: ops[0].actor,
       op_ids: ops.map((op) => op.op_id),
       update_b64: encodeBase64(Y.encodeStateAsUpdate(host))

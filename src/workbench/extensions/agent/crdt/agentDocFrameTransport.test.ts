@@ -1,19 +1,40 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 function received(
   transport: ReturnType<typeof createFakeAgentSocket>['transport'],
   type: string
 ): unknown[] {
   const details: unknown[] = []
-  transport.addEventListener(type, (event) => {
-    if (event instanceof CustomEvent) details.push(event.detail)
+  transport.registerFrameHandler(type, (data) => {
+    details.push(data)
   })
   return details
 }
 
 describe('createAgentDocFrameTransport', () => {
+  it('refuses unserializable workflows without sending a frame', () => {
+    const fake = createFakeAgentSocket()
+
+    expect(
+      fake.transport.sendDocFrame({
+        type: 'doc_reseed',
+        data: { v: 1, workflow_id: 'wf', expected_seq: 7, workflow: { id: 1n } }
+      })
+    ).toBe(false)
+
+    expect(fake.send).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'failure_sending_agent_doc_frame' })
+    )
+  })
+
   it.for([
     'doc_update',
     'doc_subscribed',
@@ -53,7 +74,7 @@ describe('createAgentDocFrameTransport', () => {
 
   it('stops listening once destroyed', () => {
     const fake = createFakeAgentSocket()
-    fake.transport.addEventListener('doc_update', vi.fn())
+    fake.transport.registerFrameHandler('doc_update', vi.fn())
     expect(fake.listenerCount()).toBe(1)
 
     fake.transport.destroy()

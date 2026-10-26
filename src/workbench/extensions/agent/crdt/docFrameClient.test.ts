@@ -4,7 +4,7 @@ import * as Y from 'yjs'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import type { DocFrameTransport, ServerDocFrame } from './docFrameClient'
+import type { DocFrameTransport, DecodedServerDocFrame } from './docFrameClient'
 import {
   DocFrameClient,
   encodeBase64,
@@ -19,9 +19,19 @@ vi.mock(import('@/platform/telemetry/reportError'))
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
 
-  send(frame: string): boolean {
-    this.sent.push(frame)
+  sendDocFrame(
+    frame: Parameters<DocFrameTransport['sendDocFrame']>[0]
+  ): boolean {
+    this.sent.push(JSON.stringify(frame))
     return true
+  }
+
+  registerFrameHandler(type: string, handler: (data: unknown) => void) {
+    const listener = (event: Event) => {
+      if (event instanceof CustomEvent) handler(event.detail)
+    }
+    this.addEventListener(type, listener)
+    return () => this.removeEventListener(type, listener)
   }
 
   receive(type: string, data: unknown): void {
@@ -37,7 +47,9 @@ function updateAfter(doc: Y.Doc, mutate: () => void): Uint8Array {
 
 describe('doc frame client', () => {
   it('names every server frame type in SERVER_DOC_FRAME_TYPES', () => {
-    expectTypeOf<ServerDocFrame['type']>().toEqualTypeOf<ServerDocFrameType>()
+    expectTypeOf<
+      DecodedServerDocFrame['type']
+    >().toEqualTypeOf<ServerDocFrameType>()
   })
 
   it('decodes a base64 doc_update that converges through Y.applyUpdate', () => {
@@ -51,6 +63,7 @@ describe('doc frame client', () => {
         v: 1,
         workflow_id: 'wf-1',
         seq: 1,
+        lineage_seq: 0,
         update_b64: encodeBase64(encoded),
         actor: 'agent:thread-1:turn-1',
         op_ids: ['op-1', 'op-2']
@@ -151,6 +164,7 @@ describe('doc frame client', () => {
       v: 1,
       workflow_id: 'wf-1',
       seq: 1,
+      lineage_seq: 0,
       update_b64: encodeBase64(update)
     })
     bridge.resubscribe()
@@ -160,6 +174,7 @@ describe('doc frame client', () => {
       v: 1,
       workflow_id: 'wf-1',
       seq: 1,
+      lineage_seq: 0,
       update_b64: encodeBase64(update)
     })
 
@@ -168,8 +183,6 @@ describe('doc frame client', () => {
     expect(
       frames.filter((frame) => frame.type === 'doc_subscribe')
     ).toHaveLength(3)
-    // The bridge holds semantic state in its FollowerDoc; the ECS adapter
-    // applies observed effects to domain stores, never into layoutStore's doc.
     expect(bridge.follower.doc.getMap('nodes').toJSON()).toEqual({ one: 1 })
   })
 
@@ -281,6 +294,7 @@ describe('doc frame client', () => {
       v: 1,
       workflow_id: 'wf-1',
       seq: 1,
+      lineage_seq: 0,
       update_b64: 'not-base64'
     }
     transport.receive('doc_update', malformed)
@@ -303,10 +317,6 @@ describe('doc frame client', () => {
     })
   })
 
-  // The subscribe-ack side of this domain is pinned by 'keeps a seq-0 or
-  // absent-seq doc_subscribed ok ack as a valid baseline' above. Both frame
-  // types share `isSequence`, so pin the update side too: a seq-0 `doc_update`
-  // must survive parsing rather than being read as "no seq".
   it('keeps seq zero on a doc update', () => {
     expect(
       parseServerDocFrame({
@@ -315,6 +325,7 @@ describe('doc frame client', () => {
           v: 1,
           workflow_id: 'wf-1',
           seq: 0,
+          lineage_seq: 0,
           update_b64: encodeBase64(new Uint8Array([1]))
         }
       })

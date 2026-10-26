@@ -1,7 +1,7 @@
 import * as fc from 'fast-check'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { DocOp } from './docFrameClient'
+import type { DocOp } from '@/scripts/apiDocFrames'
 import type { GraphOperation } from './graphOperations'
 import { mintWireOps } from './opEnvelope'
 import type { OpsResultView } from './opSender'

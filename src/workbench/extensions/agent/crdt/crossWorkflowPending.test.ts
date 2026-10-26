@@ -5,7 +5,7 @@ import type { Ref } from 'vue'
 import { render } from '@testing-library/vue'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import type { DocOp } from './docFrameClient'
+import type { DocOp } from '@/scripts/apiDocFrames'
 import type { GraphOperation } from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {
