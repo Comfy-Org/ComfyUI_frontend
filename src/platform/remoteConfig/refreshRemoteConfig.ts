@@ -260,15 +260,13 @@ const BOOTSTRAP_RETRY_BASE_MS = 1_000
 const BOOTSTRAP_RETRY_MAX_MS = 10_000
 const BOOTSTRAP_UNNAMED_PROJECT_READS = 1
 
-/** A cloud bundle on a loopback host is a local harness, not a deployed Cloud. */
 function servesLocalCloud(): boolean {
   return isLoopbackHost(window.location.hostname)
 }
 
 /**
- * Retries the anonymous /features read until the server names the Firebase
- * project. Deployed cloud waits indefinitely rather than start Firebase on the
- * bundled project; a loopback harness, whose server never sends one, stops.
+ * Blocks until the server names the Firebase project; a loopback harness,
+ * whose server never sends one, stops after a further read instead.
  */
 export async function loadRemoteConfigUntilReady(): Promise<void> {
   let unnamedProjectReads = 0

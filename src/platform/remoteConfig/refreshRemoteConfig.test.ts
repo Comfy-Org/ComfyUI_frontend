@@ -549,7 +549,6 @@ describe('refreshRemoteConfig', () => {
       expect(reachedFirebaseStartup).not.toHaveBeenCalled()
       expect(vi.mocked(global.fetch).mock.calls.length).toBeGreaterThan(5)
 
-      // Release the pending loop so it cannot leak into another test.
       vi.mocked(global.fetch).mockResolvedValue(
         mockSuccessResponse({ firebase_config: { projectId: 'dreamboothy' } })
       )
