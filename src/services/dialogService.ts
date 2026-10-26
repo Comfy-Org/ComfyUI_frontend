@@ -290,6 +290,7 @@ export const useDialogService = (): CoreDialogService => {
     itemList = [],
     hint,
     denyLabel,
+    confirmLabel,
     key = GLOBAL_PROMPT_KEY
   }: ConfirmOptions): Promise<boolean | null> {
     const show = (resolve: (value: boolean | null) => void) => {
@@ -303,7 +304,8 @@ export const useDialogService = (): CoreDialogService => {
           itemList,
           onConfirm: resolve,
           hint,
-          denyLabel
+          denyLabel,
+          confirmLabel
         },
         dialogComponentProps: {
           size: 'md',
