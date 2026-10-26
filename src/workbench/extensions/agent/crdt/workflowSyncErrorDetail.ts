@@ -22,6 +22,8 @@ function detailKey(code: string | undefined): string {
       return 'agent.workflowSyncFailedDetailCatalogMismatch'
     case 'stale_client_schema':
       return 'agent.workflowSyncFailedDetailStaleClient'
+    case 'stale_host_schema':
+      return 'agent.workflowSyncFailedDetailStaleHost'
     default:
       return 'agent.workflowSyncFailedDetail'
   }

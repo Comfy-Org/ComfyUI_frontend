@@ -10,6 +10,7 @@ export const AGENT_SUBGRAPH_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 export const AGENT_SUBGRAPH_DRIFT_WORKFLOW_ID =
   'b92718a4-02ae-41e6-ae85-c33b7bb880f7'
 export const AGENT_SUBGRAPH_HOST_ID = 11
+export const AGENT_SUBGRAPH_REUSED_HOST_ID = 5_123_456_789_012
 export const AGENT_SUBGRAPH_LINK_ID = 21
 export const AGENT_SUBGRAPH_INITIAL_TEXT = 'a photo of a pier'
 export const AGENT_SUBGRAPH_INITIAL_SEED = 0
@@ -17,6 +18,8 @@ export const AGENT_SUBGRAPH_EDITED_SEED = 42
 const AGENT_SUBGRAPH_DRIFT_TEXT = 'must not reach the canvas'
 const AGENT_SUBGRAPH_DRIFT_SEED = 99
 export const AGENT_NESTED_SUBGRAPH_ID = '52e51d98-aaac-44d3-bab1-61eae17b9869'
+const AGENT_OUTER_SUBGRAPH_ID = '1e10c33b-b40d-4af5-bac8-953551c21d0e'
+export const AGENT_INNER_HOST_ID = 30
 
 export const agentSubgraphNodeDefs: Record<string, ComfyNodeDef> = {
   AgentClipSource: {
@@ -174,6 +177,72 @@ export function agentSubgraphFrames(): {
   const initial = host.initialSync()
   const followUp = host.apply([followUpOp])
   return { initial, followUp }
+}
+
+export function agentSubgraphReuseFrames(): {
+  initial: HostFrame[]
+  reuse: HostFrame
+} {
+  const workflow = structuredClone(subgraphWorkflow)
+  const original = workflow.nodes.find(
+    ({ id }) => id === AGENT_SUBGRAPH_HOST_ID
+  )
+  if (!original) throw new Error('Agent subgraph host fixture is missing')
+  Object.assign(original, {
+    widgets_values_form: { order: ['text', 'seed'] }
+  })
+  const host = new HostDoc(AGENT_SUBGRAPH_WORKFLOW_ID, workflow, catalog)
+  const initial = host.initialSync()
+  const reused = structuredClone(original)
+  reused.id = AGENT_SUBGRAPH_REUSED_HOST_ID
+  reused.pos = [720, 300]
+  for (const input of reused.inputs) input.link = null
+  const reuse = host.apply([
+    {
+      op: 'add_node',
+      node_id: AGENT_SUBGRAPH_REUSED_HOST_ID,
+      class_type: reused.type,
+      pos: reused.pos,
+      node: reused
+    }
+  ])
+  return { initial, reuse }
+}
+
+export function agentOutOfOrderSubgraphFrames(): HostFrame[] {
+  const inner = structuredClone(subgraphWorkflow.definitions.subgraphs[0])
+  const innerHost = structuredClone(subgraphWorkflow.nodes[0])
+  innerHost.id = AGENT_INNER_HOST_ID
+  innerHost.type = inner.id
+  innerHost.pos = [640, 420]
+
+  const outer = {
+    ...structuredClone(inner),
+    id: AGENT_OUTER_SUBGRAPH_ID,
+    name: 'Outer Agent Subgraph',
+    inputs: [],
+    outputs: [],
+    widgets: [],
+    nodes: [innerHost],
+    links: []
+  }
+  const outerHost = {
+    ...structuredClone(innerHost),
+    id: AGENT_SUBGRAPH_HOST_ID,
+    type: outer.id,
+    pos: [400, 300],
+    widgets_values: []
+  }
+  const host = new HostDoc(
+    AGENT_SUBGRAPH_WORKFLOW_ID,
+    {
+      nodes: [outerHost],
+      links: [],
+      definitions: { subgraphs: [outer, inner] }
+    },
+    catalog
+  )
+  return host.initialSync()
 }
 
 export const AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT = 'a lighthouse at dawn'

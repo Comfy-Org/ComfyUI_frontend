@@ -1,9 +1,55 @@
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 import { app } from '@/scripts/app'
 
+import { canvasOrReport } from './touchCanvasAccess'
 import { touchGesture } from './touchPointerGuards'
 import type { ComfyExtension } from '@/types/comfy'
+
+type TouchPoint = { clientX: number; clientY: number }
+
+function zoomCanvasAroundPinch(
+  canvas: LGraphCanvas,
+  requestedScale: number,
+  center: TouchPoint,
+  lastTouch: TouchPoint
+) {
+  let scale = requestedScale
+  const newX = (center.clientX - lastTouch.clientX) / requestedScale
+  const newY = (center.clientY - lastTouch.clientY) / requestedScale
+
+  if (scale < canvas.ds.min_scale) {
+    scale = canvas.ds.min_scale
+  } else if (scale > canvas.ds.max_scale) {
+    scale = canvas.ds.max_scale
+  }
+
+  const oldScale = canvas.ds.scale
+
+  canvas.ds.scale = scale
+
+  if (Math.abs(canvas.ds.scale - 1) < 0.01) {
+    canvas.ds.scale = 1
+  }
+
+  const newScale = canvas.ds.scale
+
+  const convertScaleToOffset = (scale: number) => [
+    center.clientX / scale - canvas.ds.offset[0],
+    center.clientY / scale - canvas.ds.offset[1]
+  ]
+  const oldCenter = convertScaleToOffset(oldScale)
+  const newCenter = convertScaleToOffset(newScale)
+
+  canvas.ds.offset[0] += newX + newCenter[0] - oldCenter[0]
+  canvas.ds.offset[1] += newY + newCenter[1] - oldCenter[1]
+
+  lastTouch.clientX = center.clientX
+  lastTouch.clientY = center.clientY
+
+  canvas.setDirty(true, true)
+}
 
 export const simpleTouchSupportExtension: ComfyExtension = {
   name: 'Comfy.SimpleTouchSupport',
@@ -39,11 +85,13 @@ export const simpleTouchSupportExtension: ComfyExtension = {
         } else {
           touchTime = null
           if (e.touches.length === 2) {
-            lastScale = app.canvas.ds.scale
+            const canvas = canvasOrReport('touchstart', e)
+            if (!canvas) return
+            lastScale = canvas.ds.scale
             lastTouch = getMultiTouchCenter(e)
 
             touchDist = getMultiTouchPos(e)
-            app.canvas.pointer.isDown = false
+            canvas.pointer.isDown = false
           }
         }
       },
@@ -107,52 +155,22 @@ export const simpleTouchSupportExtension: ComfyExtension = {
           }
         }
         if (e.touches.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
+          const canvas = canvasOrReport('touchmove', e)
+          if (!canvas) return
           e.preventDefault()
-          app.canvas.pointer.isDown = false
+          canvas.pointer.isDown = false
           touchGesture.zooming = true
 
           LiteGraph.closeAllContextMenus(window)
-          app.canvas.search_box?.close()
+          canvas.search_box?.close()
           const newTouchDist = getMultiTouchPos(e)
 
           const center = getMultiTouchCenter(e)
 
           if (lastScale === null || touchDist === null) return
-          let scale = (lastScale * newTouchDist) / touchDist
+          const scale = (lastScale * newTouchDist) / touchDist
 
-          const newX = (center.clientX - lastTouch.clientX) / scale
-          const newY = (center.clientY - lastTouch.clientY) / scale
-
-          if (scale < app.canvas.ds.min_scale) {
-            scale = app.canvas.ds.min_scale
-          } else if (scale > app.canvas.ds.max_scale) {
-            scale = app.canvas.ds.max_scale
-          }
-
-          const oldScale = app.canvas.ds.scale
-
-          app.canvas.ds.scale = scale
-
-          if (Math.abs(app.canvas.ds.scale - 1) < 0.01) {
-            app.canvas.ds.scale = 1
-          }
-
-          const newScale = app.canvas.ds.scale
-
-          const convertScaleToOffset = (scale: number) => [
-            center.clientX / scale - app.canvas.ds.offset[0],
-            center.clientY / scale - app.canvas.ds.offset[1]
-          ]
-          const oldCenter = convertScaleToOffset(oldScale)
-          const newCenter = convertScaleToOffset(newScale)
-
-          app.canvas.ds.offset[0] += newX + newCenter[0] - oldCenter[0]
-          app.canvas.ds.offset[1] += newY + newCenter[1] - oldCenter[1]
-
-          lastTouch.clientX = center.clientX
-          lastTouch.clientY = center.clientY
-
-          app.canvas.setDirty(true, true)
+          zoomCanvasAroundPinch(canvas, scale, center, lastTouch)
         }
       },
       true

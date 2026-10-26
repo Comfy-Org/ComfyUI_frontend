@@ -65,6 +65,9 @@ const config: KnipConfig = {
     'tools/design-system-audits': {
       project: ['src/**/*.ts']
     },
+    'tools/expected-failures': {
+      project: ['src/**/*.ts']
+    },
     'tools/test-recorder': {
       project: ['src/**/*.ts']
     },

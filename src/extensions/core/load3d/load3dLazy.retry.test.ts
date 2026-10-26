@@ -1,17 +1,16 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { load3dLazyExtension } from '@/extensions/core/load3d/load3dLazy'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 const { lazyModules, lightInfoImport } = vi.hoisted(() => {
   const defineExtension = (name: string) => ({
     name,
-    beforeRegisterNodeDef: vi.fn()
+    nodeCreated: vi.fn()
   })
   return {
     lightInfoImport: { failuresRemaining: 0 },
@@ -81,16 +80,13 @@ const lazyExtensions = Object.values(lazyModules).flatMap((module) =>
   Object.values(module)
 )
 
-function registerNodeDef(id: number, name: string) {
-  const nodeData = fromPartial<ComfyNodeDef>({ name })
-  const nodeType = fromAny<typeof LGraphNode, unknown>({ id })
-  return load3dLazyExtension.beforeRegisterNodeDef!(nodeType, nodeData, app)
+function createNode(id: number, comfyClass: string) {
+  const node = fromAny<LGraphNode, unknown>({ id, constructor: { comfyClass } })
+  return load3dLazyExtension.nodeCreated!(node, app)
 }
 
-const replayedNodeTypes = () =>
-  lazyExtensions.map(
-    ({ beforeRegisterNodeDef }) => beforeRegisterNodeDef.mock.calls
-  )
+const replayedNodes = () =>
+  lazyExtensions.map(({ nodeCreated }) => nodeCreated.mock.calls)
 
 describe('load3dLazy after a failed lazy import', () => {
   it('registers nothing, reports the failure once, and retries the import on the next 3D node', async () => {
@@ -99,22 +95,20 @@ describe('load3dLazy after a failed lazy import', () => {
       extensionStore.extensions.map(({ name }) => name)
     lightInfoImport.failuresRemaining = 1
 
-    await expect(registerNodeDef(1, 'Load3D')).resolves.toBeUndefined()
+    await expect(createNode(1, 'Load3D')).resolves.toBeUndefined()
 
     expect(registeredNames()).toEqual([])
-    expect(replayedNodeTypes()).toEqual(lazyExtensions.map(() => []))
+    expect(replayedNodes()).toEqual(lazyExtensions.map(() => []))
     expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
       errorType: 'error_loading_3d_extensions',
       surface: 'graph'
     })
 
-    await registerNodeDef(2, 'Preview3D')
+    await createNode(2, 'Preview3D')
 
     expect(registeredNames()).toEqual(lazyExtensions.map(({ name }) => name))
-    expect(replayedNodeTypes()).toEqual(
-      lazyExtensions.map(() => [
-        [{ id: 2 }, expect.objectContaining({ name: 'Preview3D' }), app]
-      ])
+    expect(replayedNodes()).toEqual(
+      lazyExtensions.map(() => [[expect.objectContaining({ id: 2 }), app]])
     )
     expect(reportError).toHaveBeenCalledOnce()
   })
