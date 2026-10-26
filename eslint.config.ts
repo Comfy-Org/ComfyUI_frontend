@@ -2,7 +2,6 @@
 
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
-import { configs as astroConfigs } from 'eslint-plugin-astro'
 import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { getDefaultSelectors } from 'eslint-plugin-better-tailwindcss/api/defaults'
 import {
@@ -143,13 +142,7 @@ const oxlintConfigs = oxlint.buildFromOxlintConfigFile(
   path.resolve(import.meta.dirname, '.oxlintrc.json')
 )
 const sharedIgnores = oxlintConfigs.filter((config) => !config.rules)
-// Astro components are parsed by ESLint only, so they keep every rule.
-const rulesCoveredByOxlint = oxlintConfigs
-  .filter((config) => config.rules)
-  .map((config) => ({
-    ...config,
-    ignores: [...(config.ignores ?? []), '**/*.astro', '**/*.astro/**']
-  }))
+const rulesCoveredByOxlint = oxlintConfigs.filter((config) => config.rules)
 
 const commonGlobals = {
   ...globals.browser,
@@ -199,19 +192,6 @@ const billingWebI18nSettings = {
     localeDir: [
       {
         pattern: './apps/billing-web/src/locales/en/main.json',
-        localeKey: 'path'
-      }
-    ],
-    cwd: import.meta.dirname,
-    messageSyntaxVersion: '^9.0.0'
-  }
-} as const
-
-const websiteI18nSettings = {
-  'vue-i18n': {
-    localeDir: [
-      {
-        pattern: './apps/website/src/locales/en/main.json',
         localeKey: 'path'
       }
     ],
@@ -295,14 +275,6 @@ const tailwindConfigs = defineConfig([
         )
       }
     }
-  },
-  {
-    files: ['apps/website/**/*.{astro,ts,mts,vue}'],
-    settings: {
-      'better-tailwindcss': {
-        entryPoint: 'apps/website/src/styles/global.css'
-      }
-    }
   }
 ])
 
@@ -367,22 +339,6 @@ export default defineConfig([
       },
       // Difference in typecheck on CI vs Local
       pluginVue.configs['flat/recommended'],
-      astroConfigs['flat/recommended'],
-      {
-        files: ['apps/website/**/*.astro'],
-        settings,
-        languageOptions: {
-          parserOptions: {
-            parser: tseslintParser
-          }
-        }
-      },
-      {
-        files: ['apps/website/**/*.astro/*.{js,ts}'],
-        rules: {
-          'no-empty': ['error', { allowEmptyCatch: true }]
-        }
-      },
       ...tailwindConfigs,
       {
         files: [
@@ -403,7 +359,7 @@ export default defineConfig([
       importX.flatConfigs.typescript,
       {
         // oxlint runs this rule elsewhere; it cannot see template usages in SFCs
-        files: ['**/*.vue', '**/*.astro'],
+        files: ['**/*.vue'],
         plugins: { 'unused-imports': unusedImports },
         rules: { 'unused-imports/no-unused-imports': 'error' }
       },
@@ -501,35 +457,6 @@ export default defineConfig([
       },
 
       {
-        files: ['apps/website/**/*.vue'],
-        rules: {
-          '@intlify/vue-i18n/no-raw-text': 'off',
-          'vue/no-v-html': 'error'
-        }
-      },
-      // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
-      // TypeScript resolver cannot see but are valid at build time.
-      {
-        files: ['apps/website/**/*.{astro,ts,mts,vue}'],
-        rules: {
-          'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
-        }
-      },
-      // reka-ui wrappers forward props via v-bind, which the rule cannot trace.
-      {
-        files: [
-          'apps/website/src/components/ui/accordion/*.vue',
-          'apps/website/src/components/ui/dialog/*.vue',
-          'apps/website/src/components/ui/navigation-menu/*.vue',
-          'apps/website/src/components/ui/sheet/*.vue',
-          'apps/website/src/components/ui/slider/*.vue',
-          'apps/website/src/components/ui/toggle-group/*.vue'
-        ],
-        rules: {
-          'vue/no-unused-properties': 'off'
-        }
-      },
-      {
         name: 'comfy/enforce-sanitized-html-boundary',
         files: ['src/**/*.vue'],
         rules: {
@@ -565,18 +492,13 @@ export default defineConfig([
       }
     ]
   },
-  // Every tree checked against its own catalog. These entries add only the
-  // catalog and the rule, so the extensions must be ones the blocks above
-  // already parse: tailwindScriptFiles for .ts, templateFiles for .vue and
-  // .astro. Adding .mts here would lint it with espree and fail on syntax.
   ...(
     [
       ['src', settings],
-      ['apps/billing-web', billingWebI18nSettings],
-      ['apps/website', websiteI18nSettings]
+      ['apps/billing-web', billingWebI18nSettings]
     ] as const
   ).map(([root, treeSettings]) => ({
-    files: [`${root}/**/*.{ts,vue,astro}`],
+    files: [`${root}/**/*.{ts,vue}`],
     ignores: tailwindScriptIgnores,
     settings: treeSettings,
     plugins: { '@intlify/vue-i18n': i18nPlugin },

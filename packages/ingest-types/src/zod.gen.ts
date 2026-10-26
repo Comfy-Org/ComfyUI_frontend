@@ -74,6 +74,14 @@ export const zWorkspaceDeploymentList = z.object({
 })
 
 /**
+ * Which step the CPU server of the deployment this browser's editor runs on is on.
+ */
+export const zWorkspaceDeploymentCpuServer = z.object({
+  cpu_server: z.enum(['none', 'creating', 'building', 'created']),
+  deployment_id: z.string().optional()
+})
+
+/**
  * Present only for can_delete_workspace denied with plan_ending when all live subscription rows carry a known future cancel_at. This is guidance, not a promise that deletion will succeed at that time; writes recheck.
  */
 export const zWorkspaceDeletionDenialParams = z.object({
@@ -7084,6 +7092,16 @@ export const zPickWorkspaceDeploymentPath = z.object({
  * Picked; the cookie on this response carries it
  */
 export const zPickWorkspaceDeploymentResponse = z.void()
+
+export const zGetWorkspaceDeploymentCpuServerPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Which step the deployment's CPU server is on
+ */
+export const zGetWorkspaceDeploymentCpuServerResponse =
+  zWorkspaceDeploymentCpuServer
 
 export const zListWorkspaceDeploymentsPath = z.object({
   id: z.string()

@@ -2,10 +2,10 @@
   <div
     v-if="banner"
     role="status"
-    class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 sm:flex-row sm:items-center sm:gap-2"
+    class="flex flex-col gap-3 rounded-xl border border-border/60 bg-background p-3 sm:flex-row sm:items-center sm:gap-2"
     data-testid="billing-plan-checkout-banner"
   >
-    <div class="flex min-w-0 flex-1 flex-col gap-1">
+    <div class="flex min-w-0 flex-1 flex-col gap-2">
       <div class="flex items-center gap-2">
         <i
           :class="
@@ -23,7 +23,7 @@
       <p class="m-0 pl-6 text-sm text-muted-foreground">{{ copy?.body }}</p>
     </div>
     <div class="flex shrink-0 flex-wrap items-center gap-2 pl-6 sm:pl-0">
-      <Button variant="textonly" size="lg" @click="emit('dismiss')">
+      <Button variant="textonly" size="md" @click="emit('dismiss')">
         {{ $t('workspacePanel.billingStatus.planCheckout.dismiss') }}
       </Button>
       <Button
@@ -33,7 +33,7 @@
         target="_blank"
         rel="noopener"
         variant="secondary"
-        size="lg"
+        size="md"
         class="no-underline"
       >
         {{
