@@ -153,7 +153,8 @@ def generate_corrupt_itxt_png():
     path = out(name)
     make_1x1_image().save(path, 'PNG')
 
-    png = bytearray(open(path, 'rb').read())
+    with open(path, 'rb') as source:
+        png = bytearray(source.read())
     corrupt_zlib = bytes.fromhex('789c434c4a4e494d1c25461201003da5c15d')
     chunk_type = b'iTXt'
     chunk_data = b'workflow\0\x01\0\0\0' + corrupt_zlib
