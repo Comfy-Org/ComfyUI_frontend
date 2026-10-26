@@ -40,6 +40,7 @@ import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { AppMode } from '@/utils/appMode'
 import { isAppModeValue } from '@/utils/appMode'
+import { zeroUuid } from '@/utils/uuid'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
@@ -482,14 +483,63 @@ export const useExecutionStore = defineStore('execution', () => {
    * Whether frames for this job may paint the active workflow's canvas.
    * Jobs whose owner is unknown are admitted unless another job is active.
    */
-  function belongsToActiveWorkflow(jobId: JobId | undefined): boolean {
+  /**
+   * The all-zero sentinel is `LGraph._id`'s default, which the codebase reads
+   * as "no id yet" and replaces on configure and on clear. Comparing it as a
+   * real id matches nothing, which rejected a fresh graph's own frames. It
+   * reaches the wire regardless, because the server falls back to the id inside
+   * `extra_pnginfo.workflow`.
+   */
+  function workflowIdOrUndefined(id: string | undefined): string | undefined {
+    return !id || id === zeroUuid ? undefined : id
+  }
+
+  /**
+   * Resolution order, strongest first. `instanceId` is the only identifier
+   * unique per open tab. The session path is next, since a path identifies one
+   * open workflow. The frame's own `workflow_id` is weakest, because every copy
+   * of a graph shares it, so it can only place a job no per-tab mapping knows
+   * about: one queued before a page reload, or by another client.
+   *
+   * @param workflowId The id the server stamped on the frame, where it sends
+   * one. Absent on a backend without ComfyUI#16763, and on frames with no
+   * `prompt_id`.
+   */
+  function belongsToActiveWorkflow(
+    jobId: JobId | undefined,
+    workflowId?: string
+  ): boolean {
     if (!jobId) return true
+
+    const ownedByActiveJob = () =>
+      !activeJobId.value || jobId === activeJobId.value
+
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (!activeWorkflow) return ownedByActiveJob()
+
     const ownerInstanceId = jobIdToWorkflowInstanceId.get(jobId)
-    const activeInstanceId = workflowStore.activeWorkflow?.instanceId
-    if (ownerInstanceId && activeInstanceId) {
-      return ownerInstanceId === activeInstanceId
+    if (ownerInstanceId && activeWorkflow.instanceId) {
+      return ownerInstanceId === activeWorkflow.instanceId
     }
-    return !activeJobId.value || jobId === activeJobId.value
+
+    const ownerPath = jobIdToSessionWorkflowPath.value.get(jobId)
+    if (ownerPath && activeWorkflow.path) {
+      return ownerPath === activeWorkflow.path
+    }
+
+    const frameWorkflowId = workflowIdOrUndefined(workflowId)
+    // Read as ComfyWorkflow, where both states are nullable. LoadedComfyWorkflow
+    // declares them present and the running store does not always honour that,
+    // and this is read from a computed, so a missing state must not throw.
+    const states: ComfyWorkflow = activeWorkflow
+    const activeGraphId = workflowIdOrUndefined(
+      states.activeState?.id ?? states.initialState?.id
+    )
+    if (frameWorkflowId && activeGraphId) {
+      return frameWorkflowId === activeGraphId
+    }
+
+    return ownedByActiveJob()
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -1167,7 +1217,11 @@ export const useExecutionStore = defineStore('execution', () => {
     const startedJobIds = Object.keys(queuedJobs.value).filter(
       (jobId) => queuedJobs.value[jobId].executionStartedAt !== undefined
     )
-    const ownedJobId = startedJobIds.findLast(belongsToActiveWorkflow)
+    // Wrapped, not passed directly: findLast would hand the array index to the
+    // second parameter.
+    const ownedJobId = startedJobIds.findLast((jobId) =>
+      belongsToActiveWorkflow(jobId)
+    )
     executionIdToLocatorCache.clear()
     if (!ownedJobId) {
       nodeProgressStates.value = {}

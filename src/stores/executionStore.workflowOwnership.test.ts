@@ -5,6 +5,7 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
+import { zeroUuid } from '@/utils/uuid'
 
 vi.mock(import('@/composables/useAppMode'))
 vi.mock(import('@/platform/telemetry'))
@@ -102,5 +103,63 @@ describe('executionStore workflow ownership', () => {
   it('accepts a frame that names no job at all', () => {
     // `status` frames carry no prompt_id, so there is nothing to attribute.
     expect(store.belongsToActiveWorkflow(undefined)).toBe(true)
+  })
+
+  describe('the session path, when no tab instance is known', () => {
+    it('places a job by the path it was queued from', () => {
+      store.ensureSessionWorkflowPath('job-b', workflowB.path)
+
+      expect(store.belongsToActiveWorkflow('job-b')).toBe(false)
+      useWorkflowStore().activeWorkflow = workflowB
+      expect(store.belongsToActiveWorkflow('job-b')).toBe(true)
+    })
+
+    it('loses to the tab instance when the two disagree', () => {
+      queueJobFrom('job-a', workflowA)
+      store.ensureSessionWorkflowPath(
+        'job-a',
+        workflowB.path,
+        workflowA.instanceId
+      )
+
+      useWorkflowStore().activeWorkflow = workflowB
+      expect(
+        store.belongsToActiveWorkflow('job-a'),
+        'the instance still says A, so B does not own it'
+      ).toBe(false)
+    })
+  })
+
+  describe("the frame's own workflow id, when no per-tab mapping exists", () => {
+    it('places a job queued before this page load', () => {
+      // No instance and no path: the only thing left is what the server
+      // stamped on the frame, which is why ComfyUI#16763 exists.
+      expect(
+        store.belongsToActiveWorkflow('job-from-a-previous-page', 'other-graph')
+      ).toBe(false)
+      expect(
+        store.belongsToActiveWorkflow(
+          'job-from-a-previous-page',
+          'shared-graph-id'
+        )
+      ).toBe(true)
+    })
+
+    it('ignores the all-zero sentinel rather than comparing it', () => {
+      // LGraph._id's default. Compared as a real id it matches nothing, so the
+      // tab's own frames were rejected.
+      expect(
+        store.belongsToActiveWorkflow('job-on-a-fresh-graph', zeroUuid)
+      ).toBe(true)
+    })
+
+    it('loses to the session path when the two disagree', () => {
+      store.ensureSessionWorkflowPath('job-b', workflowB.path)
+
+      expect(
+        store.belongsToActiveWorkflow('job-b', 'shared-graph-id'),
+        'the path says B owns it, even though the graph id matches A'
+      ).toBe(false)
+    })
   })
 })

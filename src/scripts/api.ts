@@ -84,6 +84,7 @@ import type {
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { zeroUuid } from '@/utils/uuid'
 import {
   fetchHistory,
   fetchJobAssets,
@@ -97,6 +98,25 @@ interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
   partial_execution_targets?: NodeExecutionId[]
+  /**
+   * Echoed back by the server on every WebSocket frame this prompt produces
+   * that carries a `prompt_id` (ComfyUI#16763 for JSON frames, #16809 for the
+   * metadata header on binary previews). An older server ignores the field
+   * rather than rejecting the prompt.
+   *
+   * Two limits, since the contract is the server's and not ours. `status` and
+   * `logs` frames have no `prompt_id`, so they are never stamped. And a value
+   * the server cannot use is dropped rather than rejected: over 256 characters
+   * of its own JSON serialisation, with non-ASCII escaped to `\\uXXXX` first.
+   * The server then falls back to `extra_data.extra_pnginfo.workflow.id`, so
+   * omitting this field does not keep frames unstamped.
+   *
+   * Cloud does not read this field: its gateway stamps `workflow_id` from
+   * `extra_pnginfo.workflow.id` and assigns the routing ids after the frame's
+   * own fields, where core lets the frame's fields win. Treat the ids that
+   * arrive as authoritative either way.
+   */
+  workflow_metadata?: { workflow_id: string }
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
@@ -1354,6 +1374,16 @@ export class ComfyApi extends EventTarget {
       ...(options?.partialExecutionTargets && {
         partial_execution_targets: options.partialExecutionTargets
       }),
+      // `LGraph.serialize()` returns `id` unfiltered and `LGraph._id` defaults
+      // to the all-zero sentinel, which the codebase reads as "no id yet" and
+      // replaces on configure and on clear, so it is not a routing key and is
+      // not sent as one. This does not keep it off the wire: the same graph
+      // goes out under `extra_pnginfo` and the server falls back to the id
+      // there, which is why the store also discards the sentinel on the way in.
+      ...(workflow.id &&
+        workflow.id !== zeroUuid && {
+          workflow_metadata: { workflow_id: workflow.id }
+        }),
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,
