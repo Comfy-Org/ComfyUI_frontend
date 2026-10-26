@@ -12,6 +12,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'
 
 const captureCanvasState = vi.fn()
+const refreshModifiedState = vi.fn()
 
 function createTarget(options: Record<string, unknown> = {}) {
   const graph = createTestRootGraph()
@@ -53,7 +54,7 @@ async function mountEditorAfterRender(options: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   useWorkflowStore().activeWorkflow = fromPartial({
-    changeTracker: { captureCanvasState }
+    changeTracker: { captureCanvasState, refreshModifiedState }
   })
 })
 
@@ -181,6 +182,16 @@ describe('PromptEditor', () => {
       )
     }
   )
+
+  it('marks the workflow modified while typing without recording undo history', async () => {
+    const user = userEvent.setup()
+    renderEditor()
+
+    await user.type(screen.getByRole('textbox', { name: 'text' }), 'xyz')
+
+    expect(refreshModifiedState).toHaveBeenCalledTimes(3)
+    expect(captureCanvasState).not.toHaveBeenCalled()
+  })
 
   it.for([
     { typed: 'x', captures: 1 },

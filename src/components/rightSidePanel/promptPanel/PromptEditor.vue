@@ -1,7 +1,9 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-3 px-4 pt-5 pb-4">
     <p class="truncate text-sm text-muted-foreground">
-      {{ widgetLabel }} · {{ target.node.title }}
+      {{
+        $t('textEditor.title', { widget: widgetLabel, node: target.node.title })
+      }}
     </p>
     <Textarea
       ref="textareaRef"
@@ -60,6 +62,7 @@ const text = computed({
     isEdited = true
     setWidgetValue(target.node, target.widget, value)
     promptPanelStore.recordInput()
+    void useWorkflowStore().activeWorkflow?.changeTracker.refreshModifiedState()
   }
 })
 

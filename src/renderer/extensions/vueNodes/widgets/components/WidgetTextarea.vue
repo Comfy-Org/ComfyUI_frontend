@@ -104,7 +104,6 @@ import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
-import { resolveNode } from '@/utils/litegraphUtil'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
@@ -200,10 +199,6 @@ function openPromptPanel(): boolean {
 }
 
 function openTextEditor() {
-  const node =
-    nodeId === undefined
-      ? undefined
-      : resolveNode(nodeId, canvasStore.currentGraph ?? undefined)
   const isPromptPanelArm = promptEditorExperiment.assignment === 'panel'
   if (canOpenPromptPanel.value && isPromptPanelArm && openPromptPanel()) return
   if (canOpenPromptPanel.value) promptEditorExperiment.expose('control')

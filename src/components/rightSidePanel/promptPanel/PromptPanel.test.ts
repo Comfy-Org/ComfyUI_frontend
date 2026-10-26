@@ -51,7 +51,10 @@ function renderOpenPanel() {
 
 beforeEach(() => {
   useWorkflowStore().activeWorkflow = fromPartial({
-    changeTracker: { captureCanvasState: vi.fn() }
+    changeTracker: {
+      captureCanvasState: vi.fn(),
+      refreshModifiedState: vi.fn()
+    }
   })
 })
 
