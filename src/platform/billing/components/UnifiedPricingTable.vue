@@ -349,14 +349,14 @@
       </div>
     </div>
 
-    <div class="mt-auto flex min-h-14 items-center justify-center pt-4 text-sm">
+    <div
+      class="mt-auto flex min-h-14 flex-col items-center justify-center gap-2 pt-4 text-sm"
+    >
       <div
         v-if="showPastDueNotice"
-        ref="pastDueNoticeEl"
         role="status"
-        tabindex="-1"
         data-testid="pricing-past-due-notice"
-        class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background outline-none"
+        class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
       >
         <i
           class="icon-[lucide--info] size-4 shrink-0 bg-background"
@@ -365,14 +365,15 @@
         <span>
           {{
             t(
-              canManageBilling
+              isOwnerNotice
                 ? 'subscription.pastDueNoticeOwner'
                 : 'subscription.pastDueNoticeMember'
             )
           }}
         </span>
         <button
-          v-if="canManageBilling"
+          v-if="isOwnerNotice"
+          ref="updatePaymentButtonEl"
           type="button"
           class="cursor-pointer border-none bg-transparent p-0 font-inter text-sm font-bold text-background hover:opacity-80 disabled:cursor-default disabled:opacity-60"
           :disabled="isUpdatingPayment"
@@ -382,7 +383,7 @@
         </button>
       </div>
       <div
-        v-else-if="showScheduledPlanChange"
+        v-if="showScheduledPlanChange"
         role="status"
         class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
       >
@@ -400,7 +401,7 @@
         </span>
       </div>
       <I18nT
-        v-else
+        v-if="!showPastDueNotice && !showScheduledPlanChange"
         keypath="subscription.pricingBlurb"
         tag="p"
         class="m-0 text-center text-muted-foreground"
@@ -460,7 +461,6 @@ import {
 } from '@/platform/telemetry/billingActionNames'
 import type { PlanAction } from '@comfyorg/ingest-types'
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
@@ -676,32 +676,23 @@ watch(
   { immediate: true }
 )
 
-const { canManageBilling } = capabilities
 const {
   updatePayment,
   isUpdatingPayment,
   paymentRecoveryLock,
   refreshCapabilities
 } = usePaymentRecoveryDialog()
-const pastDueNoticeEl = ref<HTMLElement | null>(null)
-// A refusal keeps the notice up until the user returns from paying, after
-// which the refreshed server lock decides.
-const refusalNoticeActive = ref(false)
+const updatePaymentButtonEl = ref<HTMLElement | null>(null)
 const showPastDueNotice = computed(
-  () =>
-    isCloud && (paymentRecoveryLock.value !== null || refusalNoticeActive.value)
+  () => isCloud && paymentRecoveryLock.value !== null
 )
-useEventListener(window, 'focus', () => {
-  if (!refusalNoticeActive.value) return
-  refusalNoticeActive.value = false
-  void refreshCapabilities()
-})
+const isOwnerNotice = computed(() => paymentRecoveryLock.value === 'owner')
 watch(
   () => outstandingPaymentRefusals,
   async () => {
-    refusalNoticeActive.value = true
+    await refreshCapabilities()
     await nextTick()
-    pastDueNoticeEl.value?.focus()
+    updatePaymentButtonEl.value?.focus()
   }
 )
 

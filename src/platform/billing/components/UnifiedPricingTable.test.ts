@@ -11,7 +11,6 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
 import type { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type {
   BillingSubscriptionStatus,
   Plan
@@ -1140,9 +1139,6 @@ describe('UnifiedPricingTable past-due notice', () => {
     useBillingCapabilities().canReactivate = computed(() => true)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
     useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
-    useBillingCapabilities().canManageBilling = computed(() =>
-      receiveServerFact('can_manage_billing', true)
-    )
 
     mockSubscription.value = { tier: 'STANDARD', duration: 'ANNUAL' }
     mockSubscriptionStatus.value = null
@@ -1177,9 +1173,6 @@ describe('UnifiedPricingTable past-due notice', () => {
   })
 
   it('shows copy without an action to non-owners', () => {
-    useBillingCapabilities().canManageBilling = computed(() =>
-      receiveServerFact('can_manage_billing', false)
-    )
     mockPaymentRecoveryLock.value = 'member'
 
     renderComponent()
@@ -1201,27 +1194,44 @@ describe('UnifiedPricingTable past-due notice', () => {
     ).toBeEnabled()
   })
 
-  it('shows and focuses the notice when a checkout refusal arrives', async () => {
+  it('refreshes capabilities on a refusal without showing a notice the server did not back', async () => {
     const { rerender } = renderComponent()
-    expect(screen.queryByTestId('pricing-past-due-notice')).toBeNull()
 
     await rerender({ outstandingPaymentRefusals: 1 })
     await nextTick()
 
-    const notice = screen.getByTestId('pricing-past-due-notice')
-    expect(notice).toHaveFocus()
+    expect(mockRefreshCapabilities).toHaveBeenCalledOnce()
+    expect(screen.queryByTestId('pricing-past-due-notice')).toBeNull()
   })
 
-  it('clears a refusal notice when the user returns and the lock is null', async () => {
+  it('moves focus to the Update payment button on a refusal', async () => {
+    mockPaymentRecoveryLock.value = 'owner'
     const { rerender } = renderComponent()
+
     await rerender({ outstandingPaymentRefusals: 1 })
-    expect(screen.getByTestId('pricing-past-due-notice')).toBeTruthy()
-
-    window.dispatchEvent(new Event('focus'))
-    await nextTick()
-
-    expect(screen.queryByTestId('pricing-past-due-notice')).toBeNull()
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Update payment' })
+      ).toHaveFocus()
+    )
     expect(mockRefreshCapabilities).toHaveBeenCalledOnce()
+  })
+
+  it('shows the notice beside the scheduled plan change', () => {
+    mockPaymentRecoveryLock.value = 'owner'
+    mockSubscription.value = {
+      tier: 'STANDARD',
+      duration: 'ANNUAL',
+      scheduledChange: {
+        plan_slug: 'creator-annual',
+        effective_at: '2030-01-01T00:00:00Z',
+        team_credit_stop: null
+      }
+    }
+
+    renderComponent()
+
+    expect(screen.getAllByRole('status')).toHaveLength(2)
   })
 
   it('stays hidden off Cloud', () => {

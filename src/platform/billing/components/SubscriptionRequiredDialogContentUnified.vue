@@ -136,6 +136,7 @@ import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { isCloud } from '@/platform/distribution/types'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
@@ -160,6 +161,8 @@ const {
 const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
+
+const { paymentRecoveryLock } = usePaymentRecoveryDialog()
 
 const {
   checkoutStep,
@@ -192,7 +195,7 @@ const {
   handleTeamSubscribe,
   handleResubscribe
 } = useSubscriptionCheckout(emit, paymentIntentSource, {
-  rendersPastDueNotice: isCloud
+  rendersPastDueNotice: () => isCloud && paymentRecoveryLock.value === 'owner'
 })
 
 onMounted(() => {

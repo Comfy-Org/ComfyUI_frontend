@@ -74,7 +74,7 @@ interface SelectedTeamCheckout {
 
 interface SubscriptionCheckoutOptions {
   tierPlanType?: 'personal' | 'team'
-  rendersPastDueNotice?: boolean
+  rendersPastDueNotice?: () => boolean
 }
 
 /**
@@ -139,7 +139,7 @@ export function useSubscriptionCheckout(
   paymentIntentSource?: PaymentIntentSource,
   {
     tierPlanType = 'personal',
-    rendersPastDueNotice = false
+    rendersPastDueNotice = () => false
   }: SubscriptionCheckoutOptions = {}
 ) {
   const { t } = useI18n()
@@ -553,7 +553,7 @@ export function useSubscriptionCheckout(
     // The table is hidden on the confirm step, so only the pricing step can
     // show the notice; elsewhere the toasts stay.
     const showsNotice =
-      rendersPastDueNotice &&
+      rendersPastDueNotice() &&
       checkoutStep.value === 'pricing' &&
       hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
     if (showsNotice) outstandingPaymentRefusals.value++

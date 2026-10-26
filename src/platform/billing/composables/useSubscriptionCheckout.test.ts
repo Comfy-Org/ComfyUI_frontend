@@ -1167,13 +1167,13 @@ describe('useSubscriptionCheckout', () => {
     })
 
     describe('when the host renders the past-due notice', () => {
-      function mountWithNotice() {
+      function mountWithNotice(rendersNotice = true) {
         let checkout!: ReturnType<typeof useSubscriptionCheckout>
         render(
           {
             setup() {
               checkout = useSubscriptionCheckout(emit, undefined, {
-                rendersPastDueNotice: true
+                rendersPastDueNotice: () => rendersNotice
               })
               return () => null
             }
@@ -1243,6 +1243,23 @@ describe('useSubscriptionCheckout', () => {
 
         expect(checkout.outstandingPaymentRefusals.value).toBe(1)
         expect(useToast().error).not.toHaveBeenCalled()
+      })
+
+      it('keeps the toast when the host reports no owner action', async () => {
+        const checkout = mountWithNotice(false)
+        mockOpen.mockReturnValueOnce(null)
+        mockPreviewSubscribe.mockRejectedValueOnce(
+          errorWithCode('OUTSTANDING_PAYMENT_REQUIRED')
+        )
+        await checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+
+        expect(checkout.outstandingPaymentRefusals.value).toBe(0)
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({ kind: 'warning' })
+        ])
       })
 
       it('keeps the existing toast for other recovery codes', async () => {
