@@ -153,7 +153,6 @@ allowBuilds:
   esbuild: true
   oxc-resolver: true
   protobufjs: false
-  sharp: false
   unrs-resolver: false
   vue-demi: false
 
@@ -177,7 +176,6 @@ overrides:
   brace-expansion@^3.0.0: ^3.0.6
   brace-expansion@^4.0.0: ^5.0.9
   brace-expansion@^5.0.0: ^5.0.9
-  sharp@^0.34.0: ^0.35.0
   '@grpc/grpc-js@^1.9.0': ^1.14.6
 
 # Transitional - drop each entry once that version is older than the release-age gate.
