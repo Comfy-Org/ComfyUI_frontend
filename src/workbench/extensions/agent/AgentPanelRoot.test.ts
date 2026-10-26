@@ -953,6 +953,31 @@ describe('AgentPanelRoot Local grant messaging', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('keeps a dismissed free banner closed through balance changes for the same consent scope', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const notice = await screen.findByRole('note', { name: 'Agent credits' })
+    await userEvent.click(
+      within(notice).getByRole('button', { name: 'Dismiss' })
+    )
+    expect(screen.queryByRole('note', { name: 'Agent credits' })).toBeNull()
+
+    paywallAgentScopedHasFunds.value = false
+    await nextTick()
+    paywallAgentScopedHasFunds.value = true
+    await nextTick()
+    expect(screen.queryByRole('note', { name: 'Agent credits' })).toBeNull()
+
+    Object.assign(useAgentConsentStore(), {
+      identity: 'account-b/workspace-b/1'
+    })
+    expect(
+      await screen.findByRole('note', { name: 'Agent credits' })
+    ).toHaveTextContent('Try agent chat for free.')
+  })
+
   it('refreshes a replacement consent scope without refreshing for a new chat', async () => {
     assignArm('unknown')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -1008,8 +1033,11 @@ describe('AgentPanelRoot Local grant messaging', () => {
       await screen.findByText('Try agent chat for free.')
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Dismiss' })
-    ).not.toBeInTheDocument()
+      within(screen.getByRole('note', { name: 'Agent credits' })).getByRole(
+        'button',
+        { name: 'Dismiss' }
+      )
+    ).toBeInTheDocument()
   })
 
   it('offers ordinary Add credits without reporting a refused send or exhausted credits', async () => {

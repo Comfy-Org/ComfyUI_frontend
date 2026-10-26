@@ -1643,6 +1643,7 @@ const localGrantScope = computed(() =>
     : null
 )
 const { arm: localGrantArm } = useLocalAgentGrant(localGrantScope)
+const dismissedLocalFreeNoticeScope = ref<string | null>(null)
 watch(
   () => (billingType.value === 'unknown' ? null : localGrantScope.value),
   (scope) => {
@@ -1675,7 +1676,11 @@ const localCreditNotice = computed(() => {
   if (localGrantScope.value === null || hasPriorityCreditNotice.value)
     return null
 
-  if (localGrantArm.value === 'treatment' && freeUseGrantActive.value)
+  if (
+    localGrantArm.value === 'treatment' &&
+    freeUseGrantActive.value &&
+    dismissedLocalFreeNoticeScope.value !== localGrantScope.value
+  )
     return 'free'
   if (localGrantArm.value === 'control' && !threadHasUserMessage.value)
     return 'credits'
@@ -2437,6 +2442,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         <LocalAgentCreditNotice
           v-if="localCreditNotice === 'free'"
           kind="free"
+          @dismiss="dismissedLocalFreeNoticeScope = localGrantScope"
         />
       </template>
       <template #composerNotice>

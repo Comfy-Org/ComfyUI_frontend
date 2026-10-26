@@ -14,8 +14,8 @@ const i18n = createI18n({
 })
 
 describe('LocalAgentCreditNotice', () => {
-  it('offers free chat and a documentation link without amount or expiry claims', () => {
-    render(LocalAgentCreditNotice, {
+  it('offers free chat, a documentation link and dismissal without amount or expiry claims', async () => {
+    const { emitted } = render(LocalAgentCreditNotice, {
       props: { kind: 'free' },
       global: { plugins: [i18n] }
     })
@@ -27,7 +27,8 @@ describe('LocalAgentCreditNotice', () => {
       'href',
       'https://docs.comfy.org/agent-tools/in-app-agent'
     )
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(emitted('dismiss')).toEqual([[]])
   })
 
   it('offers a neutral purchase action without claiming the balance is exhausted', async () => {
@@ -56,6 +57,9 @@ describe('LocalAgentCreditNotice', () => {
     ).toHaveTextContent(/^Agent chats use credits\.$/)
     expect(
       screen.queryByRole('button', { name: 'Add credits' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Dismiss' })
     ).not.toBeInTheDocument()
   })
 })
