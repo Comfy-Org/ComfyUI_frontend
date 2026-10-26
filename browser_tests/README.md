@@ -621,6 +621,7 @@ where its tags place it:
 | ------------- | ------------------------------------------------------ |
 | `@mobile`     | Runs in the mobile-chrome (Pixel 5) project            |
 | `@mobile-ios` | Runs in the mobile-safari (iPhone 15 / WebKit) project |
+| `@firefox`    | Runs in the firefox (Desktop Firefox) project          |
 | `@2x`         | Runs in the 2x-scale project                           |
 | `@0.5x`       | Runs in the 0.5x-scale project                         |
 | `@perf`       | Runs in the perf project                               |

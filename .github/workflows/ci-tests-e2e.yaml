@@ -325,6 +325,8 @@ jobs:
             artifact: frontend-dist
           - browser: mobile-safari
             artifact: frontend-dist-cloud
+          - browser: firefox
+            artifact: frontend-dist
           - browser: desktop
             artifact: frontend-dist-desktop
     steps:
