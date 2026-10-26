@@ -70,36 +70,43 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
     comfyPage
   }) => {
     const textarea = getFirstMultilineStringWidget(comfyPage)
-    await textarea.fill(
-      Array.from(
-        { length: 30 },
-        (_, i) => `Line ${i + 1} of a long prompt`
-      ).join('\n')
-    )
-    await textarea.blur()
-    await comfyPage.canvasOps.setScale(0.83)
-    await comfyPage.canvasOps.moveMouseToEmptyArea()
-    await comfyPage.canvasOps.waitForViewToSettle()
-    const box = await textarea.boundingBox()
-    if (!box) throw new Error('The textarea has no bounding box')
-    const textOnly = {
-      x: box.x + 2,
-      y: box.y + 2,
-      width: box.width - 4,
-      height: box.height - 4
-    }
-    const atRest = await comfyPage.page.screenshot({
-      clip: textOnly,
-      animations: 'disabled'
-    })
 
-    await textarea.hover()
-    const hovered = await comfyPage.page.screenshot({
-      clip: textOnly,
-      animations: 'disabled'
-    })
+    const { textOnly, atRest } =
+      await test.step('capture the text away from the pointer at fractional zoom', async () => {
+        await textarea.fill(
+          Array.from(
+            { length: 30 },
+            (_, i) => `Line ${i + 1} of a long prompt`
+          ).join('\n')
+        )
+        await textarea.blur()
+        await comfyPage.canvasOps.setScale(0.83)
+        await comfyPage.canvasOps.moveMouseToEmptyArea()
+        await comfyPage.canvasOps.waitForViewToSettle()
+        const box = await textarea.boundingBox()
+        if (!box) throw new Error('The textarea has no bounding box')
+        const textOnly = {
+          x: box.x + 2,
+          y: box.y + 2,
+          width: box.width - 4,
+          height: box.height - 4
+        }
+        const atRest = await comfyPage.page.screenshot({
+          clip: textOnly,
+          animations: 'disabled'
+        })
+        return { textOnly, atRest }
+      })
 
-    expect(hovered.equals(atRest), 'text moved when hovered').toBe(true)
+    await test.step('hover without shifting the text', async () => {
+      await textarea.hover()
+      const hovered = await comfyPage.page.screenshot({
+        clip: textOnly,
+        animations: 'disabled'
+      })
+
+      expect(hovered.equals(atRest), 'text moved when hovered').toBe(true)
+    })
   })
 
   test('should use native context menu when focused', async ({ comfyPage }) => {
