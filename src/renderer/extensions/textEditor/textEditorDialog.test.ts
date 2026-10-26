@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { createEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
@@ -10,6 +10,7 @@ import {
   authenticatedRemoteConfigState,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
 import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
@@ -18,14 +19,11 @@ import { useDialogStore } from '@/stores/dialogStore'
 const captureCanvasState = vi.fn()
 const markModified = vi.fn()
 const updateModified = vi.fn()
-const telemetry = vi.hoisted(() => ({
-  trackPromptEditorOpened: vi.fn(),
-  trackPromptEditorClosed: vi.fn()
-}))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => telemetry
-}))
+vi.mock(import('@/platform/telemetry'))
+
+const telemetry = vi.mocked(useTelemetry)()
+assert.exists(telemetry)
 
 function renderDialogHost() {
   return render(GlobalDialog, { global: { plugins: [i18n] } })

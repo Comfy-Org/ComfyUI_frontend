@@ -1,22 +1,19 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import {
   authenticatedRemoteConfigState,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { useTelemetry } from '@/platform/telemetry'
 import type { PromptEditorSurfaceVariant } from '@/platform/telemetry/types'
 import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 
-const telemetry = vi.hoisted(() => ({
-  installed: true,
-  trackPromptEditorExposure: vi.fn()
-}))
-const { trackPromptEditorExposure } = telemetry
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => (telemetry.installed ? telemetry : null)
-}))
+const telemetry = vi.mocked(useTelemetry)()
+assert.exists(telemetry)
+const trackPromptEditorExposure = vi.mocked(telemetry.trackPromptEditorExposure)
 
 function serve(
   variant: string | undefined,
@@ -30,7 +27,6 @@ function serve(
 
 beforeEach(() => {
   localStorage.clear()
-  telemetry.installed = true
   serve(undefined, { authenticated: false })
 })
 
@@ -135,10 +131,9 @@ describe('usePromptEditorExperimentStore', () => {
   it('keeps exposure pending until telemetry is installed', () => {
     serve('panel')
     const experiment = usePromptEditorExperimentStore()
-    telemetry.installed = false
+    vi.mocked(useTelemetry).mockReturnValueOnce(null)
     experiment.expose('panel')
 
-    telemetry.installed = true
     experiment.expose('panel')
 
     expect(trackPromptEditorExposure).toHaveBeenCalledOnce()

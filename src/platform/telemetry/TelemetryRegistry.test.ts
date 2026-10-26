@@ -329,17 +329,16 @@ describe('TelemetryRegistry', () => {
     registry.trackPromptEditorOpened(opened)
     registry.trackPromptEditorClosed(closed)
 
-    for (const provider of providers) {
-      expect(
-        provider.trackPromptEditorExposure
-      ).toHaveBeenCalledExactlyOnceWith(exposure)
-      expect(provider.trackPromptEditorOpened).toHaveBeenCalledExactlyOnceWith(
-        opened
-      )
-      expect(provider.trackPromptEditorClosed).toHaveBeenCalledExactlyOnceWith(
-        closed
-      )
-    }
+    expect(
+      providers.map((provider) => ({
+        exposure: vi.mocked(provider.trackPromptEditorExposure!).mock.calls,
+        opened: vi.mocked(provider.trackPromptEditorOpened!).mock.calls,
+        closed: vi.mocked(provider.trackPromptEditorClosed!).mock.calls
+      }))
+    ).toEqual([
+      { exposure: [[exposure]], opened: [[opened]], closed: [[closed]] },
+      { exposure: [[exposure]], opened: [[opened]], closed: [[closed]] }
+    ])
   })
 
   describe('agent telemetry dispatch', () => {

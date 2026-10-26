@@ -6,14 +6,11 @@ import {
   within
 } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -22,16 +19,6 @@ import { createMockWidget } from './widgetTestUtils'
 
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
-const telemetry = vi.hoisted(() => ({
-  trackPromptEditorExposure: vi.fn(),
-  trackPromptEditorOpened: vi.fn(),
-  trackPromptEditorClosed: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => telemetry
-}))
-
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
     copyToClipboard: mockCopyToClipboard
@@ -482,26 +469,13 @@ describe('WidgetTextarea expand to editor', () => {
     ).toBe(shown)
   })
 
-  describe('with the dialog arm served', () => {
-    beforeEach(() => {
-      remoteConfig.value = { 'prompt-editor-surface': 'control' }
-      authenticatedRemoteConfigState.value = 'authenticated'
-    })
+  it('reports the dialog arm as exposed when Expand opens the dialog', async () => {
+    const expose = vi.spyOn(usePromptEditorExperimentStore(), 'expose')
+    renderWithDialogHost()
 
-    afterEach(() => {
-      remoteConfig.value = {}
-      authenticatedRemoteConfigState.value = 'unloaded'
-    })
+    await openEditor()
 
-    it('reports exposure when Expand opens the dialog', async () => {
-      renderWithDialogHost()
-
-      await openEditor()
-
-      expect(telemetry.trackPromptEditorExposure).toHaveBeenCalledWith({
-        '$feature/prompt-editor-surface': 'control'
-      })
-    })
+    expect(expose).toHaveBeenCalledWith('control')
   })
 
   it.for([
