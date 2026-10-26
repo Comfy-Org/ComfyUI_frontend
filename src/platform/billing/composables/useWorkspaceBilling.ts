@@ -195,6 +195,8 @@ function seatCapacityFrom(status: BillingStatusResponse): SeatCapacity | null {
  */
 export type WorkspaceBilling = BillingState &
   BillingActions & {
+    /** True only when a fresh status read published into this workspace. */
+    refreshStatusFresh: () => Promise<boolean>
     /**
      * Reads status and resolves true once the operation it reports pending
      * has been adopted, so its own polling shows progress and outcome.
@@ -372,7 +374,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     return adoption
   }
 
-  async function fetchStatus(options?: BillingRefreshOptions): Promise<void> {
+  async function readAndPublishStatus(
+    options?: BillingRefreshOptions
+  ): Promise<boolean> {
     adoption = Promise.resolve(false)
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
@@ -384,7 +388,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         ? await readOnRail(() => rail.readStatus(options), 'getBillingStatus')
         : await workspaceApi.getBillingStatus()
       if (status === undefined || isStaleStatusRead(requestId, workspaceId))
-        return
+        return false
 
       seatCapacity.value = seatCapacityFrom(status)
       statusData.value = status
@@ -392,6 +396,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
       }
       adoption = resumePendingOperation(status)
+      return true
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
         error.value =
@@ -401,6 +406,14 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     } finally {
       if (requestId === latestBillingReadIds.status) isLoading.value = false
     }
+  }
+
+  async function fetchStatus(options?: BillingRefreshOptions): Promise<void> {
+    await readAndPublishStatus(options)
+  }
+
+  function refreshStatusFresh(): Promise<boolean> {
+    return readAndPublishStatus({ fresh: true })
   }
 
   async function fetchBalance(options?: BillingRefreshOptions): Promise<void> {
@@ -872,6 +885,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     // Actions
     initialize,
     fetchStatus,
+    refreshStatusFresh,
     fetchBalance,
     subscribe,
     previewSubscribe,

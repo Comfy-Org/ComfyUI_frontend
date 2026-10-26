@@ -82,6 +82,7 @@ export function useBillingContext(): BillingContext {
     getMaxSeats: (tierKey: string) => ({ creator: 5, pro: 20 })[tierKey] ?? 1,
     initialize: async () => {},
     fetchStatus: async () => {},
+    refreshWorkspaceStatusFresh: async () => false,
     fetchBalance: async () => {},
     reconcileSubscriptionSuccess: async () => {},
     subscribe: async () => {},

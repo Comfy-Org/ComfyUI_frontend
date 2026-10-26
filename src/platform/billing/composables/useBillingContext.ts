@@ -344,6 +344,13 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.fetchStatus(options)
   }
 
+  async function refreshWorkspaceStatusFresh(): Promise<boolean> {
+    if (type.value !== 'workspace') return false
+    const adapter = getWorkspaceBilling()
+    const published = await adapter.refreshStatusFresh()
+    return published && activeContext.value === adapter
+  }
+
   async function fetchBalance(options?: BillingRefreshOptions): Promise<void> {
     if (type.value === 'unknown') return
     return activeContext.value.fetchBalance(options)
@@ -467,6 +474,7 @@ function useBillingContextInternal(): BillingContext {
 
     initialize,
     fetchStatus,
+    refreshWorkspaceStatusFresh,
     fetchBalance,
     reconcileSubscriptionSuccess,
     subscribe,

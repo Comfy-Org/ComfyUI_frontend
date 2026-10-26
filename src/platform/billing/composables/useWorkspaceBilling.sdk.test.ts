@@ -332,6 +332,7 @@ describe('useWorkspaceBilling reads with the billing SDK flag', () => {
     const billing = setupBilling()
 
     await expect(billing.fetchStatus()).resolves.toBeUndefined()
+    await expect(billing.refreshStatusFresh()).resolves.toBe(false)
 
     expect(billing.tier.value).toBeNull()
     expect(billing.error.value).toBeNull()

@@ -360,6 +360,30 @@ describe('useBillingContext', () => {
     await expect(fetchStatus()).resolves.toBeUndefined()
   })
 
+  it('confirms a published fresh workspace status and ignores legacy', async () => {
+    const { refreshWorkspaceStatusFresh } = useBillingContext()
+
+    await expect(refreshWorkspaceStatusFresh()).resolves.toBe(true)
+    mockBillingRail.value = 'legacy_stripe'
+    await expect(refreshWorkspaceStatusFresh()).resolves.toBe(false)
+  })
+
+  it('does not confirm a fresh status after the billing adapter changes', async () => {
+    let finishRead!: (status: BillingStatusResponse) => void
+    vi.mocked(workspaceApi.getBillingStatus).mockReturnValueOnce(
+      new Promise<BillingStatusResponse>((resolve) => {
+        finishRead = resolve
+      })
+    )
+    const { refreshWorkspaceStatusFresh } = useBillingContext()
+    const pending = refreshWorkspaceStatusFresh()
+
+    mockBillingRail.value = 'legacy_stripe'
+    finishRead(DEFAULT_BILLING_STATUS)
+
+    await expect(pending).resolves.toBe(false)
+  })
+
   it('exposes fetchBalance action', async () => {
     const { fetchBalance } = useBillingContext()
     await expect(fetchBalance()).resolves.toBeUndefined()

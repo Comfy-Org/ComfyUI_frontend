@@ -195,6 +195,8 @@ export type CancelRail = Exclude<BillingType, 'unknown'>
 export interface BillingContext
   extends BillingState, Omit<BillingActions, 'cancelSubscription'> {
   type: ComputedRef<BillingType>
+  /** True only if a fresh workspace status read was published for this context. */
+  refreshWorkspaceStatusFresh: () => Promise<boolean>
   cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<CancelRail>
   reconcileSubscriptionSuccess: () => Promise<void>
   /**

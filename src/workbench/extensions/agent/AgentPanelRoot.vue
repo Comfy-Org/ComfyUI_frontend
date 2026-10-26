@@ -198,6 +198,7 @@ const {
   billingStatus,
   canAccessSubscriptionFeatures,
   fetchStatus: refreshBillingStatus,
+  refreshWorkspaceStatusFresh,
   fetchBalance: refreshBillingBalance
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
@@ -358,6 +359,12 @@ const agentScopedHasFunds = computed(
 const creditsExhausted = computed(() => {
   if (!consentAccepted.value) return false
   if (billingType.value !== 'workspace') return false
+  if (
+    isLocalAgentGrantHost() &&
+    (localGrantScope.value === null ||
+      verifiedLocalGrantStatusScope.value !== localGrantScope.value)
+  )
+    return false
   // Same gate as the impression report above: an unsettled read cannot say
   // which presentation is right, and a card naming the wrong remediation is
   // worse than no card.
@@ -424,12 +431,14 @@ async function sendWithFundsRecheck(
     if (!admitted) settle()
   }
   if (!admitted) return sent
-  void refreshBillingStatus().catch((error: unknown) => {
-    reportError(error, {
-      surface: 'agent',
-      errorType: 'error_refreshing_agent_billing_status'
+  if (!isLocalAgentGrantHost()) {
+    void refreshBillingStatus().catch((error: unknown) => {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'error_refreshing_agent_billing_status'
+      })
     })
-  })
+  }
   return sent
 }
 
@@ -1269,6 +1278,10 @@ const canvasEmptyAfterTurn = computed(
 
 function refreshBillingAfterTurn(): void {
   if (billingType.value !== 'workspace') return
+  if (localGrantScope.value !== null) {
+    refreshLocalGrantBilling(localGrantScope.value)
+    return
+  }
   void refreshBillingStatus().catch((error: unknown) => {
     reportError(error, {
       surface: 'agent',
@@ -1644,14 +1657,37 @@ const localGrantScope = computed(() =>
 )
 const { arm: localGrantArm } = useLocalAgentGrant(localGrantScope)
 const dismissedLocalFreeNoticeScope = ref<string | null>(null)
+const verifiedLocalGrantStatusScope = ref<string | null>(null)
+let localGrantBillingReadId = 0
+
+function refreshLocalGrantBilling(scope: string): void {
+  const readId = ++localGrantBillingReadId
+  verifiedLocalGrantStatusScope.value = null
+  if (billingType.value !== 'workspace') return
+
+  void Promise.allSettled([
+    refreshWorkspaceStatusFresh(),
+    refreshBillingBalance({ fresh: true })
+  ]).then(([status]) => {
+    if (
+      readId === localGrantBillingReadId &&
+      localGrantScope.value === scope &&
+      billingType.value === 'workspace' &&
+      status.status === 'fulfilled' &&
+      status.value
+    )
+      verifiedLocalGrantStatusScope.value = scope
+  })
+}
+
 watch(
-  () => (billingType.value === 'unknown' ? null : localGrantScope.value),
+  () => (billingType.value === 'workspace' ? localGrantScope.value : null),
   (scope) => {
-    if (scope === null) return
-    void Promise.allSettled([
-      refreshBillingStatus({ fresh: true }),
-      refreshBillingBalance({ fresh: true })
-    ])
+    if (scope !== null) refreshLocalGrantBilling(scope)
+    else {
+      localGrantBillingReadId++
+      verifiedLocalGrantStatusScope.value = null
+    }
   },
   { immediate: true }
 )
@@ -1679,6 +1715,7 @@ const localCreditNotice = computed(() => {
   if (
     localGrantArm.value === 'treatment' &&
     freeUseGrantActive.value &&
+    verifiedLocalGrantStatusScope.value === localGrantScope.value &&
     dismissedLocalFreeNoticeScope.value !== localGrantScope.value
   )
     return 'free'
@@ -1985,6 +2022,7 @@ const { submit: onSend } = useAgentDraftSubmission({
         originContext === undefined ? null : { tabPath: originContext.tabPath }
     }
     const selectionWorkflow = selectedTarget.value
+    const localScopeAtSend = localGrantScope.value
     try {
       return await sendWithFundsRecheck((onAccepted) =>
         sendMessage(
@@ -2003,6 +2041,11 @@ const { submit: onSend } = useAgentDraftSubmission({
       )
     } finally {
       reportPendingSend()
+      if (
+        localScopeAtSend !== null &&
+        localGrantScope.value === localScopeAtSend
+      )
+        refreshLocalGrantBilling(localScopeAtSend)
     }
   }
 })

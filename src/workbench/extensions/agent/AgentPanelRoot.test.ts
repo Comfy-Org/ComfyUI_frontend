@@ -266,12 +266,13 @@ const paywallCapabilities = reactive({
 })
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null,
-  type: 'workspace' as 'workspace' | 'legacy',
   status: 'paid' as BillingStatus | null,
   isActive: true,
-  fetchStatus: vi.fn<() => Promise<void>>(),
+  statusPublished: true,
+  fetchStatus: vi.fn<(options?: { fresh?: boolean }) => Promise<void>>(),
   fetchBalance: vi.fn<() => Promise<void>>()
 }))
+const paywallBillingType = ref<'workspace' | 'legacy'>('workspace')
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
 const paywallAgentScopedHasFunds = ref<boolean | undefined>()
@@ -403,10 +404,14 @@ beforeEach(() => {
             })
       ),
       tier: computed(() => paywallBilling.tier),
-      type: computed(() => paywallBilling.type),
+      type: computed(() => paywallBillingType.value),
       billingStatus: computed(() => paywallBilling.status),
       canAccessSubscriptionFeatures: computed(() => paywallBilling.isActive),
       fetchStatus: paywallBilling.fetchStatus,
+      refreshWorkspaceStatusFresh: async () => {
+        await paywallBilling.fetchStatus({ fresh: true })
+        return paywallBilling.statusPublished
+      },
       fetchBalance: paywallBilling.fetchBalance
     })
   )
@@ -521,9 +526,10 @@ beforeEach(() => {
   paywallCapabilities.hasResolvedCapabilities = true
   paywallCapabilities.snapshotAuthoritative = true
   paywallBilling.tier = 'STANDARD'
-  paywallBilling.type = 'workspace'
+  paywallBillingType.value = 'workspace'
   paywallBilling.status = 'paid'
   paywallBilling.isActive = true
+  paywallBilling.statusPublished = true
   paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallBilling.fetchBalance.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
@@ -828,6 +834,11 @@ describe('AgentPanelRoot Local grant messaging', () => {
       paywallAgentScopedHasFunds.value = scoped
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       await screen.findByRole('textbox')
+      if (free > 0) await screen.findByText('Try agent chat for free.')
+      else
+        await waitFor(() =>
+          expect(paywallBilling.fetchStatus).toHaveBeenCalled()
+        )
 
       expect(screen.queryAllByText('Try agent chat for free.')).toHaveLength(
         free
@@ -838,6 +849,105 @@ describe('AgentPanelRoot Local grant messaging', () => {
       expect(useFreeUsePlacement).not.toHaveBeenCalled()
     }
   )
+
+  it('waits for a successful status read before claiming free funds', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    let settleStatus!: (error?: Error) => void
+    paywallBilling.fetchStatus.mockReturnValueOnce(
+      new Promise<void>((resolve, reject) => {
+        settleStatus = (error) =>
+          error === undefined ? resolve() : reject(error)
+      })
+    )
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByText('Try agent chat for free.')).toBeNull()
+    settleStatus(new Error('status unavailable'))
+    await nextTick()
+    expect(screen.queryByText('Try agent chat for free.')).toBeNull()
+    expect(paywallBilling.fetchBalance).toHaveBeenCalledExactlyOnceWith({
+      fresh: true
+    })
+  })
+
+  it('does not claim free funds when a fresh status read was superseded', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    paywallBilling.statusPublished = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await waitFor(() => expect(paywallBilling.fetchStatus).toHaveBeenCalled())
+    await nextTick()
+
+    expect(screen.queryByText('Try agent chat for free.')).toBeNull()
+    expect(paywallBilling.fetchBalance).toHaveBeenCalledExactlyOnceWith({
+      fresh: true
+    })
+  })
+
+  it('rechecks the same consent scope when billing returns to workspace', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByText('Try agent chat for free.')
+    paywallBilling.fetchStatus.mockClear()
+
+    paywallBillingType.value = 'legacy'
+    await nextTick()
+    expect(screen.queryByText('Try agent chat for free.')).toBeNull()
+
+    paywallBillingType.value = 'workspace'
+    await nextTick()
+    expect(paywallBilling.fetchStatus).toHaveBeenCalledExactlyOnceWith({
+      fresh: true
+    })
+    expect(await screen.findByText('Try agent chat for free.')).toBeVisible()
+  })
+
+  it('waits for a successful Local status read before claiming credits are exhausted', async () => {
+    assignArm('treatment')
+    paywallHasFunds.value = false
+    paywallAgentScopedHasFunds.value = false
+    let finishStatus!: () => void
+    paywallBilling.fetchStatus.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishStatus = resolve
+      })
+    )
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId('agent-credits-exhausted-paywall')).toBeNull()
+
+    finishStatus()
+    expect(
+      await screen.findByTestId('agent-credits-exhausted-paywall')
+    ).toBeVisible()
+  })
+
+  it('does not carry a funded status into a replacement consent scope', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByText('Try agent chat for free.')
+
+    let finishReplacementRead!: () => void
+    paywallBilling.fetchStatus.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishReplacementRead = resolve
+      })
+    )
+    Object.assign(useAgentConsentStore(), {
+      identity: 'account-b/workspace-b/1'
+    })
+    await nextTick()
+    expect(screen.queryByText('Try agent chat for free.')).toBeNull()
+
+    finishReplacementRead()
+    expect(await screen.findByText('Try agent chat for free.')).toBeVisible()
+  })
 
   it.for([true, false])(
     'refreshes consent-time funds with accepted-on-mount=%s',
@@ -929,6 +1039,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
       paywallAgentScopedHasFunds.value = true
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       await screen.findByRole('textbox')
+      if (free > 0) await screen.findByText('Try agent chat for free.')
 
       expect(screen.queryAllByText('Try agent chat for free.')).toHaveLength(
         free
@@ -1011,13 +1122,95 @@ describe('AgentPanelRoot Local grant messaging', () => {
     await sendFromComposer('Build a workflow')
 
     await vi.waitFor(() => expect(bodies).toHaveLength(1))
-    expect(paywallBilling.fetchBalance).toHaveBeenCalledExactlyOnceWith({
+    expect(paywallBilling.fetchBalance).toHaveBeenCalledTimes(2)
+    expect(paywallBilling.fetchBalance).toHaveBeenNthCalledWith(1, {
+      fresh: true
+    })
+    expect(paywallBilling.fetchBalance).toHaveBeenNthCalledWith(2, {
       fresh: true
     })
     expect(
       screen.queryByText('Try agent chat for free.')
     ).not.toBeInTheDocument()
     expect(withConsent).not.toHaveBeenCalled()
+  })
+
+  it('refreshes Local billing after a refused send and retries only on another Send', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = false
+    const bodies = mockMessagesEndpoint('wf-local')
+    respondToFetch(
+      { method: 'POST', url: /\/messages/ },
+      () =>
+        json(503, {
+          error: {
+            type: 'SERVICE_UNAVAILABLE',
+            reason: 'funds_unavailable',
+            message: 'Billing status is temporarily unavailable; please retry.'
+          }
+        }),
+      { times: 1 }
+    )
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    renderWithSelectedTarget()
+    await screen.findByRole('textbox')
+    await waitFor(() => expect(paywallBilling.fetchStatus).toHaveBeenCalled())
+    paywallBilling.fetchStatus.mockClear()
+    paywallBilling.fetchBalance.mockClear()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Build a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(
+      await screen.findByText(
+        'Billing status is temporarily unavailable; please retry.'
+      )
+    ).toBeVisible()
+    await waitFor(() =>
+      expect(screen.getByRole('textbox')).toHaveTextContent('Build a workflow')
+    )
+    expect(bodies).toHaveLength(0)
+    expect(paywallBilling.fetchStatus).toHaveBeenCalledExactlyOnceWith({
+      fresh: true
+    })
+    expect(paywallBilling.fetchBalance).toHaveBeenCalledExactlyOnceWith({
+      fresh: true
+    })
+    expect(withConsent).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({ content: 'Build a workflow' })
+    expect(withConsent).not.toHaveBeenCalled()
+  })
+
+  it('refreshes Local status and balance after a completed turn', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByText('Try agent chat for free.')
+    activateThread()
+    paywallBilling.fetchStatus.mockClear()
+    paywallBilling.fetchBalance.mockClear()
+
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('local-billing-refresh')
+    conversation.startTurn(turnId)
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th-active', usage: null }
+      })
+    )
+
+    await waitFor(() =>
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledExactlyOnceWith({
+        fresh: true
+      })
+    )
+    expect(paywallBilling.fetchBalance).toHaveBeenCalledExactlyOnceWith({
+      fresh: true
+    })
   })
 
   it('does not inherit the Cloud notice dismissal', async () => {
@@ -2675,7 +2868,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
   it('stays hidden on the legacy rail whose unloaded balance reads as false', async () => {
     paywallHasFunds.value = false
-    paywallBilling.type = 'legacy'
+    paywallBillingType.value = 'legacy'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     activateThread()
     await screen.findByRole('textbox')
@@ -2973,7 +3166,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
   it('does not refresh workspace status for a legacy billing turn', async () => {
     paywallHasFunds.value = true
-    paywallBilling.type = 'legacy'
+    paywallBillingType.value = 'legacy'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     activateThread()
     const conversation = useAgentConversationStore()

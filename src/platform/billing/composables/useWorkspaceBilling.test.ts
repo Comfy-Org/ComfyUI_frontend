@@ -705,6 +705,35 @@ describe('useWorkspaceBilling', () => {
       expect(billing.subscription.value?.planSlug).toBe('pro-monthly')
     })
 
+    it('reports publication only for an adopted fresh status', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      const billing = setupBilling()
+
+      await expect(billing.refreshStatusFresh()).resolves.toBe(true)
+      expect(billing.subscription.value?.tier).toBe('CREATOR')
+    })
+
+    it('does not verify stale funds when a newer status read fails', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce(activeStatus)
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      const olderStatus = createDeferred<BillingStatusResponse>()
+      mockWorkspaceApi.getBillingStatus
+        .mockReturnValueOnce(olderStatus.promise)
+        .mockRejectedValueOnce(new Error('newer status failed'))
+
+      const olderRead = billing.refreshStatusFresh()
+      await expect(billing.fetchStatus()).rejects.toThrow('newer status failed')
+      olderStatus.resolve({
+        ...activeStatus,
+        scoped_has_funds: { agent: true }
+      })
+
+      await expect(olderRead).resolves.toBe(false)
+      expect(billing.subscription.value?.agentScopedHasFunds).toBeUndefined()
+    })
+
     it('surfaces a team credit stop from the status response', async () => {
       const teamStop = {
         id: 'team_2500',

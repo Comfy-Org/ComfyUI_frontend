@@ -33,6 +33,7 @@ function createBillingContextMock(): BillingContext {
     getMaxSeats: vi.fn(() => 1),
     initialize: vi.fn(async () => {}),
     fetchStatus: vi.fn(async () => {}),
+    refreshWorkspaceStatusFresh: vi.fn(async () => false),
     fetchBalance: vi.fn(async () => {}),
     subscribe: vi.fn(async () => {}),
     previewSubscribe: vi.fn(async () => null),
