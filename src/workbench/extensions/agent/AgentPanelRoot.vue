@@ -1785,10 +1785,6 @@ const { submit: onSend } = useAgentDraftSubmission({
           nodes,
           references,
           () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
-          // The same id reported on app:agent_message_sent just above. Sent to
-          // the server so it can echo it onto agent_turn_started, which is what
-          // makes the message -> turn step attributable instead of only
-          // countable.
           meta.clientMessageId,
           onAccepted
         )
