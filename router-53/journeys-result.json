@@ -1,0 +1,114 @@
+[
+ {
+  "id": "01-old-detail-to-hub",
+  "url": "/workflows/api_bfl_flux_1_kontext_max_image-c8dc25fbb2d2/",
+  "expect": "/hub/workflows/flux-1-kontext-max-c8dc25fbb2d2/",
+  "landed": "/hub/workflows/flux-1-kontext-max-c8dc25fbb2d2/",
+  "status": 200,
+  "source": "cms",
+  "heading": "Flux.1 Kontext Max",
+  "hops": [
+   "301 /workflows/api_bfl_flux_1_kontext_max_image-c8dc25fbb2d2/",
+   "200 /hub/workflows/flux-1-kontext-max-c8dc25fbb2d2/"
+  ],
+  "pass": true
+ },
+ {
+  "id": "02-old-bare-share-id-to-hub",
+  "url": "/workflows/87fbc75b952a/",
+  "expect": "/hub/workflows/nano-banana-2-1-image-edit-87fbc75b952a/",
+  "landed": "/hub/workflows/nano-banana-2-1-image-edit-87fbc75b952a/",
+  "status": 200,
+  "source": "cms",
+  "heading": "Nano Banana 2.1: Image Edit",
+  "hops": [
+   "301 /workflows/87fbc75b952a/",
+   "200 /hub/workflows/nano-banana-2-1-image-edit-87fbc75b952a/"
+  ],
+  "pass": true
+ },
+ {
+  "id": "03-old-locale-detail-to-hub",
+  "url": "/ja/workflows/01_get_started_text_to_image-8c553cc7c664/",
+  "expect": "/hub/workflows/text-to-image-new-8c553cc7c664/",
+  "landed": "/hub/workflows/text-to-image-new-8c553cc7c664/",
+  "status": 200,
+  "source": "cms",
+  "heading": "Text to Image (New)",
+  "hops": [
+   "302 /ja/workflows/01_get_started_text_to_image-8c553cc7c664/",
+   "200 /hub/workflows/text-to-image-new-8c553cc7c664/"
+  ],
+  "pass": true
+ },
+ {
+  "id": "04-old-tag-to-filtered-list",
+  "url": "/workflows/tag/video/",
+  "expect": "/hub/workflows/?capability=Video",
+  "landed": "/hub/workflows/?capability=Video",
+  "status": 200,
+  "source": "cms",
+  "heading": "ComfyUI workflows",
+  "hops": [
+   "301 /workflows/tag/video/",
+   "200 /hub/workflows/?capability=Video"
+  ],
+  "pass": true
+ },
+ {
+  "id": "05-old-model-to-search-list",
+  "url": "/workflows/model/flux/",
+  "expect": "/hub/workflows/?q=flux",
+  "landed": "/hub/workflows/?q=flux",
+  "status": 200,
+  "source": "cms",
+  "heading": "ComfyUI workflows",
+  "hops": [
+   "301 /workflows/model/flux/",
+   "200 /hub/workflows/?q=flux"
+  ],
+  "pass": true
+ },
+ {
+  "id": "06-old-creator-to-profile",
+  "url": "/workflows/comfyui/",
+  "expect": "/hub/creators/comfyui/",
+  "landed": "/hub/creators/comfyui/",
+  "status": 200,
+  "source": "cms",
+  "heading": "ComfyUI",
+  "hops": [
+   "301 /workflows/comfyui/",
+   "200 /hub/creators/comfyui/"
+  ],
+  "pass": true
+ },
+ {
+  "id": "07-old-templates-url-to-hub",
+  "url": "/templates/064da31db8f3/",
+  "expect": "/hub/workflows/seedance-2-0-viral-videos-character-swap-064da31db8f3/",
+  "landed": "/hub/workflows/seedance-2-0-viral-videos-character-swap-064da31db8f3/",
+  "status": 200,
+  "source": "cms",
+  "heading": "Seedance 2.0 - Viral Videos Character Swap",
+  "hops": [
+   "301 /templates/064da31db8f3/",
+   "200 /hub/workflows/seedance-2-0-viral-videos-character-swap-064da31db8f3/"
+  ],
+  "pass": true
+ },
+ {
+  "id": "08-unknown-old-url-to-list",
+  "url": "/workflows/this-workflow-never-existed-qa/",
+  "expect": "/hub/workflows/",
+  "landed": "/hub/workflows/",
+  "status": 200,
+  "source": "cms",
+  "heading": "ComfyUI workflows",
+  "hops": [
+   "302 /workflows/this-workflow-never-existed-qa/",
+   "200 /hub/workflows/"
+  ],
+  "pass": true
+ }
+]
