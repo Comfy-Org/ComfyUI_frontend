@@ -7,7 +7,13 @@ import largeGraphWorkflow from '@e2e/assets/large-graph-workflow.json' with { ty
 import type { Page } from '@playwright/test'
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-const LARGE_GRAPH_WORKFLOW = zComfyWorkflow.parse(largeGraphWorkflow)
+const LARGE_GRAPH_WORKFLOW = zComfyWorkflow.parse({
+  ...largeGraphWorkflow,
+  extra: {
+    ...largeGraphWorkflow.extra,
+    ds: { ...largeGraphWorkflow.extra.ds, scale: 1 }
+  }
+})
 
 async function setCanvasOffsetX(page: Page, offsetX: number): Promise<void> {
   await page.evaluate((x) => {
