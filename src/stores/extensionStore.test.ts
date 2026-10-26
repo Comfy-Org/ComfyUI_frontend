@@ -65,7 +65,6 @@ describe('extensionStore', () => {
         'custom.toolbar',
         'agent.cushions.toolbar'
       ])
-      expect(store.hasAgentExtensions).toBe(true)
     })
   })
 

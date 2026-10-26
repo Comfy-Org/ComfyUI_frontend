@@ -2,16 +2,14 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe(
   'Agent-created extension provenance',
-  { tag: '@settings' },
+  { tag: ['@settings', '@screenshot'] },
   () => {
-    test('shows agent attribution and filters the extension list', async ({
-      comfyPage,
-      page
-    }) => {
-      await page.evaluate(() => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
         window.app!.registerExtension({ name: 'Manual.Toolbar' })
         window.app!.registerExtension({
           name: 'agent.cushions.toolbar',
@@ -21,7 +19,12 @@ test.describe(
           }
         })
       })
+    })
 
+    test('shows agent attribution and filters the extension list', async ({
+      comfyPage,
+      page
+    }) => {
       await test.step('Open Extensions and see agent attribution', async () => {
         await comfyPage.settingDialog.open()
         await comfyPage.settingDialog.category('Extension').click()
@@ -42,9 +45,14 @@ test.describe(
       await test.step('Disable every agent-created extension', async () => {
         const dialog = comfyPage.settingDialog
         await dialog.openExtensionActions()
-        await comfyPage.contextMenu
-          .menuItem('Disable all agent-created')
-          .click()
+        await expectRegionScreenshot(
+          page,
+          [dialog.root, comfyPage.contextMenu.ariaMenu],
+          'agent-extension-provenance.png'
+        )
+        await comfyPage.contextMenu.clickMenuItemExact(
+          'Disable all agent-created'
+        )
         await expect(
           dialog.root.getByRole('switch', { name: 'agent.cushions.toolbar' })
         ).not.toBeChecked()
