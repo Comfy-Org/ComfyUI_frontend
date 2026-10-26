@@ -1,0 +1,5 @@
+WORKFLOW: prod 684 local 684 same set True same order True only-prod 0 only-local 0
+MODEL: prod 148 local 148 same set True same order True only-prod 0 only-local 0
+APP: prod 2 local 2 same set True same order True only-prod 0 only-local 0
+creators prod [('comfyui', 526), ('julienaiart', 15), ('purz', 26), ('rob', 117)]
+creators local [('comfyui', 526), ('julienaiart', 15), ('purz', 26), ('rob', 117)]
