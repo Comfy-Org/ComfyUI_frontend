@@ -15,6 +15,7 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import type { DocUpdateData } from '@comfyorg/ingest-types'
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
@@ -353,10 +354,11 @@ export class HostDoc {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: this.workflowId,
         seq: this.seq,
+        lineage_seq: this.lineageSeq,
         update_b64: toBase64(update),
         actor,
         op_ids: opIds
-      }
+      } satisfies DocUpdateData
     }
   }
 }

@@ -4,6 +4,7 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import type { DocUpdateData } from '@comfyorg/ingest-types'
 import { render } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -144,9 +145,10 @@ describe('a human-added node across a tab switch', () => {
       v: 1,
       workflow_id: WORKFLOW_ID,
       seq,
+      lineage_seq: 1,
       actor: 'agent:comfy:host',
       update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
-    })
+    } satisfies DocUpdateData)
   }
 
   function acknowledge(ops: Op[]): void {
@@ -164,10 +166,11 @@ describe('a human-added node across a tab switch', () => {
       v: 1,
       workflow_id: WORKFLOW_ID,
       seq,
+      lineage_seq: 1,
       actor: ops[0].actor,
       op_ids: ops.map((op) => op.op_id),
       update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
-    })
+    } satisfies DocUpdateData)
   }
 
   it.for([

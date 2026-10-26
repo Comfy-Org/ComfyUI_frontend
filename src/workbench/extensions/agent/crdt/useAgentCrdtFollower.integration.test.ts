@@ -1,4 +1,5 @@
 import { mint, readSchemaVersion } from '@comfyorg/comfy-multi-player'
+import type { DocUpdateData } from '@comfyorg/ingest-types'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
@@ -78,8 +79,9 @@ describe('useAgentCrdtFollower over a live graph', () => {
         v: 1,
         workflow_id: WORKFLOW_ID,
         seq: 1,
+        lineage_seq: 1,
         update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
-      })
+      } satisfies DocUpdateData)
 
       graph.value = new LGraph()
       await nextTick()
@@ -127,8 +129,9 @@ describe('useAgentCrdtFollower over a live graph', () => {
         v: 1,
         workflow_id: WORKFLOW_ID,
         seq: 1,
+        lineage_seq: 1,
         update_b64: DOC_HOST_MINTED_SINK_UPDATE_B64
-      })
+      } satisfies DocUpdateData)
       await nextTick()
 
       expect(graph.value?.getNodeById(toNodeId(99))?.type).toBe('Sink')
