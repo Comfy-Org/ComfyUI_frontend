@@ -388,8 +388,6 @@ function handleImageLoad(event: Event) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
 
-  // An <img> keeps loading after unmount. Its node id would then resolve
-  // against whatever graph replaced this one (another workflow tab).
   if (nodeId && !isUnmounted) {
     nodeOutputStore.syncLegacyNodeImgs(nodeId, img, currentIndex.value)
   }

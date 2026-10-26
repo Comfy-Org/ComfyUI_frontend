@@ -581,8 +581,6 @@ describe('ImagePreview', () => {
       })
       const img = screen.getByRole('img')
 
-      // The workflow is swapped out while the image is still loading; the
-      // id '1' would now resolve to a node in the other workflow.
       unmount()
       await fireEvent.load(img)
 
