@@ -1,17 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { WorkshopModelDetail } from '@/config/models-catalogue'
+import type {
+  RouterWorkshopModel,
+  WorkflowWorkshopModel,
+  WorkshopModelDetail
+} from '@/config/models-catalogue'
 import { prepareModelPage } from './model-page'
 
 const mocks = vi.hoisted(() => ({
   lookup: vi.fn(),
   related: vi.fn(),
   successor: vi.fn(),
-  price: vi.fn()
+  price: vi.fn(),
+  pages: [] as (RouterWorkshopModel | WorkflowWorkshopModel)[]
 }))
 vi.mock(import('@/config/workshop-page-content'), () => ({
   getWorkshopPageDetail: mocks.lookup,
-  workshopPages: []
+  workshopPages: mocks.pages
 }))
 vi.mock(import('@/config/workshop-related'), () => ({
   relatedModels: mocks.related
@@ -39,6 +44,7 @@ const model: WorkshopModelDetail = {
 }
 
 beforeEach(() => {
+  mocks.pages.length = 0
   mocks.lookup.mockReturnValue(model)
   mocks.related.mockReturnValue([])
   mocks.price.mockResolvedValue(undefined)
@@ -170,5 +176,72 @@ describe('Models route preparation', () => {
     await expect(prepareModelPage(undefined)).rejects.toThrow(
       'Unknown Models route: (missing)'
     )
+  })
+
+  describe('the Hub rows', () => {
+    const sibling: RouterWorkshopModel = {
+      slug: 'provider--sibling',
+      name: 'Sibling Model',
+      href: '/models/provider--sibling/',
+      routerId: 'provider/sibling',
+      workflowCount: 0,
+      provider: 'Example Provider',
+      capabilities: [],
+      resolutions: ['1080p', '720p']
+    }
+    const stranger: RouterWorkshopModel = {
+      ...sibling,
+      slug: 'other--model',
+      routerId: 'other/model',
+      provider: 'Other Provider'
+    }
+    const usingWorkflow: WorkflowWorkshopModel = {
+      slug: 'workflows/example',
+      name: 'Example workflow',
+      href: '/hub/workflows/example/',
+      type: 'CLOUD',
+      workflowId: 'example',
+      workflowCount: 1,
+      capabilities: [],
+      models: ['Example Model']
+    }
+
+    it('lists the provider’s other models and the workflows that use this one', async () => {
+      mocks.pages.push(model, sibling, stranger, usingWorkflow)
+      mocks.price.mockResolvedValue('$0.04')
+
+      const page = await prepareModelPage(model.slug)
+
+      if (page.kind !== 'page') throw new Error('Expected canonical page')
+      expect(page.providerModels).toEqual([
+        {
+          slug: 'provider--sibling',
+          name: 'Sibling Model',
+          href: '/models/provider--sibling/',
+          provider: 'Example Provider',
+          price: '$0.04',
+          resolution: '720p – 1080p'
+        }
+      ])
+      expect(page.workflows).toEqual([usingWorkflow])
+    })
+
+    it('builds neither row for a workflow page', async () => {
+      mocks.pages.push(sibling, usingWorkflow)
+      mocks.lookup.mockReturnValue({
+        ...usingWorkflow,
+        provider: 'Example Provider',
+        fields: [],
+        examples: [],
+        defaults: {},
+        workflow: {}
+      })
+
+      const page = await prepareModelPage(usingWorkflow.slug)
+
+      if (page.kind !== 'page') throw new Error('Expected canonical page')
+      expect(page.providerModels).toEqual([])
+      expect(page.workflows).toEqual([])
+    })
   })
 })

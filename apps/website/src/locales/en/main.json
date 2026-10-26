@@ -5545,7 +5545,23 @@
       "priceNoteLabel": "How this price is estimated",
       "incomplete": "Incomplete",
       "notSupported": "Run not yet supported",
-      "missingInputSchema": "We do not know this model's inputs yet, so it cannot be run or called from code. Everything else on this page still works."
+      "missingInputSchema": "We do not know this model's inputs yet, so it cannot be run or called from code. Everything else on this page still works.",
+      "providerTable": {
+        "subtitle": "Compare {provider}'s other models. Price is the default setting; resolution and duration show the full range each model offers.",
+        "model": "Model",
+        "price": "Price",
+        "resolution": "Resolution",
+        "duration": "Duration",
+        "durationRange": "{min} – {max}s",
+        "durationOne": "{n}s",
+        "durationUpTo": "up to {max}s"
+      },
+      "paths": {
+        "label": "Ways to use this model",
+        "cloud": "Open in Cloud",
+        "api": "Use via API"
+      },
+      "usedBy": "Workflows that use {name}"
     },
     "models": {
       "heading": "Models"
@@ -5850,7 +5866,8 @@
       "lostContact": "This page lost contact with the run. It may still be running on Cloud and using credits. Reconnect to see its current status.",
       "browserUnavailable": "Running workflows from this page is not available yet.",
       "tryCloud": "Try in Cloud",
-      "explore": "Explore the possibilities"
+      "explore": "Explore the possibilities",
+      "opensInNewTab": "(opens in a new tab)"
     }
   }
 }

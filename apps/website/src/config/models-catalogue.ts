@@ -4,6 +4,7 @@ import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
 import type { WorkshopWorkflowDefinition } from './workshop-workflow-definition'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
+import type { Resolution } from '@/lib/workshop/resolution'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
 export type Modality = (typeof MODALITIES)[number]
@@ -117,6 +118,7 @@ export interface GeneratedModel {
 }
 
 interface WorkshopPresentation {
+  readonly resolutions?: readonly Resolution[]
   readonly slug: string
   readonly name: string
   readonly workflowCount: number

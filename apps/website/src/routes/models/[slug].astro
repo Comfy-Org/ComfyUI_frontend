@@ -1,7 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '@/layouts/BaseLayout.astro'
-import ModelPage from '@/components/workshop/ModelPage.vue'
+import ModelPageSwitch from '@/components/workshop/ModelPageSwitch.vue'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
 import {
@@ -74,7 +74,7 @@ const ogImage = modelOgImage(model)
       </noscript>
     </>
   ) : (
-    <ModelPage
+    <ModelPageSwitch
       page={{ ...page, model: { ...model, form: undefined } }}
       client:load
     />
