@@ -28,9 +28,14 @@ import type {
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  readWorkflowDraftLineage,
+  useWorkflowService,
+  writeWorkflowDraftLineage
+} from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -135,6 +140,10 @@ import {
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import {
+  agentRequestFailureFingerprint,
+  describeAgentRequestFailure
+} from './services/agent/agentRequestFailure'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
@@ -544,6 +553,7 @@ const agentTabGraph: ComfyWorkflowJSON = {
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 const settingStore = useSettingStore()
+const dialogStore = useDialogStore()
 watch(
   () => canvasStore.canvas?.graph,
   (graph, _previous, onCleanup) => {
@@ -651,7 +661,9 @@ const coachDeferredBy = computed(() =>
     ? 'app_mode'
     : activeTour.value !== null
       ? 'tour_active'
-      : null
+      : dialogStore.dialogStack.length > 0
+        ? 'dialog_open'
+        : null
 )
 const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
 function releaseCoachCompletionWaiters(proceed = true): void {
@@ -1049,6 +1061,7 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
+  retrySubscription,
   docInputNames,
   docWidgetValue,
   docPromotedWidgets,
@@ -1080,6 +1093,10 @@ const {
       }
     },
     onReset: graphActivity.resetWorkflow,
+    onLineageConfirmed({ workflowId, lineageSeq }) {
+      const path = bindingStore.tabPathFor(workflowId)
+      if (path) writeWorkflowDraftLineage(path, { workflowId, lineageSeq })
+    },
     onSyncError: (message, code) =>
       toast.error(t('agent.workflowSyncFailedTitle'), {
         description: formatWorkflowSyncErrorDetail(t, message, code)
@@ -1095,7 +1112,12 @@ const {
       return { x, y, width, height }
     }
   },
-  canvasFor: canvasForWorkflow
+  canvasFor: canvasForWorkflow,
+  knownLineageFor(workflowId) {
+    const path = bindingStore.tabPathFor(workflowId)
+    const lineage = path ? readWorkflowDraftLineage(path) : null
+    return lineage?.workflowId === workflowId ? lineage.lineageSeq : null
+  }
 })
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
@@ -1665,11 +1687,24 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
       failure.status === 'failed'
         ? failure.cause
         : new Error('Agent thread list ended before its last page')
+    const diagnostics =
+      failure.status === 'failed'
+        ? describeAgentRequestFailure(error)
+        : undefined
     reportError(error, {
       surface: 'agent',
       errorType: 'agent_thread_list_load_failed',
       tags:
-        failure.status === 'incomplete' ? { reason: failure.reason } : undefined
+        diagnostics ??
+        (failure.status === 'incomplete'
+          ? { reason: failure.reason }
+          : undefined),
+      fingerprint: diagnostics
+        ? agentRequestFailureFingerprint(
+            'agent_thread_list_load_failed',
+            diagnostics
+          )
+        : undefined
     })
     if (uiTreatment === 'error_overlay')
       surfaceAgentError(
@@ -1678,7 +1713,8 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
       )
     trackAgentError('thread_list_load_failed', 'pre_acceptance', uiTreatment, {
       retryable:
-        failure.status === 'failed' && isRetryableRequestFailure(error, false)
+        failure.status === 'failed' && isRetryableRequestFailure(error, false),
+      diagnostics
     })
   }
 })
@@ -2346,6 +2382,10 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
+      :sync-retry-available="
+        crdtStatus.terminal === 'retry_exhausted' ||
+        crdtStatus.terminal === 'timeout'
+      "
       :free-use-placement="freeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
@@ -2370,6 +2410,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
       @standing-paywall-shown="onStandingPaywallShown"
+      @retry-sync="retrySubscription"
       @new-chat="onNewChat('new_chat_button')"
       @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
