@@ -6,7 +6,10 @@ import { createI18n } from 'vue-i18n'
 
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
 
-const mockFetchTagLabels = vi.hoisted(() => vi.fn())
+const { mockFetchTagLabels, mockReportError } = vi.hoisted(() => ({
+  mockFetchTagLabels: vi.fn(),
+  mockReportError: vi.fn()
+}))
 
 vi.mock<unknown>(
   import('@/platform/workflow/sharing/services/comfyHubService'),
@@ -16,6 +19,10 @@ vi.mock<unknown>(
     })
   })
 )
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
 
 import ComfyHubDescribeStep from './ComfyHubDescribeStep.vue'
 
@@ -122,7 +129,8 @@ describe('ComfyHubDescribeStep', () => {
   })
 
   it('falls back to hardcoded tags when API fails', async () => {
-    mockFetchTagLabels.mockRejectedValue(new Error('network error'))
+    const error = new Error('network error')
+    mockFetchTagLabels.mockRejectedValue(error)
     const { container } = renderStep()
     await flushPromises()
 
@@ -135,6 +143,18 @@ describe('ComfyHubDescribeStep', () => {
 
     expect(suggestionValues).toHaveLength(10)
     expect(suggestionValues[0]).toBe(COMFY_HUB_TAG_OPTIONS[0])
+    expect(mockReportError).toHaveBeenCalledWith(error, {
+      errorType: 'workflow_publish_tags_fallback',
+      tags: {
+        failure_kind: 'degraded',
+        feature_area: 'workflow',
+        operation: 'load',
+        outcome: 'recovered',
+        assert_mode: 'soft'
+      },
+      context: { fallback_tag_count: COMFY_HUB_TAG_OPTIONS.length },
+      level: 'warning'
+    })
   })
 
   it('adds a suggested tag when clicked', async () => {
