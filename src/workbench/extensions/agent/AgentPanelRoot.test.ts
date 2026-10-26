@@ -15508,6 +15508,40 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
+  it('restages the unchanged canvas selection in a new chat', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+
+    await enterNodeSelectionMode()
+    state.selectedItems.add(state.nodes[0])
+    syncFakeSelection()
+    await nextTick()
+    expect(
+      screen.getByRole('button', {
+        name: /Remove VAE Decode #\d+ reference/
+      })
+    ).toBeVisible()
+
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+    expect(
+      screen.queryByRole('button', {
+        name: /Remove VAE Decode #\d+ reference/
+      })
+    ).toBeNull()
+
+    state.selectedItems.add(state.nodes[0])
+    syncFakeSelection()
+    await enterNodeSelectionMode()
+    expect(
+      screen.getByRole('button', {
+        name: /Remove VAE Decode #\d+ reference/
+      })
+    ).toBeVisible()
+  })
+
   it('clears old node references when selecting another workflow with the same node id', async () => {
     const {
       references: [other]

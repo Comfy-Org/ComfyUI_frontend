@@ -2066,6 +2066,9 @@ function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
+  attachment.cancelAllUploads()
+  replaceSelectionTags([])
+  dismissedSelectionSignature.value = null
   composerStore.clearDraft()
   newChat(source)
   agentPanelStore.startFollowingVisibleWorkflow()
