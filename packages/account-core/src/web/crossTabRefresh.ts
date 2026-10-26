@@ -1,5 +1,5 @@
-import type { AccountCredential, CrossTabRefreshPort } from '../core/session.js'
-import type { VisibilityPort } from '../core/webSessionIdentity.js'
+import type { AccountCredential, CrossTabRefreshPort } from '#/core/session'
+import type { VisibilityPort } from '#/core/webSessionIdentity'
 
 /**
  * Web Locks + BroadcastChannel implementation of the cross-tab refresh port.

@@ -31,7 +31,6 @@ import {
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
 import {
-  cachedLegacyBillingMigrationEnabled,
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
@@ -2403,7 +2402,7 @@ describe('useAuthStore', () => {
         .mockImplementationOnce(async (_route, options) => {
           options?.onAuthHeader?.(true)
           return new Response(
-            JSON.stringify({ legacy_billing_migration_enabled: false }),
+            JSON.stringify({ subscription_required: false }),
             { status: 200 }
           )
         })
@@ -2414,19 +2413,16 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
       expect(accountASignal?.aborted).toBe(true)
       expect(remoteConfigState.value).toBe('unloaded')
-      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
 
       await refreshRemoteConfig()
       resolveAccountA?.(
-        new Response(
-          JSON.stringify({ legacy_billing_migration_enabled: true }),
-          { status: 200 }
-        )
+        new Response(JSON.stringify({ subscription_required: true }), {
+          status: 200
+        })
       )
       await accountARefresh
 
-      expect(remoteConfig.value.legacy_billing_migration_enabled).toBe(false)
-      expect(cachedLegacyBillingMigrationEnabled.value).toBe(false)
+      expect(remoteConfig.value.subscription_required).toBe(false)
     })
 
     it('does not reconnect on a same-account token refresh', () => {
@@ -2732,6 +2728,25 @@ describe('useAuthStore in local/desktop distribution', () => {
       }
     )
 
+    it('returns the workspace token or refuses, never another credential', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      bridge.getWorkspaceToken.mockImplementation(async (workspaceId) =>
+        workspaceId === 'ws-a' ? 'host-token' : null
+      )
+      await startDesktopHostSession(bridge)
+
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+      await expect(store.getWorkspaceAuthTokenOrThrow()).resolves.toBe(
+        'host-token'
+      )
+
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-b' })
+      await expect(store.getWorkspaceAuthTokenOrThrow()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+    })
+
     it('drops the previous account state when Desktop switches accounts', async () => {
       const bridge = hostBridge({ status: 'signed_in', userId: 'host-a' })
       await startDesktopHostSession(bridge)
@@ -2817,6 +2832,7 @@ describe('store construction order', () => {
   const tokenResponse = {
     token: 'construction-token',
     expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+    user_id: 'uid-1',
     workspace: { id: 'workspace-personal', name: 'Personal', type: 'personal' },
     role: 'owner',
     permissions: ['owner:*']

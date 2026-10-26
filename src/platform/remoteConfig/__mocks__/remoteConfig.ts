@@ -1,7 +1,7 @@
 import { onTestFinished } from 'vitest'
 import { computed, customRef } from 'vue'
 
-import type * as realRemoteConfig from '../remoteConfig'
+import type * as realRemoteConfig from '@/platform/remoteConfig/remoteConfig'
 
 function testScopedRef<T>(defaultValue: T) {
   let value = defaultValue
@@ -39,6 +39,13 @@ const authenticatedRemoteConfigStateRef =
     'unloaded'
   )
 
+const remoteConfigCache: ReturnType<
+  typeof realRemoteConfig.useRemoteConfigCache
+> = {
+  cachedBillingControlEnabled: testScopedRemovableRef(undefined),
+  cachedV1PaymentRecovery: testScopedRemovableRef(undefined)
+}
+
 const remoteConfigModule: typeof realRemoteConfig = {
   remoteConfig: testScopedRef({}),
   remoteConfigState: remoteConfigStateRef,
@@ -53,9 +60,7 @@ const remoteConfigModule: typeof realRemoteConfig = {
   configValueOrDefault(remoteConfig, key, defaultValue) {
     return remoteConfig[key] || defaultValue
   },
-  cachedBillingControlEnabled: testScopedRemovableRef(undefined),
-  cachedLegacyBillingMigrationEnabled: testScopedRef(undefined),
-  cachedV1PaymentRecovery: testScopedRemovableRef(undefined),
+  useRemoteConfigCache: () => remoteConfigCache,
   sessionAgentGrant: testScopedRef(undefined),
   sessionAgentGrantValidUntil: testScopedRef(undefined)
 }
@@ -68,9 +73,7 @@ export const {
   isAuthenticatedConfigLoaded,
   remoteConfig,
   configValueOrDefault,
-  cachedBillingControlEnabled,
-  cachedLegacyBillingMigrationEnabled,
   sessionAgentGrant,
   sessionAgentGrantValidUntil,
-  cachedV1PaymentRecovery
+  useRemoteConfigCache
 } = remoteConfigModule

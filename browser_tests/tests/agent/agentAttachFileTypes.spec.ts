@@ -10,6 +10,7 @@ import {
 import type { AgentAttachCapability } from '@/workbench/extensions/agent/utils/attachableFiles'
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -182,13 +183,12 @@ test.describe(
       ).toBeVisible()
       await agentPanel.sendButton.hover()
       await expect(
-        page.getByRole('tooltip', {
-          name: enMessages.agent.sendBlockedByUnsupportedType.replace(
+        new Tooltip(page).named(
+          enMessages.agent.sendBlockedByUnsupportedType.replace(
             '{name}',
             'doc.pdf'
-          ),
-          exact: true
-        })
+          )
+        )
       ).toBeVisible()
 
       await agentPanel.fileInput.setInputFiles({
@@ -202,13 +202,12 @@ test.describe(
       await page.mouse.move(0, 0)
       await agentPanel.sendButton.hover()
       await expect(
-        page.getByRole('tooltip', {
-          name: enMessages.agent.sendBlockedByInvalidAttachments.replace(
+        new Tooltip(page).named(
+          enMessages.agent.sendBlockedByInvalidAttachments.replace(
             '{count}',
             '2'
-          ),
-          exact: true
-        })
+          )
+        )
       ).toBeVisible()
       await agentPanel.composer.press('Enter')
       await expect(agentPanel.composer).toHaveText('Describe these files')

@@ -12,18 +12,19 @@ import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
-import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
+import type { UserAttachment } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type {
   PromptSnapshot,
   WorkflowReference
-} from '../../../types/workflowReference'
-import type { ReplyAsset } from '../../../utils/replyAssets'
-import { isReplyAssetKind } from '../../../utils/replyAssets'
-import { agentMessageText } from '../../../utils/agentMessageText'
-import { promptReferenceParts } from '../../../utils/promptReferenceParts'
-import type { SkillReference as SkillReferenceData } from '../../../types/skillReference'
-import CatalogSkillReference from '../CatalogSkillReference.vue'
+} from '@/workbench/extensions/agent/types/workflowReference'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+import { isReplyAssetKind } from '@/workbench/extensions/agent/utils/replyAssets'
+import { agentMessageText } from '@/workbench/extensions/agent/utils/agentMessageText'
+import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
+import type { SkillReference as SkillReferenceData } from '@/workbench/extensions/agent/types/skillReference'
+import CatalogSkillReference from '@/workbench/extensions/agent/components/agent/CatalogSkillReference.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 import {
   selectedUserMessageClipboard,
@@ -156,7 +157,7 @@ function attachmentUrl(
   const capturedUrl =
     kind === 'video' || kind === 'audio' ? item.mediaUrl : item.previewUrl
   if (capturedUrl) return capturedUrl
-  if (!item.ref) return
+  if (!item.ref || isHdrImageFilename(item.name)) return
   return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
 }
 </script>

@@ -2,10 +2,10 @@ import { assert, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import { starterPromptAttribution } from '../../utils/starterPrompts'
-import type { ComposerAttachment } from '../../types/composerAttachment'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import { useComposer } from './useComposer'
 
 vi.mock(import('@/platform/telemetry'))

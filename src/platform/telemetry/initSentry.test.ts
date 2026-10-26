@@ -63,6 +63,22 @@ function eventFrom(filename: string) {
   }
 }
 
+it('sizes the resource timing buffer during Sentry init, not at diagnostics import', async () => {
+  const setBufferSize = vi.spyOn(performance, 'setResourceTimingBufferSize')
+  vi.resetModules()
+  await import('./vueDirectiveErrorDiagnostics')
+  expect(setBufferSize).not.toHaveBeenCalled()
+
+  initOptions(true)
+
+  expect(setBufferSize).toHaveBeenCalledExactlyOnceWith(1000)
+
+  vi.stubGlobal('performance', fromPartial<Performance>({}))
+  initOptions(true)
+
+  expect(sentryInit).toHaveBeenCalledTimes(2)
+})
+
 it('keeps Sentry default integrations enabled on cloud', () => {
   expect(initOptions(true).defaultIntegrations).not.toBe(false)
 })

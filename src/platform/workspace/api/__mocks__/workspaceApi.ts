@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { workspaceApi as realWorkspaceApi } from '../workspaceApi'
+import type { workspaceApi as realWorkspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 export class WorkspaceApiError extends Error {
   constructor(
@@ -44,6 +44,11 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
     clearDeployment: async () => {},
     setDefaultDeployment: async () => {},
     clearDefaultDeployment: async () => {},
+    getDeploymentCpuServer: async () => ({ cpu_server: 'none' }),
+    checkDeploymentCompatibility: async () => ({
+      deployments: [],
+      cloud: { missing_node_types: [] }
+    }),
     delete: async () => {},
     leave: async () => {},
     listMembers: async () => ({
@@ -108,6 +113,7 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
           can_edit_workspace: false,
           can_manage_auto_top_up: false,
           can_manage_subscription: false,
+          can_open_plans: false,
           can_run_workflows: false,
           can_upgrade: false,
           can_reactivate: false,
@@ -200,6 +206,13 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
     }),
     createTopupCheckout: async () => ({
       checkout_url: 'https://checkout.stripe.com/c/pay/cs_mock'
+    }),
+    listTopupCheckouts: async () => ({ checkouts: [], next_cursor: null }),
+    getTopupCheckout: async (sessionId) => ({
+      session_id: sessionId,
+      amount_cents: 0,
+      payment_amount_cents: null,
+      state: 'fulfilled'
     }),
     getBillingEvents: async () => ({
       events: [],

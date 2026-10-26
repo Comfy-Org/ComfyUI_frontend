@@ -1,0 +1,44 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/object-info-parser/tsconfig.build.json"
+    },
+    {
+      "path": "./packages/layer-editor/tsconfig.build.json"
+    },
+    {
+      "path": "./packages/mask-editor/tsconfig.build.json"
+    },
+    {
+      "path": "./packages/viewport3d/tsconfig.build.json"
+    },
+    {
+      "path": "./packages/account-core/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/account-ui/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/ingest-types/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/registry-types/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/shared-frontend-utils/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/billing-contract/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/design-system/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/tailwind-utils/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/test-utils/tsconfig.declarations.json"
+    }
+  ]
+}

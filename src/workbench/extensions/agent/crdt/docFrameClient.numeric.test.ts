@@ -8,6 +8,7 @@ const updateFrame = (seq: unknown) => ({
     v: 1,
     workflow_id: 'wf-1',
     seq,
+    lineage_seq: 1,
     update_b64: encodeBase64(new Uint8Array([1]))
   }
 })
@@ -129,7 +130,7 @@ describe('doc frame numeric domains', () => {
         parseServerDocFrame(sequencedFrame('doc_subscribed', seq))
       ).toEqual({
         type: 'doc_subscribed',
-        data: { workflowId: 'wf-1', ok: true }
+        data: { workflowId: 'wf-1', ok: true, lineageSeq: 0 }
       })
     }
   )
@@ -138,7 +139,7 @@ describe('doc frame numeric domains', () => {
     const frame = parseServerDocFrame(unsequencedSubscribedFrame())
     expect(frame).toEqual({
       type: 'doc_subscribed',
-      data: { workflowId: 'wf-1', ok: true }
+      data: { workflowId: 'wf-1', ok: true, lineageSeq: 0 }
     })
     expect(frame?.data).not.toHaveProperty('seq')
   })
@@ -171,7 +172,10 @@ describe('doc frame numeric domains', () => {
   })
 
   it('accepts finite non-negative integer sequence and expiry values', () => {
-    expect(parseServerDocFrame(updateFrame(0))?.data).toMatchObject({ seq: 0 })
+    expect(parseServerDocFrame(updateFrame(0))?.data).toMatchObject({
+      seq: 0,
+      lineageSeq: 1
+    })
     expect(parseServerDocFrame(awarenessFrame(0))?.data).toMatchObject({
       expiresAt: 0
     })

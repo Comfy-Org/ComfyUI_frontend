@@ -1,0 +1,47 @@
+import WorkflowTemplateSelectorDialog from '@/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue'
+import { useTelemetry } from '@/platform/telemetry'
+import type { TemplateLibraryMetadata } from '@/platform/telemetry/types'
+import { useDialogService } from '@/services/dialogService'
+import { useNewUserService } from '@/services/useNewUserService'
+import { useDialogStore } from '@/stores/dialogStore'
+
+const DIALOG_KEY = 'global-workflow-template-selector'
+const POPULAR_CATEGORY_ID = 'popular'
+
+export const useWorkflowTemplateSelectorDialog = () => {
+  const dialogService = useDialogService()
+  const dialogStore = useDialogStore()
+  const newUserService = useNewUserService()
+
+  function hide() {
+    dialogStore.closeDialog({ key: DIALOG_KEY })
+  }
+
+  function show(
+    source: TemplateLibraryMetadata['source'] = 'command',
+    options?: { initialCategory?: string; afterClose?: () => void }
+  ) {
+    useTelemetry()?.trackTemplateLibraryOpened({ source })
+
+    const initialCategory =
+      options?.initialCategory ??
+      (newUserService.isNewUser() ? POPULAR_CATEGORY_ID : 'all')
+
+    dialogService.showLayoutDialog({
+      key: DIALOG_KEY,
+      component: WorkflowTemplateSelectorDialog,
+      props: {
+        onClose: () => {
+          hide()
+          options?.afterClose?.()
+        },
+        initialCategory
+      }
+    })
+  }
+
+  return {
+    show,
+    hide
+  }
+}

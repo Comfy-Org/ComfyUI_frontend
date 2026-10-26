@@ -44,6 +44,7 @@ export function capabilitiesWith(
       can_manage_auto_top_up: false,
       can_manage_members: false,
       can_manage_subscription: true,
+      can_open_plans: true,
       can_delete_workspace: false,
       can_leave_workspace: false,
       can_manage_billing: false,

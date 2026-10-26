@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { refreshDownloadedTemplateInputBindings } from './refreshDownloadedTemplateInputBindings'
 
 function graphWith(node: LGraphNode, id: number): LGraph {
