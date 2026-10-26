@@ -85,13 +85,9 @@ test.describe(
 
         await comfyPage.dragDrop.dragAndDropURL(url)
 
-        // The drop triggers an async fetch → parse → loadGraphData chain.
-        // Poll until the graph settles with the loaded workflow's nodes.
-        await expect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
-            timeout: 15000
-          })
-          .toBeGreaterThan(initialNodeCount)
+        await comfyPage.expectNodeCountMinimum(initialNodeCount + 1, {
+          timeout: 15000
+        })
         expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
       })
     })

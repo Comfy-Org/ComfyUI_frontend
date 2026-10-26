@@ -179,9 +179,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Repeated pastes never reuse node instances or IDs', async ({
     comfyPage
   }) => {
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBeGreaterThan(1)
+    await comfyPage.expectNodeCountMinimum(2)
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
     await comfyPage.canvas.click()
@@ -252,9 +250,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Can undo paste multiple nodes as single action', async ({
     comfyPage
   }) => {
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBeGreaterThan(1)
+    await comfyPage.expectNodeCountMinimum(2)
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
     await comfyPage.canvas.click()
     await comfyPage.keyboard.selectAll()

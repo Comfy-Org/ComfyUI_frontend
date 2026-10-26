@@ -300,6 +300,24 @@ export class ComfyPage {
       .toBe(count)
   }
 
+  async expectNodeCountMinimum(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBeGreaterThanOrEqual(count)
+  }
+
+  async expectNodeCountMaximum(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBeLessThanOrEqual(count)
+  }
+
   async setupUser(username: string) {
     const res = await this.request.get(`${this.apiUrl}/api/users`)
     if (res.status() !== 200)

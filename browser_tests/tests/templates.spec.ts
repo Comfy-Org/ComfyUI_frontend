@@ -68,10 +68,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await firstPopularTemplate.click()
     await expect(comfyPage.templates.content).toBeHidden()
 
-    // Ensure we now have some nodes
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBeGreaterThan(0)
+    await comfyPage.expectNodeCountMinimum(1)
   })
 
   test('dialog should open Popular for first-time users', async ({
@@ -534,9 +531,7 @@ test.describe(
         url: '/?template=image_z_image_turbo'
       })
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBeGreaterThan(0)
+      await comfyPage.expectNodeCountMinimum(1)
 
       expect(await templatesFlash.hasFlashed()).toBe(false)
       await expect(comfyPage.templates.content).toBeHidden()
