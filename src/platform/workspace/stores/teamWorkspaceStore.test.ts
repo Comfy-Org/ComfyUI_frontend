@@ -1517,7 +1517,46 @@ describe('useTeamWorkspaceStore', () => {
         await store.initialize()
 
         expect(store.canCreateWorkspace).toBe(expected)
-        expect(store.workspacesManagedByOrganization).toBe(!expected)
+      }
+    )
+
+    function ownedTeams(count: number) {
+      return Array.from({ length: count }, (_, i) => ({
+        ...mockTeamWorkspace,
+        id: `ws-owned-${i}`,
+        name: `Owned ${i}`
+      }))
+    }
+
+    it.for([
+      {
+        reason: 'organization',
+        response: {
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+          default_workspace_id: mockTeamWorkspace.id
+        }
+      },
+      {
+        reason: 'limit',
+        response: { workspaces: [mockPersonalWorkspace, ...ownedTeams(9)] }
+      },
+      {
+        reason: 'unknown',
+        response: { workspaces: [mockPersonalWorkspace] }
+      }
+    ])(
+      'names the $reason refusal from a can_create_workspace: false list',
+      async ({ reason, response }) => {
+        mockWorkspaceApi.list.mockResolvedValue({
+          ...response,
+          can_create_workspace: false
+        })
+
+        const store = useTeamWorkspaceStore()
+        await store.initialize()
+
+        expect(store.canCreateWorkspace).toBe(false)
+        expect(store.createWorkspaceRefusal).toBe(reason)
       }
     )
 

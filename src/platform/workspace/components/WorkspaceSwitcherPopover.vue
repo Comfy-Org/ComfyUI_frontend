@@ -114,13 +114,7 @@
           <span v-if="canCreateWorkspace">
             {{ $t('workspaceSwitcher.createWorkspace') }}
           </span>
-          <span v-else>
-            {{
-              workspacesManagedByOrganization
-                ? $t('workspaceSwitcher.managedByOrganization')
-                : $t('workspaceSwitcher.maxWorkspacesReached')
-            }}
-          </span>
+          <span v-else>{{ createRefusal }}</span>
         </div>
       </div>
     </div>
@@ -138,6 +132,7 @@ import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
+import { useCreateWorkspaceRefusal } from '@/platform/workspace/composables/useCreateWorkspaceRefusal'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 import type {
@@ -180,10 +175,10 @@ const {
   workspaceId,
   workspaces,
   canCreateWorkspace,
-  workspacesManagedByOrganization,
   isFetchingWorkspaces,
   isSwitching
 } = storeToRefs(workspaceStore)
+const createRefusal = useCreateWorkspaceRefusal()
 
 const availableWorkspaces = computed<AvailableWorkspace[]>(() =>
   workspaces.value.map((w) => ({

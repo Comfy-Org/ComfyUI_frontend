@@ -137,6 +137,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import { useCreateWorkspaceRefusal } from '@/platform/workspace/composables/useCreateWorkspaceRefusal'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -156,11 +157,8 @@ const toast = useToast()
 const workspaceStore = useTeamWorkspaceStore()
 const { switchWorkspace } = useWorkspaceSwitch()
 const { getTierLabel } = useWorkspaceTierLabel()
-const {
-  sharedWorkspaces,
-  canCreateWorkspace,
-  workspacesManagedByOrganization
-} = storeToRefs(workspaceStore)
+const { sharedWorkspaces, canCreateWorkspace } = storeToRefs(workspaceStore)
+const createRefusal = useCreateWorkspaceRefusal()
 
 const loading = ref(false)
 const workspaceName = ref('')
@@ -185,13 +183,6 @@ const subtitle = computed(() =>
 const showNameError = computed(
   () => workspaceName.value.length > 0 && !isValidName.value
 )
-
-const createRefusal = computed(() => {
-  if (canCreateWorkspace.value) return null
-  return workspacesManagedByOrganization.value
-    ? t('workspaceSwitcher.managedByOrganization')
-    : t('workspaceSwitcher.maxWorkspacesReached')
-})
 
 const isValidName = computed(() => {
   const name = workspaceName.value.trim()

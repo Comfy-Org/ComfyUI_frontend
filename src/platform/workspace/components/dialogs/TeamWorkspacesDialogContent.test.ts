@@ -124,6 +124,7 @@ describe('TeamWorkspacesDialogContent', () => {
     pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
     workspaceStore.workspaces = []
+    workspaceStore.serverRefusesCreation = false
     workspaceStore.workspacesManagedByOrganization = false
   })
 
@@ -213,6 +214,7 @@ describe('TeamWorkspacesDialogContent', () => {
 
     it('replaces the create form with the organization notice', () => {
       setOwnedWorkspaces()
+      workspaceStore.serverRefusesCreation = true
       workspaceStore.workspacesManagedByOrganization = true
       mountComponent()
       expectNoCreateControls()
@@ -230,6 +232,16 @@ describe('TeamWorkspacesDialogContent', () => {
       expectNoCreateControls()
       expect(
         screen.getByText('workspaceSwitcher.maxWorkspacesReached')
+      ).toBeInTheDocument()
+    })
+
+    it('uses neutral copy when the server refuses without a known reason', () => {
+      setOwnedWorkspaces()
+      workspaceStore.serverRefusesCreation = true
+      mountComponent()
+      expectNoCreateControls()
+      expect(
+        screen.getByText('workspaceSwitcher.cannotCreateWorkspace')
       ).toBeInTheDocument()
     })
   })
