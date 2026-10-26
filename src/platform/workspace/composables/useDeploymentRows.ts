@@ -13,7 +13,6 @@ import {
 } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
-/** One row of the Run on menu, ready to render. */
 interface DeploymentRow {
   value: string
   deploymentId: string | null
@@ -33,9 +32,9 @@ interface DeploymentSection {
 
 /**
  * The Run on menu's rows: the one this browser runs on, then Comfy Cloud,
- * then the deployments. Once a compatibility check splits them, the current
- * row sits alone under Running on and the rest are grouped by whether they
- * run the open workflow.
+ * then the deployments. Once a compatibility check has answered for every row
+ * and splits them, the current row sits alone under Running on and the rest
+ * are grouped by whether they run the open workflow.
  */
 export function useDeploymentRows() {
   const { t, locale } = useI18n()
@@ -96,6 +95,10 @@ export function useDeploymentRows() {
     }
   }
 
+  function isChecked(row: DeploymentRow): boolean {
+    return markFor(row.deploymentId) !== null
+  }
+
   function runsWorkflow(row: DeploymentRow): boolean {
     return markFor(row.deploymentId)?.kind === 'runs'
   }
@@ -110,7 +113,11 @@ export function useDeploymentRows() {
       rows,
       (row) => row.value === pickedValue.value
     )
-    if (rows.every(runsWorkflow) || !rows.some(runsWorkflow)) {
+    if (
+      !rows.every(isChecked) ||
+      rows.every(runsWorkflow) ||
+      !rows.some(runsWorkflow)
+    ) {
       return [
         {
           key: 'runOn',

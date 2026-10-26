@@ -30,6 +30,7 @@
         {{ deployment }}
       </span>
       <span
+        ref="detailCell"
         :class="
           cn(
             'w-14 shrink-0 truncate tabular-nums',
@@ -64,6 +65,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useResizeObserver } from '@vueuse/core'
 import { DropdownMenuItemIndicator } from 'reka-ui'
 import { computed, onMounted, onUpdated, ref, useId, useTemplateRef } from 'vue'
 
@@ -95,7 +97,7 @@ const {
   deployment?: string | null
   /** The Release version when ready, else the status. */
   detail?: string | null
-  /** The row's full label, shown beside it when a name is cut off. */
+  /** The row's full label, shown beside it when any of its text is cut off. */
   tooltip?: string
   /** The deployment's status; leave it out for Comfy Cloud. */
   tone?: DeploymentStatusTone
@@ -113,6 +115,7 @@ const missingNodesId = useId()
 
 const titleText = useTemplateRef<HTMLElement>('titleText')
 const deploymentText = useTemplateRef<HTMLElement>('deploymentText')
+const detailCell = useTemplateRef<HTMLElement>('detailCell')
 const isTruncated = ref(false)
 
 const tooltipText = computed(() => {
@@ -125,10 +128,12 @@ function overflows(element: HTMLElement | null): boolean {
 }
 
 function measureTruncation() {
-  isTruncated.value =
-    overflows(titleText.value) || overflows(deploymentText.value)
+  isTruncated.value = [titleText, deploymentText, detailCell].some((cell) =>
+    overflows(cell.value)
+  )
 }
 
 onMounted(measureTruncation)
 onUpdated(measureTruncation)
+useResizeObserver([titleText, deploymentText, detailCell], measureTruncation)
 </script>

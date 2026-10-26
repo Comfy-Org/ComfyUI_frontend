@@ -232,34 +232,40 @@ describe('DeploymentSwitcher', () => {
     }
   )
 
-  it.for([
-    {
-      fits: 'cut off',
-      scrollWidth: 400,
-      tooltip: 'Studio Build · production · v2'
-    },
-    { fits: 'whole', scrollWidth: 0, tooltip: null }
-  ])(
-    'spells out a row beside the menu when its name is $fits',
-    async ({ scrollWidth, tooltip }) => {
-      vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockReturnValue(
-        scrollWidth
-      )
-      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-      const user = renderSwitcher()
-      await openList(user)
-      const production = screen.getByTestId(`deployment-row-${D2}`)
-
-      production.focus()
-      await waitFor(() => expect(production).toHaveFocus())
-
-      if (tooltip === null) {
-        expect(screen.queryByRole('tooltip')).toBeNull()
-        return
+  async function focusProductionRow(cutOffTestId?: string) {
+    vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(
+      function (this: Element) {
+        return this.getAttribute('data-testid') === cutOffTestId ? 400 : 0
       }
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip)
+    )
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+    const production = screen.getByTestId(`deployment-row-${D2}`)
+
+    production.focus()
+    await waitFor(() => expect(production).toHaveFocus())
+  }
+
+  it.for([
+    { cell: 'name', testId: 'deployment-row-name' },
+    { cell: 'status', testId: 'deployment-row-detail' }
+  ])(
+    'spells out a row beside the menu when its $cell is cut off',
+    async ({ testId }) => {
+      await focusProductionRow(testId)
+
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        'Studio Build · production · v2'
+      )
     }
   )
+
+  it('shows no tooltip for a row whose text fits', async () => {
+    await focusProductionRow()
+
+    expect(screen.queryByRole('tooltip')).toBeNull()
+  })
 
   it.for([
     {
@@ -1420,6 +1426,32 @@ describe('DeploymentSwitcher', () => {
         ).toBeNull()
       }
     )
+
+    it('keeps one Run on list while the check leaves out a listed row', async () => {
+      mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
+        deployments: [
+          { deployment_id: D2, missing_node_types: [], unknown: false },
+          {
+            deployment_id: D1,
+            missing_node_types: ['Power Lora Loader (rgthree)'],
+            unknown: false
+          }
+        ],
+        cloud: { missing_node_types: [] }
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      await waitFor(() =>
+        expect(
+          screen.getByTestId(`deployment-row-${D1}`)
+        ).toHaveAccessibleDescription(/cannot run this workflow/)
+      )
+      expect(rowsIn('Run on')).toHaveLength(4)
+      expect(
+        screen.queryByRole('group', { name: 'Incompatible environments' })
+      ).toBeNull()
+    })
 
     it('shows one Run on list when the check fails', async () => {
       mockWorkspaceApi.checkDeploymentCompatibility.mockRejectedValue(
