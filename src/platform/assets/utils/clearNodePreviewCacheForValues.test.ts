@@ -254,7 +254,9 @@ describe('createDeletedValueMatcher', () => {
     ['foo.png ', 'foo.png ', true],
     ['foo.png ', 'foo.png  [input]', false],
     ['a.png [temp] [temp]', 'a.png [temp]', false],
-    ['a.png [temp] [temp]', 'a.png [temp][TEMP]', true]
+    ['a.png [temp] [temp]', 'a.png [temp][TEMP]', true],
+    ['[input]', '', false],
+    ['[temp]', '', false]
   ] as const)(
     'deleting %j matches %j: %s',
     ([deletedValue, widgetValue, expected]) => {

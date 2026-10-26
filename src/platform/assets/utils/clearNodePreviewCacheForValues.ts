@@ -37,9 +37,9 @@ function referencesPath(value: string, deleted: ReferencePath): boolean {
 export function createDeletedValueMatcher(
   deletedValues: ReadonlySet<string>
 ): (value: unknown) => boolean {
-  const deletedPaths = [...deletedValues].map((value) =>
-    parseAnnotatedPath(value)
-  )
+  const deletedPaths = [...deletedValues]
+    .map((value) => parseAnnotatedPath(value))
+    .filter(({ filepath }) => filepath)
   return (value) =>
     typeof value === 'string' &&
     deletedPaths.some((deleted) => referencesPath(value, deleted))

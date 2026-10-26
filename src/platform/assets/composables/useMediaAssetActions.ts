@@ -70,10 +70,13 @@ function widgetValueVariants(
   )
 }
 
-function storedOutputVariants(metadata: OutputAssetMetadata | null): string[] {
+function storedOutputVariants(
+  name: string,
+  metadata: OutputAssetMetadata | null
+): string[] {
   const { storedHash, storedType, subfolder } = metadata ?? {}
   if (typeof storedHash !== 'string' || !isResultItemType(storedType)) return []
-  return widgetValueVariants(undefined, storedType, subfolder, storedHash)
+  return widgetValueVariants(name, storedType, subfolder, storedHash)
 }
 
 export function useMediaAssetActions() {
@@ -632,7 +635,7 @@ export function useMediaAssetActions() {
             metadata?.subfolder,
             asset.hash
           ),
-          ...storedOutputVariants(metadata)
+          ...storedOutputVariants(asset.name, metadata)
         ]
         return [
           {
