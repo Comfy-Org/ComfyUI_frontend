@@ -8,10 +8,11 @@ Proposed
 
 ## Context
 
-Shortcuts fire in the wrong place: typing `z` in the agent chat opens the mask
-editor (#18144); Escape over the composer's attachment preview stops the agent
-run (#21960); Ctrl+Enter also flips a focused switch (#15582); image-preview
-arrows also act on the canvas (#13377); Shift sticks after a Shift+right-click
+Shortcuts fire in the wrong place: typing `z` in a side-panel chat input opens
+the mask editor (#18144); Escape over the composer's attachment preview stops
+the agent run (#21960); Ctrl+Enter also flips a focused switch (#15582); Escape
+in an image-preview gallery also exits the subgraph (#13377); Shift sticks
+after a Shift+right-click
 (#21558); Cmd+A stops selecting nodes after a click on the tab bar (#11949).
 A per-node shortcut cannot be isolated: R in one Load3D would reset every
 Load3D (FE-840).
@@ -19,13 +20,15 @@ Load3D (FE-840).
 On main two dispatchers share `keybindingStore`: `keybindHandler`, a window
 bubble listener from `GraphView.vue`, and `executeCanvasKeybinding`, run by
 the `processKey` patch in `app.ts` on the canvas element, which then stops
-propagation. Seventeen window or document listeners act on keys outside both;
+propagation. Outside both, 24 keydown or keyup listeners sit on window,
+document or body, in 21 files;
 three hard-code undo (`changeTracker.ts`, the mask-editor package's
 `useKeyboard.ts`, `LayerEditorContent.vue`). Location comes from
 `targetElementId` containment, `escapeOverride.ts`, role checks and
 `isModalOpen` (`src/utils/modalUtil.ts`), four DOM queries run on most
-keydowns. This month's keyboard PRs each add a listener for a missing piece:
-key-up (#21965), repeat (#21906), drag cancel (#21612), Escape (#21960).
+keydowns. This month's keyboard PRs each work around a missing piece: a
+listener for key holds (#21965), a repeat check inside `keybindHandler`
+(#21906), drag-cancel listeners (#21612), an Escape listener (#21960).
 
 A first implementation (nine unmerged PRs and a draft record numbered
 KEYBINDINGS-0027) adopted one resolver at window capture, user > extension >
@@ -187,11 +190,13 @@ keys while Ctrl+Z and Ctrl+A still reach the app from a dropdown or tree.
   `aria-multiselectable="true"`. Tab list: arrows, Home, End. Buttons, links,
   media: unmodified Enter and Space.
 - A re-dispatched copy of a claimed key is never resolved again.
-  `WidgetSelectDefault.vue` replays only unmodified keys, so Ctrl+Enter in an
-  open dropdown queues once.
-- Only Reka's `SwitchRoot` toggles on Enter without checking
+  `WidgetSelectDefault.vue` stops replaying modified keys (main replays
+  Ctrl+Enter too), so Ctrl+Enter in an open dropdown queues once.
+- Among Reka's toggles only `SwitchRoot` acts on Enter without checking
   `defaultPrevented`, so `src/components/ui/switch/Switch.vue` rejects a model
   update caused by a claimed keydown (#15582). This holds in both D6 modes.
+  Reka's `TreeItem` also selects on Enter and Ctrl+Enter regardless; the tree
+  wrapper gets the same guard.
 
 ### D5 — Holds and modifier state
 
@@ -275,9 +280,10 @@ a default that moves scope.
 
 Extensions keep the hooks they use today, read no more broadly than main does.
 
-- **`ComfyApp.maskeditor_is_opended`.** Its getter, read on each keydown (so
-  MiniMax's replaced property counts), makes workspace Undo and Redo go
-  unclaimed while it returns true, as on main. It is not a modal: FiL keeps it
+- **`ComfyApp.maskeditor_is_opended`.** Read on each keydown, it makes
+  workspace Undo and Redo go unclaimed while it returns true, as main does for
+  packs that assign the hook. Reading the property itself, so a pack that
+  replaces it (MiniMax) also counts, is new. It is not a modal: FiL keeps it
   installed for the tab's lifetime, and dchatel and LLM_Prompt leave
   `() => true` behind if their overlay dies. Use logs a deprecation warning.
 - **`onKeyDown` marker.** `litegraphService.ts` puts a marker at the bottom of
@@ -291,7 +297,8 @@ Extensions keep the hooks they use today, read no more broadly than main does.
   on forwarded keyups; canvas commands dirty foreground and background.
 - **Overlay fallback.** An undeclared `role="dialog" aria-modal="true"`,
   `dialog[open]` or visible `.comfy-modal` counts as an exclusive layer, and a
-  bare Escape there closes it, as on main.
+  bare Escape there closes it. On main that happens only once the default
+  Escape binding is removed.
 - **API version.** Packs can check a keybinding API version. The migration
   guide leads with recipes that also work on old frontends: ARIA modal markup,
   and reading the triggering event from command metadata with a fallback.
@@ -376,8 +383,9 @@ A broken binding is diagnosable and never stops the keyboard.
   report reveals.
 - **DOM-only scope walk** (VS Code's: stamped contexts found by walking up from
   the target). Teleports break it: a popover in a dialog lands beside
-  `[data-dialog-key]`, menus under `body`. Zed, JetBrains and TanStack Hotkeys'
-  Vue adapter resolve along the focus or component path, as this record does.
+  `[data-dialog-key]`, menus under `body`. Zed and JetBrains resolve along the
+  focus path instead, and this record follows logical parents for the same
+  reason.
   VS Code dispatches at window bubble: prior art for scoping, not for capture.
 
 ## Rollout
