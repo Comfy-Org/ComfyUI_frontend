@@ -11,6 +11,7 @@ import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
+import type { SlotDirection } from '@/types/slotId'
 
 import {
   SUBGRAPH_INPUT_ID,
@@ -48,8 +49,6 @@ interface PanOptions {
   viewport?: ReadOnlyRect
   reducedMotion: boolean
 }
-
-type SlotType = 'input' | 'output'
 
 const ARRIVAL_TOOLBOX_CLEARANCE = 64
 
@@ -184,10 +183,10 @@ export function getSelectedLinksAnchor(graph: LGraph): Point | undefined {
 function slotLinkIds(
   graph: LGraph,
   nodeId: NodeId,
-  type: SlotType,
+  direction: SlotDirection,
   slot: number
 ): LinkId[] {
-  if (type === 'output') return outputLinkIds(graph, nodeId, slot)
+  if (direction === 'output') return outputLinkIds(graph, nodeId, slot)
   const linkId = inputLinkId(graph, nodeId, slot)
   return linkId === undefined ? [] : [linkId]
 }
@@ -195,10 +194,10 @@ function slotLinkIds(
 function slotLinks(
   graph: LGraph,
   nodeId: NodeId,
-  type: SlotType,
+  direction: SlotDirection,
   slot: number
 ): LLink[] {
-  return slotLinkIds(graph, nodeId, type, slot).flatMap((linkId) => {
+  return slotLinkIds(graph, nodeId, direction, slot).flatMap((linkId) => {
     const link = graph.getLink(linkId)
     return link ? [link] : []
   })
@@ -233,7 +232,7 @@ export function selectSlotLinks(
 
 function selectSocketLinks(
   links: readonly LLink[],
-  socketType: SlotType,
+  socketType: SlotDirection,
   position: Point
 ): void {
   useLinkSelectionStore().select({
@@ -244,11 +243,14 @@ function selectSocketLinks(
   })
 }
 
-function oppositeSlotType(type: SlotType): SlotType {
-  return type === 'input' ? 'output' : 'input'
+function oppositeSlotDirection(direction: SlotDirection): SlotDirection {
+  return direction === 'input' ? 'output' : 'input'
 }
 
-function farEnd(link: LLink, near: SlotType): { nodeId: NodeId; slot: number } {
+function farEnd(
+  link: LLink,
+  near: SlotDirection
+): { nodeId: NodeId; slot: number } {
   return near === 'input'
     ? { nodeId: link.origin_id, slot: link.origin_slot }
     : { nodeId: link.target_id, slot: link.target_slot }
@@ -265,26 +267,36 @@ function linkEndNode(graph: LGraph, nodeId: NodeId): LinkEndNode | undefined {
   return node ? { kind: 'node', node } : undefined
 }
 
-function slotCount(end: LinkEndNode, type: SlotType): number {
+function slotCount(end: LinkEndNode, direction: SlotDirection): number {
   switch (end.kind) {
     case 'subgraphInputs':
-      return type === 'output' ? end.node.slots.length : 0
+      return direction === 'output' ? end.node.slots.length : 0
     case 'subgraphOutputs':
-      return type === 'input' ? end.node.slots.length : 0
+      return direction === 'input' ? end.node.slots.length : 0
     case 'node':
-      return type === 'input' ? end.node.inputs.length : end.node.outputs.length
+      return direction === 'input'
+        ? end.node.inputs.length
+        : end.node.outputs.length
   }
 }
 
-function isSlotIndex(end: LinkEndNode, type: SlotType, slot: number): boolean {
-  return Number.isInteger(slot) && slot >= 0 && slot < slotCount(end, type)
+function isSlotIndex(
+  end: LinkEndNode,
+  direction: SlotDirection,
+  slot: number
+): boolean {
+  return Number.isInteger(slot) && slot >= 0 && slot < slotCount(end, direction)
 }
 
-function socketPosition(end: LinkEndNode, type: SlotType, slot: number): Point {
+function socketPosition(
+  end: LinkEndNode,
+  direction: SlotDirection,
+  slot: number
+): Point {
   const [x, y] =
     end.kind !== 'node'
       ? end.node.slots[slot].pos
-      : type === 'input'
+      : direction === 'input'
         ? end.node.getInputPos(slot)
         : end.node.getOutputPos(slot)
   return { x, y }
@@ -294,7 +306,7 @@ function socketPosition(end: LinkEndNode, type: SlotType, slot: number): Point {
 export function getSelectedLinkDestinations(graph: LGraph): LinkDestination[] {
   const socketType = useLinkSelectionStore().selection?.socketType
   if (!socketType) return []
-  const arrivalType = oppositeSlotType(socketType)
+  const arrivalDirection = oppositeSlotDirection(socketType)
   const linksByNode = new Map<NodeId, LLink[]>()
   for (const link of getSelectedLinks(graph)) {
     const { nodeId } = farEnd(link, socketType)
@@ -308,8 +320,8 @@ export function getSelectedLinkDestinations(graph: LGraph): LinkDestination[] {
     const arriving = links.filter((link) => {
       const { slot } = farEnd(link, socketType)
       return (
-        isSlotIndex(end, arrivalType, slot) &&
-        slotLinkIds(graph, nodeId, arrivalType, slot).includes(link.id)
+        isSlotIndex(end, arrivalDirection, slot) &&
+        slotLinkIds(graph, nodeId, arrivalDirection, slot).includes(link.id)
       )
     })
     return arriving.length ? [{ ...end, nodeId, links: arriving }] : []
@@ -348,18 +360,23 @@ export function goToLinkDestination(
 
 function selectArrivalSocket(
   graph: LGraph,
-  departureType: SlotType,
+  departureDirection: SlotDirection,
   destination: LinkDestination
 ): Point | undefined {
-  const arrivalType = oppositeSlotType(departureType)
+  const arrivalDirection = oppositeSlotDirection(departureDirection)
   const arrivalSlot = destination.links.reduce(
-    (lowest, link) => Math.min(lowest, farEnd(link, departureType).slot),
+    (lowest, link) => Math.min(lowest, farEnd(link, departureDirection).slot),
     Infinity
   )
-  const links = slotLinks(graph, destination.nodeId, arrivalType, arrivalSlot)
+  const links = slotLinks(
+    graph,
+    destination.nodeId,
+    arrivalDirection,
+    arrivalSlot
+  )
   if (!links.length) return undefined
-  const position = socketPosition(destination, arrivalType, arrivalSlot)
-  selectSocketLinks(links, arrivalType, position)
+  const position = socketPosition(destination, arrivalDirection, arrivalSlot)
+  selectSocketLinks(links, arrivalDirection, position)
   return position
 }
 

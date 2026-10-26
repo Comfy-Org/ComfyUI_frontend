@@ -3,12 +3,13 @@ import { shallowRef } from 'vue'
 
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { SlotDirection } from '@/types/slotId'
 
 interface LinkSelection {
   readonly links: readonly LLink[]
   readonly marquee: Bounds
   readonly anchorX: number
-  readonly socketType?: 'input' | 'output'
+  readonly socketType?: SlotDirection
 }
 
 export const useLinkSelectionStore = defineStore('linkSelection', () => {
