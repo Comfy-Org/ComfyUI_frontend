@@ -311,7 +311,7 @@ const disableThirdPartyExtensions = async () => {
   )
 }
 
-const disableAgentExtensions = async () => {
+async function disableAgentExtensions() {
   const result = await extensionStore.disableAgentExtensions(
     extensionStore.agentExtensions
   )
