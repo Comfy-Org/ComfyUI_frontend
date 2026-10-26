@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   needsFormButHasNone,
   proveWidgetForm
-} from '@/lib/litegraph/src/node/widgetFormProof'
+} from '@/lib/litegraph/src/widgets/widgetFormProof'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 /**

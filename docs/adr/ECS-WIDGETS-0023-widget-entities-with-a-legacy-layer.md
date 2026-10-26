@@ -181,7 +181,7 @@ So the rule is not "derive the order from `node.widgets`". It is:
 > produced from `node.widgets`. Where it cannot prove that, emit nothing.**
 
 Deriving is a guess dressed as a declaration; proving is not. `proveWidgetForm`
-(`src/lib/litegraph/src/node/widgetFormProof.ts`) is that predicate, and it returns an order
+(`src/lib/litegraph/src/widgets/widgetFormProof.ts`) is that predicate, and it returns an order
 **only** alongside `provable: true` — never a partial order beside a refusal.
 
 ### Why deriving does not work, measured
