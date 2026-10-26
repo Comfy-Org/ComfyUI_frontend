@@ -1,4 +1,9 @@
-import type { AxiosAdapter, AxiosInstance, AxiosResponse } from 'axios'
+import type {
+  AxiosAdapter,
+  AxiosInstance,
+  AxiosResponse,
+  InternalAxiosRequestConfig
+} from 'axios'
 import axios from 'axios'
 
 import type { RetryPolicy } from '@/utils/retryPolicy'
@@ -17,17 +22,36 @@ function retryAfterHeader(response: AxiosResponse): string | undefined {
     : undefined
 }
 
+function timeBudget(timeoutMs: number | undefined) {
+  const startedAt = Date.now()
+  return () => (timeoutMs ? timeoutMs - (Date.now() - startedAt) : undefined)
+}
+
 function retryingAdapter(
   adapter: AxiosAdapter,
   { policy, sleep = sleepFor, random }: AxiosRetryableStatusOptions
 ): AxiosAdapter {
+  function waitBeforeRetry(
+    error: unknown,
+    config: InternalAxiosRequestConfig,
+    attempt: number
+  ): number | undefined {
+    const response = axios.isAxiosError(error) ? error.response : undefined
+    if (!response) return undefined
+    return retryDelayMs({
+      method: config.method ?? 'GET',
+      status: response.status,
+      readRetryAfter: () => retryAfterHeader(response),
+      attempt,
+      policy,
+      random
+    })
+  }
+
   return async (config) => {
     const signal =
       config.signal instanceof AbortSignal ? config.signal : undefined
-    const budgetMs = config.timeout || undefined
-    const startedAt = Date.now()
-    const remainingMs = () =>
-      budgetMs === undefined ? undefined : budgetMs - (Date.now() - startedAt)
+    const remainingMs = timeBudget(config.timeout)
 
     for (let attempt = 1; ; attempt++) {
       const remaining = remainingMs()
@@ -36,20 +60,11 @@ function retryingAdapter(
           remaining === undefined ? config : { ...config, timeout: remaining }
         )
       } catch (error) {
-        const response = axios.isAxiosError(error) ? error.response : undefined
-        const delay = response
-          ? retryDelayMs({
-              method: config.method ?? 'GET',
-              status: response.status,
-              readRetryAfter: () => retryAfterHeader(response),
-              attempt,
-              policy,
-              random
-            })
-          : undefined
-        const budgetLeft = remainingMs()
-        if (delay === undefined) throw error
-        if (budgetLeft !== undefined && delay >= budgetLeft) throw error
+        const delay = waitBeforeRetry(error, config, attempt)
+        const left = remainingMs()
+        if (delay === undefined || (left !== undefined && delay >= left)) {
+          throw error
+        }
         await sleep(delay, signal)
       }
     }
