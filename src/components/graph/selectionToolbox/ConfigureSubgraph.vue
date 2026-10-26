@@ -5,7 +5,7 @@
     :aria-label="$t('commands.Comfy_Graph_EditSubgraphWidgets.label')"
     @click="handleClick"
   >
-    <i class="icon-[lucide--settings-2] size-[1.2em]" />
+    <i class="icon-[lucide--settings-2]" />
   </Button>
 </template>
 <script setup lang="ts">

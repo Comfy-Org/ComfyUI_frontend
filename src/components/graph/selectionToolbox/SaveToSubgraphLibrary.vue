@@ -5,7 +5,7 @@
     :aria-label="$t('commands.Comfy_PublishSubgraph.label')"
     @click="() => commandStore.execute('Comfy.PublishSubgraph')"
   >
-    <i class="icon-[lucide--book-open] size-[1.2em]" />
+    <i class="icon-[lucide--book-open]" />
   </Button>
 </template>
 

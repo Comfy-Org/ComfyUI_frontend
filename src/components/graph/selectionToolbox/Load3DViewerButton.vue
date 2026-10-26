@@ -5,7 +5,7 @@
     :aria-label="$t('commands.Comfy_3DViewer_Open3DViewer.label')"
     @click="open3DViewer"
   >
-    <i class="icon-[lucide--pencil] size-[1.2em]" />
+    <i class="icon-[lucide--pencil]" />
   </Button>
 </template>
 

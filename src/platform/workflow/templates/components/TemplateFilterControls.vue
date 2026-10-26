@@ -44,9 +44,7 @@
     :options="sortOptions"
   >
     <template #icon>
-      <i
-        class="icon-[lucide--arrow-up-down] size-[1.2em] text-muted-foreground"
-      />
+      <i class="icon-[lucide--arrow-up-down] size-3.5 text-muted-foreground" />
     </template>
   </AppSingleSelect>
 </template>

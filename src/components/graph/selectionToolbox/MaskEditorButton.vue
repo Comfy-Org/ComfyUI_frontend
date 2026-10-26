@@ -5,7 +5,7 @@
     :aria-label="$t('commands.Comfy_MaskEditor_OpenMaskEditor.label')"
     @click="openMaskEditor"
   >
-    <i class="icon-[comfy--mask] size-[1.2em]" />
+    <i class="icon-[comfy--mask]" />
   </Button>
 </template>
 

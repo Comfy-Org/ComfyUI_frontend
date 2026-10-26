@@ -18,7 +18,7 @@
         <div class="sidebar-icon-wrapper relative">
           <i
             v-if="typeof icon === 'string'"
-            class="size-[1.2em]"
+            class="size-5"
             :class="icon + ' side-bar-button-icon'"
           />
           <component

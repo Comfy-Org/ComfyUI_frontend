@@ -12,7 +12,7 @@
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
         <TooltipProvider :delay-duration="1000">
-          <div class="flex h-8 gap-1">
+          <div class="flex h-8 gap-1 [&_i]:size-3.5">
             <LinkSelectionActions v-if="hasLinkSelection" />
             <template v-else>
               <DeleteButton v-if="showDelete" />

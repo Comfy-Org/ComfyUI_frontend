@@ -6,7 +6,7 @@
     :aria-label="$t('g.info')"
     @click="onInfoClick"
   >
-    <i class="icon-[lucide--info] size-[1.2em]" />
+    <i class="icon-[lucide--info]" />
   </Button>
 </template>
 

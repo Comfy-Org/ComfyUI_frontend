@@ -13,7 +13,7 @@
           data-testid="color-picker-current-color"
           :style="{ color: currentColor ?? '' }"
         />
-        <i class="icon-[lucide--chevron-down] size-[1.2em]" />
+        <i class="icon-[lucide--chevron-down]" />
       </div>
     </Button>
     <div

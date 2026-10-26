@@ -6,7 +6,7 @@
     :aria-label="$t('g.moreOptions')"
     @click="handleClick"
   >
-    <i class="icon-[lucide--more-vertical] size-[1.2em]" />
+    <i class="icon-[lucide--more-vertical]" />
   </Button>
 </template>
 

@@ -40,9 +40,7 @@
           <span class="truncate">{{ selectedOption?.name ?? label }}</span>
         </div>
         <div :class="selectDropdownClass">
-          <i
-            class="icon-[lucide--chevron-down] size-[1.2em] text-muted-foreground"
-          />
+          <i class="icon-[lucide--chevron-down] text-muted-foreground" />
         </div>
       </ComboboxTrigger>
     </ComboboxAnchor>

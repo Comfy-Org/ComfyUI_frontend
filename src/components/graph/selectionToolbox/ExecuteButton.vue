@@ -7,7 +7,7 @@
     @mouseleave="() => handleMouseLeave()"
     @click="handleClick"
   >
-    <i class="icon-[lucide--play] size-[1.2em]" />
+    <i class="icon-[lucide--play]" />
   </Button>
 </template>
 

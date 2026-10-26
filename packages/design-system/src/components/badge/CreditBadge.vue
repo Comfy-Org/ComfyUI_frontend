@@ -8,7 +8,7 @@
       )
     "
   >
-    <i class="icon-[lucide--coins] h-full w-[1.2em] bg-credit" />
+    <i class="icon-[lucide--coins] h-full w-3.5 bg-credit" />
     <span class="truncate" v-text="text" />
   </span>
   <span
