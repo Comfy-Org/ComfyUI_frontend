@@ -1,0 +1,24 @@
+English detail: total 686 {'exact page': 656, 'generic list fallback': 20, 'exact page (after rerun)': 10}
+bare hex: total 219 {'exact page': 214, 'generic list fallback': 5}
+bare template name: total 439 {'generic list fallback': 439}
+creator: total 15 {'generic list fallback': 12, 'exact page': 3}
+creator (locale): total 150 {'generic list fallback': 120, 'exact page': 30}
+extra forms: locale-templates: total 6 {'generic list fallback': 4, 'exact page': 2}
+extra forms: query: total 26 {'generic list fallback': 7, 'exact page': 13, 'right filtered list': 6}
+extra forms: templates: total 14 {'generic list fallback': 3, 'exact page': 7, 'right filtered list': 4}
+index/other: total 22 {'untouched': 1, 'list (map target)': 5, 'right filtered list': 1, 'generic list fallback': 15}
+index/other (locale): total 20 {'list (map target)': 10, 'right filtered list': 8, 'generic list fallback': 2}
+locale bare template name: total 1 {'generic list fallback': 1}
+locale detail: total 6626 {'exact page': 6524, 'generic list fallback': 84, 'exact page (after rerun)': 18}
+tag/model/category/use-case: total 167 {'right filtered list': 153, 'list (map target)': 14}
+tag/model/category/use-case (locale): total 1035 {'right filtered list': 1028, 'list (map target)': 7}
+
+first hop by status: Counter({('302', 'no-store'): 8356, ('301', 'public, max-age=86400'): 1069, ('200', ''): 1})
+final: Counter({('200', 'cms'): 9425, ('200', ''): 1})
+max hops 1
+query kept on final: 26 / 26
+locale first-hop: Counter({'302': 7838}) english: Counter({'301': 1069, '302': 518, '200': 1})
+fallback reasons: Counter({'bare template name, no catalog record': 469, 'no catalog creator': 132, 'no catalog record for share id': 111, 'catalog lookup timeout': 28})
+no catalog record for share id ['/workflows/49a2f3a0811f-49a2f3a0811f/', '/workflows/3515c5083027-3515c5083027/', '/workflows/c98e5c457e1e-c98e5c457e1e/', '/workflows/e6f74ca84e32-e6f74ca84e32/']
+bare template name, no catalog record ['/workflows/api_seedance2_0_t2v/', '/workflows/api_seedance2_0_r2v/', '/workflows/api_seedance2_0_flf2v/', '/workflows/audio_ace_step1_5_xl_base/']
+no catalog creator ['/workflows/araminta-k/', '/workflows/doc-workbox/', '/workflows/doughogan/', '/workflows/enigmatic-e/']
