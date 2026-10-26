@@ -337,8 +337,16 @@ describe('colorUtil conversions', () => {
       ['rgb(from #0008 r g b)', false],
       ['color-mix(in srgb, red 50%, transparent)', false],
       ['oklch(0.5 0.1 120)', false],
+      ['rgba(0, 0, 0.0.0, 1)', false],
+      ['rgb(0 0 0 / 0.5 / 1)', false],
+      ['rgb(0, 0)', false],
+      ['red', true],
+      ['aliceblue', true],
+      ['GreenYellow', true],
       ['transparent', false],
-      ['red', false],
+      ['Transparent', false],
+      ['currentColor', false],
+      ['inherit', false],
       [5, false],
       [undefined, false]
     ] as const)('%s → %s', ([color, expected]) => {

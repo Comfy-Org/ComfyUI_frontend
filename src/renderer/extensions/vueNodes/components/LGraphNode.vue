@@ -12,7 +12,7 @@
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        hasTranslucentSurface ? 'drop-shadow-lg' : ['shadow-node', shapeClass],
+        hasOpaqueNodeColors ? ['shadow-xl', shapeClass] : 'drop-shadow-lg',
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
@@ -515,9 +515,9 @@ const shapeClass = computed(() =>
   })
 )
 
-const hasTranslucentSurface = computed(() =>
-  [nodeData.color, nodeData.bgcolor].some(
-    (color) => !!color && !isOpaqueColor(color)
+const hasOpaqueNodeColors = computed(() =>
+  [nodeData.color, nodeData.bgcolor].every(
+    (color) => !color || isOpaqueColor(color)
   )
 )
 
