@@ -11,6 +11,7 @@
  * 2D context and plain data.
  */
 import type { Bounds } from '@/renderer/core/layout/types'
+import { boundsIntersect } from '@/renderer/core/layout/utils/layoutMath'
 
 /** Centre of a slot, in graph space. */
 export interface NodeBoxSlot {
@@ -89,11 +90,9 @@ export function drawNodeBoxes(
   ctx.scale(scale, scale)
   ctx.translate(camera.x, camera.y)
 
-  // Drawn in passes so the whole graph shares one fillStyle per pass, rather
-  // than cycling body/title/slot colours once per node.
   const visible: NodeBox[] = []
   for (const box of boxes) {
-    if (intersects(box.bounds, viewport)) visible.push(box)
+    if (boundsIntersect(box.bounds, viewport)) visible.push(box)
   }
 
   let currentColor = ''
@@ -103,7 +102,7 @@ export function drawNodeBoxes(
 
     ctx.fillStyle = fallback
     if (desired !== fallback) ctx.fillStyle = desired
-    currentColor = String(ctx.fillStyle)
+    currentColor = ctx.fillStyle
   }
 
   for (const { bounds, color } of visible) {
@@ -124,15 +123,9 @@ export function drawNodeBoxes(
   }
 
   setFill(style.widgetColor, style.widgetColor)
-  for (const { widgets } of visible) {
-    if (!widgets) continue
-    for (const widget of widgets) {
-      ctx.fillRect(widget.x, widget.y, widget.width, widget.height)
-    }
-  }
+  drawNodeBoxWidgets(ctx, visible)
 
-  for (const { slots } of visible) {
-    if (!slots) continue
+  for (const { slots = [] } of visible) {
     for (const slot of slots) {
       setFill(slot.color, style.defaultSlotColor)
       ctx.fillRect(
@@ -148,11 +141,13 @@ export function drawNodeBoxes(
   return visible.length
 }
 
-function intersects(a: Bounds, b: Bounds): boolean {
-  return !(
-    a.x + a.width < b.x ||
-    b.x + b.width < a.x ||
-    a.y + a.height < b.y ||
-    b.y + b.height < a.y
-  )
+function drawNodeBoxWidgets(
+  ctx: CanvasRenderingContext2D,
+  boxes: readonly NodeBox[]
+): void {
+  for (const { widgets = [] } of boxes) {
+    for (const widget of widgets) {
+      ctx.fillRect(widget.x, widget.y, widget.width, widget.height)
+    }
+  }
 }

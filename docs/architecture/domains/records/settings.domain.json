@@ -144,10 +144,17 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/platform/settings/settingStore.ts"],
   "allowedDependencies": ["authentication", "dialog-host"],
-  "allowedConsumers": [],
+  "allowedConsumers": ["vue-node-renderer"],
   "characterizationScenarios": [
+    {
+      "name": "The minimum-font-size setting controls the Vue renderer's reactive low-quality threshold",
+      "checks": [
+        "src/platform/settings/settingStore.test.ts",
+        "src/renderer/extensions/vueNodes/composables/useLowQualityRendering.test.ts"
+      ]
+    },
     {
       "name": "Setting store loads, validates, migrates, persists, and reports setting values",
       "checks": [

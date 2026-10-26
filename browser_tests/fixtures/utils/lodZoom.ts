@@ -20,15 +20,16 @@ const LOD_CLEARANCE = 1.2
  */
 export async function ensureNodesAddressable(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(async (clearance) => {
-    const canvas = window.app?.canvas
-    if (!canvas) return
+    const app = window.app
+    if (!app) return
+    const canvas = app.canvas
 
-    const vueNodesEnabled = await window.app?.extensionManager.setting.get(
+    const vueNodesEnabled = await app.extensionManager.setting.get(
       'Comfy.VueNodes.Enabled'
     )
     if (!vueNodesEnabled) return
 
-    const minFontSize = canvas.min_font_size_for_lod ?? 0
+    const minFontSize = canvas.min_font_size_for_lod
     if (minFontSize <= 0) return
 
     const textSize = window.LiteGraph?.NODE_TEXT_SIZE ?? 14

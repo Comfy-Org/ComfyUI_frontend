@@ -24,10 +24,17 @@
       "role": "application"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/stores/workspace/colorPaletteStore.ts"],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["vue-node-renderer"],
   "characterizationScenarios": [
+    {
+      "name": "The palette store supplies canvas colors and initializes the Vue node box overlay",
+      "checks": [
+        "src/services/colorPaletteService.test.ts",
+        "src/renderer/extensions/vueNodes/components/NodeBoxOverlay.test.ts"
+      ]
+    },
     {
       "name": "Palettes validate, import, export, and apply colors to the canvas and CSS variables",
       "checks": [
@@ -38,7 +45,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Inventory preserves existing exports and runtime behavior; vue-node-renderer consumes the tested color palette store entry point."
   ],
   "deepImports": "inventory"
 }

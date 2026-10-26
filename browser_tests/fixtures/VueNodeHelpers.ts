@@ -259,9 +259,9 @@ export class VueNodeHelpers {
       }
     } catch (error) {
       const belowLod = await this.page.evaluate(() => {
-        const canvas = window.app?.canvas
-        const minFontSize = canvas?.min_font_size_for_lod ?? 0
-        if (!canvas || minFontSize <= 0) return null
+        const canvas = window.app!.canvas
+        const minFontSize = canvas.min_font_size_for_lod
+        if (minFontSize <= 0) return null
 
         const textSize = window.LiteGraph?.NODE_TEXT_SIZE ?? 14
         const threshold =

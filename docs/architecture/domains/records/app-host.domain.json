@@ -125,9 +125,24 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["vue-node-renderer"],
+  "allowedDependencies": [
+    "vue-node-renderer",
+    "graph-layout",
+    "canvas-renderer"
+  ],
   "allowedConsumers": [],
   "characterizationScenarios": [
+    {
+      "name": "Graph canvas builds simplified node boxes from layout bounds, slot positions, and node shape styles",
+      "checks": [
+        "src/renderer/core/layout/utils/layoutMath.test.ts",
+        "src/renderer/core/canvas/litegraph/slotCalculations.test.ts",
+        "src/renderer/extensions/vueNodes/utils/createNodeBox.test.ts",
+        "src/renderer/extensions/vueNodes/utils/nodeStyleUtils.test.ts",
+        "src/renderer/extensions/vueNodes/composables/useLowQualityRendering.test.ts",
+        "src/renderer/extensions/vueNodes/components/NodeBoxOverlay.test.ts"
+      ]
+    },
     {
       "name": "Graph canvas restores detached Vue node elements and retains focus and link-drag sources while panning",
       "checks": ["browser_tests/tests/vueNodes/viewportKeepAlive.spec.ts"]
