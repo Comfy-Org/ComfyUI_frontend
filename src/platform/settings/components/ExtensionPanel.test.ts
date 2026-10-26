@@ -170,16 +170,13 @@ describe('ExtensionPanel', () => {
     const extensionStore = useExtensionStore()
     extensionStore.registerExtension({ name: 'Manual.Toolbar' })
     extensionStore.registerExtension({ name: 'agentic.toolbar' })
+    extensionStore.registerExtension({ name: 'agent.cushions.toolbar' })
     extensionStore.registerExtension({
-      name: 'agent.cushions.toolbar',
+      name: 'agent-made.standalone',
       provenance: {
         createdBy: 'comfy-agent',
         summary: 'Adds cushion controls'
       }
-    })
-    extensionStore.registerExtension({
-      name: 'agent-made.standalone',
-      provenance: { createdBy: 'comfy-agent' }
     })
     const setSetting = vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
 
@@ -194,6 +191,7 @@ describe('ExtensionPanel', () => {
         .map((toggle) => toggle.getAttribute('aria-label'))
     ).toEqual(['agent.cushions.toolbar', 'agent-made.standalone'])
 
+    await user.type(screen.getByRole('combobox'), 'cushions')
     await user.click(screen.getByRole('button', { name: 'More Options' }))
     await user.click(
       await screen.findByRole('menuitem', {
@@ -205,6 +203,7 @@ describe('ExtensionPanel', () => {
       'agent.cushions.toolbar',
       'agent-made.standalone'
     ])
+    await user.clear(screen.getByRole('combobox'))
     await user.click(screen.getByRole('button', { name: 'All' }))
     expect(screen.getByRole('switch', { name: 'Manual.Toolbar' })).toBeChecked()
     expect(
