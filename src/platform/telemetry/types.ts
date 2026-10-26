@@ -806,7 +806,7 @@ export interface AgentConsentOfferExitedMetadata extends Record<
   trigger?: AgentConsentTrigger
 }
 export type AgentOnboardingNotShownMetadata =
-  | { reason: 'app_mode' | 'tour_active' }
+  | { reason: 'app_mode' | 'tour_active' | 'dialog_open' }
   | { reason: 'target_missing'; step: number }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource

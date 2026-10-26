@@ -3,6 +3,7 @@
     <Button
       v-if="stay"
       variant="secondary"
+      size="md"
       class="shrink-0"
       @click="dispatch({ type: 'opened', intent: stay })"
     >
@@ -17,6 +18,7 @@
     <Button
       v-if="resume"
       variant="secondary"
+      size="md"
       class="shrink-0"
       @click="dispatch({ type: 'opened', intent: resume })"
     >

@@ -15,19 +15,110 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isNonNullish } from '@/utils/typeGuardUtil'
 
+import type {
+  CpuServerReading,
+  CpuServerStep,
+  CpuServerWatch
+} from './cpuServerStep'
+import { isBeingSetUp, watchCpuServer } from './cpuServerStep'
+import {
+  showFailedToast,
+  showReadyToast,
+  showStartingToast
+} from './lateToasts'
+
 interface LateScriptFailure {
   ext: string
   error: unknown
 }
 
 interface ScriptLoader {
-  importScript: (ext: string) => Promise<LateScriptFailure | undefined>
+  importScript: (
+    ext: string,
+    options?: { retry?: boolean }
+  ) => Promise<LateScriptFailure | undefined>
   reportFailures: (failures: LateScriptFailure[]) => void
 }
 
 const LATE_EXTENSION_WAIT_MS = 2000
+const LATE_EXTENSION_RETRY_MS = 5000
+const CPU_SERVER_FIRST_ANSWER_WAIT_MS = 1000
 const ARTIST_PAUSE_TIMEOUT_MS = 30_000
 const LATE_EXTENSION_ERROR_TYPE = 'late_extension_failed'
+
+const MODULE_FETCH_FAILURES = [
+  'Failed to fetch dynamically imported module',
+  'error loading dynamically imported module'
+]
+
+function messageOf(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return typeof error === 'string' ? error : ''
+}
+
+function fetchFailureUrl(error: unknown): string | undefined {
+  const message = messageOf(error)
+  const wording = MODULE_FETCH_FAILURES.find((prefix) =>
+    message.startsWith(`${prefix}: `)
+  )
+  return wording === undefined
+    ? undefined
+    : message.slice(wording.length + ': '.length)
+}
+
+function namesExactly(url: string, error: unknown): boolean {
+  const failedUrl = fetchFailureUrl(error)
+  return (
+    failedUrl !== undefined &&
+    (failedUrl === url || failedUrl === new URL(url, document.baseURI).href)
+  )
+}
+
+class ScriptNotFetched extends Error {
+  constructor(failure: unknown) {
+    super(messageOf(failure), { cause: failure })
+    this.name = 'ScriptNotFetched'
+  }
+}
+
+function isModuleFetchFailure(error: unknown): boolean {
+  return error instanceof ScriptNotFetched
+}
+
+function ownFailure(url: string, error: unknown): unknown {
+  return namesExactly(url, error) ? new ScriptNotFetched(error) : error
+}
+
+function swallowedFailure(url: string, swallowed: unknown[]): Error {
+  const named = swallowed.find((error) => namesExactly(url, error))
+  return named === undefined
+    ? new Error(`Could not import ${url}`)
+    : new ScriptNotFetched(named)
+}
+
+/** Imports `url` through `load`; a failure counts as not fetched only when it names exactly `url`. */
+export async function importNoticingFetchFailure(
+  url: string,
+  load: (url: string) => Promise<unknown>
+): Promise<void> {
+  const swallowed: unknown[] = []
+  const stopListening = useEventListener(
+    window,
+    'vite:preloadError',
+    (event) => {
+      const payload: unknown = event.payload
+      swallowed.push(payload)
+    }
+  )
+  try {
+    if ((await load(url)) !== undefined) return
+  } catch (error) {
+    throw ownFailure(url, error)
+  } finally {
+    stopListening()
+  }
+  throw swallowedFailure(url, swallowed)
+}
 
 /** Whether startup may stop waiting for slow custom node scripts. */
 export function lateLoadingApplies(): boolean {
@@ -113,23 +204,26 @@ function reportStartupHookFailures(failures: StartupHookFailure[]) {
     reportLateExtensionFailure(extension, method, error)
 }
 
-function registerHeldExtensions(): ComfyExtension[] {
+function registerHeldExtensions(last: boolean) {
   const service = useExtensionService()
-  return useExtensionStore()
-    .stopHoldingExtensions()
-    .filter((extension) => {
-      try {
-        service.registerExtensionNow(extension)
-        return true
-      } catch (error) {
-        reportLateExtensionFailure(extension, 'register', error)
-        return false
-      }
-    })
+  const extensionStore = useExtensionStore()
+  const held = last
+    ? extensionStore.stopHoldingExtensions()
+    : extensionStore.takeHeldExtensions()
+  const registered = held.filter((extension) => {
+    try {
+      service.registerExtensionNow(extension)
+      return true
+    } catch (error) {
+      reportLateExtensionFailure(extension, 'register', error)
+      return false
+    }
+  })
+  return { registered, allRegistered: registered.length === held.length }
 }
 
 function keepHeldExtensionsForNextEditor() {
-  registerHeldExtensions()
+  registerHeldExtensions(true)
   useExtensionStore().finishLateExtensions()
 }
 
@@ -155,7 +249,9 @@ async function fetchNodeDefs() {
   return undefined
 }
 
-async function startLateExtensions(extensions: ComfyExtension[]) {
+async function startLateExtensions(
+  extensions: ComfyExtension[]
+): Promise<boolean> {
   const service = useExtensionService()
   const failures = await service.invokeStartupHook(extensions, 'init')
   const defs = await fetchNodeDefs()
@@ -174,60 +270,217 @@ async function startLateExtensions(extensions: ComfyExtension[]) {
   if (defs) await useApp().reloadNodeDefs(defs)
   failures.push(...(await service.invokeStartupHook(extensions, 'setup')))
   reportStartupHookFailures(failures)
+  return (
+    defs !== undefined &&
+    failures.every(({ extension }) => !extensions.includes(extension))
+  )
 }
 
-async function runLateBatch(work: ReturnType<typeof watchLateWork>) {
+interface BatchOutcome {
+  turnedOn: boolean
+  allStarted: boolean
+}
+
+async function runLateBatch(
+  work: ReturnType<typeof watchLateWork>,
+  last: boolean
+): Promise<BatchOutcome> {
   await until(() => !useWorkspaceStore().spinner || work.isAborted()).toBe(true)
   await until(() => !work.isArtistBusy() || work.isAborted()).toBe(true, {
     timeout: ARTIST_PAUSE_TIMEOUT_MS
   })
-  if (work.isAborted()) return
+  if (work.isAborted()) return { turnedOn: false, allStarted: false }
 
-  const extensions = registerHeldExtensions()
-  if (extensions.length > 0) await startLateExtensions(extensions)
-  if (work.isAborted()) return
-  useExtensionStore().finishLateExtensions()
-  await rebuildOpenWorkflow()
+  const { registered, allRegistered } = registerHeldExtensions(last)
+  const allHooksRan =
+    registered.length === 0 || (await startLateExtensions(registered))
+  if (work.isAborted()) return { turnedOn: false, allStarted: false }
+  if (last) useExtensionStore().finishLateExtensions()
+  if (last || registered.length > 0) await rebuildOpenWorkflow()
+  return {
+    turnedOn: registered.length > 0,
+    allStarted: allRegistered && allHooksRan
+  }
 }
 
-async function turnOnLateExtensions(
-  firstTries: Promise<(LateScriptFailure | undefined)[]>,
-  loader: ScriptLoader,
+interface LateRun {
+  firstTries: Promise<(LateScriptFailure | undefined)[]>
+  waiting: Set<string>
+  loader: ScriptLoader
   signal: AbortSignal
-) {
-  const work = watchLateWork(signal, keepHeldExtensionsForNextEditor)
+  server: CpuServerWatch
+  stopWatchingServer: () => void
+}
+
+interface LateOutcome extends BatchOutcome {
+  failedAgain: LateScriptFailure[]
+}
+
+function isSettingUp(step: CpuServerStep | undefined): boolean {
+  return step === 'creating' || step === 'building'
+}
+
+async function retryFetchFailures(
+  failures: LateScriptFailure[],
+  { loader, waiting, signal, server }: LateRun
+): Promise<LateScriptFailure[]> {
+  const waited = await delay(LATE_EXTENSION_RETRY_MS, { signal }).then(
+    () => true,
+    () => false
+  )
+  if (!waited) return []
+  if (isSettingUp(server.step())) await server.ready
+  if (signal.aborted) return []
+  const retries = await Promise.all(
+    failures.map(({ ext }) =>
+      loader
+        .importScript(ext, { retry: true })
+        .finally(() => waiting.delete(ext))
+    )
+  )
+  return retries.filter(isNonNullish)
+}
+
+async function turnOnInBatches(
+  run: LateRun,
+  work: ReturnType<typeof watchLateWork>,
+  onWaitingChange: () => void
+): Promise<LateOutcome> {
+  const failures = (await run.firstTries).filter(isNonNullish)
+  const fetchFailures = failures.filter(({ error }) =>
+    isModuleFetchFailure(error)
+  )
+  const otherFailures = failures.filter(
+    (failure) => !fetchFailures.includes(failure)
+  )
+  run.loader.reportFailures(otherFailures)
+  const scriptsLoaded = otherFailures.length === 0
+  if (fetchFailures.length === 0) {
+    const batch = await runLateBatch(work, true)
+    return {
+      turnedOn: batch.turnedOn,
+      allStarted: batch.allStarted && scriptsLoaded,
+      failedAgain: []
+    }
+  }
+
+  fetchFailures.forEach(({ ext }) => run.waiting.add(ext))
+  onWaitingChange()
+  const retries = retryFetchFailures(fetchFailures, run)
+  const first = await runLateBatch(work, false)
+  const failedAgain = await retries
+  const last = await runLateBatch(work, true)
+  return {
+    turnedOn: first.turnedOn || last.turnedOn,
+    allStarted: first.allStarted && last.allStarted && scriptsLoaded,
+    failedAgain
+  }
+}
+
+function showOutcome({ turnedOn, allStarted, failedAgain }: LateOutcome) {
+  if (failedAgain.length > 0) showFailedToast(failedAgain.map(({ ext }) => ext))
+  else if (turnedOn && allStarted) showReadyToast()
+}
+
+async function turnOnLateExtensions(run: LateRun, startedAt: number) {
+  const starting = showStartingToast(startedAt, run.waiting, run.server.step)
+  const work = watchLateWork(run.signal, () => {
+    starting.dismiss()
+    keepHeldExtensionsForNextEditor()
+  })
   try {
-    loader.reportFailures((await firstTries).filter(isNonNullish))
-    await runLateBatch(work)
+    const outcome = await turnOnInBatches(run, work, starting.refresh)
+    run.loader.reportFailures(outcome.failedAgain)
+    if (!work.isAborted()) showOutcome(outcome)
   } catch (error) {
-    reportError(error, {
-      errorType: LATE_EXTENSION_ERROR_TYPE,
-      surface: 'platform',
-      level: 'warning'
-    })
+    if (!run.signal.aborted)
+      reportError(error, {
+        errorType: LATE_EXTENSION_ERROR_TYPE,
+        surface: 'platform',
+        level: 'warning'
+      })
   } finally {
+    run.stopWatchingServer()
+    starting.dismiss()
     work.stop()
     if (!work.isAborted()) useExtensionStore().finishLateExtensions()
   }
 }
 
-/** Imports every custom script at once but waits for them only two seconds; extensions registered later are turned on after startup, until `signal` aborts. */
+function startLateRun(
+  run: Pick<LateRun, 'waiting' | 'loader' | 'signal'>,
+  firstReading: Promise<CpuServerReading>,
+  startedAt: number,
+  firstTries: (server: CpuServerWatch) => LateRun['firstTries']
+) {
+  const watching = new AbortController()
+  const server = watchCpuServer(
+    firstReading,
+    AbortSignal.any([run.signal, watching.signal])
+  )
+  useExtensionStore().holdNewExtensions()
+  void turnOnLateExtensions(
+    {
+      ...run,
+      firstTries: firstTries(server),
+      server,
+      stopWatchingServer: () => watching.abort()
+    },
+    startedAt
+  )
+}
+
+/** Loads custom scripts with a two-second wait; later arrivals are turned on until `signal` aborts. */
 export async function loadCustomExtensionsWithDeadline(
   extensions: string[],
   loader: ScriptLoader,
-  signal: AbortSignal
+  signal: AbortSignal,
+  firstReading: Promise<CpuServerReading>
 ) {
-  const firstTries = Promise.all(
-    extensions.map((ext) => loader.importScript(ext))
-  )
-  const settledInTime = await Promise.race([
-    firstTries.then(() => true),
-    delay(LATE_EXTENSION_WAIT_MS).then(() => false)
+  const startedAt = Date.now()
+  const waiting = new Set(extensions)
+  const importAll = () =>
+    Promise.all(
+      extensions.map((ext) =>
+        loader.importScript(ext).finally(() => waiting.delete(ext))
+      )
+    )
+  const readingInTime = await Promise.race([
+    firstReading,
+    delay(CPU_SERVER_FIRST_ANSWER_WAIT_MS, { signal }).then(
+      () => undefined,
+      () => undefined
+    )
   ])
-  if (settledInTime) {
-    loader.reportFailures((await firstTries).filter(isNonNullish))
+  if (signal.aborted) return
+  if (isBeingSetUp(readingInTime)) {
+    startLateRun(
+      { waiting, loader, signal },
+      firstReading,
+      startedAt,
+      (server) => server.ready.then(() => (signal.aborted ? [] : importAll()))
+    )
     return
   }
-  useExtensionStore().holdNewExtensions()
-  void turnOnLateExtensions(firstTries, loader, signal)
+
+  const firstTries = importAll()
+  const settledInTime = await Promise.race([
+    firstTries.then(() => true),
+    delay(Math.max(0, startedAt + LATE_EXTENSION_WAIT_MS - Date.now())).then(
+      () => false
+    )
+  ])
+  if (settledInTime) {
+    const failures = (await firstTries).filter(isNonNullish)
+    if (!failures.some(({ error }) => isModuleFetchFailure(error))) {
+      loader.reportFailures(failures)
+      return
+    }
+  }
+  startLateRun(
+    { waiting, loader, signal },
+    firstReading,
+    startedAt,
+    () => firstTries
+  )
 }
