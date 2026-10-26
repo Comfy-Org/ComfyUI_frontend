@@ -19,6 +19,7 @@ import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { rejectGraphLoadFromHook } from '@/scripts/graphLoadGuard'
 import { registerApp } from '@/scripts/appRegistry'
 import {
   clipspace,
@@ -466,6 +467,7 @@ export class ComfyApp implements IComfyApp {
   private configuringGraphLevel: number = 0
   private graphLoadSequence = 0
   private graphLoadQueue: Promise<void> = Promise.resolve()
+  private fileLoadDiscoveryQueue: Promise<void> = Promise.resolve()
   private pendingCamera:
     | { id: number; workflow: string | null | ComfyWorkflow }
     | undefined
@@ -1191,6 +1193,7 @@ export class ComfyApp implements IComfyApp {
     workflow: string | null | ComfyWorkflow = null,
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
+    rejectGraphLoadFromHook()
     return this.enqueueGraphLoad(() =>
       this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
     )
@@ -1568,7 +1571,7 @@ export class ComfyApp implements IComfyApp {
       )
       if (!isCurrentGraphLoad()) {
         await cancelReplacedLoad()
-        return undefined
+        return false
       }
 
       const effectiveShareId =
@@ -1596,13 +1599,9 @@ export class ComfyApp implements IComfyApp {
       }
       if (!isCurrentGraphLoad()) {
         await cancelReplacedLoad()
-        return undefined
+        return false
       }
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-      if (!isCurrentGraphLoad()) {
-        await cancelReplacedLoad()
-        return undefined
-      }
       ChangeTracker.isLoadingGraph = false
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
@@ -2102,8 +2101,39 @@ export class ComfyApp implements IComfyApp {
       onNodeCreated?: (node: LGraphNode) => void
     }
   ) {
+    const previousDiscovery = this.fileLoadDiscoveryQueue
+    let releaseDiscovery!: () => void
+    this.fileLoadDiscoveryQueue = new Promise<void>((resolve) => {
+      releaseDiscovery = resolve
+    })
+    let workflowData: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
+    try {
+      workflowData = await getWorkflowDataFromFile(file)
+    } catch (error) {
+      await previousDiscovery
+      releaseDiscovery()
+      throw error
+    }
+    await previousDiscovery
+    try {
+      return this.handleParsedFile(file, openSource, options, workflowData)
+    } finally {
+      releaseDiscovery()
+    }
+  }
+
+  private async handleParsedFile(
+    file: File,
+    openSource: WorkflowOpenSource | undefined,
+    options:
+      | {
+          deferWarnings?: boolean
+          onNodeCreated?: (node: LGraphNode) => void
+        }
+      | undefined,
+    workflowData: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
+  ) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
-    const workflowData = await getWorkflowDataFromFile(file)
     const { workflow, prompt, parameters, templates } = workflowData ?? {}
 
     if (!(workflow || prompt || parameters || templates)) {
@@ -2207,57 +2237,67 @@ export class ComfyApp implements IComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      return await this.enqueueGraphLoad(async () => {
-        const outcome = await importA1111(
-          this.rootGraph,
-          parameters,
-          async () => {
-            try {
-              // false: final destination; no later load republishes the hash.
-              useWorkflowService().beforeLoadNewGraph(false)
-              await useExtensionService().invokeExtensionsAsync(
-                'beforeLoadGraph'
-              )
-            } finally {
-              useMissingNodesErrorStore().setMissingNodeTypes([])
-            }
-            this.canvas.setGraph(this.rootGraph)
-          }
-        )
-        switch (outcome) {
-          case 'core-nodes-unavailable':
-            useToast().warning(t('toastMessages.a1111CoreNodesUnavailable'))
-            return
-          case 'not-a1111':
-            this.showErrorOnFileLoad(file)
-            return
-          case 'imported-without-embeddings':
-            useToast().warning(t('g.warning'), {
-              description: t('toastMessages.a1111EmbeddingsUnavailable')
-            })
-            break
-          case 'imported':
-            break
-          default: {
-            const unexpectedOutcome: never = outcome
-            throw new Error(
-              `Unhandled A1111 import outcome: ${unexpectedOutcome}`
+      rejectGraphLoadFromHook()
+      return await this.enqueueGraphLoad(() =>
+        ChangeTracker.withCaptureSuppressedAsync(async () => {
+          const lifecycle = { started: false, completed: false }
+          try {
+            const outcome = await importA1111(
+              this.rootGraph,
+              parameters,
+              async () => {
+                lifecycle.started = true
+                try {
+                  useWorkflowService().beforeLoadNewGraph(false)
+                  await useExtensionService().invokeExtensionsAsync(
+                    'beforeLoadGraph'
+                  )
+                } finally {
+                  useMissingNodesErrorStore().setMissingNodeTypes([])
+                }
+                this.canvas.setGraph(this.rootGraph)
+              }
             )
+            switch (outcome) {
+              case 'core-nodes-unavailable':
+                useToast().warning(t('toastMessages.a1111CoreNodesUnavailable'))
+                return
+              case 'not-a1111':
+                this.showErrorOnFileLoad(file)
+                return
+              case 'imported-without-embeddings':
+                useToast().warning(t('g.warning'), {
+                  description: t('toastMessages.a1111EmbeddingsUnavailable')
+                })
+                break
+              case 'imported':
+                break
+              default: {
+                const unexpectedOutcome: never = outcome
+                throw new Error(
+                  `Unhandled A1111 import outcome: ${unexpectedOutcome}`
+                )
+              }
+            }
+            await useExtensionService().invokeExtensionsAsync(
+              'afterConfigureGraph',
+              []
+            )
+            await useWorkflowService().afterLoadNewGraph(
+              fileName,
+              this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+            )
+            await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+            lifecycle.completed = true
+            return
+          } catch (error) {
+            if (lifecycle.started && !lifecycle.completed) {
+              await this.reportGraphLoadFailure(error)
+            }
+            throw error
           }
-        }
-        // Intentionally no beforeConfigureGraph: A1111 has no mutable
-        // workflow JSON before graph construction, so there is no payload.
-        await useExtensionService().invokeExtensionsAsync(
-          'afterConfigureGraph',
-          []
-        )
-        await useWorkflowService().afterLoadNewGraph(
-          fileName,
-          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
-        )
-        await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-        return
-      })
+        })
+      )
     }
 
     this.showErrorOnFileLoad(file)
@@ -2390,6 +2430,7 @@ export class ComfyApp implements IComfyApp {
     fileName: string,
     options: { deferWarnings?: boolean } = {}
   ): Promise<void> {
+    rejectGraphLoadFromHook()
     return this.enqueueGraphLoad(() =>
       this.loadApiJsonNow(apiData, fileName, options)
     )
@@ -2400,220 +2441,236 @@ export class ComfyApp implements IComfyApp {
     fileName: string,
     options: { deferWarnings?: boolean }
   ): Promise<void> {
-    // false: no workflow load follows to republish the hash.
-    useWorkflowService().beforeLoadNewGraph(false)
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-    this.canvas.setGraph(this.rootGraph)
-    withGraphIntentSource('load', () => this.clean())
+    return ChangeTracker.withCaptureSuppressedAsync(async () => {
+      let lifecycleCompleted = false
+      try {
+        useWorkflowService().beforeLoadNewGraph(false)
+        await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+        this.canvas.setGraph(this.rootGraph)
+        ChangeTracker.withCaptureSuppressed(() => {
+          withGraphIntentSource('load', () => this.clean())
+        })
 
-    const ids = Object.keys(apiData)
-    // Export (API) flattens subgraph nodes to ids like "194:45". At the root
-    // graph a colon reads as an execution-id path: Locate walks into node
-    // 194's subgraph and finds nothing, and deleting an unrelated node 194
-    // retires every "194:"-prefixed missing report. Remap such ids to
-    // colon-free local ids before creating nodes.
-    const importedNodeIds = new Map<string, NodeId>()
-    {
-      const taken = new Set(ids.filter((id) => !id.includes(':')))
-      for (const id of ids) {
-        if (!id.includes(':')) {
-          importedNodeIds.set(id, toNodeId(isNaN(+id) ? id : +id))
-          continue
-        }
-        let candidate = id.replaceAll(':', '_')
-        while (taken.has(candidate)) candidate = `${candidate}_`
-        taken.add(candidate)
-        importedNodeIds.set(id, toNodeId(candidate))
-      }
-    }
-    const missingNodeTypes: MissingNodeType[] = []
-    const nodeReplacementStore = useNodeReplacementStore()
-    await nodeReplacementStore.load()
-    withGraphIntentSource('load', () => {
-      for (const id of ids) {
-        const data = apiData[id]
-        const nodeId = importedNodeIds.get(id) ?? toNodeId(id)
-        let node = LiteGraph.createNode(data.class_type)
-        let placeholderEntry:
-          | Extract<MissingNodeType, { type: string }>
-          | undefined
-        if (!node) {
-          const cnrId = zNodePackMetadata.shape.cnr_id.safeParse(
-            data._meta?.cnr_id
-          ).data
-          const auxId = zNodePackMetadata.shape.aux_id.safeParse(
-            data._meta?.aux_id
-          ).data
-          const packVersion = zNodePackMetadata.shape.ver.safeParse(
-            data._meta?.ver
-          ).data
-          const missingNode = new LGraphNode(
-            data._meta?.title ?? data.class_type,
-            sanitizeNodeName(data.class_type)
-          )
-          node = missingNode
-          node.has_errors = true
-          const widgetValues: TWidgetValue[] = []
-          const widgetValuesNamed: Record<string, TWidgetValue> =
-            Object.create(null)
-          for (const [input, value] of Object.entries(data.inputs)) {
-            if (value instanceof Array) {
-              node.addInput(input, '*')
-            } else {
-              const widgetValue = unwrapExportedWidgetValue(
-                value
-              ) as TWidgetValue
-              widgetValues.push(widgetValue)
-              widgetValuesNamed[input] = widgetValue
+        const ids = Object.keys(apiData)
+        // Export (API) flattens subgraph nodes to ids like "194:45". At the root
+        // graph a colon reads as an execution-id path: Locate walks into node
+        // 194's subgraph and finds nothing, and deleting an unrelated node 194
+        // retires every "194:"-prefixed missing report. Remap such ids to
+        // colon-free local ids before creating nodes.
+        const importedNodeIds = new Map<string, NodeId>()
+        {
+          const taken = new Set(ids.filter((id) => !id.includes(':')))
+          for (const id of ids) {
+            if (!id.includes(':')) {
+              importedNodeIds.set(id, toNodeId(isNaN(+id) ? id : +id))
+              continue
             }
+            let candidate = id.replaceAll(':', '_')
+            while (taken.has(candidate)) candidate = `${candidate}_`
+            taken.add(candidate)
+            importedNodeIds.set(id, toNodeId(candidate))
           }
-          if (cnrId) node.properties.cnr_id = cnrId
-          if (auxId) node.properties.aux_id = auxId
-          if (packVersion) node.properties.ver = packVersion
-          node.last_serialization = {
-            id: nodeId,
-            type: data.class_type,
-            pos: [node.pos[0], node.pos[1]],
-            size: [node.size[0], node.size[1]],
-            flags: {},
-            order: 0,
-            mode: node.mode,
-            title: data._meta?.title ?? data.class_type,
-            inputs: node.inputs.map((input, i) =>
-              inputAsSerialisable(input, missingNode, i)
-            ),
-            properties: { ...node.properties },
-            widgets_values: widgetValues,
-            widgets_values_named: widgetValuesNamed
-          }
-          const replacement = nodeReplacementStore.getReplacementFor(
-            data.class_type
-          )
-          placeholderEntry = {
-            type: data.class_type,
-            cnrId: getCnrIdFromProperties(node.properties),
-            isReplaceable: replacement !== null,
-            replacement: replacement ?? undefined
-          }
-          missingNodeTypes.push(placeholderEntry)
         }
-        node.id = nodeId
-        node.title = data._meta?.title ?? node.title
-        app.rootGraph.add(node)
-        if (placeholderEntry && node.last_serialization) {
-          node.last_serialization.id = node.id
-          placeholderEntry.nodeId = String(node.id)
-        }
-      }
+        const missingNodeTypes: MissingNodeType[] = []
+        const nodeReplacementStore = useNodeReplacementStore()
+        await nodeReplacementStore.load()
+        ChangeTracker.withCaptureSuppressed(() => {
+          withGraphIntentSource('load', () => {
+            for (const id of ids) {
+              const data = apiData[id]
+              const nodeId = importedNodeIds.get(id) ?? toNodeId(id)
+              let node = LiteGraph.createNode(data.class_type)
+              let placeholderEntry:
+                | Extract<MissingNodeType, { type: string }>
+                | undefined
+              if (!node) {
+                const cnrId = zNodePackMetadata.shape.cnr_id.safeParse(
+                  data._meta?.cnr_id
+                ).data
+                const auxId = zNodePackMetadata.shape.aux_id.safeParse(
+                  data._meta?.aux_id
+                ).data
+                const packVersion = zNodePackMetadata.shape.ver.safeParse(
+                  data._meta?.ver
+                ).data
+                const missingNode = new LGraphNode(
+                  data._meta?.title ?? data.class_type,
+                  sanitizeNodeName(data.class_type)
+                )
+                node = missingNode
+                node.has_errors = true
+                const widgetValues: TWidgetValue[] = []
+                const widgetValuesNamed: Record<string, TWidgetValue> =
+                  Object.create(null)
+                for (const [input, value] of Object.entries(data.inputs)) {
+                  if (value instanceof Array) {
+                    node.addInput(input, '*')
+                  } else {
+                    const widgetValue = unwrapExportedWidgetValue(
+                      value
+                    ) as TWidgetValue
+                    widgetValues.push(widgetValue)
+                    widgetValuesNamed[input] = widgetValue
+                  }
+                }
+                if (cnrId) node.properties.cnr_id = cnrId
+                if (auxId) node.properties.aux_id = auxId
+                if (packVersion) node.properties.ver = packVersion
+                node.last_serialization = {
+                  id: nodeId,
+                  type: data.class_type,
+                  pos: [node.pos[0], node.pos[1]],
+                  size: [node.size[0], node.size[1]],
+                  flags: {},
+                  order: 0,
+                  mode: node.mode,
+                  title: data._meta?.title ?? data.class_type,
+                  inputs: node.inputs.map((input, i) =>
+                    inputAsSerialisable(input, missingNode, i)
+                  ),
+                  properties: { ...node.properties },
+                  widgets_values: widgetValues,
+                  widgets_values_named: widgetValuesNamed
+                }
+                const replacement = nodeReplacementStore.getReplacementFor(
+                  data.class_type
+                )
+                placeholderEntry = {
+                  type: data.class_type,
+                  cnrId: getCnrIdFromProperties(node.properties),
+                  isReplaceable: replacement !== null,
+                  replacement: replacement ?? undefined
+                }
+                missingNodeTypes.push(placeholderEntry)
+              }
+              node.id = nodeId
+              node.title = data._meta?.title ?? node.title
+              app.rootGraph.add(node)
+              if (placeholderEntry && node.last_serialization) {
+                node.last_serialization.id = node.id
+                placeholderEntry.nodeId = String(node.id)
+              }
+            }
 
-      const unresolvedInputs: (() => boolean)[] = []
-      const processNodeInputs = (id: string) => {
-        const data = apiData[id]
-        const currentNodeId = importedNodeIds.get(id) ?? toNodeId(id)
-        const node = app.rootGraph.getNodeById(currentNodeId)
-        if (!node) return
-        const targetNode = node
-        const inputs = restoreDynamicGroupInputs(node, data.inputs)
+            const unresolvedInputs: (() => boolean)[] = []
+            const processNodeInputs = (id: string) => {
+              const data = apiData[id]
+              const currentNodeId = importedNodeIds.get(id) ?? toNodeId(id)
+              const node = app.rootGraph.getNodeById(currentNodeId)
+              if (!node) return
+              const targetNode = node
+              const inputs = restoreDynamicGroupInputs(node, data.inputs)
 
-        for (const input in inputs) {
-          const value = inputs[input]
-          if (value instanceof Array) {
-            function connectInput() {
-              const [fromId, fromSlot] = value
-              const fromNode = app.rootGraph.getNodeById(
-                importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
-              )
-              if (!fromNode?.outputs[fromSlot]) return false
+              for (const input in inputs) {
+                const value = inputs[input]
+                if (value instanceof Array) {
+                  function connectInput() {
+                    const [fromId, fromSlot] = value
+                    const fromNode = app.rootGraph.getNodeById(
+                      importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
+                    )
+                    if (!fromNode?.outputs[fromSlot]) return false
 
-              let toSlot = targetNode.inputs.findIndex(
-                (inp) => inp.name === input
-              )
-              if (toSlot === -1) {
-                try {
-                  const widget = targetNode.widgets?.find(
-                    (w) => w.name === input
-                  )
-                  const convertFn = (
-                    targetNode as LGraphNode & {
-                      convertWidgetToInput?: (w: IBaseWidget) => boolean
-                    }
-                  ).convertWidgetToInput
-                  if (widget && convertFn?.(widget)) {
-                    // Re-find the target slot by name after conversion
-                    toSlot = targetNode.inputs.findIndex(
+                    let toSlot = targetNode.inputs.findIndex(
                       (inp) => inp.name === input
                     )
+                    if (toSlot === -1) {
+                      try {
+                        const widget = targetNode.widgets?.find(
+                          (w) => w.name === input
+                        )
+                        const convertFn = (
+                          targetNode as LGraphNode & {
+                            convertWidgetToInput?: (w: IBaseWidget) => boolean
+                          }
+                        ).convertWidgetToInput
+                        if (widget && convertFn?.(widget)) {
+                          // Re-find the target slot by name after conversion
+                          toSlot = targetNode.inputs.findIndex(
+                            (inp) => inp.name === input
+                          )
+                        }
+                      } catch (_error) {
+                        // Ignore conversion errors
+                      }
+                    }
+                    if (toSlot === -1) return false
+
+                    fromNode.connect(fromSlot, targetNode, toSlot)
+                    return true
                   }
-                } catch (_error) {
-                  // Ignore conversion errors
+                  if (!connectInput()) unresolvedInputs.push(connectInput)
+                } else {
+                  function applyWidgetValue() {
+                    const widget = targetNode.widgets?.find(
+                      (w) => w.name === input
+                    )
+                    if (!widget) return false
+                    const widgetValue = unwrapExportedWidgetValue(
+                      value
+                    ) as TWidgetValue
+                    widget.value = widgetValue
+                    try {
+                      widget.callback?.(widgetValue)
+                    } catch (error) {
+                      reportError(error, {
+                        surface: 'graph',
+                        errorType:
+                          'failure_invoking_api_workflow_widget_callback',
+                        tags: {
+                          node_type: targetNode.type,
+                          widget_name: input
+                        },
+                        context: { fileName }
+                      })
+                    }
+                    return true
+                  }
+                  if (!applyWidgetValue())
+                    unresolvedInputs.push(applyWidgetValue)
                 }
               }
-              if (toSlot === -1) return false
+            }
 
-              fromNode.connect(fromSlot, targetNode, toSlot)
-              return true
+            for (const id of ids) processNodeInputs(id)
+            let pendingInputs = unresolvedInputs
+            while (pendingInputs.length > 0) {
+              const remainingInputs = pendingInputs.filter(
+                (applyInput) => !applyInput()
+              )
+              if (remainingInputs.length === pendingInputs.length) break
+              pendingInputs = remainingInputs
             }
-            if (!connectInput()) unresolvedInputs.push(connectInput)
-          } else {
-            function applyWidgetValue() {
-              const widget = targetNode.widgets?.find((w) => w.name === input)
-              if (!widget) return false
-              const widgetValue = unwrapExportedWidgetValue(
-                value
-              ) as TWidgetValue
-              widget.value = widgetValue
-              try {
-                widget.callback?.(widgetValue)
-              } catch (error) {
-                reportError(error, {
-                  surface: 'graph',
-                  errorType: 'failure_invoking_api_workflow_widget_callback',
-                  tags: {
-                    node_type: targetNode.type,
-                    widget_name: input
-                  },
-                  context: { fileName }
-                })
-              }
-              return true
+            for (const node of app.rootGraph.nodes) {
+              if (!node.last_serialization) continue
+              node.last_serialization.inputs = node.inputs.map((input, i) =>
+                inputAsSerialisable(input, node, i)
+              )
             }
-            if (!applyWidgetValue()) unresolvedInputs.push(applyWidgetValue)
-          }
+            app.rootGraph.arrange()
+          })
+        })
+
+        // Intentionally no beforeConfigureGraph: API JSON builds nodes directly
+        // and never passes a ComfyWorkflowJSON through the configure stage.
+        await useExtensionService().invokeExtensionsAsync(
+          'afterConfigureGraph',
+          missingNodeTypes
+        )
+        await useWorkflowService().afterLoadNewGraph(
+          fileName,
+          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        )
+        await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+        lifecycleCompleted = true
+        if (missingNodeTypes.length) {
+          this.showMissingNodesError(missingNodeTypes, options)
         }
+      } catch (error) {
+        if (!lifecycleCompleted) await this.reportGraphLoadFailure(error)
+        throw error
       }
-
-      for (const id of ids) processNodeInputs(id)
-      let pendingInputs = unresolvedInputs
-      while (pendingInputs.length > 0) {
-        const remainingInputs = pendingInputs.filter(
-          (applyInput) => !applyInput()
-        )
-        if (remainingInputs.length === pendingInputs.length) break
-        pendingInputs = remainingInputs
-      }
-      for (const node of app.rootGraph.nodes) {
-        if (!node.last_serialization) continue
-        node.last_serialization.inputs = node.inputs.map((input, i) =>
-          inputAsSerialisable(input, node, i)
-        )
-      }
-      app.rootGraph.arrange()
     })
-
-    // Intentionally no beforeConfigureGraph: API JSON builds nodes directly
-    // and never passes a ComfyWorkflowJSON through the configure stage.
-    await useExtensionService().invokeExtensionsAsync(
-      'afterConfigureGraph',
-      missingNodeTypes
-    )
-    await useWorkflowService().afterLoadNewGraph(
-      fileName,
-      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
-    )
-    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-    if (missingNodeTypes.length) {
-      this.showMissingNodesError(missingNodeTypes, options)
-    }
   }
 
   /**

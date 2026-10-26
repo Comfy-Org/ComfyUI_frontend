@@ -15,6 +15,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { useApp } from '@/scripts/appInstance'
+import { duringGraphLoadHook } from '@/scripts/graphLoadGuard'
 import { provideExtensionService } from '@/services/extensionServiceAccess'
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
@@ -33,36 +34,6 @@ const graphLoadLifecycleHooks = new Set<string>([
   'afterLoadGraph',
   'onGraphLoadError'
 ] satisfies (keyof ComfyExtension)[])
-
-const graphLoadEntrypoints = new Set<PropertyKey>([
-  'loadGraphData',
-  'loadApiJson',
-  'handleFile'
-] satisfies (keyof ComfyApp)[])
-
-function rejectNestedGraphLoad() {
-  return Promise.reject(
-    new Error('A graph-load lifecycle hook cannot start a nested graph load')
-  )
-}
-
-function createGraphLoadHookApp(app: ComfyApp) {
-  let dispatching = true
-  const hookApp = new Proxy(app, {
-    get(target, property) {
-      if (dispatching && graphLoadEntrypoints.has(property))
-        return rejectNestedGraphLoad
-      const value: unknown = Reflect.get(target, property, target)
-      return typeof value === 'function' ? value.bind(target) : value
-    }
-  })
-  return {
-    hookApp,
-    endDispatch: () => {
-      dispatching = false
-    }
-  }
-}
 
 type StartupHook =
   | 'init'
@@ -253,58 +224,57 @@ export const useExtensionService = () => {
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
-    const graphLoadHook = graphLoadLifecycleHooks.has(method)
-      ? createGraphLoadHookApp(useApp())
-      : undefined
-    const app = graphLoadHook?.hookApp ?? useApp()
-    const logError = (ext: ComfyExtension, error: unknown) =>
-      console.error(
-        `Error calling extension '${ext.name}' method '${method}'`,
-        { error },
-        { extension: ext },
-        { args }
-      )
-
-    // This runs once per node def per extension, so avoid allocating promises
-    // or closures for extensions that do not define the hook.
-    const pending: unknown[] = []
-    for (const ext of extensionStore.enabledExtensions) {
-      // The property read is inside the try so a throwing getter or Proxy trap
-      // only affects its own extension.
-      try {
-        const fn = ext[method]
-        if (typeof fn !== 'function') continue
-
-        if (method === 'setup') {
-          // Track the current extension for legacy compatibility
-          pending.push(
-            (async () => {
-              legacyMenuCompat.setCurrentExtension(ext.name)
-              try {
-                return await fn.call(ext, ...args, app)
-              } finally {
-                legacyMenuCompat.setCurrentExtension(null)
-              }
-            })().catch((error) => logError(ext, error))
-          )
-          continue
-        }
-
-        const result: unknown = fn.call(ext, ...args, app)
-        pending.push(
-          isPromiseLike(result)
-            ? Promise.resolve(result).catch((error) => logError(ext, error))
-            : result
+    const invokeAll = () => {
+      const app = useApp()
+      const logError = (ext: ComfyExtension, error: unknown) =>
+        console.error(
+          `Error calling extension '${ext.name}' method '${method}'`,
+          { error },
+          { extension: ext },
+          { args }
         )
-      } catch (error) {
-        logError(ext, error)
+
+      // This runs once per node def per extension, so avoid allocating promises
+      // or closures for extensions that do not define the hook.
+      const pending: unknown[] = []
+      for (const ext of extensionStore.enabledExtensions) {
+        // The property read is inside the try so a throwing getter or Proxy trap
+        // only affects its own extension.
+        try {
+          const fn = ext[method]
+          if (typeof fn !== 'function') continue
+
+          if (method === 'setup') {
+            // Track the current extension for legacy compatibility
+            pending.push(
+              (async () => {
+                legacyMenuCompat.setCurrentExtension(ext.name)
+                try {
+                  return await fn.call(ext, ...args, app)
+                } finally {
+                  legacyMenuCompat.setCurrentExtension(null)
+                }
+              })().catch((error) => logError(ext, error))
+            )
+            continue
+          }
+
+          const result: unknown = fn.call(ext, ...args, app)
+          pending.push(
+            isPromiseLike(result)
+              ? Promise.resolve(result).catch((error) => logError(ext, error))
+              : result
+          )
+        } catch (error) {
+          logError(ext, error)
+        }
       }
+      return pending
     }
-    try {
-      return await Promise.all(pending)
-    } finally {
-      graphLoadHook?.endDispatch()
-    }
+    const pending = graphLoadLifecycleHooks.has(method)
+      ? duringGraphLoadHook(invokeAll)
+      : invokeAll()
+    return Promise.all(pending)
   }
 
   /** Runs one startup step on the given extensions only, in order; returns the ones that threw. */

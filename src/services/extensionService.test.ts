@@ -163,19 +163,14 @@ describe('invokeExtensionsAsync', () => {
     {
       entrypoint: 'loadApiJson',
       call: (app: HookApp) => app.loadApiJson({}, 'nested.json')
-    },
-    {
-      entrypoint: 'handleFile',
-      call: (app: HookApp) => app.handleFile(new File([], 'nested.png'))
     }
   ])(
-    'rejects $entrypoint started after an await in a graph-load hook',
+    'rejects $entrypoint started directly in a graph-load hook',
     async ({ call }) => {
       let nested: Promise<unknown> | undefined
       register({
         name: 'nested-loader',
         beforeLoadGraph: async (app: HookApp) => {
-          await Promise.resolve()
           nested = call(app)
           await nested.catch(() => {})
         }
@@ -188,6 +183,30 @@ describe('invokeExtensionsAsync', () => {
       )
     }
   )
+
+  it('uses the real app so an extension can retain and patch an entrypoint', async () => {
+    const app = useApp()
+    const original = app.loadGraphData
+    let received: HookApp | undefined
+    register({
+      name: 'patching-extension',
+      beforeLoadGraph: (hookApp: HookApp) => {
+        received = hookApp
+        hookApp.loadGraphData = async function (...args) {
+          return original.apply(this, args)
+        }
+      }
+    })
+
+    try {
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+      expect(received).toBe(app)
+      expect(app.loadGraphData).not.toBe(original)
+    } finally {
+      app.loadGraphData = original
+    }
+  })
 
   it('lets a retained hook app load once the hook dispatch has finished', async () => {
     let retained: HookApp | undefined

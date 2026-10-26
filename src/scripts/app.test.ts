@@ -57,6 +57,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { duringGraphLoadHook } from '@/scripts/graphLoadGuard'
 import {
   createTestCanvasElement,
   createTestDragAndScale,
@@ -790,7 +791,7 @@ describe('ComfyApp', () => {
 
       await expect(
         app.loadGraphData(createWorkflowGraphData(), false)
-      ).resolves.toBeUndefined()
+      ).resolves.toBe(false)
 
       const terminalHooks =
         mockExtensionService.invokeExtensionsAsync.mock.calls
@@ -1179,6 +1180,70 @@ describe('ComfyApp', () => {
           ([hook]) => hook
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
+    })
+
+    it('rejects a graph load reached through the global app during a lifecycle hook', async () => {
+      await expect(
+        duringGraphLoadHook(() =>
+          app.loadGraphData(createWorkflowGraphData(), false)
+        )
+      ).rejects.toThrow(
+        'A graph-load lifecycle hook cannot start a nested graph load'
+      )
+    })
+
+    it('closes a failed API JSON lifecycle and restores change tracking', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      vi.spyOn(useNodeReplacementStore(), 'load').mockImplementationOnce(
+        async () => {
+          throw new Error('replacement lookup failed')
+        }
+      )
+
+      await expect(app.loadApiJson({}, 'broken.json')).rejects.toThrow(
+        'replacement lookup failed'
+      )
+
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+          ([hook]) => hook
+        )
+      ).toEqual(['beforeLoadGraph', 'onGraphLoadError'])
+    })
+
+    it('does not capture an API import into the outgoing workflow', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      graph.add(new LGraphNode('outgoing'))
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const outgoing = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/outgoing-api.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const outgoingState = structuredClone(
+        graph.serialize()
+      ) as ComfyWorkflowJSON
+      const tracker = markRaw(new ChangeTracker(outgoing, outgoingState))
+      outgoing.changeTracker = tracker
+      useWorkflowStore().activeWorkflow = outgoing
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'afterConfigureGraph') tracker.captureCanvasState()
+        }
+      )
+
+      await app.loadApiJson({}, 'empty.json')
+
+      expect(tracker.activeState).toEqual(outgoingState)
+      expect(tracker.undoQueue).toHaveLength(0)
     })
   })
 
@@ -3290,6 +3355,32 @@ describe('ComfyApp', () => {
         ])
       }
     )
+
+    it('closes a failed import lifecycle and restores change tracking', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      mockImportA1111.mockImplementation(
+        async (_graph, _parameters, beforeGraphClear) => {
+          await beforeGraphClear?.()
+          expect(ChangeTracker.isLoadingGraph).toBe(false)
+          throw new Error('A1111 import failed')
+        }
+      )
+
+      await expect(
+        app.handleFile(createTestFile('a1111.png', 'image/png'))
+      ).rejects.toThrow('A1111 import failed')
+
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+          ([hook]) => hook
+        )
+      ).toEqual(['beforeLoadGraph', 'onGraphLoadError'])
+    })
   })
 
   describe('graph-load FIFO across import paths', () => {
@@ -3375,6 +3466,49 @@ describe('ComfyApp', () => {
       await workflow
 
       expect(workflowFinishedBeforeImport).toBe(true)
+    })
+
+    it('preserves file call order when a later parse finishes first', async () => {
+      let resolveFirst!: (
+        value: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
+      ) => void
+      const firstParsed = new Promise<
+        Awaited<ReturnType<typeof getWorkflowDataFromFile>>
+      >((resolve) => {
+        resolveFirst = resolve
+      })
+      const firstGraph = createWorkflowGraphData()
+      firstGraph.extra = { marker: 'first' }
+      const secondGraph = createWorkflowGraphData()
+      secondGraph.extra = { marker: 'second' }
+      vi.mocked(getWorkflowDataFromFile)
+        .mockReturnValueOnce(firstParsed)
+        .mockResolvedValueOnce({ workflow: secondGraph })
+
+      const first = app.handleFile(
+        createTestFile('first.json', 'application/json')
+      )
+      const second = app.handleFile(
+        createTestFile('second.json', 'application/json')
+      )
+      await Promise.resolve()
+      expect(app.rootGraph.extra).not.toMatchObject({ marker: 'second' })
+
+      resolveFirst({ workflow: firstGraph })
+      await Promise.all([first, second])
+
+      expect(app.rootGraph.extra).toMatchObject({ marker: 'second' })
+    })
+
+    it('allows a non-graph media file from a graph lifecycle hook', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
+      vi.mocked(createNode).mockResolvedValue(null)
+
+      await expect(
+        duringGraphLoadHook(() =>
+          app.handleFile(createTestFile('preview.png', 'image/png'))
+        )
+      ).resolves.toBeUndefined()
     })
 
     it('cleans before extensions prepare the incoming workflow', async () => {

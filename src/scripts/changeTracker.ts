@@ -334,6 +334,7 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
 
 export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
+  private static captureSuppressionDepth = 0
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.
    * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
@@ -342,6 +343,28 @@ export class ChangeTracker implements WorkflowChangeTracker {
    * serialize the wrong graph into the old workflow's activeState, corrupting it.
    */
   static isLoadingGraph = false
+
+  /** Runs synchronous graph replacement work without capturing an undo state. */
+  static withCaptureSuppressed<T>(operation: () => T): T {
+    ChangeTracker.captureSuppressionDepth++
+    try {
+      return operation()
+    } finally {
+      ChangeTracker.captureSuppressionDepth--
+    }
+  }
+
+  /** Runs asynchronous graph replacement work without capturing an undo state. */
+  static async withCaptureSuppressedAsync<T>(
+    operation: () => Promise<T>
+  ): Promise<T> {
+    ChangeTracker.captureSuppressionDepth++
+    try {
+      return await operation()
+    } finally {
+      ChangeTracker.captureSuppressionDepth--
+    }
+  }
   /**
    * The active state of the workflow.
    */
@@ -505,7 +528,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
       !useApp().isGraphReady ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
-      ChangeTracker.isLoadingGraph
+      ChangeTracker.isLoadingGraph ||
+      ChangeTracker.captureSuppressionDepth > 0
     )
       return
 
@@ -543,7 +567,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
   squashState = useDebounceFn(() => {
     if (
       this !== useWorkflowStore().activeWorkflow?.changeTracker ||
-      ChangeTracker.isLoadingGraph
+      ChangeTracker.isLoadingGraph ||
+      ChangeTracker.captureSuppressionDepth > 0
     )
       return
 
