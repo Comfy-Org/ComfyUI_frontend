@@ -1045,7 +1045,7 @@ export const workspaceApi = {
   },
 
   /**
-   * List the workspace's hosted top-up checkouts, newest first
+   * List the workspace's hosted top-up checkouts
    * GET /api/billing/topup/checkouts
    */
   async listTopupCheckouts(): Promise<HostedTopupCheckoutList> {

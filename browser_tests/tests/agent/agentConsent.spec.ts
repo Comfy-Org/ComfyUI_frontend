@@ -780,5 +780,39 @@ test.describe(
         await expect(agentPanel.root).toBeVisible()
       })
     })
+
+    test.describe('with first Agent onboarding', () => {
+      test.use({
+        agentConsentAccepted: true,
+        agentOnboardingCompleted: false
+      })
+
+      test('shows the coach after the approval closes', async ({
+        comfyPage,
+        agentPanel,
+        agentConsentReads
+      }) => {
+        const page = comfyPage.page
+        const approval = page.getByRole('dialog', {
+          name: enMessages.desktopLogin.confirmSummary
+        })
+        const coach = page.getByRole('dialog', {
+          name: enMessages.agent.coachTitle
+        })
+
+        await expect(approval).toBeVisible()
+        await expect(agentPanel.root).toBeVisible()
+        await expect.poll(() => agentConsentReads.length).toBeGreaterThan(0)
+        await expect(page.getByRole('dialog')).toHaveCount(1)
+        await expect(coach).toHaveCount(0)
+
+        await approval
+          .getByRole('button', { name: enMessages.g.confirm })
+          .click()
+
+        await expect(approval).toHaveCount(0)
+        await expect(coach).toBeVisible()
+      })
+    })
   }
 )

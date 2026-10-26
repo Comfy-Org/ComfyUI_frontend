@@ -3023,7 +3023,11 @@
       "creditsToReceiveLabel": "Credits to receive",
       "selectAmount": "Select amount",
       "needMore": "Need more?",
-      "contactUs": "Contact us"
+      "contactUs": "Contact us",
+      "paymentProcessingFlyout": "Payment processing. You don't need to pay again.",
+      "paymentProcessingTitle": "A {amount} payment is still processing",
+      "paymentProcessingTitleNoAmount": "A payment is still processing",
+      "paymentProcessingBody": "No need to pay again."
     },
     "creditsAvailable": "Credits available",
     "refreshes": "Refreshes {date}",
@@ -3649,6 +3653,7 @@
       "plan": {
         "actions": {
           "choosePlan": "Choose a plan",
+          "contactSales": "Contact sales",
           "manage": "Manage",
           "resume": "Resume plan",
           "stay": "Stay on {plan}",
