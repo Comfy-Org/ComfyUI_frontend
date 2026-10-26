@@ -306,7 +306,8 @@ describe('colorUtil conversions', () => {
   describe('isOpaqueColor', () => {
     it.for([
       ['#abc', true],
-      [' #ABC ', true],
+      ['#ABC', true],
+      ['RGB(255, 0, 0)', true],
       ['#abcf', true],
       ['#abc8', false],
       ['#abc0', false],
@@ -333,6 +334,7 @@ describe('colorUtil conversions', () => {
       ['rgba(calc(255/2), 0, 0, 0.5)', false],
       ['rgb(0 0 0 / var(--alpha))', false],
       ['rgba(var(--rgb), 0.5)', false],
+      ['rgb(from #0008 r g b)', false],
       ['color-mix(in srgb, red 50%, transparent)', false],
       ['oklch(0.5 0.1 120)', false],
       ['transparent', false],

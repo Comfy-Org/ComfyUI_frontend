@@ -36,14 +36,13 @@ export function isTransparent(color: string) {
   return false
 }
 
-/** Whether a CSS color is certainly opaque: hex, or plain-number rgb(a)/hsl(a) with alpha 1. */
+/** Whether a CSS color is certainly opaque: hex, or rgb(a)/hsl(a) with only plain numbers and alpha 1. */
 export function isOpaqueColor(color: unknown): boolean {
   if (typeof color !== 'string') return false
 
-  const normalized = color.trim().toLowerCase()
-  if (/^#(?:[\da-f]{3}f?|[\da-f]{6}(?:ff)?)$/.test(normalized)) return true
+  if (/^#(?:[\da-f]{3}f?|[\da-f]{6}(?:ff)?)$/i.test(color)) return true
 
-  const args = normalized.match(/^(?:rgba?|hsla?)\(([^()]*)\)$/)?.[1]
+  const args = color.match(/^(?:rgba?|hsla?)\(([\d\s.,%/+-]*)\)$/i)?.[1]
   if (args === undefined) return false
 
   const [channels, ...slashAlpha] = args.split('/')
