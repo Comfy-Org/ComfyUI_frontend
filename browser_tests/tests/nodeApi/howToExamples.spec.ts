@@ -119,6 +119,47 @@ test.describe(
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(14)
     })
 
+    test('persists public storage across a page reload', async ({
+      comfyPage
+    }) => {
+      const name = 'HowTo.ApiExamples/storage-round-trip'
+      const value = 'A saved greeting\n日本語 👋'
+      await comfyPage.page.evaluate(
+        async ({ name, value }) => {
+          if (!window.comfy) throw new Error('Published API is unavailable')
+          await window.comfy.storage.set(name, value)
+        },
+        { name, value }
+      )
+
+      await comfyPage.page.reload()
+      await comfyPage.waitForAppReady()
+
+      expect(
+        await comfyPage.page.evaluate(async (name) => {
+          if (!window.comfy) throw new Error('Published API is unavailable')
+          return window.comfy.storage.get(name)
+        }, name)
+      ).toBe(value)
+      expect(
+        await comfyPage.page.evaluate(async () => {
+          if (!window.comfy) throw new Error('Published API is unavailable')
+          return window.comfy.storage.list('HowTo.ApiExamples')
+        })
+      ).toContain(name)
+
+      await comfyPage.page.evaluate(async (name) => {
+        if (!window.comfy) throw new Error('Published API is unavailable')
+        await window.comfy.storage.remove(name)
+      }, name)
+      expect(
+        await comfyPage.page.evaluate(async (name) => {
+          if (!window.comfy) throw new Error('Published API is unavailable')
+          return window.comfy.storage.get(name)
+        }, name)
+      ).toBeUndefined()
+    })
+
     test('reports rejected asynchronous example actions', async ({
       comfyPage
     }) => {
