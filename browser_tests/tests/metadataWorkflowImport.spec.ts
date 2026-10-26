@@ -117,11 +117,9 @@ test.describe(
         tag: '@canvas'
       },
       async ({ comfyPage, page }) => {
-        const decompressionErrors: string[] = []
+        const pageErrors: string[] = []
         const onPageError = (error: Error) => {
-          if (error.message.includes('invalid distance too far back')) {
-            decompressionErrors.push(error.message)
-          }
+          pageErrors.push(error.message)
         }
         page.on('pageerror', onPageError)
 
@@ -137,7 +135,7 @@ test.describe(
           expect(
             await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
           ).toHaveLength(1)
-          expect(decompressionErrors).toEqual([])
+          expect(pageErrors).toEqual([])
         } finally {
           page.off('pageerror', onPageError)
         }
