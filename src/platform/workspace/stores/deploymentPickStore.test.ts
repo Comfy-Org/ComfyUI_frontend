@@ -1874,13 +1874,13 @@ describe('useDeploymentPickStore', () => {
   describe('packs the boot deployment could not load', () => {
     const vfx: ReleaseUnsupportedPack = {
       folder: 'ComfyUI-NVIDIA-VFX',
-      registryId: 'comfyui-nvidia-vfx',
+      registry_id: 'comfyui-nvidia-vfx',
       repository: 'https://github.com/NVIDIA/ComfyUI-NVIDIA-VFX',
       cause: 'needs a GPU'
     }
     const seedvr: ReleaseUnsupportedPack = {
       folder: 'seedvr2_videoupscaler',
-      registryId: '',
+      registry_id: '',
       repository: 'https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler',
       cause: "No module named 'cv2'"
     }

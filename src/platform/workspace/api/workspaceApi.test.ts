@@ -428,7 +428,7 @@ describe('workspaceApi', () => {
         packs: [
           {
             folder: 'ComfyUI-NVIDIA-VFX',
-            registryId: 'comfyui-nvidia-vfx',
+            registry_id: 'comfyui-nvidia-vfx',
             repository: 'https://github.com/NVIDIA/ComfyUI-NVIDIA-VFX',
             cause: 'needs a GPU'
           }
@@ -443,6 +443,50 @@ describe('workspaceApi', () => {
         { headers: AUTH_HEADER }
       )
       expect(result).toEqual(data)
+    })
+
+    it('getReleaseUnsupportedPacks() reads a pack not installed from the registry, with its cause', async () => {
+      const data = {
+        release_id: 'rel-picked',
+        packs: [
+          {
+            folder: 'ComfyUI_Nvidia_RTX_Nodes',
+            registry_id: '',
+            repository: '',
+            cause: 'needs a GPU'
+          }
+        ]
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getReleaseUnsupportedPacks()
+
+      expect(result.packs).toEqual([
+        {
+          folder: 'ComfyUI_Nvidia_RTX_Nodes',
+          registry_id: '',
+          repository: '',
+          cause: 'needs a GPU'
+        }
+      ])
+    })
+
+    it('getReleaseUnsupportedPacks() rejects a pack whose registry id is in camelCase', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: {
+          release_id: 'rel-picked',
+          packs: [
+            {
+              folder: 'ComfyUI_Nvidia_RTX_Nodes',
+              registryId: '',
+              repository: '',
+              cause: 'needs a GPU'
+            }
+          ]
+        }
+      })
+
+      await expect(workspaceApi.getReleaseUnsupportedPacks()).rejects.toThrow()
     })
 
     it('getReleaseUnsupportedPacks() rejects a body without packs', async () => {

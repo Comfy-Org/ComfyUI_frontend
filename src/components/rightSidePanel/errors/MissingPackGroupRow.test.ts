@@ -97,7 +97,7 @@ function makeGroup(
 
 const nvidiaVfx: ReleaseUnsupportedPack = {
   folder: 'ComfyUI-NVIDIA-VFX',
-  registryId: 'comfyui-nvidia-vfx',
+  registry_id: 'comfyui-nvidia-vfx',
   repository: 'https://github.com/NVIDIA/ComfyUI-NVIDIA-VFX',
   cause: 'needs a GPU'
 }
@@ -106,7 +106,7 @@ function buildLeftOut(pack: ReleaseUnsupportedPack | undefined) {
   return vi
     .spyOn(useDeploymentPickStore(), 'unsupportedPackFor')
     .mockImplementation((cnrId) =>
-      pack && cnrId === pack.registryId ? pack : undefined
+      pack && cnrId === pack.registry_id ? pack : undefined
     )
 }
 

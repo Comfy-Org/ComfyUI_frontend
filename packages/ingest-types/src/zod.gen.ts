@@ -78,7 +78,7 @@ export const zWorkspaceDeploymentList = z.object({
  */
 export const zReleaseUnsupportedPack = z.object({
   folder: z.string(),
-  registryId: z.string(),
+  registry_id: z.string(),
   repository: z.string(),
   cause: z.string()
 })

@@ -142,7 +142,7 @@ export type ReleaseUnsupportedPack = {
   /**
    * The pack's Comfy Registry id; empty for a pack not installed from the registry.
    */
-  registryId: string
+  registry_id: string
   /**
    * The repository URL the pack's own pyproject.toml names, for matching only, never a verified source; empty when it names none.
    */

@@ -184,7 +184,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   ): ReleaseUnsupportedPack | undefined {
     const packs = unsupportedPacks.value
     return (
-      packs.find((pack) => pack.registryId === cnrId) ??
+      packs.find((pack) => pack.registry_id === cnrId) ??
       packs.find((pack) => pack.folder === cnrId)
     )
   }
