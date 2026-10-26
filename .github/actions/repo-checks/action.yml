@@ -1,6 +1,6 @@
 name: 'Repository consistency checks'
 description: >
-  Runs dependency-cycle, unused-code, locale integrity and ADR checks. Shared by
+  Runs dependency-cycle, unused-code, locale integrity, follower-invariant and ADR checks. Shared by
   ci-lint-format.yaml (PR) and ci-lint-format-queue.yaml (merge queue). The
   caller is responsible for a blobless full-history checkout (locale:check
   fetches source blobs from git history) and frontend setup.
@@ -27,3 +27,7 @@ runs:
     - name: Verify ADR naming
       shell: bash
       run: pnpm adr:check
+
+    - name: Verify Agent follower invariants
+      shell: bash
+      run: pnpm follower-invariants:check

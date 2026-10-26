@@ -1,6 +1,5 @@
 import { nextTick } from 'vue'
 
-import Load3DAdvanced from '@/extensions/core/load3d/components/Load3DAdvanced.vue'
 import {
   nodeToLoad3dMap,
   useLoad3d
@@ -8,29 +7,15 @@ import {
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import type { CameraConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import { findNumericWidget } from '@/extensions/core/load3d/findNumericWidget'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
-import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import type { ComfyExtension } from '@/types/comfy'
 
-const inputSpecLoad3DAdvanced: CustomInputSpec = {
-  name: 'viewport_state',
-  type: 'LOAD_3D_ADVANCED',
-  isPreview: false
-}
-
 export const load3dAdvancedExtension: ComfyExtension = {
   name: 'Comfy.Load3DAdvanced',
-
-  beforeRegisterNodeDef(_nodeType, nodeData) {
-    if (nodeData.name !== 'Load3DAdvanced') return
-    if (!nodeData.input?.required) return
-    nodeData.input.required.viewport_state = ['LOAD_3D_ADVANCED', {}]
-  },
 
   getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
     if (node.constructor.comfyClass !== 'Load3DAdvanced') return []
@@ -39,26 +24,6 @@ export const load3dAdvancedExtension: ComfyExtension = {
     if (!load3d) return []
 
     return createExportMenuItems(load3d)
-  },
-
-  getCustomWidgets() {
-    return {
-      LOAD_3D_ADVANCED(node) {
-        const widget = new ComponentWidgetImpl({
-          node,
-          name: 'viewport_state',
-          component: Load3DAdvanced,
-          inputSpec: inputSpecLoad3DAdvanced,
-          options: { hideInPanel: true }
-        })
-
-        widget.type = 'load3DAdvanced'
-
-        addWidget(node, widget)
-
-        return { widget }
-      }
-    }
   },
 
   async nodeCreated(node: LGraphNode) {
@@ -71,12 +36,8 @@ export const load3dAdvancedExtension: ComfyExtension = {
 
     useLoad3d(node).onLoad3dReady((load3d) => {
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-      const width = node.widgets?.find(
-        (w): w is INumericWidget => w.name === 'width' && w.type === 'number'
-      )
-      const height = node.widgets?.find(
-        (w): w is INumericWidget => w.name === 'height' && w.type === 'number'
-      )
+      const width = findNumericWidget(node.widgets, 'width')
+      const height = findNumericWidget(node.widgets, 'height')
       if (!modelWidget || !width || !height) return
 
       const cameraConfig = node.properties['Camera Config'] as

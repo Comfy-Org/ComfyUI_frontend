@@ -39,7 +39,11 @@ import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
-import { RESEED_CONFLICT, isRetryableReseedCode } from './docFrameCodes'
+import {
+  RESEED_CONFLICT,
+  isPermanentSubscribeRefusalCode,
+  isRetryableReseedCode
+} from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge, isLiveAgentUpdate } from './layoutFollowerBridge'
@@ -142,9 +146,9 @@ function handleSubscribeRefusal(
   lifecycle: AgentCrdtDocLifecycle
 ): SubscribeRefusalOutcome {
   const code = typeof detail?.code === 'string' ? detail.code : undefined
-  if (!lifecycle.onSubscribeRefused(code)) return { shouldNotify: false }
+  const shouldNotify = lifecycle.onSubscribeRefused(code)
   return {
-    shouldNotify: true,
+    shouldNotify,
     message: typeof detail?.message === 'string' ? detail.message : undefined,
     code
   }
@@ -349,6 +353,7 @@ export function useAgentCrdtFollower(
       }),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       follower.value?.enqueueHumanOperations(operations),
+    retrySubscription: () => follower.value?.retrySubscription(),
     docInputNames: (nodeId: NodeId) =>
       follower.value?.docInputNames(nodeId) ?? null,
     docWidgetValue: (nodeId: NodeId, widgetName: string) =>
@@ -717,8 +722,10 @@ function startAgentCrdtFollower(
     const code = typeof detail.code === 'string' ? detail.code : undefined
     if (detail.ok === true || code === RESEED_CONFLICT) return
     if (isRetryableReseedCode(code)) lifecycle.onSubscribeRefused(code)
-    else lifecycle.stopProbing()
-    if (lifecycle.refusalIsFinal()) terminal.value = 'refused'
+    else {
+      lifecycle.stopProbing()
+      terminal.value = 'refused'
+    }
   }
 
   function handleRejectedSubscription(
@@ -733,7 +740,13 @@ function startAgentCrdtFollower(
     const refusal = reseeding
       ? { shouldNotify: false }
       : handleSubscribeRefusal(detail, lifecycle)
-    if (!reseeding && lifecycle.refusalIsFinal()) terminal.value = 'refused'
+    if (
+      !reseeding &&
+      refusal.code !== undefined &&
+      isPermanentSubscribeRefusalCode(refusal.code) &&
+      lifecycle.refusalIsFinal()
+    )
+      terminal.value = 'refused'
     releaseHeldOps()
     sender.abortIfUnbound()
     if (refusal.shouldNotify)
@@ -931,14 +944,23 @@ function startAgentCrdtFollower(
   function notifyStaleClient(
     detail: { workflowId?: string; found?: unknown } | null
   ): void {
-    const found = newerDocSchema(detail?.found)
+    const found = detail?.found
+    const skew = docSchemaSkew(found)
     const workflowId = detail?.workflowId
-    if (found === null || workflowId === undefined) return
-    if (staleClientNotified.has(workflowId)) return
-    staleClientNotified.add(workflowId)
+    if (skew === null || workflowId === undefined) return
+    const notificationKey = `${workflowId}:${skew}`
+    if (staleClientNotified.has(notificationKey)) return
+    staleClientNotified.add(notificationKey)
+    if (skew === 'newer') {
+      events.onSyncError?.(
+        `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
+        'stale_client_schema'
+      )
+      return
+    }
     events.onSyncError?.(
-      `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
-      'stale_client_schema'
+      `document schema v${found} is older than this page reads (v${SCHEMA_VERSION})`,
+      'stale_host_schema'
     )
   }
   const onGap: EventListener = (event) => {
@@ -1189,6 +1211,11 @@ function startAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
+    retrySubscription: () => {
+      if (!lifecycle.retry()) return
+      connected.value = false
+      terminal.value = null
+    },
     enqueueHumanOperations: (operations: GraphOperation[]) => {
       const sentAdds = sentAddsToCurrentDoc()
       for (const operation of operations)
@@ -1216,6 +1243,10 @@ function startAgentCrdtFollower(
   }
 }
 
-function newerDocSchema(found: unknown): number | null {
-  return typeof found === 'number' && found > SCHEMA_VERSION ? found : null
+function docSchemaSkew(found: unknown): 'newer' | 'older' | null {
+  if (typeof found !== 'number' || !Number.isInteger(found) || found <= 0)
+    return null
+  if (found > SCHEMA_VERSION) return 'newer'
+  if (found < SCHEMA_VERSION) return 'older'
+  return null
 }
