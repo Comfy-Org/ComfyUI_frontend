@@ -1,4 +1,5 @@
-import { expect, mergeTests } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test';
+import type { WebSocketRoute } from '@playwright/test';
 
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
@@ -28,6 +29,7 @@ import { subscribeAgentWorkflow } from '@e2e/fixtures/utils/subscribeAgentWorkfl
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(agentTest, webSocketFixture)
+const canvasTextProbeKey = '__comfyE2eCanvasTextProbe'
 
 test.describe(
   'Agent stage frames carried by insert_workflow (PM-947)',
@@ -42,10 +44,10 @@ test.describe(
   () => {
     test.use({ connectWebSocketToServer: false })
 
-    test('shows each titled stage frame around its own nodes, clear of the existing graph', async ({
-      page,
-      getAgentSocket
-    }) => {
+    let host: HostDoc
+    let socket: WebSocketRoute
+
+    test.beforeEach(async ({ page, getAgentSocket }) => {
       await page.setViewportSize({ width: 1920, height: 1280 })
       await bootAgentApp(page, true, {
         beforeNavigate: async (page) => {
@@ -61,7 +63,7 @@ test.describe(
 
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      const socket = await getAgentSocket()
+      socket = await getAgentSocket()
       await subscribeAgentWorkflow({
         agentPanel,
         socket,
@@ -69,7 +71,7 @@ test.describe(
         prompt: 'Build a describe-then-generate workflow with labelled stages'
       })
 
-      const host = new HostDoc(
+      host = new HostDoc(
         STAGE_FRAMES_WORKFLOW_ID,
         { nodes: STAGE_FRAMES_EXISTING_NODES, links: [] },
         STAGE_FRAMES_CATALOG
@@ -79,7 +81,6 @@ test.describe(
         .poll(() => page.evaluate(() => window.app!.graph.nodes.length))
         .toBe(STAGE_FRAMES_EXISTING_NODES.length)
 
-      const canvasTextProbeKey = '__comfyE2eCanvasTextProbe'
       await page.evaluate(
         ({ expectedTexts, key }) => {
           const context = window.app!.canvas.bgcanvas.getContext('2d')
@@ -97,6 +98,11 @@ test.describe(
         },
         { expectedTexts: STAGE_FRAME_TITLES, key: canvasTextProbeKey }
       )
+    })
+
+    test('shows each titled stage frame around its own nodes, clear of the existing graph', async ({
+      page
+    }) => {
       socket.send(JSON.stringify(host.apply(STAGE_FRAMES_INSERT_OPS)))
       await expect
         .poll(() => page.evaluate(() => window.app!.graph.nodes.length))
@@ -136,9 +142,9 @@ test.describe(
           page.evaluate((key) => {
             const observed: unknown = Reflect.get(window, key)
             if (!Array.isArray(observed)) return []
-            return observed.filter(
-              (text): text is string => typeof text === 'string'
-            )
+            return observed
+              .filter((text): text is string => typeof text === 'string')
+              .sort()
           }, canvasTextProbeKey)
         )
         .toEqual(STAGE_FRAME_TITLES)
