@@ -175,7 +175,6 @@ export const WithLongText: Story = {
 
 - **`main.ts`**: Core Storybook configuration and Vite integration
 - **`preview.ts`**: Global decorators, parameters, and Vue app setup
-- **`manager.ts`**: Storybook UI customization (if needed)
 - **`preview-head.html`**: Injects custom HTML into the `<head>` of every Storybook iframe (used for global styles, fonts, or fixes for iframe-specific issues)
 
 ## Chromatic Visual Testing

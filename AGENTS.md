@@ -73,6 +73,8 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm comfy-test list [--filter <keyword>]`: List available test workflows
 - `pnpm comfy-test tags`: List test tags with their meanings
 - `pnpm comfy-test add-workflow <file> [--name <n>]`: Add and validate a workflow asset from disk
+- `pnpm comfy-test agent-replay`: Replay recorded agent conversations as Playwright tests (see `.claude/skills/agent-integration-replay/SKILL.md`)
+- `pnpm comfy-test guide`: Print the end-to-end usage guide. Non-interactive
 
 **Agent workflow, end to end:** `comfy-test plan` → hand its output to the `playwright-test-generator` agent (writes a convention-compliant spec directly, no `transform` needed) → `comfy-test pr <file>`.
 
@@ -88,7 +90,7 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 
 Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `waitForTimeout()`, never weaken assertions, and reference `.claude/skills/codegen-transform/SKILL.md` for transform rules.
 
-- `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
+- `pnpm lint` / `pnpm lint:fix`: Lint (stylelint, oxlint, `architecture:check`, ESLint, then workspace package lints)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
 - `pnpm deps:audit`: Reject production `src/` import cycles, including type-only imports

@@ -57,30 +57,38 @@ While services can interact with both UI components and stores (centralized stat
 
 ## Core Services
 
-The following table lists ALL services in the system as of 2025-09-01:
+`src/services/` holds the cross-cutting services. Services owned by a single
+domain sit with that domain — see [Domain-Owned
+Services](#domain-owned-services).
 
 ### Main Services
 
-| Service                    | Description                                               | Category   |
-| -------------------------- | --------------------------------------------------------- | ---------- |
-| audioService.ts            | Manages audio recording and WAV encoding functionality    | Media      |
-| autoQueueService.ts        | Manages automatic queue execution                         | Execution  |
-| colorPaletteService.ts     | Handles color palette management and customization        | UI         |
-| comfyManagerService.ts     | Manages ComfyUI application packages and updates          | Manager    |
-| comfyRegistryService.ts    | Handles registration and discovery of ComfyUI extensions  | Registry   |
-| customerEventsService.ts   | Handles customer event tracking and audit logs            | Analytics  |
-| dialogService.ts           | Provides dialog and modal management                      | UI         |
-| extensionService.ts        | Manages extension registration and lifecycle              | Extensions |
-| litegraphService.ts        | Provides utilities for working with the LiteGraph library | Graph      |
-| load3dService.ts           | Manages 3D model loading and visualization                | 3D         |
-| mediaCacheService.ts       | Manages media file caching with blob storage and cleanup  | Media      |
-| newUserService.ts          | Handles new user initialization and onboarding            | System     |
-| nodeHelpService.ts         | Provides node documentation and help                      | Nodes      |
-| nodeOrganizationService.ts | Handles node organization and categorization              | Nodes      |
-| nodeSearchService.ts       | Implements node search functionality                      | Search     |
-| releaseService.ts          | Manages application release information and updates       | System     |
-| subgraphService.ts         | Handles subgraph operations and navigation                | Graph      |
-| workflowService.ts         | Handles workflow operations (save, load, execute)         | Workflows  |
+Directly under `src/services/`:
+
+| Service                      | Description                                                  | Category   |
+| ---------------------------- | ------------------------------------------------------------ | ---------- |
+| audioService.ts              | Audio recording and WAV encoding                             | Media      |
+| autoQueueService.ts          | Automatic queue execution (`setupAutoQueueHandler`)          | Execution  |
+| colorPaletteService.ts       | Color palette management and customization                   | UI         |
+| comfyRegistryService.ts      | Registration and discovery of ComfyUI extensions             | Registry   |
+| customerEventsService.ts     | Customer event tracking and audit logs                       | Analytics  |
+| dialogService.ts             | Dialog and modal management                                  | UI         |
+| dialogServiceTypes.ts        | Shared dialog option and result types                        | UI         |
+| extensionDialogService.ts    | Dialog surface exposed to extensions                         | Extensions |
+| extensionLoader.ts           | Fetches and evaluates custom node JavaScript                 | Extensions |
+| extensionService.ts          | Extension registration and lifecycle                         | Extensions |
+| extensionServiceAccess.ts    | Late-bound accessor for the extension service                | Extensions |
+| hdrViewerService.ts          | HDR image viewer                                             | Media      |
+| jobOutputCache.ts            | Caches job outputs across queue reads                        | Execution  |
+| litegraphService.ts          | Utilities for working with the LiteGraph library             | Graph      |
+| mediaCacheService.ts         | Media file caching with blob storage and cleanup             | Media      |
+| nodeHelpService.ts           | Node documentation and help                                  | Nodes      |
+| nodeOrganizationService.ts   | Node organization and categorization                         | Nodes      |
+| nodeSearchService.ts         | Node search (`NodeSearchService` class)                      | Search     |
+| subgraphPseudoWidgetCache.ts | Caches pseudo-widgets for subgraph boundaries                | Graph      |
+| subgraphService.ts           | Subgraph operations and navigation                           | Graph      |
+| uploadTempFile.ts            | Uploads a temporary file to the backend                      | Files      |
+| useNewUserService.ts         | New user initialization and onboarding (`useNewUserService`) | System     |
 
 ### Gateway Services
 
@@ -94,10 +102,23 @@ Located in `services/gateway/`:
 
 Located in `services/providers/`:
 
-| Service                   | Description                                   |
-| ------------------------- | --------------------------------------------- |
-| algoliaSearchProvider.ts  | Implements search functionality using Algolia |
-| registrySearchProvider.ts | Provides registry search capabilities         |
+| Service                     | Description                         |
+| --------------------------- | ----------------------------------- |
+| algoliaPackSearchRequest.ts | Builds Algolia pack search requests |
+| algoliaSearchProvider.ts    | Search backed by Algolia            |
+| registrySearchProvider.ts   | Registry search capabilities        |
+
+### Domain-Owned Services
+
+These services previously lived in `src/services/` and now sit with their
+domain. Import them from their current path:
+
+| Service               | Location                                                           |
+| --------------------- | ------------------------------------------------------------------ |
+| `comfyManagerService` | `src/workbench/extensions/manager/services/comfyManagerService.ts` |
+| `useLoad3dService`    | `src/extensions/core/load3d/services/load3dService.ts`             |
+| `releaseService`      | `src/platform/updates/common/releaseService.ts`                    |
+| `workflowService`     | `src/platform/workflow/core/services/workflowService.ts`           |
 
 ## Service Development Guidelines
 
@@ -197,15 +218,15 @@ export function useNodeSearchService(initialData: ComfyNodeDefImpl[]) {
 
 ### Service Pattern Comparison
 
-| Aspect               | Class-Based Services                                                 | Composable-Style Services                  | Bootstrap Services            | Shared State Services              |
-| -------------------- | -------------------------------------------------------------------- | ------------------------------------------ | ----------------------------- | ---------------------------------- |
-| **Count**            | 4 services                                                           | 18+ services                               | 1 service                     | 1 service                          |
-| **Export Pattern**   | `export class ServiceName`                                           | `export function useServiceName()`         | `export function setupX()`    | `export function serviceFactory()` |
-| **Instantiation**    | `new ServiceName(data)`                                              | `useServiceName()`                         | Direct function call          | Direct function call               |
-| **Best For**         | Complex data structures, search algorithms, expensive initialization | Vue integration, API calls, reactive state | One-time app initialization   | Singleton-like shared state        |
-| **State Management** | Encapsulated private/public properties                               | External stores + reactive refs            | Event listeners, side effects | Module-level state                 |
-| **Vue Integration**  | Manual integration needed                                            | Native reactivity support                  | N/A                           | Varies                             |
-| **Examples**         | `NodeSearchService`, `Load3dService`                                 | `workflowService`, `dialogService`         | `autoQueueService`            | `newUserService`                   |
+| Aspect               | Class-Based Services                                                 | Composable-Style Services                  | Bootstrap Services            | Shared State Services                    |
+| -------------------- | -------------------------------------------------------------------- | ------------------------------------------ | ----------------------------- | ---------------------------------------- |
+| **Count**            | 1 service                                                            | most services                              | 1 service                     | 1 service                                |
+| **Export Pattern**   | `export class ServiceName`                                           | `export function useServiceName()`         | `export function setupX()`    | `createSharedComposable(...)`            |
+| **Instantiation**    | `new ServiceName(data)`                                              | `useServiceName()`                         | Direct function call          | `useServiceName()`                       |
+| **Best For**         | Complex data structures, search algorithms, expensive initialization | Vue integration, API calls, reactive state | One-time app initialization   | Singleton-like shared state              |
+| **State Management** | Encapsulated private/public properties                               | External stores + reactive refs            | Event listeners, side effects | Module-level state shared by all callers |
+| **Vue Integration**  | Manual integration needed                                            | Native reactivity support                  | N/A                           | Native reactivity support                |
+| **Examples**         | `NodeSearchService`                                                  | `workflowService`, `dialogService`         | `autoQueueService`            | `useNewUserService`                      |
 
 ### Decision Criteria
 
@@ -221,10 +242,10 @@ When choosing between these approaches, consider:
 
 **Current Usage Patterns:**
 
-- **Class-based services (4)**: Complex data processing, search algorithms, expensive initialization
-- **Composable-style services (18+)**: UI interactions, API calls, store integration, reactive state management
-- **Bootstrap services (1)**: One-time application initialization and event handler setup
-- **Shared state services (1)**: Singleton-like behavior with module-level state management
+- **Class-based services**: only `NodeSearchService`, for its search index and filters
+- **Composable-style services**: the default — UI interactions, API calls, store integration, reactive state management
+- **Bootstrap services**: `autoQueueService`, for one-time initialization and event handler setup
+- **Shared state services**: `useNewUserService`, wrapped in VueUse's `createSharedComposable` so every caller sees the same state
 
 ### Service Template
 
@@ -465,15 +486,14 @@ describe('autoQueueService', () => {
 **Focus on Shared State Behavior:**
 
 ```typescript
-describe('newUserService', () => {
+describe('useNewUserService', () => {
   beforeEach(() => {
-    // Reset module state between tests
-    vi.resetModules()
+    useNewUserService().reset()
   })
 
   test('should return consistent API across calls', () => {
-    const service1 = newUserService()
-    const service2 = newUserService()
+    const service1 = useNewUserService()
+    const service2 = useNewUserService()
 
     // Same functions returned (shared behavior)
     expect(service1.isNewUser).toBeDefined()
@@ -481,12 +501,11 @@ describe('newUserService', () => {
   })
 
   test('should share state between service instances', async () => {
-    const service1 = newUserService()
-    const service2 = newUserService()
+    const service1 = useNewUserService()
+    const service2 = useNewUserService()
 
     // Initialize through one instance
-    const mockSettingStore = { set: vi.fn() }
-    await service1.initializeIfNewUser(mockSettingStore)
+    await service1.initializeIfNewUser()
 
     // State should be shared
     expect(service2.isNewUser()).toBe(true) // or false, depending on mock
