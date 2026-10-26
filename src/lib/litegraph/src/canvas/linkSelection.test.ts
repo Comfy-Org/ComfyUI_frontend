@@ -546,6 +546,18 @@ describe('going to the other end of a socket', () => {
     expect(destinationIds(graph)).toEqual([source.id])
   })
 
+  it('rejects a destination disconnected after projection', () => {
+    const { graph, source, targets, links } = createFanOut()
+    clickSocket(graph, source, 'output')
+    expect(destinationIds(graph)).toContain(targets[0].id)
+    const anchor = getSelectedLinksAnchor(graph)
+    graph.removeLink(links[0].id)
+
+    expect(jumpTo(graph, targets[0])).toBeUndefined()
+    expect(getSelectedLinkIds(graph)).toEqual([links[1].id, links[2].id])
+    expect(getSelectedLinksAnchor(graph)).toEqual(anchor)
+  })
+
   it('makes one destination of several links into the same node', () => {
     const graph = new LGraph()
     const source = createTestNode(graph, [], ['number'])

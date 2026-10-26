@@ -22,6 +22,7 @@ import {
   createMockCanvas,
   createTestDragAndScale
 } from '@/utils/__tests__/canvasTestUtils'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const i18n = createI18n({
   legacy: false,
@@ -161,12 +162,15 @@ describe('LinkSelectionActions', () => {
   })
 
   it.for([
-    { name: 'bigger than the view', height: 2000 },
-    { name: 'too big to leave room for the menu', height: 520 }
+    { name: 'bigger than the view', height: 2000, scale: 1 },
+    { name: 'too big to leave room for the menu', height: 520, scale: 1 },
+    { name: 'too big at the current zoom', height: 300, scale: 1.7 }
   ])(
     'centres the landing socket when the node is $name',
-    async ({ height }) => {
-      const { graph, source, targets, canvas } = createWorkflow()
+    async ({ height, scale }) => {
+      const ds = createTestDragAndScale()
+      ds.scale = scale
+      const { graph, source, targets, canvas } = createWorkflow(ds)
       source.size = [300, height]
       source.updateArea()
       clickSocket(graph, targets[0], 'input')
@@ -184,8 +188,13 @@ describe('LinkSelectionActions', () => {
     }
   )
 
-  it('centres the source at the current zoom in one step when animations are turned off', async () => {
-    const ds = createTestDragAndScale()
+  it('centres the source in the uncovered canvas at the current zoom in one step when animations are turned off', async () => {
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    panel.consentAccepted = true
+    panel.isOpen = true
+    panel.setWidth(500)
+    const ds = createTestDragAndScale(1000, 600)
     ds.scale = 1.7
     ds.offset = [13, 29]
     const { graph, source, targets, canvas } = createWorkflow(ds)
@@ -203,7 +212,7 @@ describe('LinkSelectionActions', () => {
       y + height / 2
     ])
     expect(ds.scale).toBe(1.7)
-    expect(centreX).toBeCloseTo(400)
+    expect(centreX).toBeCloseTo(250)
     expect(centreY).toBeCloseTo(300)
     expect(canvas.animateToBounds).not.toHaveBeenCalled()
     expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
