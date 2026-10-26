@@ -2083,6 +2083,11 @@ describe('useMediaAssetActions', () => {
           'runs/2026/bb12cd34.png [output]',
           'cc56ef78.png [temp]'
         ])
+        const readableReferences = [
+          addLoadImageNode('previews/ComfyUI_temp_00001_.png [temp]'),
+          addLoadImageNode('runs/2026/ComfyUI_00001_.png [output]'),
+          addLoadImageNode('ComfyUI_temp_00002_.png [temp]')
+        ]
         const survivors = [
           addLoadImageNode('aa7ecf08.png [output]'),
           addLoadImageNode('other/aa7ecf08.png [temp]'),
@@ -2109,6 +2114,11 @@ describe('useMediaAssetActions', () => {
           cleared('previews/aa7ecf08.png [temp]'),
           cleared('runs/2026/bb12cd34.png [output]'),
           cleared('cc56ef78.png [temp]')
+        ])
+        expect(readableReferences.map(referenceState)).toEqual([
+          cleared('previews/ComfyUI_temp_00001_.png [temp]'),
+          cleared('runs/2026/ComfyUI_00001_.png [output]'),
+          cleared('ComfyUI_temp_00002_.png [temp]')
         ])
         expect(survivors.map(referenceState)).toEqual([
           kept('aa7ecf08.png [output]'),
