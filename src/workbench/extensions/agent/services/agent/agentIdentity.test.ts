@@ -267,4 +267,32 @@ describe('resolveAgentIdentity', () => {
       userId: 'local-user'
     })
   })
+
+  it('stops reporting once the report budget is spent, so a flapping socket cannot flood telemetry', async () => {
+    const getIdentity = failing()
+    const identity = harness(getIdentity)
+
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    expect(identity.onFailure).toHaveBeenCalledTimes(8)
+
+    for (let reopen = 0; reopen < 3; reopen += 1) {
+      identity.connect()
+      await vi.advanceTimersByTimeAsync(10 * 60_000)
+    }
+
+    expect(getIdentity).toHaveBeenCalledTimes(32)
+    expect(identity.onFailure).toHaveBeenCalledTimes(8)
+  })
+
+  it('reports again for a new account, because reset refreshes the report budget', async () => {
+    const getIdentity = failing()
+    const identity = harness(getIdentity)
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    expect(identity.onFailure).toHaveBeenCalledTimes(8)
+
+    identity.reset()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(identity.onFailure).toHaveBeenCalledTimes(16)
+  })
 })

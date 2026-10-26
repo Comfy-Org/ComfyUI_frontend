@@ -5,6 +5,12 @@ const RETRY_BASE_MS = 1_000
 const RETRY_MAX_MS = 30_000
 /** Lookups tried before a transient failure is treated as a rejection. */
 const MAX_ATTEMPTS = 8
+/**
+ * Failures reported per identity. The attempt budget restarts every time the
+ * socket reopens, so without a separate report budget a flapping socket would
+ * re-emit the same warning for as long as the panel stays mounted.
+ */
+const MAX_REPORTED_FAILURES = 8
 
 interface AgentIdentityDeps {
   getIdentity(): Promise<{ userId: string }>
@@ -35,6 +41,7 @@ export function resolveAgentIdentity(
   let inFlight = false
   let stopped = false
   let failures = 0
+  let reported = 0
   let retryTimer: ReturnType<typeof setTimeout> | null = null
   let generation = 0
   let exhausted = false
@@ -59,7 +66,10 @@ export function resolveAgentIdentity(
 
   function settleFailure(error: unknown): void {
     failures += 1
-    deps.onFailure(error)
+    if (reported < MAX_REPORTED_FAILURES) {
+      reported += 1
+      deps.onFailure(error)
+    }
     if (!deps.isRetryable(error)) {
       state.value = { status: 'rejected' }
       return
@@ -106,6 +116,7 @@ export function resolveAgentIdentity(
       generation += 1
       state.value = { status: 'pending' }
       failures = 0
+      reported = 0
       exhausted = false
       inFlight = false
       cancelRetry()
