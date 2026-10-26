@@ -9,6 +9,7 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -36,7 +37,8 @@ import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
-import { readDocSlotNames } from './liveGraphApplier'
+import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
+import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
@@ -341,7 +343,11 @@ export function useAgentCrdtFollower(
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       follower.value?.enqueueHumanOperations(operations),
     docInputNames: (nodeId: NodeId) =>
-      follower.value?.docInputNames(nodeId) ?? null
+      follower.value?.docInputNames(nodeId) ?? null,
+    docWidgetValue: (nodeId: NodeId, widgetName: string) =>
+      follower.value?.docWidgetValue(nodeId, widgetName),
+    docPromotedWidgets: (nodeId: NodeId) =>
+      follower.value?.docPromotedWidgets(nodeId) ?? null
   }
 }
 
@@ -386,6 +392,26 @@ function startAgentCrdtFollower(
   const confirmedDeletes = new Set<string>()
   const rejectedOpNotifier = createRejectedOpNotifier()
   const projection = new AgentCrdtProjection(getGraph, applierDeps)
+  const pendingRejected = new Map<string, Op[]>()
+
+  const applyRejectedOps = (
+    workflowId: string,
+    rejected: readonly Op[]
+  ): boolean => {
+    if (getGraph() === null) return false
+    reportMaterialized(
+      workflowId,
+      projection.revertRejected(workflowId, rejected)
+    )
+    return true
+  }
+
+  const drainRejectedOps = (workflowId: string): void => {
+    const rejected = pendingRejected.get(workflowId)
+    if (!rejected) return
+    if (applyRejectedOps(workflowId, rejected))
+      pendingRejected.delete(workflowId)
+  }
 
   const trackAcknowledgedDeletes = (
     outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
@@ -408,10 +434,18 @@ function startAgentCrdtFollower(
 
     const applied = new Set(outcome.result.applied)
     const rejected = outcome.ops.filter((op) => !applied.has(op.op_id))
-    reportMaterialized(
-      workflowId,
-      projection.revertRejected(workflowId, rejected)
-    )
+    if (!isTargetActive.value) {
+      pendingRejected.set(workflowId, [
+        ...(pendingRejected.get(workflowId) ?? []),
+        ...rejected
+      ])
+      return
+    }
+    if (!applyRejectedOps(workflowId, rejected))
+      pendingRejected.set(workflowId, [
+        ...(pendingRejected.get(workflowId) ?? []),
+        ...rejected
+      ])
   }
 
   const settleHumanOps = (outcome: BatchOutcome) => {
@@ -636,6 +670,7 @@ function startAgentCrdtFollower(
       projection.bind(workflowId, bridge.follower)
     }
   }
+  const staleClientNotified = new Set<string>()
   const onSchemaError: EventListener = (event) => {
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
@@ -645,7 +680,7 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as { workflowId?: string } | null)
+        ? (event.detail as { workflowId?: string; found?: unknown } | null)
         : null
     if (detail?.workflowId !== undefined)
       projection.discardPending(detail.workflowId)
@@ -653,6 +688,20 @@ function startAgentCrdtFollower(
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
+    )
+    notifyStaleClient(detail)
+  }
+  function notifyStaleClient(
+    detail: { workflowId?: string; found?: unknown } | null
+  ): void {
+    const found = newerDocSchema(detail?.found)
+    const workflowId = detail?.workflowId
+    if (found === null || workflowId === undefined) return
+    if (staleClientNotified.has(workflowId)) return
+    staleClientNotified.add(workflowId)
+    events.onSyncError?.(
+      `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
+      'stale_client_schema'
     )
   }
   const onGap: EventListener = (event) => {
@@ -726,7 +775,10 @@ function startAgentCrdtFollower(
   // collected at the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
     const bound = subscribedWorkflowId.value
-    if (graph && bound !== null && isTargetActive.value) applyCollected(bound)
+    if (graph && bound !== null && isTargetActive.value) {
+      applyCollected(bound)
+      drainRejectedOps(bound)
+    }
   })
   const rebindProjection = (next: string | null): void => {
     const current = subscribedWorkflowId.value
@@ -809,23 +861,37 @@ function startAgentCrdtFollower(
     if (justActivated) applyCollected(persisted)
   }
 
+  type TargetSnapshot = [string | null | undefined, boolean | undefined]
+  const isActivationEdge = (
+    active: boolean,
+    previous: TargetSnapshot | undefined
+  ): boolean => active && previous?.[1] === false
+  const acknowledgesFollowedDoc = (
+    next: string | null,
+    active: boolean,
+    justActivated: boolean
+  ): boolean =>
+    active &&
+    !justActivated &&
+    next !== null &&
+    next === subscribedWorkflowId.value
+
   const activateTarget = (next: string, justActivated: boolean): void => {
     initialBind = false
     rebindProjection(next)
     retarget(next)
+    drainRejectedOps(next)
     if (justActivated) applyCollected(next)
   }
 
   watch(
     [workflowId, isTargetActive],
-    (
-      [next, active],
-      previous: [string | null | undefined, boolean | undefined] | undefined
-    ) => {
+    ([next, active], previous: TargetSnapshot | undefined) => {
       // Only the inactive->active edge, and never the `immediate` first run
       // (`previous` is undefined there): a plain mount or retarget has no
       // collected changes to apply, the graph watcher covers readiness.
-      const justActivated = active && previous?.[1] === false
+      const justActivated = isActivationEdge(active, previous)
+      if (acknowledgesFollowedDoc(next, active, justActivated)) return
       lifecycle.clearForRetarget()
       connected.value = false
       pendingLiveNodeIds.clear()
@@ -861,6 +927,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_reseed_result', onReseedResult),
       () => sender.detach(),
       () => rejectedOpNotifier.cancel(),
+      () => pendingRejected.clear(),
       () => coalescer.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),
@@ -893,6 +960,14 @@ function startAgentCrdtFollower(
       coalescer.enqueue(operations)
     },
     docInputNames: (nodeId: NodeId) =>
-      readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs')
+      readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
+    docWidgetValue: (nodeId: NodeId, widgetName: string) =>
+      readDocWidgetValue(bridge.follower.doc, String(nodeId), widgetName),
+    docPromotedWidgets: (nodeId: NodeId) =>
+      readDocPromotedWidgets(bridge.follower.doc, String(nodeId))
   }
+}
+
+function newerDocSchema(found: unknown): number | null {
+  return typeof found === 'number' && found > SCHEMA_VERSION ? found : null
 }

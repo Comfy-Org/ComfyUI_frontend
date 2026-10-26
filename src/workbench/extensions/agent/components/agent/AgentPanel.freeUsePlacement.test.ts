@@ -13,16 +13,15 @@ vi.hoisted(() => {
 
 import { i18n } from '@/i18n'
 
+import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
+
 import AgentPanel from './AgentPanel.vue'
 import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
-import { FREE_USE_PLACEMENTS } from '../../experiments/freeUsePlacement'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
 
-const PLACEMENTS = FREE_USE_PLACEMENTS.filter(
-  (variant) => variant !== 'control'
-)
+const PLACEMENTS = AGENT_FREE_USE_PLACEMENTS
 
 function mount(freeUsePlacement: FreeUseVariant) {
   return render(AgentPanel, {

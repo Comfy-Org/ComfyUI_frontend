@@ -9,6 +9,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { render } from '@testing-library/vue'
@@ -510,6 +511,24 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('FE-1969: naming the rebound workflow keeps its confirmed subscription', async () => {
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+    const { unmount, workflowId, status } = mountFollower(null)
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    workflowId.value = 'wf-1'
+    await nextTick()
+
+    expect(status().connected).toBe(true)
+    expect(bridge().subscribe).toHaveBeenCalledOnce()
+    vi.advanceTimersByTime(SUBSCRIBE_CATCHUP_GRACE_MS)
+    expect(bridge().resubscribe).toHaveBeenCalledOnce()
+    unmount()
+  })
+
   it('FE-1902: a real detach clears the persisted binding and unsubscribes', async () => {
     const { unmount, workflowId } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
@@ -856,6 +875,40 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(bridge().reconcile).not.toHaveBeenCalled()
+    expect(onSyncError).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('asks for a reload once when the document is newer than this build reads', () => {
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    const found = SCHEMA_VERSION + 1
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found })
+
+    expect(onSyncError).toHaveBeenCalledExactlyOnceWith(
+      `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
+      'stale_client_schema'
+    )
+    unmount()
+  })
+
+  it('does not ask for a reload when the document is older than this build reads', () => {
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      found: SCHEMA_VERSION - 1
+    })
+
     expect(onSyncError).not.toHaveBeenCalled()
     unmount()
   })
@@ -1412,7 +1465,8 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('reverts only the ops the host rejected from a human batch', async () => {
-    const { unmount, enqueue } = mountFollower('wf-1')
+    const readyGraph = fromPartial<LGraph>({})
+    const { unmount, enqueue } = mountFollower('wf-1', true, () => readyGraph)
     enqueue([
       { op: 'set_widget', node_id: '2', widget: 'steps', value: 3 },
       { op: 'delete_node', node_id: '1', removed_links: [] }
@@ -1442,6 +1496,74 @@ describe('useAgentCrdtFollower', () => {
           code: 'unknown_node'
         })
       })
+    )
+    unmount()
+  })
+
+  it('defers rejected-op reverts until the bound workflow is active again', async () => {
+    const readyGraph = fromPartial<LGraph>({})
+    const { unmount, enqueue, isTargetActive } = mountFollower(
+      'wf-1',
+      true,
+      () => readyGraph
+    )
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+
+    isTargetActive.value = false
+    await nextTick()
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: { index: 0, op_id: ops[0].op_id, code: 'unknown_node' }
+    })
+
+    expect(projectionState.revertRejected).not.toHaveBeenCalled()
+
+    isTargetActive.value = true
+    await nextTick()
+
+    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
+      'wf-1',
+      [ops[0]]
+    )
+    unmount()
+  })
+
+  it('retains a rejected revert until the active graph becomes ready', async () => {
+    const graph = shallowRef<LGraph | null>(null)
+    const readyGraph = fromPartial<LGraph>({})
+    const { unmount, enqueue, isTargetActive } = mountFollower(
+      'wf-1',
+      false,
+      () => graph.value
+    )
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: { index: 0, op_id: ops[0].op_id, code: 'unknown_node' }
+    })
+    expect(projectionState.revertRejected).not.toHaveBeenCalled()
+
+    isTargetActive.value = true
+    await nextTick()
+    expect(projectionState.revertRejected).not.toHaveBeenCalled()
+
+    graph.value = readyGraph
+    await nextTick()
+
+    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
+      'wf-1',
+      [ops[0]]
     )
     unmount()
   })

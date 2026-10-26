@@ -337,6 +337,11 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.fetchStatus()
   }
 
+  async function fetchStatusFresh(): Promise<boolean> {
+    if (type.value === 'unknown') return false
+    return (await activeContext.value.fetchStatusFresh?.()) ?? false
+  }
+
   async function fetchBalance(): Promise<void> {
     if (type.value === 'unknown') return
     return activeContext.value.fetchBalance()
@@ -463,6 +468,7 @@ function useBillingContextInternal(): BillingContext {
 
     initialize,
     fetchStatus,
+    fetchStatusFresh,
     fetchBalance,
     reconcileSubscriptionSuccess,
     readCheckoutOperation,

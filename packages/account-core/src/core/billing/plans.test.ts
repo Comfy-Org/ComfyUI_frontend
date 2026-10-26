@@ -77,4 +77,25 @@ describe('createPlansReader', () => {
 
     expect(calls[0].timeoutMs).toBe(5_000)
   })
+
+  it.for([
+    'billing_operation_in_progress',
+    'billing_operation_parked',
+    'annual_to_monthly_unsupported'
+  ])('publishes a catalog with a plan unavailable for %s', async (reason) => {
+    const { scopeSource } = fakeSession()
+    const unavailable = { ...PLAN, availability: { available: false, reason } }
+    const { transport } = fakeTransport([
+      httpOk({ ...CATALOG, plans: [unavailable] })
+    ])
+
+    const result = await createPlansReader({ transport, scopeSource }).read()
+
+    expect(result.status).toBe('ok')
+    if (result.status !== 'ok') return
+    expect(result.value.data.plans[0].availability).toEqual({
+      available: false,
+      reason
+    })
+  })
 })

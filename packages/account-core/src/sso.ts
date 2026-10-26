@@ -15,6 +15,7 @@ import { timedSignal } from './core/requestTimeout.js'
 import { safeInternalPath } from './redirect.js'
 
 export {
+  isAccountOutsideOrganizationRefusal,
   isSsoRequiredRefusal,
   ssoRequiredOrganizationId
 } from './core/ssoRequired.js'

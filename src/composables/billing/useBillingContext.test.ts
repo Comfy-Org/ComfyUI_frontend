@@ -466,11 +466,10 @@ describe('useBillingContext', () => {
     expect(useAuthActions().purchaseCreditsDirect).toHaveBeenCalledWith(5)
   })
 
-  it('routes migrated legacy Stripe topups through workspace billing', async () => {
-    remoteConfig.value = { legacy_billing_migration_enabled: true }
+  it('routes migrated Stripe topups through workspace billing', async () => {
     remoteConfigState.value = 'authenticated'
     authenticatedRemoteConfigState.value = 'authenticated'
-    mockBillingRail.value = 'legacy_stripe'
+    mockBillingRail.value = 'stripe'
 
     const context = useBillingContext()
     await nextTick()

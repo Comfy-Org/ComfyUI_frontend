@@ -61,6 +61,24 @@ jobs:
           cache-key: ${{ steps.lint-cache.outputs.cache-key }}
           path: ${{ env.LINT_CACHE_PATHS }}
 
+  server-facts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ref
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      # Push runs gate the pushed range; a branch-creation push has no base.
+      - name: Check server facts on changed lines
+        if: ${{ (github.event.merge_group.base_sha || github.event.before) != '0000000000000000000000000000000000000000' }}
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
+        run: pnpm lint:server-facts --base "$BASE_SHA"
+
   typecheck:
     runs-on: ubuntu-latest
     steps:
@@ -132,7 +150,7 @@ jobs:
 
   # Single stable branch-protection context over the parallel jobs above.
   lint-and-format:
-    needs: [lint, typecheck, typecheck-aux, repo-checks]
+    needs: [lint, server-facts, typecheck, typecheck-aux, repo-checks]
     if: ${{ always() && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:

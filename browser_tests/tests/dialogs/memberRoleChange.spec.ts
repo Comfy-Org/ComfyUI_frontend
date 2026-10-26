@@ -1,3 +1,4 @@
+import type { PendingInvite } from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
@@ -9,10 +10,15 @@ import {
   DEFAULT_TEAM_MEMBERS,
   MEMBER_JANE,
   MEMBER_JOHN,
+  TEAM_BILLING_STATUS,
+  TEAM_WORKSPACE,
+  TEAM_MEMBER_WORKSPACE,
   VIEWER
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 // Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
 // against fully mocked endpoints; `comfyPage` would try to reach the OSS
@@ -62,12 +68,119 @@ async function openChangeRoleSubmenu(page: Page) {
 }
 
 test.describe('Members plan gating', { tag: '@cloud' }, () => {
+  test('full workspace keeps member and pending-invite management', async ({
+    page
+  }) => {
+    await new CloudWorkspaceMockHelper(page).setup(
+      DEFAULT_TEAM_MEMBERS,
+      TEAM_WORKSPACE,
+      { ...TEAM_BILLING_STATUS, occupied_seats: 30 },
+      {
+        can_manage_members: true,
+        can_invite_members: false,
+        can_change_seats: false
+      }
+    )
+    const invites: PendingInvite[] = Array.from({ length: 26 }, (_, index) => ({
+      id: `invite-${index}`,
+      email: `pending-${index}@test.comfy.org`,
+      invited_at: '2026-01-01T00:00:00Z',
+      expires_at: '2099-01-01T00:00:00Z',
+      token: `token-${index}`
+    }))
+    await page.route('**/api/workspace/invites', (route) =>
+      route.fulfill(jsonRoute({ invites }))
+    )
+    await page.route('**/api/workspace/invites/invite-0/resend', (route) =>
+      route.fulfill(jsonRoute(invites[0]))
+    )
+    const content = await openMembersTab(page)
+
+    await expect(
+      content.getByRole('button', { name: 'Invite member' })
+    ).toHaveCount(0)
+    await menuButton(memberRow(content, MEMBER_JANE.email)).click()
+    await openChangeRoleSubmenu(page)
+    await page
+      .getByRole('menuitemradio', { name: 'Owner', exact: true })
+      .click()
+    await expect(
+      page.getByRole('heading', { name: 'Make Jane an owner?' })
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+
+    await content.getByRole('button', { name: 'Pending (26)' }).click()
+    const inviteRow = memberRow(content, invites[0].email)
+    await expect(inviteRow).toBeVisible()
+    await menuButton(inviteRow).click()
+    await page
+      .getByTestId(TestIds.menu.moreMenuContent)
+      .getByRole('button', { name: 'Resend invite' })
+      .click()
+    await expect(page.getByText('Invite resent')).toBeVisible()
+    await menuButton(inviteRow).click()
+    await page
+      .getByTestId(TestIds.menu.moreMenuContent)
+      .getByRole('button', { name: 'Cancel invite' })
+      .click()
+    await expect(
+      page.getByRole('heading', { name: 'Uninvite this person?' })
+    ).toBeVisible()
+  })
+
+  test('team member can view and search the returned roster without management controls', async ({
+    page
+  }) => {
+    await new CloudWorkspaceMockHelper(page).setup(
+      DEFAULT_TEAM_MEMBERS.map((member) =>
+        member.id === VIEWER.id ? { ...member, role: 'member' } : member
+      ),
+      TEAM_MEMBER_WORKSPACE,
+      TEAM_BILLING_STATUS,
+      { can_manage_members: false, can_invite_members: false }
+    )
+    const content = await openMembersTab(page)
+
+    await expect(
+      content.getByText(MEMBER_JANE.email, { exact: true })
+    ).toBeVisible()
+    await expect(content.getByText('Role', { exact: true })).toBeVisible()
+    await expect(content.getByRole('button', { name: /^Pending/ })).toHaveCount(
+      0
+    )
+    await expect(
+      content.getByRole('button', { name: 'Invite member' })
+    ).toHaveCount(0)
+    await expect(menuButton(memberRow(content, MEMBER_JANE.email))).toHaveCount(
+      0
+    )
+    const search = content.getByRole('combobox')
+    await expect(search).toBeVisible()
+    await search.fill(MEMBER_JANE.email)
+    await expect(
+      content.getByText(MEMBER_JANE.email, { exact: true })
+    ).toBeVisible()
+    await expect(
+      content.getByText(MEMBER_JOHN.email, { exact: true })
+    ).toHaveCount(0)
+  })
+
   test('personal workspace with a Team plan gets member management', async ({
     page
   }) => {
     await new CloudWorkspaceMockHelper(page).setup(
       DEFAULT_TEAM_MEMBERS,
       workspace('personal', 'owner')
+    )
+    const invite: PendingInvite = {
+      id: 'personal-invite',
+      email: 'personal-pending@test.comfy.org',
+      invited_at: '2026-01-01T00:00:00Z',
+      expires_at: '2099-01-01T00:00:00Z',
+      token: 'personal-invite-token'
+    }
+    await page.route('**/api/workspace/invites', (route) =>
+      route.fulfill(jsonRoute({ invites: [invite] }))
     )
     const content = await openMembersTab(page)
 
@@ -83,6 +196,9 @@ test.describe('Members plan gating', { tag: '@cloud' }, () => {
       content.getByRole('button', { name: 'Upgrade to Team' })
     ).toHaveCount(0)
     await expect(menuButton(memberRow(content, CREATOR.email))).toHaveCount(0)
+
+    await content.getByRole('button', { name: 'Pending (1)' }).click()
+    await expect(content.getByText(invite.email, { exact: true })).toBeVisible()
 
     await inviteButton.click()
     await expect(

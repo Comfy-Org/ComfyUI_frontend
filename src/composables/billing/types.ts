@@ -36,6 +36,8 @@ export interface SubscriptionInfo {
   hasFunds: boolean
   /** Agent funds across shared credits and the Agent-scoped balance. */
   agentHasFunds: boolean
+  /** The Agent's dedicated granted balance, excluding shared workspace credits. */
+  agentScopedHasFunds?: boolean
 }
 
 /**
@@ -56,6 +58,8 @@ export interface BalanceInfo {
 export interface BillingActions {
   initialize: () => Promise<void>
   fetchStatus: () => Promise<void>
+  /** True only when this call's status response was adopted for the active billing scope. */
+  fetchStatusFresh?: () => Promise<boolean>
   fetchBalance: () => Promise<void>
   subscribe: (
     planSlug: string,

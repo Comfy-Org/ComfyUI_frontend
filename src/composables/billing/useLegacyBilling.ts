@@ -97,6 +97,14 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const occupiedSeats = computed(() => null)
 
   const hasFunds = computed(() => (authStore.balance?.amount_micros ?? 0) > 0)
+  const agentHasFunds = computed(
+    () =>
+      legacySubscriptionStatus.value?.scoped_effective_has_funds?.agent ??
+      hasFunds.value
+  )
+  const agentScopedHasFunds = computed(
+    () => legacySubscriptionStatus.value?.scoped_has_funds?.agent
+  )
   const subscription = computed<SubscriptionInfo | null>(() => {
     // A past-due legacy status has no tier and is inactive, yet must still
     // reach the payment-recovery banner.
@@ -118,7 +126,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
       endDate: legacySubscriptionStatus.value?.cancel_at ?? null,
       isCancelled: isCancelled.value,
       hasFunds: hasFunds.value,
-      agentHasFunds: hasFunds.value
+      agentHasFunds: agentHasFunds.value,
+      agentScopedHasFunds: agentScopedHasFunds.value
     }
   })
 
@@ -183,11 +192,11 @@ export function useLegacyBilling(): BillingState & BillingActions {
     }
   }
 
-  async function fetchStatus(): Promise<void> {
+  async function fetchStatusFresh(): Promise<boolean> {
     isLoading.value = true
     error.value = null
     try {
-      await legacyFetchStatus()
+      return (await legacyFetchStatus()) !== null
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to fetch subscription'
@@ -195,6 +204,10 @@ export function useLegacyBilling(): BillingState & BillingActions {
     } finally {
       isLoading.value = false
     }
+  }
+
+  async function fetchStatus(): Promise<void> {
+    await fetchStatusFresh()
   }
 
   async function fetchBalance(): Promise<void> {
@@ -302,6 +315,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     // Actions
     initialize,
     fetchStatus,
+    fetchStatusFresh,
     fetchBalance,
     subscribe,
     previewSubscribe,

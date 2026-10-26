@@ -160,7 +160,13 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   ): void {
     const ga4EventName =
       event === 'modal_opened' ? 'view_promotion' : 'select_promotion'
-    this.pushEvent(ga4EventName, metadata ? { ...metadata } : undefined)
+    this.pushEvent(
+      ga4EventName,
+      metadata && {
+        current_tier: metadata.current_tier,
+        reason: metadata.reason
+      }
+    )
   }
 
   trackSignupOpened(): void {

@@ -67,8 +67,6 @@ export const cachedBillingControlEnabled = useStorage<boolean | undefined>(
   undefined
 )
 
-export const cachedLegacyBillingMigrationEnabled = ref<boolean | undefined>()
-
 /**
  * Last authenticated answer for the agent allowlist, so a transient /features
  * failure cannot unmount the panel mid-session. Deliberately NOT `useStorage`

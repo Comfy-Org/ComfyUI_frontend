@@ -212,7 +212,8 @@ describe('eventUtils', () => {
           display_name: 'My asset',
           attachment_ref: 'stored-asset.png',
           media_kind: 'image',
-          preview_url: 'http://localhost/api/assets/asset/content'
+          preview_url: 'http://localhost/api/assets/asset/content',
+          media_url: 'http://localhost/api/assets/asset/original'
         })
       )
       dataTransfer.setData('text/uri-list', 'http://localhost/api/view?x=1')
@@ -222,7 +223,8 @@ describe('eventUtils', () => {
         uri: 'http://localhost/api/view?x=1',
         ref: 'stored-asset.png',
         kind: 'image',
-        previewUrl: 'http://localhost/api/assets/asset/content'
+        previewUrl: 'http://localhost/api/assets/asset/content',
+        mediaUrl: 'http://localhost/api/assets/asset/original'
       })
     })
 
@@ -242,7 +244,8 @@ describe('eventUtils', () => {
         uri: undefined,
         ref: 'stored-asset.mp4',
         kind: 'video',
-        previewUrl: undefined
+        previewUrl: undefined,
+        mediaUrl: undefined
       })
     })
 

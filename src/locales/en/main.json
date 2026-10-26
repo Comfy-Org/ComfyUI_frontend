@@ -2718,6 +2718,10 @@
         "bodyWithEmail": "{email} signs in with your organization's single sign-on. Continue with SSO to sign in.",
         "dismiss": "Not now"
       },
+      "outsideOrganization": {
+        "title": "This workspace is managed by single sign-on",
+        "body": "Your account isn't part of the organization that manages this workspace, so it can't open it. Switch to another workspace, or ask the organization's admin for access."
+      },
       "emailLabel": "Work email",
       "emailPlaceholder": "Enter your work email",
       "submit": "Continue",
@@ -2889,8 +2893,13 @@
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
       "chargedImmediatelyNote": "Your saved payment method is charged immediately.",
       "paymentDetailsRequiredNote": "You'll be asked to add a payment method to complete this purchase.",
-      "noPaymentMethodError": "No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.",
       "manageBillingError": "Failed to open the billing portal. Please try again.",
+      "noPaymentMethodCheckoutHint": "This workspace has no card saved for one-click top-ups. Pay on a checkout page instead.",
+      "continueToCheckout": "Continue to checkout",
+      "checkoutBlockedTitle": "Checkout didn't open",
+      "checkoutBlockedBody": "Your browser blocked the new tab. Open checkout to finish paying.",
+      "openCheckout": "Open checkout",
+      "checkoutOpenFailed": "The payment page couldn't open. Nothing was charged. Try again.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -2929,6 +2938,7 @@
     "details": "Details",
     "time": "Time",
     "additionalInfo": "Additional Info",
+    "charge": "Charge",
     "model": "Model",
     "added": "Added",
     "accountInitialized": "Account initialized",
@@ -2939,7 +2949,8 @@
       "accountCreated": "Account Created",
       "apiUsage": "API Usage",
       "gpuUsage": "GPU Usage",
-      "apiNodeUsage": "Partner Node Usage"
+      "apiNodeUsage": "Partner Node Usage",
+      "agentUsage": "Agent Usage"
     },
     "unified": {
       "message": "Credits have been unified",
@@ -3800,6 +3811,39 @@
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "failedToSwitch": "Failed to switch workspace"
+  },
+  "deploymentSwitcher": {
+    "runningOn": "Running on",
+    "comfyCloud": "Comfy Cloud",
+    "comfyCloudCaption": "Comfy's own node set",
+    "deployment": "{build} v{version}",
+    "unnamedDeployment": "Deployment {id}",
+    "pickGone": "The deployment you picked no longer exists.",
+    "pickGoneDetail": "This browser now runs on Comfy Cloud. Pick a deployment again from the account menu to use one.",
+    "defaultGone": "The workspace's default deployment no longer exists.",
+    "namedDeployment": "{name}",
+    "namedCaption": "{release} · {caption}",
+    "caption": "{id}, {status}",
+    "captionDefault": "{id}, {status} · Workspace default",
+    "noDeployments": "This workspace has no deployments yet. Deploy a Release on the Developer Platform first.",
+    "buildsHidden": "Build names are not visible to this account.",
+    "reloadNote": "Picking reloads the editor with the deployment's nodes. When the deployment is updated to another Release, reload to get its new nodes.",
+    "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
+    "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
+    "reload": "Reload",
+    "failedToSwitch": "Could not switch",
+    "switchTimedOut": "This change took too long. Reload the page before trying again.",
+    "workspaceDefault": "Workspace default",
+    "workspaceDefaultIs": "Workspace default: {deployment}",
+    "noWorkspaceDefault": "No workspace default: members start on Comfy Cloud.",
+    "followWorkspace": "Use the workspace default",
+    "followWorkspaceCaption": "Drop this browser's own pick and run on {deployment}",
+    "setAsDefault": "Set as workspace default",
+    "clearDefault": "Clear workspace default",
+    "failedToSetDefault": "Could not change the workspace default",
+    "linkTimedOut": "This deployment took too long to open. Try the link again.",
+    "linkRefused": "Couldn't open this deployment",
+    "linkWorkspaceRefused": "Couldn't switch to that workspace. You're still in {workspaceName}."
   },
   "selectionToolbox": {
     "executeButton": {
@@ -4796,7 +4840,12 @@
         "toastMessageOneCloud": "This node isn't supported on Cloud.",
         "toastMessageOneOss": "This workflow uses a custom node that isn't installed. Install it from the registry or replace the node.",
         "toastMessageManyCloud": "This workflow uses nodes that aren't supported on Cloud.",
-        "toastMessageManyOss": "{count} nodes require missing node packs."
+        "toastMessageManyOss": "{count} nodes require missing node packs.",
+        "displayMessageDeployment": "These nodes aren't on {deployment}. Replace them, or pick a deployment that has them.",
+        "toastTitleOneDeployment": "{nodeType} isn't on {deployment}",
+        "toastTitleManyDeployment": "Nodes aren't on {deployment}",
+        "toastMessageOneDeployment": "Replace this node, or pick a deployment that has it.",
+        "toastMessageManyDeployment": "Replace these nodes, or pick a deployment that has them."
       },
       "swap_nodes": {
         "displayMessage": "Some nodes can be replaced with alternatives",
@@ -4815,7 +4864,12 @@
         "toastMessageOneCloud": "This model isn't supported. Choose a different one.",
         "toastMessageOneOss": "{nodeName} is missing a required model file.",
         "toastMessageManyCloud": "Some models aren't supported. Choose different ones.",
-        "toastMessageManyOss": "{count} model files are missing."
+        "toastMessageManyOss": "{count} model files are missing.",
+        "displayMessageDeployment": "These models aren't on {deployment}. Open the node to choose one it has.",
+        "toastTitleOneDeployment": "{modelName} isn't on {deployment}",
+        "toastTitleManyDeployment": "Models aren't on {deployment}",
+        "toastMessageOneDeployment": "Choose a different model, or pick a deployment that has it.",
+        "toastMessageManyDeployment": "Choose different models, or pick a deployment that has them."
       },
       "missing_media": {
         "displayMessage": "A required media input has no file selected.",
@@ -5534,7 +5588,8 @@
     "entryButton": "Agent",
     "feedbackCaption": "Share feedback",
     "freeUseNoticeLabel": "Free use notice",
-    "freeUseNotice": "Prompts and workflow runs are FREE during BETA.",
+    "firstChatFreeNotice": "Try your first chat for free!",
+    "creditTransitionNotice": "You've used your free agent credits. Further agent activity uses your workspace credits, which may include paid credits.",
     "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
     "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
     "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",
@@ -5683,6 +5738,7 @@
     "sendFailed": "Message failed to send",
     "recoveredTurnFailed": "The agent could not complete this response.",
     "sendBusy": "A message is already being sent",
+    "sendTurnInProgress": "This chat still has a response running. Wait for it to finish, or stop it, then send again.",
     "retryAfterSeconds": "You can try again in {seconds}s.",
     "malformedEvent": "The agent sent an event this panel could not read",
     "coachProgress": "{current} of {total}",
@@ -5714,6 +5770,7 @@
     "workflowSyncFailedTitle": "This workflow can't sync",
     "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",
     "workflowSyncFailedDetailCatalogMismatch": "This workflow uses a node catalog that is incompatible with this workspace. Your canvas has been left unchanged.",
+    "workflowSyncFailedDetailStaleClient": "This page is out of date, so the agent's changes can't be shown. Reload the page to see them.",
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",

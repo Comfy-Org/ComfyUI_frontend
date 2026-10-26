@@ -32,10 +32,11 @@
       "
     >
       <Switch
-        v-model="modelValue"
+        :model-value
         :disabled="Boolean(widget.options?.disabled)"
         :readonly="Boolean(widget.options?.read_only)"
         :aria-label="widget.label || widget.name"
+        @update:model-value="updateValue"
       />
     </div>
   </WidgetLayoutField>
@@ -47,6 +48,7 @@ import { useI18n } from 'vue-i18n'
 
 import Switch from '@/components/ui/switch/Switch.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
@@ -70,7 +72,12 @@ const hasLabels = computed(() => {
 
 function handleOptionChange(value: string | undefined) {
   if (value) {
-    modelValue.value = value === 'on'
+    updateValue(value === 'on')
   }
+}
+
+function updateValue(value: boolean) {
+  modelValue.value = value
+  useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
 }
 </script>

@@ -50,6 +50,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -241,10 +242,12 @@ const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null,
   type: 'workspace' as 'workspace' | 'legacy',
   status: 'paid' as BillingStatus | null,
+  isActive: true,
   fetchStatus: vi.fn<() => Promise<void>>()
 }))
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
+const paywallAgentScopedHasFunds = ref<boolean | undefined>()
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -257,6 +260,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
+import { useBillingIdentity } from './composables/useBillingIdentity'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
@@ -330,12 +334,15 @@ beforeEach(() => {
           ? null
           : fromPartial({
               hasFunds: paywallHasFunds.value,
-              agentHasFunds: paywallAgentHasFunds.value ?? paywallHasFunds.value
+              agentHasFunds:
+                paywallAgentHasFunds.value ?? paywallHasFunds.value,
+              agentScopedHasFunds: paywallAgentScopedHasFunds.value
             })
       ),
       tier: computed(() => paywallBilling.tier),
       type: computed(() => paywallBilling.type),
       billingStatus: computed(() => paywallBilling.status),
+      canAccessSubscriptionFeatures: computed(() => paywallBilling.isActive),
       fetchStatus: paywallBilling.fetchStatus
     })
   )
@@ -448,9 +455,11 @@ beforeEach(() => {
   paywallBilling.tier = 'STANDARD'
   paywallBilling.type = 'workspace'
   paywallBilling.status = 'paid'
+  paywallBilling.isActive = true
   paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
+  paywallAgentScopedHasFunds.value = undefined
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -550,6 +559,20 @@ function renderWithSelectedTarget() {
   return render(AgentPanelRoot, { global: { plugins: [i18n] } })
 }
 
+function activateThread(): void {
+  const conversation = useAgentConversationStore()
+  conversation.setThreadId('th-active')
+  const turnId = toTurnId('msg-first')
+  conversation.recordUser(turnId, 'first message')
+  conversation.messages.push({
+    id: turnId,
+    role: 'assistant',
+    parts: [{ type: 'text', text: 'First reply', state: 'done' }],
+    streaming: false,
+    thinking: false
+  })
+}
+
 async function sendFromComposer(text: string): Promise<void> {
   const textbox = screen.getByRole('textbox')
   await userEvent.click(textbox)
@@ -614,9 +637,13 @@ describe('AgentPanelRoot first-use experience', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('forwards free-use notice telemetry with its rendered placement', async () => {
+  it('forwards free-use notice interactions to the experiment', async () => {
+    const reportFreeUseNotice = vi.fn()
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
-      fromPartial({ variant: ref('top-banner') })
+      fromPartial({
+        variant: ref('top-banner'),
+        reportNotice: reportFreeUseNotice
+      })
     )
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -627,10 +654,30 @@ describe('AgentPanelRoot first-use experience', () => {
       within(notice).getByRole('button', { name: 'Dismiss' })
     )
 
-    expect(useTelemetry()!.trackAgentFreeUseNotice).toHaveBeenCalledWith({
-      action: 'dismissed',
-      placement: 'top-banner'
-    })
+    // The experiment owns the event now, so it can drop a repeat impression
+    // and stay silent under a QA override. The panel only reports what the
+    // viewer did, and with which rendered placement.
+    expect(reportFreeUseNotice.mock.calls).toEqual([
+      [{ action: 'shown', placement: 'top-banner' }],
+      [{ action: 'dismissed', placement: 'top-banner' }]
+    ])
+  })
+
+  it('says nothing about free turns once the grant is spent', async () => {
+    const reportFreeUseNotice = vi.fn()
+    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
+      fromPartial({
+        variant: ref('top-banner'),
+        reportNotice: reportFreeUseNotice
+      })
+    )
+    paywallAgentScopedHasFunds.value = false
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    expect(reportFreeUseNotice).not.toHaveBeenCalled()
   })
 })
 
@@ -752,6 +799,30 @@ describe('AgentPanelRoot onboarding', () => {
     } finally {
       firstRunHolds.value = false
     }
+  })
+
+  it('defers the coach while a global dialog is open, like the desktop sign-in confirm', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-dialog'
+    })
+    const dialogStore = useDialogStore()
+    const dialog = dialogStore.showDialog({
+      component: defineComponent({})
+    })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(
+      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).not.toBeInTheDocument()
+    expect(
+      useTelemetry()!.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'dialog_open' })
+
+    dialogStore.closeDialog({ key: dialog.key })
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
   })
 
   it('stays quiet when App Mode pauses a coach that was already on screen', async () => {
@@ -1570,6 +1641,226 @@ describe('AgentPanelRoot paywall telemetry', () => {
   })
 })
 
+describe('AgentPanelRoot Agent credit transition notice', () => {
+  const NOTICE = 'agent-credit-transition-notice'
+
+  function observeAgentScopedFunds(scopedHasFunds: boolean | undefined): void {
+    paywallAgentScopedHasFunds.value = scopedHasFunds
+    if (scopedHasFunds === undefined) return
+    useAgentPanelStore().observeAgentScopedFunds(
+      useBillingIdentity().value,
+      scopedHasFunds
+    )
+  }
+
+  beforeEach(() => {
+    paywallHasFunds.value = true
+    paywallAgentHasFunds.value = true
+  })
+
+  it('shows only after the Agent-scoped balance changes from available to exhausted', async () => {
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+
+    expect(await screen.findByTestId(NOTICE)).toHaveTextContent(
+      i18n.global.t('agent.creditTransitionNotice')
+    )
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
+  it('removes the first-chat offer when the scoped grant is exhausted', async () => {
+    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
+      fromPartial({ variant: ref('near-composer') })
+    )
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      await screen.findByRole('note', { name: 'Free use notice' })
+    ).toBeInTheDocument()
+
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+
+    expect(
+      screen.queryByRole('note', { name: 'Free use notice' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('reports one impression however often the panel remounts', async () => {
+    observeAgentScopedFunds(true)
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(NOTICE)
+
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
+  it('reports an impression first shown without telemetry once telemetry is available', async () => {
+    observeAgentScopedFunds(true)
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    vi.mocked(useTelemetry).mockReturnValue(null)
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+    vi.mocked(useTelemetry).mockReturnValue(telemetry)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(NOTICE)
+
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
+  it('does not infer a transition when the first scoped-balance read is false', async () => {
+    observeAgentScopedFunds(false)
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(undefined)
+    await nextTick()
+    observeAgentScopedFunds(false)
+    await nextTick()
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+  })
+
+  it('preserves the last defined scoped balance across an omitted read and panel remount', async () => {
+    observeAgentScopedFunds(true)
+    const firstPanel = render(AgentPanelRoot, {
+      global: { plugins: [i18n] }
+    })
+    await screen.findByRole('textbox')
+    firstPanel.unmount()
+
+    observeAgentScopedFunds(undefined)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(false)
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('defers an observed transition until Agent consent is ready', async () => {
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+    await nextTick()
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    Object.assign(useAgentConsentStore(), { accepted: true })
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('withholds the notice while the workspace has no active subscription', async () => {
+    paywallBilling.isActive = false
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+    await nextTick()
+
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+  })
+
+  it('defers the notice until the billing capability read settles', async () => {
+    paywallCapabilities.isReady = false
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+    await nextTick()
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    paywallCapabilities.isReady = true
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('yields to the exhaustion paywall when no funding remains, then shows the notice once workspace funding returns', async () => {
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    activateThread()
+
+    observeAgentScopedFunds(false)
+    paywallAgentHasFunds.value = false
+    paywallHasFunds.value = false
+
+    expect(
+      await screen.findByTestId('agent-credits-exhausted-paywall')
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    paywallAgentHasFunds.value = true
+    paywallHasFunds.value = true
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('reports a new impression when the scoped balance refills and runs out again', async () => {
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+    observeAgentScopedFunds(true)
+    await nextTick()
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+
+    expect(telemetry.trackAgentCreditTransitionNotice.mock.calls).toEqual([
+      [{ action: 'shown' }],
+      [{ action: 'shown' }]
+    ])
+  })
+
+  it('shows again for a dismissed notice once the scoped balance refills and runs out again', async () => {
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(false)
+    const notice = await screen.findByTestId(NOTICE)
+
+    await userEvent.click(
+      within(notice).getByRole('button', {
+        name: i18n.global.t('agent.dismiss')
+      })
+    )
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    observeAgentScopedFunds(true)
+    await nextTick()
+    observeAgentScopedFunds(false)
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+    expect(telemetry.trackAgentCreditTransitionNotice.mock.calls).toEqual([
+      [{ action: 'shown' }],
+      [{ action: 'dismissed' }],
+      [{ action: 'shown' }]
+    ])
+  })
+})
+
 /**
  * The standing credits-exhausted surface.
  *
@@ -1606,6 +1897,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
       paywallBilling.tier = subscription
       paywallHasFunds.value = effectiveFunds
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      activateThread()
       await screen.findByRole('textbox')
 
       expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
@@ -1615,18 +1907,22 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it.for([
     {
       subscription: null,
+      isActive: false,
       effectiveFunds: false
     },
     {
       subscription: 'STANDARD' as const,
+      isActive: true,
       effectiveFunds: false
     }
   ])(
     'shows for subscription=$subscription without effective funds',
-    async ({ subscription, effectiveFunds }) => {
+    async ({ subscription, isActive, effectiveFunds }) => {
       paywallBilling.tier = subscription
+      paywallBilling.isActive = isActive
       paywallHasFunds.value = effectiveFunds
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      activateThread()
 
       expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
     }
@@ -1635,6 +1931,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('shows an upgrade path when the workspace is out of credits, with no refusal first', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
 
     const card = await screen.findByTestId(STANDING)
 
@@ -1657,6 +1954,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     paywallHasFunds.value = false
     workflowStore.activeWorkflow = addTab('workflows/current.json')
     renderWithSelectedTarget()
+    activateThread()
     await screen.findByTestId(STANDING)
 
     await sendFromComposer('continue anyway')
@@ -1668,6 +1966,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('reports the impression against the credits_exhausted surface', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
 
     await waitFor(() =>
       expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
@@ -1680,6 +1979,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('attributes its CTA to the credits_exhausted surface and opens the credits flow', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     const card = await screen.findByTestId(STANDING)
 
     await userEvent.click(
@@ -1700,16 +2000,78 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('stays hidden while the workspace has funds', async () => {
     paywallHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByRole('textbox')
 
     expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
     expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
+  it('stays hidden on an empty thread until the first user message', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+
+    activateThread()
+
+    expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
+        reason: 'no_funds',
+        surface: 'credits_exhausted'
+      })
+    )
+  })
+
+  it('stays hidden while a restored thread has not loaded any messages', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    useAgentConversationStore().setThreadId('th-restoring')
+    await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  it('shows after a first send that failed before the thread was created', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    useAgentConversationStore().recordFailedSend(
+      toTurnId('msg-failed-first'),
+      'Build a red fox workflow',
+      'Something went wrong'
+    )
+
+    expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
+  })
+
+  it('shows once a refused first send has its inline card resolved', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    const conversation = useAgentConversationStore()
+
+    conversation.recordPaywall(toTurnId('msg-refused-first'), 'continue')
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+
+    conversation.resolvePaywalls()
+
+    expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
+  })
+
   it('stays hidden while Agent-scoped gratis can fund the turn', async () => {
     paywallHasFunds.value = false
     paywallAgentHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByRole('textbox')
 
     expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
@@ -1720,6 +2082,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     Object.assign(useAgentConsentStore(), { accepted: false })
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByRole('textbox')
 
     expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
@@ -1730,6 +2093,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     paywallHasFunds.value = false
     paywallBilling.type = 'legacy'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByRole('textbox')
 
     expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
@@ -1741,6 +2105,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
       paywallHasFunds.value = false
       paywallBilling.status = status
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      activateThread()
       await screen.findByRole('textbox')
 
       expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
@@ -1752,6 +2117,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('stays hidden while the billing read has not answered', async () => {
     paywallHasFunds.value = null
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByRole('textbox')
 
     expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
@@ -1765,6 +2131,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     paywallHasFunds.value = false
     paywallCapabilities.isReady = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByRole('textbox')
     await nextTick()
 
@@ -1779,6 +2146,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     paywallCapabilities.canTopUp = false
     paywallCapabilities.hasResolvedCapabilities = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByRole('textbox')
     await nextTick()
 
@@ -1790,6 +2158,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     paywallWorkspace.role = 'member'
     paywallCapabilities.canTopUp = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByRole('textbox')
 
     expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
@@ -1800,6 +2169,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('yields to an inline paywall card rather than duplicating it', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByTestId(STANDING)
 
     useAgentConversationStore().recordPaywall(
@@ -1816,6 +2186,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('shows the standing card when a normal reply follows an older unresolved inline card', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     const conversation = useAgentConversationStore()
     conversation.recordPaywall(toTurnId('msg-paywall'), 'continue')
     await waitFor(() =>
@@ -1836,6 +2207,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('returns after the inline paywall is resolved and credits run out again', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByTestId(STANDING)
 
     useAgentConversationStore().recordPaywall(
@@ -1858,6 +2230,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('reports only after returning from chat history', async () => {
     paywallHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByRole('textbox')
 
     await userEvent.click(
@@ -1894,6 +2267,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     const firstPanel = render(AgentPanelRoot, {
       global: { plugins: [i18n] }
     })
+    activateThread()
     await screen.findByTestId(STANDING)
     await waitFor(() =>
       expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
@@ -1921,6 +2295,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
     firstPanel.unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByTestId(STANDING)
 
     expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
@@ -1929,6 +2304,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('disappears once funds arrive', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByTestId(STANDING)
 
     paywallHasFunds.value = true
@@ -1943,6 +2319,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('reports one impression per exhaustion episode, not per re-evaluation', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByTestId(STANDING)
     await waitFor(() =>
       expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
@@ -1958,6 +2335,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('does not re-arm the impression when capabilities refresh while still exhausted', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByTestId(STANDING)
     await waitFor(() =>
       expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
@@ -1974,6 +2352,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('does not report the same exhaustion episode after a panel remount', async () => {
     paywallHasFunds.value = false
     const firstPanel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByTestId(STANDING)
     await waitFor(() =>
       expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
@@ -1981,6 +2360,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
     firstPanel.unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     await screen.findByTestId(STANDING)
 
     expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
@@ -1988,6 +2368,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('refreshes workspace billing after an active turn becomes idle', async () => {
     paywallHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     const conversation = useAgentConversationStore()
     const turnId = toTurnId('billing-refresh')
 
@@ -2010,6 +2391,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     paywallHasFunds.value = true
     paywallBilling.type = 'legacy'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     const conversation = useAgentConversationStore()
     const turnId = toTurnId('legacy-billing-refresh')
 
@@ -2031,6 +2413,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     paywallHasFunds.value = true
     paywallBilling.fetchStatus.mockRejectedValueOnce(refreshError)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    activateThread()
     const conversation = useAgentConversationStore()
     const turnId = toTurnId('failed-billing-refresh')
 

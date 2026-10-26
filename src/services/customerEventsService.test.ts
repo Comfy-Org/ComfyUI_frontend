@@ -22,7 +22,8 @@ const mockAxiosInstance = vi.hoisted(() => ({
 }))
 
 const mockI18n = vi.hoisted(() => ({
-  d: vi.fn()
+  d: vi.fn(),
+  locale: { value: 'en' }
 }))
 
 // Mock dependencies
@@ -33,9 +34,10 @@ vi.mock<unknown>(import('axios'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   d: mockI18n.d,
-  t: (key: string) => key
+  t: (key: string) => key,
+  i18n: { global: { locale: mockI18n.locale } }
 }))
 
 vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
@@ -335,7 +337,8 @@ describe('useCustomerEventsService', () => {
       account_created: 'credits.eventTypes.accountCreated',
       api_usage_completed: 'credits.eventTypes.apiUsage',
       gpu_usage: 'credits.eventTypes.gpuUsage',
-      api_node_usage: 'credits.eventTypes.apiNodeUsage'
+      api_node_usage: 'credits.eventTypes.apiNodeUsage',
+      agent_usage: 'credits.eventTypes.agentUsage'
     }
 
     it('maps known legacy and unified event types to expected i18n keys', () => {
@@ -365,6 +368,7 @@ describe('useCustomerEventsService', () => {
     it('returns warning for unified usage events', () => {
       expect(service.getEventSeverity('gpu_usage')).toBe('warning')
       expect(service.getEventSeverity('api_node_usage')).toBe('warning')
+      expect(service.getEventSeverity('agent_usage')).toBe('warning')
     })
 
     it('should return default severity for unknown event types', () => {
@@ -471,6 +475,78 @@ describe('useCustomerEventsService', () => {
       expect(result).toContain('<strong>Duration:</strong> 5,000')
       expect(result).toContain('<strong>Status:</strong> completed')
       expect(result).toContain('<br>')
+    })
+
+    it.for([
+      {
+        charge: 33_044,
+        expected: '<strong>credits.charge:</strong> 7 credits.credits'
+      },
+      {
+        charge: '36209',
+        expected: '<strong>credits.charge:</strong> 8 credits.credits'
+      },
+      {
+        charge: 0,
+        expected: '<strong>credits.charge:</strong> 0 credits.credits'
+      },
+      { charge: 'n/a', expected: '<strong>Charge Micro Usd:</strong> n/a' }
+    ])(
+      'shows charge_micro_usd $charge in whole credits',
+      ({ charge, expected }) => {
+        const event = {
+          event_id: 'agent-1',
+          event_type: 'agent_usage',
+          params: { charge_micro_usd: charge },
+          createdAt: '2024-01-01T10:00:00Z'
+        }
+
+        expect(service.getTooltipContent(event)).toBe(expected)
+      }
+    )
+
+    it('formats the charge in the app locale', () => {
+      mockI18n.locale.value = 'de'
+      try {
+        const event = {
+          event_id: 'agent-2',
+          event_type: 'agent_usage',
+          params: { charge_micro_usd: 10_000_000_000 },
+          createdAt: '2024-01-01T10:00:00Z'
+        }
+
+        expect(service.getTooltipContent(event)).toBe(
+          '<strong>credits.charge:</strong> 2.110.000 credits.credits'
+        )
+      } finally {
+        mockI18n.locale.value = 'en'
+      }
+    })
+
+    it('renders param keys and values as text, not markup', () => {
+      const event = {
+        event_id: 'evt-html',
+        event_type: 'api_usage_completed',
+        params: { '<b>key</b>': '<img src=x onerror="x()">' },
+        createdAt: '2024-01-01T10:00:00Z'
+      }
+
+      expect(service.getTooltipContent(event)).toBe(
+        '<strong>&lt;b&gt;key&lt;/b&gt;:</strong> &lt;img src=x onerror=&quot;x()&quot;&gt;'
+      )
+    })
+
+    it('keeps other params next to the charge', () => {
+      const event = {
+        event_id: 'agent-3',
+        event_type: 'agent_usage',
+        params: { charge_micro_usd: 33_044, model: 'claude' },
+        createdAt: '2024-01-01T10:00:00Z'
+      }
+
+      expect(service.getTooltipContent(event)).toBe(
+        '<strong>credits.charge:</strong> 7 credits.credits<br><strong>Model:</strong> claude'
+      )
     })
 
     it('should return empty string when no parameters', () => {

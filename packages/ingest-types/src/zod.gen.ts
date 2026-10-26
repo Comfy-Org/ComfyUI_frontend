@@ -176,43 +176,6 @@ export const zWorkflowPublishInfo = z.object({
 })
 
 /**
- * The workflow to read.
- */
-export const zWorkflowPacksRequest = z.object({
-  workflow: z.record(z.unknown())
-})
-
-/**
- * One node class of the workflow that Cloud cannot confirm a pack provides, and why.
- */
-export const zWorkflowMissingNode = z.object({
-  class_type: z.string(),
-  pack: z.string().optional(),
-  reason: z.enum(['github', 'unknown', 'unchecked', 'stamped']),
-  repository: z.string().optional()
-})
-
-/**
- * One node pack the workflow needs, as it would be installed.
- */
-export const zWorkflowPack = z.object({
-  id: z.string().optional(),
-  name: z.string(),
-  repository: z.string().optional(),
-  version: z.string().optional()
-})
-
-/**
- * What a workflow needs. A node class built into ComfyUI, or served by a partner provider, is in none of the lists: there is nothing to install for it.
- */
-export const zWorkflowPacks = z.object({
-  format: z.enum(['api', 'ui']),
-  matched_packs: z.array(zWorkflowPack),
-  missing_nodes: z.array(zWorkflowMissingNode),
-  stamped_packs: z.array(zWorkflowPack)
-})
-
-/**
  * Pagination metadata included in list responses. Supports both legacy
  * offset/limit pagination and cursor-based pagination. When cursor-based
  * pagination is used, `next_cursor` is the primary pagination token and
@@ -458,7 +421,8 @@ export const zTopupQuoteResponse = z.object({
 })
 
 /**
- * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. The optional produced_asset field is a strict exception containing only the server-recorded id/hash from a successful asset-producing media call. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ * This object is projected at read time by services/agent/internal/persist.ToolCallsForThread from agent_tool_calls; it is never stored in agent_messages.content, so there is no legacy persisted shape. Because of that projection the contract holds for every row ever served: tool_call_id is always present (it falls back to id for rows written before the column existed), status is always one of the enum values (the audit-table word "ok" is translated by ToolCallWireStatus), and duration_ms is always an integer when present. Clients (the frontend's zPersistedToolCallSummary) must not relax these fields to parse "historical" rows — a row that fails this schema is a server bug (BE-20134).
  */
 export const zToolCallSummary = z.object({
   duration_ms: z.number().int().optional(),
@@ -466,6 +430,12 @@ export const zToolCallSummary = z.object({
   finished_at: z.string().datetime().optional(),
   id: z.string(),
   job_id: z.string().optional(),
+  produced_asset: z
+    .object({
+      hash: z.string(),
+      id: z.string()
+    })
+    .optional(),
   started_at: z.string().datetime().optional(),
   status: z.enum(['success', 'error']),
   tool_call_id: z.string(),
@@ -1360,9 +1330,12 @@ export const zPreviewSubscribeRequest = z.object({
 export const zPlanAvailabilityReason = z.enum([
   'same_plan',
   'incompatible_transition',
+  'billing_operation_in_progress',
+  'billing_operation_parked',
+  'annual_to_monthly_unsupported',
+  'exceeds_max_seats',
   'requires_team',
-  'requires_personal',
-  'exceeds_max_seats'
+  'requires_personal'
 ])
 
 /**
@@ -4345,6 +4318,11 @@ export const zGetBillingUsageTimeSeriesQuery = z.object({
 export const zGetBillingUsageTimeSeriesResponse = zUsageTimeSeries
 
 /**
+ * Default workflow JSON
+ */
+export const zGetDefaultWorkflowResponse = z.record(z.unknown())
+
+/**
  * Embedding names
  */
 export const zGetEmbeddingsResponse = z.array(z.string())
@@ -4390,6 +4368,7 @@ export const zGetFeaturesResponse = z.object({
       'above-input',
       'inside-input'
     ])
+    .optional()
     .default('control'),
   'agent-starter-prompt-set': z
     .enum(['control', 'test'])
@@ -5444,17 +5423,6 @@ export const zListWorkspaceDeploymentsPath = z.object({
  * The workspace's live deployments, newest first
  */
 export const zListWorkspaceDeploymentsResponse = zWorkspaceDeploymentList
-
-export const zResolveWorkspaceWorkflowPacksBody = zWorkflowPacksRequest
-
-export const zResolveWorkspaceWorkflowPacksPath = z.object({
-  id: z.string()
-})
-
-/**
- * The workflow was read; what it needs, and what nothing provides
- */
-export const zResolveWorkspaceWorkflowPacksResponse = zWorkflowPacks
 
 /**
  * The credential's workspace

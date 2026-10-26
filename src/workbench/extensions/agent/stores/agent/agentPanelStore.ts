@@ -16,6 +16,12 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 
+import type {
+  CreditTransitionNoticeEvent,
+  CreditTransitionNoticeState
+} from './creditTransitionNoticeState'
+import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
+
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
@@ -44,6 +50,12 @@ type TargetTracking =
       closedPath?: never
       unavailable: true
     }
+
+interface BillingRefreshEntry {
+  result: Promise<boolean>
+  lateErrors: Set<(error: unknown) => void>
+  lateSuccesses: Set<() => void>
+}
 
 export type AgentPanelView =
   | { screen: 'chat' }
@@ -78,6 +90,23 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
    */
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
+  const reportedFreeUseExposure = ref(false)
+  const reportedFreeUseImpression = ref(false)
+  const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
+    null
+  )
+  const creditTransitionRefresh = shallowRef<{
+    identity: string
+    epoch: number
+    ready: boolean
+  } | null>(null)
+  const billingRefreshes = new Map<string, BillingRefreshEntry>()
+  const panelOpenEpoch = ref(0)
+  let latestBillingRefresh: Promise<void> | undefined
+  let creditTransitionRefreshEpoch = 0
+  watch(isOpen, (open, wasOpen) => {
+    if (open && !wasOpen) panelOpenEpoch.value += 1
+  })
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -211,6 +240,13 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
   let teardownReported = false
 
+  function startOpenEpoch(): void {
+    openedAt = Date.now()
+    teardownReported = false
+    reportedFreeUseExposure.value = false
+    reportedFreeUseImpression.value = false
+  }
+
   const isVisible = computed(() => enabled.value && isOpen.value)
 
   watch(isVisible, (visible) => {
@@ -220,8 +256,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     }
     hasEverOpened.value = true
     if (openedAt !== null) return
-    openedAt = Date.now()
-    teardownReported = false
+    startOpenEpoch()
     useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
   })
 
@@ -260,8 +295,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   ): void {
     if (isOpen.value) return
     isOpen.value = true
-    openedAt = Date.now()
-    teardownReported = false
+    startOpenEpoch()
     useTelemetry()?.trackAgentPanelOpened({ source })
   }
 
@@ -326,6 +360,133 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (!maximized.value) draggedWidth.value = PANEL_MIN_WIDTH
   }
 
+  function dispatchCreditTransitionNotice(
+    event: CreditTransitionNoticeEvent
+  ): boolean {
+    const before = creditTransitionNotice.value
+    creditTransitionNotice.value = reduceCreditTransitionNotice(before, event)
+    return creditTransitionNotice.value !== before
+  }
+
+  function observeAgentScopedFunds(
+    identity: string,
+    scopedHasFunds: boolean
+  ): void {
+    dispatchCreditTransitionNotice({
+      type: 'scopedRead',
+      identity,
+      scopedHasFunds
+    })
+  }
+
+  function claimCreditTransitionNoticeImpression(identity: string): boolean {
+    return dispatchCreditTransitionNotice({
+      type: 'shown',
+      identity
+    })
+  }
+
+  function dismissCreditTransitionNotice(identity: string): boolean {
+    return dispatchCreditTransitionNotice({ type: 'dismissed', identity })
+  }
+
+  function beginCreditTransitionRefresh(identity: string): number {
+    const current = creditTransitionRefresh.value
+    if (current?.identity === identity && !current.ready) return current.epoch
+    const epoch = ++creditTransitionRefreshEpoch
+    creditTransitionRefresh.value = { identity, epoch, ready: false }
+    return epoch
+  }
+
+  function completeCreditTransitionRefresh(
+    identity: string,
+    epoch: number
+  ): boolean {
+    const current = creditTransitionRefresh.value
+    if (current?.identity !== identity || current.epoch !== epoch) return false
+    creditTransitionRefresh.value = { ...current, ready: true }
+    return true
+  }
+
+  function claimCompletedCreditTransitionRefresh(identity: string): boolean {
+    const current = creditTransitionRefresh.value
+    if (current?.identity !== identity || !current.ready) return false
+    creditTransitionRefresh.value = null
+    return true
+  }
+
+  function refreshBillingStatus(
+    key: string,
+    fetchStatus: () => Promise<boolean>,
+    afterCurrent = false,
+    onLateError?: (error: unknown) => void,
+    onLateSuccess?: () => void
+  ): Promise<boolean> {
+    const existing = billingRefreshes.get(key)
+    if (existing) {
+      if (onLateError) existing.lateErrors.add(onLateError)
+      if (onLateSuccess) existing.lateSuccesses.add(onLateSuccess)
+      return existing.result
+    }
+    const previous = afterCurrent ? latestBillingRefresh : undefined
+    const lateErrors = new Set<(error: unknown) => void>()
+    const lateSuccesses = new Set<() => void>()
+    if (onLateError) lateErrors.add(onLateError)
+    if (onLateSuccess) lateSuccesses.add(onLateSuccess)
+    const notifyLateErrors = (error: unknown) => {
+      for (const report of lateErrors) {
+        try {
+          report(error)
+        } catch {
+          // Error reporters must not reject the detached request.
+        }
+      }
+    }
+    const fetchPromise = (previous ?? Promise.resolve()).then(fetchStatus)
+    let timedOut = false
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    const result = new Promise<boolean>((resolve, reject) => {
+      timeoutId = setTimeout(() => {
+        timedOut = true
+        resolve(false)
+      }, 15_000)
+      fetchPromise.then(
+        (adopted) => {
+          if (!timedOut) resolve(adopted)
+          else if (adopted) {
+            for (const callback of lateSuccesses) {
+              try {
+                callback()
+              } catch (error) {
+                notifyLateErrors(error)
+              }
+            }
+          }
+        },
+        (error: unknown) => {
+          if (!timedOut) reject(error)
+          else notifyLateErrors(error)
+        }
+      )
+    })
+    const entry = { result, lateErrors, lateSuccesses }
+    const settled = fetchPromise
+      .then(
+        () => undefined,
+        () => undefined
+      )
+      .finally(() => {
+        if (timeoutId !== undefined) clearTimeout(timeoutId)
+        if (billingRefreshes.get(key) === entry) {
+          billingRefreshes.delete(key)
+        }
+        if (latestBillingRefresh === settled) latestBillingRefresh = undefined
+      })
+    billingRefreshes.set(key, entry)
+    latestBillingRefresh = settled
+    return result
+  }
+
   return {
     enabled,
     consentAccepted,
@@ -337,6 +498,25 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     interruptHistorySelection,
     flagsSettled,
     reportedExhaustionIdentity,
+    reportedFreeUseExposure,
+    reportedFreeUseImpression,
+    creditTransitionNotice:
+      computed<Readonly<CreditTransitionNoticeState> | null>(
+        () => creditTransitionNotice.value
+      ),
+    creditTransitionRefresh: computed<Readonly<{
+      identity: string
+      epoch: number
+      ready: boolean
+    }> | null>(() => creditTransitionRefresh.value),
+    panelOpenEpoch: computed(() => panelOpenEpoch.value),
+    observeAgentScopedFunds,
+    claimCreditTransitionNoticeImpression,
+    dismissCreditTransitionNotice,
+    beginCreditTransitionRefresh,
+    completeCreditTransitionRefresh,
+    claimCompletedCreditTransitionRefresh,
+    refreshBillingStatus,
     width,
     requestedWidth,
     isOverlay,

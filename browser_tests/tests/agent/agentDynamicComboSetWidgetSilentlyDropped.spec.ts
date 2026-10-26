@@ -32,6 +32,8 @@ import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
  * widget's value getter (`dynamicComboWidget` in
  * `src/core/graph/widgets/dynamicWidgets.ts`) always does, so its setter —
  * which mounts the option's nested sub-widgets — never ran.
+ *
+ * BE-16625: https://linear.app/comfyorg/issue/BE-16625/widget-catalog-arity-mismatch-extra-n-positional-overflow-is-a
  */
 
 const NODE_TYPE = 'TestMagnificSkinEnhancer'
@@ -116,7 +118,7 @@ test.describe(
   'Agent set_widget on a dynamic-combo widget',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test('keeps applying visible edits after rejecting an unknown dotted widget', async ({
+    test('applies positional overflow after rejecting an unknown dotted widget', async ({
       page
     }) => {
       test.setTimeout(60_000)
@@ -283,6 +285,8 @@ test.describe(
         .getNodeLocator(String(NODE_ID))
         .getByRole('spinbutton', { name: 'mode.skin_detail' })
       await expect(skinDetailField).toBeVisible()
+      hostSocket.send(host.setDocumentWidget(NODE_ID, '_extra_1', 90))
+      await expect(skinDetailField).toHaveValue('90')
       await expect(
         vueNodes.getNodeLocator(String(NODE_ID)).getByText('faithful', {
           exact: true

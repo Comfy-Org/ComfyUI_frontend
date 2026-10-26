@@ -35,6 +35,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
 import { openHostedBillingTabOutcome } from '@/platform/workspace/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
@@ -241,7 +242,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       isCancelled: status.subscription_status === 'canceled',
       hasFunds: status.has_funds,
       agentHasFunds:
-        status.scoped_effective_has_funds?.agent ?? status.has_funds
+        status.scoped_effective_has_funds?.agent ?? status.has_funds,
+      agentScopedHasFunds: status.scoped_has_funds?.agent
     }
   })
 
@@ -364,7 +366,19 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     return adoption
   }
 
-  async function fetchStatus(): Promise<void> {
+  function adoptStatus(
+    status: BillingStatusResponse,
+    workspaceId: string | undefined
+  ): void {
+    seatCapacity.value = seatCapacityFrom(status)
+    statusData.value = status
+    if (workspaceId && status.billing_rail) {
+      workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
+    }
+    adoption = resumePendingOperation(status)
+  }
+
+  async function fetchStatusFresh(): Promise<boolean> {
     adoption = Promise.resolve(false)
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
@@ -376,14 +390,10 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         ? await readOnRail(rail.readStatus, 'getBillingStatus')
         : await workspaceApi.getBillingStatus()
       if (status === undefined || isStaleStatusRead(requestId, workspaceId))
-        return
+        return false
 
-      seatCapacity.value = seatCapacityFrom(status)
-      statusData.value = status
-      if (workspaceId && status.billing_rail) {
-        workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
-      }
-      adoption = resumePendingOperation(status)
+      adoptStatus(status, workspaceId)
+      return true
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
         error.value =
@@ -393,6 +403,10 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     } finally {
       if (requestId === latestBillingReadIds.status) isLoading.value = false
     }
+  }
+
+  async function fetchStatus(): Promise<void> {
+    await fetchStatusFresh()
   }
 
   async function fetchBalance(): Promise<void> {
@@ -630,9 +644,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     if (hosted === 'blocked') return reportBillingTabBlocked()
 
     const portal = createBillingPortalReporter(telemetry, 'manage_subscription')
-    // The handle arms the return refresh, so adding `noopener` here (which
-    // nulls it) silently stops billing state from re-reading on return.
-    const portalTab = window.open('', '_blank')
+    const portalTab = reserveBillingTab()
     if (!portalTab) {
       portal.blocked()
       return reportBillingTabBlocked()
@@ -643,7 +655,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         portal.failed(undefined, billingClient)
         return portalTab.close()
       }
-      portalTab.location.href = url
+      portalTab.navigate(url)
       portal.opened(billingClient)
       refreshOnPortalReturn()
     } catch (err) {
@@ -871,6 +883,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     // Actions
     initialize,
     fetchStatus,
+    fetchStatusFresh,
     fetchBalance,
     subscribe,
     previewSubscribe,

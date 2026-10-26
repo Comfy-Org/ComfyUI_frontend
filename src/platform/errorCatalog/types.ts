@@ -58,6 +58,11 @@ export type MissingErrorMessageSource =
       nodeTypes: MissingNodeType[]
       count: number
       isCloud: boolean
+      /**
+       * The deployment the editor runs on (FE-2434), named instead of Cloud;
+       * absent on Comfy Cloud and outside Cloud.
+       */
+      deploymentLabel?: string
     }
   | {
       kind: 'swap_nodes'
@@ -70,6 +75,11 @@ export type MissingErrorMessageSource =
       groups: MissingModelGroup[]
       count: number
       isCloud: boolean
+      /**
+       * The deployment the editor runs on (FE-2434), named instead of Cloud;
+       * absent on Comfy Cloud and outside Cloud.
+       */
+      deploymentLabel?: string
     }
   | {
       kind: 'missing_media'

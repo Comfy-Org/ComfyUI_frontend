@@ -14,7 +14,8 @@
 
 import {
   AUTH_TELEMETRY_EVENT,
-  SESSION_TELEMETRY_EVENT
+  SESSION_TELEMETRY_EVENT,
+  SSO_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
 import type {
   BillingTelemetryEvent,
@@ -28,11 +29,17 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { BILLING_TELEMETRY_EVENTS } from '@comfyorg/account-core/billing'
 import type { BillingSource } from '@comfyorg/billing-contract'
-import type { AgentRunMode, GetFeaturesResponses } from '@comfyorg/ingest-types'
+import type {
+  AgentRunMode,
+  GetFeaturesResponses,
+  SubscriptionTier,
+  WorkspaceWithRole
+} from '@comfyorg/ingest-types'
 import type {
   AuthErrorMetadata,
   AuthFlowAction,
   AuthMethod,
+  SsoTelemetryEvent,
   WebSessionTelemetryEvent
 } from '@comfyorg/account-core/telemetry'
 import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
@@ -262,10 +269,31 @@ export interface SurveyResponsesNormalized extends SurveyResponses {
   useCase_raw?: string
 }
 
+type AuthRail = 'web_session' | 'token'
+
+/**
+ * The selected workspace and the auth rail its requests ride on. The RUM
+ * global context and the Run-gate events carry it, so a blocked run or a
+ * failure can be split by the workspace it was scoped to.
+ */
+export interface WorkspaceTelemetryContext {
+  workspace_id: string
+  workspace_type: WorkspaceWithRole['type']
+  workspace_role: WorkspaceWithRole['role']
+  workspace_tier: SubscriptionTier | null
+  auth_rail: AuthRail
+}
+
+/** A billing read for the selected workspace that the server resolved for another. */
+export interface WorkspaceScopeMismatchMetadata extends WorkspaceTelemetryContext {
+  resolved_workspace_id: string
+  resolved_workspace_type: WorkspaceWithRole['type'] | 'unknown'
+}
+
 /**
  * Run button tracking properties
  */
-export interface RunButtonProperties {
+export interface RunButtonProperties extends Partial<WorkspaceTelemetryContext> {
   subscribe_to_run: boolean
   workflow_type: 'template' | 'custom'
   workflow_name: string
@@ -690,6 +718,8 @@ export type AgentConsentOfferExit =
   | 'card_already_seen'
   /** Panel activation owns consent timing, so the automatic offer is dropped. */
   | 'activation_opened_panel'
+  /** The bounded panel-discovery window is complete and the panel is closed. */
+  | 'activation_window_complete'
   /** The one-shot auto-show key for this scope is already burned. */
   | 'already_offered'
   /** The first-run startup probe rejected. */
@@ -772,7 +802,7 @@ export interface AgentConsentOfferExitedMetadata extends Record<
   trigger?: AgentConsentTrigger
 }
 export type AgentOnboardingNotShownMetadata =
-  | { reason: 'app_mode' | 'tour_active' }
+  | { reason: 'app_mode' | 'tour_active' | 'dialog_open' }
   | { reason: 'target_missing'; step: number }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
@@ -898,14 +928,17 @@ interface AgentStarterPromptExperimentMetadata {
  * `$feature/agent-free-use-message-placement`, and a translation layer between
  * the two is one more place for the arms to drift apart.
  */
-export type AgentFreeUsePlacement =
-  | 'top-banner'
-  | 'near-composer'
-  | 'above-input'
-  | 'inside-input'
+export const AGENT_FREE_USE_PLACEMENTS = [
+  'top-banner',
+  'near-composer',
+  'above-input',
+  'inside-input'
+] as const
+export type AgentFreeUsePlacement = (typeof AGENT_FREE_USE_PLACEMENTS)[number]
+export type AgentFreeUseVariant = 'control' | AgentFreeUsePlacement
 export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
-  placement: 'control' | AgentFreeUsePlacement
-  '$feature/agent-free-use-message-placement': 'control' | AgentFreeUsePlacement
+  placement: AgentFreeUseVariant
+  '$feature/agent-free-use-message-placement': AgentFreeUseVariant
 }
 /**
  * Interactions with the notice itself. The experiment's primary outcome and
@@ -918,6 +951,12 @@ export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
 export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
   action: 'shown' | 'dismissed' | 'learn_more_clicked'
   placement: AgentFreeUsePlacement
+}
+export interface AgentCreditTransitionNoticeMetadata extends Record<
+  string,
+  unknown
+> {
+  action: 'shown' | 'dismissed'
 }
 export interface AgentStarterPromptClickedMetadata
   extends
@@ -1190,7 +1229,7 @@ export interface CheckoutAttributionMetadata {
   wbraid?: string
 }
 
-export interface SubscriptionMetadata {
+export interface SubscriptionMetadata extends Partial<WorkspaceTelemetryContext> {
   current_tier?: string
   reason?: PaymentIntentSource
 }
@@ -1343,6 +1382,7 @@ export interface TelemetryProvider {
   trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
   trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
   trackWebSessionEvent?(event: WebSessionTelemetryEvent): void
+  trackSsoEvent?(event: SsoTelemetryEvent): void
   trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
   trackUserLoggedIn?(): void
   trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
@@ -1371,11 +1411,17 @@ export interface TelemetryProvider {
 
   trackBillingEvent?(event: BillingTelemetryEvent): void
 
+  setWorkspaceContext?(context: WorkspaceTelemetryContext | undefined): void
+  trackWorkspaceScopeMismatch?(metadata: WorkspaceScopeMismatchMetadata): void
+
   /** Emit a checkout-journey lifecycle event to this provider. */
   trackCheckoutJourneyEvent?(event: CheckoutJourneyTelemetryEvent): void
 
   trackAgentPaywallShown?(metadata: AgentPaywallShownMetadata): void
   trackAgentPaywallCtaClicked?(metadata: AgentPaywallCtaMetadata): void
+  trackAgentCreditTransitionNotice?(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
@@ -1533,6 +1579,11 @@ export const TelemetryEvents = {
   UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
   UNIFIED_AUTH_REFRESH_SUCCEEDED: SESSION_TELEMETRY_EVENT.refreshSucceeded,
   UNIFIED_AUTH_REFRESH_FAILED: SESSION_TELEMETRY_EVENT.refreshFailed,
+  SSO_REQUIRED_SHOWN: SSO_TELEMETRY_EVENT.requiredShown,
+  SSO_CONTINUE_CLICKED: SSO_TELEMETRY_EVENT.continueClicked,
+  SSO_SIGN_IN_FAILED: SSO_TELEMETRY_EVENT.signInFailed,
+  SSO_SIGN_IN_COMPLETED: SSO_TELEMETRY_EVENT.signInCompleted,
+  SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
 
@@ -1651,6 +1702,7 @@ export const TelemetryEvents = {
   AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
+  AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
@@ -1679,7 +1731,9 @@ export const TelemetryEvents = {
   PAGE_VIEW: 'app:page_view',
 
   // Network
-  FETCH_TIMEOUT: 'app:fetch_timeout'
+  FETCH_TIMEOUT: 'app:fetch_timeout',
+
+  WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
 
 export type TelemetryEventName =
@@ -1739,6 +1793,7 @@ export type TelemetryEventProperties =
   | UnifiedAuthRetryMetadata
   | UnifiedAuthRefreshMetadata
   | WebSessionTelemetryEvent['properties']
+  | SsoTelemetryEvent['properties']
   | ImageLoadFailureMetadata
   | BootstrapCompleteMetadata
   | SurveyResponses
@@ -1781,4 +1836,6 @@ export type TelemetryEventProperties =
   | CheckoutJourneyTelemetryEventPayload
   | AgentPaywallShownMetadata
   | AgentPaywallCtaMetadata
+  | AgentCreditTransitionNoticeMetadata
   | FetchTimeoutMetadata
+  | WorkspaceScopeMismatchMetadata
