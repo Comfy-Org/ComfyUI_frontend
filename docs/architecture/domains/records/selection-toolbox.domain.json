@@ -13,22 +13,14 @@
     },
     {
       "path": "src/components/graph/SelectionToolbox.test.ts",
-      "role": "presentation"
+      "role": "integration"
     },
     {
       "path": "src/components/graph/SelectionToolbox.vue",
-      "role": "presentation"
+      "role": "integration"
     },
     {
       "path": "src/components/graph/selectionToolbox/ArrangeButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/BypassButton.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/BypassButton.vue",
       "role": "presentation"
     },
     {
@@ -40,63 +32,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/graph/selectionToolbox/ConfigureSubgraph.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/ConvertToSubgraphButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/DeleteButton.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/graph/selectionToolbox/ExecuteButton.test.ts",
       "role": "presentation"
     },
     {
       "path": "src/components/graph/selectionToolbox/ExecuteButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/ExtensionCommandButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/FrameNodes.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/InfoButton.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/InfoButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/Load3DViewerButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/MaskEditorButton.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/MaskEditorButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/NodeOptionsButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/RefreshSelectionButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue",
       "role": "presentation"
     },
     {
@@ -245,7 +185,13 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": [
+    "app-host",
+    "canvas-renderer",
+    "properties-panel",
+    "telemetry",
+    "test-support"
+  ],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
@@ -253,10 +199,7 @@
       "checks": [
         "src/components/graph/SelectionToolbox.test.ts",
         "src/components/graph/selectionToolbox/ExecuteButton.test.ts",
-        "src/components/graph/selectionToolbox/BypassButton.test.ts",
-        "src/components/graph/selectionToolbox/ColorPickerButton.test.ts",
-        "src/components/graph/selectionToolbox/InfoButton.test.ts",
-        "src/components/graph/selectionToolbox/MaskEditorButton.test.ts"
+        "src/components/graph/selectionToolbox/ColorPickerButton.test.ts"
       ]
     },
     {
@@ -297,7 +240,7 @@
   ],
   "adrs": ["docs/adr/CANVAS-SELECTION-0028-single-selection-store.md"],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Toolbox integration composes existing canvas actions, panel navigation, translation, and telemetry without changing their contracts."
   ],
   "deepImports": "inventory"
 }

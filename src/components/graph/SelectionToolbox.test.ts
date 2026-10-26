@@ -1,92 +1,41 @@
-/* oxlint-disable testing-library/no-container, testing-library/no-node-access */
-import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import commands from '@/locales/en/commands.json'
+import en from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
-import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useCommandStore } from '@/stores/commandStore'
-import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
-import * as nodeFilterUtil from '@/utils/nodeFilterUtil'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
-function createMockExtensionService(): ReturnType<typeof useExtensionService> {
-  return {
-    extensionCommands: { value: new Map() },
-    registerExtension: vi.fn(),
-    invokeExtensions: vi.fn(() => []),
-    invokeExtensionsAsync: vi.fn()
-  } as Partial<ReturnType<typeof useExtensionService>> as ReturnType<
-    typeof useExtensionService
-  >
-}
-
-const defaultSettingValues: Record<string, unknown> = {
-  'Comfy.UseNewMenu': 'Top',
-  'Comfy.NodeLibrary.NewDesign': true,
-  'Comfy.Load3D.3DViewerEnable': true
-}
-
-function mockSettingValues(overrides: Record<string, unknown> = {}) {
-  const settingStore = useSettingStore()
-  settingStore.$patch({
-    settingValues: {
-      ...defaultSettingValues,
-      ...overrides
-    }
-  })
-}
-
-// Mock the composables and services
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
-
-vi.mock<unknown>(
-  import('@/composables/canvas/useSelectionToolboxPosition'),
-  () => ({
-    useSelectionToolboxPosition: vi.fn(() => ({
-      visible: { value: true }
-    })),
-    resetMoreOptionsState: vi.fn()
-  })
-)
-
-vi.mock<unknown>(
-  import('@/renderer/extensions/minimap/composables/useMinimap'),
-  () => ({
-    useMinimap: vi.fn(() => ({
-      containerStyles: {
-        value: {
-          backgroundColor: '#ffffff'
-        }
-      }
-    }))
-  })
-)
-
-vi.mock<unknown>(import('@/services/extensionService'), () => ({
-  useExtensionService: vi.fn(() => ({
-    extensionCommands: { value: new Map() },
-    invokeExtensions: vi.fn(() => [])
-  }))
-}))
-
+vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/services/extensionService'), () => {
+  const service: ReturnType<typeof useExtensionService> = {
+    registerExtension: vi.fn(),
+    registerExtensionNow: vi.fn(),
+    invokeExtensions: vi.fn(() => []),
+    invokeExtensionsAsync: vi.fn(async () => []),
+    invokeStartupHook: vi.fn(async () => [])
+  }
+  return { useExtensionService: () => service }
+})
 vi.mock(import('@/utils/litegraphUtil'))
-
-vi.mock(import('@comfyorg/design-system/common/VerticalDivider'), () => ({
-  default: defineComponent({ template: '<div class="vertical-divider" />' })
-}))
-
-vi.mock(import('@/utils/nodeFilterUtil'), () => ({
-  isOutputNode: vi.fn(() => false),
-  filterOutputNodes: vi.fn((nodes) => nodes.filter(() => false))
+vi.mock(import('@/composables/canvas/useSelectionToolboxPosition'), () => ({
+  useSelectionToolboxPosition: () => ({ visible: computed(() => true) }),
+  resetMoreOptionsState: vi.fn()
 }))
 
 const nodeDef = new ComfyNodeDefImpl({
@@ -102,408 +51,245 @@ const nodeDef = new ComfyNodeDefImpl({
   description: ''
 })
 
-describe('SelectionToolbox', () => {
-  let canvasStore: ReturnType<typeof useCanvasStore>
-
-  const i18n = createI18n({
-    legacy: false,
-    locale: 'en',
-    messages: {
-      en: {
-        g: {
-          info: 'Node Info',
-          bookmark: 'Save to Library',
-          frameNodes: 'Frame Nodes',
-          moreOptions: 'More Options',
-          refreshNode: 'Refresh Node'
+function renderToolbox() {
+  return render(SelectionToolbox, {
+    global: {
+      plugins: [
+        createI18n({
+          legacy: false,
+          locale: 'en',
+          messages: { en: { ...en, commands } }
+        })
+      ],
+      stubs: {
+        ArrangeButton: true,
+        ColorPickerButton: {
+          template: '<button aria-label="Color" />'
+        },
+        ExecuteButton: {
+          template: '<button aria-label="Execute to selected output nodes" />'
         }
       }
     }
   })
+}
 
-  const mockProvide = {
-    isVisible: { value: true },
-    selectedItems: []
-  }
-
+describe('SelectionToolbox', () => {
   beforeEach(() => {
-    canvasStore = useCanvasStore()
+    useCanvasStore().canvas = createMockCanvas()
+    vi.spyOn(useRightSidePanelStore(), 'openPanel').mockImplementation(() => {})
     vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(nodeDef)
-
-    // Mock the canvas to avoid "getCanvas: canvas is null" errors
-    canvasStore.canvas = createMockCanvas()
-
-    mockSettingValues()
-  })
-
-  function renderComponent(props = {}): { container: Element } {
-    const { container } = render(SelectionToolbox, {
-      props,
-      global: {
-        plugins: [i18n],
-        provide: {
-          [Symbol.for('SelectionOverlay')]: mockProvide
-        },
-        stubs: {
-          NodeContextMenu: { template: '<div class="node-context-menu" />' },
-          InfoButton: { template: '<div class="info-button" />' },
-          ColorPickerButton: {
-            template:
-              '<button data-testid="color-picker-button" class="color-picker-button" />'
-          },
-          FrameNodes: { template: '<div class="frame-nodes" />' },
-          PublishButton: {
-            template:
-              '<button data-testid="add-to-library" class="bookmark-button" />'
-          },
-          BypassButton: {
-            template:
-              '<button data-testid="bypass-button" class="bypass-button" />'
-          },
-          PinButton: { template: '<div class="pin-button" />' },
-          Load3DViewerButton: {
-            template: '<div class="load-3d-viewer-button" />'
-          },
-          MaskEditorButton: {
-            template: '<div class="mask-editor-button" />'
-          },
-          DeleteButton: {
-            template:
-              '<button data-testid="delete-button" class="delete-button" />'
-          },
-          RefreshSelectionButton: {
-            template: '<div class="refresh-button" />'
-          },
-          ExecuteButton: { template: '<div class="execute-button" />' },
-          ConvertToSubgraphButton: {
-            template:
-              '<button data-testid="convert-to-subgraph-button" class="convert-to-subgraph-button" />'
-          },
-          ExtensionCommandButton: {
-            template: '<div class="extension-command-button" />'
-          },
-          MoreOptions: {
-            template:
-              '<button data-testid="more-options-button" class="more-options" />'
-          }
-        }
+    vi.mocked(useExtensionService().invokeExtensions).mockReturnValue([])
+    useSettingStore().$patch({
+      settingValues: {
+        'Comfy.UseNewMenu': 'Top',
+        'Comfy.NodeLibrary.NewDesign': true,
+        'Comfy.Load3D.3DViewerEnable': true
       }
     })
-    return { container }
-  }
+  })
 
-  describe('Button Visibility Logic', () => {
-    beforeEach(() => {
-      const mockExtensionService = vi.mocked(useExtensionService)
-      mockExtensionService.mockReturnValue(createMockExtensionService())
-    })
+  it('updates actions when selection changes without remounting', async () => {
+    setCanvasSelection([new LGraphNode('Test Node')])
+    renderToolbox()
+    expect(screen.getByTestId('info-button')).toBeInTheDocument()
+    expect(screen.getByTestId('delete-button')).toBeInTheDocument()
+    expect(screen.getByTestId('convert-to-subgraph-button')).toBeInTheDocument()
+    expect(screen.getByTestId('bypass-button')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Color' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Frame Nodes' })).toBeNull()
 
-    it('should show info button only for single selections', () => {
-      // Single node selection
-      setCanvasSelection([new LGraphNode('Test Node')])
-      const { container } = renderComponent()
-      expect(container.querySelector('.info-button')).toBeTruthy()
+    setCanvasSelection([new LGraphNode('A'), new LGraphNode('B')])
+    await nextTick()
+    expect(screen.queryByTestId('info-button')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Frame Nodes' })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Color' })).toBeInTheDocument()
+    expect(screen.getByTestId('bypass-button')).toBeInTheDocument()
 
-      // Multiple node selection - render in separate test scope
-      setCanvasSelection([
-        new LGraphNode('Test Node'),
-        new LGraphNode('Test Node')
-      ])
-      const { container: container2 } = renderComponent()
-      expect(container2.querySelector('.info-button')).toBeFalsy()
-    })
+    setCanvasSelection([])
+    await nextTick()
+    expect(screen.getAllByRole('button')).toEqual([
+      screen.getByTestId('more-options-button')
+    ])
+  })
 
-    it('should not show info button when node definition is not found', () => {
-      setCanvasSelection([new LGraphNode('Test Node')])
-      vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(null)
-      const { container } = renderComponent()
-      expect(container.querySelector('.info-button')).toBeFalsy()
-    })
-
-    it('should not show info button when legacy menu uses the new node library', () => {
-      mockSettingValues({
-        'Comfy.UseNewMenu': 'Disabled',
-        'Comfy.NodeLibrary.NewDesign': true
+  it.for([
+    { menu: 'Top', library: true, visible: true },
+    { menu: 'Top', library: false, visible: true },
+    { menu: 'Disabled', library: true, visible: false },
+    { menu: 'Disabled', library: false, visible: false }
+  ] as const)(
+    'info visibility with menu $menu and new library $library',
+    ({ menu, library, visible }) => {
+      useSettingStore().$patch({
+        settingValues: {
+          'Comfy.UseNewMenu': menu,
+          'Comfy.NodeLibrary.NewDesign': library
+        }
       })
       setCanvasSelection([new LGraphNode('Test Node')])
+      renderToolbox()
+      expect(screen.queryByTestId('info-button') !== null).toBe(visible)
+    }
+  )
 
-      const { container } = renderComponent()
+  it('hides info without a node definition', () => {
+    vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(null)
+    setCanvasSelection([new LGraphNode('Unknown')])
+    renderToolbox()
+    expect(screen.queryByTestId('info-button')).toBeNull()
+  })
 
-      expect(container.querySelector('.info-button')).toBeFalsy()
-    })
-
-    it('should not show info button when legacy menu uses the legacy node library', () => {
-      mockSettingValues({
-        'Comfy.UseNewMenu': 'Disabled',
-        'Comfy.NodeLibrary.NewDesign': false
-      })
-      setCanvasSelection([new LGraphNode('Test Node')])
-
-      const { container } = renderComponent()
-
-      expect(container.querySelector('.info-button')).toBeFalsy()
-    })
-
-    it('should show info button when new menu uses the legacy node library', () => {
-      mockSettingValues({
-        'Comfy.UseNewMenu': 'Top',
-        'Comfy.NodeLibrary.NewDesign': false
-      })
-      setCanvasSelection([new LGraphNode('Test Node')])
-
-      const { container } = renderComponent()
-
-      expect(container.querySelector('.info-button')).toBeTruthy()
-    })
-
-    it('should show color picker for all selections', () => {
-      // Single node selection
-      setCanvasSelection([new LGraphNode('Test Node')])
-      const { container } = renderComponent()
-      expect(
-        container.querySelector('[data-testid="color-picker-button"]')
-      ).toBeTruthy()
-
-      // Multiple node selection
-      setCanvasSelection([
-        new LGraphNode('Test Node'),
-        new LGraphNode('Test Node')
-      ])
-      const { container: container2 } = renderComponent()
-      expect(
-        container2.querySelector('[data-testid="color-picker-button"]')
-      ).toBeTruthy()
-    })
-
-    it('should show frame nodes only for multiple selections', () => {
-      // Single node selection
-      setCanvasSelection([new LGraphNode('Test Node')])
-      const { container } = renderComponent()
-      expect(container.querySelector('.frame-nodes')).toBeFalsy()
-
-      // Multiple node selection
-      setCanvasSelection([
-        new LGraphNode('Test Node'),
-        new LGraphNode('Test Node')
-      ])
-      const { container: container2 } = renderComponent()
-      expect(container2.querySelector('.frame-nodes')).toBeTruthy()
-    })
-
-    it('should show bypass button for appropriate selections', () => {
-      // Single node selection
-      setCanvasSelection([new LGraphNode('Test Node')])
-      const { container } = renderComponent()
-      expect(
-        container.querySelector('[data-testid="bypass-button"]')
-      ).toBeTruthy()
-
-      // Multiple node selection
-      setCanvasSelection([
-        new LGraphNode('Test Node'),
-        new LGraphNode('Test Node')
-      ])
-      const { container: container2 } = renderComponent()
-      expect(
-        container2.querySelector('[data-testid="bypass-button"]')
-      ).toBeTruthy()
-    })
-
-    it('should show common buttons for all selections', () => {
-      setCanvasSelection([new LGraphNode('Test Node')])
-      const { container } = renderComponent()
-
-      expect(
-        container.querySelector('[data-testid="delete-button"]')
-      ).toBeTruthy()
-      expect(
-        container.querySelector('[data-testid="convert-to-subgraph-button"]')
-      ).toBeTruthy()
-      expect(
-        container.querySelector('[data-testid="more-options-button"]')
-      ).toBeTruthy()
-    })
-
-    it('should show mask editor only for single image nodes', () => {
-      const imageNode = new LGraphNode('Test Node')
-      imageNode.previewMediaType = 'image'
-
-      // Single image node
-      setCanvasSelection([imageNode])
-      const { container } = renderComponent()
-      expect(container.querySelector('.mask-editor-button')).toBeTruthy()
-
-      // Single non-image node
-      setCanvasSelection([new LGraphNode('Test Node')])
-      const { container: container2 } = renderComponent()
-      expect(container2.querySelector('.mask-editor-button')).toBeFalsy()
-    })
-
-    it('should show Color picker button only for single Load3D nodes', () => {
-      // Single Load3D node
-      setCanvasSelection([new LGraphNode('Test Node', 'Load3D')])
-      const { container } = renderComponent()
-      expect(container.querySelector('.load-3d-viewer-button')).toBeTruthy()
-
-      // Single non-Load3D node
-      setCanvasSelection([new LGraphNode('Test Node')])
-      const { container: container2 } = renderComponent()
-      expect(container2.querySelector('.load-3d-viewer-button')).toBeFalsy()
-    })
-
-    it('should show ExecuteButton only when output nodes are selected', () => {
-      const isOutputNodeSpy = vi.spyOn(nodeFilterUtil, 'isOutputNode')
-      const filterOutputNodesSpy = vi.spyOn(nodeFilterUtil, 'filterOutputNodes')
-
-      // With output node selected
-      isOutputNodeSpy.mockReturnValue(true)
-      filterOutputNodesSpy.mockReturnValue([
-        { type: 'SaveImage' }
-      ] as LGraphNode[])
-      setCanvasSelection([new LGraphNode('Test Node')])
-      const { container } = renderComponent()
-      expect(container.querySelector('.execute-button')).toBeTruthy()
-
-      // Without output node selected
-      isOutputNodeSpy.mockReturnValue(false)
-      filterOutputNodesSpy.mockReturnValue([])
-      setCanvasSelection([new LGraphNode('Test Node')])
-      const { container: container2 } = renderComponent()
-      expect(container2.querySelector('.execute-button')).toBeFalsy()
-
-      // No selection at all
-      setCanvasSelection([])
-      const { container: container3 } = renderComponent()
-      expect(container3.querySelector('.execute-button')).toBeFalsy()
+  it('opens info and tracks a successful click', async () => {
+    setCanvasSelection([new LGraphNode('Test Node')])
+    renderToolbox()
+    await userEvent.setup().click(screen.getByTestId('info-button'))
+    expect(useRightSidePanelStore().openPanel).toHaveBeenCalledWith('info')
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
+      button_id: 'selection_toolbox_node_info_opened',
+      element_group: 'selection_toolbox'
     })
   })
 
-  describe('Divider Visibility Logic', () => {
-    it('should show dividers between button groups when both groups have buttons', () => {
-      // Setup single node to show info + other buttons
-      setCanvasSelection([new LGraphNode('Test Node')])
-      const { container } = renderComponent()
-
-      const dividers = container.querySelectorAll('.vertical-divider')
-      expect(dividers.length).toBeGreaterThan(0)
-    })
-
-    it('should not show dividers when adjacent groups are empty', () => {
-      // No selection should show minimal buttons and dividers
-      setCanvasSelection([])
-      const { container } = renderComponent()
-
-      expect(
-        container.querySelector('[data-testid="more-options-button"]')
-      ).toBeTruthy()
-    })
+  it('does not track info when the selection becomes unavailable before rendering', () => {
+    setCanvasSelection([new LGraphNode('Test Node')])
+    renderToolbox()
+    const button = screen.getByTestId('info-button')
+    setCanvasSelection([])
+    button.click()
+    expect(useRightSidePanelStore().openPanel).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
   })
 
-  describe('Extension Commands', () => {
-    it('should render extension command buttons when available', () => {
-      useCommandStore().registerCommand({
-        id: 'test-command',
-        function: vi.fn(),
-        label: 'Test Command'
+  it.for([
+    ['bypass-button', 'Comfy.Canvas.ToggleSelectedNodes.Bypass'],
+    ['delete-button', 'Comfy.Canvas.DeleteSelectedItems'],
+    ['convert-to-subgraph-button', 'Comfy.Graph.ConvertToSubgraph']
+  ])('routes %s through the command store', async ([testId, commandId]) => {
+    const action = vi.fn()
+    useCommandStore().registerCommand({ id: commandId, function: action })
+    setCanvasSelection([new LGraphNode('Test Node')])
+    renderToolbox()
+    await userEvent.setup().click(screen.getByTestId(testId))
+    expect(action).toHaveBeenCalledOnce()
+  })
+
+  it('keeps protected selections undeletable', async () => {
+    const node = new LGraphNode('Protected')
+    node.removable = false
+    setCanvasSelection([node])
+    renderToolbox()
+    expect(screen.queryByTestId('delete-button')).toBeNull()
+    setCanvasSelection([node, new LGraphNode('Removable')])
+    await nextTick()
+    expect(screen.getByTestId('delete-button')).toBeInTheDocument()
+  })
+
+  it('offers the mask editor for a single image and routes its command', async () => {
+    const node = new LGraphNode('Image')
+    node.previewMediaType = 'image'
+    const action = vi.fn()
+    useCommandStore().registerCommand({
+      id: 'Comfy.MaskEditor.OpenMaskEditor',
+      function: action
+    })
+    setCanvasSelection([node])
+    renderToolbox()
+    await userEvent.setup().click(
+      screen.getByRole('button', {
+        name: 'Open Mask Editor for Selected Node'
       })
-      const mockExtensionService = vi.mocked(useExtensionService)
-      mockExtensionService.mockReturnValue({
-        extensionCommands: {
-          value: new Map([
-            ['test-command', { id: 'test-command', title: 'Test Command' }]
-          ])
-        },
-        registerExtension: vi.fn(),
-        registerExtensionNow: vi.fn(),
-        invokeExtensions: vi.fn(() => ['test-command']),
-        invokeExtensionsAsync: vi.fn(),
-        invokeStartupHook: vi.fn(async () => [])
-      } as ReturnType<typeof useExtensionService>)
-
-      setCanvasSelection([new LGraphNode('Test Node')])
-      const { container } = renderComponent()
-
-      expect(container.querySelector('.extension-command-button')).toBeTruthy()
-    })
-
-    it('should not render extension commands when none available', () => {
-      const mockExtensionService = vi.mocked(useExtensionService)
-      mockExtensionService.mockReturnValue(createMockExtensionService())
-
-      setCanvasSelection([new LGraphNode('Test Node')])
-      const { container } = renderComponent()
-
-      expect(container.querySelector('.extension-command-button')).toBeFalsy()
-    })
-  })
-
-  describe('Event Handling', () => {
-    it('should handle wheel events', async () => {
-      const mockCanvasInteractions = vi.mocked(useCanvasInteractions)
-      const forwardEventToCanvasSpy = vi.fn()
-      mockCanvasInteractions.mockReturnValue({
-        handleWheel: vi.fn(),
-        handlePointerDown: vi.fn(),
-        handlePointerMove: vi.fn(),
-        handlePointerUp: vi.fn(),
-        forwardEventToCanvas: forwardEventToCanvasSpy,
-        shouldHandleNodePointerEvents: { value: true } as ReturnType<
-          typeof useCanvasInteractions
-        >['shouldHandleNodePointerEvents']
+    )
+    expect(action).toHaveBeenCalledOnce()
+    setCanvasSelection([new LGraphNode('Other')])
+    await nextTick()
+    expect(
+      screen.queryByRole('button', {
+        name: 'Open Mask Editor for Selected Node'
       })
-
-      const mockExtensionService = vi.mocked(useExtensionService)
-      mockExtensionService.mockReturnValue(createMockExtensionService())
-
-      setCanvasSelection([new LGraphNode('Test Node')])
-      const { container } = renderComponent()
-
-      const panel = container.querySelector('[data-testid="selection-toolbox"]')
-      expect(panel).toBeTruthy()
-      await fireEvent.wheel(panel!)
-
-      expect(forwardEventToCanvasSpy).toHaveBeenCalled()
-    })
+    ).toBeNull()
   })
 
-  describe('No Selection State', () => {
-    beforeEach(() => {
-      const mockExtensionService = vi.mocked(useExtensionService)
-      mockExtensionService.mockReturnValue(createMockExtensionService())
-    })
-
-    it('should hide most buttons when no items selected', () => {
-      setCanvasSelection([])
-      const { container } = renderComponent()
-
-      expect(container.querySelector('.info-button')).toBeFalsy()
-      expect(container.querySelector('.color-picker-button')).toBeFalsy()
-      expect(container.querySelector('.frame-nodes')).toBeFalsy()
-      expect(container.querySelector('.bookmark-button')).toBeFalsy()
-    })
+  it('offers the 3D viewer only for a Load3D selection', async () => {
+    setCanvasSelection([new LGraphNode('3D', 'Load3D')])
+    renderToolbox()
+    expect(
+      screen.getByRole('button', {
+        name: 'Open 3D Viewer (Beta) for Selected Node'
+      })
+    ).toBeInTheDocument()
+    setCanvasSelection([new LGraphNode('Other')])
+    await nextTick()
+    expect(
+      screen.queryByRole('button', {
+        name: 'Open 3D Viewer (Beta) for Selected Node'
+      })
+    ).toBeNull()
   })
 
-  describe('Tooltips', () => {
-    beforeEach(() => {
-      vi.mocked(useExtensionService).mockReturnValue(
-        createMockExtensionService()
-      )
+  it('offers execution only when output nodes are selected', async () => {
+    class OutputNode extends LGraphNode {
+      static override nodeData = { output_node: true }
+    }
+    setCanvasSelection([new OutputNode('Output')])
+    renderToolbox()
+    expect(
+      screen.getByRole('button', { name: 'Execute to selected output nodes' })
+    ).toBeInTheDocument()
+    setCanvasSelection([new LGraphNode('Other')])
+    await nextTick()
+    expect(
+      screen.queryByRole('button', { name: 'Execute to selected output nodes' })
+    ).toBeNull()
+  })
+
+  it('renders deduplicated extension commands and executes them', async () => {
+    const action = vi.fn()
+    useCommandStore().registerCommand({
+      id: 'Comfy.Graph.UnpackSubgraph',
+      function: action,
+      icon: () => 'icon-[lucide--star]'
     })
+    vi.mocked(useExtensionService().invokeExtensions).mockReturnValue([
+      'Comfy.Graph.UnpackSubgraph',
+      'Comfy.Graph.UnpackSubgraph',
+      'Unknown.Command'
+    ])
+    setCanvasSelection([new LGraphNode('Test Node')])
+    renderToolbox()
+    expect(
+      screen.getAllByRole('button', {
+        name: 'Unpack the selected Subgraph'
+      })
+    ).toHaveLength(1)
+    await userEvent.setup().click(
+      screen.getByRole('button', {
+        name: 'Unpack the selected Subgraph'
+      })
+    )
+    expect(action).toHaveBeenCalledOnce()
+  })
 
-    it('waits a full second before showing a tooltip over the canvas', async () => {
-      vi.useFakeTimers()
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      setCanvasSelection([new LGraphNode('Test Node')])
-      renderComponent()
+  it('forwards wheel events to the canvas', async () => {
+    setCanvasSelection([new LGraphNode('Test Node')])
+    renderToolbox()
+    await fireEvent.wheel(screen.getByTestId('selection-toolbox'))
+    expect(useCanvasInteractions().forwardEventToCanvas).toHaveBeenCalledOnce()
+  })
 
-      await user.hover(screen.getByRole('button', { name: 'More Options' }))
-      await vi.advanceTimersByTimeAsync(500)
-      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-
-      await vi.advanceTimersByTimeAsync(500)
-      expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
-        'More Options'
-      )
-    })
+  it('waits a full second before showing a tooltip over the canvas', async () => {
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    setCanvasSelection([new LGraphNode('Test Node')])
+    renderToolbox()
+    await user.hover(screen.getByRole('button', { name: 'More Options' }))
+    await vi.advanceTimersByTimeAsync(500)
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
+      'More Options'
+    )
   })
 })
