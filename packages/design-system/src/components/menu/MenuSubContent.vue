@@ -39,6 +39,7 @@ const forwarded = useForwardPropsEmits(restProps, emits)
         className
       )
     "
+    @pointermove.stop
   >
     <slot />
   </DropdownMenuSubContent>
