@@ -762,6 +762,10 @@ export class LiveGraphApplier {
   private readonly reported = new Set<string>()
   private readonly interiorIds = new Map<string, Map<string, NodeId>>()
   private readonly failureCounts: number[] = []
+  private readonly unappliedRegrownRows = new WeakMap<
+    LGraphNode,
+    ReadonlySet<string>
+  >()
 
   constructor(deps: LiveGraphApplierDeps) {
     this.deps = deps
@@ -1156,14 +1160,31 @@ export class LiveGraphApplier {
       return
     }
     if (!widgets) return
+    const regrown = this.regrownRows(node, Object.keys(widgets), names)
     this.applyWidgets(
       node,
       Object.fromEntries(
-        Object.entries(widgets).filter(([name]) => changed(node, name, names))
+        Object.entries(widgets).filter(
+          ([name]) => changed(node, name, names) || regrown.has(name)
+        )
       ),
       mode,
       { documentWidgets: widgets }
     )
+    this.unappliedRegrownRows.delete(node)
+  }
+
+  private regrownRows(
+    node: LGraphNode,
+    keys: readonly string[],
+    names: ReadonlySet<string>
+  ): ReadonlySet<string> {
+    const regrown = new Set(this.unappliedRegrownRows.get(node))
+    for (const name of keys) {
+      if (regrownRow(node, name, names)) regrown.add(name)
+    }
+    if (regrown.size > 0) this.unappliedRegrownRows.set(node, regrown)
+    return regrown
   }
 
   private applyInteriors(
@@ -1257,15 +1278,17 @@ export class LiveGraphApplier {
       this.applyWidgets(live, widgets as DocNode['widgets'], mode)
       return
     }
+    const regrown = this.regrownRows(live, Object.keys(widgets), names)
     const filtered = Object.fromEntries(
       Object.entries(widgets).filter(
-        ([name]) => names.has(name) || regrownRow(live, name, names)
+        ([name]) => names.has(name) || regrown.has(name)
       )
     )
     if (Object.keys(filtered).length === 0) return
     this.applyWidgets(live, filtered, mode, {
       documentWidgets: widgets as DocNode['widgets']
     })
+    this.unappliedRegrownRows.delete(live)
   }
 
   private propagateInteriorToHost(
@@ -1754,7 +1777,7 @@ function changed(
   name: string,
   names: ReadonlySet<string>
 ): boolean {
-  if (names.has(name) || regrownRow(node, name, names)) return true
+  if (names.has(name)) return true
   const positional = overflowWidget(node, name)
   return positional !== undefined && names.has(positional.name)
 }
