@@ -321,7 +321,18 @@ describe('colorUtil conversions', () => {
       ['rgb(255, 0, 0)', false],
       ['hsla(120, 50%, 50%, 0)', true],
       ['hsl(120, 50%, 50%)', false],
-      ['red', false]
+      ['rgba(0, 0, 0, .5)', true],
+      ['rgba(255, 0, 0, 50%)', true],
+      ['rgba(255, 0, 0, 100%)', false],
+      ['rgb(255, 0, 0, 0.5)', true],
+      ['rgb(0 0 0 / 0.5)', true],
+      ['rgb(0 0 0 / 1)', false],
+      ['hsl(120 50% 50% / .5)', true],
+      ['oklch(0.5 0.1 120 / 20%)', true],
+      ['oklch(0.5 0.1 120)', false],
+      ['red', false],
+      [5, false],
+      [undefined, false]
     ] as const)('%s → %s', ([color, expected]) => {
       expect(isTranslucent(color)).toBe(expected)
     })

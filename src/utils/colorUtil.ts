@@ -36,16 +36,33 @@ export function isTransparent(color: string) {
   return false
 }
 
-/** Whether a hex, rgb(a) or hsl(a) color, or `transparent`, has alpha below 1. */
-export function isTranslucent(color: string): boolean {
+/** Whether a CSS color string has alpha below 1; non-strings and unparsed colors count as opaque. */
+export function isTranslucent(color: unknown): boolean {
+  if (typeof color !== 'string') return false
+
   const normalized = color.trim().toLowerCase()
   if (normalized === 'transparent') return true
 
-  const format = identifyColorFormat(normalized)
-  if (!format) return false
+  const hexAlpha = normalized.match(
+    /^#(?:[\da-f]{3}([\da-f])|[\da-f]{6}([\da-f]{2}))$/
+  )
+  if (hexAlpha) {
+    const [, short, long] = hexAlpha
+    return parseInt(short ? short + short : long, 16) < 255
+  }
 
-  const hsla = parseToHSLA(normalized, format)
-  return isHSLA(hsla) && hsla.a < 1
+  const functionArgs = normalized.match(/^[a-z-]+\((.*)\)$/)?.[1]
+  if (!functionArgs) return false
+
+  const alpha = functionArgs.includes('/')
+    ? functionArgs.split('/').at(1)
+    : functionArgs.split(',').at(3)
+  return alpha !== undefined && parseCssAlpha(alpha) < 1
+}
+
+function parseCssAlpha(value: string): number {
+  const trimmed = value.trim()
+  return trimmed.endsWith('%') ? parseFloat(trimmed) / 100 : parseFloat(trimmed)
 }
 
 export function rgbToHsl({ r, g, b }: RGB): HSL {
