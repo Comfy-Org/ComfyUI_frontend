@@ -1257,7 +1257,33 @@ describe('DeploymentSwitcher', () => {
       ])
     })
 
-    it('lists the rows that run it first, then every other row with Comfy Cloud among them, and names missing nodes on hover and in the row description', async () => {
+    function rowOrder() {
+      return screen
+        .getAllByRole('menuitemradio')
+        .map((row) => row.dataset.testid)
+    }
+
+    it('puts the current deployment first in the one Run on list', async () => {
+      vi.mocked(useFeatureFlags().flags).deploymentCompatibilityMarksEnabled =
+        false
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        picked_deployment_id: D1
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      await waitFor(() =>
+        expect(rowsIn('Run on')).toEqual([
+          `deployment-row-${D1}`,
+          'deployment-row-cloud',
+          `deployment-row-${D2}`,
+          `deployment-row-${D9}`
+        ])
+      )
+    })
+
+    it('lists the current row under Run on, then the rows that run it, then the rest, and names missing nodes on hover and in the row description', async () => {
       mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
         deployments: [
           { deployment_id: D2, missing_node_types: [], unknown: false },
@@ -1286,8 +1312,14 @@ describe('DeploymentSwitcher', () => {
         'KSampler',
         'Power Lora Loader (rgthree)'
       ])
+      expect(rowsIn('Run on')).toEqual(['deployment-row-cloud'])
       expect(rowsIn('Incompatible environments')).toEqual([
+        `deployment-row-${D1}`,
+        `deployment-row-${D9}`
+      ])
+      expect(rowOrder()).toEqual([
         'deployment-row-cloud',
+        `deployment-row-${D2}`,
         `deployment-row-${D1}`,
         `deployment-row-${D9}`
       ])
@@ -1311,6 +1343,44 @@ describe('DeploymentSwitcher', () => {
       expect(await screen.findByRole('tooltip')).toHaveTextContent(
         'Studio Build · staging cannot run this workflow. It is missing Power Lora Loader (rgthree).'
       )
+    })
+
+    it('leaves out a group whose only row is the current one', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        picked_deployment_id: D2
+      })
+      mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
+        deployments: [
+          { deployment_id: D2, missing_node_types: [], unknown: false },
+          {
+            deployment_id: D1,
+            missing_node_types: ['Power Lora Loader (rgthree)'],
+            unknown: false
+          },
+          {
+            deployment_id: D9,
+            missing_node_types: ['Power Lora Loader (rgthree)'],
+            unknown: false
+          }
+        ],
+        cloud: { missing_node_types: ['Power Lora Loader (rgthree)'] }
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      await waitFor(() =>
+        expect(rowsIn('Run on')).toEqual([`deployment-row-${D2}`])
+      )
+      expect(
+        screen.queryByRole('group', { name: 'Compatible environments' })
+      ).toBeNull()
+      expect(rowOrder()).toEqual([
+        `deployment-row-${D2}`,
+        'deployment-row-cloud',
+        `deployment-row-${D1}`,
+        `deployment-row-${D9}`
+      ])
     })
 
     it.for([

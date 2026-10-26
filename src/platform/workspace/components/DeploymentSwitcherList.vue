@@ -120,10 +120,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/DeploymentSwitcherDefaultMenu.vue'
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
 import { switcherItemClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
-import {
-  COMFY_CLOUD_ROW,
-  useDeploymentLabels
-} from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
@@ -153,7 +150,7 @@ const {
   followsWorkspace
 } = storeToRefs(useDeploymentPickStore())
 const { currentLabel } = useDeploymentLabels()
-const { sections } = useDeploymentRows()
+const { sections, pickedValue } = useDeploymentRows()
 const sectionLabelId = useId()
 
 const buildsUrl = `${getComfyPlatformBaseUrl()}/profile/builds`
@@ -171,8 +168,6 @@ const buildsLink = computed(() =>
         icon: 'icon-[lucide--plus]'
       }
 )
-
-const pickedValue = computed(() => pickedDeploymentId.value ?? COMFY_CLOUD_ROW)
 
 const listedSections = computed(() =>
   sections.value.map((section, index) => ({

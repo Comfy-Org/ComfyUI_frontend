@@ -26,18 +26,21 @@ interface DeploymentRow {
 }
 
 interface DeploymentSection {
-  key: 'all' | 'compatible' | 'incompatible'
+  key: 'runOn' | 'compatible' | 'incompatible'
   label: string
   rows: DeploymentRow[]
 }
 
 /**
- * The Run on menu's rows, Comfy Cloud first. Once a compatibility check
- * answers, rows that run the open workflow come first under their own label.
+ * The Run on menu's rows: the one this browser runs on, then Comfy Cloud,
+ * then the deployments. Once a compatibility check splits them, the rest are
+ * grouped by whether they run the open workflow.
  */
 export function useDeploymentRows() {
   const { t, locale } = useI18n()
-  const { deployments } = storeToRefs(useDeploymentPickStore())
+  const { deployments, pickedDeploymentId } = storeToRefs(
+    useDeploymentPickStore()
+  )
   const {
     deploymentTitle,
     deploymentName,
@@ -92,16 +95,27 @@ export function useDeploymentRows() {
     }
   }
 
+  function runsWorkflow(row: DeploymentRow): boolean {
+    return markFor(row.deploymentId)?.kind === 'runs'
+  }
+
+  const pickedValue = computed(
+    () => pickedDeploymentId.value ?? COMFY_CLOUD_ROW
+  )
+
   const sections = computed<DeploymentSection[]>(() => {
     const rows = [cloudRow(), ...deployments.value.map(deploymentRow)]
-    const [compatible, incompatible] = partition(
+    const [current, others] = partition(
       rows,
-      (row) => markFor(row.deploymentId)?.kind === 'runs'
+      (row) => row.value === pickedValue.value
     )
-    if (compatible.length === 0 || incompatible.length === 0) {
-      return [{ key: 'all', label: t('deploymentSwitcher.runOn'), rows }]
+    const runOn = t('deploymentSwitcher.runOn')
+    if (rows.every(runsWorkflow) || !rows.some(runsWorkflow)) {
+      return [{ key: 'runOn', label: runOn, rows: [...current, ...others] }]
     }
-    return [
+    const [compatible, incompatible] = partition(others, runsWorkflow)
+    const groups: DeploymentSection[] = [
+      { key: 'runOn', label: runOn, rows: current },
       {
         key: 'compatible',
         label: t('deploymentSwitcher.compatibleEnvironments'),
@@ -113,7 +127,8 @@ export function useDeploymentRows() {
         rows: incompatible
       }
     ]
+    return groups.filter((group) => group.rows.length > 0)
   })
 
-  return { sections }
+  return { sections, pickedValue }
 }
