@@ -5,6 +5,7 @@ import { resolveUnifiedWebSession } from '@comfyorg/account-core/webSessionFlag'
 import { hasServerFirebaseConfig } from '@/config/firebase'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
+import { isLoopbackHost } from '@/utils/hostWhitelist'
 
 import {
   authenticatedRemoteConfigState,
@@ -259,9 +260,15 @@ const BOOTSTRAP_RETRY_BASE_MS = 1_000
 const BOOTSTRAP_RETRY_MAX_MS = 10_000
 const BOOTSTRAP_UNNAMED_PROJECT_READS = 1
 
+/** A cloud bundle on a loopback host is a local harness, not a deployed Cloud. */
+function servesLocalCloud(): boolean {
+  return isLoopbackHost(window.location.hostname)
+}
+
 /**
- * Retries the anonymous /features read until it loads and, for a server that
- * names the Firebase project, until that name arrives.
+ * Retries the anonymous /features read until the server names the Firebase
+ * project. Deployed cloud waits indefinitely rather than start Firebase on the
+ * bundled project; a loopback harness, whose server never sends one, stops.
  */
 export async function loadRemoteConfigUntilReady(): Promise<void> {
   let unnamedProjectReads = 0
@@ -270,7 +277,7 @@ export async function loadRemoteConfigUntilReady(): Promise<void> {
     if (remoteConfigState.value !== 'error') {
       if (hasServerFirebaseConfig()) return
       unnamedProjectReads++
-      if (unnamedProjectReads > BOOTSTRAP_UNNAMED_PROJECT_READS) {
+      if (unnamedProjectReads === 1) {
         reportError(
           new Error(
             'Startup read answered without naming the Firebase project'
@@ -279,11 +286,15 @@ export async function loadRemoteConfigUntilReady(): Promise<void> {
             surface: 'workspace',
             errorType: 'startup_remote_config_without_firebase_project',
             level: 'warning',
-            context: { reads: unnamedProjectReads }
+            context: { localCloud: servesLocalCloud() }
           }
         )
-        return
       }
+      if (
+        servesLocalCloud() &&
+        unnamedProjectReads > BOOTSTRAP_UNNAMED_PROJECT_READS
+      )
+        return
     }
     await delay(
       Math.min(BOOTSTRAP_RETRY_BASE_MS * 2 ** attempt, BOOTSTRAP_RETRY_MAX_MS)

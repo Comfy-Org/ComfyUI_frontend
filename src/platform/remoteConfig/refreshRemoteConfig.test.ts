@@ -481,6 +481,8 @@ describe('refreshRemoteConfig', () => {
   })
 
   describe('loadRemoteConfigUntilReady', () => {
+    const BOOTSTRAP_RELEASE_MS = 30_000
+
     it('retries until /features loads instead of leaving startup on build-time defaults', async () => {
       vi.useFakeTimers()
       const serverConfig = { firebase_config: { projectId: 'dreamboothy' } }
@@ -517,8 +519,9 @@ describe('refreshRemoteConfig', () => {
       vi.useRealTimers()
     })
 
-    it('stops waiting when the server never names the project, so startup cannot hang', async () => {
+    it('stops waiting on a loopback host, whose server never names a project', async () => {
       vi.useFakeTimers()
+      vi.stubGlobal('location', { hostname: '127.0.0.1' })
       vi.mocked(global.fetch).mockResolvedValue(
         mockSuccessResponse({ subscription_required: true })
       )
@@ -528,6 +531,32 @@ describe('refreshRemoteConfig', () => {
       await loading
 
       expect(global.fetch).toHaveBeenCalledTimes(2)
+      vi.unstubAllGlobals()
+      vi.useRealTimers()
+    })
+
+    it('never reaches Firebase startup on deployed cloud that keeps answering without a project', async () => {
+      vi.useFakeTimers()
+      vi.stubGlobal('location', { hostname: 'cloud.comfy.org' })
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockSuccessResponse({ subscription_required: true })
+      )
+      const reachedFirebaseStartup = vi.fn()
+
+      void loadRemoteConfigUntilReady().then(reachedFirebaseStartup)
+      await vi.advanceTimersByTimeAsync(5 * 60_000)
+
+      expect(reachedFirebaseStartup).not.toHaveBeenCalled()
+      expect(global.fetch.mock.calls.length).toBeGreaterThan(5)
+
+      // Release the pending loop so it cannot leak into another test.
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockSuccessResponse({ firebase_config: { projectId: 'dreamboothy' } })
+      )
+      await vi.advanceTimersByTimeAsync(BOOTSTRAP_RELEASE_MS)
+      expect(reachedFirebaseStartup).toHaveBeenCalledOnce()
+
+      vi.unstubAllGlobals()
       vi.useRealTimers()
     })
 
