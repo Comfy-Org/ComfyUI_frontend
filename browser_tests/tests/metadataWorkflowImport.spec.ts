@@ -117,28 +117,16 @@ test.describe(
         tag: '@canvas'
       },
       async ({ comfyPage, page }) => {
-        const pageErrors: string[] = []
-        const onPageError = (error: Error) => {
-          pageErrors.push(error.message)
-        }
-        page.on('pageerror', onPageError)
+        await comfyPage.dragDrop.dragAndDropFilePath(
+          metadataFixturePath('corrupt_compressed_itxt.png'),
+          { waitForUpload: true }
+        )
 
-        try {
-          await comfyPage.dragDrop.dragAndDropFilePath(
-            metadataFixturePath('corrupt_compressed_itxt.png'),
-            { waitForUpload: true }
-          )
-
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(1)
-          expect(
-            await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-          ).toHaveLength(1)
-          expect(pageErrors).toEqual([])
-        } finally {
-          page.off('pageerror', onPageError)
-        }
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        expect(
+          await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+        ).toHaveLength(1)
+        expect(await page.pageErrors()).toEqual([])
       }
     )
   }
