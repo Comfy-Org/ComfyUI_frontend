@@ -1286,13 +1286,6 @@ export class LiveGraphApplier {
     }
   }
 
-  /**
-   * A positional list is read against the live widgets one slot at a time,
-   * because a DynamicGroup controller resizes that list and the slots after it
-   * belong to the rows it creates or removes. When the controller does not
-   * reach the document's count, the later slots no longer line up with any
-   * widget, so they are left unapplied rather than written one row off.
-   */
   private applyPositionalWidgets(node: LGraphNode, widgets: unknown[]): void {
     let live = serializableWidgets(node)
     for (
@@ -1672,10 +1665,6 @@ function isWidgetEntry(
   return entry[1] !== undefined && isWidgetValue(entry[1])
 }
 
-/**
- * Ordinary node widget values by document name, ordered so Y.Map insertion
- * order cannot decide the outcome (`widgetEntryRank`).
- */
 function ordinaryWidgetEntries(
   node: LGraphNode,
   widgets: Record<string, unknown>
