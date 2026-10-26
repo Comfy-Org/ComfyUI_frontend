@@ -169,7 +169,7 @@ test.describe(
       const initialNode = comfyPage.vueNodes.nodes.first()
       const nodeId = await initialNode.getAttribute('data-node-id')
       const initialElement = await initialNode.elementHandle()
-      if (!nodeId || !initialElement) {
+      if (!nodeId) {
         throw new Error('Expected an active Vue node with an id')
       }
       const initialSize = await getGraphNodeSize(comfyPage.page, nodeId)
@@ -184,7 +184,6 @@ test.describe(
       const returnedNode = comfyPage.vueNodes.getNodeLocator(nodeId)
       await expect(returnedNode).toBeVisible()
       const returnedElement = await returnedNode.elementHandle()
-      if (!returnedElement) throw new Error('Expected the Vue node to return')
 
       expect(
         await initialElement.evaluate(
@@ -203,7 +202,6 @@ test.describe(
       test.slow()
       const focusedNode = comfyPage.vueNodes.nodes.first()
       const focusedElement = await focusedNode.elementHandle()
-      if (!focusedElement) throw new Error('Expected an active Vue node')
       await focusedNode.focus()
 
       await setCanvasScale(comfyPage, 0.4)

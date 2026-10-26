@@ -52,14 +52,9 @@ export function useLowQualityRendering(canvas: Ref<LGraphCanvas | undefined>) {
     devicePixelRatio.value = window.devicePixelRatio || 1
   })
 
-  // Read from the setting rather than the canvas instance: the instance field
-  // is a plain getter, so a settings change would not re-evaluate this until
-  // something else moved the camera.
   const threshold = computed(() =>
     getLowQualityThreshold(
-      settingStore.get('LiteGraph.Canvas.MinFontSizeForLOD') ??
-        canvas.value?.min_font_size_for_lod ??
-        0,
+      settingStore.get('LiteGraph.Canvas.MinFontSizeForLOD'),
       devicePixelRatio.value
     )
   )
@@ -73,17 +68,11 @@ export function useLowQualityRendering(canvas: Ref<LGraphCanvas | undefined>) {
       return
     }
 
-    // Asymmetric bounds: drop into boxes at the threshold, but climb back out
-    // only once clearly above it.
     isLowQuality.value = isLowQuality.value
       ? camera.z < limit * (1 + HYSTERESIS)
       : camera.z < limit
   })
 
-  // Vue owns node interaction only while its components exist. Below the
-  // threshold none are mounted, so litegraph has to take hit-testing back or
-  // the graph becomes unselectable, undraggable and unresizable while boxes
-  // are showing - with right-click still working, which is worse than either.
   watchEffect(() => {
     LiteGraph.vueNodesSuspended = isLowQuality.value
   })

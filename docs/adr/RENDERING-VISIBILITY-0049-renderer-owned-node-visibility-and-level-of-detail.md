@@ -1,4 +1,4 @@
-# 24. Nodes 2.0 Viewport Retention and Level of Detail
+# ADR-RENDERING-VISIBILITY-0049: Nodes 2.0 viewport retention and level of detail
 
 Date: 2026-08-17
 

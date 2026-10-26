@@ -4,6 +4,7 @@ import { effectScope, nextTick, reactive, shallowRef } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   getLowQualityThreshold,
   useLowQualityRendering
@@ -24,7 +25,6 @@ describe('getLowQualityThreshold', () => {
   it('matches the zoom at which text hits the minimum readable size', () => {
     setDpr(1)
 
-    // NODE_TEXT_SIZE is 14, so 14px text renders at 7px once zoomed to 0.5.
     expect(getLowQualityThreshold(7)).toBeCloseTo(0.5, 5)
   })
 
@@ -34,7 +34,6 @@ describe('getLowQualityThreshold', () => {
     setDpr(4)
     const at4x = getLowQualityThreshold(8)
 
-    // sqrt(4) = 2, so the threshold halves rather than quartering.
     expect(at4x).toBeCloseTo(at1x / 2, 5)
   })
 
@@ -45,18 +44,13 @@ describe('getLowQualityThreshold', () => {
 })
 
 const camera = reactive({ x: 0, y: 0, z: 1 })
-const settings = reactive({ minFontSize: 8 })
 
-vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
-  useTransformState: () => ({ camera })
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => settings.minFontSize })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/layout/transform/useTransformState'),
+  () => ({ useTransformState: () => ({ camera }) })
+)
 
 describe('useLowQualityRendering', () => {
-  // 8 / (14 * sqrt(1)) ~= 0.571
   const THRESHOLD = 8 / 14
 
   function run() {
@@ -73,7 +67,7 @@ describe('useLowQualityRendering', () => {
   beforeEach(() => {
     setDpr(1)
     Object.assign(camera, { x: 0, y: 0, z: 1 })
-    settings.minFontSize = 8
+    useSettingStore().settingValues['LiteGraph.Canvas.MinFontSizeForLOD'] = 8
     LiteGraph.vueNodesSuspended = false
   })
 
@@ -92,15 +86,12 @@ describe('useLowQualityRendering', () => {
   })
 
   it('needs a margin above the threshold before switching back', async () => {
-    // A wheel gesture dwelling on the boundary would otherwise mount and
-    // unmount every node in the graph repeatedly.
     const { isLowQuality } = run()
 
     camera.z = THRESHOLD * 0.9
     await nextTick()
     expect(isLowQuality.value).toBe(true)
 
-    // Just above the raw threshold: still simplified.
     camera.z = THRESHOLD * 1.02
     await nextTick()
     expect(isLowQuality.value).toBe(true)
@@ -116,14 +107,12 @@ describe('useLowQualityRendering', () => {
     await nextTick()
     expect(isLowQuality.value).toBe(true)
 
-    settings.minFontSize = 0
+    useSettingStore().settingValues['LiteGraph.Canvas.MinFontSizeForLOD'] = 0
     await nextTick()
     expect(isLowQuality.value).toBe(false)
   })
 
   it('hands node interaction back to litegraph while simplified', async () => {
-    // Nothing is mounted below the threshold, so the gates that defer to Vue
-    // have to defer back or the graph cannot be selected or dragged at all.
     const { isLowQuality } = run()
     expect(LiteGraph.vueNodesSuspended).toBe(false)
 
@@ -166,8 +155,6 @@ describe('useLowQualityRendering', () => {
   })
 
   it('repaints the canvas when the mode flips', async () => {
-    // The two layers swap wholesale at the threshold; without a repaint the
-    // stale one stays on screen until something else dirties the canvas.
     const canvasMock: LGraphCanvas = fromAny({ setDirty: vi.fn() })
     const canvas = shallowRef<LGraphCanvas | undefined>(canvasMock)
     const scope = effectScope()

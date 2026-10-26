@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 
@@ -11,7 +9,7 @@ const callbacks = vi.hoisted(() => ({
   resize: vi.fn<() => void>()
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useRafFn: (callback: () => void) =>
     callbacks.frame.mockImplementation(callback),
   useResizeObserver: (_target: unknown, callback: () => void) =>
@@ -20,9 +18,10 @@ vi.mock('@vueuse/core', () => ({
 
 const camera = reactive({ x: -100, y: -50, z: 2 })
 
-vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
-  useTransformState: () => ({ camera })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/layout/transform/useTransformState'),
+  () => ({ useTransformState: () => ({ camera }) })
+)
 
 const originalDpr = window.devicePixelRatio
 
@@ -34,7 +33,6 @@ function setDpr(value: number): void {
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   Object.assign(camera, { x: -100, y: -50, z: 2 })
   setDpr(2)
 })

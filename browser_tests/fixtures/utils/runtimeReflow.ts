@@ -36,32 +36,25 @@ async function centerOnNode(comfyPage: ComfyPage, nodeId: string) {
       const graph = window.graph as TestGraphAccess
       const node = graph._nodes_by_id[id]
       if (!node) {
-        // A silent return here surfaces later as an opaque locator timeout
-        // pointing at the node rather than at this fixture.
         throw new Error(
           `runtimeReflow: node ${id} not found in the graph; cannot center on it`
         )
       }
 
-      // Derived from the live threshold, reading the same inputs litegraph
-      // uses, so a DPR or setting change cannot silently put the measurement
-      // below the LOD cutoff where no [data-node-id] exists.
-      const minFontSize = canvas.min_font_size_for_lod ?? 0
+      const minFontSize = canvas.min_font_size_for_lod
       const textSize = window.LiteGraph?.NODE_TEXT_SIZE ?? 14
       const lodThreshold =
         minFontSize > 0
           ? minFontSize / (textSize * Math.sqrt(window.devicePixelRatio || 1))
           : 0
-      const zoom = Math.max(Number(zoomFloor), lodThreshold * 1.4)
+      const zoom = Math.max(zoomFloor, lodThreshold * 1.4)
 
       const element = canvas.canvas
-      canvas.ds.scale = Number(zoom)
+      canvas.ds.scale = zoom
       canvas.ds.offset[0] =
-        -(node.pos[0] + node.size[0] / 2) +
-        element.clientWidth / 2 / Number(zoom)
+        -(node.pos[0] + node.size[0] / 2) + element.clientWidth / 2 / zoom
       canvas.ds.offset[1] =
-        -(node.pos[1] + node.size[1] / 2) +
-        element.clientHeight / 2 / Number(zoom)
+        -(node.pos[1] + node.size[1] / 2) + element.clientHeight / 2 / zoom
       canvas.setDirty(true, true)
     },
     [nodeId, MEASUREMENT_ZOOM_FLOOR] as const

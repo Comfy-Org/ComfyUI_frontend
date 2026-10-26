@@ -37,7 +37,7 @@ export function createNodeBox(
   const bounds = { x, y, width, height }
   const titleHeight = Math.max(0, node.pos[1] - y)
 
-  if (node.flags?.collapsed) {
+  if (node.flags.collapsed) {
     return {
       bounds,
       color: colors?.body,
@@ -69,8 +69,8 @@ export function createNodeBox(
           : undefined
     })
   }
-  node.inputs?.forEach((slot, index) => addSlot(slot, index, true))
-  node.outputs?.forEach((slot, index) => addSlot(slot, index, false))
+  node.inputs.forEach((slot, index) => addSlot(slot, index, true))
+  node.outputs.forEach((slot, index) => addSlot(slot, index, false))
 
   const widgets: NodeBoxWidget[] = []
   for (const widget of node.widgets ?? []) {
