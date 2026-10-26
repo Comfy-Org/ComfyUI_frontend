@@ -284,7 +284,9 @@ export function useMaskEditorSaver() {
 
     writeImageWidgetValue(
       node,
-      mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
+      (mainRef.subfolder ? `${mainRef.subfolder}/` : '') +
+        mainRef.filename +
+        (mainRef.type ? ` [${mainRef.type}]` : '')
     )
 
     node.imgs = undefined
