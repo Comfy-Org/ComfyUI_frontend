@@ -188,7 +188,7 @@ describe('projectBillingPlans', () => {
     expect(projectBillingPlans(tooLarge)).toBeUndefined()
   })
 
-  it('refuses a feature count a number cannot hold exactly', () => {
+  it('drops an unsafe display count without rejecting the catalog', () => {
     const tooLarge: BillingPlansData = {
       ...DECODED,
       plans: [
@@ -206,6 +206,12 @@ describe('projectBillingPlans', () => {
       ]
     }
 
-    expect(projectBillingPlans(tooLarge)).toBeUndefined()
+    expect(projectBillingPlans(tooLarge)?.plans[0].feature_items).toEqual([
+      {
+        key: 'membersUpTo',
+        status: 'available',
+        text: 'Too many members'
+      }
+    ])
   })
 })
