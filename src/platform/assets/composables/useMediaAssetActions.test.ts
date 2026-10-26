@@ -12,10 +12,12 @@ import type { App } from 'vue'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
 
 import { i18n } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+import { seedMediaNodeDefs } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
 import { scanNodeMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
@@ -24,6 +26,7 @@ import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { clearDeletedAssetWidgetValues } from '@/platform/assets/utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '@/platform/assets/utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '@/platform/assets/utils/markDeletedAssetsAsMissingMedia'
+import { getAssetType } from '@/platform/assets/utils/assetTypeUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { useMediaAssetActions as createMediaAssetActions } from './useMediaAssetActions'
 
@@ -91,10 +94,8 @@ vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isResultItemType: vi.fn(() => true)
 }))
 
-const mockGetAssetType = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/assets/utils/assetTypeUtil'), () => ({
-  getAssetType: mockGetAssetType
-}))
+vi.mock(import('@/platform/assets/utils/assetTypeUtil'), { spy: true })
+const mockGetAssetType = vi.mocked(getAssetType)
 
 const mockGetOutputAssetMetadata = vi.hoisted(() =>
   vi.fn<
@@ -470,8 +471,8 @@ describe('useMediaAssetActions', () => {
           ['2', 'temp'],
           ['3', 'output']
         ])
-        mockGetAssetType.mockImplementation((asset: AssetItem) =>
-          typeByAssetId.get(asset.id)
+        mockGetAssetType.mockImplementation(
+          (asset: AssetItem) => typeByAssetId.get(asset.id) ?? 'input'
         )
         const { actions, unmount } = mountMediaActions()
 
@@ -1849,7 +1850,7 @@ describe('useMediaAssetActions', () => {
 
       expect(mockMarkMissingMedia).toHaveBeenCalledWith(
         mockAppGraph.value,
-        new Set(['shared.png', 'shared.png [input]'])
+        new Set(['shared.png'])
       )
       expect(useMissingMediaStore().missingMediaCandidates).toEqual(
         expect.arrayContaining([
@@ -1897,39 +1898,30 @@ describe('useMediaAssetActions', () => {
       const [graphArg, valuesArg, removeArg] =
         mockClearNodePreviewCache.mock.calls[0]
       expect(graphArg).toBe(mockAppGraph.value)
-      expect(valuesArg).toEqual(
-        new Set(['foo.png', 'foo.png [input]', 'abc123.png'])
-      )
+      expect(valuesArg).toEqual(new Set(['foo.png', 'abc123.png']))
       expect(typeof removeArg).toBe('function')
 
       const sampleNode = fromAny<LGraphNode, unknown>({ id: 42 })
       removeArg(sampleNode)
       expect(mockRemoveNodeOutputsForNode).toHaveBeenCalledWith(sampleNode)
-      // Locator is resolved from the node's own graph, not from the raw id —
-      // covers Load Image / Load Video nodes nested inside subgraphs.
       expect(mockRemoveNodeOutputs).not.toHaveBeenCalled()
 
       expect(mockClearWidgetValues).toHaveBeenCalledWith(
         mockAppGraph.value,
-        new Set(['foo.png', 'foo.png [input]', 'abc123.png'])
+        new Set(['foo.png', 'abc123.png'])
       )
 
       expect(mockMarkMissingMedia).toHaveBeenCalledWith(
         mockAppGraph.value,
-        new Set(['foo.png', 'foo.png [input]', 'abc123.png'])
+        new Set(['foo.png', 'abc123.png'])
       )
 
-      // markMissing + previewCache must run before widget-value clearing,
-      // otherwise findNodesReferencingValues sees blanked widgets and matches
-      // nothing.
       const markOrder = mockMarkMissingMedia.mock.invocationCallOrder[0]
       const cacheOrder = mockClearNodePreviewCache.mock.invocationCallOrder[0]
       const clearOrder = mockClearWidgetValues.mock.invocationCallOrder[0]
       expect(markOrder).toBeLessThan(clearOrder)
       expect(cacheOrder).toBeLessThan(clearOrder)
 
-      // Programmatic widget mutation doesn't go through DOM events, so the
-      // workflow won't be flagged as modified unless we capture explicitly.
       expect(mockCaptureCanvasState).toHaveBeenCalled()
     })
 
@@ -1975,6 +1967,191 @@ describe('useMediaAssetActions', () => {
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
       expect(mockCaptureCanvasState).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('deleteAssets — references added from the deleted asset', () => {
+    const job = { job_id: 'job-1', created_at: '2026-01-01T00:00:00Z' }
+    const tempAsset = createMockAsset({
+      ...job,
+      id: 'temp-asset',
+      name: 'ComfyUI_temp_00001_.png',
+      hash: 'aa7ecf08.png',
+      tags: ['temp'],
+      user_metadata: { jobId: 'job-1', subfolder: 'previews' }
+    })
+    const outputAsset = createMockAsset({
+      ...job,
+      id: 'output-asset',
+      name: 'ComfyUI_00001_.png',
+      hash: 'bb12cd34.png',
+      tags: ['output'],
+      user_metadata: { jobId: 'job-1', subfolder: 'runs/2026' }
+    })
+    const urlTempAsset = createMockAsset({
+      ...job,
+      id: 'url-temp-asset',
+      name: 'ComfyUI_temp_00002_.png',
+      hash: 'cc56ef78.png',
+      tags: ['output'],
+      preview_url: '/api/view?filename=ComfyUI_temp_00002_.png&type=temp',
+      user_metadata: { jobId: 'job-1', subfolder: '' }
+    })
+    const deletedAssets = [tempAsset, outputAsset, urlTempAsset]
+
+    let graph: LGraph
+
+    beforeEach(() => {
+      mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      mockDeleteAsset.mockResolvedValue(undefined)
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) =>
+          props.onConfirm(true)
+      )
+      mockGetAssetType.mockRestore()
+      mockGetOutputAssetMetadata.mockImplementation(
+        (metadata) => metadata ?? null
+      )
+      seedMediaNodeDefs()
+      graph = new LGraph()
+      mockAppGraph.value = graph
+      vi.mocked(useLitegraphService()).addNodeOnGraph.mockImplementation(() =>
+        addLoadImageNode('')
+      )
+    })
+
+    function addLoadImageNode(value: string): LGraphNode {
+      const node = new LGraphNode('LoadImage', 'LoadImage')
+      node.serialize_widgets = true
+      node.addWidget('combo', 'image', value, () => undefined, { values: [] })
+      graph.add(node)
+      node.imgs = [new Image()]
+      return node
+    }
+
+    async function addReferencesTo(assets: AssetItem[]) {
+      const { actions } = mountMediaActions()
+      await actions.addMultipleToWorkflow(assets)
+      return { actions, nodes: [...graph.nodes] }
+    }
+
+    function serializedImageValue(node: LGraphNode) {
+      return node.serialize().widgets_values?.[0]
+    }
+
+    function expectReferenceCleaned(node: LGraphNode, deletedValue: string) {
+      expect(serializedImageValue(node)).toBe('')
+      expect(node.imgs).toBeUndefined()
+      expect(mockRemoveNodeOutputsForNode).toHaveBeenCalledWith(node)
+      expect(useMissingMediaStore().missingMediaCandidates).toContainEqual(
+        expect.objectContaining({
+          nodeId: String(node.id),
+          name: deletedValue,
+          isMissing: true
+        })
+      )
+    }
+
+    function expectReferenceKept(node: LGraphNode, value: string) {
+      expect(serializedImageValue(node)).toBe(value)
+      expect(node.imgs).toHaveLength(1)
+      expect(mockRemoveNodeOutputsForNode).not.toHaveBeenCalledWith(node)
+      expect(
+        useMissingMediaStore().missingMediaCandidates ?? []
+      ).not.toContainEqual(expect.objectContaining({ nodeId: String(node.id) }))
+    }
+
+    it.for([
+      ['flat', () => deletedAssets],
+      ['grouped', () => unflattenOutputAssets(deletedAssets)]
+    ] as const)(
+      'clears hash-backed temp and output references after deleting the %s assets',
+      async ([, deletionTargets]) => {
+        const { actions, nodes } = await addReferencesTo(deletedAssets)
+        const addedValues = nodes.map(serializedImageValue)
+        expect(addedValues).toEqual([
+          'previews/aa7ecf08.png [temp]',
+          'runs/2026/bb12cd34.png [output]',
+          'cc56ef78.png [temp]'
+        ])
+        const survivors = [
+          'aa7ecf08.png [output]',
+          'other/aa7ecf08.png [temp]',
+          'ComfyUI_temp_00001_.png [temp]',
+          'bb12cd34.png [output]'
+        ].map((value) => ({ value, node: addLoadImageNode(value) }))
+
+        await expect(actions.deleteAssets(deletionTargets())).resolves.toBe(
+          true
+        )
+
+        const deletedIds = mockDeleteAsset.mock.calls.map(([id]) => id)
+        expect(deletedIds).toHaveLength(3)
+        expect(deletedIds).toEqual(
+          expect.arrayContaining([
+            'output-asset',
+            'temp-asset',
+            'url-temp-asset'
+          ])
+        )
+        nodes.forEach((node, index) =>
+          expectReferenceCleaned(node, String(addedValues[index]))
+        )
+        for (const { node, value } of survivors)
+          expectReferenceKept(node, value)
+      }
+    )
+
+    it.for([
+      'aa7ecf08.png[temp]',
+      'aa7ecf08.png [TEMP]',
+      'aa7ecf08.png [temp] '
+    ])('clears a hash-backed temp reference written as %j', async (value) => {
+      const node = addLoadImageNode(value)
+      const { actions } = mountMediaActions()
+
+      await actions.deleteAssets(
+        createMockAsset({ ...tempAsset, user_metadata: undefined })
+      )
+
+      expectReferenceCleaned(node, value)
+    })
+
+    it('clears every compatible input form and keeps other roots and folders', async () => {
+      const inputAsset = createMockAsset({
+        id: 'input-asset',
+        name: 'photo.png',
+        hash: 'dd90ab12.png',
+        tags: ['input']
+      })
+      const deletedNodes = [
+        'photo.png',
+        'photo.png [input]',
+        'dd90ab12.png',
+        'dd90ab12.png [input]'
+      ].map((value) => ({ value, node: addLoadImageNode(value) }))
+      const survivors = [
+        'photo.png [output]',
+        'photo.png [temp]',
+        'clipspace/photo.png [input]'
+      ].map((value) => ({ value, node: addLoadImageNode(value) }))
+      const { actions } = mountMediaActions()
+
+      await actions.deleteAssets(inputAsset)
+
+      for (const { node, value } of deletedNodes)
+        expectReferenceCleaned(node, value)
+      for (const { node, value } of survivors) expectReferenceKept(node, value)
+    })
+
+    it('keeps every reference when the deletion fails', async () => {
+      mockDeleteAsset.mockRejectedValue(new Error('503 Service Unavailable'))
+      const { actions, nodes } = await addReferencesTo([tempAsset])
+
+      await actions.deleteAssets(unflattenOutputAssets([tempAsset]))
+
+      expectReferenceKept(nodes[0], 'previews/aa7ecf08.png [temp]')
     })
   })
 
@@ -2061,12 +2238,7 @@ describe('useMediaAssetActions', () => {
         createMockAsset({ id: 'asset-third', name: 'third.png' })
       ]
       mockInputAssets.items = [...assets]
-      const succeededVariants = new Set([
-        'first.png',
-        'first.png [input]',
-        'third.png',
-        'third.png [input]'
-      ])
+      const succeededVariants = new Set(['first.png', 'third.png'])
 
       await useMediaAssetActions().deleteAssets(assets)
 

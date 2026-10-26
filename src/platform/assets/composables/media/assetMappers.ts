@@ -2,6 +2,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
+import { getAssetType as getAssetSourceType } from '@/platform/assets/utils/assetTypeUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
@@ -70,18 +71,23 @@ const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
 const byIsTemp = (a: AssetItem, b: AssetItem): number =>
   Number(b.tags.includes('temp')) - Number(a.tags.includes('temp'))
 
+function isTempOutput(asset: AssetItem): boolean {
+  return asset.tags.includes('temp') || getAssetSourceType(asset) === 'temp'
+}
+
 function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   const url = asset.preview_url ?? ''
   return {
     assetId: asset.id,
+    hash: asset.hash,
     display_name: asset.display_name ?? undefined,
     filename: asset.name,
     format: metadata?.format,
     mediaType: getMediaTypeFromFilename(asset.name),
     nodeId: metadata?.nodeId ?? '',
     subfolder: metadata?.subfolder ?? '',
-    type: asset.tags.includes('temp') ? 'temp' : 'output',
+    type: isTempOutput(asset) ? 'temp' : 'output',
     url,
     previewUrl: asset.thumbnail_url ?? url
   }
