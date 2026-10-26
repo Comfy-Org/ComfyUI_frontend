@@ -1,5 +1,6 @@
 import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { DocResetData } from '@comfyorg/ingest-types'
+import { zDocUpdateData } from '@comfyorg/ingest-types/zod'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
@@ -371,28 +372,40 @@ function parseAwarenessState(value: unknown): AwarenessStateResult {
   return { kind: 'present', state }
 }
 
-const serverFrameParsers: ServerFrameParsers = {
-  doc_update: (workflowId, data) => {
-    const seq = parseSequence(data.seq)
-    if (seq === null || typeof data.update_b64 !== 'string') return null
-    const update = decodeBase64(data.update_b64)
-    if (update === null) return null
-    if (!isAbsent(data.op_ids) && !isStringArray(data.op_ids)) return null
-    const actor = parseAdvisoryActor(data.actor)
-    return {
-      type: 'doc_update',
-      data: {
-        workflowId,
-        seq,
-        ...(isSequence(data.lineage_seq) && {
-          lineageSeq: data.lineage_seq
-        }),
-        update,
-        ...(actor !== undefined && { actor }),
-        ...(isStringArray(data.op_ids) && { opIds: data.op_ids })
-      }
+function parseDocUpdateLineage(value: unknown): number | null {
+  const parsed = zDocUpdateData.shape.lineage_seq.safeParse(value)
+  return parsed.success ? parseSequence(parsed.data) : null
+}
+
+function parseDocUpdateBytes(value: unknown): Uint8Array | null {
+  return typeof value === 'string' ? decodeBase64(value) : null
+}
+
+function parseDocUpdateFrame(
+  workflowId: string,
+  data: WireData
+): Extract<ServerDocFrame, { type: 'doc_update' }> | null {
+  const seq = parseSequence(data.seq)
+  const lineageSeq = parseDocUpdateLineage(data.lineage_seq)
+  const update = parseDocUpdateBytes(data.update_b64)
+  if (seq === null || lineageSeq === null || update === null) return null
+  if (!isAbsent(data.op_ids) && !isStringArray(data.op_ids)) return null
+  const actor = parseAdvisoryActor(data.actor)
+  return {
+    type: 'doc_update',
+    data: {
+      workflowId,
+      seq,
+      lineageSeq,
+      update,
+      ...(actor !== undefined && { actor }),
+      ...(isStringArray(data.op_ids) && { opIds: data.op_ids })
     }
-  },
+  }
+}
+
+const serverFrameParsers: ServerFrameParsers = {
+  doc_update: parseDocUpdateFrame,
   doc_subscribed: (workflowId, data) =>
     typeof data.ok === 'boolean'
       ? {

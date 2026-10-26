@@ -274,6 +274,7 @@ describe('layout follower bridge: stale-schema reseed', () => {
         v: 1,
         workflow_id: 'wf-1',
         seq: 1,
+        lineage_seq: 1,
         update_b64: encodeBase64(
           Y.encodeStateAsUpdate(mint({ nodes: [], links: [] }, { types: {} }))
         )
