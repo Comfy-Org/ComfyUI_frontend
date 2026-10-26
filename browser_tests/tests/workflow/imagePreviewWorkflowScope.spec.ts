@@ -4,13 +4,49 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-const firstNodeState = (comfyPage: ComfyPage) =>
-  comfyPage.page.evaluate(() => {
+type ImageLoadWindow = Window & {
+  __handledImageLoads?: string[]
+  __restoreImageSrc?: () => void
+}
+
+function firstNodeState(comfyPage: ComfyPage) {
+  return comfyPage.page.evaluate(() => {
     const node = window.app!.graph.nodes.at(0)
     return node
       ? { id: String(node.id), type: node.type, imgs: node.imgs?.length }
       : null
   })
+}
+
+function trackHandledImageLoads(comfyPage: ComfyPage) {
+  return comfyPage.page.evaluate(() => {
+    const w = window as ImageLoadWindow
+    const src = Object.getOwnPropertyDescriptor(
+      HTMLImageElement.prototype,
+      'src'
+    )!
+    w.__handledImageLoads = []
+    Object.defineProperty(HTMLImageElement.prototype, 'src', {
+      ...src,
+      set(this: HTMLImageElement, value: string) {
+        this.addEventListener(
+          'load',
+          () => setTimeout(() => w.__handledImageLoads?.push(this.src)),
+          { once: true }
+        )
+        src.set!.call(this, value)
+      }
+    })
+    w.__restoreImageSrc = () =>
+      Object.defineProperty(HTMLImageElement.prototype, 'src', src)
+  })
+}
+
+function restoreImageSrc(comfyPage: ComfyPage) {
+  return comfyPage.page.evaluate(() =>
+    (window as ImageLoadWindow).__restoreImageSrc?.()
+  )
+}
 
 async function expectLatePreviewStaysOnItsWorkflow(
   comfyPage: ComfyPage,
@@ -37,6 +73,7 @@ async function expectLatePreviewStaysOnItsWorkflow(
   })
 
   try {
+    await trackHandledImageLoads(comfyPage)
     await comfyPage.menu.topbar.closeWorkflowTab(workflowB)
     await comfyPage.workflow.waitForWorkflowIdle()
     await expect.poll(() => held.length).toBeGreaterThan(0)
@@ -49,18 +86,23 @@ async function expectLatePreviewStaysOnItsWorkflow(
       .poll(() => firstNodeState(comfyPage))
       .toEqual({ id: sharedId, type: 'LoraLoaderModelOnly' })
 
-    const loaded = comfyPage.page.waitForEvent('requestfinished', (req) =>
-      req.url().includes('example.png')
-    )
     for (const route of held.splice(0)) await route.fallback()
-    await loaded
-    await comfyPage.nextFrame()
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() =>
+          (window as ImageLoadWindow).__handledImageLoads?.some((url) =>
+            url.includes('example.png')
+          )
+        )
+      )
+      .toBe(true)
 
     expect(await firstNodeState(comfyPage)).toEqual({
       id: sharedId,
       type: 'LoraLoaderModelOnly'
     })
   } finally {
+    await restoreImageSrc(comfyPage)
     await comfyPage.page.unroute('**/api/view?**')
     await comfyPage.workflow.deleteWorkflow(workflowB)
   }
