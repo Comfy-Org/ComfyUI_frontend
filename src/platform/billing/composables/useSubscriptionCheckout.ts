@@ -110,7 +110,9 @@ let stopPaymentRecoveryReturnRefresh: (() => void) | null = null
 function armPaymentRecoveryReturnRefresh(): void {
   stopPaymentRecoveryReturnRefresh?.()
   const { fetchStatus } = useBillingContext()
-  stopPaymentRecoveryReturnRefresh = registerRefreshOnReturn(fetchStatus)
+  stopPaymentRecoveryReturnRefresh = registerRefreshOnReturn(() =>
+    Promise.allSettled([fetchStatus(), useBillingCapabilities().refresh()])
+  )
 }
 
 /** Thrown by `assertReactivationAmountUnchanged` when a fresh preview no
@@ -552,11 +554,11 @@ export function useSubscriptionCheckout(
 
     // The table is hidden on the confirm step, so only the pricing step can
     // show the notice; elsewhere the toasts stay.
-    const showsNotice =
-      rendersPastDueNotice() &&
+    const isPricingStepRefusal =
       checkoutStep.value === 'pricing' &&
       hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
-    if (showsNotice) outstandingPaymentRefusals.value++
+    const showsNotice = rendersPastDueNotice() && isPricingStepRefusal
+    if (isPricingStepRefusal) outstandingPaymentRefusals.value++
 
     const portal = createBillingPortalReporter(telemetry, 'payment_recovery')
     let billingClient: BillingClient | undefined

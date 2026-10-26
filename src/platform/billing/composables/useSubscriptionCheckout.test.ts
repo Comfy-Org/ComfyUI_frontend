@@ -1146,6 +1146,18 @@ describe('useSubscriptionCheckout', () => {
       }
     )
 
+    it('re-reads capabilities when the user returns from the recovery portal', async () => {
+      await submitRejectedPreview('OUTSTANDING_PAYMENT_REQUIRED')
+      expect(useBillingCapabilities().refresh).not.toHaveBeenCalled()
+
+      window.dispatchEvent(new Event('focus'))
+
+      await vi.waitFor(() =>
+        expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+      )
+      expect(mockFetchStatus).toHaveBeenCalledOnce()
+    })
+
     it('warns when the billing portal popup is blocked', async () => {
       mockOpen.mockReturnValueOnce(null)
       const checkout = await submitRejectedPreview(
@@ -1256,7 +1268,7 @@ describe('useSubscriptionCheckout', () => {
           billingCycle: 'yearly'
         })
 
-        expect(checkout.outstandingPaymentRefusals.value).toBe(0)
+        expect(checkout.outstandingPaymentRefusals.value).toBe(1)
         expect(useToast().toasts).toEqual([
           expect.objectContaining({ kind: 'warning' })
         ])
@@ -1280,7 +1292,7 @@ describe('useSubscriptionCheckout', () => {
           'OUTSTANDING_PAYMENT_REQUIRED'
         )
 
-        expect(checkout.outstandingPaymentRefusals.value).toBe(0)
+        expect(checkout.outstandingPaymentRefusals.value).toBe(1)
         expect(useToast().error).toHaveBeenCalled()
       })
     })
