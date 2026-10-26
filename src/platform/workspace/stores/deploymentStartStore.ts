@@ -15,7 +15,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 const REFUSALS_BY_STATUS = new Map<number, DeploymentStartRefusal>([
   [402, 'noCredits'],
-  [403, 'notAllowed'],
+  [403, 'unavailable'],
   [404, 'unavailable'],
   [405, 'unavailable'],
   [429, 'tooManyRunning'],

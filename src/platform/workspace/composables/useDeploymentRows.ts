@@ -44,6 +44,7 @@ export interface DeploymentRow extends DeploymentRowLabels, MarkedRow {
   note: string | null
   action: DeploymentRowAction
   actionLabel: string | null
+  actionIcon: string | null
   ariaLabel: string | undefined
   problem: DeploymentStartProblem | null
 }
@@ -61,7 +62,10 @@ const SECTION_LABEL_KEYS: Record<DeploymentSectionKey, string> = {
 }
 
 const ACTION_KEYS: Partial<
-  Record<DeploymentRowAction, { label: string; ariaLabel: string }>
+  Record<
+    DeploymentRowAction,
+    { label: string; ariaLabel: string; icon?: string }
+  >
 > = {
   start: {
     label: 'deploymentSwitcher.start',
@@ -70,13 +74,17 @@ const ACTION_KEYS: Partial<
   retry: {
     label: 'deploymentSwitcher.retry',
     ariaLabel: 'deploymentSwitcher.retryLabel'
+  },
+  open: {
+    label: 'deploymentSwitcher.start',
+    ariaLabel: 'deploymentSwitcher.startOnPlatformLabel',
+    icon: 'icon-[lucide--arrow-up-right]'
   }
 }
 
 const FIX_KEYS: Record<DeploymentStartRefusal, string> = {
   noCredits: 'deploymentSwitcher.startFix.noCredits',
   tooManyRunning: 'deploymentSwitcher.startFix.tooManyRunning',
-  notAllowed: 'deploymentSwitcher.startFix.notAllowed',
   unavailable: 'deploymentSwitcher.startFix.unavailable',
   failed: 'deploymentSwitcher.startFix.failed'
 }
@@ -86,7 +94,6 @@ const REASON_KEYS: Record<DeploymentRowReason, string> = {
   failed: 'deploymentSwitcher.reason.failed',
   starting: 'deploymentSwitcher.reason.starting',
   startElsewhere: 'deploymentSwitcher.reason.startElsewhere',
-  notAllowed: 'deploymentSwitcher.reason.notAllowed',
   notReady: 'deploymentSwitcher.reason.notReady'
 }
 
@@ -116,9 +123,10 @@ export function sectionRows<Row extends MarkedRow>(
 
 /**
  * The Run on menu's rows under their headings, and the picked row's value.
- * Only a ready deployment can be picked, and a stopped or failed one offers
- * Start when the `deployment_start_enabled` flag is on. Any row but the
- * current one that cannot be picked says why.
+ * Only a ready deployment can be picked. A stopped or failed one offers Start,
+ * in place when the `deployment_start_enabled` flag is on and on the Developer
+ * Platform when it is off. Any row but the current one that cannot be picked
+ * says why.
  */
 export function useDeploymentRows() {
   const { t, locale } = useI18n()
@@ -193,15 +201,38 @@ export function useDeploymentRows() {
     }
   }
 
+  function actionFor(
+    action: DeploymentRowAction,
+    label: string
+  ): Pick<
+    DeploymentRow,
+    'action' | 'actionLabel' | 'actionIcon' | 'ariaLabel'
+  > {
+    const keys = ACTION_KEYS[action]
+    if (!keys) {
+      return {
+        action,
+        actionLabel: null,
+        actionIcon: null,
+        ariaLabel: undefined
+      }
+    }
+    return {
+      action,
+      actionLabel: t(keys.label),
+      actionIcon: keys.icon ?? null,
+      ariaLabel: text(keys.ariaLabel, label)
+    }
+  }
+
   function cloudRow(): DeploymentRow {
     const mark = markFor(null)
+    const label = deploymentFullLabel(null)
     return {
       ...deploymentRowLabels(null),
       mark,
-      note: note(mark, deploymentFullLabel(null), null),
-      action: 'pick',
-      actionLabel: null,
-      ariaLabel: undefined,
+      note: note(mark, label, null),
+      ...actionFor('pick', label),
       problem: null
     }
   }
@@ -220,7 +251,6 @@ export function useDeploymentRows() {
       deployment.deployment_id === pickedDeploymentId.value
         ? null
         : deploymentRowReason(deployment.status, action, start)
-    const actionKeys = ACTION_KEYS[action]
     return {
       ...labels,
       detail: isStarting
@@ -233,9 +263,7 @@ export function useDeploymentRows() {
         label,
         reason === null ? null : text(REASON_KEYS[reason], label)
       ),
-      action,
-      actionLabel: actionKeys ? t(actionKeys.label) : null,
-      ariaLabel: actionKeys ? text(actionKeys.ariaLabel, label) : undefined,
+      ...actionFor(action, label),
       problem: problemFor(label, start)
     }
   }

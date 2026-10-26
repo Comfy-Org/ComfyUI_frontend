@@ -14,6 +14,7 @@ import type {
 
 import enMessages from '@/locales/en/main.json'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -225,6 +226,7 @@ describe('DeploymentSwitcher', () => {
       title: 'Studio Build',
       name: 'production',
       detail: 'v2',
+      runOnDetail: 'v2',
       note: ''
     },
     {
@@ -232,6 +234,7 @@ describe('DeploymentSwitcher', () => {
       title: 'Studio Build',
       name: 'staging',
       detail: 'Stopped',
+      runOnDetail: 'Start',
       note: "Studio Build · staging isn't running. Start it on the Developer Platform, then pick it."
     },
     {
@@ -239,6 +242,7 @@ describe('DeploymentSwitcher', () => {
       title: 'Deployment dep-b9b9b9b9',
       name: '',
       detail: 'Stopped',
+      runOnDetail: 'Start',
       note: "Deployment dep-b9b9b9b9 isn't running. Start it on the Developer Platform, then pick it."
     }
   ]
@@ -247,18 +251,21 @@ describe('DeploymentSwitcher', () => {
     { title, name, detail }: (typeof rowColumns)[number],
     note = ''
   ) {
-    return new RegExp(`^${escapeRegExp(`${title}${name}${detail}${note}`)}$`)
+    const cells = [title, name, detail, note].map(escapeRegExp)
+    return new RegExp(`^${cells.join('\\s*')}$`)
   }
 
   it.for(rowColumns)(
-    'gives each row the same columns, the Build, the deployment, then the version when ready or else the status: $title $name $detail',
+    'gives each row the same columns, the Build, the deployment, then the version when ready or else what choosing it does: $title $name $runOnDetail',
     async (columns) => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
       const user = renderSwitcher()
       await openList(user)
       expect(
         screen.getByTestId(`deployment-row-${columns.row}`)
-      ).toHaveTextContent(columnsOf(columns, columns.note))
+      ).toHaveTextContent(
+        columnsOf({ ...columns, detail: columns.runOnDetail }, columns.note)
+      )
     }
   )
 
@@ -406,9 +413,8 @@ describe('DeploymentSwitcher', () => {
     expect(screen.getByTestId(`deployment-row-${D2}`)).not.toHaveAttribute(
       'aria-disabled'
     )
-    expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveAttribute(
-      'aria-disabled',
-      'true'
+    expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveAccessibleName(
+      'Start Studio Build · staging on the Developer Platform'
     )
     expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
   })
@@ -443,14 +449,24 @@ describe('DeploymentSwitcher', () => {
     )
   })
 
-  it('switches only to a ready deployment, and a row that is not does nothing when chosen', async () => {
+  it('switches only to a ready deployment, and a stopped row opens its page on the Developer Platform in a new tab', async () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     mockWorkspaceApi.pickDeployment.mockReturnValue(new Promise(() => {}))
     const user = renderSwitcher()
     await openList(user)
 
     await user.click(screen.getByTestId(`deployment-row-${D1}`))
+    expect(openPage).toHaveBeenCalledWith(
+      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}`,
+      '_blank',
+      'noopener,noreferrer'
+    )
     expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    expect(mockWorkspaceApi.startDeployment).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
+    await openList(user)
 
     await user.click(screen.getByTestId(`deployment-row-${D2}`))
     expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
@@ -1747,11 +1763,15 @@ describe('DeploymentSwitcher, starting a stopped deployment', () => {
     expect(within(stagingRow()).getByText('Starting')).toBeVisible()
   })
 
-  it('tells a viewer the server will not let start it who can, and offers no Start or Retry', async () => {
+  it('offers the Developer Platform when the server will not start it from this editor, and does not ask it again', async () => {
     offerStart()
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
     mockWorkspaceApi.listDeployments.mockResolvedValue(withStaging('stopped'))
     mockWorkspaceApi.startDeployment.mockRejectedValue(
-      new WorkspaceApiError('Only workspace owners can start deployments.', 403)
+      new WorkspaceApiError(
+        'starting a deployment needs a signed-in session, not an API key',
+        403
+      )
     )
     const user = renderSwitcher()
     await openList(user)
@@ -1763,32 +1783,55 @@ describe('DeploymentSwitcher, starting a stopped deployment', () => {
     )
     expect(
       await screen.findByTestId('deployment-row-problem')
-    ).toHaveTextContent('Ask a workspace owner to start it.')
-    expect(within(stagingRow()).getByText('Stopped')).toBeVisible()
-    expect(stagingRow()).toHaveAttribute('aria-disabled', 'true')
+    ).toHaveTextContent('Start it on the Developer Platform for now.')
 
-    await user.click(stagingRow())
+    await user.click(
+      screen.getByRole('menuitemradio', {
+        name: 'Start Studio Build · staging on the Developer Platform'
+      })
+    )
+    expect(openPage).toHaveBeenCalledWith(
+      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}`,
+      '_blank',
+      'noopener,noreferrer'
+    )
     expect(mockWorkspaceApi.startDeployment).toHaveBeenCalledTimes(1)
   })
 
-  it('says jobs will not run on a stopped deployment this browser is on, on hover and at the top of the list', async () => {
-    offerStart()
-    mockWorkspaceApi.listDeployments.mockResolvedValue({
-      ...withStaging('stopped'),
-      picked_deployment_id: D1,
-      pick_source: 'browser'
-    })
-    const user = renderSwitcher()
-    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+  it.for([
+    {
+      start: 'offered',
+      offered: true,
+      tooltip:
+        "Running on Studio Build · staging. It's stopped, so jobs won't run. Open this menu to start it."
+    },
+    {
+      start: 'not offered',
+      offered: false,
+      tooltip:
+        "Running on Studio Build · staging. It's stopped, so jobs won't run until it's started on the Developer Platform."
+    }
+  ])(
+    'says jobs will not run on a stopped deployment this browser is on, on hover and at the top of the list, with Start $start',
+    async ({ offered, tooltip }) => {
+      if (offered) offerStart()
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...withStaging('stopped'),
+        picked_deployment_id: D1,
+        pick_source: 'browser'
+      })
+      const user = renderSwitcher()
+      const trigger = await screen.findByTestId('deployment-switcher-trigger')
 
-    await user.hover(trigger)
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
-      "Running on Studio Build · staging. It's stopped, so jobs won't run. Open this menu to start it."
-    )
-    await openList(user)
+      await user.hover(trigger)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip)
+      await openList(user)
 
-    expect(screen.getByTestId('deployment-switcher-notice')).toHaveTextContent(
-      "Studio Build · staging is stopped, so jobs won't run. Start it, or pick a ready deployment."
-    )
-  })
+      expect(
+        screen.getByTestId('deployment-switcher-notice')
+      ).toHaveTextContent(
+        "Studio Build · staging is stopped, so jobs won't run. Start it, or pick a ready deployment."
+      )
+    }
+  )
 })

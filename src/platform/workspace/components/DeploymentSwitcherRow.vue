@@ -53,6 +53,11 @@
           aria-hidden="true"
         >
           {{ actionLabel }}
+          <i
+            v-if="actionIcon"
+            :class="cn(actionIcon, 'ml-1 size-3')"
+            aria-hidden="true"
+          />
         </span>
         <template v-else>{{
           switching ? $t('deploymentSwitcher.switching') : detail
@@ -114,6 +119,7 @@ const {
   tone,
   note = null,
   actionLabel = null,
+  actionIcon = null,
   problem = null,
   muted = false,
   switching = false,
@@ -128,6 +134,7 @@ const {
   tone?: DeploymentStatusTone
   note?: string | null
   actionLabel?: string | null
+  actionIcon?: string | null
   problem?: { summary: string; message: string | null; fix: string } | null
   muted?: boolean
   switching?: boolean

@@ -129,7 +129,9 @@ describe('deploymentRowAction', () => {
     { status: 'ready', start: undefined, offered: true, action: 'pick' },
     { status: 'stopped', start: undefined, offered: true, action: 'start' },
     { status: 'failed', start: undefined, offered: true, action: 'start' },
-    { status: 'stopped', start: undefined, offered: false, action: 'none' },
+    { status: 'stopped', start: undefined, offered: false, action: 'open' },
+    { status: 'failed', start: undefined, offered: false, action: 'open' },
+    { status: 'stopping', start: undefined, offered: false, action: 'none' },
     { status: 'starting', start: undefined, offered: true, action: 'none' },
     { status: 'stopping', start: undefined, offered: true, action: 'none' },
     {
@@ -146,15 +148,9 @@ describe('deploymentRowAction', () => {
     },
     {
       status: 'stopped',
-      start: { phase: 'refused', reason: 'notAllowed', message: null },
-      offered: true,
-      action: 'none'
-    },
-    {
-      status: 'stopped',
       start: { phase: 'refused', reason: 'unavailable', message: null },
       offered: true,
-      action: 'none'
+      action: 'open'
     }
   ] satisfies {
     status: string
@@ -178,7 +174,7 @@ describe('deploymentRowReason', () => {
     { status: 'failed', action: 'start', start: undefined, reason: 'failed' },
     {
       status: 'stopped',
-      action: 'none',
+      action: 'open',
       start: undefined,
       reason: 'startElsewhere'
     },
@@ -197,9 +193,9 @@ describe('deploymentRowReason', () => {
     },
     {
       status: 'stopped',
-      action: 'none',
-      start: { phase: 'refused', reason: 'notAllowed', message: null },
-      reason: 'notAllowed'
+      action: 'open',
+      start: { phase: 'refused', reason: 'unavailable', message: null },
+      reason: null
     },
     {
       status: 'stopped',
