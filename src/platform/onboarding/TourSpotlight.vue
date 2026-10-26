@@ -1,5 +1,8 @@
 <template>
-  <div ref="overlayRef" class="pointer-events-none fixed inset-0">
+  <div
+    data-testid="coach-overlay"
+    class="pointer-events-none fixed inset-0 z-tour"
+  >
     <svg
       v-if="useMaskScrim"
       aria-hidden="true"
@@ -22,7 +25,7 @@
       <rect
         width="100%"
         height="100%"
-        class="fill-coach-scrim"
+        class="fill-black/60"
         :mask="`url(#${maskId})`"
       />
       <path
@@ -40,7 +43,7 @@
       :class="
         cn(
           'pointer-events-auto absolute inset-0',
-          !useMaskScrim && !targetRect && 'bg-coach-scrim'
+          !useMaskScrim && !targetRect && 'bg-black/60'
         )
       "
     />
@@ -49,10 +52,11 @@
       data-testid="coach-spotlight"
       :class="
         cn(
-          'pointer-events-none absolute rounded-xl outline-2 outline-coach-ring',
+          'pointer-events-none absolute rounded-xl outline-2 outline-white',
           !targetMoves &&
             'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
-          !useMaskScrim && 'shadow-[0_0_0_9999px_var(--color-coach-scrim)]'
+          !useMaskScrim &&
+            'shadow-[0_0_0_9999px_color-mix(in_srgb,var(--color-black)_60%,transparent)]'
         )
       "
       :style="spotlightStyle"
@@ -84,12 +88,12 @@
         :style="cardStyle"
       >
         <i
-          v-if="cursorEdgeClass"
+          v-if="cursorClass"
           data-testid="coach-cursor"
           :class="
             cn(
-              'absolute icon-[lucide--mouse-pointer-2] size-4 text-base-foreground drop-shadow-md',
-              cursorEdgeClass
+              'absolute icon-[lucide--mouse-pointer-2] size-4 text-foreground drop-shadow-md',
+              cursorClass
             )
           "
           aria-hidden="true"
@@ -123,7 +127,7 @@
                 v-if="canGoBack"
                 variant="secondary"
                 size="md"
-                class="border border-solid border-border-default"
+                class="border border-solid"
                 @click="emit('back')"
               >
                 <i class="icon-[lucide--arrow-left]" />
@@ -151,20 +155,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useWindowSize } from '@vueuse/core'
-import { ZIndex } from '@primeuix/utils/zindex'
 import { FocusScope } from 'reka-ui'
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  ref,
-  useId,
-  useTemplateRef,
-  watch
-} from 'vue'
+import { computed, nextTick, ref, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
 
 import CoachmarkCard from './CoachmarkCard.vue'
@@ -174,6 +168,7 @@ import {
   VIEWPORT_MARGIN,
   CARD_GLIDE_MS,
   clampSpotlightRect,
+  cursorEdgeClass,
   hitRegionPath,
   noTargetCardLeft
 } from './coachmarkLayout'
@@ -219,7 +214,6 @@ const bodyId = useId()
 const subtitleId = useId()
 const titleId = useId()
 
-const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
@@ -259,22 +253,6 @@ useEventListener(
   { capture: true }
 )
 
-async function raiseOverlay() {
-  await nextTick()
-  const el = overlayRef.value
-  if (!el) return
-  // ZIndex.set pushes a fresh entry into the shared modal sequence on every
-  // call, so clear the previous one or per-step re-raises leak entries.
-  ZIndex.clear(el)
-  ZIndex.set(MODAL_Z_KEY, el, MODAL_Z_BASE)
-}
-
-watch(
-  () => step,
-  () => void raiseOverlay(),
-  { immediate: true }
-)
-
 watch(
   [() => step, () => waitingForTarget],
   () => {
@@ -282,10 +260,6 @@ watch(
   },
   { immediate: true }
 )
-
-onBeforeUnmount(() => {
-  if (overlayRef.value) ZIndex.clear(overlayRef.value)
-})
 
 function viewport() {
   return { width: windowWidth.value, height: windowHeight.value }
@@ -346,24 +320,7 @@ const cardStyle = computed(() => {
   return { ...floatingStyles.value, width, maxWidth, opacity }
 })
 
-/** Floats the cursor in the gap on the card edge facing the target. */
-const CURSOR_EDGE_CLASS = {
-  top: '-top-7 left-1/2 -translate-x-1/2 rotate-45',
-  bottom: '-bottom-7 left-1/2 -translate-x-1/2 -rotate-[135deg]',
-  left: '-left-7 top-1/2 -translate-y-1/2 -rotate-45',
-  right: '-right-7 top-1/2 -translate-y-1/2 rotate-[135deg]'
-} as const
-
-const TARGET_FACING_EDGE = {
-  top: 'bottom',
-  bottom: 'top',
-  left: 'right',
-  right: 'left'
-} as const
-
-const cursorEdgeClass = computed(() => {
-  if (!step.cursor || !hasTarget.value) return ''
-  const side = placement.value.split('-')[0] as keyof typeof TARGET_FACING_EDGE
-  return CURSOR_EDGE_CLASS[TARGET_FACING_EDGE[side]]
-})
+const cursorClass = computed(() =>
+  step.cursor && hasTarget.value ? cursorEdgeClass(placement.value) : ''
+)
 </script>

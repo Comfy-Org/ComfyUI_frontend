@@ -10,13 +10,13 @@ import { createMockWidget } from './widgetTestUtils'
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
     copyToClipboard: mockCopyToClipboard
   }))
 }))
 
-vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({
+vi.mock(import('@/composables/graph/useMoreOptionsMenu'), () => ({
   isNodeOptionsOpen: mockIsNodeOptionsOpen
 }))
 
@@ -65,7 +65,7 @@ async function setTextareaValueAndTrigger(
   if (trigger === 'blur') {
     await fireEvent.blur(textarea)
   } else {
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.input(textarea)
   }
   return textarea
@@ -178,7 +178,7 @@ describe('WidgetTextarea Value Binding', () => {
       const widget = createTextareaWidget('test')
       const { container } = renderComponent(widget, 'test')
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const textareaLabel = container.querySelector('label')
       expect(textareaLabel?.textContent).toBe('test_textarea')
     })
@@ -223,7 +223,7 @@ describe('WidgetTextarea Value Binding', () => {
   describe('Locked Field Hover Styling', () => {
     // Tests assert on the Tailwind class name directly because that's the
     // mechanism being guarded — a rename would need a baseline update anyway.
-    const HOVER_CLASS = 'hover:bg-component-node-widget-background-hovered'
+    const HOVER_CLASS = 'hover:bg-muted'
 
     it('omits the generic hover background class from the wrapper when read-only', () => {
       const widget = createTextareaWidget('locked value', {
@@ -232,7 +232,7 @@ describe('WidgetTextarea Value Binding', () => {
       const { container } = renderComponent(widget, 'locked value')
 
       // hover class lives on wrapper <div>, not the <textarea>
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       const wrapper = container.firstElementChild
       expect(wrapper?.className).not.toContain(HOVER_CLASS)
     })
@@ -242,7 +242,7 @@ describe('WidgetTextarea Value Binding', () => {
       const { container } = renderComponent(widget, 'linked value')
 
       // hover class lives on wrapper <div>, not the <textarea>
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       const wrapper = container.firstElementChild
       expect(wrapper?.className).not.toContain(HOVER_CLASS)
     })
@@ -252,7 +252,7 @@ describe('WidgetTextarea Value Binding', () => {
       const { container } = renderComponent(widget, 'editable value')
 
       // hover class lives on wrapper <div>, not the <textarea>
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       const wrapper = container.firstElementChild
       expect(wrapper?.className).toContain(HOVER_CLASS)
     })

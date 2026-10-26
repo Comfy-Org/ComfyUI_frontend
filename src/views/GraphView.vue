@@ -20,14 +20,13 @@
     </template>
   </div>
 
-  <GlobalToast />
-  <InviteAcceptedToast />
-  <RerouteMigrationToast />
-  <ModelImportProgressDialog />
-  <AssetExportProgressDialog />
+  <AppToaster />
+  <ToastDock>
+    <ModelImportProgressDialog />
+    <AssetExportProgressDialog />
+    <ManagerProgressToast />
+  </ToastDock>
   <PartnerNodesEducationCard v-if="!isCloud" />
-  <ManagerProgressToast />
-  <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
@@ -53,11 +52,13 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
+import ToastDock from '@/components/ui/toast/ToastDock.vue'
+import AppToaster from '@/components/common/AppToaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
-import GlobalToast from '@/components/toast/GlobalToast.vue'
-import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
-import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
+import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
+import { useProgressTextPreviews } from '@/composables/node/useProgressTextPreviews'
+import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreSidebarTabs'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
@@ -65,20 +66,33 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
+import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
+import { scanAllMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import { startTemplateInputDownloadGraphSync } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
+import { refreshDownloadedTemplateInputBindings } from '@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
-import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
+import type { ServerConfig } from '@/constants/serverConfig'
+import type { ServerConfigValue } from '@/platform/settings/types'
 import { setActiveLocale } from '@/i18n'
+import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
-import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
+import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { useDesktopCloudNotification } from '@/platform/cloud/notification/composables/useDesktopCloudNotification'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
+import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
+import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useDeploymentPickAtBoot } from '@/platform/workspace/composables/useDeploymentPickAtBoot'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
+import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
@@ -90,13 +104,14 @@ import { useAuthStore } from '@/stores/authStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
-import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import {
   useQueuePendingTaskCountStore,
   useQueueStore
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
@@ -109,7 +124,10 @@ import ManagerProgressToast from '@/workbench/extensions/manager/components/Mana
 
 setupAutoQueueHandler()
 useProgressFavicon()
+useProgressTextPreviews()
 useBrowserTabTitle()
+useDesktopCloudNotification()
+if (isCloud) useDeploymentCompatibility()
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
@@ -121,6 +139,46 @@ const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
+const templateInputDownloadStore = useTemplateInputDownloadStore()
+const templateInputGraphSync = startTemplateInputDownloadGraphSync({
+  getReferencedInputNames: () =>
+    new Set(scanAllMediaCandidates(app.rootGraph).map(({ name }) => name)),
+  refreshGraphBindings: async (completedInputNames) => {
+    try {
+      await app.reloadNodeDefs()
+      refreshDownloadedTemplateInputBindings(
+        app.rootGraph,
+        scanAllMediaCandidates(app.rootGraph),
+        new Set(completedInputNames)
+      )
+      await runMissingMediaPipeline({ rootGraph: app.rootGraph, silent: true })
+    } finally {
+      // The transfers finished even if rebinding them did not. Releasing them
+      // either way keeps a failed rebind from holding the run action behind a
+      // permanent finalizing state; the failure is reported separately.
+      templateInputDownloadStore.completeGraphSync(completedInputNames)
+    }
+  },
+  reportError: (error) => {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'workflow_template_input_refresh_failed'
+    })
+  }
+})
+const stopTemplateInputDownloadTracking =
+  (isDesktop &&
+    window.__comfyDesktop2?.onTemplateInputDownloadProgress?.((progress) => {
+      templateInputDownloadStore.updateProgress(progress)
+      templateInputGraphSync.handleProgress(progress)
+    })) ||
+  (() => undefined)
+
+onBeforeUnmount(() => {
+  stopTemplateInputDownloadTracking()
+  templateInputGraphSync.dispose()
+  templateInputDownloadStore.clear()
+})
 
 watch(linearMode, (isLinear) => {
   if (isLinear) {
@@ -132,15 +190,12 @@ const telemetry = useTelemetry()
 const authStore = useAuthStore()
 let hasTrackedLogin = false
 
+// Learn which developer-platform deployment this page booted on (FE-2434).
+if (isCloud) void useDeploymentPickAtBoot()
+
 watch(
   () => colorPaletteStore.completedActivePalette,
   (newTheme) => {
-    const DARK_THEME_CLASS = 'dark-theme'
-    if (newTheme.light_theme) {
-      document.documentElement.classList.remove(DARK_THEME_CLASS)
-    } else {
-      document.documentElement.classList.add(DARK_THEME_CLASS)
-    }
     if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',
@@ -192,7 +247,7 @@ watchEffect(() => {
 watchEffect(() => {
   const padding = settingStore.get('Comfy.TreeExplorer.ItemPadding')
   document.documentElement.style.setProperty(
-    '--comfy-tree-explorer-item-padding',
+    '--tree-item-padding',
     `${padding}px`
   )
 })
@@ -233,30 +288,23 @@ const coreCommands = useCoreCommands()
 useCommandStore().registerCommands(coreCommands)
 useMenuItemStore().registerCoreMenuCommands()
 useKeybindingService().registerCoreKeybindings()
-useSidebarTabStore().registerCoreSidebarTabs()
-void useBottomPanelStore().registerCoreBottomPanelTabs()
+registerCoreSidebarTabs()
+registerSettingDialogComponent(SettingDialog)
+registerAssetBrowserModalComponent(AssetBrowserModal)
+void registerCoreBottomPanelTabs()
 
 useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
-const sidebarTabStore = useSidebarTabStore()
 
 const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   queuePendingTaskCountStore.update(e)
   await queueStore.update()
-  // Only update assets if the assets sidebar is currently open
-  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.outputAssets.loadNew()
-  }
+  await assetsStore.outputAssets.loadNew()
 }
 
 const onExecutionSuccess = async () => {
   await queueStore.update()
-  // Only update assets if the assets sidebar is currently open
-  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.outputAssets.loadNew()
-  }
+  await assetsStore.outputAssets.loadNew()
 }
 
 const { onReconnecting, onReconnected } = useReconnectingNotification()
@@ -313,9 +361,11 @@ const onGraphReady = () => {
     // Set up page visibility tracking (cloud only)
     if (isCloud && telemetry) {
       useEventListener(document, 'visibilitychange', () => {
-        telemetry.trackPageVisibilityChanged({
-          visibility_state: document.visibilityState as 'visible' | 'hidden'
-        })
+        telemetry.trackPageVisibilityChanged(
+          getPageVisibilityMetadata(
+            document.visibilityState as 'visible' | 'hidden'
+          )
+        )
       })
     }
 

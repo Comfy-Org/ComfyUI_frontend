@@ -1,32 +1,30 @@
-import { createTestingPinia } from '@pinia/testing'
 import type { MockInstance } from 'vitest'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { reportError } from '@/platform/telemetry/reportError'
+import { api } from '@/scripts/api'
 
-import { createEmptyIndex } from '../base/draftCacheV2'
-import { MAX_DRAFTS } from '../base/draftTypes'
-import { hashPath } from '../base/hashUtil'
-import { readIndex, resetStorageAvailable } from '../base/storageIO'
-import { StorageKeys } from '../base/storageKeys'
+import { createEmptyIndex } from '@/platform/workflow/persistence/base/draftCacheV2'
+import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
+import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
+import {
+  readIndex,
+  resetStorageAvailable
+} from '@/platform/workflow/persistence/base/storageIO'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    clientId: 'test-client',
-    initialClientId: 'test-client'
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    loadGraphData: vi.fn().mockResolvedValue(undefined)
-  }
-}))
+beforeEach(() => {
+  api.clientId = 'test-client'
+  api.initialClientId = 'test-client'
+})
+
+vi.mock(import('@/scripts/app'))
 
 const reportErrorMock = vi.hoisted(() => vi.fn<typeof reportError>())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
@@ -70,7 +68,6 @@ function failPayloadWrites(failTimes = Infinity): MockInstance {
 
 describe('workflowDraftStoreV2', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
     sessionStorage.clear()
     resetStorageAvailable()
@@ -78,7 +75,6 @@ describe('workflowDraftStoreV2', () => {
   })
 
   afterEach(() => {
-    activeSpy?.mockRestore()
     activeSpy = null
     localStorage.clear()
     sessionStorage.clear()
@@ -124,6 +120,42 @@ describe('workflowDraftStoreV2', () => {
       expect(draft!.name).toBe('test-updated')
       expect(draft!.isTemporary).toBe(false)
       expect(draft!.updatedAt).toEqual(expect.any(Number))
+    })
+
+    it('retains CRDT lineage when draft content changes', () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/test.json'
+
+      store.saveDraft(path, '{"nodes":[]}', {
+        name: 'test',
+        isTemporary: true
+      })
+      store.setLineage(path, { workflowId: 'wf-1', lineageSeq: 12 })
+      store.saveDraft(path, '{"nodes":[1]}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      expect(store.getDraft(path)?.lineage).toEqual({
+        workflowId: 'wf-1',
+        lineageSeq: 12
+      })
+    })
+
+    it('does not rewrite a draft when its CRDT lineage is unchanged', () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/test.json'
+      const lineage = { workflowId: 'wf-1', lineageSeq: 12 }
+      store.saveDraft(path, '{"nodes":[]}', {
+        name: 'test',
+        isTemporary: true
+      })
+      store.setLineage(path, lineage)
+      const setItemSpy = vi.spyOn(localStorage, 'setItem')
+
+      store.setLineage(path, lineage)
+
+      expect(setItemSpy).not.toHaveBeenCalled()
     })
 
     it('keeps payload updatedAt stable when only recency is refreshed', () => {
@@ -339,6 +371,7 @@ describe('workflowDraftStoreV2', () => {
       expect(ok).toBe(false)
 
       expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'graph',
         errorType: 'storage_quota_exhausted',
         level: 'warning',
         tags: { store: 'workflowDraftStoreV2' },
@@ -524,6 +557,25 @@ describe('workflowDraftStoreV2', () => {
       })
 
       expect(result).toBe(false)
+    })
+
+    it('does not apply a draft after its identity becomes stale', async () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/test.json', '{"nodes":[]}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      const result = await store.loadPersistedWorkflow({
+        preferredPath: 'workflows/test.json',
+        isCurrent: () => false
+      })
+      const { app } = (await vi.importMock('@/scripts/app')) as {
+        app: { loadGraphData: MockInstance }
+      }
+
+      expect(result).toBe(false)
+      expect(app.loadGraphData).not.toHaveBeenCalled()
     })
   })
 

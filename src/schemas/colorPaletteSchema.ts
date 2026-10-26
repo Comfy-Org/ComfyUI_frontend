@@ -78,21 +78,49 @@ export const comfyBaseSchema = z.object({
   ['interface-panel-surface']: z.string().optional(),
   ['interface-panel-box-shadow']: z.string().optional(),
   ['interface-panel-drop-shadow']: z.string().optional(),
+  ['interface-floating-panel-shadow']: z.string().optional(),
   ['interface-panel-hover-surface']: z.string().optional(),
   ['interface-panel-selected-surface']: z.string().optional(),
   ['interface-button-hover-surface']: z.string().optional()
 })
 
+/** Design-system theme variables a palette may override: the shadcn/tweakcn contract plus the node layer. */
+export const themeSchema = z
+  .object({
+    background: z.string(),
+    foreground: z.string(),
+    card: z.string(),
+    popover: z.string(),
+    primary: z.string(),
+    secondary: z.string(),
+    muted: z.string(),
+    ['muted-foreground']: z.string(),
+    accent: z.string(),
+    destructive: z.string(),
+    border: z.string(),
+    input: z.string(),
+    ring: z.string(),
+    node: z.string(),
+    ['node-foreground']: z.string(),
+    ['node-header']: z.string(),
+    ['node-border']: z.string(),
+    warning: z.string(),
+    ['shadow-color']: z.string()
+  })
+  .partial()
+
 const colorsSchema = z.object({
   node_slot: nodeSlotSchema,
   litegraph_base: litegraphBaseSchema,
-  comfy_base: comfyBaseSchema
+  comfy_base: comfyBaseSchema,
+  theme: themeSchema.optional()
 })
 
 const partialColorsSchema = z.object({
   node_slot: nodeSlotSchema.partial(),
   litegraph_base: litegraphBaseSchema.partial(),
-  comfy_base: comfyBaseSchema.partial()
+  comfy_base: comfyBaseSchema.partial(),
+  theme: themeSchema.optional()
 })
 
 // Palette in the wild can have custom metadata fields such as 'version'.
@@ -113,9 +141,8 @@ const completedPaletteSchema = z
   })
   .passthrough()
 
-export const colorPalettesSchema = z.record(paletteSchema)
-
 export type Colors = z.infer<typeof colorsSchema>
+export type Theme = z.infer<typeof themeSchema>
 export type Palette = z.infer<typeof paletteSchema>
 export type CompletedPalette = z.infer<typeof completedPaletteSchema>
-export type ColorPalettes = z.infer<typeof colorPalettesSchema>
+export type ColorPalettes = Record<string, Palette>

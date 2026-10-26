@@ -1,4 +1,4 @@
-import type { ITextareaWidget } from '../types/widgets'
+import type { ITextareaWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
@@ -10,8 +10,6 @@ export class TextareaWidget
   extends BaseWidget<ITextareaWidget>
   implements ITextareaWidget
 {
-  override type = 'textarea' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(ctx, options, 'Textarea')
   }

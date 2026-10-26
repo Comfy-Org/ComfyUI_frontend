@@ -16,25 +16,28 @@ interface MockBillingOptions {
   billingCapabilitiesStatus?: number
 }
 
+export const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
+  is_active: true,
+  has_funds: true,
+  subscription_status: 'active',
+  subscription_tier: 'PRO',
+  subscription_duration: 'MONTHLY',
+  billing_status: 'paid',
+  max_seats: 1,
+  occupied_seats: 1,
+  team_credit_stop: null,
+  scheduled_change: null
+}
+
 /**
  * Minimal valid billing shapes so the billing facade resolves while a
- * subscription dialog mounts. Active personal sub with zero balance.
+ * subscription dialog mounts.
  */
 export async function mockBilling(
   page: Page,
   {
     workspaceId = 'ws-personal',
-    billingStatus = {
-      is_active: true,
-      has_funds: true,
-      subscription_status: 'active',
-      subscription_tier: 'PRO',
-      subscription_duration: 'MONTHLY',
-      billing_status: 'paid',
-      max_seats: 1,
-      occupied_seats: 1,
-      team_credit_stop: null
-    },
+    billingStatus = DEFAULT_BILLING_STATUS,
     billingCapabilities = createBillingCapabilities(workspaceId),
     billingCapabilitiesStatus
   }: MockBillingOptions = {}

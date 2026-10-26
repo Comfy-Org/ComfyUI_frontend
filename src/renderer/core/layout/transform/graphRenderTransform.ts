@@ -19,7 +19,7 @@ export function getGraphRenderAnchor(graph: LGraph): Point {
   const cached = anchorCache.get(graph)
   if (cached) return cached
 
-  const bounds = graph.nodes?.length ? createBounds(graph.nodes) : undefined
+  const bounds = graph.nodes.length ? createBounds(graph.nodes) : undefined
   const anchor = bounds ? { x: bounds[0], y: bounds[1] } : { x: 0, y: 0 }
   anchorCache.set(graph, anchor)
   return anchor

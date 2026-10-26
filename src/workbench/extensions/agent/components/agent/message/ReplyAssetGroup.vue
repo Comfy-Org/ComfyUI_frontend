@@ -1,7 +1,15 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  onBeforeUnmount,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
+import Button from '@/components/ui/button/Button.vue'
 import {
   findOutputAsset,
   findServerPreviewUrl,
@@ -10,8 +18,8 @@ import {
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ReplyAsset } from '../../../utils/replyAssets'
-import { replyAssetResultItem } from '../../../utils/replyAssets'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+import { replyAssetResultItem } from '@/workbench/extensions/agent/utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
 const { assets } = defineProps<{ assets: ReplyAsset[] }>()
@@ -64,6 +72,48 @@ const galleryIndex = ref(-1)
 
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
+const thumbnailAbortController = new AbortController()
+const thumbnailRetryTimers = new Set<ReturnType<typeof setTimeout>>()
+const THUMBNAIL_RETRY_DELAY_MS = 2000
+const THUMBNAIL_MAX_ATTEMPTS = 30
+
+onBeforeUnmount(() => {
+  thumbnailAbortController.abort()
+  for (const timer of thumbnailRetryTimers) clearTimeout(timer)
+  thumbnailRetryTimers.clear()
+})
+
+async function generateOffscreenModelThumbnail(
+  url: string,
+  filename: string,
+  attempt = 1
+): Promise<void> {
+  const { generateModelThumbnail } =
+    await import('@/extensions/core/load3d/components/modelThumbnail')
+  const generated = await generateModelThumbnail(
+    url,
+    filename,
+    thumbnailAbortController.signal
+  )
+  if (generated.status === 'rendered') {
+    modelThumbnails.value[url] = generated.dataUrl
+    return
+  }
+  if (
+    generated.status !== 'busy' ||
+    thumbnailAbortController.signal.aborted ||
+    attempt >= THUMBNAIL_MAX_ATTEMPTS
+  ) {
+    return
+  }
+  const timer = setTimeout(() => {
+    thumbnailRetryTimers.delete(timer)
+    void generateOffscreenModelThumbnail(url, filename, attempt + 1).catch(
+      () => {}
+    )
+  }, THUMBNAIL_RETRY_DELAY_MS)
+  thumbnailRetryTimers.add(timer)
+}
 
 watch(
   () => assets.filter((asset) => asset.kind === '3D' || asset.kind === 'audio'),
@@ -78,10 +128,12 @@ watch(
               modelThumbnails.value[url] = preview
               return
             }
-            const { generateModelThumbnail } =
-              await import('@/components/load3d/modelThumbnail')
-            const generated = await generateModelThumbnail(url, filename)
-            if (generated) modelThumbnails.value[url] = generated
+            if (
+              !new URL(url, window.location.origin).searchParams.has('filename')
+            ) {
+              return
+            }
+            await generateOffscreenModelThumbnail(url, filename)
           })
           .catch(() => {})
       }
@@ -99,7 +151,7 @@ watch(
 )
 
 const Load3dViewerContent = defineAsyncComponent(
-  () => import('@/components/load3d/Load3dViewerContent.vue')
+  () => import('@/extensions/core/load3d/components/Load3dViewerContent.vue')
 )
 const MediaLightbox = defineAsyncComponent(
   () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
@@ -120,14 +172,11 @@ function inspect(asset: ReplyAsset): void {
   if (asset.kind === '3D') {
     useDialogStore().showDialog({
       key: 'asset-3d-viewer',
-      title: assetNames.value[asset.url] || asset.filename,
+      title: assetNames.value[asset.url] || asset.label || asset.filename,
       component: Load3dViewerContent,
       props: { modelUrl: asset.url },
       dialogComponentProps: {
-        renderer: 'reka',
-        size: 'full',
-        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
-        maximizable: true,
+        ...LOAD3D_VIEWER_DIALOG_PROPS,
         onClose: () => refreshModelThumbnail(asset)
       }
     })
@@ -148,7 +197,7 @@ function stopPreview(event: Event): void {
 </script>
 
 <template>
-  <div class="my-4 flex flex-col gap-2">
+  <div data-testid="reply-asset-group" class="my-4 flex flex-col gap-2">
     <div v-if="visibleVisual.length" :class="cn('grid gap-1', gridColsClass)">
       <button
         v-for="asset in visibleVisual"
@@ -158,7 +207,7 @@ function stopPreview(event: Event): void {
         :class="
           cn(
             'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
-            multi && 'bg-agent-surface-hover aspect-square',
+            multi && 'aspect-square bg-accent',
             !multi && asset.kind === '3D' && 'justify-self-end'
           )
         "
@@ -168,6 +217,7 @@ function stopPreview(event: Event): void {
           v-if="asset.kind === 'image'"
           :src="asset.url"
           :alt="asset.label ?? asset.filename"
+          data-testid="reply-image-preview"
           loading="lazy"
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
         />
@@ -195,19 +245,33 @@ function stopPreview(event: Event): void {
           :class="
             cn(
               'flex items-center justify-center',
-              multi ? 'size-full' : 'bg-agent-surface-hover aspect-square w-40'
+              multi ? 'size-full' : 'aspect-square w-40 bg-accent'
             )
           "
         >
-          <span class="text-agent-fg-muted icon-[lucide--box] size-6" />
+          <span class="icon-[lucide--box] size-6 text-muted-foreground" />
+        </span>
+        <span
+          v-if="asset.kind === 'video'"
+          data-testid="reply-video-affordance"
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 flex items-center justify-center"
+        >
+          <span
+            class="flex size-9 items-center justify-center rounded-full bg-black/60 text-white shadow-sm backdrop-blur-sm"
+          >
+            <span class="icon-[lucide--play] size-4 fill-current" />
+          </span>
         </span>
       </button>
     </div>
 
-    <button
+    <Button
       v-if="collapsible"
       type="button"
-      class="border-agent-border text-agent-fg hover:bg-agent-surface-hover flex cursor-pointer items-center gap-1 self-center rounded-full border px-3 py-1 text-xs"
+      variant="outline"
+      size="sm"
+      class="self-center rounded-full"
       @click="expanded = !expanded"
     >
       {{ expanded ? t('agent.showLess') : t('agent.showMore') }}
@@ -216,19 +280,21 @@ function stopPreview(event: Event): void {
           cn('icon-[lucide--chevron-down] size-3', expanded && 'rotate-180')
         "
       />
-    </button>
+    </Button>
 
     <div v-if="audio.length" class="flex flex-col gap-1">
       <ReplyAudioCard
         v-for="asset in visibleAudio"
         :key="asset.url"
         :asset
-        :title="assetNames[asset.url] || asset.filename"
+        :title="assetNames[asset.url] || asset.label || asset.filename"
       />
-      <button
+      <Button
         v-if="audioCollapsible"
         type="button"
-        class="border-agent-border text-agent-fg hover:bg-agent-surface-hover flex cursor-pointer items-center gap-1 self-center rounded-full border px-3 py-1 text-xs"
+        variant="outline"
+        size="sm"
+        class="self-center rounded-full"
         @click="audioExpanded = !audioExpanded"
       >
         {{ audioExpanded ? t('agent.showLess') : t('agent.showMore') }}
@@ -240,7 +306,7 @@ function stopPreview(event: Event): void {
             )
           "
         />
-      </button>
+      </Button>
     </div>
 
     <MediaLightbox

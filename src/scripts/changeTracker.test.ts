@@ -1,4 +1,20 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { markRaw, ref } from 'vue'
+
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import {
   createNestedSubgraphs,
@@ -7,79 +23,29 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
+import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
+import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
-vi.mock('@/base/assert', () => ({
+vi.mock(import('@/base/assert'), () => ({
   assert: mockAssert
 }))
 
-const mockNodeOutputStore = vi.hoisted(() => ({
-  snapshotOutputs: vi.fn(() => ({})),
-  restoreOutputs: vi.fn()
-}))
+vi.mock(import('@/scripts/app'))
 
-const mockSubgraphNavigationStore = vi.hoisted(() => ({
-  exportState: vi.fn(() => []),
-  restoreState: vi.fn()
-}))
-
-const mockWorkflowStore = vi.hoisted(() => ({
-  activeWorkflow: null as { changeTracker: unknown } | null,
-  getWorkflowByPath: vi.fn()
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: {
-    graph: {},
-    rootGraph: {
-      serialize: vi.fn(() => ({
-        nodes: [],
-        links: [],
-        groups: [],
-        extra: {},
-        config: {},
-        version: 0.4,
-        last_node_id: 0,
-        last_link_id: 0
-      }))
-    },
-    loadGraphData: vi.fn(() => Promise.resolve()),
-    canvas: {
-      ds: { scale: 1, offset: [0, 0] }
-    },
-    ui: {
-      autoQueueEnabled: false,
-      autoQueueMode: 'instant'
-    }
-  }
-}))
-
-vi.mock('@/scripts/api', () => ({
-  api: {
-    dispatchCustomEvent: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
-
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: vi.fn(() => mockNodeOutputStore)
-}))
-
-vi.mock('@/stores/subgraphNavigationStore', () => ({
-  useSubgraphNavigationStore: vi.fn(() => mockSubgraphNavigationStore)
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  ComfyWorkflow: class {},
-  useWorkflowStore: vi.fn(() => mockWorkflowStore)
-}))
+vi.mock(import('@/scripts/api'))
 
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
@@ -121,13 +87,15 @@ function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
   const workflow = {
     path: `/test/workflow-${++workflowPathCounter}.json`
   } as never
-  const tracker = new ChangeTracker(workflow, state)
-  mockWorkflowStore.activeWorkflow = { changeTracker: tracker }
+  const tracker = markRaw(new ChangeTracker(workflow, state))
+  useWorkflowStore().activeWorkflow = fromPartial({
+    changeTracker: tracker
+  })
   return tracker
 }
 
 function mockCanvasState(state: ComfyWorkflowJSON) {
-  vi.mocked(app.rootGraph.serialize).mockReturnValue(state as never)
+  vi.spyOn(app.rootGraph, 'serialize').mockReturnValue(state as never)
 }
 
 function dispatchedEventNames() {
@@ -219,21 +187,259 @@ describe('ChangeTracker', () => {
     nodeIdCounter = 0
     ChangeTracker.isLoadingGraph = false
     ChangeTracker.resetCheckStateWarningForTest()
-    mockWorkflowStore.activeWorkflow = null
-    mockWorkflowStore.getWorkflowByPath.mockReturnValue(null)
+    useWorkflowStore().activeWorkflow = null
+    vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(null)
     mockCanvasState(createState())
     useQueueSettingsStore().mode = 'change'
     app.ui.autoQueueEnabled = false
     app.ui.autoQueueMode = 'instant'
+    vi.mocked(useSubgraphNavigationStore().exportState).mockReturnValue([])
+    vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+      () => {}
+    )
+    app.rootGraph.subgraphs.clear()
+    vi.mocked(app.loadGraphData).mockImplementation(async (state) => {
+      const restored = await requireValidWorkflow(state)
+      useWorkflowStore().activeWorkflow?.changeTracker.reset(restored)
+      mockCanvasState(restored)
+      return true
+    })
+  })
+
+  describe('undoRedo', () => {
+    it.for([
+      {
+        key: 'z',
+        shiftKey: false,
+        history: 'undo',
+        selectOnly: false,
+        calls: 1
+      },
+      {
+        key: 'z',
+        shiftKey: false,
+        history: 'undo',
+        selectOnly: true,
+        calls: 0
+      },
+      { key: 'z', shiftKey: true, history: 'redo', selectOnly: true, calls: 0 },
+      { key: 'y', shiftKey: false, history: 'redo', selectOnly: true, calls: 0 }
+    ] as const)(
+      'Ctrl+$key shift=$shiftKey with selectOnly=$selectOnly consumes the key and runs $history $calls times',
+      async ({ key, shiftKey, history, selectOnly, calls }) => {
+        const tracker = createTracker()
+        const run = vi.spyOn(tracker, history).mockResolvedValue()
+        app.canvas.selectOnly = selectOnly
+        onTestFinished(() => {
+          app.canvas.selectOnly = false
+        })
+
+        const handled = await tracker.undoRedo(
+          new KeyboardEvent('keydown', { key, ctrlKey: true, shiftKey })
+        )
+
+        expect(handled).toBe(true)
+        expect(run).toHaveBeenCalledTimes(calls)
+      }
+    )
+
+    it.for([
+      { key: 'a', ctrlKey: true, shiftKey: false, altKey: false },
+      { key: 'z', ctrlKey: false, shiftKey: false, altKey: false },
+      { key: 'z', ctrlKey: true, shiftKey: false, altKey: true },
+      { key: 'y', ctrlKey: true, shiftKey: true, altKey: false }
+    ])(
+      '$key ctrl=$ctrlKey shift=$shiftKey alt=$altKey is not a history shortcut',
+      async ({ key, ctrlKey, shiftKey, altKey }) => {
+        const tracker = createTracker()
+        const undo = vi.spyOn(tracker, 'undo').mockResolvedValue()
+        const redo = vi.spyOn(tracker, 'redo').mockResolvedValue()
+
+        const handled = await tracker.undoRedo(
+          new KeyboardEvent('keydown', { key, ctrlKey, shiftKey, altKey })
+        )
+
+        expect(handled).toBeUndefined()
+        expect(undo).not.toHaveBeenCalled()
+        expect(redo).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      { selectOnlyAtKeydown: true, selectOnlyAtFrame: false, undoCalls: 0 },
+      { selectOnlyAtKeydown: false, selectOnlyAtFrame: true, undoCalls: 1 }
+    ])(
+      'Ctrl+Z with selectOnly=$selectOnlyAtKeydown at keydown and $selectOnlyAtFrame at the frame undoes $undoCalls times',
+      async ({ selectOnlyAtKeydown, selectOnlyAtFrame, undoCalls }) => {
+        const tracker = createTracker()
+        const undo = vi.spyOn(tracker, 'undo').mockResolvedValue()
+        const frames: FrameRequestCallback[] = []
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        const addEventListener = vi
+          .spyOn(window, 'addEventListener')
+          .mockImplementation(() => {})
+        ChangeTracker.init()
+        const keydown = addEventListener.mock.calls.find(
+          ([type]) => type === 'keydown'
+        )?.[1]
+        if (typeof keydown !== 'function')
+          throw new Error('keydown listener missing')
+        onTestFinished(() => {
+          app.canvas.selectOnly = false
+        })
+
+        app.canvas.selectOnly = selectOnlyAtKeydown
+        keydown(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true }))
+        app.canvas.selectOnly = selectOnlyAtFrame
+        expect(frames).toHaveLength(1)
+        await frames[0](0)
+
+        expect(undo).toHaveBeenCalledTimes(undoCalls)
+      }
+    )
+
+    describe('modifier release around history shortcuts', () => {
+      let events: EventTarget
+      let frames: FrameRequestCallback[]
+
+      beforeEach(() => {
+        events = new EventTarget()
+        frames = []
+        vi.spyOn(window, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            events.addEventListener(type, listener, options)
+        )
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        ChangeTracker.init()
+      })
+
+      it.for([
+        { key: 'y', shiftKey: false, queue: 'redoQueue' },
+        { key: 'z', shiftKey: true, queue: 'redoQueue' },
+        { key: 'z', shiftKey: false, queue: 'undoQueue' }
+      ] as const)(
+        'Ctrl+$key shift=$shiftKey restores history when released before the next frame',
+        async ({ key, shiftKey, queue }) => {
+          const tracker = createTracker(createState(1))
+          const target = createState(2)
+          tracker[queue].push(target)
+          mockCanvasState(createState(3))
+
+          events.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Control', ctrlKey: true })
+          )
+          await Promise.all(frames.splice(0).map((frame) => frame(0)))
+          events.dispatchEvent(
+            new KeyboardEvent('keydown', { key, ctrlKey: true, shiftKey })
+          )
+          events.dispatchEvent(
+            new KeyboardEvent('keyup', { key, ctrlKey: true, shiftKey })
+          )
+          events.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control' }))
+          await Promise.all(frames.splice(0).map((frame) => frame(0)))
+
+          expect(tracker.activeState).toEqual(target)
+        }
+      )
+
+      it('captures changes when a bare modifier is released within one frame', () => {
+        const tracker = createTracker(createState(1))
+        const changed = createState(2)
+        mockCanvasState(changed)
+
+        events.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Control', ctrlKey: true })
+        )
+        events.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control' }))
+
+        expect(tracker.activeState).toEqual(changed)
+      })
+    })
+
+    it.for([
+      { editor: 'INPUT', createElement: () => document.createElement('input') },
+      {
+        editor: 'TEXTAREA',
+        createElement: () => document.createElement('textarea')
+      },
+      {
+        editor: 'contenteditable',
+        createElement: () => {
+          const element = document.createElement('div')
+          Object.defineProperty(element, 'isContentEditable', { value: true })
+          return element
+        }
+      }
+    ])(
+      'leaves $editor history to the editor without scanning modals',
+      ({ createElement }) => {
+        vi.spyOn(document, 'activeElement', 'get').mockReturnValue(
+          createElement()
+        )
+        useQueueSettingsStore().mode = 'disabled'
+        const querySelectorAll = vi.spyOn(document, 'querySelectorAll')
+        const frames: FrameRequestCallback[] = []
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        const addEventListener = vi
+          .spyOn(window, 'addEventListener')
+          .mockImplementation(() => {})
+        ChangeTracker.init()
+        const keydown = addEventListener.mock.calls.find(
+          ([type]) => type === 'keydown'
+        )?.[1]
+        if (typeof keydown !== 'function')
+          throw new Error('keydown listener missing')
+
+        keydown(new KeyboardEvent('keydown', { key: 'a' }))
+
+        expect(querySelectorAll).not.toHaveBeenCalled()
+        expect(frames).toHaveLength(0)
+      }
+    )
+
+    it('captures editor changes when store-backed auto-queue uses change mode', async () => {
+      const editor = document.createElement('input')
+      vi.spyOn(document, 'activeElement', 'get').mockReturnValue(editor)
+      useQueueSettingsStore().mode = 'change'
+      app.ui.autoQueueEnabled = false
+      const tracker = createTracker(createState(1))
+      mockCanvasState(createState(2))
+      const frames: FrameRequestCallback[] = []
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+        frames.push(frame)
+      )
+      const addEventListener = vi
+        .spyOn(window, 'addEventListener')
+        .mockImplementation(() => {})
+      ChangeTracker.init()
+      const keydown = addEventListener.mock.calls.find(
+        ([type]) => type === 'keydown'
+      )?.[1]
+      if (typeof keydown !== 'function')
+        throw new Error('keydown listener missing')
+
+      keydown(new KeyboardEvent('keydown', { key: 'a' }))
+      expect(frames).toHaveLength(1)
+      await frames[0](0)
+
+      expect(dispatchedEventNames()).toContain('autoQueueGraphChanged')
+      expect(tracker.activeState.nodes).toHaveLength(2)
+    })
   })
 
   describe('captureCanvasState', () => {
     describe('guards', () => {
-      it('is a no-op when app.graph is falsy', () => {
+      it('is a no-op when the graph is not ready', () => {
         const tracker = createTracker()
         const original = tracker.activeState
 
-        const spy = vi.spyOn(app, 'graph', 'get').mockReturnValue(null as never)
+        const spy = vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
         tracker.captureCanvasState()
         spy.mockRestore()
 
@@ -270,7 +476,9 @@ describe('ChangeTracker', () => {
 
       it('is a no-op and calls assert when called on inactive tracker', () => {
         const tracker = createTracker()
-        mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+        useWorkflowStore().activeWorkflow = fromPartial({
+          changeTracker: {}
+        })
 
         tracker.captureCanvasState()
 
@@ -452,7 +660,9 @@ describe('ChangeTracker', () => {
         {
           name: 'tracker becomes inactive',
           blockSquash: () => {
-            mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+            useWorkflowStore().activeWorkflow = fromPartial({
+              changeTracker: {}
+            })
           }
         },
         {
@@ -489,6 +699,23 @@ describe('ChangeTracker', () => {
         tracker.captureCanvasState()
 
         expect(tracker.undoQueue).toHaveLength(0)
+      })
+
+      it('does not push when only the recomputed node execution order differs', () => {
+        const initial = createState(2)
+        const tracker = createTracker(initial)
+        const reordered = structuredClone(initial)
+        reordered.nodes[0].order = 1
+        reordered.nodes[1].order = 0
+        mockCanvasState(reordered)
+
+        tracker.captureCanvasState()
+
+        expect(tracker.undoQueue).toHaveLength(0)
+        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+          'graphChanged',
+          expect.anything()
+        )
       })
 
       it.for([
@@ -713,7 +940,6 @@ describe('ChangeTracker', () => {
           node.id = String(node.id)
         }
         const initialLink = initial.links[0]
-        if (!initialLink) throw new Error('link missing')
         initialLink[1] = String(initialLink[1])
         initialLink[3] = String(initialLink[3])
         changed.nodes[0].pos = [40, 50]
@@ -913,7 +1139,6 @@ describe('ChangeTracker', () => {
         const tracker = createTracker(initial)
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.pos = [40, 50]
         interior.size = [200, 100]
         mockCanvasState(changed)
@@ -932,7 +1157,6 @@ describe('ChangeTracker', () => {
         const tracker = createTracker(initial)
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.widgets_values = [2]
         mockCanvasState(changed)
 
@@ -968,12 +1192,10 @@ describe('ChangeTracker', () => {
           throw new Error('nested subgraph definitions missing')
         }
         const [leaf] = rootDefinitions.splice(leafIndex, 1)
-        if (!leaf) throw new Error('nested leaf definition missing')
         parent.definitions = { subgraphs: [leaf] }
         const initialLeaf = findSubgraphDefinition(initial, leafId)
         if (!initialLeaf) throw new Error('nested leaf definition missing')
         const initialLeafNode = initialLeaf.nodes[0]
-        if (!initialLeafNode) throw new Error('nested leaf node missing')
         initialLeafNode.widgets_values = [1]
         const tracker = createTracker(initial)
 
@@ -981,7 +1203,6 @@ describe('ChangeTracker', () => {
         const changedLeaf = findSubgraphDefinition(changed, leafId)
         if (!changedLeaf) throw new Error('nested leaf definition missing')
         const changedLeafNode = changedLeaf.nodes[0]
-        if (!changedLeafNode) throw new Error('nested leaf node missing')
         changedLeafNode.widgets_values = [2]
         mockCanvasState(changed)
 
@@ -996,7 +1217,6 @@ describe('ChangeTracker', () => {
         const initial = await createSubgraphState()
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.widgets_values = [2]
         omitOptionalSubgraphCollections(initial)
         omitOptionalSubgraphCollections(changed)
@@ -1131,6 +1351,535 @@ describe('ChangeTracker', () => {
   })
 
   describe('undo and redo', () => {
+    it('keeps Redo after Undo normalizes an interior node size', async () => {
+      const initial = await createSubgraphState()
+      const changed = structuredClone(initial)
+      getSubgraphDefinition(changed).nodes[0].widgets_values = [2]
+      const normalized = structuredClone(initial)
+      getSubgraphDefinition(normalized).nodes[0].size = [100, 178]
+      const tracker = createTracker(changed)
+      tracker.undoQueue.push(initial)
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(normalized)
+        mockCanvasState(normalized)
+        return true
+      })
+
+      await tracker.undo()
+      tracker.captureCanvasState()
+
+      expect(tracker.undoQueue).toEqual([])
+      expect(tracker.redoQueue).toEqual([changed])
+      expect(tracker.activeState).toEqual(normalized)
+      await tracker.redo()
+      expect(tracker.activeState).toEqual(changed)
+      expect(tracker.undoQueue).toEqual([normalized])
+      expect(tracker.redoQueue).toEqual([])
+    })
+
+    it('clears Redo for an intentional resize after normalized Undo', async () => {
+      const initial = createState(1)
+      const changed = structuredClone(initial)
+      changed.nodes[0].widgets_values = [2]
+      const normalized = structuredClone(initial)
+      normalized.nodes[0].size = [100, 178]
+      const tracker = createTracker(changed)
+      tracker.undoQueue.push(initial)
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(normalized)
+        mockCanvasState(normalized)
+        return true
+      })
+      await tracker.undo()
+      const resized = structuredClone(normalized)
+      resized.nodes[0].size = [350, 220]
+      mockCanvasState(resized)
+
+      tracker.captureCanvasState()
+
+      expect(tracker.redoQueue).toEqual([])
+      expect(tracker.undoQueue).toEqual([normalized])
+      expect(tracker.activeState).toEqual(resized)
+      await tracker.undo()
+      expect(tracker.activeState).toEqual(normalized)
+      await tracker.redo()
+      expect(tracker.activeState).toEqual(resized)
+    })
+
+    it.for(['undo', 'redo'] as const)(
+      'keeps the restored workflow snapshot when another graph is configured during %s',
+      async (direction) => {
+        const restored = createState(1)
+        const changed = createState(2)
+        const normalized = structuredClone(restored)
+        normalized.nodes[0].size = [100, 178]
+        const tracker = createTracker(changed)
+        const history = { undo: tracker.undoQueue, redo: tracker.redoQueue }
+        history[direction].push(restored)
+        vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+          tracker.reset(normalized)
+          mockCanvasState(createState(3))
+          return true
+        })
+
+        await tracker[direction]()
+
+        expect(tracker.activeState).toEqual(normalized)
+        expect(tracker.initialState).toEqual(changed)
+        expect(history[direction]).toEqual([])
+      }
+    )
+
+    it('keeps the normalized snapshot if another workflow becomes active during Undo', async () => {
+      const initial = createState(1)
+      const tracker = createTracker(createState(2))
+      tracker.undoQueue.push(initial)
+      const normalized = structuredClone(initial)
+      normalized.nodes[0].size = [100, 178]
+      const otherState = createState(3)
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(normalized)
+        createTracker(otherState)
+        mockCanvasState(otherState)
+        return true
+      })
+
+      await tracker.undo()
+
+      expect(tracker.activeState).toEqual(normalized)
+      expect(
+        useWorkflowStore().activeWorkflow?.changeTracker.activeState
+      ).toEqual(otherState)
+    })
+
+    it('keeps Redo reachable when a load rejects after committing the normalized Undo state', async () => {
+      const saved = createState(1)
+      saved.nodes[0].widgets_values = [1]
+      const changed = structuredClone(saved)
+      changed.nodes[0].widgets_values = [2]
+      const normalized = structuredClone(saved)
+      normalized.nodes[0].size = [100, 178]
+      const tracker = createTracker(saved)
+      tracker.activeState = changed
+      tracker.undoQueue.push(saved)
+      const workflow = useWorkflowStore().activeWorkflow
+      assert.exists(workflow)
+      workflow.isModified = true
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      const error = new Error('Post-load asset scan rejected')
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(normalized)
+        mockCanvasState(normalized)
+        throw error
+      })
+
+      await expect(tracker.undo()).rejects.toThrow(error)
+
+      expect(tracker.activeState).toEqual(normalized)
+      expect(tracker.initialState).toEqual(normalized)
+      expect(tracker.undoQueue).toEqual([])
+      expect(tracker.redoQueue).toEqual([changed])
+      expect(workflow.isModified).toBe(false)
+      expect(tracker._restoringState).toBe(false)
+      await tracker.redo()
+      expect(tracker.activeState).toEqual(changed)
+      expect(workflow.isModified).toBe(true)
+    })
+
+    it('retains the Undo target when a same-workflow reload updates the tracker instead', async () => {
+      const saved = createState(1)
+      saved.nodes[0].widgets_values = [1]
+      const current = structuredClone(saved)
+      current.nodes[0].widgets_values = [2]
+      const reloaded = structuredClone(current)
+      reloaded.nodes[0].size = [100, 178]
+      const tracker = createTracker(saved)
+      tracker.activeState = current
+      tracker.undoQueue.push(saved)
+      const workflow = useWorkflowStore().activeWorkflow
+      assert.exists(workflow)
+      workflow.isModified = true
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(reloaded)
+        mockCanvasState(reloaded)
+        return undefined
+      })
+
+      await tracker.undo()
+
+      expect(tracker.activeState).toEqual(reloaded)
+      expect(tracker.initialState).toEqual(saved)
+      expect(tracker.undoQueue).toEqual([saved])
+      expect(tracker.redoQueue).toEqual([])
+      expect(workflow.isModified).toBe(true)
+      expect(tracker._restoringState).toBe(false)
+    })
+
+    it('keeps Redo when a late load error follows normalization of an interior node size', async () => {
+      const saved = await createSubgraphState()
+      const changed = structuredClone(saved)
+      getSubgraphDefinition(changed).nodes[0].widgets_values = [2]
+      const normalized = structuredClone(saved)
+      getSubgraphDefinition(normalized).nodes[0].size = [100, 178]
+      const tracker = createTracker(saved)
+      tracker.activeState = changed
+      tracker.undoQueue.push(saved)
+      const error = new Error('Post-load asset scan rejected')
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(normalized)
+        mockCanvasState(normalized)
+        throw error
+      })
+
+      await expect(tracker.undo()).rejects.toThrow(error)
+
+      expect(tracker.activeState).toEqual(normalized)
+      expect(tracker.initialState).toEqual(normalized)
+      expect(tracker.undoQueue).toEqual([])
+      expect(tracker.redoQueue).toEqual([changed])
+      expect(tracker._restoringState).toBe(false)
+    })
+
+    it('retains the Undo target when an unrelated same-workflow reload precedes a late error', async () => {
+      const saved = createState(1)
+      saved.nodes[0].widgets_values = [1]
+      const current = structuredClone(saved)
+      current.nodes[0].widgets_values = [2]
+      const reloaded = structuredClone(current)
+      reloaded.nodes[0].size = [100, 178]
+      const tracker = createTracker(saved)
+      tracker.activeState = current
+      tracker.undoQueue.push(saved)
+      const workflow = useWorkflowStore().activeWorkflow
+      assert.exists(workflow)
+      workflow.isModified = true
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      const error = new Error('Superseded Undo asset scan rejected')
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(reloaded)
+        mockCanvasState(reloaded)
+        throw error
+      })
+
+      await expect(tracker.undo()).rejects.toThrow(error)
+
+      expect(tracker.activeState).toEqual(reloaded)
+      expect(tracker.initialState).toEqual(saved)
+      expect(tracker.undoQueue).toEqual([saved])
+      expect(tracker.redoQueue).toEqual([])
+      expect(workflow.isModified).toBe(true)
+      expect(tracker._restoringState).toBe(false)
+    })
+
+    it('retains a resize Undo target when an unrelated reload changes only the node size', async () => {
+      const saved = createState(1)
+      const current = structuredClone(saved)
+      current.nodes[0].size = [400, 220]
+      const reloaded = structuredClone(current)
+      reloaded.nodes[0].size = [400, 260]
+      const tracker = createTracker(saved)
+      tracker.activeState = current
+      tracker.undoQueue.push(saved)
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(reloaded)
+        mockCanvasState(reloaded)
+        return undefined
+      })
+
+      await tracker.undo()
+
+      expect(tracker.activeState).toEqual(reloaded)
+      expect(tracker.initialState).toEqual(saved)
+      expect(tracker.undoQueue).toEqual([saved])
+      expect(tracker.redoQueue).toEqual([])
+      expect(tracker._restoringState).toBe(false)
+    })
+
+    it.for([
+      { direction: 'undo', reverse: 'redo', start: 3, end: 1 },
+      { direction: 'redo', reverse: 'undo', start: 1, end: 3 }
+    ] as const)(
+      'applies both overlapping $direction requests',
+      async ({ direction, reverse, start, end }) => {
+        vi.useFakeTimers()
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const current = createState(start)
+        const intermediate = createState(2)
+        const final = createState(end)
+        const tracker = createTracker(current)
+        const history = { undo: tracker.undoQueue, redo: tracker.redoQueue }
+        history[direction].push(final, intermediate)
+        const loadGraphData = vi
+          .mocked(app.loadGraphData)
+          .getMockImplementation()
+        assert.exists(loadGraphData)
+        vi.mocked(app.loadGraphData).mockImplementationOnce(async (...args) => {
+          await new Promise<void>((resolve) => setTimeout(resolve, 5))
+          return loadGraphData(...args)
+        })
+
+        const requests = Promise.all([
+          tracker[direction](),
+          tracker[direction]()
+        ])
+        await vi.advanceTimersByTimeAsync(5)
+        await requests
+
+        expect(tracker.activeState).toEqual(final)
+        expect(history[direction]).toEqual([])
+        expect(history[reverse]).toEqual([current, intermediate])
+        expect(tracker._restoringState).toBe(false)
+      }
+    )
+
+    it.for([
+      { first: 'undo', second: 'redo' },
+      { first: 'redo', second: 'undo' }
+    ] as const)(
+      'applies overlapping $first then $second requests in order',
+      async ({ first, second }) => {
+        vi.useFakeTimers()
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const current = createState(3)
+        const previous = createState(2)
+        const tracker = createTracker(current)
+        const history = { undo: tracker.undoQueue, redo: tracker.redoQueue }
+        history[first].push(previous)
+        const loadGraphData = vi
+          .mocked(app.loadGraphData)
+          .getMockImplementation()
+        assert.exists(loadGraphData)
+        vi.mocked(app.loadGraphData).mockImplementationOnce(async (...args) => {
+          await new Promise<void>((resolve) => setTimeout(resolve, 5))
+          return loadGraphData(...args)
+        })
+
+        const requests = Promise.all([tracker[first](), tracker[second]()])
+        await vi.advanceTimersByTimeAsync(5)
+        await requests
+
+        expect(tracker.activeState).toEqual(current)
+        expect(history[first]).toEqual([previous])
+        expect(history[second]).toEqual([])
+        expect(tracker._restoringState).toBe(false)
+      }
+    )
+
+    it.for([false, undefined])(
+      'processes a queued Undo after the pending restore returns %s',
+      async (result) => {
+        vi.useFakeTimers()
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const earlier = createState(1)
+        const previous = createState(2)
+        const current = createState(3)
+        const tracker = createTracker(current)
+        tracker.undoQueue.push(earlier, previous)
+        vi.mocked(app.loadGraphData).mockImplementationOnce(
+          () => new Promise((resolve) => setTimeout(() => resolve(result), 5))
+        )
+
+        const requests = Promise.all([tracker.undo(), tracker.undo()])
+        await vi.advanceTimersByTimeAsync(0)
+        expect(tracker.activeState).toEqual(current)
+        expect(tracker.undoQueue).toEqual([earlier])
+        expect(tracker.redoQueue).toEqual([])
+        await vi.advanceTimersByTimeAsync(5)
+        await requests
+
+        expect(tracker.activeState).toEqual(previous)
+        expect(tracker.undoQueue).toEqual([earlier])
+        expect(tracker.redoQueue).toEqual([current])
+        expect(tracker._restoringState).toBe(false)
+      }
+    )
+
+    it.for([
+      { direction: 'undo', reverse: 'redo' },
+      { direction: 'redo', reverse: 'undo' }
+    ] as const)(
+      'processes a queued $direction after the pending restore rejects',
+      async ({ direction, reverse }) => {
+        const current = createState(3)
+        const previous = createState(2)
+        const tracker = createTracker(current)
+        const history = { undo: tracker.undoQueue, redo: tracker.redoQueue }
+        history[direction].push(previous)
+        const error = new Error('Workflow load rejected')
+        vi.mocked(app.loadGraphData).mockRejectedValueOnce(error)
+
+        const results = await Promise.allSettled([
+          tracker[direction](),
+          tracker[direction]()
+        ])
+
+        expect(results).toEqual([
+          { status: 'rejected', reason: error },
+          { status: 'fulfilled', value: undefined }
+        ])
+        expect(tracker.activeState).toEqual(previous)
+        expect(history[direction]).toEqual([])
+        expect(history[reverse]).toEqual([current])
+        expect(tracker._restoringState).toBe(false)
+      }
+    )
+
+    it('serializes distinct workflow requests after a pending Undo', async () => {
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const earlier = createState(1)
+      const previous = createState(2)
+      const current = createState(3)
+      const firstSelection = createState(4)
+      const secondSelection = createState(5)
+      const firstSource = [firstSelection]
+      const secondSource = [secondSelection]
+      const tracker = createTracker(current)
+      tracker.undoQueue.push(earlier, previous)
+      let releasePending!: () => void
+      const pending = new Promise<void>((resolve) => {
+        releasePending = resolve
+      })
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        await pending
+        tracker.reset(previous)
+        mockCanvasState(previous)
+        return true
+      })
+
+      const undo = tracker.undo()
+      let selectionFinished = false
+      const firstRequest = tracker
+        .updateState(firstSource, tracker.undoQueue)
+        .then(() => {
+          selectionFinished = true
+        })
+      const secondRequest = tracker.updateState(secondSource, tracker.undoQueue)
+      try {
+        await vi.advanceTimersByTimeAsync(0)
+        expect(selectionFinished).toBe(false)
+      } finally {
+        releasePending()
+        await Promise.all([undo, firstRequest, secondRequest])
+      }
+
+      expect(tracker.activeState).toEqual(secondSelection)
+      expect(tracker.undoQueue).toEqual([earlier, previous, firstSelection])
+      expect(tracker.redoQueue).toEqual([current])
+      expect(firstSource).toEqual([])
+      expect(secondSource).toEqual([])
+    })
+
+    it.for([false, undefined])(
+      'preserves state and history when restoration returns %s',
+      async (result) => {
+        const initial = createState(1)
+        const current = createState(2)
+        const tracker = createTracker(current)
+        tracker.undoQueue.push(initial)
+        vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+          expect(tracker.activeState).toEqual(current)
+          mockCanvasState(createState(3))
+          return result
+        })
+
+        await tracker.undo()
+
+        expect(tracker.activeState).toEqual(current)
+        expect(tracker.undoQueue).toEqual([initial])
+        expect(tracker.redoQueue).toEqual([])
+        expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
+        expect(tracker._restoringState).toBe(false)
+      }
+    )
+
+    it('preserves state and history when restoration rejects', async () => {
+      const initial = createState(1)
+      const current = createState(2)
+      const tracker = createTracker(current)
+      tracker.undoQueue.push(initial)
+      const error = new Error('Workflow load rejected')
+      vi.mocked(app.loadGraphData).mockRejectedValueOnce(error)
+
+      await expect(tracker.undo()).rejects.toThrow(error)
+
+      expect(tracker.activeState).toEqual(current)
+      expect(tracker.undoQueue).toEqual([initial])
+      expect(tracker.redoQueue).toEqual([])
+      expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
+      expect(tracker._restoringState).toBe(false)
+    })
+
+    it.for([
+      {
+        direction: 'undo',
+        reverse: 'redo',
+        restoresSaved: true,
+        restoredValue: 1,
+        modified: false
+      },
+      {
+        direction: 'redo',
+        reverse: 'undo',
+        restoresSaved: true,
+        restoredValue: 1,
+        modified: false
+      },
+      {
+        direction: 'undo',
+        reverse: 'redo',
+        restoresSaved: false,
+        restoredValue: 3,
+        modified: true
+      }
+    ] as const)(
+      'tracks unsaved changes after $direction normalizes a node (saved target: $restoresSaved)',
+      async ({ direction, reverse, restoredValue, modified }) => {
+        const saved = createState(1)
+        saved.nodes[0].widgets_values = [1]
+        const current = structuredClone(saved)
+        current.nodes[0].widgets_values = [2]
+        const restored = structuredClone(saved)
+        restored.nodes[0].widgets_values = [restoredValue]
+        const normalized = structuredClone(restored)
+        normalized.nodes[0].size = [100, 178]
+        const tracker = createTracker(saved)
+        tracker.activeState = current
+        const workflow = useWorkflowStore().activeWorkflow
+        assert.exists(workflow)
+        vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(
+          workflow
+        )
+        const history = { undo: tracker.undoQueue, redo: tracker.redoQueue }
+        history[direction].push(restored)
+        vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+          tracker.reset(normalized)
+          mockCanvasState(normalized)
+          return true
+        })
+
+        await tracker[direction]()
+        tracker.captureCanvasState()
+
+        expect(workflow.isModified).toBe(modified)
+        expect(tracker.activeState).toEqual(normalized)
+        expect(history[direction]).toEqual([])
+        expect(history[reverse]).toEqual([current])
+        await tracker[reverse]()
+        expect(tracker.activeState).toEqual(current)
+        expect(workflow.isModified).toBe(true)
+      }
+    )
+
     it('dispatches autoQueueGraphChanged for a data change in both directions', async () => {
       const initial = createState(1)
       const changed = structuredClone(initial)
@@ -1177,6 +1926,95 @@ describe('ChangeTracker', () => {
     })
   })
 
+  describe('graphEqual', () => {
+    beforeEach(() => {
+      resetReportedWorkflowStateAnomaliesForTests()
+    })
+
+    it.for([
+      ['first', null, createState(), { hasFirst: false, hasSecond: true }],
+      ['second', createState(), undefined, { hasFirst: true, hasSecond: false }]
+    ] as const)(
+      'reports and returns false when the %s state is missing',
+      ([, a, b, context]) => {
+        expect(ChangeTracker.graphEqual(a, b)).toBe(false)
+
+        expect(mockAssert).toHaveBeenCalledWith(
+          false,
+          'ChangeTracker.graphEqual() called with a missing state',
+          { method: 'ChangeTracker.graphEqual', ...context }
+        )
+      }
+    )
+
+    it('does not report when both states are present', () => {
+      const state = createState(1)
+
+      expect(ChangeTracker.graphEqual(state, structuredClone(state))).toBe(true)
+      expect(ChangeTracker.graphEqual(state, createState(2))).toBe(false)
+
+      expect(mockAssert).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('updateModified', () => {
+    beforeEach(() => {
+      resetReportedWorkflowStateAnomaliesForTests()
+    })
+
+    function storeWorkflowFor(tracker: ChangeTracker) {
+      const workflow = fromPartial<ComfyWorkflow>({
+        path: tracker.workflow.path,
+        isLoaded: false,
+        isPersisted: true,
+        isTemporary: false,
+        changeTracker: null,
+        initialState: null,
+        activeState: null,
+        originalContent: null,
+        isModified: false
+      })
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      return workflow
+    }
+
+    it('marks the workflow modified when its state differs from the initial state', () => {
+      const tracker = createTracker(createState(1))
+      const workflow = storeWorkflowFor(tracker)
+      tracker.activeState = createState(2)
+
+      tracker.updateModified()
+
+      expect(workflow.isModified).toBe(true)
+      expect(mockAssert).not.toHaveBeenCalled()
+    })
+
+    it('leaves isModified alone and reports when the tracker has no initial state', () => {
+      const tracker = createTracker(createState(1))
+      const workflow = storeWorkflowFor(tracker)
+      tracker.initialState = fromAny<ComfyWorkflowJSON, null>(null)
+
+      expect(() => tracker.updateModified()).not.toThrow()
+
+      expect(workflow.isModified).toBe(false)
+      expect(mockAssert).toHaveBeenCalledWith(
+        false,
+        'ChangeTracker has no initial state',
+        {
+          method: 'ChangeTracker.updateModified',
+          isLoaded: false,
+          hasChangeTracker: false,
+          hasInitialState: false,
+          hasActiveState: false,
+          isPersisted: true,
+          isTemporary: false,
+          originalContentKind: 'unavailable',
+          isActive: true
+        }
+      )
+    })
+  })
+
   describe('deactivate', () => {
     it('captures canvas state then stores viewport/outputs', () => {
       const tracker = createTracker(createState(1))
@@ -1186,8 +2024,8 @@ describe('ChangeTracker', () => {
       tracker.deactivate()
 
       expect(tracker.activeState).toEqual(changed)
-      expect(mockNodeOutputStore.snapshotOutputs).toHaveBeenCalled()
-      expect(mockSubgraphNavigationStore.exportState).toHaveBeenCalled()
+      expect(useNodeOutputStore().snapshotOutputs).toHaveBeenCalled()
+      expect(useSubgraphNavigationStore().exportState).toHaveBeenCalled()
     })
 
     it('skips captureCanvasState but still calls store during undo/redo', () => {
@@ -1197,21 +2035,85 @@ describe('ChangeTracker', () => {
       tracker.deactivate()
 
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
-      expect(mockNodeOutputStore.snapshotOutputs).toHaveBeenCalled()
+      expect(useNodeOutputStore().snapshotOutputs).toHaveBeenCalled()
     })
 
     it('is a full no-op and calls assert when called on inactive tracker', () => {
       const tracker = createTracker()
-      mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        changeTracker: {}
+      })
 
       tracker.deactivate()
 
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
-      expect(mockNodeOutputStore.snapshotOutputs).not.toHaveBeenCalled()
+      expect(useNodeOutputStore().snapshotOutputs).not.toHaveBeenCalled()
       expect(mockAssert).toHaveBeenCalledWith(
         false,
         'ChangeTracker.deactivate() called on inactive tracker'
       )
+    })
+  })
+
+  describe('restore', () => {
+    function deactivateWithNavigation(navigation: string[]) {
+      const tracker = createTracker(createState(1))
+      vi.mocked(useSubgraphNavigationStore().exportState).mockReturnValue(
+        navigation
+      )
+      tracker.deactivate()
+      return tracker
+    }
+
+    it('reopens the deepest subgraph the undone state still contains', () => {
+      const survivor = fromPartial<Subgraph>({ id: 'outer', nodes: [] })
+      app.rootGraph.subgraphs.set('outer', survivor)
+      const tracker = deactivateWithNavigation(['outer', 'inner', 'innermost'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
+
+      tracker.restore()
+
+      expect(restoredNavigation).toEqual(['outer'])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(survivor)
+    })
+
+    it('reopens the deepest of multiple surviving ancestors', () => {
+      const outer = fromPartial<Subgraph>({ id: 'outer', nodes: [] })
+      const inner = fromPartial<Subgraph>({ id: 'inner', nodes: [] })
+      app.rootGraph.subgraphs.set('outer', outer)
+      app.rootGraph.subgraphs.set('inner', inner)
+      const tracker = deactivateWithNavigation(['outer', 'inner', 'innermost'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
+
+      tracker.restore()
+
+      expect(restoredNavigation).toEqual(['outer', 'inner'])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(inner)
+    })
+
+    it('returns to the root graph when the undone state removed every ancestor', () => {
+      const tracker = deactivateWithNavigation(['outer', 'inner'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
+
+      tracker.restore()
+
+      expect(restoredNavigation).toEqual([])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
     })
   })
 
@@ -1229,7 +2131,9 @@ describe('ChangeTracker', () => {
     it('is a no-op when tracker is inactive', () => {
       const tracker = createTracker()
       const original = tracker.activeState
-      mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        changeTracker: {}
+      })
 
       tracker.prepareForSave()
 
@@ -1240,7 +2144,6 @@ describe('ChangeTracker', () => {
 
   describe('checkState (deprecated)', () => {
     it('captures each state and warns once across repeated calls', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
       const tracker = createTracker(createState(1))
       const firstChanged = createState(2)
       mockCanvasState(firstChanged)
@@ -1254,10 +2157,236 @@ describe('ChangeTracker', () => {
       tracker.checkState()
 
       expect(tracker.activeState).toEqual(secondChanged)
-      expect(warn).toHaveBeenCalledOnce()
-      expect(warn).toHaveBeenCalledWith(
-        'checkState() is deprecated — use captureCanvasState() instead.'
+      expect(
+        vi
+          .mocked(console.warn)
+          .mock.calls.filter(
+            ([message]) =>
+              message ===
+              'checkState() is deprecated — use captureCanvasState() instead.'
+          )
+      ).toHaveLength(1)
+    })
+  })
+
+  describe('node-history widgets', () => {
+    const addedNodes: LGraphNode[] = []
+
+    afterEach(() => {
+      for (const node of addedNodes.splice(0)) app.rootGraph.remove(node)
+    })
+
+    const regionA = { x: 0, y: 0, width: 64, height: 64 }
+    const regionB = { x: 32, y: 32, width: 128, height: 128 }
+
+    function addBoundingBoxesNode() {
+      const node = new LGraphNode('CreateBoundingBoxes')
+      node.id = toNodeId(7)
+      node.addWidget('number', 'width', 512, null)
+      node.addWidget('boundingboxes', 'bboxes', [], null)
+      const nodes = vi.spyOn(app.rootGraph, 'nodes', 'get')
+      nodes.mockReturnValue([node])
+      onTestFinished(() => nodes.mockRestore())
+      return { id: node.id, removeFromGraph: () => nodes.mockReturnValue([]) }
+    }
+
+    function recordNodeHistory(nodeId: LGraphNode['id']) {
+      const scope = {
+        rootGraphId: app.rootGraph.id,
+        widgetId: widgetId(app.rootGraph.id, nodeId, 'bboxes')
+      }
+      useWidgetHistoryStore().record(scope, [])
+      return () => useWidgetHistoryStore().canUndo(scope)
+    }
+
+    function stateWith(
+      nodeId: LGraphNode['id'],
+      values: { width: number; bboxes: unknown[] },
+      pos: [number, number] = [0, 0]
+    ): ComfyWorkflowJSON {
+      const state = createState()
+      state.nodes = [
+        {
+          id: nodeId,
+          type: 'CreateBoundingBoxes',
+          pos,
+          size: [100, 50],
+          flags: {},
+          order: 0,
+          mode: 0,
+          inputs: [],
+          outputs: [],
+          properties: {},
+          widgets_values: [values.width, values.bboxes],
+          widgets_values_named: { ...values }
+        }
+      ]
+      return state
+    }
+
+    function loadedState(): unknown {
+      return vi.mocked(app.loadGraphData).mock.calls.at(-1)?.[0]
+    }
+
+    function addImageCropNode() {
+      const node = new LGraphNode('ImageCropV2')
+      node.id = toNodeId(8)
+      node.serialize_widgets = true
+      app.rootGraph.add(node)
+      addedNodes.push(node)
+      vi.mocked(app.rootGraph.serialize).mockRestore()
+      const crop = useBoundingBoxWidget()(node, {
+        type: 'BOUNDING_BOX',
+        name: 'crop_region',
+        component: 'ImageCrop'
+      })
+      const field = (name: string) => {
+        const widget = node.widgets?.find((w) => w.name === name)
+        if (!widget) throw new Error(`missing widget ${name}`)
+        return widget
+      }
+      const cropBounds = () => {
+        if (!isBoundsObject(crop.value)) throw new Error('crop is not bounds')
+        return crop.value
+      }
+      return { crop, cropBounds, field }
+    }
+
+    function inVueNodesMode(enabled: boolean) {
+      const previous = LiteGraph.vueNodesMode
+      LiteGraph.vueNodesMode = enabled
+      onTestFinished(() => {
+        LiteGraph.vueNodesMode = previous
+      })
+    }
+
+    async function serializedGraph() {
+      return requireValidWorkflow(app.rootGraph.serialize())
+    }
+
+    it('keeps an image crop edit and its widget undo out of graph history in Vue nodes mode', async () => {
+      inVueNodesMode(true)
+      const { crop, cropBounds, field } = addImageCropNode()
+      const tracker = createTracker(await serializedGraph())
+      const editCrop = (x: number) => {
+        crop.value = { ...cropBounds(), x }
+        crop.callback?.(crop.value)
+        tracker.captureCanvasState()
+      }
+
+      editCrop(25)
+      expect(field('x').value).toBe(25)
+      editCrop(0)
+
+      expect(tracker.undoQueue).toEqual([])
+    })
+
+    it('records a graph undo step for a crop field edited on the classic canvas', async () => {
+      inVueNodesMode(false)
+      const { cropBounds, field } = addImageCropNode()
+      const tracker = createTracker(await serializedGraph())
+
+      field('x').callback?.(25)
+      tracker.captureCanvasState()
+
+      expect(cropBounds().x).toBe(25)
+      expect(tracker.undoQueue).toHaveLength(1)
+    })
+
+    it('records no graph undo step for a node-history value edit', () => {
+      const { id } = addBoundingBoxesNode()
+      const initial = stateWith(id, { width: 512, bboxes: [] })
+      const edited = stateWith(id, { width: 512, bboxes: [regionA] })
+      const tracker = createTracker(initial)
+      mockCanvasState(edited)
+
+      tracker.captureCanvasState()
+
+      expect(tracker.undoQueue).toEqual([])
+      expect(tracker.activeState).toEqual(edited)
+      expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+        'graphChanged',
+        edited
       )
+    })
+
+    it('keeps the live node-history value when undoing another change', async () => {
+      const { id } = addBoundingBoxesNode()
+      const initial = stateWith(id, { width: 512, bboxes: [] })
+      const moved = stateWith(id, { width: 512, bboxes: [] }, [50, 50])
+      const movedAndEdited = stateWith(
+        id,
+        { width: 512, bboxes: [regionA] },
+        [50, 50]
+      )
+      const tracker = createTracker(initial)
+      mockCanvasState(moved)
+      tracker.captureCanvasState()
+      mockCanvasState(movedAndEdited)
+      tracker.captureCanvasState()
+
+      await tracker.undo()
+
+      expect(loadedState()).toEqual(
+        stateWith(id, { width: 512, bboxes: [regionA] })
+      )
+      expect(tracker.redoQueue).toEqual([movedAndEdited])
+    })
+
+    it('forgets the node history of a deleted node', () => {
+      const { id, removeFromGraph } = addBoundingBoxesNode()
+      const hasHistory = recordNodeHistory(id)
+      const tracker = createTracker(stateWith(id, { width: 512, bboxes: [] }))
+      removeFromGraph()
+      mockCanvasState(createState())
+
+      tracker.captureCanvasState()
+
+      expect(hasHistory()).toBe(false)
+    })
+
+    it('keeps the node history when graph undo reloads the node', async () => {
+      const { id } = addBoundingBoxesNode()
+      const hasHistory = recordNodeHistory(id)
+      const tracker = createTracker(stateWith(id, { width: 512, bboxes: [] }))
+      mockCanvasState(stateWith(id, { width: 512, bboxes: [] }, [50, 50]))
+      tracker.captureCanvasState()
+
+      await tracker.undo()
+
+      expect(tracker.redoQueue).toHaveLength(1)
+      expect(hasHistory()).toBe(true)
+    })
+
+    it('keeps graph redo through a node-history edit and redoes with the live value', async () => {
+      const { id } = addBoundingBoxesNode()
+      const initial = stateWith(id, { width: 512, bboxes: [] })
+      const moved = stateWith(id, { width: 512, bboxes: [] }, [50, 50])
+      const tracker = createTracker(initial)
+      mockCanvasState(moved)
+      tracker.captureCanvasState()
+      await tracker.undo()
+      mockCanvasState(stateWith(id, { width: 512, bboxes: [regionA] }))
+
+      tracker.captureCanvasState()
+      await tracker.redo()
+
+      expect(loadedState()).toEqual(
+        stateWith(id, { width: 512, bboxes: [regionA] }, [50, 50])
+      )
+    })
+
+    it('restores the node-history value together with its node widgets', async () => {
+      const { id } = addBoundingBoxesNode()
+      const initial = stateWith(id, { width: 512, bboxes: [regionA] })
+      const resized = stateWith(id, { width: 1024, bboxes: [regionB] })
+      const tracker = createTracker(initial)
+      mockCanvasState(resized)
+      tracker.captureCanvasState()
+
+      await tracker.undo()
+
+      expect(loadedState()).toEqual(initial)
     })
   })
 
@@ -1282,11 +2411,11 @@ describe('ChangeTracker', () => {
       return modal
     }
 
-    it.each([
+    it.for<[string, () => HTMLElement]>([
       ['a reka dialog', createRekaDialog],
       ['a native dialog', createNativeDialog],
       ['a legacy comfy modal', createLegacyComfyModal]
-    ])('does not undo while %s is open', async (_kind, createModal) => {
+    ])('does not undo while %s is open', async ([, createModal]) => {
       const previousState = createState(1)
       const currentState = createState(2)
       const tracker = createTracker(currentState)

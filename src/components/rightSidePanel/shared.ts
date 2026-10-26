@@ -8,6 +8,10 @@ import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/types/nodeId'
+import {
+  deriveWidgetVisibility,
+  isWidgetVisibleOnSurface
+} from '@/types/widgetVisibility'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -47,7 +51,10 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
       index,
       searchableLabel: item.widget.label?.toLowerCase() || '',
       searchableName: item.widget.name.toLowerCase(),
-      searchableType: item.widget.type.toLowerCase(),
+      searchableType:
+        typeof item.widget.type === 'string'
+          ? item.widget.type.toLowerCase()
+          : '',
       searchableValue: item.widget.value?.toString().toLowerCase() || ''
     }
     return searchableItem
@@ -92,7 +99,7 @@ export function searchWidgetsAndNodes(
 
   const searchableList: NodeSearchItem[] = list.map((item) => ({
     nodeId: item.node.id,
-    searchableTitle: (item.node.getTitle() ?? '').toLowerCase()
+    searchableTitle: (item.node.getTitle() ?? item.node.type).toLowerCase()
   }))
 
   const fuseOptions: IFuseOptions<NodeSearchItem> = {
@@ -256,14 +263,12 @@ export function computedSectionDataList(nodes: MaybeRefOrGetter<LGraphNode[]>) {
     return toValue(nodes).map((node) => {
       const { widgets = [] } = node
       const shownWidgets = widgets
-        .filter(
-          (w) =>
-            !(
-              w.options?.canvasOnly ||
-              w.options?.hidden ||
-              w.options?.hideInPanel ||
-              (w.options?.advanced && !includesAdvanced.value)
-            )
+        .filter((w) =>
+          isWidgetVisibleOnSurface(
+            w.visibility ?? deriveWidgetVisibility(w),
+            'panel',
+            { showAdvanced: includesAdvanced.value }
+          )
         )
         .map((widget) => ({ node, widget }))
       return { widgets: shownWidgets, node }

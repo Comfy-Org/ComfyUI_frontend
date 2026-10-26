@@ -34,7 +34,7 @@ export function useVideoCarousel({
    *  first callback would cost a frame of playback. */
   const isVisible = ref(true)
   useIntersectionObserver(root, ([entry]) => {
-    isVisible.value = entry?.isIntersecting ?? false
+    isVisible.value = entry.isIntersecting
   })
 
   const documentVisibility = useDocumentVisibility()

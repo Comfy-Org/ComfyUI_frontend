@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Excluir itens selecionados"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "Excluir Conexões Selecionadas"
+  },
   "Comfy_Canvas_FitView": {
     "label": "Ajustar visualização aos nós selecionados"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "Ocultar Conexões Selecionadas"
   },
   "Comfy_Canvas_Lock": {
     "label": "Travar tela"
@@ -82,6 +88,9 @@
   },
   "Comfy_Canvas_SelectAll": {
     "label": "Selecionar tudo"
+  },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "Mostrar Conexões Selecionadas"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Alternar visibilidade dos links na tela"
@@ -230,6 +239,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "Novo Fluxo de Trabalho em Branco"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "Repetir integração"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
@@ -277,9 +289,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "Definir aliases de pesquisa do subgrafo"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Experimental: Ativar AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "Desempenho da Tela"

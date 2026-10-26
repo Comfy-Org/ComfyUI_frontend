@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
@@ -11,14 +9,14 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { useExtensionStore } from '@/stores/extensionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { ComfyExtension } from '@/types/comfy'
 import { graphToPrompt } from '@/utils/executionUtil'
+
+import { customWidgetsExtension } from './customWidgets'
 
 // Regression coverage for https://github.com/Comfy-Org/ComfyUI/issues/15060
 // (FE-1456): once a Custom Combo node's `choice` widget is promoted through
-// a subgraph boundary (ADR 0009 link-only promotion), the hidden `index`
+// a subgraph boundary (ADR-SUBGRAPH-PROMOTION-0009 link-only promotion), the hidden `index`
 // widget must resolve the current *host* value, not the frozen interior
 // widget value.
 const TEST_CUSTOM_COMBO_TYPE = 'test/CustomComboSubgraphPromotion'
@@ -66,28 +64,14 @@ function findWidget(node: LGraphNode, name: string) {
   return node.widgets?.find((widget) => widget.name === name)
 }
 
-function getCustomWidgetsExtension(): ComfyExtension {
-  const extension = useExtensionStore().extensions.find(
-    (candidate) => candidate.name === 'Comfy.CustomWidgets'
-  )
-  if (!extension) {
-    throw new Error('Comfy.CustomWidgets extension was not registered')
-  }
-  return extension
-}
-
 describe('CustomCombo index widget after subgraph promotion', () => {
   beforeAll(async () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    await import('./customWidgets')
-
-    const extension = getCustomWidgetsExtension()
-    await extension.beforeRegisterNodeDef?.(
+    await customWidgetsExtension.beforeRegisterNodeDef?.(
       TestCustomComboNode,
       { name: 'CustomCombo' } as ComfyNodeDef,
       app
     )
-    await extension.beforeRegisterNodeDef?.(
+    await customWidgetsExtension.beforeRegisterNodeDef?.(
       TestCustomComboNodeWithoutInput,
       { name: 'CustomCombo' } as ComfyNodeDef,
       app
@@ -173,7 +157,7 @@ describe('CustomCombo index widget after subgraph promotion', () => {
       findWidget(comboNode, 'choice')!.value = 'two'
 
       const { output } = await graphToPrompt(rootGraph)
-      const promptInputs = output[`${comboNode.id}`].inputs
+      const promptInputs = output[comboNode.id].inputs
 
       // "two" is index 1 of ["one", "two", "three"].
       expect(promptInputs.index).toBe(1)

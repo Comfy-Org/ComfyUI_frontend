@@ -1,3 +1,15 @@
+import type {
+  ExecutableLGraphNode,
+  ExecutionId,
+  LGraph,
+  Subgraph,
+  LGraphCanvas,
+  Reroute,
+  SubgraphNode,
+  SubgraphInputNode,
+  SubgraphOutputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNodeConstructor } from '@/lib/litegraph/src/types/nodeConstructor'
 import { toValue } from 'vue'
 
 import {
@@ -20,15 +32,29 @@ import {
   setNodeSize
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import { toSelectableKey } from '@/core/selection/selectionState'
+import type {
+  NodeExecutionOutput,
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import type { GraphScope } from '@/types/graphScopeId'
-import { mintLinkId } from './idAllocation'
+import { linkIdReservations, mintLinkId } from './idAllocation'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import type { NodeProperty, NodeState } from '@/types/nodeState'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
+import type { NodeProperty } from '@/types/nodeProperty'
+import {
+  deriveWidgetVisibility,
+  isWidgetVisibleOnSurface,
+  occupiesCanvasRow
+} from '@/types/widgetVisibility'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import { zeroUuid } from '@/utils/uuid'
@@ -44,12 +70,15 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import type { DragAndScale } from './DragAndScale'
-import type { LGraph } from './LGraph'
+
 import { LGraphBadge } from './LGraphBadge'
 import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
+import { isDrawnEmphasized } from './nodeEmphasis'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
-import { LGraphCanvas } from './LGraphCanvas'
+
+import { canvasClass } from './canvas/canvasClassAccess'
+import { realignGroupWidgetChildLinks } from './linkDeduplication'
 import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
 import {
   inputHasLink,
@@ -63,19 +92,27 @@ import {
 } from './node/slotLinks'
 import {
   createInputSlotView,
+  createOutputSlotView,
   resolveInputSlotView
 } from './node/slotDescriptorView'
-import { initializeWidgetsView } from './node/widgetsView'
+import {
+  clearWidgetRestorationSlots,
+  getWidgetRestorationSlot,
+  initializeWidgetsView
+} from './node/widgetsView'
+import type { NodeCanonicalField } from './extensionPersistence'
 import {
   extensionConfigureView,
   hydrateExtensionPayload,
+  isNodeCanonicalField,
   NODE_CANONICAL_FIELDS,
   runExtensionSerializeHook
 } from './extensionPersistence'
 import { anchorRerouteChain } from './Reroute'
-import type { Reroute, RerouteId } from './Reroute'
+import type { RerouteId } from '@/types/rerouteId'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
+import { emitNodeFieldWrite } from './graphIntents'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -85,16 +122,10 @@ import type {
   DefaultConnectionColors,
   Dictionary,
   IColorable,
-  IContextMenuValue,
-  IFoundSlot,
   INodeFlags,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
-  INodeSlotContextItem,
   IPinnable,
   ISlotType,
-  Panel,
   Point,
   Positionable,
   ReadOnlyRect,
@@ -102,8 +133,17 @@ import type {
   Size,
   SlotIndex
 } from './interfaces'
-import { LiteGraph, Subgraph } from './litegraph'
-import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
+import type { IContextMenuValue } from './types/contextMenu'
+import type {
+  IFoundSlot,
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlotContextItem
+} from './types/slots'
+import type { Panel } from './types/panel'
+import { LiteGraph } from './litegraphInstance'
+import { isSubgraph } from './subgraph/subgraphTypeGuards'
+
 import {
   createBounds,
   isInRect,
@@ -118,8 +158,6 @@ import {
   isWidgetInputSlot,
   outputAsSerialisable
 } from './node/slotUtils'
-import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type { NodeLike } from './types/NodeLike'
 import type { CanvasPointerEvent } from './types/events'
 import {
@@ -135,7 +173,7 @@ import type {
   TWidgetType,
   TWidgetValue
 } from './types/widgets'
-import { findFreeSlotOfType } from './utils/collections'
+import { findFreeSlotOfType, provideGraphNodeGuard } from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
 import {
   computeLegacyWidgetShadow,
@@ -158,7 +196,11 @@ interface INodePropertyInfo {
   default_value?: NodeProperty
   widget?: string
   label?: string
-  values?: TWidgetValue[]
+  values?: string[] | Record<string, TWidgetValue>
+}
+
+function isNodePropertyInfo(value: unknown): value is INodePropertyInfo {
+  return typeof value === 'object' && value !== null
 }
 
 interface IMouseOverData {
@@ -167,20 +209,66 @@ interface IMouseOverData {
   overWidget?: IBaseWidget
 }
 
+function legacyArrayItem<T>(items: readonly T[], index: number): T | undefined {
+  return items[index]
+}
+
+function legacyValue<T>(value: T): T | undefined {
+  return value
+}
+
+function cloneWidgetValueTwice(
+  value: TWidgetValue
+): [TWidgetValue, TWidgetValue] {
+  if (value == null || typeof value !== 'object') {
+    const primitive = value ?? null
+    return [primitive, primitive]
+  }
+  const json = JSON.stringify(value)
+  return [JSON.parse(json), JSON.parse(json)]
+}
+
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const value = widget.value
-    const serialisedValue =
-      value != null && typeof value === 'object'
-        ? JSON.parse(JSON.stringify(value))
-        : (value ?? null)
-    positional.push(serialisedValue)
-    named[widget.name] = serialisedValue
+    const [positionalValue, namedValue] = cloneWidgetValueTwice(widget.value)
+    positional.push(positionalValue)
+    Object.defineProperty(named, widget.name, {
+      value: namedValue,
+      writable: true,
+      enumerable: true,
+      configurable: true
+    })
   }
   return { widgets_values: positional, widgets_values_named: named }
+}
+
+function configureCanonicalField(
+  target: Partial<Record<NodeCanonicalField, unknown>>,
+  key: NodeCanonicalField,
+  incoming: unknown
+): void {
+  if (incoming == null) return
+  if (typeof incoming !== 'object') {
+    target[key] = incoming
+    return
+  }
+  const current = target[key]
+  if (
+    current &&
+    typeof current === 'object' &&
+    'configure' in current &&
+    typeof current.configure === 'function'
+  ) {
+    current.configure(incoming)
+  } else {
+    target[key] = LiteGraph.cloneObject(
+      incoming,
+      typeof current === 'object' && current !== null ? current : undefined
+    )
+  }
 }
 
 export function createWidgetRestorationState(
@@ -304,6 +392,16 @@ supported callbacks:
 
 export interface LGraphNode {
   constructor: LGraphNodeConstructor
+
+  addDOMWidget<
+    T extends HTMLElement = HTMLElement,
+    V extends object | string = string
+  >(
+    name: string,
+    type: string,
+    element: T,
+    options?: DOMWidgetOptions<V>
+  ): DOMWidget<T, V>
 }
 
 // #endregion Types
@@ -357,7 +455,8 @@ export class LGraphNode
   }
 
   set title(value: string) {
-    setTrackedNodeState(this, 'title', value)
+    if (setTrackedNodeState(this, 'title', value))
+      emitNodeFieldWrite(this, { field: 'title', value })
   }
   /**
    * The font style used to render the node's title text.
@@ -375,6 +474,7 @@ export class LGraphNode
   }
 
   graph: LGraph | Subgraph | null = null
+  priority?: number
 
   /** Shell state for the fields the renderer draws; the `nodeDataStore` proxy once registered. */
   _state: NodeState
@@ -489,8 +589,10 @@ export class LGraphNode
   }
 
   set mode(value: LGraphEventMode) {
-    setTrackedNodeState(this, 'mode', value)
+    if (setTrackedNodeState(this, 'mode', value))
+      emitNodeFieldWrite(this, { field: 'mode', value })
   }
+
   get last_serialization(): ISerialisedNode | undefined {
     return this._state.lastSerialization
   }
@@ -567,8 +669,7 @@ export class LGraphNode
     }
 
     if (LiteGraph.node_box_coloured_by_mode) {
-      const modeColour =
-        LiteGraph.NODE_MODES_COLORS[this.mode ?? LGraphEventMode.ALWAYS]
+      const modeColour = LiteGraph.NODE_MODES_COLORS[this.mode]
       if (modeColour) return modeColour
     }
     return LiteGraph.NODE_DEFAULT_BOXCOLOR
@@ -588,7 +689,7 @@ export class LGraphNode
   /** @inheritdoc {@link IColorable.getColorOption} */
   getColorOption(): ColorOption | null {
     return (
-      Object.values(LGraphCanvas.node_colors).find(
+      Object.values(canvasClass.node_colors).find(
         (colorOption) =>
           colorOption.color === this.color &&
           colorOption.bgcolor === this.bgcolor
@@ -671,7 +772,29 @@ export class LGraphNode
   has_errors?: boolean
   removable?: boolean
   block_delete?: boolean
-  selected?: boolean
+  private detachedSelected = false
+
+  get selected(): boolean {
+    const scope = this.selectionScope
+    return scope
+      ? isSelectedIn(scope, toSelectableKey('node', this.id))
+      : this.detachedSelected
+  }
+
+  set selected(value: boolean | undefined) {
+    const scope = this.selectionScope
+    if (!scope) {
+      this.detachedSelected = !!value
+      return
+    }
+    this.detachedSelected = false
+    setSelectedIn(scope, toSelectableKey('node', this.id), !!value)
+  }
+
+  private get selectionScope(): GraphScope | undefined {
+    return this.graph ? graphScopeOf(this.graph) : undefined
+  }
+
   get showAdvanced(): boolean | undefined {
     return this._state.showAdvanced
   }
@@ -682,8 +805,50 @@ export class LGraphNode
 
   declare comfyDynamic?: Record<string, object>
   declare comfyClass?: string
+  /**
+   * If the node is a frontend only node and should not be serialized into the prompt.
+   */
   declare isVirtualNode?: boolean
+  /**
+   * @deprecated Lets virtual nodes such as primitives write their values into
+   * the graph before queueing.
+   */
   applyToGraph?(extraLinks?: LLink[]): void
+
+  declare animatedImages?: boolean
+  declare imgs?: HTMLImageElement[]
+  declare images?: ResultItem[]
+  declare videoContainer?: HTMLElement
+  /** Whether the node's preview media is loading */
+  declare isLoading?: boolean
+  declare isUploading?: boolean
+  declare previewMediaType?: 'image' | 'video' | 'audio' | 'model'
+  /** If true, output images are stored but not rendered below the node */
+  declare hideOutputImages?: boolean
+
+  declare preview?: string[]
+  /** Index of the currently selected image on a multi-image node such as Preview Image */
+  declare imageIndex?: number | null
+  declare imageRects?: Rect[]
+  declare overIndex?: number | null
+  declare pointerDown?: { index: number | null; pos: Point } | null
+  /** @deprecated Image previews size themselves. */
+  setSizeForImage?(force?: boolean): void
+  /** @deprecated Unused */
+  declare inputHeight?: unknown
+
+  /** The y offset of the image preview to the top of the node body. */
+  declare imageOffset?: number
+
+  declare canvasHeight?: number
+  declare index?: number
+  declare runningInternalNodeId?: SerializedNodeId
+
+  /** Used internally for sizing the node during creation */
+  declare _initialMinSize?: { width: number; height: number }
+
+  /** Raw widget values from the last `configure`; litegraph does not read it. */
+  declare widgets_values?: TWidgetValue[]
 
   isSubgraphNode(): this is SubgraphNode {
     return false
@@ -736,8 +901,8 @@ export class LGraphNode
   }
 
   /** Node position does not necessarily correlate to the top-left corner. */
-  public set pos(value) {
-    if (!value || value.length < 2) return
+  public set pos(value: Point | null | undefined) {
+    if (!value) return
 
     setNodePosition(this, value)
   }
@@ -753,8 +918,8 @@ export class LGraphNode
     return nodeSizeView(this)
   }
 
-  public set size(value) {
-    if (!value || value.length < 2) return
+  public set size(value: Size | null | undefined) {
+    if (!value) return
 
     setNodeSize(this, value)
   }
@@ -800,7 +965,7 @@ export class LGraphNode
     )
   }
 
-  public get is_selected(): boolean | undefined {
+  public get is_selected(): boolean {
     return this.selected
   }
 
@@ -859,8 +1024,36 @@ export class LGraphNode
     param: unknown,
     options: { action_call?: string }
   ): void
+  onTrigger?(this: LGraphNode, value: unknown): void
+  setTrigger?(this: LGraphNode, func?: () => void): void
   onDrawBackground?(this: LGraphNode, ctx: CanvasRenderingContext2D): void
   onNodeCreated?(this: LGraphNode): void
+  /**
+   * Callback fired on each node after the graph is configured
+   */
+  onAfterGraphConfigured?(): void
+  onGraphConfigured?(): void
+  /** Called with the node's execution output, which may carry custom keys. */
+  onExecuted?(output: NodeExecutionOutput): void
+  onExecutionStart?(): unknown
+  refreshComboInNode?(defs?: Record<string, ComfyNodeDef>): void
+  /** Flattens a subgraph node into its executable inner nodes. */
+  getInnerNodes?(
+    nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
+    subgraphNodePath?: readonly SerializedNodeId[],
+    nodes?: ExecutableLGraphNode[],
+    subgraphs?: Set<LGraphNode>
+  ): ExecutableLGraphNode[]
+  recreate?(): Promise<LGraphNode>
+  /** Returns true if this node handles an external drag (file or element). */
+  onDragOver?(e: DragEvent): boolean
+  /** Returns true if this node handled an external drop (file or element). */
+  onDragDrop?(e: DragEvent): Promise<boolean> | boolean
+  convertWidgetToInput?(): boolean
+  /** Callback for pasting an image file into the node */
+  pasteFile?(file: File): void
+  /** Callback for pasting multiple files into the node */
+  pasteFiles?(files: File[]): void
   /**
    * Callback invoked by {@link connect} to override the target slot index.
    * Its return value overrides the target index selection.
@@ -1024,7 +1217,7 @@ export class LGraphNode
   private _getSelectedStrokeStyle(
     this: LGraphNode
   ): IDrawBoundingOptions | undefined {
-    if (this.selected) {
+    if (isDrawnEmphasized(this)) {
       return {
         padding: this.has_errors ? 20 : undefined
       }
@@ -1040,6 +1233,7 @@ export class LGraphNode
       type,
       this.title_mode
     )
+    this._state.outputs = createOutputSlotView(this, this._state.outputs)
     this._inputs = this._state.inputs
     this._outputs = this._state.outputs
     for (const property of [
@@ -1075,9 +1269,8 @@ export class LGraphNode
       this.graph.incrementVersion()
     }
     for (const j in info) {
-      if (!NODE_CANONICAL_FIELDS.has(j)) continue
+      if (!isNodeCanonicalField(j)) continue
       if (j == 'properties') {
-        // i don't want to clone properties, I want to reuse the old container
         for (const k in info.properties) {
           this.properties[k] = info.properties[k]
           this.onPropertyChanged?.(k, info.properties[k])
@@ -1088,37 +1281,17 @@ export class LGraphNode
       if (j === 'type') continue
 
       if (j === 'id') {
-        // Once registered, the owning graph owns the id — it may have
-        // renumbered this node to resolve a collision that the serialised id
-        // would reinstate.
         if (this._graphScope) continue
         const id = toNodeId(info.id)
         if (id !== UNASSIGNED_NODE_ID) this.id = id
         continue
       }
 
-      // @ts-expect-error #594
-      if (info[j] == null) {
-        continue
-        // @ts-expect-error #594
-      } else if (typeof info[j] == 'object') {
-        // @ts-expect-error #594
-        if (this[j]?.configure) {
-          // @ts-expect-error #594
-          this[j]?.configure(info[j])
-        } else {
-          // @ts-expect-error #594
-          this[j] = LiteGraph.cloneObject(info[j], this[j])
-        }
-      } else {
-        // value
-        // @ts-expect-error #594
-        this[j] = info[j]
-      }
+      configureCanonicalField(this, j, info[j])
     }
 
     if (!info.title) {
-      this.title = this.constructor.title
+      this.title = this.constructor.title ?? ''
     }
 
     this.inputs = this.inputs.map((input) =>
@@ -1148,8 +1321,9 @@ export class LGraphNode
       this.onOutputAdded?.(output)
     }
 
-    // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
+
+    realignGroupWidgetChildLinks(this, info)
 
     const restoration = createWidgetRestorationState(
       info,
@@ -1165,14 +1339,15 @@ export class LGraphNode
       )
 
       if (this.widgets) {
-        for (const w of this.widgets) {
+        for (const [index] of this.widgets.entries()) {
+          const w = legacyArrayItem(this.widgets, index)
           if (!w) continue
 
           const input = this.inputs.find((i) => i.widget?.name === w.name)
           if (input?.label) w.label = input.label
 
           if (
-            w.options?.property &&
+            w.options.property &&
             this.properties[w.options.property] != undefined
           )
             w.value = JSON.parse(
@@ -1186,13 +1361,17 @@ export class LGraphNode
           const restored = useWidgetValueStore().getRestoredWidgetValue(
             graphId,
             this.id,
-            widget.name,
-            positionalIndex++
+            widget,
+            getWidgetRestorationSlot(
+              this,
+              widget,
+              positionalIndex++,
+              restoration.positional.length
+            )
           )
           if (restored) widget.value = restored.value
         }
       }
-      // Sync the state of this.resizable.
       if (this.pinned) this.resizable = false
 
       if (this.widgets_up) {
@@ -1216,6 +1395,7 @@ export class LGraphNode
         )
       }
     } finally {
+      clearWidgetRestorationSlots(this)
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
   }
@@ -1248,19 +1428,17 @@ export class LGraphNode
         pos: o.pos
       }
 
-    if (state.inputs)
-      o.inputs = state.inputs.map((input, i) =>
-        inputAsSerialisable(input, this, i)
-      )
-    if (state.outputs)
-      o.outputs = state.outputs.map((output, i) =>
-        outputAsSerialisable(output, this, i)
-      )
+    o.inputs = state.inputs.map((input, i) =>
+      inputAsSerialisable(input, this, i)
+    )
+    o.outputs = state.outputs.map((output, i) =>
+      outputAsSerialisable(output, this, i)
+    )
 
     if (state.title && state.title != this.constructor.title)
       o.title = state.title
 
-    if (state.properties) o.properties = LiteGraph.cloneObject(state.properties)
+    o.properties = LiteGraph.cloneObject(state.properties)
 
     const { widgets } = this
     if (widgets?.length && this.serialize_widgets)
@@ -1293,7 +1471,6 @@ export class LGraphNode
   }
 
   clone(): LGraphNode | null {
-    if (this.type == null) return null
     const node = LiteGraph.createNode(this.type)
     if (!node) return null
 
@@ -1314,9 +1491,6 @@ export class LGraphNode
       }
     }
 
-    // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
-    data.id = undefined
-
     node.id = this.id
     node.configure(data)
 
@@ -1333,7 +1507,7 @@ export class LGraphNode
   /**
    * get the title string
    */
-  getTitle(): string {
+  getTitle(): string | undefined {
     return this.title || this.constructor.title
   }
 
@@ -1343,7 +1517,6 @@ export class LGraphNode
    * @param value
    */
   setProperty(name: string, value: TWidgetValue): void {
-    this.properties ||= {}
     if (value === this.properties[name]) return
 
     const prev_value = this.properties[name]
@@ -1353,7 +1526,8 @@ export class LGraphNode
       this.properties[name] = prev_value
 
     if (this.widgets) {
-      for (const w of this.widgets) {
+      for (const [index] of this.widgets.entries()) {
+        const w = legacyArrayItem(this.widgets, index)
         if (!w) continue
 
         if (w.options.property == name) {
@@ -1374,12 +1548,11 @@ export class LGraphNode
     data: number | string | boolean | { toToolTip?(): string }
   ): void {
     const { outputs } = this
-    if (!outputs) return
 
     // this maybe slow and a niche case
-    if (slot == -1 || slot >= outputs.length) return
+    if (slot >= outputs.length) return
 
-    const output_info = outputs[slot]
+    const output_info = legacyArrayItem(outputs, slot)
     if (!output_info) return
 
     // store data in the output itself in case we want to debug
@@ -1397,9 +1570,9 @@ export class LGraphNode
    */
   setOutputDataType(slot: SlotIndex, type: ISlotType): void {
     const { outputs } = this
-    if (!outputs || slot == -1 || slot >= outputs.length) return
+    if (slot >= outputs.length) return
 
-    const output_info = outputs[slot]
+    const output_info = legacyArrayItem(outputs, slot)
     if (!output_info) return
     // store data in the output itself in case we want to debug
     output_info.type = type
@@ -1418,7 +1591,7 @@ export class LGraphNode
    * @returns data or if it is not connected returns undefined
    */
   getInputData(slot: number, force_update?: boolean): unknown {
-    if (!this.inputs || slot >= this.inputs.length) return
+    if (slot >= this.inputs.length) return
     if (!this.graph) throw new NullGraphError()
 
     const link = this.getInputLink(slot)
@@ -1445,7 +1618,7 @@ export class LGraphNode
    * @returns datatype in string format
    */
   getInputDataType(slot: SlotIndex): ISlotType | null {
-    if (!this.inputs || slot >= this.inputs.length) return null
+    if (slot >= this.inputs.length) return null
     if (!this.graph) throw new NullGraphError()
 
     const link = this.getInputLink(slot)
@@ -1454,7 +1627,7 @@ export class LGraphNode
     const node = this.graph.getNodeById(link.origin_id)
     if (!node) return link.type
 
-    const output_info = node.outputs[link.origin_slot]
+    const output_info = legacyArrayItem(node.outputs, link.origin_slot)
     return output_info ? output_info.type : null
   }
 
@@ -1475,7 +1648,6 @@ export class LGraphNode
    * @returns `true` if the input slot has a link ID (does not perform validation)
    */
   isInputConnected(slot: number): boolean {
-    if (!this.inputs) return false
     return (
       slot < this.inputs.length &&
       !!this.graph &&
@@ -1488,9 +1660,7 @@ export class LGraphNode
    * @returns object or null { link: id, name: string, type: string or 0 }
    */
   getInputInfo(slot: number): INodeInputSlot | null {
-    return !this.inputs || !(slot < this.inputs.length)
-      ? null
-      : this.inputs[slot]
+    return !(slot < this.inputs.length) ? null : this.inputs[slot]
   }
 
   /**
@@ -1506,8 +1676,6 @@ export class LGraphNode
    * @returns object or null
    */
   getInputLink(slot: number): LLink | null {
-    if (!this.inputs) return null
-
     if (slot < this.inputs.length) {
       if (!this.graph) throw new NullGraphError()
 
@@ -1521,7 +1689,6 @@ export class LGraphNode
    * @returns node or null
    */
   getInputNode(slot: number): LGraphNode | null {
-    if (!this.inputs) return null
     if (slot >= this.inputs.length) return null
 
     if (!this.inputs[slot]) return null
@@ -1539,8 +1706,8 @@ export class LGraphNode
    */
   getInputOrProperty(name: string): unknown {
     const { inputs } = this
-    if (!inputs?.length) {
-      return this.properties ? this.properties[name] : null
+    if (!inputs.length) {
+      return this.properties[name]
     }
     if (!this.graph) throw new NullGraphError()
 
@@ -1558,7 +1725,6 @@ export class LGraphNode
    * @returns object or null
    */
   getOutputData(slot: number): unknown {
-    if (!this.outputs) return null
     if (slot >= this.outputs.length) return null
 
     const info = this.outputs[slot]
@@ -1570,16 +1736,14 @@ export class LGraphNode
    * @returns object or null { name: string, type: string, links: [ ids of links in number ] }
    */
   getOutputInfo(slot: number): INodeOutputSlot | null {
-    return !this.outputs || !(slot < this.outputs.length)
-      ? null
-      : this.outputs[slot]
+    return !(slot < this.outputs.length) ? null : this.outputs[slot]
   }
 
   /**
    * tells you if there is a connection in one output slot
    */
   isOutputConnected(slot: number): boolean {
-    if (!this.outputs || !this.graph) return false
+    if (!this.graph) return false
     return (
       slot < this.outputs.length && outputHasLinks(this.graph, this.id, slot)
     )
@@ -1590,7 +1754,7 @@ export class LGraphNode
    */
   isAnyOutputConnected(): boolean {
     const { outputs, graph } = this
-    if (!outputs || !graph) return false
+    if (!graph) return false
 
     return outputs.some((_, slot) => outputHasLinks(graph, this.id, slot))
   }
@@ -1600,7 +1764,7 @@ export class LGraphNode
    */
   getOutputNodes(slot: number): LGraphNode[] | null {
     const { outputs } = this
-    if (!outputs || outputs.length == 0) return null
+    if (outputs.length == 0) return null
 
     if (slot >= outputs.length) return null
     if (!this.graph) return null
@@ -1663,8 +1827,7 @@ export class LGraphNode
       case LGraphEventMode.ALWAYS:
         break
 
-      // @ts-expect-error Not impl.
-      case LiteGraph.ON_REQUEST:
+      case LGraphEventMode.BYPASS:
         break
 
       default:
@@ -1678,29 +1841,26 @@ export class LGraphNode
    * Triggers the node code execution, place a boolean/counter to mark the node as being executed
    */
   doExecute(param?: unknown, options?: { action_call?: string }): void {
-    options = options || {}
+    options ??= {}
     if (this.onExecute) {
       // enable this to give the event an ID
       options.action_call ||= `${this.id}_exec_${Math.floor(Math.random() * 9999)}`
       if (!this.graph) throw new NullGraphError()
 
-      // @ts-expect-error Technically it works when id is a string. Array gets props.
       this.graph.nodes_executing[this.id] = true
       this.onExecute(param, options)
-      // @ts-expect-error deprecated
       this.graph.nodes_executing[this.id] = false
 
       // save execution/action ref
       this.exec_version = this.graph.iteration
-      if (options?.action_call) {
+      if (options.action_call) {
         this.action_call = options.action_call
-        // @ts-expect-error deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
     // the nFrames it will be used (-- each step), means "how old" is the event
     this.execute_triggered = 2
-    this.onAfterExecuteNode?.(param, options)
+    this.onAfterExecuteNode(param, options)
   }
 
   /**
@@ -1710,30 +1870,27 @@ export class LGraphNode
   actionDo(
     action: string,
     param: unknown,
-    options: { action_call?: string }
+    options: { action_call?: string } | undefined
   ): void {
-    options = options || {}
+    options ||= {}
     if (this.onAction) {
       // enable this to give the event an ID
       options.action_call ||= `${this.id}_${action || 'action'}_${Math.floor(Math.random() * 9999)}`
       if (!this.graph) throw new NullGraphError()
 
-      // @ts-expect-error deprecated
       this.graph.nodes_actioning[this.id] = action || 'actioning'
       this.onAction(action, param, options)
-      // @ts-expect-error deprecated
       this.graph.nodes_actioning[this.id] = false
 
       // save execution/action ref
-      if (options?.action_call) {
+      if (options.action_call) {
         this.action_call = options.action_call
-        // @ts-expect-error deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
     // the nFrames it will be used (-- each step), means "how old" is the event
     this.action_triggered = 2
-    this.onAfterExecuteNode?.(param, options)
+    this.onAfterExecuteNode(param, options)
   }
 
   /**
@@ -1746,13 +1903,14 @@ export class LGraphNode
     options: { action_call?: string }
   ): void {
     const { outputs } = this
-    if (!outputs || !outputs.length) {
+    if (!outputs.length) {
       return
     }
 
     if (this.graph) this.graph._last_trigger_time = LiteGraph.getTime()
 
-    for (const [i, output] of outputs.entries()) {
+    for (const [i] of outputs.entries()) {
+      const output = legacyArrayItem(outputs, i)
       if (
         !output ||
         output.type !== LiteGraph.EVENT ||
@@ -1770,14 +1928,12 @@ export class LGraphNode
    * @param link_id [optional] in case you want to trigger and specific output link in a slot
    */
   triggerSlot(
-    slot: number,
+    slot: number | null,
     param: unknown,
     link_id: number | null,
     options?: { action_call?: string }
   ): void {
-    options = options || {}
-    if (!this.outputs) return
-
+    options ??= {}
     if (slot == null) {
       console.error('slot must be a number')
       return
@@ -1788,7 +1944,7 @@ export class LGraphNode
         "slot must be a number, use node.trigger('name') if you want to use a string"
       )
 
-    const output = this.outputs[slot]
+    const output = legacyArrayItem(this.outputs, slot)
     if (!output) return
 
     if (!this.graph) throw new NullGraphError()
@@ -1812,7 +1968,7 @@ export class LGraphNode
         if (!options.action_call)
           options.action_call = `${this.id}_trigg_${Math.floor(Math.random() * 9999)}`
         // -- wrapping node.onExecute(param); --
-        node.doExecute?.(param, options)
+        node.doExecute(param, options)
       } else if (node.onAction) {
         // generate unique action ID if not present
         if (!options.action_call)
@@ -1829,10 +1985,8 @@ export class LGraphNode
    * @param slot the index of the output slot
    * @param link_id [optional] in case you want to trigger and specific output link in a slot
    */
-  clearTriggeredSlot(slot: number, link_id: number): void {
-    if (!this.outputs) return
-
-    const output = this.outputs[slot]
+  clearTriggeredSlot(slot: number, link_id: number | null): void {
+    const output = legacyArrayItem(this.outputs, slot)
     if (!output) return
 
     if (!this.graph) throw new NullGraphError()
@@ -1879,9 +2033,7 @@ export class LGraphNode
     const o: INodePropertyInfo = { name, type, default_value }
     if (extra_info) Object.assign(o, extra_info)
 
-    this.properties_info ||= []
     this.properties_info.push(o)
-    this.properties ||= {}
     this.properties[name] = default_value
     return o
   }
@@ -1904,9 +2056,8 @@ export class LGraphNode
       extraProps
     ) as NodeOutputSlot & TProperties
 
-    this.outputs ||= []
     this.outputs.push(output)
-    const added = this.outputs.at(-1) as NodeOutputSlot & TProperties
+    const added = output
     this.onOutputAdded?.(added)
 
     if (LiteGraph.auto_load_slot_types)
@@ -1971,9 +2122,8 @@ export class LGraphNode
       extraProps
     ) as NodeInputSlot & TProperties
 
-    this.inputs ||= []
     this.inputs.push(input)
-    const added = this.inputs.at(-1) as NodeInputSlot & TProperties
+    const added = input
     this.expandToFitContent()
 
     this.onInputAdded?.(added)
@@ -1988,15 +2138,17 @@ export class LGraphNode
    */
   removeInput(slot: number): void {
     const { graph, inputs } = this
-    const slotInfo = inputs[slot]
+    const slotInfo = legacyArrayItem(inputs, slot)
     if (!slotInfo) return
 
     if (graph) {
       const previous = captureInputLayout(this)
+      const nextInputs = [...previous.inputs]
+      nextInputs.splice(slot, 1)
       const result = replaceNodeInputs(
         this,
         previous,
-        previous.inputs.toSpliced(slot, 1),
+        nextInputs,
         previous.links,
         true
       )
@@ -2025,8 +2177,8 @@ export class LGraphNode
 
     const { inputs, outputs, widgets } = this
     let rows = Math.max(
-      inputs ? inputs.filter((input) => !isWidgetInputSlot(input)).length : 1,
-      outputs ? outputs.length : 1
+      inputs.filter((input) => !isWidgetInputSlot(input)).length,
+      outputs.length
     )
     const size = out ?? [0, 0]
     rows = Math.max(rows, 1)
@@ -2041,27 +2193,23 @@ export class LGraphNode
     let widgetWidth = 0
     let output_width = 0
 
-    if (inputs) {
-      for (const input of inputs) {
-        const text = input.label || input.localized_name || input.name || ''
-        const text_width = compute_text_size(text, this.innerFontStyle)
-        if (isWidgetInputSlot(input)) {
-          const widget = this.getWidgetFromSlot(input)
-          if (widget && !this.isWidgetVisible(widget)) continue
+    for (const input of inputs) {
+      const text = input.label || input.localized_name || input.name || ''
+      const text_width = compute_text_size(text, this.innerFontStyle)
+      if (isWidgetInputSlot(input)) {
+        const widget = this.getWidgetFromSlot(input)
+        if (widget && !this.isWidgetRowVisible(widget)) continue
 
-          if (text_width > widgetWidth) widgetWidth = text_width
-        } else {
-          if (text_width > input_width) input_width = text_width
-        }
+        if (text_width > widgetWidth) widgetWidth = text_width
+      } else {
+        if (text_width > input_width) input_width = text_width
       }
     }
 
-    if (outputs) {
-      for (const output of outputs) {
-        const text = output.label || output.localized_name || output.name || ''
-        const text_width = compute_text_size(text, this.innerFontStyle)
-        if (output_width < text_width) output_width = text_width
-      }
+    for (const output of outputs) {
+      const text = output.label || output.localized_name || output.name || ''
+      const text_width = compute_text_size(text, this.innerFontStyle)
+      if (output_width < text_width) output_width = text_width
     }
 
     const minWidth = LiteGraph.NODE_WIDTH * (widgets?.length ? 1.5 : 1)
@@ -2087,7 +2235,7 @@ export class LGraphNode
     let widgets_height = 0
     if (widgets?.length) {
       for (const widget of widgets) {
-        if (!this.isWidgetVisible(widget)) continue
+        if (!this.isWidgetRowVisible(widget)) continue
 
         let widget_height = 0
         if (widget.computeSize) {
@@ -2113,10 +2261,11 @@ export class LGraphNode
       size[1] = Math.max(size[1], widgets_height + this.widgets_start_y)
     else size[1] += widgets_height
 
-    function compute_text_size(text: string, fontStyle: string) {
+    function compute_text_size(text: string | undefined, fontStyle: string) {
+      const value = text ?? ''
       return (
-        LGraphCanvas._measureText?.(text, fontStyle) ??
-        font_size * (text?.length ?? 0) * 0.6
+        canvasClass._measureText?.(value, fontStyle) ??
+        font_size * value.length * 0.6
       )
     }
 
@@ -2131,7 +2280,7 @@ export class LGraphNode
   }
 
   inResizeCorner(canvasX: number, canvasY: number): boolean {
-    const rows = this.outputs ? this.outputs.length : 1
+    const rows = this.outputs.length
     const outputs_offset =
       (this.constructor.slot_start_y || 0) + rows * LiteGraph.NODE_SLOT_HEIGHT
     const size = this.renderingSize
@@ -2173,39 +2322,40 @@ export class LGraphNode
    * @param property name of the property
    * @returns the object with all the available info
    */
-  getPropertyInfo(property: string) {
-    let info = null
+  getPropertyInfo(property: string): INodePropertyInfo & { type: string } {
+    let info: INodePropertyInfo | null = null
 
     // there are several ways to define info about a property
     // legacy mode
     const { properties_info } = this
-    if (properties_info) {
-      for (const propInfo of properties_info) {
-        if (propInfo.name == property) {
-          info = propInfo
-          break
-        }
+    for (const propInfo of properties_info) {
+      if (propInfo.name == property) {
+        info = propInfo
+        break
       }
     }
     // litescene mode using the constructor
-    // @ts-expect-error deprecated https://github.com/Comfy-Org/litegraph.js/issues/639
-    if (this.constructor[`@${property}`])
-      // @ts-expect-error deprecated https://github.com/Comfy-Org/litegraph.js/issues/639
-      info = this.constructor[`@${property}`]
+    const constructorProperties = this.constructor as unknown as Record<
+      string,
+      unknown
+    >
+    const constructorProperty = constructorProperties[`@${property}`]
+    if (isNodePropertyInfo(constructorProperty)) info = constructorProperty
 
-    if (this.constructor.widgets_info?.[property])
-      info = this.constructor.widgets_info[property]
+    const widgetInfo = this.constructor.widgets_info?.[property]
+    if (isNodePropertyInfo(widgetInfo)) info = widgetInfo
 
     // litescene mode using the constructor
     if (!info && this.onGetPropertyInfo) {
       info = this.onGetPropertyInfo(property)
     }
 
-    info ||= {}
-    info.type ||= typeof this.properties[property]
-    if (info.widget == 'combo') info.type = 'enum'
+    const type =
+      info?.widget == 'combo'
+        ? 'enum'
+        : info?.type || typeof this.properties[property]
 
-    return info
+    return { ...info, type }
   }
 
   /**
@@ -2245,8 +2395,7 @@ export class LGraphNode
     }
 
     const w: IBaseWidget & { type: Type } = {
-      // @ts-expect-error - Type casting for widget type property
-      type: type.toLowerCase(),
+      type: type.toLowerCase() as Type,
       name: name,
       value: value,
       callback: typeof callback !== 'function' ? undefined : callback,
@@ -2279,9 +2428,8 @@ export class LGraphNode
     const widget = toConcreteWidget(custom_widget, this)
     this.widgets.push(widget)
 
-    // Only register with store if node has a valid ID (is already in a graph).
-    // If the node isn't in a graph yet (id === -1), registration happens
-    // when the node is added via LGraph.add() -> node.onAdded.
+    if (!this.widgets.includes(widget)) return widget
+
     if (this.id !== UNASSIGNED_NODE_ID && isNodeBindable(widget)) {
       widget.setNodeId(this.id)
     }
@@ -2294,7 +2442,7 @@ export class LGraphNode
     const restored = useWidgetValueStore().getRestoredWidgetValue(
       this.graph?.rootGraph.id ?? zeroUuid,
       this.id,
-      widget.name,
+      widget,
       positionalIndex
     )
     if (restored) widget.value = restored.value
@@ -2303,7 +2451,6 @@ export class LGraphNode
   }
 
   addTitleButton(options: LGraphButtonOptions): LGraphButton {
-    this.title_buttons ||= []
     const button = new LGraphButton(options)
     this.title_buttons.push(button)
     return button
@@ -2331,13 +2478,11 @@ export class LGraphNode
     const id = widget.widgetId
 
     // Clean up slot references to prevent memory leaks
-    if (this.inputs) {
-      for (const input of this.inputs) {
-        if (input._widget === widget) {
-          input._widget = undefined
-          input.widget = undefined
-          input.pos = undefined
-        }
+    for (const input of this.inputs) {
+      if (input._widget === widget) {
+        input._widget = undefined
+        input.widget = undefined
+        input.pos = undefined
       }
     }
 
@@ -2379,7 +2524,7 @@ export class LGraphNode
 
     out[0] = this.pos[0]
     out[1] = this.pos[1] + -titleHeight
-    if (!this.flags?.collapsed || LiteGraph.vueNodesMode) {
+    if (!this.flags.collapsed || LiteGraph.vueNodesMode) {
       const size = this.renderingSize
       out[2] = size[0]
       out[3] = size[1] + titleHeight
@@ -2509,21 +2654,17 @@ export class LGraphNode
     // search for inputs
     const { inputs, outputs } = this
 
-    if (inputs) {
-      for (const [i, input] of inputs.entries()) {
-        const pos = this.getInputPos(i)
-        if (isInRectangle(x, y, pos[0] - 10, pos[1] - 10, 20, 20)) {
-          return { input, slot: i, link_pos: pos }
-        }
+    for (const [i, input] of inputs.entries()) {
+      const pos = this.getInputPos(i)
+      if (isInRectangle(x, y, pos[0] - 10, pos[1] - 10, 20, 20)) {
+        return { input, slot: i, link_pos: pos }
       }
     }
 
-    if (outputs) {
-      for (const [i, output] of outputs.entries()) {
-        const pos = this.getOutputPos(i)
-        if (isInRectangle(x, y, pos[0] - 10, pos[1] - 10, 20, 20)) {
-          return { output, slot: i, link_pos: pos }
-        }
+    for (const [i, output] of outputs.entries()) {
+      const pos = this.getOutputPos(i)
+      if (isInRectangle(x, y, pos[0] - 10, pos[1] - 10, 20, 20)) {
+        return { output, slot: i, link_pos: pos }
       }
     }
 
@@ -2589,17 +2730,10 @@ export class LGraphNode
    * @param returnObj if the obj itself wanted
    * @returns the slot (-1 if not found)
    */
-  findInputSlot<TReturn extends false>(
-    name: string,
-    returnObj?: TReturn
-  ): number
-  findInputSlot<TReturn extends true>(
-    name: string,
-    returnObj?: TReturn
-  ): INodeInputSlot
+  findInputSlot(name: string, returnObj?: false): number
+  findInputSlot(name: string, returnObj?: true): INodeInputSlot
   findInputSlot(name: string, returnObj: boolean = false) {
     const { inputs } = this
-    if (!inputs) return -1
 
     for (const [i, input] of inputs.entries()) {
       if (name == input.name) {
@@ -2615,17 +2749,10 @@ export class LGraphNode
    * @param returnObj if the obj itself wanted
    * @returns the slot (-1 if not found)
    */
-  findOutputSlot<TReturn extends false>(
-    name: string,
-    returnObj?: TReturn
-  ): number
-  findOutputSlot<TReturn extends true>(
-    name: string,
-    returnObj?: TReturn
-  ): INodeOutputSlot
+  findOutputSlot(name: string, returnObj?: false): number
+  findOutputSlot(name: string, returnObj?: true): INodeOutputSlot
   findOutputSlot(name: string, returnObj: boolean = false) {
     const { outputs } = this
-    if (!outputs) return -1
 
     for (const [i, output] of outputs.entries()) {
       if (name == output.name) {
@@ -2640,11 +2767,11 @@ export class LGraphNode
    * @param optsIn
    * @returns The index of the first matching slot, the slot itself if returnObj is true, or -1 if not found.
    */
-  findInputSlotFree<TReturn extends false>(
-    optsIn?: FindFreeSlotOptions & { returnObj?: TReturn }
+  findInputSlotFree(
+    optsIn?: FindFreeSlotOptions & { returnObj?: false }
   ): number
-  findInputSlotFree<TReturn extends true>(
-    optsIn?: FindFreeSlotOptions & { returnObj?: TReturn }
+  findInputSlotFree(
+    optsIn?: FindFreeSlotOptions & { returnObj?: true }
   ): INodeInputSlot | -1
   findInputSlotFree(optsIn?: FindFreeSlotOptions) {
     return this._findFreeSlot(this.inputs, true, optsIn)
@@ -2655,11 +2782,11 @@ export class LGraphNode
    * @param optsIn
    * @returns The index of the first matching slot, the slot itself if returnObj is true, or -1 if not found.
    */
-  findOutputSlotFree<TReturn extends false>(
-    optsIn?: FindFreeSlotOptions & { returnObj?: TReturn }
+  findOutputSlotFree(
+    optsIn?: FindFreeSlotOptions & { returnObj?: false }
   ): number
-  findOutputSlotFree<TReturn extends true>(
-    optsIn?: FindFreeSlotOptions & { returnObj?: TReturn }
+  findOutputSlotFree(
+    optsIn?: FindFreeSlotOptions & { returnObj?: true }
   ): INodeOutputSlot | -1
   findOutputSlotFree(optsIn?: FindFreeSlotOptions) {
     return this._findFreeSlot(this.outputs, false, optsIn)
@@ -2680,15 +2807,15 @@ export class LGraphNode
       typesNotAccepted: []
     }
     const opts = Object.assign(defaults, options || {})
-    const length = slots?.length
+    const length = slots.length
     if (!(length > 0)) return -1
 
     for (let i = 0; i < length; ++i) {
-      const slot: TSlot = slots[i]
+      const slot = legacyArrayItem(slots, i)
       if (!slot) continue
       if (isInput ? this.isInputConnected(i) : this.isOutputConnected(i))
         continue
-      if (opts.typesNotAccepted?.includes?.(slot.type)) continue
+      if (opts.typesNotAccepted.includes(slot.type)) continue
       return !opts.returnObj ? i : slot
     }
     return -1
@@ -2697,15 +2824,15 @@ export class LGraphNode
   /**
    * findSlotByType for INPUTS
    */
-  findInputSlotByType<TReturn extends false>(
+  findInputSlotByType(
     type: ISlotType,
-    returnObj?: TReturn,
+    returnObj?: false,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
   ): number
-  findInputSlotByType<TReturn extends true>(
+  findInputSlotByType(
     type: ISlotType,
-    returnObj?: TReturn,
+    returnObj?: true,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
   ): INodeInputSlot
@@ -2728,15 +2855,15 @@ export class LGraphNode
   /**
    * findSlotByType for OUTPUTS
    */
-  findOutputSlotByType<TReturn extends false>(
+  findOutputSlotByType(
     type: ISlotType,
-    returnObj?: TReturn,
+    returnObj?: false,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
   ): number
-  findOutputSlotByType<TReturn extends true>(
+  findOutputSlotByType(
     type: ISlotType,
-    returnObj?: TReturn,
+    returnObj?: true,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
   ): INodeOutputSlot
@@ -2764,24 +2891,24 @@ export class LGraphNode
    * @param preferFreeSlot if we want a free slot (if not found, will return the first of the type anyway)
    * @returns the slot (-1 if not found)
    */
-  findSlotByType<TSlot extends true | false, TReturn extends false>(
-    input: TSlot,
+  findSlotByType(
+    input: boolean,
     type: ISlotType,
-    returnObj?: TReturn,
+    returnObj?: false,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
   ): number
-  findSlotByType<TSlot extends true, TReturn extends true>(
-    input: TSlot,
+  findSlotByType(
+    input: true,
     type: ISlotType,
-    returnObj?: TReturn,
+    returnObj?: true,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
   ): INodeInputSlot | -1
-  findSlotByType<TSlot extends false, TReturn extends true>(
-    input: TSlot,
+  findSlotByType(
+    input: false,
     type: ISlotType,
-    returnObj?: TReturn,
+    returnObj?: true,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
   ): INodeOutputSlot | -1
@@ -2832,7 +2959,7 @@ export class LGraphNode
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
   ): TSlot | number {
-    const length = slots?.length
+    const length = slots.length
     if (!length) return -1
 
     // Empty string and * match anything (type:  0)
@@ -2842,7 +2969,7 @@ export class LGraphNode
     // Run the search
     let occupiedSlot: number | TSlot | null = null
     for (let i = 0; i < length; ++i) {
-      const slot: TSlot = slots[i]
+      const slot: TSlot | undefined = slots[i]
       const destTypes =
         slot.type == '0' || slot.type == '*'
           ? ['0']
@@ -2884,7 +3011,7 @@ export class LGraphNode
    */
   findConnectByTypeSlot(
     findInputs: boolean,
-    node: LGraphNode,
+    node: LGraphNode | number,
     slotType: ISlotType,
     options?: ConnectByTypeOptions
   ): number | undefined {
@@ -2906,14 +3033,14 @@ export class LGraphNode
 
     if (!this.graph) throw new NullGraphError()
 
-    if (node && typeof node === 'number') {
-      const nodeById = this.graph.getNodeById(node)
+    if (typeof node === 'number') {
+      const nodeById = this.graph.getNodeById(toNodeId(node))
       if (!nodeById) return
 
       node = nodeById
     }
     const slot = node.findSlotByType(findInputs, slotType, false, true)
-    if (slot >= 0 && slot !== null) return slot
+    if (slot >= 0) return slot
 
     // TODO: Remove or reimpl. events.  WILL CREATE THE onTrigger IN SLOT
     if (opts.createEventInCase && slotType == LiteGraph.EVENT) {
@@ -3064,8 +3191,8 @@ export class LGraphNode
    */
   connect(
     slot: number | string,
-    target_node: LGraphNode,
-    target_slot: ISlotType,
+    target_node: LGraphNode | number | null,
+    target_slot: number | string,
     afterRerouteId?: RerouteId
   ): LLink | null {
     // Allow legacy API support for searching target_slot by string, without mutating the input variables
@@ -3089,14 +3216,14 @@ export class LGraphNode
           console.error(`Connect: Error, no slot of name ${slot}`)
         return null
       }
-    } else if (!outputs || slot >= outputs.length) {
+    } else if (slot >= outputs.length) {
       if (LiteGraph.debug)
         console.error('Connect: Error, slot number not found')
       return null
     }
 
-    if (target_node && typeof target_node === 'number') {
-      const nodeById = graph.getNodeById(target_node)
+    if (typeof target_node === 'number') {
+      const nodeById = graph.getNodeById(toNodeId(target_node))
       if (!nodeById) throw 'target node is null'
 
       target_node = nodeById
@@ -3138,18 +3265,14 @@ export class LGraphNode
       targetIndex = typeof requestedIndex === 'number' ? requestedIndex : null
     }
 
-    if (
-      targetIndex === null ||
-      !target_node.inputs ||
-      targetIndex >= target_node.inputs.length
-    ) {
+    if (targetIndex === null || targetIndex >= target_node.inputs.length) {
       if (LiteGraph.debug)
         console.error('Connect: Error, slot number not found')
       return null
     }
 
     const input = target_node.inputs[targetIndex]
-    const output = outputs[slot]
+    const output = legacyArrayItem(outputs, slot)
 
     if (!output) return null
 
@@ -3231,7 +3354,7 @@ export class LGraphNode
     const maybeCommonType =
       input.type && output.type && commonType(input.type, output.type)
 
-    const linkId = mintLinkId(graph.state)
+    const linkId = mintLinkId(graph.state, linkIdReservations(graph.rootGraph))
 
     const link = new LLink(
       linkId,
@@ -3247,6 +3370,7 @@ export class LGraphNode
       if (replacingLink) graph.afterChange()
       return
     }
+    graph._addLink(link)
 
     if (replacingLink) {
       finalizeInputLinkRemoval(
@@ -3343,9 +3467,6 @@ export class LGraphNode
     }
 
     // Adding a new floating reroute from the tip of a floating chain.
-    if (!parentReroute)
-      throw new Error('[connectFloatingReroute] Parent reroute not found')
-
     const link = parentReroute.getFloatingLinks('output')?.[0]
     if (!link)
       throw new Error('[connectFloatingReroute] Floating link not found')
@@ -3370,14 +3491,14 @@ export class LGraphNode
           console.error(`Connect: Error, no slot of name ${slot}`)
         return false
       }
-    } else if (!this.outputs || slot >= this.outputs.length) {
+    } else if (slot >= this.outputs.length) {
       if (LiteGraph.debug)
         console.error('Connect: Error, slot number not found')
       return false
     }
 
     // get output slot
-    const output = this.outputs[slot]
+    const output = legacyArrayItem(this.outputs, slot)
     if (!output) return false
 
     let removedFloating = false
@@ -3411,11 +3532,11 @@ export class LGraphNode
       }
       disconnected = true
 
-      if (
-        link_info.target_id === SUBGRAPH_OUTPUT_ID &&
-        graph instanceof Subgraph
-      ) {
-        const targetSlot = graph.outputNode.slots[link_info.target_slot]
+      if (link_info.target_id === SUBGRAPH_OUTPUT_ID && isSubgraph(graph)) {
+        const targetSlot = legacyArrayItem(
+          graph.outputNode.slots,
+          link_info.target_slot
+        )
         if (targetSlot) {
           targetSlot.linkIds.length = 0
         } else {
@@ -3476,14 +3597,14 @@ export class LGraphNode
           console.error(`Connect: Error, no slot of name ${slot}`)
         return false
       }
-    } else if (!this.inputs || slot >= this.inputs.length) {
+    } else if (slot >= this.inputs.length) {
       if (LiteGraph.debug) {
         console.error('Connect: Error, slot number not found')
       }
       return false
     }
 
-    const input = this.inputs[slot]
+    const input = legacyArrayItem(this.inputs, slot)
     if (!input) {
       console.error('disconnectInput: input not found', slot, this.inputs)
       return false
@@ -3523,14 +3644,17 @@ export class LGraphNode
           return false
         }
 
-        const output = target_node.outputs[link_info.origin_slot]
+        const output = legacyArrayItem(
+          target_node.outputs,
+          link_info.origin_slot
+        )
         if (!output) {
           // Output not found - may have been removed
           return false
         }
 
         link_info.disconnect(graph, keepReroutes ? 'output' : undefined)
-        if (graph) graph.incrementVersion()
+        graph.incrementVersion()
 
         this.onConnectionsChange?.(
           NodeSlotType.INPUT,
@@ -3585,8 +3709,8 @@ export class LGraphNode
     }
 
     // hard-coded pos
-    const inputPos = inputs?.[slot_number]?.pos
-    const outputPos = outputs?.[slot_number]?.pos
+    const inputPos = inputs[slot_number]?.pos
+    const outputPos = outputs[slot_number]?.pos
 
     if (is_input && inputPos) {
       out[0] = nodeX + inputPos[0]
@@ -3716,12 +3840,16 @@ export class LGraphNode
   trace(msg: string): void {
     this.console ||= []
     this.console.push(msg)
-    // @ts-expect-error deprecated
-    if (this.console.length > LGraphNode.MAX_CONSOLE) this.console.shift()
+    const { MAX_CONSOLE } = LGraphNode
+    if (MAX_CONSOLE !== undefined && this.console.length > MAX_CONSOLE)
+      this.console.shift()
   }
 
   /* Forces to redraw or the main canvas (LGraphNode) or the bg canvas (links) */
   setDirtyCanvas(dirty_foreground: boolean, dirty_background?: boolean): void {
+    if (dirty_foreground && LiteGraph.vueNodesMode) {
+      for (const widget of this.widgets ?? []) widget.syncLiveDisabled?.()
+    }
     this.graph?.canvasAction((c) =>
       c.setDirty(dirty_foreground, dirty_background)
     )
@@ -3781,6 +3909,10 @@ export class LGraphNode
     if (!this.graph) throw new NullGraphError()
     this.graph.incrementVersion()
     this.flags.collapsed = !this.flags.collapsed
+    emitNodeFieldWrite(this, {
+      field: 'flags.collapsed',
+      value: this.flags.collapsed
+    })
     this.setDirtyCanvas(true, true)
   }
 
@@ -3811,6 +3943,10 @@ export class LGraphNode
     this.flags.pinned = v ?? !this.flags.pinned
     this.resizable = !this.pinned
     if (!this.pinned) this.flags.pinned = undefined
+    emitNodeFieldWrite(this, {
+      field: 'flags.pinned',
+      value: this.flags.pinned ?? null
+    })
   }
 
   unpin(): void {
@@ -3999,7 +4135,7 @@ export class LGraphNode
     }: DrawTitleTextOptions
   ): void {
     const size = this.renderingSize
-    const selected = this.selected
+    const selected = isDrawnEmphasized(this)
 
     if (this.onDrawTitleText) {
       this.onDrawTitleText(
@@ -4019,8 +4155,8 @@ export class LGraphNode
     }
 
     ctx.font = this.titleFontStyle
-    const rawTitle = this.getTitle() ?? `❌ ${this.type}`
-    const title = String(rawTitle) + (this.pinned ? '📌' : '')
+    const title =
+      (this.getTitle() ?? `❌ ${this.type}`) + (this.pinned ? '📌' : '')
     if (title) {
       if (selected) {
         ctx.fillStyle = LiteGraph.NODE_SELECTED_TITLE_COLOR
@@ -4032,7 +4168,7 @@ export class LGraphNode
       let availableWidth = size[0] - title_height * 2 // Basic margins
 
       // Subtract space for title buttons
-      if (this.title_buttons?.length > 0) {
+      if (this.title_buttons.length > 0) {
         let buttonsWidth = 0
         const savedFont = ctx.font // Save current font
         for (const button of this.title_buttons) {
@@ -4084,7 +4220,6 @@ export class LGraphNode
    */
   connectInputToOutput(): boolean | undefined {
     const { inputs, outputs, graph } = this
-    if (!inputs || !outputs) return
     if (!graph) throw new NullGraphError()
 
     const nodeId = this.id
@@ -4092,13 +4227,13 @@ export class LGraphNode
 
     // First pass: only match exactly index-to-index
     for (const [index, input] of inputs.entries()) {
-      const output = outputs[index]
+      const output = legacyArrayItem(outputs, index)
       if (!output || !LiteGraph.isValidConnection(input.type, output.type))
         continue
 
       const inLink = inputLink(graph, nodeId, index)
       if (!inLink) continue
-      const inNode = graph.getNodeById(inLink?.origin_id)
+      const inNode = graph.getNodeById(inLink.origin_id)
       if (!inNode) continue
 
       bypassAllLinks(index, inNode, inLink, graph)
@@ -4111,7 +4246,7 @@ export class LGraphNode
     for (const [inputIndex, input] of inputs.entries()) {
       const inLink = inputLink(graph, nodeId, inputIndex)
       if (!inLink) continue
-      const inNode = graph.getNodeById(inLink?.origin_id)
+      const inNode = graph.getNodeById(inLink.origin_id)
       if (!inNode) continue
 
       for (const [outIndex, output] of outputs.entries()) {
@@ -4151,33 +4286,76 @@ export class LGraphNode
    * Returns `true` if the widget is visible, otherwise `false`.
    */
   isWidgetVisible(widget: IBaseWidget): boolean {
-    const isHidden =
-      this.collapsed || widget.hidden || (widget.advanced && !this.showAdvanced)
-    return !isHidden
+    return (
+      !this.collapsed &&
+      isWidgetVisibleOnSurface(
+        widget.visibility ?? deriveWidgetVisibility(widget),
+        'canvas',
+        { showAdvanced: this.showAdvanced ?? false }
+      )
+    )
+  }
+
+  /**
+   * Returns `true` when the widget's layout row renders on the legacy canvas.
+   * A connection-suppressed widget keeps its row — anchoring the connected
+   * slot dot and the widget name — even though its control is not rendered;
+   * see {@link isWidgetVisible}.
+   */
+  isWidgetRowVisible(widget: IBaseWidget): boolean {
+    return (
+      !this.collapsed &&
+      occupiesCanvasRow(widget.visibility ?? deriveWidgetVisibility(widget), {
+        showAdvanced: this.showAdvanced ?? false
+      })
+    )
   }
 
   /**
    * Returns all widgets that should participate in layout calculations.
-   * Filters out hidden widgets only (not collapsed/advanced).
+   * Filters out hidden widgets only (not collapsed/advanced). A
+   * connection-suppressed widget stays in layout so its row keeps anchoring
+   * the connected input slot.
    */
   getLayoutWidgets(): IBaseWidget[] {
-    return this.widgets?.filter((w) => !w.hidden) ?? []
+    return (
+      this.widgets?.filter((widget) => {
+        const { surfaces, suppression } =
+          widget.visibility ?? deriveWidgetVisibility(widget)
+        return !suppression.byExtension && surfaces.canvas !== 'never'
+      }) ?? []
+    )
   }
 
   /**
-   * Returns `true` if the node has any advanced widgets.
+   * Returns `true` if the node has any widgets gated behind the legacy
+   * canvas advanced toggle.
    */
   hasAdvancedWidgets(): boolean {
-    return this.widgets?.some((w) => w.advanced) ?? false
+    return (
+      this.widgets?.some(
+        (w) =>
+          (w.visibility ?? deriveWidgetVisibility(w)).surfaces.canvas ===
+          'advanced'
+      ) ?? false
+    )
   }
 
+  /**
+   * An upstream link satisfying a widget's input suppresses the widget's
+   * control on every rendering surface. A promoted host widget has its own
+   * visibility component, so suppressing an interior widget fed by the
+   * subgraph boundary leaves the host visible.
+   */
   updateComputedDisabled() {
-    if (!this.widgets) return
-    for (const widget of this.widgets) {
+    const { widgets } = this
+    if (!widgets) return
+    for (const widget of widgets) {
       const slot = this.getSlotFromWidget(widget)
-      widget.computedDisabled =
-        widget.disabled ||
-        (!!slot && this.isInputConnected(this.inputs.indexOf(slot)))
+      const connected =
+        !!slot && this.isInputConnected(this.inputs.indexOf(slot))
+      widget.computedDisabled = widget.disabled || connected
+      widget.connectionSuppressed = connected
     }
   }
 
@@ -4196,25 +4374,38 @@ export class LGraphNode
 
     this.updateComputedDisabled()
     for (const widget of widgets) {
-      if (!this.isWidgetVisible(widget)) continue
+      if (!this.isWidgetRowVisible(widget)) continue
 
       const { y } = widget
-      const outlineColour = widget.advanced
-        ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
-        : LiteGraph.WIDGET_OUTLINE_COLOR
-
       widget.last_y = y
+      const width = widget.width || nodeWidth
+
+      if (widget.connectionSuppressed) {
+        if (showText) {
+          ctx.globalAlpha *= 0.5
+          toConcreteWidget(widget, this, false)?.drawSuppressedRowLabel(ctx, {
+            width
+          })
+          ctx.globalAlpha = editorAlpha
+        }
+        continue
+      }
+
+      const outlineColour =
+        (widget.visibility ?? deriveWidgetVisibility(widget)).surfaces
+          .canvas === 'advanced'
+          ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
+          : LiteGraph.WIDGET_OUTLINE_COLOR
 
       ctx.strokeStyle = outlineColour
       ctx.fillStyle = '#222'
       ctx.textAlign = 'left'
       if (widget.computedDisabled) ctx.globalAlpha *= 0.5
-      const width = widget.width || nodeWidth
 
       if (typeof widget.draw === 'function') {
         widget.draw(ctx, this, width, y, H, lowQuality)
       } else {
-        toConcreteWidget(widget, this, false)?.drawWidget(ctx, {
+        legacyValue(toConcreteWidget(widget, this, false))?.drawWidget(ctx, {
           width,
           showText
         })
@@ -4516,4 +4707,12 @@ export class LGraphNode
     ctx.fillRect(0, 0, this.width * this.progress, 6)
     ctx.fillStyle = originalFillStyle
   }
+}
+
+provideGraphNodeGuard((item): item is LGraphNode => item instanceof LGraphNode)
+
+type RegisteredLGraphNode = LGraphNode
+
+declare module './types/entityRegistry' {
+  interface LGraphNode extends RegisteredLGraphNode {}
 }

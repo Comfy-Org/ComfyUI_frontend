@@ -17,6 +17,101 @@ interface ExtensionState {
 
 const payloads = new WeakMap<object, ExtensionState>()
 
+function safeCloneExtensionValue(value: unknown): JsonValue | undefined {
+  let clonedValue: unknown
+  try {
+    clonedValue = structuredClone(value)
+  } catch (error) {
+    if (!(error instanceof Error) || error.name !== 'DataCloneError')
+      throw error
+    try {
+      clonedValue = JSON.parse(JSON.stringify(value))
+    } catch {
+      return
+    }
+  }
+
+  return isJsonValue(clonedValue) ? clonedValue : undefined
+}
+
+function readIndexedArray(value: unknown): unknown[] | undefined {
+  if (
+    value === null ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    ArrayBuffer.isView(value)
+  )
+    return
+  try {
+    const keys = Object.keys(value)
+    if (keys.length === 0) return
+    if (keys.some((key, index) => key !== `${index}`)) return
+    if (Reflect.get(value, 'length') !== keys.length) return
+    return keys.map((key) => Reflect.get(value, key))
+  } catch {
+    return
+  }
+}
+
+type CanonicalCloneResult = { ok: true; value: unknown } | { ok: false }
+
+function detachCanonicalValue(value: unknown): CanonicalCloneResult {
+  if (
+    value === undefined ||
+    typeof value === 'function' ||
+    typeof value === 'symbol'
+  )
+    return { ok: true, value: undefined }
+  try {
+    const json = JSON.stringify(
+      value,
+      (_key, nestedValue: unknown) =>
+        readIndexedArray(nestedValue) ?? nestedValue
+    )
+    return {
+      ok: true,
+      value: JSON.parse(json)
+    }
+  } catch {
+    return { ok: false }
+  }
+}
+
+function isStructuredCloneable(value: unknown): boolean {
+  try {
+    structuredClone(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function writeDetachedCanonicalValue(
+  canonical: object,
+  key: string,
+  value: unknown
+): void {
+  if (isStructuredCloneable(value)) return
+
+  const detached = detachCanonicalValue(value)
+  if (detached.ok) {
+    Reflect.set(canonical, key, detached.value)
+    return
+  }
+
+  console.warn(
+    `LiteGraph: could not detach canonical field "${key}"; preserving its value`
+  )
+}
+
+function readClonedEntry(source: object, key: string): JsonValue | undefined {
+  try {
+    return safeCloneExtensionValue(Reflect.get(source, key))
+  } catch {
+    return undefined
+  }
+}
+
 const nodeCanonicalFields = {
   title: true,
   id: true,
@@ -38,12 +133,18 @@ const nodeCanonicalFields = {
   widgets_values_named: true
 } satisfies Record<Exclude<keyof ISerialisedNode, 'extensions'>, true>
 
+export type NodeCanonicalField = keyof typeof nodeCanonicalFields
+
 export const NODE_CANONICAL_FIELDS: ReadonlySet<string> = new Set(
   Object.keys(nodeCanonicalFields)
 )
 
-type GraphCanonicalField = Exclude<
-  keyof (SerialisableGraph & ExportedSubgraph & ISerialisedGraph),
+export function isNodeCanonicalField(key: string): key is NodeCanonicalField {
+  return NODE_CANONICAL_FIELDS.has(key)
+}
+
+export type GraphCanonicalField = Exclude<
+  keyof SerialisableGraph | keyof ExportedSubgraph | keyof ISerialisedGraph,
   'extensions'
 >
 
@@ -77,6 +178,10 @@ export const GRAPH_CANONICAL_FIELDS: ReadonlySet<string> = new Set(
   Object.keys(graphCanonicalFields)
 )
 
+export function isGraphCanonicalField(key: string): key is GraphCanonicalField {
+  return GRAPH_CANONICAL_FIELDS.has(key)
+}
+
 const isJsonValue = (
   value: unknown,
   ancestors = new WeakSet<object>()
@@ -106,45 +211,61 @@ const isJsonValue = (
 const isSafeExtensionKey = (key: string): boolean => key !== '__proto__'
 
 const readPayload = (value: unknown): ExtensionPayload => {
-  if (
-    !isJsonValue(value) ||
-    value === null ||
-    typeof value !== 'object' ||
-    Array.isArray(value)
-  ) {
-    if (value !== undefined)
-      console.warn('LiteGraph: ignoring non-serializable extension payload')
+  if (value === undefined) return {}
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    console.warn('LiteGraph: ignoring non-serializable extension payload')
     return {}
   }
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter(([key]) => isSafeExtensionKey(key))
-      .map(([key, entry]) => [key, structuredClone(entry)])
-  )
+  let keys: string[]
+  try {
+    keys = Object.keys(value)
+  } catch {
+    console.warn('LiteGraph: ignoring non-serializable extension payload')
+    return {}
+  }
+  const payload: ExtensionPayload = {}
+  for (const key of keys) {
+    if (!isSafeExtensionKey(key)) continue
+    const clonedEntry = readClonedEntry(value, key)
+    if (clonedEntry !== undefined) {
+      payload[key] = clonedEntry
+    } else {
+      console.warn('LiteGraph: ignoring non-serializable extension payload')
+    }
+  }
+  return payload
 }
 
-function copyExtensionFields(
-  target: ExtensionPayload,
-  source: Record<string, unknown>,
+function readNamespacedPayload(source: object): ExtensionPayload {
+  try {
+    return readPayload(Reflect.get(source, 'extensions'))
+  } catch {
+    console.warn('LiteGraph: ignoring non-serializable extension payload')
+    return {}
+  }
+}
+
+function readExtensionFields(
+  source: object,
   canonicalFields: ReadonlySet<string>
-): void {
-  for (const [key, value] of Object.entries(source)) {
+): ExtensionPayload {
+  const payload: ExtensionPayload = {}
+  for (const key of Object.keys(source)) {
     if (
       !isSafeExtensionKey(key) ||
       canonicalFields.has(key) ||
-      key === 'extensions' ||
-      !isJsonValue(value)
+      key === 'extensions'
     ) {
-      if (
-        isSafeExtensionKey(key) &&
-        !canonicalFields.has(key) &&
-        key !== 'extensions'
-      )
-        console.warn('LiteGraph: ignoring non-serializable extension payload')
       continue
     }
-    target[key] = structuredClone(value)
+    const clonedValue = readClonedEntry(source, key)
+    if (clonedValue !== undefined) {
+      payload[key] = clonedValue
+    } else {
+      console.warn('LiteGraph: ignoring non-serializable extension payload')
+    }
   }
+  return payload
 }
 
 export const hydrateExtensionPayload = (
@@ -152,14 +273,12 @@ export const hydrateExtensionPayload = (
   data: object,
   canonicalFields: ReadonlySet<string>
 ): void => {
-  const record = Object.fromEntries(Object.entries(data))
   const previous = payloads.get(owner)
   for (const key of Object.keys(previous?.legacy ?? {}))
     Reflect.deleteProperty(owner, key)
 
-  const namespaced = readPayload(record.extensions)
-  const legacyFields: ExtensionPayload = {}
-  copyExtensionFields(legacyFields, record, canonicalFields)
+  const namespaced = readNamespacedPayload(data)
+  const legacyFields = readExtensionFields(data, canonicalFields)
   Object.assign(owner, structuredClone(legacyFields))
   for (const key of Object.keys(legacyFields)) delete namespaced[key]
   payloads.set(owner, { legacy: legacyFields, namespaced })
@@ -183,20 +302,17 @@ export const runExtensionSerializeHook = <T extends object>(
   Object.assign(view, structuredClone(state.legacy), {
     extensions: structuredClone({ ...state.namespaced, ...state.legacy })
   })
-  hook?.(view)
 
-  for (const key of canonicalFields) {
-    if (Object.hasOwn(view, key)) {
-      Reflect.set(canonical, key, Reflect.get(view, key))
-    } else {
-      Reflect.deleteProperty(canonical, key)
+  if (hook) {
+    hook(view)
+    for (const key of canonicalFields) {
+      if (Object.hasOwn(view, key))
+        writeDetachedCanonicalValue(canonical, key, Reflect.get(view, key))
     }
   }
 
-  const viewRecord = Object.fromEntries(Object.entries(view))
-  const namespaced = readPayload(viewRecord.extensions)
-  const legacy: ExtensionPayload = {}
-  copyExtensionFields(legacy, viewRecord, canonicalFields)
+  const namespaced = readNamespacedPayload(view)
+  const legacy = readExtensionFields(view, canonicalFields)
   for (const key of Object.keys(legacy)) delete namespaced[key]
   payloads.set(owner, { legacy, namespaced })
 
@@ -214,7 +330,7 @@ export const extensionConfigureView = <T extends object>(
   canonical: T
 ): T =>
   Object.assign(
-    canonical,
+    { ...canonical },
     structuredClone(payloads.get(owner)?.namespaced),
     structuredClone(payloads.get(owner)?.legacy)
   )

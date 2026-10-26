@@ -60,6 +60,12 @@ const scenarios = [
 ] as const satisfies readonly AgentRequestResponseScenario[]
 
 describe('AgentRequestResponseQueue', () => {
+  it('rejects a suite with no scenarios', () => {
+    expect(() => new AgentRequestResponseQueue([])).toThrow(
+      'Agent request queue requires at least one scenario'
+    )
+  })
+
   it('consumes requests and interleaved responses in declaration order', () => {
     const queue = new AgentRequestResponseQueue(scenarios)
 

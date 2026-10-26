@@ -1,20 +1,24 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
+import type {
+  LGraphNode,
+  LLink,
+  SubgraphInput,
+  SubgraphOutput
+} from '@/lib/litegraph/src/types/entityRegistry'
+
+import type { LinkId } from '@/types/linkId'
 import { LabelPosition } from '@/lib/litegraph/src/draw'
+import type { OptionalProps, Point } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  OptionalProps,
-  Point
-} from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
+
+import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {

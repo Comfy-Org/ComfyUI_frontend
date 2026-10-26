@@ -1,8 +1,31 @@
 <template>
-  <SelectRoot v-model="selectedItem" v-model:open="isOpen" :disabled>
+  <SearchableSingleSelect
+    v-if="searchable && searchLabel !== undefined && emptyText !== undefined"
+    v-model="selectedItem"
+    v-bind="attrsWithoutClass"
+    :class="attrsClass"
+    :label
+    :accessible-label
+    :search-label
+    :empty-text
+    :options
+    :size
+    :invalid
+    :loading
+    :disabled
+    :search-placeholder
+    :list-max-height
+    :popover-min-width
+    :popover-max-width
+    :content-style
+  >
+    <template #icon><slot name="icon" /></template>
+  </SearchableSingleSelect>
+
+  <SelectRoot v-else v-model="selectedItem" v-model:open="isOpen" :disabled>
     <SelectTrigger
       v-bind="attrsWithoutClass"
-      :aria-label="label || t('g.singleSelectDropdown')"
+      :aria-label="accessibleLabel"
       :aria-busy="loading || undefined"
       :aria-invalid="invalid || undefined"
       :class="
@@ -40,7 +63,7 @@
         position="popper"
         :side-offset="8"
         align="start"
-        :style="[optionStyle, contentStyle, liftedContentStyle]"
+        :style="[optionStyle, contentStyle]"
         :class="cn(selectContentClass, 'min-w-(--reka-select-trigger-width)')"
         @keydown="onContentKeydown"
       >
@@ -61,7 +84,7 @@
               class="flex shrink-0 items-center justify-center"
             >
               <i
-                class="icon-[lucide--check] text-base-foreground"
+                class="icon-[lucide--check] text-foreground"
                 aria-hidden="true"
               />
             </SelectItemIndicator>
@@ -78,15 +101,13 @@ import {
   SelectItem,
   SelectItemIndicator,
   SelectItemText,
-  SelectPortal,
   SelectRoot,
   SelectTrigger,
   SelectValue,
-  SelectViewport
+  SelectViewport,
+  SelectPortal
 } from 'reka-ui'
 import { ref } from 'vue'
-import type { StyleValue } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import {
   selectContentClass,
@@ -94,12 +115,13 @@ import {
   selectItemVariants,
   selectTriggerVariants,
   stopEscapeToDocument
-} from '@/components/ui/select/select.variants'
-import type { SelectOption } from '@/components/ui/select/types'
+} from '@comfyorg/design-system/select.variants'
+import type { SingleSelectProps } from '@/components/ui/single-select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import SearchableSingleSelect from './SearchableSingleSelect.vue'
 
 defineOptions({
   inheritAttrs: false
@@ -108,40 +130,27 @@ const { attrsClass, attrsWithoutClass } = useAttrsClass()
 
 const {
   label,
-  options,
+  accessibleLabel,
+  searchLabel,
+  emptyText,
+  options = [],
   size = 'lg',
   invalid = false,
   loading = false,
   disabled = false,
+  searchable = false,
+  searchPlaceholder,
   listMaxHeight = '28rem',
   popoverMinWidth,
   popoverMaxWidth,
   contentStyle
-} = defineProps<{
-  label?: string
-  options?: SelectOption[]
-  /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
-  size?: 'lg' | 'md'
-  /** Show invalid (destructive) border */
-  invalid?: boolean
-  /** Show loading spinner instead of chevron */
-  loading?: boolean
-  /** Disable the select */
-  disabled?: boolean
-  /** Maximum height of the dropdown panel (default: 28rem) */
-  listMaxHeight?: string
-  /** Minimum width of the popover (default: auto) */
-  popoverMinWidth?: string
-  /** Maximum width of the popover (default: auto) */
-  popoverMaxWidth?: string
-  contentStyle?: StyleValue
-}>()
+} = defineProps<SingleSelectProps>()
 
-const selectedItem = defineModel<string | undefined>({ required: true })
+const selectedItem = defineModel<string | number | undefined>({
+  required: true
+})
 
-const { t } = useI18n()
 const isOpen = ref(false)
-const liftedContentStyle = useModalLiftedZIndex(isOpen)
 
 function onContentKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {

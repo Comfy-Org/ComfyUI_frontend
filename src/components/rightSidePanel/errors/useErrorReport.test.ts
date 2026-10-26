@@ -1,12 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { until } from '@vueuse/core'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import type { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 import type { ErrorCardData } from './types'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { useErrorReport } from './useErrorReport'
-import { toNodeId } from '@/types/nodeId'
+import { app } from '@/scripts/app'
+import { api } from '@/scripts/api'
 
 async function flushPromises() {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -14,80 +17,23 @@ async function flushPromises() {
 }
 
 const mocks = vi.hoisted(() => {
-  // Helpers only — imports happen inside factories below.
   return {
-    getLogs: vi.fn(),
     serialize: vi.fn(),
-    refetchSystemStats: vi.fn(),
     generateErrorReport: vi.fn()
   }
 })
 
-const storeState = vi.hoisted(() => {
-  // Plain objects wired up in beforeEach. Tests use setStoreState to swap values.
-  return {
-    systemStats: null,
-    isLoading: false
-  }
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.getSystemStats).mockResolvedValue(sampleSystemStats)
 })
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getLogs: mocks.getLogs
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    rootGraph: {
-      serialize: mocks.serialize
-    }
-  }
-}))
-
-vi.mock('@/utils/errorReportUtil', () => ({
+vi.mock(import('@/utils/errorReportUtil'), () => ({
   generateErrorReport: mocks.generateErrorReport
 }))
-
-vi.mock('@/stores/systemStatsStore', async () => {
-  const { ref: vueRef } = await import('vue')
-  const systemStatsRef = vueRef<unknown>(null)
-  const isLoadingRef = vueRef(false)
-
-  return {
-    useSystemStatsStore: () => ({
-      get systemStats() {
-        return systemStatsRef.value
-      },
-      set systemStats(value: unknown) {
-        systemStatsRef.value = value
-      },
-      get isLoading() {
-        return isLoadingRef.value
-      },
-      set isLoading(value: boolean) {
-        isLoadingRef.value = value
-      },
-      refetchSystemStats: mocks.refetchSystemStats,
-      __setSystemStats(value: unknown) {
-        systemStatsRef.value = value
-      },
-      __setIsLoading(value: boolean) {
-        isLoadingRef.value = value
-      }
-    })
-  }
-})
-
-type TestStore = ReturnType<typeof useSystemStatsStore> & {
-  __setSystemStats: (value: unknown) => void
-  __setIsLoading: (value: boolean) => void
-}
-
-async function getStore(): Promise<TestStore> {
-  const mod = await import('@/stores/systemStatsStore')
-  return mod.useSystemStatsStore() as unknown as TestStore
-}
 
 const sampleSystemStats = {
   system: {
@@ -96,7 +42,9 @@ const sampleSystemStats = {
     argv: [],
     python_version: '3.11',
     embedded_python: false,
-    pytorch_version: '2.3.0'
+    pytorch_version: '2.3.0',
+    ram_total: 16000000000,
+    ram_free: 8000000000
   },
   devices: []
 }
@@ -112,19 +60,12 @@ function makeCard(overrides: Partial<ErrorCardData> = {}): ErrorCardData {
 }
 
 describe('useErrorReport', () => {
-  let warnSpy: ReturnType<typeof vi.spyOn>
-
   beforeEach(async () => {
-    storeState.systemStats = null
-    storeState.isLoading = false
-    const store = await getStore()
-    store.__setSystemStats(null)
-    store.__setIsLoading(false)
-    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    warnSpy.mockRestore()
+    vi.spyOn(app.rootGraph, 'serialize').mockImplementation(mocks.serialize)
+    const store = useSystemStatsStore()
+    await until(() => store.isInitialized).toBe(true)
+    store.systemStats = null
+    store.isLoading = false
   })
 
   it('returns early without enrichment when the card has no runtime errors', async () => {
@@ -135,15 +76,15 @@ describe('useErrorReport', () => {
     const { displayedDetailsMap } = useErrorReport(card)
     await flushPromises()
 
-    expect(mocks.getLogs).not.toHaveBeenCalled()
+    expect(api.getLogs).not.toHaveBeenCalled()
     expect(mocks.generateErrorReport).not.toHaveBeenCalled()
     expect(displayedDetailsMap.value).toEqual({ 0: 'details' })
   })
 
   it('enriches each runtime error with a generated report when systemStats is present', async () => {
-    const store = await getStore()
-    store.__setSystemStats(sampleSystemStats)
-    mocks.getLogs.mockResolvedValue('server logs')
+    const store = useSystemStatsStore()
+    store.systemStats = sampleSystemStats
+    vi.mocked(api.getLogs).mockResolvedValue('server logs')
     mocks.serialize.mockReturnValue({ nodes: [] })
     mocks.generateErrorReport.mockImplementation(
       ({ exceptionType }: { exceptionType: string }) =>
@@ -173,7 +114,7 @@ describe('useErrorReport', () => {
     const { displayedDetailsMap } = useErrorReport(card)
     await flushPromises()
 
-    expect(mocks.getLogs).toHaveBeenCalledTimes(1)
+    expect(api.getLogs).toHaveBeenCalledTimes(1)
     expect(mocks.generateErrorReport).toHaveBeenCalledTimes(2)
     expect(mocks.generateErrorReport).toHaveBeenNthCalledWith(1, {
       exceptionType: 'RuntimeError',
@@ -202,9 +143,9 @@ describe('useErrorReport', () => {
   })
 
   it('awaits the systemStats loading flag before proceeding', async () => {
-    const store = await getStore()
-    store.__setIsLoading(true)
-    mocks.getLogs.mockResolvedValue('logs')
+    const store = useSystemStatsStore()
+    store.isLoading = true
+    vi.mocked(api.getLogs).mockResolvedValue('logs')
     mocks.serialize.mockReturnValue({ nodes: [] })
     mocks.generateErrorReport.mockReturnValue('report')
 
@@ -215,23 +156,26 @@ describe('useErrorReport', () => {
     const { displayedDetailsMap } = useErrorReport(card)
     await flushPromises()
 
-    expect(mocks.getLogs).not.toHaveBeenCalled()
+    expect(api.getLogs).not.toHaveBeenCalled()
     expect(displayedDetailsMap.value).toEqual({ 0: 'trace' })
 
-    store.__setSystemStats(sampleSystemStats)
-    store.__setIsLoading(false)
+    store.systemStats = sampleSystemStats
+    store.isLoading = false
     await flushPromises()
 
-    expect(mocks.getLogs).toHaveBeenCalledTimes(1)
+    expect(api.getLogs).toHaveBeenCalledTimes(1)
     expect(displayedDetailsMap.value).toEqual({ 0: 'report' })
   })
 
   it('calls refetchSystemStats when not loading and stats are missing', async () => {
-    const store = await getStore()
-    mocks.refetchSystemStats.mockImplementation(async () => {
-      store.__setSystemStats(sampleSystemStats)
-    })
-    mocks.getLogs.mockResolvedValue('logs')
+    const store = useSystemStatsStore()
+    vi.mocked(useSystemStatsStore().refetchSystemStats).mockImplementation(
+      async () => {
+        store.systemStats = sampleSystemStats
+        return sampleSystemStats
+      }
+    )
+    vi.mocked(api.getLogs).mockResolvedValue('logs')
     mocks.serialize.mockReturnValue({ nodes: [] })
     mocks.generateErrorReport.mockReturnValue('report')
 
@@ -242,13 +186,15 @@ describe('useErrorReport', () => {
     useErrorReport(card)
     await flushPromises()
 
-    expect(mocks.refetchSystemStats).toHaveBeenCalledTimes(1)
+    expect(useSystemStatsStore().refetchSystemStats).toHaveBeenCalledTimes(1)
     expect(mocks.generateErrorReport).toHaveBeenCalledTimes(1)
   })
 
   it('returns early and warns when refetchSystemStats throws', async () => {
-    mocks.refetchSystemStats.mockRejectedValue(new Error('boom'))
-    mocks.getLogs.mockResolvedValue('logs')
+    vi.mocked(useSystemStatsStore().refetchSystemStats).mockRejectedValue(
+      new Error('boom')
+    )
+    vi.mocked(api.getLogs).mockResolvedValue('logs')
 
     const card = makeCard({
       errors: [{ message: 'runtime', details: 'trace', isRuntimeError: true }]
@@ -257,16 +203,16 @@ describe('useErrorReport', () => {
     useErrorReport(card)
     await flushPromises()
 
-    expect(mocks.refetchSystemStats).toHaveBeenCalledTimes(1)
-    expect(mocks.getLogs).not.toHaveBeenCalled()
+    expect(useSystemStatsStore().refetchSystemStats).toHaveBeenCalledTimes(1)
+    expect(api.getLogs).not.toHaveBeenCalled()
     expect(mocks.generateErrorReport).not.toHaveBeenCalled()
-    expect(warnSpy).toHaveBeenCalled()
+    expect(console.warn).toHaveBeenCalled()
   })
 
   it('returns early and warns when workflow serialization throws', async () => {
-    const store = await getStore()
-    store.__setSystemStats(sampleSystemStats)
-    mocks.getLogs.mockResolvedValue('logs')
+    const store = useSystemStatsStore()
+    store.systemStats = sampleSystemStats
+    vi.mocked(api.getLogs).mockResolvedValue('logs')
     mocks.serialize.mockImplementation(() => {
       throw new Error('serialize failed')
     })
@@ -279,14 +225,14 @@ describe('useErrorReport', () => {
     await flushPromises()
 
     expect(mocks.generateErrorReport).not.toHaveBeenCalled()
-    expect(warnSpy).toHaveBeenCalled()
+    expect(console.warn).toHaveBeenCalled()
     expect(displayedDetailsMap.value).toEqual({ 0: 'trace' })
   })
 
   it('falls back to original error.details when generateErrorReport throws', async () => {
-    const store = await getStore()
-    store.__setSystemStats(sampleSystemStats)
-    mocks.getLogs.mockResolvedValue('logs')
+    const store = useSystemStatsStore()
+    store.systemStats = sampleSystemStats
+    vi.mocked(api.getLogs).mockResolvedValue('logs')
     mocks.serialize.mockReturnValue({ nodes: [] })
     mocks.generateErrorReport.mockImplementation(() => {
       throw new Error('generate failed')
@@ -301,14 +247,14 @@ describe('useErrorReport', () => {
     const { displayedDetailsMap } = useErrorReport(card)
     await flushPromises()
 
-    expect(warnSpy).toHaveBeenCalled()
+    expect(console.warn).toHaveBeenCalled()
     expect(displayedDetailsMap.value).toEqual({ 0: 'fallback' })
   })
 
   it('re-enriches and clears stale enriched details when the card ref changes', async () => {
-    const store = await getStore()
-    store.__setSystemStats(sampleSystemStats)
-    mocks.getLogs.mockResolvedValue('logs')
+    const store = useSystemStatsStore()
+    store.systemStats = sampleSystemStats
+    vi.mocked(api.getLogs).mockResolvedValue('logs')
     mocks.serialize.mockReturnValue({ nodes: [] })
     mocks.generateErrorReport.mockImplementation(
       ({ exceptionMessage }: { exceptionMessage: string }) =>
@@ -340,8 +286,8 @@ describe('useErrorReport', () => {
   })
 
   it('drops stale results when the card changes mid-flight', async () => {
-    const store = await getStore()
-    store.__setSystemStats(sampleSystemStats)
+    const store = useSystemStatsStore()
+    store.systemStats = sampleSystemStats
     mocks.serialize.mockReturnValue({ nodes: [] })
     mocks.generateErrorReport.mockImplementation(
       ({ exceptionMessage }: { exceptionMessage: string }) =>
@@ -358,8 +304,10 @@ describe('useErrorReport', () => {
       })
       return { resolve, promise }
     })()
-    mocks.getLogs.mockImplementationOnce(() => firstLogsDeferred.promise)
-    mocks.getLogs.mockImplementationOnce(async () => 'second-logs')
+    vi.mocked(api.getLogs).mockImplementationOnce(
+      () => firstLogsDeferred.promise
+    )
+    vi.mocked(api.getLogs).mockImplementationOnce(async () => 'second-logs')
 
     const cardRef = ref<ErrorCardData>(
       makeCard({

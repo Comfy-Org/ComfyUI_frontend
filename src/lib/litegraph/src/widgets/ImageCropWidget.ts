@@ -1,4 +1,4 @@
-import type { IImageCropWidget } from '../types/widgets'
+import type { IImageCropWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
@@ -10,8 +10,6 @@ export class ImageCropWidget
   extends BaseWidget<IImageCropWidget>
   implements IImageCropWidget
 {
-  override type = 'imagecrop' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(ctx, options, 'ImageCrop')
   }

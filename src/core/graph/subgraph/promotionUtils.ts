@@ -9,13 +9,16 @@ import type { LinkId } from '@/types/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLitegraphService } from '@/services/litegraphService'
+import {
+  providePromoteRecommendedWidgets,
+  useCanvasStore
+} from '@/renderer/core/canvas/canvasStore'
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
@@ -28,6 +31,8 @@ import { widgetId } from '@/types/widgetId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
+type RuntimeWidget = Omit<IBaseWidget, 'options'> &
+  Partial<Pick<IBaseWidget, 'options'>>
 
 export type WidgetItem = [LGraphNode, IBaseWidget]
 export { CANVAS_IMAGE_PREVIEW_WIDGET }
@@ -64,7 +69,7 @@ export function findHostInputForPromotion(
  * Host-first resolver for promoted widget value keys.
  *
  * Anchors on the host `SubgraphNode.inputs` (which own the promoted `widgetId`
- * per ADR 0009) and walks host -> interior only to key each host widget by the
+ * per ADR-SUBGRAPH-PROMOTION-0009) and walks host -> interior only to key each host widget by the
  * interior source it projects. Consumers that discover an interior source can
  * then look up the host value key without a per-source reverse walk.
  */
@@ -171,7 +176,7 @@ function applySubgraphInputOrder(
   orderedIndices: readonly number[]
 ): void {
   const widgetValues = subgraphNode.inputs.map((input) => {
-    const id = input?.widgetId
+    const id = input.widgetId
     if (!id) return undefined
     return useWidgetValueStore().getWidget(id)?.value
   })
@@ -198,7 +203,7 @@ function isSamePromotedInput(
   inputIndex: number,
   orderedWidget: Pick<IBaseWidget, 'widgetId'>
 ): boolean {
-  const input = subgraphNode.inputs[inputIndex]
+  const input = subgraphNode.inputs.at(inputIndex)
   const linkedInput = input?._subgraphSlot
   if (!input || !linkedInput) return false
 
@@ -290,7 +295,8 @@ export function promoteValueWidgetViaSubgraphInput(
   const inputName = nextUniqueName(sourceWidgetName, existingNames)
   const subgraphInput = subgraphNode.subgraph.addInput(
     inputName,
-    String(sourceSlot.type ?? sourceWidget.type ?? '*')
+    // oxlint-disable-next-line typescript/no-unnecessary-condition -- legacy extension slots may omit type at runtime
+    String(sourceSlot.type ?? '*')
   )
   subgraphInput.label = sourceSlot.label
   const link = subgraphInput.connect(sourceSlot, sourceNode)
@@ -328,7 +334,10 @@ export function seedNestedPromotedInputState(
 
   const store = useWidgetValueStore()
   const sourceState = store.getWidget(sourceSlot.widgetId)
-  if (!sourceState) return
+  const sourceVisibility = store.getWidgetVisibility(sourceSlot.widgetId)
+  if (!sourceState || !sourceVisibility) return
+  const visibility = cloneDeep(sourceVisibility)
+  visibility.suppression.byConnection = false
 
   const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, inputName)
   hostInput.widget ??= { name: inputName }
@@ -338,12 +347,13 @@ export function seedNestedPromotedInputState(
     {
       type: sourceState.type,
       value: sourceState.value,
-      options: cloneDeep(sourceState.options ?? {}),
+      options: cloneDeep(sourceState.options),
       label: hostInput.label ?? sourceSlot.label ?? inputName,
       serialize: sourceState.serialize,
       disabled: sourceState.disabled
     },
-    store.getWidgetRenderState(sourceSlot.widgetId) ?? {}
+    store.getWidgetRenderState(sourceSlot.widgetId) ?? {},
+    visibility
   )
   if (!registered) {
     delete hostInput.widget
@@ -381,7 +391,7 @@ function promotePreviewViaExposure(
 
 const PREVIEW_WIDGET_TYPES = new Set(['preview', 'video', 'audioUI'])
 
-export function isPreviewPseudoWidget(widget: IBaseWidget): boolean {
+export function isPreviewPseudoWidget(widget: RuntimeWidget): boolean {
   if (widget.name.startsWith('$$')) return true
   if (widget.serialize !== false && widget.options?.serialize !== false)
     return false
@@ -427,8 +437,6 @@ function demotePromotedInput(
   subgraphNode: SubgraphNode,
   source: PromotedWidgetSource
 ): boolean {
-  if (!subgraphNode.subgraph) return false
-
   const hostInput = findHostInputForPromotion(
     subgraphNode,
     source.sourceNodeId,
@@ -454,8 +462,6 @@ export function demoteWidget(
 ) {
   const source = toPromotionSource(node, widget)
   for (const parent of parents) {
-    if (!parent.subgraph) continue
-
     if (demotePromotedInput(parent, source)) continue
 
     if (isPreviewPseudoWidget(widget)) {
@@ -491,10 +497,8 @@ function getParentNodes(): SubgraphNode[] {
   const { navigationStack } = useSubgraphNavigationStore()
   const subgraph = navigationStack.at(-1)
   if (!subgraph) {
-    useToastStore().add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('subgraphStore.promoteOutsideSubgraph')
+    useToast().error(t('g.error'), {
+      description: t('subgraphStore.promoteOutsideSubgraph')
     })
     return []
   }
@@ -605,7 +609,7 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
 
 export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
   if (subgraphNode.properties.previewExposures !== undefined) return
-  const { updatePreviews } = useLitegraphService()
+  const { updatePreviews } = useLitegraphServiceAccess()
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
@@ -713,3 +717,5 @@ export function hasUnpromotedWidgets(subgraphNode: SubgraphNode): boolean {
     )
   )
 }
+
+providePromoteRecommendedWidgets(promoteRecommendedWidgets)

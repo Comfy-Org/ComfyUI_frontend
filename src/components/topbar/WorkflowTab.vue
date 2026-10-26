@@ -1,92 +1,126 @@
 <template>
-  <ContextMenuRoot :modal="false">
+  <ContextMenuRoot :modal="false" @update:open="menuOpen = $event">
     <ContextMenuTrigger as-child>
       <div
         ref="workflowTabRef"
         data-testid="workflow-tab"
-        class="workflow-tab group flex h-9 items-center justify-center gap-2 px-4 py-2"
+        :class="
+          cn(
+            'workflow-tab group/tab relative h-full min-w-22.5 motion-safe:transition-[flex-shrink] motion-safe:duration-200 motion-safe:ease-out',
+            isActiveTab ? 'shrink-0' : 'shrink'
+          )
+        "
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
-        @mouseup="handleMouseUp"
         @click="handleClick"
       >
-        <i v-if="isBuilderState" class="bg-text-subtle icon-[lucide--hammer]" />
-        <i
-          v-else-if="workflowOption.workflow.initialMode === 'app'"
-          class="icon-[lucide--panels-top-left] bg-primary-background"
-        />
-        <span
-          class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
+        <TabsTrigger
+          :value="workflowOption.workflow.path"
+          class="h-full w-full py-2 pr-2 pl-3"
         >
-          {{ workflowOption.workflow.filename }}
-        </span>
-        <div class="relative size-4 shrink-0">
-          <i
-            v-if="isAgentEditing"
-            role="img"
-            :aria-label="t('g.agentWorking')"
-            class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 group-hover:hidden motion-safe:animate-spin"
-          />
-          <span
-            v-else-if="showUnseenAgentDot"
-            role="img"
-            :aria-label="t('g.agentModified')"
-            data-testid="agent-modified-indicator"
-            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background group-hover:hidden"
-          />
-          <i
-            v-else-if="workflowStatus"
-            role="img"
-            :aria-label="workflowStatusLabel"
-            :class="
-              cn(
-                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden',
-                workflowStatusIconClasses[workflowStatus]
-              )
-            "
-          />
-          <span
-            v-else-if="shouldShowUnsavedIndicator"
-            data-testid="workflow-dirty-indicator"
-            :class="
-              cn(
-                'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full group-hover:hidden',
-                isActiveTab ? 'bg-base-foreground' : 'bg-smoke-800'
-              )
-            "
-          />
-          <Button
-            class="close-button invisible size-4 rounded-none p-0 text-smoke-800 group-hover:visible"
-            variant="muted-textonly"
-            size="unset"
-            :aria-label="t('g.close')"
-            data-testid="close-workflow-button"
-            @click.stop="onCloseWorkflow(workflowOption)"
-          >
+          <template v-if="showModeIcon">
             <i
-              data-testid="close-workflow-icon"
-              class="icon-[lucide--x] size-4"
+              v-if="isBuilderState"
+              data-testid="workflow-mode-icon"
+              class="icon-[lucide--hammer] bg-muted-foreground"
             />
-          </Button>
-        </div>
+            <i
+              v-else-if="workflowOption.workflow.initialMode === 'app'"
+              data-testid="workflow-mode-icon"
+              class="icon-[lucide--panels-top-left] bg-primary"
+            />
+          </template>
+          <WorkflowAgentTargetIndicator
+            :workflow-path="workflowOption.workflow.path"
+          />
+          <span
+            class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
+          >
+            {{ workflowOption.workflow.filename }}
+          </span>
+          <span
+            :class="
+              cn(
+                'relative size-4 shrink-0 group-focus-within/tab:invisible',
+                revealsCloseOnHover && 'group-hover/tab:invisible'
+              )
+            "
+          >
+            <span
+              v-if="isAgentAwaitingApproval"
+              role="img"
+              :aria-label="t('g.agentNeedsApproval')"
+              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-warning"
+            />
+            <i
+              v-else-if="isAgentEditing"
+              role="img"
+              :aria-label="t('g.agentWorking')"
+              class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-muted-foreground motion-safe:animate-spin"
+            />
+            <span
+              v-else-if="showUnseenAgentDot"
+              role="img"
+              :aria-label="t('g.agentModified')"
+              data-testid="agent-modified-indicator"
+              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary"
+            />
+            <i
+              v-else-if="workflowStatus"
+              role="img"
+              :aria-label="workflowStatusLabel"
+              :class="
+                cn(
+                  'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2',
+                  workflowStatusIconClasses[workflowStatus]
+                )
+              "
+            />
+            <span
+              v-else-if="shouldShowUnsavedIndicator"
+              data-testid="workflow-dirty-indicator"
+              :class="
+                cn(
+                  'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full',
+                  isActiveTab ? 'bg-foreground' : 'bg-muted-foreground'
+                )
+              "
+            />
+          </span>
+        </TabsTrigger>
+        <Button
+          :class="
+            cn(
+              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 text-muted-foreground group-focus-within/tab:visible',
+              closeButtonVisibility,
+              revealsCloseOnHover && 'group-hover/tab:visible'
+            )
+          "
+          variant="muted-textonly"
+          size="unset"
+          :aria-label="t('g.close')"
+          data-testid="close-workflow-button"
+          @click.stop="onCloseWorkflow(workflowOption)"
+        >
+          <i
+            data-testid="close-workflow-icon"
+            class="icon-[lucide--x] size-4"
+          />
+        </Button>
       </div>
     </ContextMenuTrigger>
-    <ContextMenuPortal>
-      <ContextMenuContent
-        class="z-1000 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
-      >
-        <WorkflowActionsList
-          :items="contextMenuItems"
-          :item-component="ContextMenuItem"
-          :separator-component="ContextMenuSeparator"
-        />
+    <ContextMenuPortal :key="Number(menuOpen)">
+      <ContextMenuContent :class="cn(menuContentClass, 'min-w-56')">
+        <MenuItems :items="contextMenuItems" />
       </ContextMenuContent>
     </ContextMenuPortal>
   </ContextMenuRoot>
-
   <WorkflowTabPopover
-    ref="popoverRef"
+    v-model:open="popoverOpen"
+    v-model:clicked="popoverClicked"
+    :anchor="workflowTabRef"
+    :hovered="popoverHovered"
     :workflow-filename="workflowOption.workflow.filename"
     :thumbnail-url="thumbnailUrl"
     :is-active-tab="isActiveTab"
@@ -95,18 +129,18 @@
 
 <script setup lang="ts">
 import {
-  ContextMenuContent,
-  ContextMenuItem,
   ContextMenuPortal,
+  ContextMenuContent,
   ContextMenuRoot,
-  ContextMenuSeparator,
   ContextMenuTrigger
 } from 'reka-ui'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import MenuItems from '@/components/ui/menu/MenuItems.vue'
+import { menuContentClass } from '@/components/ui/menu/menuStyles'
+import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
@@ -129,6 +163,7 @@ import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
+import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
 
 defineOptions({ inheritAttrs: false })
 
@@ -137,27 +172,35 @@ interface WorkflowOption {
   workflow: ComfyWorkflow
 }
 
-const props = defineProps<{
+const {
+  workflowOption,
+  isFirst,
+  isLast,
+  compact = false
+} = defineProps<{
   workflowOption: WorkflowOption
   isFirst: boolean
   isLast: boolean
+  compact?: boolean
 }>()
 
 const emit = defineEmits<{
   closeToLeft: []
   closeToRight: []
   closeOthers: []
-  mouseup: [event: MouseEvent]
 }>()
 
 const { t } = useI18n()
 
+const menuOpen = ref(false)
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
-const popoverRef = ref<InstanceType<typeof WorkflowTabPopover> | null>(null)
+const popoverOpen = ref(false)
+const popoverHovered = ref(false)
+const popoverClicked = ref(false)
 const workflowThumbnail = useWorkflowThumbnail()
 
 // Use computed refs to cache autosave settings
@@ -173,11 +216,11 @@ const shouldShowUnsavedIndicator = computed(() => {
     // Branch 1: Shift key is held down, do not show the status indicator.
     return false
   }
-  if (!props.workflowOption.workflow.isPersisted) {
+  if (!workflowOption.workflow.isPersisted) {
     // Branch 2: Workflow is not persisted, show the status indicator.
     return true
   }
-  if (props.workflowOption.workflow.isModified) {
+  if (workflowOption.workflow.isModified) {
     // Branch 3: Workflow is modified.
     if (autoSaveSetting.value === 'off') {
       // Sub-branch 3a: Autosave is off, so show the status indicator.
@@ -195,25 +238,31 @@ const shouldShowUnsavedIndicator = computed(() => {
 })
 
 const isBuilderState = computed(() => {
-  const currentMode = props.workflowOption.workflow.activeMode
+  const currentMode = workflowOption.workflow.activeMode
   return typeof currentMode === 'string' && currentMode.startsWith('builder:')
 })
 
 const isActiveTab = computed(() => {
-  return workflowStore.isActive(props.workflowOption.workflow)
+  return workflowStore.isActive(workflowOption.workflow)
 })
+
+const showModeIcon = computed(() => !compact || isActiveTab.value)
 
 const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
   running:
-    'text-base-foreground icon-[lucide--loader-circle] motion-safe:animate-spin',
-  completed: 'icon-[lucide--circle-check] text-success-background',
-  failed: 'icon-[lucide--octagon-alert] text-destructive-background'
+    'text-foreground icon-[lucide--loader-circle] motion-safe:animate-spin',
+  completed: 'icon-[lucide--circle-check] text-success',
+  failed: 'icon-[lucide--octagon-alert] text-destructive'
 }
 
 const tabActivity = useWorkflowTabActivityStore()
 
-const isAgentEditing = computed(
-  () => tabActivity.editingTabPath === props.workflowOption.workflow.path
+const isAgentAwaitingApproval = computed(() =>
+  tabActivity.awaitingApprovalPaths.has(workflowOption.workflow.path)
+)
+
+const isAgentEditing = computed(() =>
+  tabActivity.editingPaths.has(workflowOption.workflow.path)
 )
 
 // The active tab doesn't badge its own status - the user is already looking
@@ -221,13 +270,13 @@ const isAgentEditing = computed(
 const workflowStatus = computed(() =>
   isActiveTab.value
     ? undefined
-    : executionStore.getWorkflowStatus(props.workflowOption.workflow)
+    : executionStore.getWorkflowStatus(workflowOption.workflow)
 )
 
 // A failed run outranks the unseen-changes dot so the failure isn't masked.
 const showUnseenAgentDot = computed(
   () =>
-    tabActivity.unseenModifiedPaths.has(props.workflowOption.workflow.path) &&
+    tabActivity.unseenModifiedPaths.has(workflowOption.workflow.path) &&
     workflowStatus.value !== 'failed'
 )
 
@@ -237,47 +286,50 @@ const workflowStatusLabel = computed(() =>
     : undefined
 )
 
+const hasStatusIndicator = computed(
+  () =>
+    isAgentAwaitingApproval.value ||
+    isAgentEditing.value ||
+    showUnseenAgentDot.value ||
+    workflowStatus.value !== undefined ||
+    shouldShowUnsavedIndicator.value
+)
+
+const revealsCloseOnHover = computed(
+  () => isActiveTab.value || !compact || !hasStatusIndicator.value
+)
+
+const closeButtonVisibility = computed(() =>
+  isActiveTab.value && !hasStatusIndicator.value ? 'visible' : 'invisible'
+)
+
 const thumbnailUrl = computed(() => {
-  return workflowThumbnail.getThumbnail(props.workflowOption.workflow.key)
+  return workflowThumbnail.getThumbnail(workflowOption.workflow.key)
 })
 
-// Event handlers that delegate to the popover component
-const handleMouseEnter = (event: Event) => {
-  popoverRef.value?.showPopover(event)
+const handleMouseEnter = () => {
+  popoverClicked.value = false
+  popoverHovered.value = true
 }
 
 const handleMouseLeave = () => {
-  popoverRef.value?.hidePopover()
+  popoverHovered.value = false
 }
 
-const handleClick = (event: Event) => {
-  popoverRef.value?.togglePopover(event)
+const handleClick = () => {
+  if (!popoverOpen.value) popoverClicked.value = true
+  popoverOpen.value = !popoverOpen.value
 }
 
-const handleMouseUp = (event: MouseEvent) => {
-  emit('mouseup', event)
-}
-
-const closeWorkflows = async (options: WorkflowOption[]) => {
-  for (const opt of options) {
-    if (
-      !(await useWorkflowService().closeWorkflow(opt.workflow, {
-        warnIfUnsaved: !workspaceStore.shiftDown,
-        hint: t('sideToolbar.workflowTab.dirtyCloseHint')
-      }))
-    ) {
-      // User cancelled, or the replacement load failed
-      break
-    }
-  }
-}
-
-const onCloseWorkflow = async (option: WorkflowOption) => {
-  await closeWorkflows([option])
-}
+const onCloseWorkflow = (option: WorkflowOption) =>
+  useWorkflowService().closeWorkflows([option.workflow], {
+    warnIfUnsaved: !workspaceStore.shiftDown,
+    hint: t('sideToolbar.workflowTab.dirtyCloseHint'),
+    initiator: 'user'
+  })
 
 const commandStore = useCommandStore()
-const workflow = computed(() => props.workflowOption.workflow)
+const workflow = computed(() => workflowOption.workflow)
 
 const { menuItems: baseMenuItems } = useWorkflowActionsMenu(
   () => commandStore.execute('Comfy.RenameWorkflow'),
@@ -291,7 +343,7 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
     id: 'close-tab',
     label: t('tabMenu.closeTab'),
     icon: 'pi pi-times',
-    command: () => onCloseWorkflow(props.workflowOption)
+    command: () => onCloseWorkflow(workflowOption)
   },
   {
     id: 'close-tabs-to-left',
@@ -304,7 +356,7 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
       subIconScale: 0.5
     },
     command: () => emit('closeToLeft'),
-    disabled: props.isFirst
+    disabled: isFirst
   },
   {
     id: 'close-tabs-to-right',
@@ -317,7 +369,7 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
       subIconScale: 0.5
     },
     command: () => emit('closeToRight'),
-    disabled: props.isLast
+    disabled: isLast
   },
   {
     id: 'close-other-tabs',
@@ -330,7 +382,7 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
       subIconScale: 0.5
     },
     command: () => emit('closeOthers'),
-    disabled: props.isFirst && props.isLast
+    disabled: isFirst && isLast
   }
 ])
 
@@ -339,7 +391,7 @@ const tabGetter = () => workflowTabRef.value as HTMLElement
 usePragmaticDraggable(tabGetter, {
   getInitialData: () => {
     return {
-      workflowKey: props.workflowOption.workflow.key
+      workflowKey: workflowOption.workflow.key
     }
   }
 })
@@ -347,7 +399,7 @@ usePragmaticDraggable(tabGetter, {
 usePragmaticDroppable(tabGetter, {
   getData: () => {
     return {
-      workflowKey: props.workflowOption.workflow.key
+      workflowKey: workflowOption.workflow.key
     }
   },
   onDrop: (e) => {
@@ -362,14 +414,4 @@ usePragmaticDroppable(tabGetter, {
     }
   }
 })
-
-onUnmounted(() => {
-  popoverRef.value?.hidePopover()
-})
 </script>
-
-<style>
-.p-tooltip.workflow-tab-tooltip {
-  z-index: 1200 !important;
-}
-</style>

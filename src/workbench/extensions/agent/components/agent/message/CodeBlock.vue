@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { useClipboard, watchDebounced } from '@vueuse/core'
-import { default as DOMPurify } from 'dompurify'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 const { code, lang = 'text' } = defineProps<{
   code: string
@@ -16,16 +16,8 @@ const { code, lang = 'text' } = defineProps<{
 const { t } = useI18n()
 const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
 
-// shiki highlights asynchronously and its bundle is lazy-loaded, so the block first
-// renders as plain escaped code and swaps to the highlighted markup once shiki resolves.
-// An unknown language (or a shiki failure) degrades to the plain fallback rather than
-// throwing. shiki emits its own trusted <span> markup, safe to inject.
 const highlighted = ref<string | null>(null)
 
-// watchDebounced (not watchEffect) so the code/lang deps are tracked even though the highlight
-// body awaits the lazy shiki import, and streaming token bursts collapse into one re-highlight.
-// The previous highlight stays visible until the next one resolves, so the block never flashes
-// back to plain mid-stream.
 watchDebounced(
   () => [code, lang] as const,
   async ([currentCode, currentLang], _prev, onCleanup) => {
@@ -40,7 +32,7 @@ watchDebounced(
         theme: 'github-dark',
         colorReplacements: { '#24292e': 'transparent' }
       })
-      if (!cancelled) highlighted.value = DOMPurify.sanitize(html)
+      if (!cancelled) highlighted.value = html
     } catch {
       if (!cancelled) highlighted.value = null
     }
@@ -50,21 +42,21 @@ watchDebounced(
 </script>
 
 <template>
-  <div
-    class="group border-agent-border-strong relative my-2 overflow-hidden rounded-md border"
-  >
+  <div class="group relative my-2 overflow-hidden rounded-md border">
     <div
-      class="border-agent-border-strong bg-agent-surface-hover flex items-center justify-between border-b px-3 py-1.5"
+      class="flex items-center justify-between border-b bg-accent px-3 py-1.5"
     >
       <span
-        class="text-agent-fg-subtle flex items-center gap-1.5 font-mono text-xs"
+        class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
       >
         <span class="icon-[lucide--file-code] size-3.5" />
-        <span class="text-agent-fg font-medium">{{ lang }}</span>
+        <span class="text-foreground">{{ lang }}</span>
       </span>
-      <button
+      <Button
         type="button"
-        class="text-agent-fg-subtle hover:bg-agent-surface hover:text-agent-fg border-agent-border-strong flex items-center gap-1 rounded-sm border px-2 py-0.5 font-mono text-xs transition-colors"
+        variant="outline"
+        size="sm"
+        class="gap-1 font-mono"
         @click="copy(code)"
       >
         <span
@@ -76,16 +68,17 @@ watchDebounced(
           "
         />
         {{ copied ? t('agent.copied') : t('agent.copy') }}
-      </button>
+      </Button>
     </div>
     <SanitizedHtml
       v-if="highlighted"
+      profile="highlighted-code"
       class="overflow-x-auto p-4 font-mono text-sm [&_pre]:bg-transparent"
       :html="highlighted"
     />
     <pre
       v-else
-      class="text-agent-fg overflow-x-auto p-4 font-mono text-sm"
+      class="overflow-x-auto p-4 font-mono text-sm"
     ><code>{{ code }}</code></pre>
   </div>
 </template>

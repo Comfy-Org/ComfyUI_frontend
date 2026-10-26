@@ -34,7 +34,7 @@ async function measureMarkDurationMs(
   measureName: string
 ): Promise<number> {
   return comfyPage.page.evaluate((name) => {
-    const [entry] = performance.getEntriesByName(name, 'measure')
+    const entry = performance.getEntriesByName(name, 'measure').at(0)
     return entry?.duration ?? 0
   }, measureName)
 }
@@ -168,10 +168,6 @@ async function benchmarkViewportKeepAlive(
 }
 
 test.describe('Viewport KeepAlive benchmark', { tag: ['@perf'] }, () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   // Split into separate tests (each with its own fresh comfyPage) rather
   // than running both variants back to back on one page: a shared page
   // gives the second variant a warmed-up JIT and a larger heap, biasing

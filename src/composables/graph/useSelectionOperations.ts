@@ -1,7 +1,7 @@
 // import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems' // Unused for now
 import { t } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   useCanvasStore,
@@ -17,29 +17,25 @@ import { isSelectOnly } from '@/utils/litegraphUtil'
 export function useSelectionOperations() {
   // const { getSelectedNodes } = useSelectedLiteGraphItems() // Unused for now
   const canvasStore = useCanvasStore()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const dialogService = useDialogService()
   const titleEditorStore = useTitleEditorStore()
   const workflowStore = useWorkflowStore()
 
   const copySelection = () => {
     const canvas = app.canvas
-    if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
-      toastStore.add({
-        severity: 'warn',
-        summary: t('g.nothingToCopy'),
-        detail: t('g.selectItemsToCopy'),
-        life: 3000
+    if (canvas.selectedItems.size === 0) {
+      toast.warning(t('g.nothingToCopy'), {
+        description: t('g.selectItemsToCopy'),
+        duration: 3000
       })
       return
     }
 
     canvas.copyToClipboard()
-    toastStore.add({
-      severity: 'success',
-      summary: t('g.copied'),
-      detail: t('g.itemsCopiedToClipboard'),
-      life: 2000
+    toast.success(t('g.copied'), {
+      description: t('g.itemsCopiedToClipboard'),
+      duration: 2000
     })
   }
 
@@ -48,17 +44,15 @@ export function useSelectionOperations() {
     canvas.pasteFromClipboard({ connectInputs: false })
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const duplicateSelection = () => {
     const canvas = app.canvas
-    if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
-      toastStore.add({
-        severity: 'warn',
-        summary: t('g.nothingToDuplicate'),
-        detail: t('g.selectItemsToDuplicate'),
-        life: 3000
+    if (canvas.selectedItems.size === 0) {
+      toast.warning(t('g.nothingToDuplicate'), {
+        description: t('g.selectItemsToDuplicate'),
+        duration: 3000
       })
       return
     }
@@ -67,14 +61,13 @@ export function useSelectionOperations() {
     canvas.copyToClipboard()
 
     // Clear selection to avoid confusion
-    canvas.selectedItems.clear()
-    canvasStore.updateSelectedItems()
+    canvas.deselectAll()
 
     // Paste to create duplicates
     canvas.pasteFromClipboard({ connectInputs: false })
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const deleteSelection = () => {
@@ -82,12 +75,10 @@ export function useSelectionOperations() {
     // Picking nodes for the agent is not editing: deleting stays off until the
     // mode ends.
     if (isSelectOnly(canvas)) return
-    if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
-      toastStore.add({
-        severity: 'warn',
-        summary: t('g.nothingToDelete'),
-        detail: t('g.selectItemsToDelete'),
-        life: 3000
+    if (canvas.selectedItems.size === 0) {
+      toast.warning(t('g.nothingToDelete'), {
+        description: t('g.selectItemsToDelete'),
+        duration: 3000
       })
       return
     }
@@ -96,7 +87,7 @@ export function useSelectionOperations() {
     canvas.setDirty(true, true)
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const renameSelection = async () => {
@@ -126,7 +117,7 @@ export function useSelectionOperations() {
           const titledItem = item as { title: string }
           titledItem.title = newTitle
           app.canvas.setDirty(true, true)
-          workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+          workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
         }
       }
       return
@@ -149,16 +140,14 @@ export function useSelectionOperations() {
           }
         })
         app.canvas.setDirty(true, true)
-        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+        workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
       }
       return
     }
 
-    toastStore.add({
-      severity: 'warn',
-      summary: t('g.nothingToRename'),
-      detail: t('g.selectItemsToRename'),
-      life: 3000
+    toast.warning(t('g.nothingToRename'), {
+      description: t('g.selectItemsToRename'),
+      duration: 3000
     })
   }
 

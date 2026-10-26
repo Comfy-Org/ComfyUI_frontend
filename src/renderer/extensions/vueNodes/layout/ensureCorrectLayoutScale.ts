@@ -1,4 +1,4 @@
-import type { LGraph, RendererType } from '@/lib/litegraph/src/LGraph'
+import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Point as LGPoint } from '@/lib/litegraph/src/interfaces'
@@ -31,12 +31,10 @@ interface Positioned {
  * @param targetGraph - The graph to normalize.
  */
 export function ensureCorrectLayoutScale(
-  rendererVersion: RendererType | undefined,
+  rendererVersion: LGraphExtra['workflowRendererVersion'],
   graph: LGraph
 ): boolean {
-  if (!graph.nodes) return false
-
-  const currentRenderer = graph.extra?.workflowRendererVersion
+  const currentRenderer = graph.extra.workflowRendererVersion
   if (currentRenderer === 'Vue-corrected') return false
 
   const renderer = currentRenderer ?? rendererVersion
@@ -49,7 +47,7 @@ export function ensureCorrectLayoutScale(
     method: 'round' | 'ceil' | 'floor' = 'round'
   ) {
     if (LiteGraph.alwaysSnapToGrid) {
-      const snapTo = graph.getSnapToGridSize?.()
+      const snapTo = graph.getSnapToGridSize()
       if (snapTo) {
         snapPoint(pos, snapTo, method)
       }
@@ -104,12 +102,10 @@ export function ensureCorrectLayoutScale(
 
   if ('inputNode' in graph && 'outputNode' in graph) {
     for (const ioNode of [
-      graph.inputNode as SubgraphInputNode,
-      graph.outputNode as SubgraphOutputNode
+      graph.inputNode as SubgraphInputNode | null,
+      graph.outputNode as SubgraphOutputNode | null
     ]) {
-      if (ioNode) {
-        normalize(ioNode)
-      }
+      if (ioNode) normalize(ioNode)
     }
   }
 

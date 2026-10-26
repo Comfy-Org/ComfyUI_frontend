@@ -1,6 +1,9 @@
 <template>
   <div
     class="relative flex items-center gap-2 overflow-hidden rounded-lg p-2 select-none"
+    :aria-describedby="
+      videoStatus === 'failed' ? videoFailedDescriptionId : undefined
+    "
   >
     <div
       v-if="hasAnyProgressPercent(progressTotalPercent, progressCurrentPercent)"
@@ -21,7 +24,7 @@
     <div
       :class="
         cn(
-          'relative z-1 flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-secondary-background',
+          'relative z-1 flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-secondary',
           iconWrapperClass
         )
       "
@@ -42,19 +45,33 @@
         >
           <template v-if="isVideoPreview">
             <video
-              :src="previewUrl"
+              v-if="videoStatus !== 'failed'"
+              :src="videoSrc"
               preload="metadata"
               muted
               playsinline
               class="pointer-events-none size-full object-cover"
+              @error="onVideoError"
             />
-            <VideoPlayOverlay size="sm" />
+            <VideoPlayOverlay v-if="videoStatus !== 'failed'" size="sm" />
+            <i
+              v-if="videoStatus === 'failed'"
+              aria-hidden="true"
+              class="absolute inset-0 m-auto icon-[lucide--video-off] size-4 text-muted-foreground"
+            />
           </template>
           <img
-            v-else
+            v-else-if="failedImageUrl !== previewUrl"
             :src="previewUrl"
             :alt="previewAlt"
             class="size-full object-cover"
+            :draggable="false"
+            @error="failedImageUrl = previewUrl"
+          />
+          <i
+            v-else
+            aria-hidden="true"
+            class="absolute inset-0 m-auto icon-[lucide--image] size-4 text-muted-foreground"
           />
         </div>
         <div
@@ -67,7 +84,7 @@
             :class="
               cn(
                 iconName ?? 'icon-[lucide--image]',
-                'size-4 text-text-secondary',
+                'size-4 text-muted-foreground',
                 iconClass
               )
             "
@@ -76,11 +93,10 @@
       </slot>
     </div>
 
-    <div class="relative z-1 flex min-w-0 flex-1 flex-col gap-1">
-      <div
-        v-if="$slots.primary || primaryText"
-        class="min-w-0 text-xs leading-none text-text-primary"
-      >
+    <div
+      class="relative z-1 flex min-w-0 flex-1 flex-col gap-1 text-xs leading-none"
+    >
+      <div v-if="$slots.primary || primaryText" class="min-w-0 text-foreground">
         <slot v-if="$slots.primary" name="primary" />
         <span v-else class="block truncate" :title="primaryText">
           {{ primaryText }}
@@ -88,7 +104,7 @@
       </div>
       <div
         v-if="$slots.secondary || secondaryText"
-        class="min-w-0 text-xs leading-none text-text-secondary"
+        class="min-w-0 text-muted-foreground"
       >
         <slot v-if="$slots.secondary" name="secondary" />
         <span v-else class="block truncate" :title="secondaryText">
@@ -131,10 +147,21 @@
         />
       </Button>
     </div>
+
+    <span
+      v-if="videoStatus === 'failed'"
+      :id="videoFailedDescriptionId"
+      class="sr-only"
+    >
+      {{ $t('g.videoFailedToLoad') }}
+    </span>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, useId } from 'vue'
+
+import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -177,6 +204,15 @@ const {
   progressTotalPercent?: number
   progressCurrentPercent?: number
 }>()
+
+const {
+  src: videoSrc,
+  status: videoStatus,
+  onError: onVideoError
+} = useRetryableMediaSrc(() => (isVideoPreview ? previewUrl : undefined))
+
+const videoFailedDescriptionId = useId()
+const failedImageUrl = ref<string>()
 
 const {
   progressBarContainerClass,

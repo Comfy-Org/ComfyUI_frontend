@@ -1,12 +1,18 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type {
+  LGraphNode,
+  Reroute,
+  LinkConnector
+} from '@/lib/litegraph/src/types/entityRegistry'
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork
-} from '@/lib/litegraph/src/litegraph'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
+import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
 
-import type { LinkConnector } from './LinkConnector'
 import { ToInputRenderLink } from './ToInputRenderLink'
 import { ToOutputRenderLink } from './ToOutputRenderLink'
 
@@ -29,7 +35,30 @@ export class ToOutputFromRerouteLink extends ToOutputRenderLink {
   }
 
   override connectToOutput(node: LGraphNode, output: INodeOutputSlot) {
+    const graph = this.node.graph
+    if (!graph) return
+    const scope = graphScopeOf(graph)
+    const store = useLinkPresentationStore()
+    const targets = (this.fromReroute.findTargetInputs() ?? []).map(
+      ({ input, link }) => ({
+        input,
+        linkId: link.id,
+        presentation: store.getPresentation(scope, link.id)
+      })
+    )
     const nuRenderLink = new ToInputRenderLink(this.network, node, output)
     this.linkConnector._connectOutputToReroute(this.fromReroute, nuRenderLink)
+    for (const { input, linkId, presentation } of targets) {
+      const replacement =
+        input.link == null ? undefined : this.network.links.get(input.link)
+      if (
+        replacement &&
+        replacement.id !== linkId &&
+        replacement.origin_id === node.id &&
+        replacement.origin_slot === nuRenderLink.fromSlotIndex
+      ) {
+        transferLinkPresentation(scope, presentation, replacement.id)
+      }
+    }
   }
 }

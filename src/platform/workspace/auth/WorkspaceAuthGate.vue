@@ -1,19 +1,44 @@
 <template>
   <slot v-if="initializationState === 'ready'" />
   <div
-    v-else-if="initializationState !== 'initializing'"
+    v-else-if="initializationState === 'no_workspace'"
     ref="errorPanel"
-    class="flex size-full items-center justify-center bg-base-background p-8"
+    class="flex size-full items-center justify-center bg-background p-8"
     role="alert"
     tabindex="-1"
   >
     <div class="flex max-w-md flex-col items-center gap-4 text-center">
       <i
         aria-hidden="true"
-        class="icon-[lucide--triangle-alert] size-8 text-error"
+        class="icon-[lucide--users] size-8 text-muted-foreground"
       />
       <div>
-        <h1 class="m-0 text-lg font-semibold text-base-foreground">
+        <h1 class="m-0 text-lg font-semibold">
+          {{ $t('workspaceAuth.noWorkspaceAccess.title') }}
+        </h1>
+        <p class="mt-2 mb-0 text-muted-foreground">
+          {{ $t('workspaceAuth.noWorkspaceAccess.detail') }}
+        </p>
+      </div>
+      <Button variant="secondary" @click="handleSignOut">
+        {{ $t('auth.signOut.signOut') }}
+      </Button>
+    </div>
+  </div>
+  <div
+    v-else-if="initializationState !== 'initializing'"
+    ref="errorPanel"
+    class="flex size-full items-center justify-center bg-background p-8"
+    role="alert"
+    tabindex="-1"
+  >
+    <div class="flex max-w-md flex-col items-center gap-4 text-center">
+      <i
+        aria-hidden="true"
+        class="icon-[lucide--triangle-alert] size-8 text-destructive"
+      />
+      <div>
+        <h1 class="m-0 text-lg font-semibold">
           {{ $t('workspaceAuth.initializationFailed') }}
         </h1>
         <p class="mt-2 mb-0 text-muted-foreground">
@@ -71,6 +96,8 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
+import { signedInOnWebSession } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import {
   remoteConfigErrorStatus,
@@ -78,9 +105,12 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { ReportErrorOptions } from '@/platform/telemetry/reportError'
+import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { syncWorkspaceTelemetryContext } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -88,11 +118,12 @@ const FIREBASE_INIT_TIMEOUT_MS = 16_000
 const CONFIG_REFRESH_TIMEOUT_MS = 10_000
 
 const initializationState = ref<
-  'initializing' | 'retrying' | 'ready' | 'error'
+  'initializing' | 'retrying' | 'ready' | 'error' | 'no_workspace'
 >(isCloud ? 'initializing' : 'ready')
 const initializationRetryable = ref(true)
 const errorPanel = useTemplateRef<HTMLElement>('errorPanel')
 const billingCapabilities = useBillingCapabilities()
+syncWorkspaceTelemetryContext()
 let initializationGeneration = 0
 let initializationController: AbortController | null = null
 let backgroundInitialization: Promise<void> | null = null
@@ -104,6 +135,20 @@ function cancelInitialization(): void {
   initializationController = null
   backgroundInitialization = null
   backgroundInitializationUserId = undefined
+}
+
+/** A tab signed in on the web session carries its workspace on the session. */
+async function requiresUnifiedToken(): Promise<boolean> {
+  return (
+    useFeatureFlags().flags.unifiedCloudAuthEnabled &&
+    useAuthStore().currentUser !== null &&
+    !(await signedInOnWebSession())
+  )
+}
+
+/** A session sign-in mid-setup lifts the need for the token that went missing. */
+async function missingUnifiedToken(hasToken: boolean): Promise<boolean> {
+  return !hasToken && (await requiresUnifiedToken())
 }
 
 async function initialize(): Promise<void> {
@@ -118,12 +163,9 @@ async function initialize(): Promise<void> {
   initializationController = controller
 
   const authStore = useAuthStore()
-  const { isInitialized, currentUser } = storeToRefs(authStore)
+  const { isInitialized, isAuthenticated } = storeToRefs(authStore)
 
   try {
-    // Step 1: Wait for Firebase auth to resolve
-    // This is shared with router guard - both wait for the same thing,
-    // but this gate blocks rendering while router guard blocks navigation
     if (!isInitialized.value) {
       await until(isInitialized).toBe(true, {
         timeout: FIREBASE_INIT_TIMEOUT_MS,
@@ -132,15 +174,11 @@ async function initialize(): Promise<void> {
     }
     if (generation !== initializationGeneration) return
 
-    // Step 2: If not authenticated, nothing more to do
-    // Unauthenticated users don't have workspace context
-    if (!currentUser.value) {
+    if (!isAuthenticated.value) {
       initializationState.value = 'ready'
       return
     }
 
-    // Step 3: Refresh feature flags with auth context
-    // Timeout prevents hanging if server is slow/unresponsive
     let timeoutId: ReturnType<typeof setTimeout>
     await Promise.race([
       refreshRemoteConfig({ useAuth: true, signal: controller.signal }),
@@ -156,12 +194,13 @@ async function initialize(): Promise<void> {
       throw new Error('Failed to load authenticated remote config')
     }
 
-    const { flags } = useFeatureFlags()
     const workspaceAuthStore = useWorkspaceAuthStore()
-    if (flags.unifiedCloudAuthEnabled) {
+    const needsUnifiedToken = await requiresUnifiedToken()
+    if (generation !== initializationGeneration) return
+    if (needsUnifiedToken) {
       const authenticated = await workspaceAuthStore.mintAtLogin()
       if (generation !== initializationGeneration) return
-      if (!authenticated) {
+      if (await missingUnifiedToken(authenticated)) {
         throw new Error('Failed to initialize unified cloud auth')
       }
     }
@@ -169,10 +208,8 @@ async function initialize(): Promise<void> {
     await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
     void billingCapabilities.initialize(controller.signal)
-    if (
-      flags.unifiedCloudAuthEnabled &&
-      !workspaceAuthStore.getUnifiedToken()
-    ) {
+    const hasUnifiedToken = Boolean(workspaceAuthStore.getUnifiedToken())
+    if (needsUnifiedToken && (await missingUnifiedToken(hasUnifiedToken))) {
       throw new Error('Unified cloud auth was cleared during workspace setup')
     }
 
@@ -181,17 +218,33 @@ async function initialize(): Promise<void> {
     }
   } catch (error) {
     if (generation !== initializationGeneration) return
-    console.error('[WorkspaceAuthGate] Initialization failed:', error)
     reportError(error, {
-      errorType: 'workspace_auth_gate_initialization_failure'
+      surface: 'auth',
+      errorType: 'workspace_auth_gate_initialization_failure',
+      ...initializationFailureReport(error)
     })
     initializationRetryable.value = isRetryableInitializationError(error)
-    initializationState.value = 'error'
+    initializationState.value =
+      useFeatureFlags().flags.ssoEnabled &&
+      error instanceof NoWorkspaceAccessError
+        ? 'no_workspace'
+        : 'error'
     document.getElementById('splash-loader')?.remove()
     await nextTick()
     if (generation !== initializationGeneration) return
     errorPanel.value?.focus()
   }
+}
+
+function initializationFailureReport(
+  error: unknown
+): Pick<ReportErrorOptions, 'level' | 'tags'> {
+  return error instanceof SessionRevokedError
+    ? {
+        level: 'warning',
+        tags: { failure_code: error.code, outcome: 'gave_up' }
+      }
+    : { level: 'error' }
 }
 
 function isRetryableInitializationError(error: unknown): boolean {
@@ -201,6 +254,7 @@ function isRetryableInitializationError(error: unknown): boolean {
   ) {
     return false
   }
+  if (error instanceof SessionRevokedError) return false
   return !(
     error instanceof Error && error.message === 'No workspaces available'
   )
@@ -276,6 +330,8 @@ function initializeWorkspacesInBackground(): Promise<void> {
       return
     }
     await initializeWorkspaceMode()
+    if (generation !== initializationGeneration) return
+    void billingCapabilities.initialize()
   })().catch((error: unknown) => {
     if (generation === initializationGeneration) {
       console.warn(

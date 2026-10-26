@@ -1,50 +1,36 @@
 <template>
-  <div
-    class="flex w-full max-w-90 flex-col rounded-2xl border border-border-default bg-base-background"
+  <AppDialogPanel
+    size="compact"
+    body-class="text-sm text-muted-foreground"
+    @close="onCancel"
   >
-    <!-- Header -->
-    <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
-    >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
-        {{
-          isPromotion
-            ? $t('workspacePanel.changeRoleDialog.promoteTitle', {
-                name: memberName
-              })
-            : $t('workspacePanel.changeRoleDialog.demoteTitle', {
-                name: memberName
-              })
-        }}
-      </h2>
-      <button
-        class="focus-visible:ring-secondary-foreground -m-1 cursor-pointer rounded-sm border-none bg-transparent p-1 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
-        :aria-label="$t('g.close')"
-        @click="onCancel"
-      >
-        <i class="pi pi-times size-4" />
-      </button>
-    </div>
+    <template #title>
+      {{
+        isPromotion
+          ? $t('workspacePanel.changeRoleDialog.promoteTitle', {
+              name: memberName
+            })
+          : $t('workspacePanel.changeRoleDialog.demoteTitle', {
+              name: memberName
+            })
+      }}
+    </template>
 
-    <!-- Body -->
-    <div class="p-4">
-      <template v-if="isPromotion">
-        <p class="m-0 text-sm text-muted-foreground">
-          {{ $t('workspacePanel.changeRoleDialog.promoteIntro') }}
-        </p>
-        <ul class="m-0 mt-1 list-disc ps-5 text-sm text-muted-foreground">
-          <li v-for="permission in promotePermissions" :key="permission">
-            {{ permission }}
-          </li>
-        </ul>
-      </template>
-      <p v-else class="m-0 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.changeRoleDialog.demoteMessage') }}
+    <template v-if="isPromotion">
+      <p class="m-0">
+        {{ $t('workspacePanel.changeRoleDialog.promoteIntro') }}
       </p>
-    </div>
+      <ul class="m-0 mt-1 list-disc ps-5">
+        <li v-for="permission in promotePermissions" :key="permission">
+          {{ permission }}
+        </li>
+      </ul>
+    </template>
+    <p v-else class="m-0">
+      {{ $t('workspacePanel.changeRoleDialog.demoteMessage') }}
+    </p>
 
-    <!-- Footer -->
-    <div class="flex items-center justify-end gap-4 p-4">
+    <template #footer>
       <Button variant="muted-textonly" @click="onCancel">
         {{ $t('g.cancel') }}
       </Button>
@@ -55,12 +41,13 @@
             : $t('workspacePanel.changeRoleDialog.demoteConfirm')
         }}
       </Button>
-    </div>
-  </div>
+    </template>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -97,17 +84,12 @@ async function onConfirm() {
   loading.value = true
   try {
     await workspaceStore.changeMemberRole(memberId, targetRole)
-    toast.add({
-      severity: 'success',
-      summary: t('workspacePanel.changeRoleDialog.success'),
-      life: 2000
+    toast.success(t('workspacePanel.changeRoleDialog.success'), {
+      duration: 2000
     })
     dialogStore.closeDialog({ key: 'change-member-role' })
   } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('workspacePanel.changeRoleDialog.error')
-    })
+    toast.error(t('workspacePanel.changeRoleDialog.error'))
   } finally {
     loading.value = false
   }

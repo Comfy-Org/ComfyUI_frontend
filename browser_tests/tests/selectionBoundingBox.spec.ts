@@ -64,16 +64,10 @@ async function assertSelectionEncompassesNodes(
 
 test.describe(
   'Selection bounding box (Vue mode)',
-  { tag: ['@canvas', '@node'] },
+  { tag: ['@canvas', '@node', '@vue-nodes'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
-      await comfyPage.vueNodes.waitForNodes()
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
     })
 
     const vueCases: ReadonlyArray<{
@@ -103,7 +97,7 @@ test.describe(
           [targetId]: LAYOUTS[pos].target
         })
         await comfyPage.nextFrame()
-        await comfyPage.vueNodes.waitForNodes()
+
         await comfyPage.vueNodes.getNodeLocator(targetId).waitFor()
         await comfyPage.vueNodes.getNodeLocator(refId).waitFor()
 
@@ -124,16 +118,10 @@ test.describe(
 
 test.describe(
   'Selection bounding box (Vue mode) — collapsed node bypass toggle',
-  { tag: ['@canvas', '@node'] },
+  { tag: ['@canvas', '@node', '@vue-nodes'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
-      await comfyPage.vueNodes.waitForNodes()
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
     })
 
     test('collapsed node narrows bounding box when bypass is removed', async ({
@@ -144,7 +132,6 @@ test.describe(
         [REGULAR_ID]: LAYOUTS['bottom-right'].target
       })
       await comfyPage.nextFrame()
-      await comfyPage.vueNodes.waitForNodes()
 
       const nodeRef = await comfyPage.nodeOps.getNodeRefById(REGULAR_ID)
       await toggleBypass(comfyPage, nodeRef)
@@ -170,7 +157,6 @@ test.describe(
         [REGULAR_ID]: LAYOUTS['bottom-right'].target
       })
       await comfyPage.nextFrame()
-      await comfyPage.vueNodes.waitForNodes()
 
       const nodeRef = await comfyPage.nodeOps.getNodeRefById(REGULAR_ID)
       await nodeRef.toggleCollapse()
@@ -193,13 +179,8 @@ test.describe(
   { tag: ['@canvas', '@node'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
       await comfyPage.nextFrame()
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
     })
 
     const legacyCases: ReadonlyArray<{ state: NodeState; pos: Position }> = [

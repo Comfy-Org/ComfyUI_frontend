@@ -3,7 +3,7 @@
     <FocusScope as-child :trapped="!dialogOpen" loop>
       <div
         ref="screenRef"
-        class="fixed inset-0 z-1600 flex overflow-y-auto bg-base-background focus:outline-none"
+        class="fixed inset-0 z-onboarding flex overflow-y-auto bg-background focus:outline-none"
         role="dialog"
         :aria-modal="!dialogOpen"
         :aria-label="t('gettingStarted.title')"
@@ -11,27 +11,25 @@
         @keydown.escape.capture.prevent="dismissGettingStarted()"
       >
         <div class="m-auto flex w-full flex-col items-center gap-8 px-8 py-16">
-          <div class="flex flex-col items-center gap-3">
-            <h1
-              class="m-0 text-center text-4xl/11 font-medium text-base-foreground"
-            >
+          <div class="flex flex-col items-center gap-3 text-center">
+            <h1 class="m-0 text-4xl/11 font-medium">
               {{ t('gettingStarted.title') }}
             </h1>
-            <p class="m-0 text-center text-base/5 text-muted-foreground">
+            <p class="m-0 text-base/5 text-muted-foreground">
               {{ t('gettingStarted.subtitle') }}
             </p>
           </div>
 
           <TabList
             v-model="activeTab"
-            class="w-auto gap-1 rounded-full border border-border-subtle p-0.5"
+            class="w-auto gap-1 rounded-full border border-border/50 p-0.5"
             :aria-label="t('gettingStarted.tabsLabel')"
           >
             <Tab
               v-for="tab in tabs"
               :key="tab.value"
               :value="tab.value"
-              class="gap-2.5 rounded-full px-3 text-xs font-medium text-base-foreground hover:opacity-100 data-[state=active]:bg-tertiary-background data-[state=inactive]:opacity-70"
+              class="gap-2.5 rounded-full px-3 text-xs font-medium text-foreground hover:opacity-100 data-[state=active]:bg-muted data-[state=inactive]:opacity-70"
             >
               <i :class="cn(tab.icon, 'size-3.5')" aria-hidden="true" />
               {{ t(tab.labelKey) }}
@@ -131,14 +129,12 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import TabPanel from '@/components/tab/TabPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import GettingStartedCard from './GettingStartedCard.vue'
 import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
-import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 import { useFirstRunEntry } from './firstRunEntry'
 import type { TutorialCard } from './tutorialCards'
 import {
@@ -165,12 +161,10 @@ const tabs = [
 
 const { t } = useI18n()
 
-const { dismissGettingStarted } = useFirstRunEntry()
-const { beginTour } = useFirstRunTourController()
+const { dismissGettingStarted, dismissIntoFirstRunTour } = useFirstRunEntry()
 const templatesStore = useWorkflowTemplatesStore()
 const dialogStore = useDialogStore()
 
-/** The dialog layer starts at z-1700; sitting below it and releasing the trap keeps any dialog (desktop sign-in approval, invite links) reachable. */
 const dialogOpen = computed(() => dialogStore.dialogStack.length > 0)
 const { loadWorkflowTemplate, getTemplateThumbnailUrl, loadingTemplateId } =
   useTemplateWorkflows()
@@ -235,10 +229,10 @@ async function onSelectTemplate(id: string) {
   if (loadingTemplateId.value) return
   failedTemplateId.value = null
 
-  if (await loadWorkflowTemplate(id, 'default')) {
-    await dismissGettingStarted()
+  const result = await loadWorkflowTemplate(id, 'default')
+  if (result === 'loaded') {
     try {
-      await beginTour(id)
+      await dismissIntoFirstRunTour(id)
     } catch (error) {
       console.error('first-run tour failed to start', error)
     }
@@ -246,10 +240,5 @@ async function onSelectTemplate(id: string) {
   }
 
   failedTemplateId.value = id
-  useToastStore().add({
-    severity: 'error',
-    summary: t('g.error'),
-    detail: t('gettingStarted.templateFailed')
-  })
 }
 </script>

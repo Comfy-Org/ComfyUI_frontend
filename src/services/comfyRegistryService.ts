@@ -45,19 +45,19 @@ export const useComfyRegistryService = () => {
 
       switch (status) {
         case 400:
-          return `Bad request: ${data?.message || 'Invalid input'}`
+          return `Bad request: ${data.message || 'Invalid input'}`
         case 401:
           return 'Unauthorized: Authentication required'
         case 403:
-          return `Forbidden: ${data?.message || 'Access denied'}`
+          return `Forbidden: ${data.message || 'Access denied'}`
         case 404:
-          return `Not found: ${data?.message || 'Resource not found'}`
+          return `Not found: ${data.message || 'Resource not found'}`
         case 409:
-          return `Conflict: ${data?.message || 'Resource conflict'}`
+          return `Conflict: ${data.message || 'Resource conflict'}`
         case 500:
-          return `Server error: ${data?.message || 'Internal server error'}`
+          return `Server error: ${data.message || 'Internal server error'}`
         default:
-          return `${context}: ${data?.message || axiosError.message}`
+          return `${context}: ${data.message || axiosError.message}`
       }
     }
 

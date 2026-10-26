@@ -1,23 +1,60 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, test, vi } from 'vitest'
+import type { User } from 'firebase/auth'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import { getSurveyCompletedStatus } from './auth'
+import {
+  consumeSurveyReplayRequest,
+  isSurveyReplayRequested,
+  requestOnboardingReplay
+} from '@/platform/onboarding/onboardingReplay'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { reportError } from '@/platform/telemetry/reportError'
+import { api } from '@/scripts/api'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
-const fetchApi = vi.fn()
+import {
+  getSurveyCompletedStatus as getSurveyCompletedStatusFor,
+  submitSurvey as submitSurveyFor
+} from './auth'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fetchApi: (...args: unknown[]) => fetchApi(...args)
-  }
+type IdentityListener = (user: User | null) => void
+
+const identityListeners = vi.hoisted(() => new Set<IdentityListener>())
+
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/telemetry/reportError'))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: true
 }))
+vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
+vi.mock(import('firebase/auth'), { spy: true })
 
-vi.mock('@sentry/vue', () => ({
+const fetchApi = vi.mocked(api.fetchApi)
+const OWNER_ID = 'account-a'
+
+vi.mock(import('@sentry/vue'), () => ({
   addBreadcrumb: vi.fn(),
   captureException: vi.fn(),
   // reportError() probes this; without it the probe throws, reportError
   // swallows it, and the report silently never happens.
   isEnabled: vi.fn(() => false)
 }))
+
+beforeEach(() => {
+  stubFirebaseAuthHarness()
+  identityListeners.clear()
+  vi.mocked(firebaseIdentity.onUserChanged).mockImplementation((listener) => {
+    identityListeners.add(listener)
+    return () => {
+      identityListeners.delete(listener)
+    }
+  })
+})
+
+const getSurveyCompletedStatus = () => getSurveyCompletedStatusFor(OWNER_ID)
+const submitSurvey = (survey: Record<string, unknown>) =>
+  submitSurveyFor(survey, OWNER_ID)
 
 function mockResponse({
   ok,
@@ -38,40 +75,44 @@ function mockResponse({
 
 describe('getSurveyCompletedStatus', () => {
   test('200 with non-empty value → true', async () => {
-    fetchApi.mockResolvedValueOnce(
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
       mockResponse({ ok: true, status: 200, body: { value: { q1: 'a' } } })
     )
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
 
   test('200 with empty value → false (the only "not completed" signal)', async () => {
-    fetchApi.mockResolvedValueOnce(
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
       mockResponse({ ok: true, status: 200, body: { value: {} } })
     )
     await expect(getSurveyCompletedStatus()).resolves.toBe(false)
   })
 
   test('200 with null value → false', async () => {
-    fetchApi.mockResolvedValueOnce(
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
       mockResponse({ ok: true, status: 200, body: { value: null } })
     )
     await expect(getSurveyCompletedStatus()).resolves.toBe(false)
   })
 
-  test('200 with missing value key → false', async () => {
+  test('200 with missing value key → true (malformed response fails safe)', async () => {
     fetchApi.mockResolvedValueOnce(
       mockResponse({ ok: true, status: 200, body: {} })
+    )
+    await expect(getSurveyCompletedStatus()).resolves.toBe(true)
+  })
+
+  test('404 → false (key never stored = genuinely not completed)', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      mockResponse({ ok: false, status: 404 })
     )
     await expect(getSurveyCompletedStatus()).resolves.toBe(false)
   })
 
-  test('404 → false (key never stored = genuinely not completed)', async () => {
-    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }))
-    await expect(getSurveyCompletedStatus()).resolves.toBe(false)
-  })
-
   test('500 → true (do not bounce on transient backend error)', async () => {
-    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 500 }))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      mockResponse({ ok: false, status: 500 })
+    )
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
 
@@ -82,17 +123,308 @@ describe('getSurveyCompletedStatus', () => {
   // itself. Locking with tests so the policy can't drift back to a "throw on
   // auth error" branch.
   test('401 → true (auth layer handles re-auth on next call)', async () => {
-    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 401 }))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      mockResponse({ ok: false, status: 401 })
+    )
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
 
   test('403 → true (auth layer handles re-auth on next call)', async () => {
-    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 403 }))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      mockResponse({ ok: false, status: 403 })
+    )
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
 
   test('network rejection → true (do not bounce on network error)', async () => {
-    fetchApi.mockRejectedValueOnce(new TypeError('Network request failed'))
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(
+      new TypeError('Network request failed')
+    )
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
+  })
+})
+
+describe('onboarding replay', () => {
+  test('a requested replay re-opens the gate without reading the stored answers', async () => {
+    requestOnboardingReplay(OWNER_ID)
+
+    await expect(getSurveyCompletedStatus()).resolves.toBe(false)
+    expect(fetchApi).not.toHaveBeenCalled()
+  })
+
+  test('a completed account is gated again as soon as the replay is spent', async () => {
+    requestOnboardingReplay(OWNER_ID)
+    await expect(getSurveyCompletedStatus()).resolves.toBe(false)
+
+    consumeSurveyReplayRequest(OWNER_ID)
+    fetchApi.mockResolvedValueOnce(
+      mockResponse({ ok: true, status: 200, body: { value: { q1: 'a' } } })
+    )
+
+    await expect(getSurveyCompletedStatus()).resolves.toBe(true)
+  })
+
+  test('preserves stored answers and spends their replay', async () => {
+    fetchApi.mockResolvedValueOnce(
+      mockResponse({
+        ok: true,
+        status: 200,
+        body: { value: { q1: 'original' } }
+      })
+    )
+    requestOnboardingReplay(OWNER_ID)
+
+    await expect(submitSurvey({ q1: 'replayed' })).resolves.toEqual({
+      status: 'preserved'
+    })
+
+    expect(
+      fetchApi.mock.calls.every(
+        ([, init]) => (init?.method ?? 'GET') === 'GET'
+      ),
+      'a replay may only read the survey key, never write it'
+    ).toBe(true)
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+  })
+
+  test.for([401, 403, 500] as const)(
+    'keeps the replay and writes nothing when the stored answers read %s',
+    async (status) => {
+      fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status }))
+      requestOnboardingReplay(OWNER_ID)
+
+      await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+        status: 'failed',
+        cause: expect.stringContaining('Could not read the stored survey')
+      })
+
+      expect(
+        isSurveyReplayRequested(OWNER_ID),
+        'an unserved replay must survive so the survey can be retried'
+      ).toBe(true)
+      expect(
+        fetchApi.mock.calls.every(
+          ([, init]) => (init?.method ?? 'GET') === 'GET'
+        ),
+        'refusing to guess means refusing to write'
+      ).toBe(true)
+    }
+  )
+
+  test('keeps the replay and writes nothing when the stored answers cannot be read', async () => {
+    fetchApi.mockRejectedValueOnce(new TypeError('Network request failed'))
+    requestOnboardingReplay(OWNER_ID)
+
+    await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+      status: 'failed'
+    })
+
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(true)
+    expect(fetchApi).toHaveBeenCalledOnce()
+  })
+
+  test.for([{}, 1, [], { value: [] }, { value: 'invalid' }])(
+    'keeps the replay and writes nothing for malformed settings data %#',
+    async (body) => {
+      fetchApi.mockResolvedValueOnce(
+        mockResponse({ ok: true, status: 200, body })
+      )
+      requestOnboardingReplay(OWNER_ID)
+
+      await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+        status: 'failed'
+      })
+
+      expect(isSurveyReplayRequested(OWNER_ID)).toBe(true)
+      expect(fetchApi).toHaveBeenCalledOnce()
+    }
+  )
+
+  test('keeps the replay when settings JSON cannot be parsed', async () => {
+    const response = mockResponse({ ok: true, status: 200 })
+    vi.spyOn(response, 'json').mockRejectedValue(
+      new SyntaxError('Invalid JSON')
+    )
+    fetchApi.mockResolvedValueOnce(response)
+    requestOnboardingReplay(OWNER_ID)
+
+    await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+      status: 'failed'
+    })
+
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(true)
+    expect(fetchApi).toHaveBeenCalledOnce()
+  })
+
+  test('keeps the replay when the first-time write it fell through to fails', async () => {
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }))
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 500 }))
+    requestOnboardingReplay(OWNER_ID)
+
+    await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+      status: 'failed'
+    })
+
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(true)
+  })
+
+  test('a replay with nothing stored keeps the pass, which is the account real first one', async () => {
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }))
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: true, status: 200 }))
+    requestOnboardingReplay(OWNER_ID)
+
+    await expect(submitSurvey({ q1: 'a' })).resolves.toEqual({
+      status: 'stored'
+    })
+
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/settings',
+      expect.objectContaining({
+        body: JSON.stringify({ onboarding_survey: { q1: 'a' } })
+      })
+    )
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+  })
+
+  test('writes nothing when the account changes during the stored-answer check', async () => {
+    let resolveRead: ((response: Response) => void) | undefined
+    fetchApi.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveRead = resolve
+        })
+    )
+    requestOnboardingReplay(OWNER_ID)
+
+    const submission = submitSurvey({ q1: 'account-a-answer' })
+    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledOnce())
+    for (const listener of identityListeners) {
+      listener(fromPartial<User>({ uid: 'account-b' }))
+    }
+    resolveRead?.(mockResponse({ ok: false, status: 404 }))
+
+    await expect(submission).resolves.toEqual({ status: 'cancelled' })
+    expect(fetchApi).toHaveBeenCalledOnce()
+  })
+
+  test('submitting without a replay stores the answers as usual', async () => {
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: true, status: 200 }))
+
+    await expect(submitSurvey({ q1: 'a' })).resolves.toEqual({
+      status: 'stored'
+    })
+
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/settings',
+      expect.objectContaining({
+        body: JSON.stringify({ onboarding_survey: { q1: 'a' } })
+      })
+    )
+  })
+
+  test('a failed first-time submission reports failure to the caller', async () => {
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 500 }))
+
+    await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+      status: 'failed'
+    })
+  })
+})
+
+describe('aborted requests', () => {
+  function changeAccount() {
+    for (const listener of identityListeners) {
+      listener(fromPartial<User>({ uid: 'account-b' }))
+    }
+  }
+
+  function rejectOnAbort(init?: RequestInit) {
+    return new Promise<Response>((_, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(init.signal?.reason))
+    })
+  }
+
+  test('an account change during the survey write is cancelled, not reported', async () => {
+    fetchApi.mockImplementationOnce(async (_route, init) => rejectOnAbort(init))
+
+    const submission = submitSurvey({ q1: 'a' })
+    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledOnce())
+    changeAccount()
+
+    await expect(submission).resolves.toEqual({ status: 'cancelled' })
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  test('an account change during the replay read is cancelled, not reported', async () => {
+    fetchApi.mockImplementationOnce(async (_route, init) => rejectOnAbort(init))
+    requestOnboardingReplay(OWNER_ID)
+
+    const submission = submitSurvey({ q1: 'a' })
+    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledOnce())
+    changeAccount()
+
+    await expect(submission).resolves.toEqual({ status: 'cancelled' })
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  test('a non-abort failure after an account change is still reported', async () => {
+    let rejectWrite: ((error: Error) => void) | undefined
+    fetchApi.mockImplementationOnce(
+      () =>
+        new Promise<Response>((_, reject) => {
+          rejectWrite = reject
+        })
+    )
+
+    const submission = submitSurvey({ q1: 'a' })
+    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledOnce())
+    changeAccount()
+    rejectWrite?.(new TypeError('Network request failed'))
+
+    await expect(submission).resolves.toMatchObject({ status: 'failed' })
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  test('a parse failure after an account change is still reported', async () => {
+    let resolveRead: ((response: Response) => void) | undefined
+    fetchApi.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveRead = resolve
+        })
+    )
+    requestOnboardingReplay(OWNER_ID)
+
+    const submission = submitSurvey({ q1: 'a' })
+    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledOnce())
+    changeAccount()
+    const response = mockResponse({ ok: true, status: 200 })
+    vi.spyOn(response, 'json').mockRejectedValue(
+      new SyntaxError('Invalid JSON')
+    )
+    resolveRead?.(response)
+
+    await expect(submission).resolves.toEqual({ status: 'cancelled' })
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  test('an AbortError that is not the identity abort is still reported', async () => {
+    fetchApi.mockRejectedValueOnce(new DOMException('aborted', 'AbortError'))
+
+    await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+      status: 'failed'
+    })
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  test('other network failures are still reported', async () => {
+    fetchApi.mockRejectedValueOnce(new TypeError('Network request failed'))
+    await submitSurvey({ q1: 'a' })
+
+    fetchApi.mockRejectedValueOnce(new TypeError('Network request failed'))
+    requestOnboardingReplay(OWNER_ID)
+    await submitSurvey({ q1: 'a' })
+
+    expect(reportError).toHaveBeenCalledTimes(2)
   })
 })

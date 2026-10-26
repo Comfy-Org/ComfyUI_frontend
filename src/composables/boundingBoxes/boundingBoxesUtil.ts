@@ -152,6 +152,16 @@ export function boxesAt(
   return res
 }
 
+const UNCOLORED_REGION = '#8c8c8c'
+
+export function regionColor(region: Pick<Region, 'palette'>): string {
+  return region.palette.find(Boolean) ?? UNCOLORED_REGION
+}
+
+export function regionTag(index: number): string {
+  return String(index + 1).padStart(2, '0')
+}
+
 export function tagRects(
   regions: readonly Region[],
   logW: number,
@@ -169,7 +179,7 @@ export function tagRects(
     const y1 = b.y * logH
     const x2 = (b.x + b.w) * logW
     const y2 = (b.y + b.h) * logH
-    const tag = String(i + 1).padStart(2, '0')
+    const tag = regionTag(i)
     const w = measureWidth(tag) + 8
     let pick: [number, number] = [x1, y1]
     for (const [cx, cy] of [
@@ -191,14 +201,25 @@ export function tagRects(
   return rects
 }
 
-export function isBoundingBox(b: unknown): b is BoundingBox {
-  if (!b || typeof b !== 'object') return false
-  const box = b as Record<string, unknown>
+export type BoundingBoxInput = Pick<
+  BoundingBox,
+  'x' | 'y' | 'width' | 'height'
+> & {
+  metadata?: unknown
+}
+
+export function isBoundingBox(b: unknown): b is BoundingBoxInput {
   return (
-    typeof box.x === 'number' &&
-    typeof box.y === 'number' &&
-    typeof box.width === 'number' &&
-    typeof box.height === 'number'
+    !!b &&
+    typeof b === 'object' &&
+    'x' in b &&
+    typeof b.x === 'number' &&
+    'y' in b &&
+    typeof b.y === 'number' &&
+    'width' in b &&
+    typeof b.width === 'number' &&
+    'height' in b &&
+    typeof b.height === 'number'
   )
 }
 
@@ -218,15 +239,38 @@ function normalizePalette(palette: unknown): string[] {
     : []
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object'
+}
+
+function isRegion(value: unknown): value is Region {
+  return (
+    isRecord(value) &&
+    typeof value.x === 'number' &&
+    typeof value.y === 'number' &&
+    typeof value.w === 'number' &&
+    typeof value.h === 'number' &&
+    (value.type === 'obj' || value.type === 'text') &&
+    typeof value.text === 'string' &&
+    typeof value.desc === 'string' &&
+    Array.isArray(value.palette) &&
+    value.palette.every((color) => typeof color === 'string')
+  )
+}
+
+export function isRegionList(value: unknown): value is Region[] {
+  return Array.isArray(value) && value.every(isRegion)
+}
+
 export function fromBoundingBoxes(
-  boxes: readonly BoundingBox[],
+  boxes: readonly unknown[],
   width: number,
   height: number
 ): Region[] {
   const w = width || 1
   const h = height || 1
   return boxes.filter(isBoundingBox).map((box) => {
-    const meta = (box.metadata ?? {}) as Partial<BoundingBoxMetadata>
+    const meta = isRecord(box.metadata) ? box.metadata : {}
     return {
       x: box.x / w,
       y: box.y / h,

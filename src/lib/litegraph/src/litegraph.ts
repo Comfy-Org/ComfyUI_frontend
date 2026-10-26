@@ -1,16 +1,15 @@
-import type { ContextMenu } from './ContextMenu'
-import type { LGraphNode } from './LGraphNode'
-import { LiteGraphGlobal } from './LiteGraphGlobal'
 import type {
-  ConnectingLink,
-  IContextMenuOptions,
-  Point,
-  Size
-} from './interfaces'
+  ContextMenu,
+  LGraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+
+import { LiteGraphGlobal } from './LiteGraphGlobal'
+import type { Point } from './interfaces'
+import type { ConnectingLink } from './types/slots'
+import type { IContextMenuOptions } from './types/contextMenu'
 import { registerLiteGraphInstance } from './litegraphInstance'
 import { loadPolyfills } from './polyfills'
 import type { CanvasEventDetail } from './types/events'
-import type { RenderShape, TitleMode } from './types/globalEnums'
 
 // Must remain above LiteGraphGlobal (circular dependency due to abstract factory behaviour in `configure`)
 export { Subgraph } from './subgraph/Subgraph'
@@ -56,29 +55,9 @@ export interface LinkReleaseContextExtended {
 
 export interface LiteGraphCanvasEvent extends CustomEvent<CanvasEventDetail> {}
 
-export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
-  new (title: string, type?: string): T
-
-  title: string
-  type?: string // TODO: to be, or not to be--that is the question
-  size?: Size
-  min_height?: number
-  slot_start_y?: number
-  widgets_info?: Record<string, unknown>
-  collapsable?: boolean
-  color?: string
-  bgcolor?: string
-  shape?: RenderShape
-  title_mode?: TitleMode
-  title_color?: string
-  title_text_color?: string
-  keepAllLinksOnBypass: boolean
-  resizeHandleSize?: number
-  resizeEdgeSize?: number
-}
-
 // End backwards compat
 
+export type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
 export { LinkConnector } from './canvas/LinkConnector'
 export { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 export { CanvasPointer } from './CanvasPointer'
@@ -93,19 +72,19 @@ export type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
 export type {
   CanvasColour,
   ColorOption,
-  CreateNodeOptions,
-  IContextMenuOptions,
-  IContextMenuValue,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
   ISlotType,
-  LinkNetwork,
   Point,
   Positionable,
   Size,
   SlotIndex
 } from './interfaces'
+export type {
+  IContextMenuOptions,
+  IContextMenuValue
+} from './types/contextMenu'
+export type { LinkNetwork } from './types/linkNetwork'
+export type { INodeInputSlot, INodeOutputSlot } from './types/slots'
 export {
   LGraph,
   type LGraphTriggerAction,
@@ -160,7 +139,6 @@ export { BaseWidget } from './widgets/BaseWidget'
 export { LegacyWidget } from './widgets/LegacyWidget'
 
 export { isComboWidget } from './widgets/widgetMap'
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export { isAssetWidget } from './widgets/widgetMap'
 // Additional test-specific exports
 export { LGraphButton } from './LGraphButton'
@@ -180,3 +158,11 @@ export { inputAsSerialisable, outputAsSerialisable } from './node/slotUtils'
 export { MovingInputLink } from './canvas/MovingInputLink'
 export { ToInputRenderLink } from './canvas/ToInputRenderLink'
 export { LiteGraphGlobal } from './LiteGraphGlobal'
+export type { CreateNodeOptions } from './LiteGraphGlobal'
+
+type RegisteredLinkReleaseContextExtended = LinkReleaseContextExtended
+
+declare module './types/entityRegistry' {
+  interface LinkReleaseContextExtended extends RegisteredLinkReleaseContextExtended {}
+}
+export type { LGraphNodeConstructor } from './types/nodeConstructor'

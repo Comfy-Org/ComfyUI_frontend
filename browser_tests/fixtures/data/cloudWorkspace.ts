@@ -11,6 +11,8 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
+
 export const CLOUD_REMOTE_CONFIG: RemoteConfig = {}
 
 export const LEGACY_PERSONAL_BILLING_STATUS = {
@@ -22,7 +24,8 @@ export const LEGACY_PERSONAL_BILLING_STATUS = {
   occupied_seats: 1,
   subscription_status: 'ended',
   subscription_tier: 'FREE',
-  team_credit_stop: null
+  team_credit_stop: null,
+  scheduled_change: null
 } satisfies IngestBillingStatusResponse
 
 export const EMPTY_BILLING_BALANCE = {
@@ -107,6 +110,7 @@ export const TEAM_BILLING_STATUS = {
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
   team_credit_stop: null,
+  scheduled_change: null,
   max_seats: 30,
   occupied_seats: DEFAULT_TEAM_MEMBERS.length
 } satisfies IngestBillingStatusResponse
@@ -121,6 +125,7 @@ export const ENDED_STANDARD_BILLING_STATUS = {
   subscription_status: 'ended',
   subscription_tier: 'STANDARD',
   team_credit_stop: null,
+  scheduled_change: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies IngestBillingStatusResponse & { billing_rail: 'stripe' }
@@ -133,17 +138,12 @@ export const INACTIVE_TEAM_BILLING_STATUS = {
   subscription_tier: 'TEAM'
 } satisfies IngestBillingStatusResponse
 
-export const TEAM_PRO_PLAN: Plan = {
+export const TEAM_PRO_PLAN: Plan = createPlan({
   slug: TEAM_PLAN_SLUG,
   tier: 'PRO',
   duration: 'MONTHLY',
-  price_cents: 10000,
-  credits_cents: 21100,
-  max_seats: 30,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 4,
-    total_cost_cents: 40000,
-    total_credits_cents: 0
-  }
-}
+  priceCents: 10000,
+  monthlyCredits: 21100,
+  maxSeats: 30,
+  seatCount: 4
+})

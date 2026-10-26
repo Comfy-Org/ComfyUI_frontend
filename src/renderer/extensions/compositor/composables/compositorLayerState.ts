@@ -1,10 +1,10 @@
-import { LAYER_MODES } from '@/renderer/extensions/layerEditor/engine/mode'
-import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
+import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
 import type {
   FillData,
   SceneNode,
   Transform
-} from '@/renderer/extensions/layerEditor/engine/node'
+} from '@comfyorg/layer-editor/node'
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
 
@@ -360,7 +360,7 @@ export function applyLayerState(
 
   if (state.order) {
     const ids = state.order
-      .map((index) => layers[index]?.id)
+      .map((index) => layers.at(index)?.id)
       .filter((id): id is string => id !== undefined)
     if (ids.length > 0) ops.setLayerOrder(ids)
   }

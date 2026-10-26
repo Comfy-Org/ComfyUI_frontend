@@ -93,6 +93,30 @@ export function useViewportKeepAlive({
   const activeNodeIds = shallowRef<Set<NodeId>>(new Set())
   let keepAliveActive = false
 
+  function shouldAttachNode(nodeId: NodeId, viewportBounds: Bounds): boolean {
+    const nodeType = getNodeType(nodeId)
+    if (nodeType && isNodeTypeExcludedFromCulling(nodeType)) return true
+
+    const bounds = getNodeBounds(nodeId)
+    return (
+      !bounds ||
+      !isUsableBounds(bounds) ||
+      boundsIntersect(bounds, viewportBounds)
+    )
+  }
+
+  function getViewportActiveNodeIds(ids: NodeId[], viewportBounds: Bounds) {
+    const next = new Set<NodeId>()
+    for (const nodeId of ids) {
+      if (shouldAttachNode(nodeId, viewportBounds)) next.add(nodeId)
+    }
+
+    for (const nodeId of pinnedNodeIds.value) {
+      if (activeNodeIds.value.has(nodeId)) next.add(nodeId)
+    }
+    return next
+  }
+
   function refresh(): void {
     const ids = nodeIds.value
     keepAliveActive =
@@ -111,37 +135,7 @@ export function useViewportKeepAlive({
     if (viewport.width <= 0 || viewport.height <= 0) return
 
     const viewportBounds = getKeepAliveBounds(camera, viewport)
-    const next = new Set<NodeId>()
-    for (const nodeId of ids) {
-      // Admission for registered types: an extension has said detaching this
-      // node from the document destroys state its component cannot keep - a
-      // canvas context, an uncontrolled editor. Always attached, wherever it
-      // is. Bounded by the registrant, not the graph, so unlike the pins below
-      // it is safe to admit.
-      const nodeType = getNodeType(nodeId)
-      if (nodeType && isNodeTypeExcludedFromCulling(nodeType)) {
-        next.add(nodeId)
-        continue
-      }
-      const bounds = getNodeBounds(nodeId)
-      if (
-        !bounds ||
-        !isUsableBounds(bounds) ||
-        boundsIntersect(bounds, viewportBounds)
-      ) {
-        next.add(nodeId)
-      }
-    }
-
-    // Retention, not admission: a pin keeps an attached node attached while
-    // the pin holds, and nothing more. A pinned node that is already detached
-    // stays detached - focus, playing media and a link drag can only exist on
-    // an attached node, so admission would never be needed, and it is what
-    // would let a graph-sized pin mount the graph. Retention expires with the
-    // pin because this set is rebuilt from the viewport on every refresh.
-    for (const nodeId of pinnedNodeIds.value) {
-      if (activeNodeIds.value.has(nodeId)) next.add(nodeId)
-    }
+    const next = getViewportActiveNodeIds(ids, viewportBounds)
 
     if (!setsEqual(next, activeNodeIds.value)) activeNodeIds.value = next
   }
@@ -162,8 +156,6 @@ export function useViewportKeepAlive({
   )
   watch(pinnedNodeIds, () => void refreshThrottled())
   watch(isEnabled, refresh)
-  // An extension can register an opt-out at any time, typically at load. The
-  // registered nodes must attach on registration, not on the next pan.
   watch(getCullingOptOutVersion, () => void refreshThrottled())
 
   watch(getGeometryVersion, () => void refreshThrottled())

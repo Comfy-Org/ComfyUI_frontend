@@ -1,0 +1,125 @@
+# ADR-AUTH-IDENTITY-0028: The Account Package's Firebase Entry Delivers Identity to the Cloud Session Client
+
+Date: 2026-09-09
+
+## Status
+
+Proposed
+
+Amended 2026-09-16: rules 1 and 4 follow the session client taking identity at
+construction (FE-2196).
+
+Amended 2026-09-16: rule 5 follows the package initializing the cloud app's
+Firebase, replacing vuefire (FE-2196, C4).
+
+The original transitional text (the Pinia identity adapter and the
+`attachIdentity` seam) is superseded by
+[AUTH-IDENTITY-0033](AUTH-IDENTITY-0033-account-package-owns-identity-taken-at-construction.md);
+rules 1 to 5 as amended still stand.
+
+## Context
+
+The cloud app holds two consumers of Firebase identity:
+
+- The Pinia `authStore`, built on vuefire's default Firebase app. Its
+  auth-state listener carries app-wide side effects: workspace teardown,
+  socket re-handshake, balance and provisioning resets, telemetry.
+- The `@comfyorg/account-core` session client, which binds identity through an
+  `IdentityPort`. The account TDD reserves that port for test fakes; real
+  hosts pass the package's own Firebase entry, `createFirebaseIdentity`.
+
+The entry accepts an existing `Auth` instance (`createFirebaseIdentity({
+auth })`), so binding it to vuefire's instance creates no second app and no
+second persistence store. The remaining question was ordering: the auth
+listener must tear the workspace context down before the client mints for
+a new identity, and Firebase fires observers in registration order, which
+is not a contract to build on.
+
+## Decision
+
+1. Identity reaches the session client through the package entry: the
+   identity module (`src/platform/auth/firebaseIdentity.ts`) creates it and
+   `workspaceAuthStore` passes it to `createSessionClient` at construction.
+   `authStore` subscribes to the same entry for its side effects and holds
+   no identity of its own. No hand-rolled port exists in `src/`.
+2. The Pinia `authStore` is a projection for app-wide side effects. It is
+   not an identity authority for the session client and pushes nothing
+   into it.
+3. Ordering between the auth listener and the port is not load-bearing:
+   the client's `invalidate()` drops only the credential and keeps the
+   identity, the port callback fails closed on an identity change by
+   itself, and every host mint waits for the port to have delivered the
+   app's current user before it runs (`unifiedUser()`), so a mint can
+   neither run for a stale identity nor be lost to teardown. That wait
+   reads `authStore.currentUser` only to know which uid to wait for, a
+   convergence check between two projections of one `Auth` instance; the
+   port's user is what mints. The wait is bounded, so a silent port fails
+   the mint closed instead of hanging the auth gate. Mints stay
+   host-driven (`autoMint: false`), so telemetry and coalescing are
+   unchanged. The two-store construction-order coupling is gone at
+   this head: `workspaceAuthStore` binds the package `firebaseIdentity`, and
+   every `useAuthStore()` read is inside a function or callback, not the setup
+   body, so neither store re-enters the other during construction and nothing
+   depends on the SDK's microtask timing. `useWorkspaceAuth.test.ts` pins the
+   store subscribing and minting even when built before `authStore` exists.
+4. `syncUnifiedIdentity` is gone, and the flag gates minting, not
+   subscription: identity is bound to the session client for the store's
+   lifetime. With `unified_cloud_auth` off the port stays subscribed but
+   inert. The store drives every mint explicitly (`autoMint: false`), so an
+   identity event mints nothing, and `clearUnifiedContext()` invalidates the
+   credential and stops the scheduler and cross-tab lease. A mint already
+   parked on `unifiedUser()` when the flag flips is caught by the flag-gated
+   helpers re-checking the flag after that await, so it commits nothing
+   either: no unified token, network call or timer exists. The residue is the
+   snapshot's user and a `minting`/`pending` phase that no flag-off consumer
+   reads.
+5. The package initializes the cloud app's Firebase: the identity module
+   (`src/platform/auth/firebaseIdentity.ts`) is the one entry, created from
+   `getFirebaseConfig()` under the default app name (`[DEFAULT]`, the name
+   persisted sessions are keyed by) with an ordered persistence hierarchy:
+   localStorage, then the IndexedDB store vuefire persisted sessions into,
+   then session storage, and the popup resolver. Firebase restores a user
+   from the first store that holds one and migrates it into localStorage,
+   which is what keeps existing sign-ins alive. Nothing else in `src/`
+   creates a Firebase app or `Auth`. `main.ts` calls `initialize()` after
+   remote config has loaded, so the config is the server's; resolution
+   before remote config has loaded throws in every environment, so the
+   `main.ts` ordering is the invariant. `firebaseIdentity.test.ts` pins it:
+   the config is read at `initialize()` rather than at import, and a resolve
+   while remote config is still unloaded throws. The cloud e2e set is the
+   end-to-end proof of the `main.ts` sequence and runs green in the `cloud`
+   and `chromium` projects.
+   Booting on build-time config could point auth at the wrong Firebase
+   project, so the module fails closed rather than falling back.
+   `currentUser()` never initializes, so a feature-flag read before that
+   point fails closed instead of booting Firebase early.
+
+The contract is pinned by the "unified identity source" test in
+`authStore.test.ts`, the identity-driven cases in `useWorkspaceAuth.test.ts`
+(driven through a fake port that mirrors the store's user), and the package's
+"keeps the identity after invalidation" test.
+
+## Alternatives Considered
+
+- **Transitional Pinia adapter** (the previous text of this ADR): the auth
+  listener diffed `authStore.currentUser` into a hand-rolled port and the
+  entry points re-synced defensively. Superseded once `invalidate()`
+  stopped erasing the identity, which was the only reason the adapter had
+  to re-deliver.
+- **A reactive `watch` on `authStore.currentUser`**: rejected, it keeps
+  Pinia as the messenger and reintroduces ordering ambiguity.
+- **Package-initialized Firebase now**: deferred at first for the vuefire
+  coupling; landed as the amended rule 5 once the entry passed the popup
+  resolver alongside a host persistence.
+
+## Consequences
+
+- The cloud app and the Workshop site bind identity the same way, through
+  the same package entry, so the session behaviour cannot drift between
+  them.
+- Token reads go through the Firebase `User` directly; a transient read
+  failure is a retried transient exchange failure, not a permanent
+  not-authenticated error.
+- The cloud app runs on the package-initialized `[DEFAULT]` app, not the
+  package's `comfy-account` default name, so persisted sessions and the e2e
+  seed keep their IndexedDB key.

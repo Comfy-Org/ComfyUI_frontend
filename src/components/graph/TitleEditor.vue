@@ -1,14 +1,19 @@
 <template>
   <div
     v-if="showInput"
-    class="group-title-editor node-title-editor"
+    class="group-title-editor node-title-editor z-overlay p-1"
     :style="inputStyle"
   >
     <EditableText
       :is-editing="showInput"
       :model-value="editedTitle"
-      :input-attrs="{ 'data-testid': 'node-title-input' }"
+      class="size-full"
+      :input-attrs="{
+        'data-testid': 'node-title-input',
+        class: 'size-full text-[length:inherit]'
+      }"
       @edit="onEdit"
+      @cancel="closeEditor"
     />
   </div>
 </template>
@@ -61,6 +66,10 @@ const onEdit = (newValue: string) => {
 
     app.canvas.setDirty(true, true)
   }
+  closeEditor()
+}
+
+function closeEditor() {
   showInput.value = false
   titleEditorStore.titleEditorTarget = null
   canvasStore.canvas!.allow_dragcanvas = previousCanvasDraggable.value
@@ -134,22 +143,3 @@ const canvasEventHandler = (event: LiteGraphCanvasEvent) => {
 
 useEventListener(document, 'litegraph:canvas', canvasEventHandler)
 </script>
-
-<style scoped>
-.group-title-editor.node-title-editor {
-  z-index: 9999;
-  padding: 0.25rem;
-}
-
-:deep(.editable-text) {
-  width: 100%;
-  height: 100%;
-}
-
-:deep(.editable-text input) {
-  width: 100%;
-  height: 100%;
-  /* Override the default font size */
-  font-size: inherit;
-}
-</style>

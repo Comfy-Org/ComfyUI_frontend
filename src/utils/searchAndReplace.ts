@@ -25,7 +25,7 @@ export function applyTextReplacements(
 
     // Find node with matching S&R property name
     let nodes = allNodes.filter(
-      (n) => n.properties?.['Node name for S&R'] === split[0]
+      (n) => n.properties['Node name for S&R'] === split[0]
     )
     // If we can't, see if there is a node with that title
     if (!nodes.length) {
@@ -49,7 +49,7 @@ export function applyTextReplacements(
     }
 
     return ((widget.value ?? '') + '').replaceAll(
-      // eslint-disable-next-line no-control-regex
+      // oxlint-disable-next-line no-control-regex
       /[/?<>\\:*|"\x00-\x1F\x7F]/g,
       '_'
     )

@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 
-import type { layoutStore as RealLayoutStore } from '../layoutStore'
+import type { layoutStore as RealLayoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 /** Inert layout store for tests that exercise canvas behavior. */
 export const layoutStore = fromPartial<typeof RealLayoutStore>({
@@ -9,6 +9,7 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   applyOperation: vi.fn(() => 'applied'),
   applyOperations: vi.fn(() => 'applied'),
   batchUpdateNodeBounds: vi.fn(),
+  clearGraph: vi.fn(),
   clearViewGeometry: vi.fn(),
   geometryVersion: 0,
   getAllGroups: vi.fn(() => ({ value: new Map() })),

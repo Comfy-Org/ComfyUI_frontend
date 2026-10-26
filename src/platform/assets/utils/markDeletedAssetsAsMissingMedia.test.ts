@@ -1,27 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type * as MissingMediaScanModule from '@/platform/missingMedia/missingMediaScan'
 import {
   createPromotedMediaRuntime,
   seedMediaNodeDefs
-} from '@/platform/missingMedia/__fixtures__/promotedMedia'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+} from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
+import { scanNodeMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 
 import { markDeletedAssetsAsMissingMedia } from './markDeletedAssetsAsMissingMedia'
 
-vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
-}))
-
-const mockScanNodeMediaCandidates = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/missingMedia/missingMediaScan', () => ({
-  scanNodeMediaCandidates: mockScanNodeMediaCandidates
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ currentGraph: null })
-}))
+vi.mock(import('@/platform/workflowErrors/missingMedia/missingMediaScan'), {
+  spy: true
+})
+const mockScanNodeMediaCandidates = vi.mocked(scanNodeMediaCandidates)
 
 function makeGraph(nodes: unknown[]): LGraph {
   return { nodes } as unknown as LGraph
@@ -48,14 +40,16 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
-        name: 'sub/foo.png [output]'
+        name: 'sub/foo.png [output]',
+        isMissing: undefined
       },
       {
         nodeId: '1',
         nodeType: 'LoadImage',
         widgetName: 'mask',
         mediaType: 'image',
-        name: 'unrelated.png'
+        name: 'unrelated.png',
+        isMissing: undefined
       }
     ])
 
@@ -98,7 +92,7 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
     expect(mockScanNodeMediaCandidates).toHaveBeenCalledWith(
       expect.anything(),
       inputNode,
-      true
+      { includeTemp: true }
     )
   })
 
@@ -144,7 +138,8 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
-        name: 'nested.png [output]'
+        name: 'nested.png [output]',
+        isMissing: undefined
       }
     ])
 
@@ -166,33 +161,42 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
     ])
   })
 
-  it('marks a deleted asset referenced only by a promoted host widget', async () => {
-    const deletedValue = 'deleted-host-only.png'
-    const { rootGraph } = createPromotedMediaRuntime({
-      sourceIds: [100],
-      hostIds: [50],
-      hostValue: deletedValue,
-      sourceValue: 'stale-interior.png',
-      sourceOptions: []
-    })
-    const { scanNodeMediaCandidates } = await vi.importActual<
-      typeof MissingMediaScanModule
-    >('@/platform/missingMedia/missingMediaScan')
-    mockScanNodeMediaCandidates.mockImplementation(scanNodeMediaCandidates)
+  it.for([
+    'deleted-host-only.png',
+    'deleted-host-only.png [temp]',
+    'deleted-host-only.png[temp]'
+  ])(
+    'marks a deleted asset referenced only by a promoted host widget: %s',
+    (deletedValue) => {
+      const { rootGraph } = createPromotedMediaRuntime({
+        sourceIds: [100],
+        hostIds: [50],
+        hostValue: deletedValue,
+        sourceValue: 'stale-interior.png',
+        sourceOptions: []
+      })
+      mockScanNodeMediaCandidates.mockRestore()
 
-    markDeletedAssetsAsMissingMedia(rootGraph, new Set([deletedValue]))
+      markDeletedAssetsAsMissingMedia(rootGraph, new Set([deletedValue]))
 
-    expect(useMissingMediaStore().missingMediaCandidates).toEqual([
-      {
-        nodeId: '50',
-        nodeType: 'LoadImage',
-        widgetName: 'outer_image',
-        mediaType: 'image',
-        name: deletedValue,
-        isMissing: true
-      }
-    ])
-  })
+      expect(useMissingMediaStore().missingMediaCandidates).toEqual([
+        {
+          nodeId: '50',
+          nodeType: 'LoadImage',
+          widgetName: 'outer_image',
+          promotedSources: [
+            {
+              executionId: '50:100',
+              widgetName: 'image'
+            }
+          ],
+          mediaType: 'image',
+          name: deletedValue,
+          isMissing: true
+        }
+      ])
+    }
+  )
 
   it('is a no-op when no nodes reference any deleted value', () => {
     const node = {

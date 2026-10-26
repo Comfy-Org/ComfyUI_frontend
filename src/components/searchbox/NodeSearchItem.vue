@@ -1,6 +1,6 @@
 <template>
   <div
-    class="option-container flex w-full cursor-pointer items-center justify-between overflow-hidden px-2 py-0"
+    class="option-container flex w-full items-center justify-between overflow-hidden px-2 py-0"
   >
     <div class="option-display-name flex flex-col font-semibold">
       <div>
@@ -8,59 +8,63 @@
           <i class="pi pi-bookmark-fill mr-1 text-sm" />
         </span>
         <span>
-          <HighlightedText :text="nodeDef.display_name" :query="currentQuery" />
+          <HighlightedText
+            :text="nodeDef.display_name"
+            :query="currentQuery"
+            highlight-class="-my-0.5 mx-0.5 rounded-sm bg-primary px-0.5 font-bold text-foreground"
+          />
         </span>
         <span>&nbsp;</span>
-        <Tag v-if="showIdName" severity="secondary">
+        <Badge v-if="showIdName" severity="secondary">
           <span>
-            <HighlightedText :text="nodeDef.name" :query="currentQuery" />
+            <HighlightedText
+              :text="nodeDef.name"
+              :query="currentQuery"
+              highlight-class="-my-0.5 mx-0.5 rounded-sm bg-primary px-0.5 font-bold text-foreground"
+            />
           </span>
-        </Tag>
+        </Badge>
       </div>
       <div
         v-if="showCategory"
-        class="option-category truncate text-sm font-light text-muted"
+        class="option-category truncate font-light text-muted-foreground"
       >
         {{ nodeDef.category.replaceAll('/', ' > ') }}
       </div>
     </div>
     <div class="option-badges">
-      <Tag
-        v-if="nodeDef.deprecated"
-        :value="$t('g.deprecated')"
-        severity="danger"
-      />
-      <Tag
-        v-if="nodeDef.experimental"
-        :value="$t('g.experimental')"
-        severity="primary"
-      />
-      <Tag v-if="nodeDef.dev_only" :value="$t('g.devOnly')" severity="info" />
-      <Tag
-        v-if="showNodeFrequency && nodeFrequency > 0"
-        :value="formatNumberWithSuffix(nodeFrequency, { roundToInt: true })"
-        severity="secondary"
-      />
-      <Chip
+      <Badge v-if="nodeDef.deprecated" severity="danger">
+        {{ $t('g.deprecated') }}
+      </Badge>
+      <Badge v-if="nodeDef.experimental" severity="primary">
+        {{ $t('g.experimental') }}
+      </Badge>
+      <Badge v-if="nodeDef.dev_only" severity="info">
+        {{ $t('g.devOnly') }}
+      </Badge>
+      <Badge v-if="showNodeFrequency && nodeFrequency > 0" severity="secondary">
+        {{ formatNumberWithSuffix(nodeFrequency, { roundToInt: true }) }}
+      </Badge>
+      <Badge
         v-if="nodeDef.nodeSource.type !== NodeSourceType.Unknown"
+        variant="chip"
         class="text-sm font-light"
       >
         {{ nodeDef.nodeSource.displayText }}
-      </Chip>
+      </Badge>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Chip from 'primevue/chip'
-import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
 import HighlightedText from '@/components/searchbox/HighlightedText.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { formatNumberWithSuffix } from '@/utils/formatUtil'
 
@@ -89,14 +93,3 @@ const props = defineProps<{
   currentQuery: string
 }>()
 </script>
-
-<style scoped>
-:deep(.highlight) {
-  background-color: var(--p-primary-color);
-  color: var(--p-primary-contrast-color);
-  font-weight: 700;
-  border-radius: 0.25rem;
-  padding: 0 0.125rem;
-  margin: -0.125rem 0.125rem;
-}
-</style>

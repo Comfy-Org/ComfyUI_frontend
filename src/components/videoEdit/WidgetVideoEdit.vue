@@ -13,19 +13,30 @@
       :file-size="fileSize"
       :width="width"
       :height="height"
+      :has-source="hasSource"
       :loading="loading"
       :error="error"
+      @load-error="onError"
       @retry="retry"
-    />
+      @edit-end="commitAfterUpdate"
+    >
+      <template #history>
+        <WidgetHistoryButtons :can-undo :can-redo @undo="undo" @redo="redo" />
+      </template>
+    </VideoEditPanel>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 
 import VideoEditPanel from '@/components/videoEdit/VideoEditPanel.vue'
+import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
+import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
+import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import { useVideoEditModel } from '@/composables/video/useVideoEditModel'
 import { useVideoFilmstrip } from '@/composables/video/useVideoFilmstrip'
+import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import { useVideoSourceUrl } from '@/composables/video/useVideoSourceUrl'
 import type {
   IWidgetVideoEditOptions,
@@ -56,7 +67,7 @@ const node = computed(() => {
   return owner || app.canvas.graph?.getNodeById(nodeId)
 })
 
-const { videoUrl } = useVideoSourceUrl(node)
+const { videoUrl, status, onError, retry } = useVideoSourceUrl(node)
 
 const {
   thumbnail,
@@ -66,10 +77,24 @@ const {
   height,
   fps,
   fileSize,
-  loading,
-  error,
-  retry
+  loading: filmstripLoading,
+  error: filmstripError
 } = useVideoFilmstrip(videoUrl)
+
+watch(filmstripError, (error) => {
+  if (error === 'load-failed') onError()
+})
+
+const hasSource = computed(() => status.value !== 'idle')
+const loading = computed(
+  () =>
+    status.value !== 'failed' &&
+    (filmstripLoading.value || status.value === 'retrying')
+)
+const error = computed<FilmstripError | null>(() => {
+  if (filmstripError.value === 'canvas-unavailable') return 'canvas-unavailable'
+  return status.value === 'failed' ? 'load-failed' : null
+})
 
 const { startFrame, endFrame, cropBounds } = useVideoEditModel(modelValue, {
   duration,
@@ -78,4 +103,22 @@ const { startFrame, endFrame, cropBounds } = useVideoEditModel(modelValue, {
   width,
   height
 })
+
+function isVideoEditValue(value: unknown): value is VideoEditValue {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+const { canUndo, canRedo, undo, redo, commit, syncBaseline } =
+  useWidgetValueHistory({
+    scope: () => widgetHistoryScope(widget, nodeId),
+    read: () => modelValue.value,
+    apply: (value) => {
+      if (isVideoEditValue(value)) modelValue.value = value
+    }
+  })
+void nextTick(syncBaseline)
+
+function commitAfterUpdate(mergeKey?: string) {
+  void nextTick(() => commit(mergeKey))
+}
 </script>

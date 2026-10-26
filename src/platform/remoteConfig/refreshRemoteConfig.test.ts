@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { api } from '@/scripts/api'
 
@@ -7,18 +8,20 @@ import {
   refreshRemoteConfig
 } from './refreshRemoteConfig'
 import {
-  cachedLegacyBillingMigrationEnabled,
+  authenticatedRemoteConfigState,
   remoteConfig,
   remoteConfigErrorStatus,
-  remoteConfigState
+  remoteConfigRevision,
+  remoteConfigState,
+  sessionAgentGrant,
+  sessionAgentGrantValidUntil,
+  useRemoteConfigCache
 } from './remoteConfig'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fetchApi: vi.fn(),
-    apiURL: vi.fn((route: string) => `/ComfyUI/api${route}`)
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+const { cachedBillingControlEnabled, cachedV1PaymentRecovery } =
+  useRemoteConfigCache()
 
 describe('refreshRemoteConfig', () => {
   const mockConfig = { feature1: true, feature2: 'value' }
@@ -30,6 +33,12 @@ describe('refreshRemoteConfig', () => {
     } as Response
   }
 
+  function storageEntries(store: Storage): Record<string, string | null> {
+    return Object.fromEntries(
+      Object.keys(store).map((key) => [key, store.getItem(key)])
+    )
+  }
+
   function mockErrorResponse(status: number, statusText: string) {
     return {
       ok: false,
@@ -38,15 +47,26 @@ describe('refreshRemoteConfig', () => {
     } as Response
   }
 
+  function mockAuthenticatedFetch(response: Response): void {
+    vi.mocked(api.fetchApi).mockImplementation(async (_route, options) => {
+      options?.onAuthHeader?.(true)
+      return response
+    })
+  }
+
   beforeEach(() => {
     vi.mocked(api.apiURL).mockImplementation(
       (route: string) => `/ComfyUI/api${route}`
     )
-    vi.stubGlobal('fetch', vi.fn())
     remoteConfig.value = {}
     remoteConfigErrorStatus.value = null
     remoteConfigState.value = 'unloaded'
-    cachedLegacyBillingMigrationEnabled.value = undefined
+    authenticatedRemoteConfigState.value = 'unloaded'
+    remoteConfigRevision.value = 0
+    cachedBillingControlEnabled.value = undefined
+    cachedV1PaymentRecovery.value = undefined
+    sessionAgentGrant.value = undefined
+    sessionAgentGrantValidUntil.value = undefined
     window.__CONFIG__ = {}
   })
 
@@ -58,6 +78,8 @@ describe('refreshRemoteConfig', () => {
       comfy_platform_base_url: 'https://platform.example.com'
     }
     window.__CONFIG__ = remoteConfig.value
+    sessionAgentGrant.value = true
+    sessionAgentGrantValidUntil.value = Date.now() + 60_000
 
     invalidateRemoteConfig()
 
@@ -68,11 +90,29 @@ describe('refreshRemoteConfig', () => {
     })
     expect(window.__CONFIG__).toEqual(remoteConfig.value)
     expect(remoteConfigState.value).toBe('unloaded')
+    expect(sessionAgentGrant.value).toBeUndefined()
+    expect(authenticatedRemoteConfigState.value).toBe('unloaded')
+    expect(sessionAgentGrantValidUntil.value).toBeUndefined()
+  })
+
+  it('persists the authenticated server flags to localStorage', async () => {
+    mockAuthenticatedFetch(
+      mockSuccessResponse({
+        billing_control_enabled: true,
+        v1_payment_recovery: true
+      })
+    )
+
+    await refreshRemoteConfig()
+    await nextTick()
+
+    expect(localStorage.getItem('billing_control_enabled')).toBe('true')
+    expect(localStorage.getItem('v1_payment_recovery')).toBe('true')
   })
 
   describe('with auth (default)', () => {
     it('uses api.fetchApi when useAuth is true', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
+      mockAuthenticatedFetch(mockSuccessResponse())
 
       await refreshRemoteConfig({ useAuth: true })
 
@@ -86,7 +126,7 @@ describe('refreshRemoteConfig', () => {
     })
 
     it('uses api.fetchApi by default', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
+      mockAuthenticatedFetch(mockSuccessResponse())
 
       await refreshRemoteConfig()
 
@@ -94,18 +134,45 @@ describe('refreshRemoteConfig', () => {
       expect(global.fetch).not.toHaveBeenCalled()
     })
 
-    it('caches authenticated legacy billing migration eligibility', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue(
-        mockSuccessResponse({ legacy_billing_migration_enabled: true })
-      )
+    it('rejects a successful response when no auth header was attached', async () => {
+      remoteConfig.value = { subscription_required: true }
+      window.__CONFIG__ = remoteConfig.value
+      vi.mocked(api.fetchApi).mockImplementation(async (_route, options) => {
+        options?.onAuthHeader?.(false)
+        return mockSuccessResponse({ 'agent-in-app-experience': true })
+      })
 
       await refreshRemoteConfig()
 
-      expect(cachedLegacyBillingMigrationEnabled.value).toBe(true)
+      expect(remoteConfig.value).toEqual({ subscription_required: true })
+      expect(authenticatedRemoteConfigState.value).toBe('error')
+      expect(remoteConfigState.value).toBe('error')
+      expect(remoteConfigRevision.value).toBe(1)
+    })
+
+    it('restores the prior state when the caller cancels the refresh', async () => {
+      authenticatedRemoteConfigState.value = 'error'
+      vi.mocked(api.fetchApi).mockImplementation(
+        (_route, options) =>
+          new Promise<Response>((_, reject) => {
+            options?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('Aborted', 'AbortError'))
+            })
+          })
+      )
+      const controller = new AbortController()
+
+      const refresh = refreshRemoteConfig({ signal: controller.signal })
+      expect(authenticatedRemoteConfigState.value).toBe('loading')
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledOnce())
+      controller.abort()
+      await refresh
+
+      expect(authenticatedRemoteConfigState.value).toBe('error')
     })
 
     it('passes an AbortSignal on the authenticated branch', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
+      mockAuthenticatedFetch(mockSuccessResponse())
 
       await refreshRemoteConfig({ useAuth: true })
 
@@ -113,29 +180,51 @@ describe('refreshRemoteConfig', () => {
       expect(init?.signal).toBeInstanceOf(AbortSignal)
     })
 
-    it('discards a failed response from a superseded refresh', async () => {
-      let resolveFirst: ((response: Response) => void) | undefined
-      vi.mocked(api.fetchApi)
-        .mockImplementationOnce(
-          () =>
-            new Promise<Response>((resolve) => {
-              resolveFirst = resolve
-            })
-        )
-        .mockResolvedValueOnce(
-          mockSuccessResponse({ subscription_required: true })
-        )
+    it.for([200, 401])(
+      'discards a superseded response with status %s without changing cached flags',
+      async (status) => {
+        const latestConfig = {
+          subscription_required: true,
+          billing_control_enabled: false,
+          v1_payment_recovery: false
+        }
+        let resolveFirst: ((response: Response) => void) | undefined
+        vi.mocked(api.fetchApi)
+          .mockImplementationOnce(
+            (_route, options) =>
+              new Promise<Response>((resolve) => {
+                options?.onAuthHeader?.(true)
+                resolveFirst = resolve
+              })
+          )
+          .mockImplementationOnce(async (_route, options) => {
+            options?.onAuthHeader?.(true)
+            return mockSuccessResponse(latestConfig)
+          })
 
-      const firstRefresh = refreshRemoteConfig({ useAuth: true })
-      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
-      await refreshRemoteConfig({ useAuth: true })
-      resolveFirst?.(mockErrorResponse(401, 'Unauthorized'))
-      await firstRefresh
+        const firstRefresh = refreshRemoteConfig({ useAuth: true })
+        await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
+        await refreshRemoteConfig({ useAuth: true })
+        expect(cachedBillingControlEnabled.value).toBe(false)
+        expect(cachedV1PaymentRecovery.value).toBe(false)
+        resolveFirst?.(
+          new Response(
+            JSON.stringify({
+              billing_control_enabled: true,
+              v1_payment_recovery: true
+            }),
+            { status }
+          )
+        )
+        await firstRefresh
 
-      expect(remoteConfig.value).toEqual({ subscription_required: true })
-      expect(remoteConfigState.value).toBe('authenticated')
-      expect(remoteConfigErrorStatus.value).toBeNull()
-    })
+        expect(remoteConfig.value).toEqual(latestConfig)
+        expect(remoteConfigState.value).toBe('authenticated')
+        expect(remoteConfigErrorStatus.value).toBeNull()
+        expect(cachedBillingControlEnabled.value).toBe(false)
+        expect(cachedV1PaymentRecovery.value).toBe(false)
+      }
+    )
 
     it('preserves shared state when the caller cancels the refresh', async () => {
       const existingConfig = { subscription_required: true }
@@ -146,6 +235,7 @@ describe('refreshRemoteConfig', () => {
       vi.mocked(api.fetchApi).mockImplementation(
         (_route, options) =>
           new Promise<Response>((_, reject) => {
+            options?.onAuthHeader?.(true)
             if (options?.signal?.aborted) {
               reject(new DOMException('Aborted', 'AbortError'))
               return
@@ -169,11 +259,29 @@ describe('refreshRemoteConfig', () => {
       expect(remoteConfigErrorStatus.value).toBe(500)
       expect(window.__CONFIG__).toEqual(existingConfig)
     })
+
+    it('keeps authenticated state settled while polling', async () => {
+      authenticatedRemoteConfigState.value = 'authenticated'
+      let resolveRefresh: ((response: Response) => void) | undefined
+      vi.mocked(api.fetchApi).mockImplementation(
+        (_route, options) =>
+          new Promise<Response>((resolve) => {
+            options?.onAuthHeader?.(true)
+            resolveRefresh = resolve
+          })
+      )
+
+      const refresh = refreshRemoteConfig()
+
+      expect(authenticatedRemoteConfigState.value).toBe('authenticated')
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledOnce())
+      resolveRefresh?.(mockSuccessResponse())
+      await refresh
+    })
   })
 
   describe('without auth', () => {
     it('builds the no-auth url via api.apiURL so a path prefix is respected', async () => {
-      cachedLegacyBillingMigrationEnabled.value = true
       vi.mocked(global.fetch).mockResolvedValue(mockSuccessResponse())
 
       await refreshRemoteConfig({ useAuth: false })
@@ -186,7 +294,64 @@ describe('refreshRemoteConfig', () => {
       expect(api.fetchApi).not.toHaveBeenCalled()
       expect(remoteConfig.value).toEqual(mockConfig)
       expect(window.__CONFIG__).toEqual(mockConfig)
-      expect(cachedLegacyBillingMigrationEnabled.value).toBe(true)
+    })
+
+    it('clears authenticated state and its grant when anonymous config commits', async () => {
+      authenticatedRemoteConfigState.value = 'authenticated'
+      sessionAgentGrant.value = true
+      sessionAgentGrantValidUntil.value = Date.now() + 60_000
+      vi.mocked(global.fetch).mockResolvedValue(mockSuccessResponse())
+
+      await refreshRemoteConfig({ useAuth: false })
+
+      expect(authenticatedRemoteConfigState.value).toBe('unloaded')
+      expect(sessionAgentGrant.value).toBeUndefined()
+      expect(sessionAgentGrantValidUntil.value).toBeUndefined()
+    })
+
+    it('keeps anonymous state after an older authenticated refresh settles', async () => {
+      authenticatedRemoteConfigState.value = 'error'
+      let resolveAuthenticated: ((response: Response) => void) | undefined
+      vi.mocked(api.fetchApi).mockImplementation(
+        (_route, options) =>
+          new Promise<Response>((resolve) => {
+            options?.onAuthHeader?.(true)
+            resolveAuthenticated = resolve
+          })
+      )
+      vi.mocked(global.fetch).mockResolvedValue(mockSuccessResponse())
+
+      const authenticatedRefresh = refreshRemoteConfig()
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledOnce())
+      await refreshRemoteConfig({ useAuth: false })
+      resolveAuthenticated?.(mockSuccessResponse())
+      await authenticatedRefresh
+
+      expect(authenticatedRemoteConfigState.value).toBe('unloaded')
+      expect(remoteConfigState.value).toBe('anonymous')
+    })
+
+    it('does not erase authenticated config or its grant on an anonymous 401', async () => {
+      const existingConfig = {
+        subscription_required: false,
+        'agent-in-app-experience': true
+      }
+      remoteConfig.value = existingConfig
+      window.__CONFIG__ = existingConfig
+      authenticatedRemoteConfigState.value = 'authenticated'
+      sessionAgentGrant.value = true
+      sessionAgentGrantValidUntil.value = Date.now() + 60_000
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockErrorResponse(401, 'Unauthorized')
+      )
+
+      await refreshRemoteConfig({ useAuth: false })
+
+      expect(remoteConfig.value).toEqual(existingConfig)
+      expect(window.__CONFIG__).toEqual(existingConfig)
+      expect(sessionAgentGrant.value).toBe(true)
+      expect(authenticatedRemoteConfigState.value).toBe('authenticated')
+      expect(remoteConfigErrorStatus.value).toBeNull()
     })
   })
 
@@ -214,22 +379,68 @@ describe('refreshRemoteConfig', () => {
 
   describe('error handling', () => {
     it('clears config on 401 response', async () => {
-      cachedLegacyBillingMigrationEnabled.value = true
-      vi.mocked(api.fetchApi).mockResolvedValue(
-        mockErrorResponse(401, 'Unauthorized')
-      )
+      mockAuthenticatedFetch(mockErrorResponse(401, 'Unauthorized'))
 
       await refreshRemoteConfig()
 
       expect(remoteConfig.value).toEqual({})
       expect(window.__CONFIG__).toEqual({})
-      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
+    })
+
+    it("records this session's grant without persisting it anywhere", async () => {
+      // Prime the two feature values that are intentionally backed by storage,
+      // so any storage delta below can only come from the session grant.
+      localStorage.setItem('billing_control_enabled', 'false')
+      localStorage.setItem('v1_payment_recovery', 'false')
+      cachedBillingControlEnabled.value = false
+      cachedV1PaymentRecovery.value = false
+      const localStorageBefore = storageEntries(localStorage)
+      const sessionStorageBefore = storageEntries(sessionStorage)
+      mockAuthenticatedFetch(
+        mockSuccessResponse({ 'agent-in-app-experience': true })
+      )
+
+      await refreshRemoteConfig()
+
+      expect(sessionAgentGrant.value).toBe(true)
+      expect(sessionAgentGrantValidUntil.value).toBeGreaterThan(Date.now())
+      expect(storageEntries(localStorage)).toEqual(localStorageBefore)
+      expect(storageEntries(sessionStorage)).toEqual(sessionStorageBefore)
+    })
+
+    it('reactively expires the transient session grant', async () => {
+      vi.useFakeTimers()
+      mockAuthenticatedFetch(
+        mockSuccessResponse({ 'agent-in-app-experience': true })
+      )
+
+      await refreshRemoteConfig()
+      await vi.advanceTimersByTimeAsync(15 * 60_000)
+
+      expect(sessionAgentGrant.value).toBeUndefined()
+      expect(sessionAgentGrantValidUntil.value).toBeUndefined()
+    })
+
+    it('keeps this session granted when the poll fails transiently', async () => {
+      sessionAgentGrant.value = true
+      mockAuthenticatedFetch(mockErrorResponse(503, 'Service Unavailable'))
+
+      await refreshRemoteConfig()
+
+      expect(sessionAgentGrant.value).toBe(true)
+    })
+
+    it('drops the grant when auth itself is rejected', async () => {
+      sessionAgentGrant.value = true
+      mockAuthenticatedFetch(mockErrorResponse(401, 'Unauthorized'))
+
+      await refreshRemoteConfig()
+
+      expect(sessionAgentGrant.value).toBeUndefined()
     })
 
     it('clears config on 403 response', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue(
-        mockErrorResponse(403, 'Forbidden')
-      )
+      mockAuthenticatedFetch(mockErrorResponse(403, 'Forbidden'))
 
       await refreshRemoteConfig()
 
@@ -242,7 +453,6 @@ describe('refreshRemoteConfig', () => {
         subscription_required: true,
         comfy_cloud_base_url: 'https://cloud.example.com'
       }
-      cachedLegacyBillingMigrationEnabled.value = true
       remoteConfig.value = existingConfig
       window.__CONFIG__ = existingConfig
       vi.mocked(api.fetchApi).mockRejectedValue(new Error('Network error'))
@@ -251,7 +461,6 @@ describe('refreshRemoteConfig', () => {
 
       expect(remoteConfig.value).toEqual(existingConfig)
       expect(window.__CONFIG__).toEqual(existingConfig)
-      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
     })
 
     it('preserves config on 500 response', async () => {
@@ -259,9 +468,7 @@ describe('refreshRemoteConfig', () => {
       remoteConfig.value = existingConfig
       window.__CONFIG__ = existingConfig
 
-      vi.mocked(api.fetchApi).mockResolvedValue(
-        mockErrorResponse(500, 'Internal Server Error')
-      )
+      mockAuthenticatedFetch(mockErrorResponse(500, 'Internal Server Error'))
 
       await refreshRemoteConfig()
 

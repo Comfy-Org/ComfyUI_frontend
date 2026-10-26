@@ -1,6 +1,6 @@
 import { mergeTests } from '@playwright/test'
 
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -8,6 +8,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
@@ -59,7 +60,6 @@ async function getValidationErrorMessage(comfyPage: ComfyPage) {
 test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
   test.use({
     initialSettings: {
-      'Comfy.UseNewMenu': 'Top',
       'Comfy.RightSidePanel.ShowErrorsTab': true
     }
   })
@@ -80,9 +80,13 @@ test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
         .getByTestId(TestIds.dialogs.errorOverlayDismiss)
         .click()
       await errorOverlay.waitFor({ state: 'hidden' })
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'execution-error-unconnected-slot.png'
-      )
+      const region = await screenshotRegion(comfyPage.page, [
+        ...(await comfyPage.nodeOps.getNodeRefsByType(
+          'CheckpointLoaderSimple'
+        )),
+        ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+      ])
+      await region.expectScreenshot('execution-error-unconnected-slot.png')
     }
   )
 })
@@ -129,7 +133,6 @@ test.describe(
 test.describe('Execution validation errors', { tag: '@workflow' }, () => {
   test.use({
     initialSettings: {
-      'Comfy.UseNewMenu': 'Top',
       'Comfy.RightSidePanel.ShowErrorsTab': true
     }
   })
@@ -170,4 +173,38 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
       .toBe(VALIDATION_ERROR_MESSAGE)
     await expect(errorOverlay).toBeVisible()
   })
+
+  test(
+    'renders cloud node errors when optional details are omitted',
+    { tag: '@cloud' },
+    async ({ comfyPage, getWebSocket }) => {
+      await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+
+      const ws = await getWebSocket()
+      const exec = new ExecutionHelper(comfyPage, ws)
+      const jobId = await exec.run()
+      exec.executionStart(jobId)
+      exec.validationError(jobId, VALIDATION_ERROR_NODE_ID, {
+        [VALIDATION_ERROR_NODE_ID]: {
+          class_type: 'PreviewAny',
+          dependent_outputs: [VALIDATION_ERROR_NODE_ID],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: VALIDATION_ERROR_MESSAGE,
+              extra_info: { input_name: 'source' }
+            }
+          ]
+        }
+      })
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await expect(errorOverlay).toContainText(
+        'Preview as Text is missing a required input: source'
+      )
+    }
+  )
 })
