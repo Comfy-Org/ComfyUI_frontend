@@ -9,8 +9,10 @@ import type {
 import { asSafeNumber } from './safeInt64'
 
 type DecodedPlan = BillingPlansData['plans'][number]
+type DecodedFeatureItem = NonNullable<DecodedPlan['feature_items']>[number]
 type DecodedStops = NonNullable<BillingPlansData['team_credit_stops']>
 type DecodedStop = DecodedStops['stops'][number]
+type FeatureItem = NonNullable<Plan['feature_items']>[number]
 type StopPrice = TeamCreditStops['stops'][number]['monthly']
 
 /**
@@ -30,11 +32,30 @@ function projectCredits(
   return credits === undefined ? undefined : { credits }
 }
 
+function projectFeatureItem({
+  params,
+  ...item
+}: DecodedFeatureItem): FeatureItem | undefined {
+  if (params === undefined) return item
+  const count = asSafeNumber(params.count)
+  return count === undefined ? undefined : { ...item, params: { count } }
+}
+
+function projectFeatureItems(
+  raw: DecodedPlan['feature_items']
+): Pick<Plan, 'feature_items'> | undefined {
+  if (raw === undefined) return {}
+  const feature_items = projectAll(raw, projectFeatureItem)
+  return feature_items === undefined ? undefined : { feature_items }
+}
+
 function projectPlan({
   credits: rawCredits,
+  feature_items: rawFeatureItems,
   ...plan
 }: DecodedPlan): Plan | undefined {
   const credits = projectCredits(rawCredits)
+  const featureItems = projectFeatureItems(rawFeatureItems)
   const credits_cents = asSafeNumber(plan.credits_cents)
   const max_seats = asSafeNumber(plan.max_seats)
   const price_cents = asSafeNumber(plan.price_cents)
@@ -44,6 +65,7 @@ function projectPlan({
   )
   if (
     credits === undefined ||
+    featureItems === undefined ||
     credits_cents === undefined ||
     max_seats === undefined ||
     price_cents === undefined ||
@@ -54,6 +76,7 @@ function projectPlan({
   return {
     ...plan,
     ...credits,
+    ...featureItems,
     credits_cents,
     max_seats,
     price_cents,
