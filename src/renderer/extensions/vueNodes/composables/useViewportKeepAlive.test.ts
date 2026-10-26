@@ -11,9 +11,10 @@ import { toNodeId } from '@/types/nodeId'
 
 const camera = reactive({ x: 0, y: 0, z: 1 })
 
-vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
-  useTransformState: () => ({ camera })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/layout/transform/useTransformState'),
+  () => ({ useTransformState: () => ({ camera }) })
+)
 
 const activeScopes: ReturnType<typeof effectScope>[] = []
 
