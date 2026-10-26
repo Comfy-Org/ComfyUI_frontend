@@ -547,7 +547,7 @@ describe('refreshRemoteConfig', () => {
       await vi.advanceTimersByTimeAsync(5 * 60_000)
 
       expect(reachedFirebaseStartup).not.toHaveBeenCalled()
-      expect(global.fetch.mock.calls.length).toBeGreaterThan(5)
+      expect(vi.mocked(global.fetch).mock.calls.length).toBeGreaterThan(5)
 
       // Release the pending loop so it cannot leak into another test.
       vi.mocked(global.fetch).mockResolvedValue(
