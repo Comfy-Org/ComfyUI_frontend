@@ -15,15 +15,13 @@ const { mockAxiosInstance } = vi.hoisted(() => ({
     put: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
-    defaults: {},
-    interceptors: { response: { use: vi.fn() } }
+    interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } }
   }
 }))
 
 vi.mock<unknown>(import('axios'), () => ({
   default: {
     create: vi.fn(() => mockAxiosInstance),
-    getAdapter: vi.fn(() => vi.fn()),
     isAxiosError: vi.fn((err: unknown) => {
       return (
         err !== null &&

@@ -1,0 +1,70 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+
+import type {
+  WebSessionRequests,
+  WebSessionRequestScope
+} from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+
+import { workspaceApi } from './workspaceApi'
+import { installWorkspaceApiAuth } from './workspaceApiAuth'
+
+vi.mock(import('@/i18n'))
+
+vi.mock(import('./workspaceApiUrl'), () => ({
+  workspaceApiUrl: (path: string) => `/api${path}`
+}))
+
+vi.mock(import('firebase/auth'), { spy: true })
+
+beforeEach(() => {
+  stubFirebaseAuthHarness()
+})
+
+installWorkspaceApiAuth()
+
+function provideSessionSending(...answers: Response[]) {
+  const send = vi.fn<WebSessionRequests['send']>(async () => {
+    const answer = answers.shift()
+    if (!answer) throw new Error('send called more times than scripted')
+    return answer
+  })
+  const release = provideWebSessionRequests(
+    fromPartial<WebSessionRequests>({
+      scope: async () => fromPartial<WebSessionRequestScope>({}),
+      send
+    })
+  )
+  onTestFinished(release)
+  return send
+}
+
+const unavailable = (headers?: Record<string, string>) =>
+  new Response('{"message":"unavailable"}', { status: 503, headers })
+
+describe('workspaceApi on the web session', () => {
+  it('recovers from a 503 on the session adapter', async () => {
+    vi.useFakeTimers()
+    const send = provideSessionSending(
+      unavailable(),
+      new Response('{"workspaces":[]}', { status: 200 })
+    )
+
+    const pending = workspaceApi.list()
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    await expect(pending).resolves.toEqual({ workspaces: [] })
+    expect(send).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not retry a write that got a 503', async () => {
+    const send = provideSessionSending(unavailable())
+
+    await expect(workspaceApi.create({ name: 'Team' })).rejects.toMatchObject({
+      status: 503
+    })
+    expect(send).toHaveBeenCalledTimes(1)
+  })
+})

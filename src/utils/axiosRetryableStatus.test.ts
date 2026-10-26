@@ -10,9 +10,9 @@ interface ScriptedAnswer {
   readonly headers?: Record<string, string>
 }
 
-function makeClient(answers: ScriptedAnswer[]) {
+function scriptedAdapter(answers: ScriptedAnswer[]) {
   let call = 0
-  const adapter = vi.fn<AxiosAdapter>(async (config) => {
+  return vi.fn<AxiosAdapter>(async (config) => {
     const { status, headers = {} } =
       answers[Math.min(call++, answers.length - 1)]
     const response: AxiosResponse = {
@@ -31,6 +31,10 @@ function makeClient(answers: ScriptedAnswer[]) {
       response
     )
   })
+}
+
+function makeClient(answers: ScriptedAnswer[]) {
+  const adapter = scriptedAdapter(answers)
   const sleep = vi.fn<(ms: number) => Promise<void>>(async () => {})
   const client = axios.create({ adapter })
   attachRetryableStatusRetry(client, { sleep, random: () => 1 })
@@ -108,5 +112,57 @@ describe('attachRetryableStatusRetry', () => {
 
     await expect(client.get('https://api/x')).rejects.toBe(networkError)
     expect(adapter).toHaveBeenCalledTimes(1)
+  })
+  it('retries through an adapter the request selects for itself', async () => {
+    const { client, adapter: defaultAdapter } = makeClient([{ status: 200 }])
+    const requestAdapter = scriptedAdapter([{ status: 503 }, { status: 200 }])
+
+    const response = await client.get('https://api/x', {
+      adapter: requestAdapter
+    })
+
+    expect(response.status).toBe(200)
+    expect(requestAdapter).toHaveBeenCalledTimes(2)
+    expect(defaultAdapter).not.toHaveBeenCalled()
+  })
+
+  describe('with a request timeout', () => {
+    function makeTimedClient(answers: ScriptedAnswer[]) {
+      const adapter = scriptedAdapter(answers)
+      const client = axios.create({ adapter })
+      attachRetryableStatusRetry(client, { random: () => 1 })
+      return { client, adapter }
+    }
+
+    it('stops instead of waiting past the timeout', async () => {
+      vi.useFakeTimers()
+      const { client, adapter } = makeTimedClient([
+        { status: 503, headers: { 'retry-after': '1' } },
+        { status: 200 }
+      ])
+
+      await expect(
+        client.get('https://api/x', { timeout: 100 })
+      ).rejects.toMatchObject({ response: { status: 503 } })
+
+      expect(adapter).toHaveBeenCalledTimes(1)
+      expect(vi.getTimerCount()).toBe(0)
+    })
+
+    it('retries when the wait fits inside the timeout and shrinks the next attempt', async () => {
+      vi.useFakeTimers()
+      const { client, adapter } = makeTimedClient([
+        { status: 503, headers: { 'retry-after': '1' } },
+        { status: 200 }
+      ])
+
+      const pending = client.get('https://api/x', { timeout: 5_000 })
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect((await pending).status).toBe(200)
+      expect(adapter.mock.calls.map(([config]) => config.timeout)).toEqual([
+        5_000, 4_000
+      ])
+    })
   })
 })
