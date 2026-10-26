@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { DropdownMenuSub } from 'reka-ui'
-import { provide } from 'vue'
+import type { DropdownMenuSubEmits, DropdownMenuSubProps } from 'reka-ui'
+import { DropdownMenuSub, useForwardPropsEmits } from 'reka-ui'
 
-import { menuSubOpenKey } from './menuSubContext'
-
-const open = defineModel<boolean>('open', { default: false })
-provide(menuSubOpenKey, open)
+const props = defineProps<DropdownMenuSubProps>()
+const emits = defineEmits<DropdownMenuSubEmits>()
+const forwarded = useForwardPropsEmits(props, emits)
 </script>
 
 <template>
-  <DropdownMenuSub v-model:open="open">
-    <slot :open />
+  <DropdownMenuSub v-slot="slotProps" v-bind="forwarded">
+    <slot v-bind="slotProps" />
   </DropdownMenuSub>
 </template>
