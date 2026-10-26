@@ -55,16 +55,17 @@ mechanism and preserve the feature.
 
 ## Guides
 
-| Guide                                      | Covers                                                                                                               |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| [Migration how-to](./how-to.md)            | task-oriented LiteGraph-to-API recipes, intent forks, before/after examples, and migration traps                     |
-| [Nodes and definitions](./nodes.md)        | `NodeDef`, `NodeDefBuilder`, `NodeHandle`, lifecycle hooks, properties, menus, badges, and frontend node definitions |
-| [Graphs and groups](./graph.md)            | visible/root/subgraph scopes, selection, geometry, editing, undo batches, groups, and graph events                   |
-| [Slots and links](./slots.md)              | slot identity, lookup, dynamic slots, connections, link-preserving operations, and resolved sources                  |
-| [Widgets](./widgets.md)                    | widget values, events, ordering, serialization, DOM mounts, canvas widgets, and custom widget types                  |
-| [Execution and resolution](./execution.md) | queue lifecycle, backend execution, frontend-only nodes, suppliers, preview frames, and prompt-time serialization    |
-| [Application services](./services.md)      | settings, commands, notifications, UI contributions, backend requests, workflow loading, and persistent storage      |
-| [API reference](./reference.md)            | root members, domain interfaces, capability names, errors, and the generated declaration contract                    |
+| Guide                                           | Covers                                                                                                               |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| [Migration how-to](./how-to.md)                 | task-oriented LiteGraph-to-API recipes, intent forks, before/after examples, and migration traps                     |
+| [Nodes and definitions](./nodes.md)             | `NodeDef`, `NodeDefBuilder`, `NodeHandle`, lifecycle hooks, properties, menus, badges, and frontend node definitions |
+| [Graphs and groups](./graph.md)                 | visible/root/subgraph scopes, selection, geometry, editing, undo batches, groups, and graph events                   |
+| [Slots and links](./slots.md)                   | slot identity, lookup, dynamic slots, connections, link-preserving operations, and resolved sources                  |
+| [Connection policies](./connection-policies.md) | native host-evaluated constraints, graph scope, refusal precedence, validation bounds, and worker prerequisites      |
+| [Widgets](./widgets.md)                         | widget values, events, ordering, serialization, DOM mounts, canvas widgets, and custom widget types                  |
+| [Execution and resolution](./execution.md)      | queue lifecycle, backend execution, frontend-only nodes, suppliers, preview frames, and prompt-time serialization    |
+| [Application services](./services.md)           | settings, commands, notifications, UI contributions, backend requests, workflow loading, and persistent storage      |
+| [API reference](./reference.md)                 | root members, domain interfaces, capability names, errors, and the generated declaration contract                    |
 
 ## The root object
 

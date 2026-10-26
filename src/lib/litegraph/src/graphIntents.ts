@@ -57,6 +57,10 @@ const listeners = new Set<GraphIntentListener>()
 let activeSource: GraphIntentSource = 'local'
 let severedLinkSink: LinkId[] | null = null
 
+export function getGraphIntentSource(): GraphIntentSource {
+  return activeSource
+}
+
 export function onGraphIntent(listener: GraphIntentListener): () => void {
   listeners.add(listener)
   return () => listeners.delete(listener)

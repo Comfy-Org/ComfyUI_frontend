@@ -58,18 +58,23 @@ than making each pack capture and call a previous prototype method.
 
 ### Builder configuration
 
-| Method                                            | Purpose                                                                 |
-| ------------------------------------------------- | ----------------------------------------------------------------------- |
-| `setTitle(title)`                                 | Change the displayed type title.                                        |
-| `setCategory(category)`                           | Change where the type appears in node search.                           |
-| `setExecution('backend' \| 'frontend', resolve?)` | Mark a backend-defined type frontend-only or restore backend execution. |
-| `setSupply(supplier)`                             | Declare broadcast-style edges into other nodes' unconnected inputs.     |
-| `addWidget(def)`                                  | Add a declared widget to every instance.                                |
-| `hideWidget(name)`                                | Hide a declared widget while retaining its value.                       |
-| `addMenuItem(item)`                               | Add a host-rendered context-menu entry.                                 |
+| Method                                            | Purpose                                                                        |
+| ------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `setTitle(title)`                                 | Change the displayed type title.                                               |
+| `setCategory(category)`                           | Change where the type appears in node search.                                  |
+| `setConnectionPolicy(policy)`                     | Declare host-evaluated connection rules; `null` clears this extension's rules. |
+| `setExecution('backend' \| 'frontend', resolve?)` | Mark a backend-defined type frontend-only or restore backend execution.        |
+| `setSupply(supplier)`                             | Declare broadcast-style edges into other nodes' unconnected inputs.            |
+| `addWidget(def)`                                  | Add a declared widget to every instance.                                       |
+| `hideWidget(name)`                                | Hide a declared widget while retaining its value.                              |
+| `addMenuItem(item)`                               | Add a host-rendered context-menu entry.                                        |
 
 Structural changes to a live node—dynamic slots, values, ordering, or
 connections—belong on the instance handles supplied by lifecycle callbacks.
+
+See [Connection policies](./connection-policies.md) for the native preview
+contract, graph and slot identities, bounds, refusal precedence, and worker
+authority requirements.
 
 ### Lifecycle and behavior hooks
 

@@ -331,6 +331,25 @@ interface CommandsHandle {
   has(id: string): boolean
 }
 
+// ─── connectionPolicy.ts ─────────────────────────────────────────
+
+interface ConnectionRule {
+  readonly side: 'input' | 'output'
+  readonly slots?: readonly SlotRef[]
+  readonly peerTypes?: readonly string[]
+  readonly peerSlots?: readonly SlotRef[]
+  readonly allow: 'only' | 'never'
+  readonly whileDownstream?: readonly string[]
+  readonly requiresConnectedInputs?: readonly SlotRef[]
+}
+
+interface ConnectionPolicy {
+  readonly passThroughTypes?: readonly string[]
+  readonly refuseCycles?: boolean
+  readonly refuseDuplicateSources?: boolean
+  readonly rules?: readonly ConnectionRule[]
+}
+
 // ─── defsRegistry.ts ─────────────────────────────────────────────
 
 /**
@@ -449,6 +468,8 @@ interface NodeDefBuilder {
 
   setTitle(title: string): void
   setCategory(category: string): void
+  /** Replaces this extension's policy; invalid data or an installed extension host returns false. */
+  setConnectionPolicy(policy: ConnectionPolicy | null): boolean
   /**
    * Declares that this node type never reaches the backend.
    *
@@ -781,6 +802,7 @@ interface NodeDefinition {
    * declared.
    */
   readonly supply?: Supplier
+  readonly connectionPolicy?: ConnectionPolicy
 
   onCreated?(node: NodeHandle, event: NodeCreatedEvent): void
   onExecuted?(node: NodeHandle, result: ExecutionResult): void

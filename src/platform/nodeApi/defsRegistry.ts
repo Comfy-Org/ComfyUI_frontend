@@ -16,14 +16,21 @@
  *    Registered callbacks are invoked in registration order, always.
  */
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { getGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import { reportError } from '@/platform/telemetry/reportError'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import { st } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { hasExtensionHost } from '@/services/extensionHostProvider'
 
 import { ComfyApiError } from './errors'
+import {
+  connectionPolicyAllows,
+  parseConnectionPolicy
+} from './connectionPolicy'
+import type { ConnectionPolicy } from './connectionPolicy'
 import type { NodeHandle, Size } from './nodeHandle'
 import { slotShapeOf } from './slotHandle'
 import type { SlotShape } from './slotHandle'
@@ -149,6 +156,8 @@ export interface NodeDefBuilder {
 
   setTitle(title: string): void
   setCategory(category: string): void
+  /** Replaces this extension's policy; invalid data or an installed extension host returns false. */
+  setConnectionPolicy(policy: ConnectionPolicy | null): boolean
   /**
    * Declares that this node type never reaches the backend.
    *
@@ -481,6 +490,7 @@ export interface NodeDefinition {
    * declared.
    */
   readonly supply?: Supplier
+  readonly connectionPolicy?: ConnectionPolicy
 
   onCreated?(node: NodeHandle, event: NodeCreatedEvent): void
   onExecuted?(node: NodeHandle, result: ExecutionResult): void
@@ -636,6 +646,9 @@ function applyNodeDefinition(
     builder.onPromptSerialize(run)
   )
   whenDefined(definition.supply, (supply) => builder.setSupply(supply))
+  whenDefined(definition.connectionPolicy, (policy) =>
+    builder.setConnectionPolicy(policy)
+  )
 }
 
 interface MenuItemBinding {
@@ -1148,6 +1161,39 @@ export function provideGraphLoadingState(source: () => boolean): void {
   isLoadingGraph = source
 }
 
+interface ConnectionPolicyBinding {
+  policy: ConnectionPolicy | null
+  isActive: () => boolean
+}
+
+function policiesAllowConnection(
+  bindings: readonly ConnectionPolicyBinding[],
+  node: LGraphNode,
+  event: BeforeConnectEvent,
+  peer: unknown,
+  peerSlot: unknown
+): boolean {
+  if (
+    isLoadingGraph() ||
+    getGraphIntentSource() !== 'local' ||
+    hasExtensionHost()
+  )
+    return true
+  return bindings.every(
+    ({ policy, isActive }) =>
+      !policy ||
+      !isActive() ||
+      connectionPolicyAllows(policy, {
+        node,
+        peer,
+        peerSlot,
+        side: event.side,
+        index: event.index,
+        peerIndex: event.peerIndex
+      })
+  )
+}
+
 /**
  * Type name -> its unplaced-link listeners.
  *
@@ -1247,11 +1293,21 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
   const registrations = new Set<Registration>()
   const known = new Map<string, NodeDef>()
 
-  const defineType = (
+  function defineType(
     definition: NodeDefinition,
     handleFor: (nodeId: string) => NodeHandle,
     handleForNode: (node: LGraphNode) => NodeHandle
-  ): Unsubscribe => {
+  ): Unsubscribe {
+    if (definition.connectionPolicy !== undefined) {
+      if (hasExtensionHost()) {
+        throw new ComfyApiError(
+          'Connection policies are unavailable while an extension host is installed.'
+        )
+      }
+      if (!parseConnectionPolicy(definition.connectionPolicy).success) {
+        throw new ComfyApiError('Invalid connection policy in node definition.')
+      }
+    }
     const { type } = definition
     if (Object.hasOwn(LiteGraph.registered_node_types, type)) {
       throw new ComfyApiError(
@@ -1263,8 +1319,6 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
     const raw = rawDefinedNode(definition)
     const Defined = definedNodeClass(definition)
 
-    // Hooks route through the same registration path as extend(), so they
-    // compose with extensions other packs register against this type.
     const registration: Registration = {
       selector: type,
       handleFor,
@@ -1421,6 +1475,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         handleForNode: (node: LGraphNode) => NodeHandle
         isActive: () => boolean
       }[] = []
+      const connectionPolicies: ConnectionPolicyBinding[] = []
       const unplacedLink: {
         run: (node: NodeHandle, event: UnplacedLinkEvent) => boolean | void
         handleFor: (nodeId: string) => NodeHandle
@@ -1493,6 +1548,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
           const { handleFor, handleForNode } = registration
           const isActive = () => registration.active
           const binding = { handleFor, handleForNode, isActive }
+          const policyBinding: ConnectionPolicyBinding = {
+            policy: null,
+            isActive
+          }
+          connectionPolicies.push(policyBinding)
 
           const builder: NodeDefBuilder = {
             get def() {
@@ -1503,6 +1563,20 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             },
             setCategory: (category) => {
               def = Object.freeze({ ...def, category })
+            },
+            setConnectionPolicy(value) {
+              if (!isActive() || hasExtensionHost()) return false
+              const parsed =
+                value === null ? undefined : parseConnectionPolicy(value)
+              if (parsed && !parsed.success) {
+                reportError(parsed.error, {
+                  errorType: 'node_api_connection_policy_refused',
+                  surface: 'graph'
+                })
+                return false
+              }
+              policyBinding.policy = parsed?.data ?? null
+              return true
             },
             setExecution: (execution, resolve) => {
               executionState.frontendOnly = execution === 'frontend'
@@ -1890,16 +1964,23 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             }
         }
 
-        if (beforeConnect.length) {
-          /**
-           * Asks every listener, in registration order. Any refusal refuses the
-           * connection: a veto is only useful if one pack cannot be overruled by
-           * another's silence.
-           */
-          const mayConnect = (
+        if (beforeConnect.length || connectionPolicies.length) {
+          function mayConnect(
             node: LGraphNode,
-            event: BeforeConnectEvent
-          ): boolean => {
+            event: BeforeConnectEvent,
+            peer: unknown,
+            peerSlot: unknown
+          ): boolean {
+            if (
+              !policiesAllowConnection(
+                connectionPolicies,
+                node,
+                event,
+                peer,
+                peerSlot
+              )
+            )
+              return false
             const id = String(node.id)
             for (const { run, handleFor, isActive } of beforeConnect) {
               if (
@@ -1928,33 +2009,32 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
 
           install(
             'onConnectInput',
-            (node, index, _type, _output, sourceNode, sourceIndex) =>
+            (node, index, _type, output, sourceNode, sourceIndex) =>
               mayConnect(
                 node,
                 Object.freeze({
                   side: 'input',
                   index,
                   ...peerOf(sourceNode, sourceIndex)
-                })
+                }),
+                sourceNode,
+                output
               ),
             { veto: true }
           )
 
-          // The output side was declared from the start and never installed, so
-          // `side` was typed 'input' | 'output' and was always 'input'. A node
-          // that may only feed particular types — rgthree's relay reaching only
-          // a repeater — could be wired to anything and would silently do
-          // nothing.
           install(
             'onConnectOutput',
-            (node, index, _type, _input, targetNode, targetIndex) =>
+            (node, index, _type, input, targetNode, targetIndex) =>
               mayConnect(
                 node,
                 Object.freeze({
                   side: 'output',
                   index,
                   ...peerOf(targetNode, targetIndex)
-                })
+                }),
+                targetNode,
+                input
               ),
             { veto: true }
           )
