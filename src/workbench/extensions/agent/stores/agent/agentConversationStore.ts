@@ -637,7 +637,8 @@ export const useAgentConversationStore = defineStore(
       if (submitted) submitted.awaitingResolution = undefined
     }
 
-    function clearSubmittedAskAnswers(owner: string): void {
+    function clearSettledAskState(owner: string): void {
+      provisionalRetiredAsks.delete(owner)
       for (const [askId, submitted] of submittedAskAnswers)
         if (submitted.owner === owner) submittedAskAnswers.delete(askId)
     }
@@ -1174,14 +1175,13 @@ export const useAgentConversationStore = defineStore(
       persistedParts: AssistantMessage['parts'] | undefined,
       ending: 'completed' | 'failed' = 'completed'
     ): void {
-      provisionalRetiredAsks.delete(turn.threadId)
       const slot = activeSlot.value
       const isActive =
         slot !== null &&
         turn.threadId === slot.threadId &&
         turn.messageId === slot.turnId
       if (isActive) {
-        clearSubmittedAskAnswers(turn.threadId)
+        clearSettledAskState(turn.threadId)
         finishWithPersistedParts(slot.message, persistedParts)
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
@@ -1192,7 +1192,7 @@ export const useAgentConversationStore = defineStore(
       }
       const entry = backgroundTurns.get(turn.messageId)
       if (!entry || entry.messageId !== turn.messageId || entry.settled) return
-      clearSubmittedAskAnswers(turn.threadId)
+      clearSettledAskState(turn.threadId)
       finishWithPersistedParts(entry.message, persistedParts)
       entry.transport.settle()
       updateBackgroundTurn(entry.messageId, { settled: true })

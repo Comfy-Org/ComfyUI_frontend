@@ -1415,11 +1415,12 @@ describe('useAgentConversationStore', () => {
     expect(store.isAskRetired('ask-2', 'background')).toBe(true)
   })
 
-  it('does not clear a live answer when a stale turn settlement arrives', () => {
+  it('does not clear live ask state when a stale turn settlement arrives', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
     store.startTurn(T1)
     store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th')
+    store.retireAsk('ask-2', { status: 'retired' }, 'th', false)
 
     store.settleTurn(
       { threadId: 'th', messageId: 'stale' as TurnId },
@@ -1427,6 +1428,18 @@ describe('useAgentConversationStore', () => {
     )
 
     expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+    expect(store.isAskRetired('ask-2', 'th')).toBe(true)
+  })
+
+  it('clears provisional tombstones when the matching turn settles', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.retireAsk('ask-2', { status: 'retired' }, 'th', false)
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
+
+    expect(store.isAskRetired('ask-2', 'th')).toBe(false)
   })
 
   it('holds the thread id and clears it on reset', () => {
