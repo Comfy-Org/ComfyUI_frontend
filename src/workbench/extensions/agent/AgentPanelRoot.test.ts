@@ -10104,6 +10104,46 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(workflowStore.activeWorkflow.path).toBe(other.path)
   })
 
+  it('preserves a new unsent draft when Back leaves a failed history selection', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint(
+      'wf-42',
+      [{ id: 'wf-42', name: 'current' }],
+      [
+        agentThread({
+          id: 'th-1',
+          title: 'Previous chat',
+          last_message_at: '2026-09-25T00:00:00Z'
+        })
+      ]
+    )
+    const request = vi.mocked(fetch).getMockImplementation()
+    assert.exists(request)
+    vi.mocked(fetch).mockImplementation((input, init) =>
+      String(input).includes('/messages') && init?.method !== 'POST'
+        ? Promise.resolve(json(500, {}))
+        : request(input, init)
+    )
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Keep my new draft')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Previous chat' })
+    )
+    await screen.findByRole('alert')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    expect(screen.getByRole('textbox')).toHaveTextContent('Keep my new draft')
+  })
+
   it('restores Current after remounting an interrupted return instead of reusing stale messages', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint(
