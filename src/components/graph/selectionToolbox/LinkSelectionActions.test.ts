@@ -162,6 +162,21 @@ describe('LinkSelectionActions', () => {
     await waitFor(() => expect(backButton).toHaveFocus())
   })
 
+  it('lists the linked nodes in their new order after one moves', async () => {
+    const { graph, source, targets } = createWorkflow()
+    clickSocket(graph, source, 'output')
+    const { user } = renderActions()
+
+    targets[1].pos = [400, -200]
+    await user.click(
+      screen.getByRole('button', { name: 'Go to a linked node' })
+    )
+
+    const items = await screen.findAllByRole('menuitem')
+    expect(items[0]).toHaveAccessibleName(`Negative #${targets[1].id}`)
+    expect(items[1]).toHaveAccessibleName(`Positive #${targets[0].id}`)
+  })
+
   it('moves the view in one step when animations are turned off', async () => {
     const { graph, source, targets, canvas } = createWorkflow()
     useSettingStore().settingValues['Comfy.Appearance.DisableAnimations'] = true

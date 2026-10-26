@@ -327,8 +327,8 @@ export function getSelectedLinkDestinations(graph: LGraph): LinkDestination[] {
     return arriving.length ? [{ ...end, nodeId, links: arriving }] : []
   })
   return sortBy(destinations, [
-    (destination) => destination.node.boundingRect[1],
-    (destination) => destination.node.boundingRect[0]
+    (destination) => destination.node.pos[1],
+    (destination) => destination.node.pos[0]
   ])
 }
 
