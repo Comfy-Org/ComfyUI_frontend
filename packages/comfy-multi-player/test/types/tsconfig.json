@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "../..",
+    "noUnusedLocals": false
+  },
+  "include": ["invalid-states.negative.ts"]
+}
