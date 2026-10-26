@@ -74,22 +74,28 @@ export function createAgentEventSource({
     } finally {
       connecting = false
     }
-    if (generation !== connectGeneration) {
-      void connect()
-      return
-    }
+    if (generation !== connectGeneration) return
     if (listeners.size === 0) return
-    if (!auth.ok) {
+    // A credential that cannot be read right now — a rejected refresh, or a
+    // token the provider has not minted yet — is retried on the backoff rather
+    // than leaving the source dead until something else calls `reconnect()`.
+    if (!auth.ok || auth.params === null) {
       notifyStatus(false)
       scheduleReconnect()
       return
     }
-    if (auth.params === null) return
     open(eventUrl(auth.params))
   }
 
   function open(url: string): void {
-    const current = new WebSocket(url)
+    let current: WebSocket
+    try {
+      current = new WebSocket(url)
+    } catch {
+      notifyStatus(false)
+      scheduleReconnect()
+      return
+    }
     socket = current
     let openedAt: number | null = null
     current.addEventListener('open', () => {
@@ -99,7 +105,6 @@ export function createAgentEventSource({
     })
     current.addEventListener('message', (event) => {
       if (socket !== current) return
-      failedConnects = 0
       let frame: unknown = event.data
       if (typeof event.data === 'string') {
         try {
@@ -115,6 +120,9 @@ export function createAgentEventSource({
     })
     current.addEventListener('close', () => {
       if (socket !== current) return
+      // Only a connection that lasted clears the backoff. A server that
+      // accepts the upgrade, writes a frame and hangs up must not reset it, or
+      // the panel reconnects in a tight loop that never widens.
       if (openedAt !== null && Date.now() - openedAt >= maxReconnectDelayMs)
         failedConnects = 0
       socket = null
@@ -125,6 +133,9 @@ export function createAgentEventSource({
 
   function disconnect(): void {
     connectGeneration++
+    // An auth read that never settles would otherwise latch `connecting` and
+    // make every later `connect()` — `reconnect()` included — a no-op.
+    connecting = false
     reconnectTimer.stop()
     const current = socket
     socket = null

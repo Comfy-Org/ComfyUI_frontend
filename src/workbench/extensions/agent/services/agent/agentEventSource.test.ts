@@ -240,7 +240,7 @@ describe('createAgentEventSource', () => {
 })
 
 describe('createAgentEventSource reconnect backoff', () => {
-  it('doubles the delay per refused connect and resets once a socket delivers a frame', async () => {
+  it('doubles the delay per refused connect', async () => {
     const source = createSource()
 
     source.subscribe(vi.fn())
@@ -252,12 +252,52 @@ describe('createAgentEventSource reconnect backoff', () => {
     expect(sockets()).toHaveLength(2)
     await vi.advanceTimersByTimeAsync(1)
     expect(sockets()).toHaveLength(3)
+  })
 
-    sockets()[2].open()
-    sockets()[2].receive({ type: 'agent_message_delta', data: {} })
-    sockets()[2].close()
+  it('keeps backing off when the server accepts, sends one frame and closes', async () => {
+    const source = createSource()
+
+    source.subscribe(vi.fn())
+    await connected()
+    for (const wait of [1000, 2000, 4000]) {
+      lastSocket().open()
+      lastSocket().receive({ type: 'agent_message_delta', data: {} })
+      lastSocket().close()
+      const opened = sockets().length
+      await vi.advanceTimersByTimeAsync(wait - 1)
+      expect(sockets()).toHaveLength(opened)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(sockets()).toHaveLength(opened + 1)
+    }
+  })
+
+  it('schedules a reconnect when the socket constructor throws', async () => {
+    let throwOnConstruct = true
+    vi.stubGlobal(
+      'WebSocket',
+      Object.assign(
+        function WebSocketStub(url: string) {
+          if (!throwOnConstruct) return new FakeSocket(url)
+          throwOnConstruct = false
+          throw new DOMException('insecure socket', 'SecurityError')
+        },
+        {
+          CONNECTING: FakeSocket.CONNECTING,
+          OPEN: FakeSocket.OPEN,
+          CLOSED: FakeSocket.CLOSED
+        }
+      )
+    )
+    const source = createSource()
+    const status = vi.fn()
+    source.onStatus(status)
+
+    source.subscribe(vi.fn())
+    await connected()
+    expect(sockets()).toHaveLength(0)
+
     await vi.advanceTimersByTimeAsync(1000)
-    expect(sockets()).toHaveLength(4)
+    expect(sockets()).toHaveLength(1)
   })
 
   it('keeps backing off when the server accepts the upgrade and then closes', async () => {
@@ -433,6 +473,47 @@ describe('createAgentEventSource token', () => {
     await connected()
 
     expect(sockets()).toHaveLength(0)
+  })
+
+  it('opens the socket once a later read supplies the missing credential', async () => {
+    const reads: (() => Promise<URLSearchParams | null>)[] = [
+      async () => null,
+      async () => tokenParams('signed-in')
+    ]
+    const source = createSource({
+      getAuthParams: () => reads.shift()?.() ?? Promise.resolve(null)
+    })
+
+    source.subscribe(vi.fn())
+    await connected()
+    expect(sockets()).toHaveLength(0)
+
+    await vi.advanceTimersByTimeAsync(1000)
+
+    expect(
+      sockets().map((socket) => new URL(socket.url).searchParams.get('token'))
+    ).toEqual(['signed-in'])
+  })
+
+  it('reconnects after an auth read that never settles', async () => {
+    const reads: (() => Promise<URLSearchParams | null>)[] = [
+      () => new Promise<URLSearchParams | null>(() => {}),
+      async () => tokenParams('recovered')
+    ]
+    const source = createSource({
+      getAuthParams: () => reads.shift()?.() ?? Promise.resolve(null)
+    })
+
+    source.subscribe(vi.fn())
+    await connected()
+    expect(sockets()).toHaveLength(0)
+
+    source.reconnect()
+    await connected()
+
+    expect(
+      sockets().map((socket) => new URL(socket.url).searchParams.get('token'))
+    ).toEqual(['recovered'])
   })
 
   it('carries every auth param onto the socket URL', async () => {
