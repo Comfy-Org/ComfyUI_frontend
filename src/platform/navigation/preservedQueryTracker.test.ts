@@ -176,9 +176,8 @@ describe('installPreservedQueryTracker', () => {
   it('strips keys of multiple marked namespaces in a single redirect', async () => {
     const router = createTestRouter()
     let navigationAttempts = 0
-    router.beforeEach((_to, _from, next) => {
+    router.beforeEach(() => {
       navigationAttempts++
-      next()
     })
     installPreservedQueryTracker(router, [
       strippedDefinition,

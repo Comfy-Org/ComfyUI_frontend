@@ -2,7 +2,12 @@
   <div class="flex min-w-0 flex-col">
     <!-- Search bar + collapse toggle -->
     <div class="flex min-w-0 shrink-0 items-center border-b px-4 pt-1 pb-4">
-      <AsyncSearchInput v-model="searchQuery" />
+      <AsyncSearchInput
+        v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+        :accessible-label="$t('g.search')"
+      />
       <CollapseToggleButton
         v-model="isAllCollapsed"
         :show="!isSearching && allErrorGroups.length > 1"
@@ -394,20 +399,20 @@ import { useManagerDialog } from '@/workbench/extensions/manager/composables/use
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
-import CollapseToggleButton from '../layout/CollapseToggleButton.vue'
-import TransitionCollapse from '../layout/TransitionCollapse.vue'
+import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
+import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import ErrorCardSection from './ErrorCardSection.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import LocateNodeButton from './LocateNodeButton.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
-import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
-import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
-import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
+import SwapNodesCard from '@/platform/workflowErrors/nodeReplacement/components/SwapNodesCard.vue'
+import MissingModelCard from '@/platform/workflowErrors/missingModel/components/MissingModelCard.vue'
+import MissingMediaCard from '@/platform/workflowErrors/missingMedia/components/MissingMediaCard.vue'
 import { isCloud } from '@/platform/distribution/types'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useErrorGroups } from './useErrorGroups'
@@ -415,7 +420,7 @@ import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup, ErrorGroupSeverity } from './types'
 import { isExecutionItemListGroup } from './executionItemList'
 import { selectionEmphasisClass } from './selectionEmphasis'
-import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
+import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
 
 interface ExecutionItemListEntry {
   key: string

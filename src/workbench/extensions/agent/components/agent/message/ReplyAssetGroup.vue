@@ -8,7 +8,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import Button from '@/components/ui/button/Button.vue'
 import {
   findOutputAsset,
@@ -18,8 +18,8 @@ import {
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ReplyAsset } from '../../../utils/replyAssets'
-import { replyAssetResultItem } from '../../../utils/replyAssets'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+import { replyAssetResultItem } from '@/workbench/extensions/agent/utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
 const { assets } = defineProps<{ assets: ReplyAsset[] }>()
@@ -89,7 +89,7 @@ async function generateOffscreenModelThumbnail(
   attempt = 1
 ): Promise<void> {
   const { generateModelThumbnail } =
-    await import('@/components/load3d/modelThumbnail')
+    await import('@/extensions/core/load3d/components/modelThumbnail')
   const generated = await generateModelThumbnail(
     url,
     filename,
@@ -151,7 +151,7 @@ watch(
 )
 
 const Load3dViewerContent = defineAsyncComponent(
-  () => import('@/components/load3d/Load3dViewerContent.vue')
+  () => import('@/extensions/core/load3d/components/Load3dViewerContent.vue')
 )
 const MediaLightbox = defineAsyncComponent(
   () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')

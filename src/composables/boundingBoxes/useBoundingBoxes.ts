@@ -1,8 +1,9 @@
-import { useElementSize } from '@vueuse/core'
+import { useElementSize, useEventBus } from '@vueuse/core'
+import type { EventBusKey } from '@vueuse/core'
 import { cloneDeep, isEqual } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import type { Ref, ShallowRef } from 'vue'
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, readonly, ref, watch } from 'vue'
 
 import {
   applyDrag,
@@ -10,6 +11,7 @@ import {
   fromBoundingBoxes,
   isBoundingBox,
   isRegionList,
+  regionColor,
   tagRects,
   toBoundingBoxes
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
@@ -19,16 +21,15 @@ import type {
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  locateWidgetNode,
+  widgetHistoryScope
+} from '@/composables/widgetHistoryScope'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
-import { app } from '@/scripts/app'
-import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
-import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
 import { readableTextColor, textOnColor } from '@/utils/colorUtil'
 
 const HANDLE_PX = 8
@@ -40,6 +41,12 @@ const MAX_GRID_CELLS = 64
 const DOT_ALPHA = 0.18
 const DOT_RADIUS = 1
 
+const gridBusKey: EventBusKey<{ widgetId: string; enabled: boolean }> = Symbol(
+  'bounding-boxes-grid'
+)
+
+type RegionField = 'type' | 'text' | 'desc' | 'palette'
+
 interface InlineEditorState {
   value: string
   style: Record<string, string>
@@ -48,20 +55,20 @@ interface InlineEditorState {
 
 interface UseBoundingBoxesOptions {
   canvasEl: Readonly<ShallowRef<HTMLCanvasElement | null>>
-  canvasContainer: Readonly<ShallowRef<HTMLDivElement | null>>
   inlineEditorEl: Readonly<ShallowRef<HTMLTextAreaElement | null>>
   modelValue: Ref<BoundingBox[]>
   widget: Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'>
+  alwaysShowActive?: boolean
 }
 
 export function useBoundingBoxes(
   nodeId: NodeId,
   {
     canvasEl,
-    canvasContainer,
     inlineEditorEl,
     modelValue,
-    widget
+    widget,
+    alwaysShowActive = false
   }: UseBoundingBoxesOptions
 ) {
   const focused = ref(false)
@@ -76,23 +83,10 @@ export function useBoundingBoxes(
   const grid = ref(true)
   const incomingPending = ref(false)
 
-  const { width: containerWidth } = useElementSize(canvasContainer)
-
-  function locateNode(): { graph: LGraph; nodeId: NodeId } | null {
-    const located = widget.nodeLocatorId
-      ? parseNodeLocatorId(widget.nodeLocatorId)
-      : null
-    if (!located) {
-      return app.canvas.graph ? { graph: app.canvas.graph, nodeId } : null
-    }
-    const graph = located.subgraphUuid
-      ? app.rootGraph.subgraphs.get(located.subgraphUuid)
-      : app.rootGraph
-    return graph ? { graph, nodeId: located.localNodeId } : null
-  }
+  const { width: canvasWidth, height: canvasHeight } = useElementSize(canvasEl)
 
   const litegraphNode = computed(() => {
-    const location = locateNode()
+    const location = locateWidgetNode(widget, nodeId)
     return location?.graph.getNodeById(location.nodeId) ?? null
   })
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
@@ -118,6 +112,10 @@ export function useBoundingBoxes(
     () => `${widthValue.value} / ${heightValue.value}`
   )
   const canvasStyle = computed(() => ({ aspectRatio: aspectRatio.value }))
+  const containedCanvasStyle = computed(() => ({
+    aspectRatio: aspectRatio.value,
+    width: `min(100cqw, 100cqh * ${widthValue.value} / ${heightValue.value})`
+  }))
 
   const activeRegion = computed(() =>
     activeIndex.value >= 0 ? state.value.regions[activeIndex.value] : null
@@ -263,7 +261,7 @@ export function useBoundingBoxes(
 
     if (grid.value) drawDots(ctx, W, H)
 
-    const showActive = focused.value || isNodeSelected.value
+    const showActive = alwaysShowActive || focused.value || isNodeSelected.value
     const aIdx = showActive ? activeIndex.value : -1
     const order = state.value.regions
       .map((_, i) => i)
@@ -280,7 +278,7 @@ export function useBoundingBoxes(
       const b = state.value.regions[i]
       const active = i === aIdx
       const pal = b.palette.filter(Boolean)
-      const col = pal.length ? pal[0] : '#8c8c8c'
+      const col = regionColor(b)
       const x1 = b.x * W
       const y1 = b.y * H
       const x2 = (b.x + b.w) * W
@@ -614,11 +612,28 @@ export function useBoundingBoxes(
       activeIndex.value = Math.max(0, activeIndex.value - 1)
   }
 
-  function setActiveType(t: 'obj' | 'text') {
-    if (activeRegion.value) {
-      activeRegion.value.type = t
-      commitEdit()
-    }
+  function updateRegion<K extends RegionField>(
+    index: number,
+    field: K,
+    value: Region[K]
+  ) {
+    if (!hasRegion(index)) return
+    state.value.regions[index][field] = value
+    commitEdit(field === 'type' ? undefined : `${field}:${index}`)
+  }
+
+  function hasRegion(index: number) {
+    return index >= 0 && index < state.value.regions.length
+  }
+
+  function selectRegion(index: number) {
+    if (hasRegion(index)) activeIndex.value = index
+  }
+
+  function deleteRegion(index: number) {
+    if (!hasRegion(index)) return
+    removeRegion(index)
+    commitEdit()
   }
 
   function clearAll() {
@@ -626,18 +641,6 @@ export function useBoundingBoxes(
     activeIndex.value = -1
     incomingPending.value = false
     setLastIncoming([])
-    commitEdit()
-  }
-
-  function onActiveTextInput() {
-    commitEdit(`text:${activeIndex.value}`)
-  }
-
-  function onActiveDescInput() {
-    commitEdit(`desc:${activeIndex.value}`)
-  }
-
-  function onActivePaletteChange() {
     commitEdit()
   }
 
@@ -652,42 +655,53 @@ export function useBoundingBoxes(
 
   function restoreRegions(value: unknown) {
     if (!isRegionList(value)) return
-    state.value.regions = value
-    activeIndex.value = Math.min(
-      activeIndex.value,
-      state.value.regions.length - 1
-    )
-    inlineEditor.value = null
+    replaceRegions(value)
     syncState()
   }
 
-  function historyScope(): WidgetHistoryScope | null {
-    const location = locateNode()
-    return location
-      ? {
-          rootGraphId: app.rootGraph.id,
-          widgetId: widgetId(location.graph.id, location.nodeId, widget.name)
-        }
-      : null
+  function replaceRegions(regions: Region[]) {
+    state.value.regions = regions
+    activeIndex.value = Math.min(
+      Math.max(activeIndex.value, regions.length ? 0 : -1),
+      regions.length - 1
+    )
+    inlineEditor.value = null
   }
 
-  const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
-    scope: historyScope,
-    read: () => state.value.regions,
-    apply: restoreRegions
-  })
+  function adoptExternalValue(boxes: BoundingBox[]) {
+    if (drawing.value) return
+    const current = toBoundingBoxes(
+      state.value.regions,
+      widthValue.value,
+      heightValue.value
+    )
+    if (isEqual(boxes, current)) return
+    replaceRegions(
+      fromBoundingBoxes(boxes, widthValue.value, heightValue.value)
+    )
+    syncBaseline()
+    requestDraw()
+  }
+
+  const { canUndo, canRedo, undo, redo, commit, syncBaseline } =
+    useWidgetValueHistory({
+      scope: () => widgetHistoryScope(widget, nodeId),
+      read: () => state.value.regions,
+      apply: restoreRegions
+    })
 
   function commitEdit(mergeKey?: string) {
     syncState()
     commit(mergeKey)
   }
 
-  watch(containerWidth, () => requestDraw())
+  watch([canvasWidth, canvasHeight], () => requestDraw())
+  watch(modelValue, adoptExternalValue)
   watch(
     () => state.value.regions.length,
     () => requestDraw()
   )
-  watch(isNodeSelected, () => requestDraw())
+  watch([isNodeSelected, activeIndex], () => requestDraw())
   watch([widthValue, heightValue], () => syncState())
 
   watch(
@@ -699,11 +713,18 @@ export function useBoundingBoxes(
     },
     { immediate: true }
   )
+  const gridBus = useEventBus(gridBusKey)
+  gridBus.on(({ widgetId, enabled }) => {
+    if (widgetId === widgetHistoryScope(widget, nodeId)?.widgetId)
+      grid.value = enabled
+  })
   watch(grid, (enabled) => {
     const props = litegraphNode.value?.properties as
       | Record<string, unknown>
       | undefined
     if (props) props.bboxGrid = enabled
+    const widgetId = widgetHistoryScope(widget, nodeId)?.widgetId
+    if (widgetId) gridBus.emit({ widgetId, enabled })
     requestDraw()
   })
 
@@ -828,6 +849,7 @@ export function useBoundingBoxes(
 
   return {
     canvasStyle,
+    containedCanvasStyle,
     canvasCursor,
     focused,
     activeRegion,
@@ -842,11 +864,12 @@ export function useBoundingBoxes(
     onCanvasKeyDown,
     onInlineKeyDown,
     commitInlineEditor,
-    setActiveType,
+    regions: computed(() => state.value.regions),
+    activeIndex: readonly(activeIndex),
+    selectRegion,
+    deleteRegion,
+    updateRegion,
     clearAll,
-    onActiveTextInput,
-    onActiveDescInput,
-    onActivePaletteChange,
     canUndo,
     canRedo,
     undo,

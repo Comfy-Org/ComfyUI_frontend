@@ -89,7 +89,8 @@ const activeWorkflowPath = computed({
   get: () => workflowStore.activeWorkflow?.path ?? '',
   set: (path: string) => {
     const workflow = workflowStore.getWorkflowByPath(path)
-    if (workflow) void workflowService.openWorkflow(workflow)
+    if (workflow)
+      void workflowService.openWorkflow(workflow, { initiator: 'user' })
   }
 })
 
@@ -127,7 +128,7 @@ const menuEntries = computed<MenuItem[]>(() => [
   {
     label: t('linearMode.enterNodeGraph'),
     icon: 'icon-[comfy--workflow]',
-    new: true,
+    badge: t('contextMenu.new'),
     command: () => (canvasStore.linearMode = false)
   },
   { separator: true },

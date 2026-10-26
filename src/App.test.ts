@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import App from './App.vue'
@@ -26,11 +25,6 @@ describe('App', () => {
   it('blocks existing dialogs while loading and keeps a stable readiness hook', async () => {
     const workspaceStore = useWorkspaceStore()
     workspaceStore.spinner = true
-    render({
-      directives: { rekaZIndex: vRekaZIndex },
-      template: '<div v-reka-z-index data-testid="dialog" />'
-    })
-    const dialog = screen.getByTestId('dialog')
     const { unmount } = render(App, {
       global: {
         stubs: { RouterView: true }
@@ -41,9 +35,7 @@ describe('App', () => {
     const overlay = screen.getByTestId('app-loading-overlay')
     expect(overlay).toHaveAttribute('aria-busy', 'true')
     expect(overlay).toBeVisible()
-    expect(Number(overlay.style.zIndex)).toBeGreaterThan(
-      Number(dialog.style.zIndex)
-    )
+    expect(overlay).toHaveClass('z-blocking')
 
     workspaceStore.spinner = false
     await nextTick()
@@ -57,9 +49,7 @@ describe('App', () => {
     await nextTick()
 
     expect(overlay).toBeVisible()
-    expect(Number(overlay.style.zIndex)).toBeGreaterThan(
-      Number(dialog.style.zIndex)
-    )
+    expect(overlay).toHaveClass('z-blocking')
     unmount()
     expect(overlay.style.zIndex).toBe('')
   })

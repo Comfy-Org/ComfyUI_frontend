@@ -31,9 +31,14 @@ export function teamCheckoutPlan(
     (stops?.stops ?? []).map((candidate) => ({
       id: candidate.id,
       credits: Number(candidate.credits),
+      monthly: {
+        price_cents: Number(candidate.monthly.price_cents),
+        period_charge_cents: Number(candidate.monthly.period_charge_cents)
+      },
       yearly: {
         list_price_cents: Number(candidate.yearly.list_price_cents),
-        price_cents: Number(candidate.yearly.price_cents)
+        price_cents: Number(candidate.yearly.price_cents),
+        period_charge_cents: Number(candidate.yearly.period_charge_cents)
       }
     }))
   ).find((candidate) => candidate.id === stopId)
@@ -42,6 +47,7 @@ export function teamCheckoutPlan(
     name,
     monthlyPriceUsd: { monthly: monthlyUsd, yearly: monthlyUsd },
     monthlyCredits: stop?.credits ?? 0,
+    yearlyChargeUsd: stop?.periodChargeUsd.yearly,
     pricedByQuote: false
   }
 }

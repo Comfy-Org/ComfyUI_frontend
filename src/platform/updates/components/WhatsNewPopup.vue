@@ -58,8 +58,8 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-import type { ReleaseNote } from '../common/releaseService'
-import { useReleaseStore } from '../common/releaseStore'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 
 const { buildDocsUrl } = useExternalLink()
 const releaseStore = useReleaseStore()

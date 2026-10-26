@@ -1,21 +1,21 @@
 import { assert, describe, expect, it } from 'vitest'
 
-import type { SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
+import type { SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
 import type {
   BillingHttpResponse,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import { sessionBillingScopeSource } from './billingScope.js'
-import { createCapabilitiesReader } from './capabilities.js'
-import type { BillingCapabilities } from './capabilities.js'
+} from './billingContracts'
+import { sessionBillingScopeSource } from './billingScope'
+import { createCapabilitiesReader } from './capabilities'
+import type { BillingCapabilities } from './capabilities'
 import {
   authenticated,
   credential,
   httpOk
-} from './__fixtures__/billingTestFixtures.js'
-import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
+} from './__fixtures__/billingTestFixtures'
+import type { SessionFake } from './__fixtures__/billingTestFixtures'
 
 const TEAM_WORKSPACE: AccountCredential['workspace'] = {
   id: 'ws-team',
@@ -63,6 +63,7 @@ const NO_RIGHTS: BillingCapabilities = {
   can_manage_members: false,
   can_manage_partner_node_access: false,
   can_manage_subscription: false,
+  can_open_plans: false,
   can_view_pending_invites: false,
   can_view_team_usage: false,
   can_reactivate: false,

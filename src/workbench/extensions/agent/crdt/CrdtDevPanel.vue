@@ -14,7 +14,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
+import { resolveDeployEnv } from '@/platform/telemetry/rumContext'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -25,7 +25,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
-import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { CrdtLogLevel } from './crdtDebugGate'
 import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
 import type {

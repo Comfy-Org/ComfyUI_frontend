@@ -267,6 +267,84 @@ describe('awaitCheckoutUiVariant', () => {
   })
 })
 
+describe('awaitUnifiedBillingSettings', () => {
+  it.for<{ name: string; reply: () => Promise<Response>; on: boolean }>([
+    {
+      name: 'true',
+      reply: async () => answer({ unified_billing_settings: true }),
+      on: true
+    },
+    {
+      name: 'false',
+      reply: async () => answer({ unified_billing_settings: false }),
+      on: false
+    },
+    {
+      name: 'a non-boolean value',
+      reply: async () => answer({ unified_billing_settings: 'true' }),
+      on: false
+    },
+    {
+      name: 'an absent key',
+      reply: async () => answer({ firebase_config: {} }),
+      on: false
+    },
+    {
+      name: 'a server error',
+      reply: async () => answer({ unified_billing_settings: true }, 500),
+      on: false
+    },
+    {
+      name: 'a refused request',
+      reply: () => Promise.reject(new TypeError('Failed to fetch')),
+      on: false
+    }
+  ])('answers $on for $name', async ({ reply, on }) => {
+    respondToFetch(FEATURES_URL, reply)
+    const { awaitUnifiedBillingSettings } = await freshCheckoutUi()
+
+    expect(await awaitUnifiedBillingSettings()).toBe(on)
+  })
+
+  it('answers false for a signed-out visitor without asking the server', async () => {
+    h.phase = 'signed-out'
+    const { awaitUnifiedBillingSettings } = await freshCheckoutUi()
+
+    expect(await awaitUnifiedBillingSettings()).toBe(false)
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('shares one features read with the checkout UI variant', async () => {
+    respondToFetch(FEATURES_URL, () =>
+      answer({
+        billing_web_checkout_ui: 'full_page',
+        unified_billing_settings: true
+      })
+    )
+    const { awaitCheckoutUiVariant, awaitUnifiedBillingSettings } =
+      await freshCheckoutUi()
+
+    expect(
+      await Promise.all([
+        awaitCheckoutUiVariant(),
+        awaitUnifiedBillingSettings()
+      ])
+    ).toEqual(['full_page', true])
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it.for([true, false])(
+    'honours a JSON dev override of %s without asking the server',
+    async (on) => {
+      localStorage.setItem('ff:unified_billing_settings', JSON.stringify(on))
+      const { awaitUnifiedBillingSettings } = await freshCheckoutUi()
+
+      expect(await awaitUnifiedBillingSettings()).toBe(on)
+      expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+})
+
 describe('settleCheckoutUi', () => {
   it.for<{ variant: 'embedded' | 'full_page' }>([
     { variant: 'embedded' },

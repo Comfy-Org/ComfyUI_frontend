@@ -5,6 +5,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { toNodeId } from '@/types/nodeId'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const IMAGE_COMPARE_NODE_ID = toNodeId(1)
 
@@ -223,7 +224,7 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
 
       await waitForImagesLoaded(node)
       await comfyPage.page.mouse.move(0, 0)
-      await expect(node).toHaveScreenshot('image-compare-default-50.png')
+      await expectElementScreenshot(node, 'image-compare-default-50.png')
     }
   )
 
@@ -558,7 +559,7 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
           .poll(() => getClipPathInsetRightPercent(beforeImg))
           .toBeLessThan(expectedClipMax)
 
-        await expect(node).toHaveScreenshot(`image-compare-slider-${pct}.png`)
+        await expectElementScreenshot(node, `image-compare-slider-${pct}.png`)
       }
     )
   }

@@ -1,21 +1,23 @@
 <template>
-  <DialogPanel class="w-full min-w-[400px]" @close="onCancel">
+  <AppDialogPanel
+    body-class="flex flex-col gap-4"
+    class="max-w-none min-w-100"
+    @close="onCancel"
+  >
     <template #title>
       {{ $t('workspacePanel.editWorkspaceDialog.title') }}
     </template>
 
-    <div class="flex flex-col gap-4 p-4">
-      <div class="flex flex-col gap-2 text-sm">
-        <label>
-          {{ $t('workspacePanel.editWorkspaceDialog.nameLabel') }}
-        </label>
-        <input
-          v-model="newWorkspaceName"
-          type="text"
-          class="w-full rounded-lg border bg-transparent px-3 py-2 placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-none"
-          @keydown.enter="isValidName && onSave()"
-        />
-      </div>
+    <div class="flex flex-col gap-2 text-sm">
+      <label>
+        {{ $t('workspacePanel.editWorkspaceDialog.nameLabel') }}
+      </label>
+      <input
+        v-model="newWorkspaceName"
+        type="text"
+        class="w-full rounded-lg border bg-transparent px-3 py-2 placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-none"
+        @keydown.enter="isValidName && onSave()"
+      />
     </div>
 
     <template #footer>
@@ -32,11 +34,11 @@
         {{ $t('workspacePanel.editWorkspaceDialog.save') }}
       </Button>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

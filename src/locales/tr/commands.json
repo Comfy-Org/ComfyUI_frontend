@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Seçili Öğeleri Sil"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "Seçili Bağlantıları Sil"
+  },
   "Comfy_Canvas_FitView": {
     "label": "Görünümü seçili düğümlere sığdır"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "Seçili Bağlantıları Gizle"
   },
   "Comfy_Canvas_Lock": {
     "label": "Tuvali Kilitle"
@@ -82,6 +88,9 @@
   },
   "Comfy_Canvas_SelectAll": {
     "label": "Tümünü Seç"
+  },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "Seçili Bağlantıları Göster"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Tuval Bağlantı Görünürlüğünü Aç/Kapat"
