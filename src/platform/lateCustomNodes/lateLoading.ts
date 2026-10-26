@@ -21,6 +21,7 @@ import type {
   CpuServerWatch
 } from './cpuServerStep'
 import { isBeingSetUp, watchCpuServer } from './cpuServerStep'
+import { graphsAwaitingNodeTypes } from './lateNodeTypes'
 import {
   showFailedToast,
   showReadyToast,
@@ -178,18 +179,11 @@ function watchLateWork(signal: AbortSignal, onAbort: () => void) {
 
 async function rebuildOpenWorkflow() {
   await useApp().enqueueGraphLoad(async () => {
-    const store = useWorkflowStore()
-    for (const workflow of store.openWorkflows) {
-      if (!store.isActive(workflow)) workflow.releaseGraph()
+    for (const workflow of useWorkflowStore().openWorkflows) {
+      if (workflow.graph) graphsAwaitingNodeTypes.add(workflow.graph)
     }
   })
-  const workflow = useWorkflowStore().activeWorkflow
-  const baseline = workflow?.changeTracker.initialState
-  const wasModified = workflow?.isModified ?? false
   await useWorkflowService().reloadCurrentWorkflow()
-  if (!workflow || !baseline) return
-  workflow.changeTracker.initialState = baseline
-  workflow.isModified = wasModified
 }
 
 function reportLateExtensionFailure(

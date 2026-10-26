@@ -796,19 +796,27 @@ describe('ComfyApp', () => {
       }
     )
 
-    it('restores a background workflow containing an uninstalled node without losing its tracker state', async () => {
+    it('preserves redo after a background restore containing an uninstalled node and a group without flags', async () => {
+      onTestFinished(attachLegacyUI(singletonApp))
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+      })
       const active = new LGraph()
       active.extra = { marker: 'visible' }
       Reflect.set(app, 'rootGraphInternal', active)
-      const workflow = new ComfyWorkflow({
-        path: 'workflows/missing-node.json',
-        modified: 0,
-        size: 0
-      })
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/missing-node.json',
+          modified: 0,
+          size: 0
+        })
+      )
       const owned = new LGraph()
       workflow.adoptGraph(owned)
       const data = zComfyWorkflow.parse({
         ...createWorkflowGraphData(),
+        groups: [{ title: 'Restored group', bounding: [0, 0, 200, 200] }],
         nodes: [
           {
             id: 1,
@@ -825,16 +833,30 @@ describe('ComfyApp', () => {
       const missingNode = data.nodes[0]
       assert(missingNode)
       Reflect.deleteProperty(missingNode, 'flags')
-      const tracker = new ChangeTracker(workflow, createWorkflowGraphData())
+      const tracker = markRaw(
+        new ChangeTracker(workflow, createWorkflowGraphData())
+      )
       workflow.changeTracker = tracker
+      tracker.undoQueue.push(createWorkflowGraphData())
+      tracker.redoQueue.push(createWorkflowGraphData())
 
       await expect(
         app.loadGraphData(data, false, false, workflow)
       ).resolves.toBe(true)
 
-      expect(tracker.activeState.nodes).toEqual(data.nodes)
+      expect.soft(tracker.activeState).toEqual(owned.serialize())
       expect(active.extra).toEqual({ marker: 'visible' })
       expect(app.rootGraph).toBe(active)
+
+      Reflect.set(app, 'rootGraphInternal', owned)
+      Reflect.set(singletonApp, 'rootGraphInternal', owned)
+      useWorkflowStore().activeWorkflow = workflow
+      tracker.captureCanvasState()
+
+      expect({
+        undo: tracker.undoQueue.length,
+        redo: tracker.redoQueue.length
+      }).toEqual({ undo: 1, redo: 1 })
     })
 
     it('refuses a non-clean load into a workflow whose graph was released instead of borrowing the active one', async () => {

@@ -4,7 +4,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-di
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -26,7 +26,10 @@ import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplace
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { nodeTypesMayStillArrive } from '@/platform/lateCustomNodes/lateNodeTypes'
+import {
+  graphsAwaitingNodeTypes,
+  nodeTypesMayStillArrive
+} from '@/platform/lateCustomNodes/lateNodeTypes'
 import { showPlaceholdersAsWaiting } from '@/platform/lateCustomNodes/waitingNodes'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
@@ -94,7 +97,7 @@ vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/platform/lateCustomNodes/lateNodeTypes'))
+vi.mock(import('@/platform/lateCustomNodes/lateNodeTypes'), { spy: true })
 vi.mock(import('@/platform/lateCustomNodes/waitingNodes'))
 
 const storeThumbnailMock = vi.hoisted(() => vi.fn())
@@ -563,6 +566,39 @@ describe('useWorkflowService', () => {
         expect.anything()
       )
     })
+
+    it('reconfigures when late types invalidate a live switch already queued', async () => {
+      const graph = next.graph
+      assert(graph)
+      let beginQueue = () => {}
+      const queued = new Promise<void>((resolve) => {
+        beginQueue = resolve
+      })
+      let finishQueue = () => {}
+      const proceed = new Promise<void>((resolve) => {
+        finishQueue = resolve
+      })
+      vi.mocked(app.enqueueGraphLoad).mockImplementation(async (operation) => {
+        beginQueue()
+        await proceed
+        return operation()
+      })
+      const opening = useWorkflowService().openWorkflow(next)
+      await queued
+
+      graphsAwaitingNodeTypes.add(graph)
+      finishQueue()
+      await opening
+
+      expect(app.activateRootGraph).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.anything(),
+        true,
+        true,
+        next,
+        expect.anything()
+      )
+    })
   })
 
   describe('openWorkflow ordering', () => {
@@ -614,6 +650,49 @@ describe('useWorkflowService', () => {
         expect(
           vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
         ).toEqual([next, next])
+      })
+
+      it('preserves the reloaded tab saved baseline and unsaved mark after a pending switch', async () => {
+        const saved = makeWorkflowData({ note: 'saved next tab' })
+        const edited = makeWorkflowData({ note: 'unsaved next tab' })
+        const tracker = new ChangeTracker(next, saved)
+        tracker.activeState = edited
+        next.changeTracker = tracker
+        next.isModified = true
+        const previousBaseline = previous.changeTracker.initialState
+        let beginLoading = () => {}
+        const loading = new Promise<void>((resolve) => {
+          beginLoading = resolve
+        })
+        let finishLoading = () => {}
+        const proceed = new Promise<void>((resolve) => {
+          finishLoading = resolve
+        })
+        vi.mocked(app.loadGraphData)
+          .mockImplementationOnce(async () => {
+            beginLoading()
+            await proceed
+            useWorkflowStore().activeWorkflow = next
+            return true
+          })
+          .mockImplementation(async () => {
+            next.changeTracker = new ChangeTracker(next, edited)
+            next.isModified = false
+            return true
+          })
+        const opening = useWorkflowService().openWorkflow(next)
+        await loading
+
+        const reloading = useWorkflowService().reloadCurrentWorkflow()
+        finishLoading()
+        await Promise.all([opening, reloading])
+
+        expect(
+          vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
+        ).toEqual([next, next])
+        expect(next.changeTracker.initialState).toEqual(saved)
+        expect(next.isModified).toBe(true)
+        expect(previous.changeTracker.initialState).toBe(previousBaseline)
       })
 
       it('does not reopen the previous workflow when a switch lands after the reload read it', async () => {
@@ -971,6 +1050,49 @@ describe('useWorkflowService', () => {
       expect(app.activateRootGraph).toHaveBeenCalledWith(retained.graph)
       expect(retained.changeTracker.restore).toHaveBeenCalled()
       expect(workflowStore.activeWorkflow.path).toBe('workflows/retained.json')
+    })
+
+    it('preserves saved baseline and unsaved edits when a failed load restores a retained graph awaiting late types', async () => {
+      const workflowStore = useWorkflowStore()
+      const retained = createModeTestWorkflow({
+        path: 'workflows/retained.json'
+      })
+      const saved = makeWorkflowData({ note: 'saved retained tab' })
+      const edited = makeWorkflowData({ note: 'unsaved retained tab' })
+      const tracker = new ChangeTracker(retained, saved)
+      tracker.activeState = edited
+      retained.changeTracker = tracker
+      retained.isModified = true
+      const graph = app.createRootGraph()
+      retained.adoptGraph(graph)
+      graphsAwaitingNodeTypes.add(graph)
+      const failing = createModeTestWorkflow({ path: 'workflows/failing.json' })
+      workflowStore.attachWorkflow(retained, 0)
+      workflowStore.attachWorkflow(failing, 1)
+      workflowStore.activeWorkflow = retained
+      vi.mocked(app.loadGraphData)
+        .mockResolvedValueOnce(false)
+        .mockImplementationOnce(async () => {
+          retained.changeTracker = new ChangeTracker(retained, edited)
+          retained.isModified = false
+          return true
+        })
+
+      await expect(useWorkflowService().openWorkflow(failing)).resolves.toBe(
+        false
+      )
+
+      expect(app.loadGraphData).toHaveBeenLastCalledWith(
+        edited,
+        true,
+        true,
+        retained
+      )
+      expect(app.activateRootGraph).not.toHaveBeenCalled()
+      expect(workflowStore.activeWorkflow.path).toBe(retained.path)
+      expect(retained.changeTracker.initialState).toEqual(saved)
+      expect(retained.changeTracker.activeState).toEqual(edited)
+      expect(retained.isModified).toBe(true)
     })
 
     it('leaves the retained workflow alone for a superseded load', async () => {

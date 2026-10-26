@@ -46,6 +46,7 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { graphsAwaitingNodeTypes } from '@/platform/lateCustomNodes/lateNodeTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
@@ -78,10 +79,7 @@ import type {
   WorkflowJSON04
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
-import {
-  zComfyWorkflow,
-  zNodePackMetadata
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import {
   buildSubgraphExecutionPaths,
@@ -1497,6 +1495,7 @@ export class ComfyApp implements IComfyApp {
         }
         try {
           graph.configure(graphData as ISerialisedGraph)
+          graphsAwaitingNodeTypes.delete(graph)
 
           const originalMainGraphRenderer = graph.extra.workflowRendererVersion
 
@@ -1611,16 +1610,15 @@ export class ComfyApp implements IComfyApp {
           'afterConfigureGraph',
           missingNodeTypes
         )
+        const configuredGraphData =
+          graph.serialize() as unknown as ComfyWorkflowJSON
 
         if (
           !clean &&
           workflow instanceof ComfyWorkflow &&
           graph !== this.rootGraph
         ) {
-          const parsed = zComfyWorkflow.safeParse(graph.serialize())
-          workflow.changeTracker?.reset(
-            parsed.success ? parsed.data : graphData
-          )
+          workflow.changeTracker?.reset(configuredGraphData)
           return true
         }
 
@@ -1641,7 +1639,7 @@ export class ComfyApp implements IComfyApp {
         try {
           await useWorkflowService().afterLoadNewGraph(
             workflow,
-            graph.serialize() as unknown as ComfyWorkflowJSON,
+            configuredGraphData,
             graph,
             effectiveShareId
           )

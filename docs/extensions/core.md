@@ -225,9 +225,11 @@ afterConfigureGraph
 
 `beforeLoadGraph` and `afterLoadGraph` do not run because the visible workflow
 does not change. Throughout the restore, `app.graph` and `app.rootGraph` refer
-to the visible workflow, not the graph being configured. Per-node hooks can
-use the node's `graph` instead. Reserve visible-graph subscriptions and DOM
-updates for `afterLoadGraph`.
+to the visible workflow, not the graph being configured. `loadedGraphNode`
+can use `node.graph` instead. In `nodeCreated`, ordinary nodes are not yet
+attached to a graph, and subgraph nodes may temporarily reference the visible
+root graph. Reserve visible-graph subscriptions and DOM updates for
+`afterLoadGraph`.
 
 A failed background restore can call `onGraphLoadError` without a preceding
 `beforeLoadGraph`. Error handlers must tolerate that sequence.

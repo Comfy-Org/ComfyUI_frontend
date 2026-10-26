@@ -31,9 +31,12 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { useApp } from '@/scripts/appInstance'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
-import { nodeTypesMayStillArrive } from '@/platform/lateCustomNodes/lateNodeTypes'
-import { showPlaceholdersAsWaiting } from '@/platform/lateCustomNodes/waitingNodes'
 import { useExtensionService } from '@/services/extensionService'
+import {
+  graphsAwaitingNodeTypes,
+  nodeTypesMayStillArrive
+} from '@/platform/lateCustomNodes/lateNodeTypes'
+import { showPlaceholdersAsWaiting } from '@/platform/lateCustomNodes/waitingNodes'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -361,18 +364,18 @@ export const useWorkflowService = () => {
   const loadBlankWorkflow = () =>
     queueWorkflowLoad(() => useApp().loadGraphData(blankGraph))
 
-  /**
-   * Reload the current workflow
-   * Waits for queued loads; skipped when a later open replaces the workflow.
-   */
   const reloadCurrentWorkflow = async () => {
     await workflowLoadTail
     const workflow = workflowStore.activeWorkflow
     if (workflow) {
+      const baseline = workflow.changeTracker.initialState
+      const wasModified = workflow.isModified
       await openWorkflow(workflow, {
         force: true,
         isCurrent: () => workflowStore.activeWorkflow === workflow
       })
+      workflow.changeTracker.initialState = baseline
+      workflow.isModified = wasModified
     }
   }
 
@@ -380,7 +383,14 @@ export const useWorkflowService = () => {
     const retained = getActiveWorkflow()
     if (!retained?.graph || retained.path === failed.path) return
 
-    await switchToWorkflowGraph(retained, retained.graph)
+    if (!(await switchToWorkflowGraph(retained, retained.graph))) {
+      const loaded = await retained.load()
+      const baseline = loaded.changeTracker.initialState
+      const wasModified = loaded.isModified
+      await useApp().loadGraphData(loaded.activeState, true, true, retained)
+      loaded.changeTracker.initialState = baseline
+      loaded.isModified = wasModified
+    }
     showPendingWarnings(undefined, { silent: true })
   }
 
@@ -405,10 +415,13 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     graph: NonNullable<ComfyWorkflow['graph']>,
     navigationIntentId?: number
-  ): Promise<void> =>
+  ): Promise<boolean> =>
     useApp().enqueueGraphLoad(async () => {
+      if (workflow.graph !== graph || graphsAwaitingNodeTypes.has(graph))
+        return false
       beforeLoadNewGraph(true)
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+      if (workflow.graph !== graph) return false
       const app = useApp()
       useSubgraphNavigationStore().suppressRootGraphHash(graph)
       app.activateRootGraph(graph)
@@ -427,6 +440,7 @@ export const useWorkflowService = () => {
         requestAnimationFrame(() => {
           app.canvas.setDirty(true, true)
         })
+        return true
       } finally {
         void useSubgraphNavigationStore().updateHash(
           'workflow-load',
@@ -458,6 +472,7 @@ export const useWorkflowService = () => {
     if (
       pendingWorkflowLoads === 0 &&
       workflowStore.isActive(workflow) &&
+      !(workflow.graph && graphsAwaitingNodeTypes.has(workflow.graph)) &&
       !options.force
     ) {
       return Promise.resolve(true)
@@ -483,12 +498,15 @@ export const useWorkflowService = () => {
           return false
         }
 
-        if (workflow.graph && !options.force) {
-          await switchToWorkflowGraph(
+        if (
+          workflow.graph &&
+          !options.force &&
+          (await switchToWorkflowGraph(
             workflow,
             workflow.graph,
             navigationIntentId
-          )
+          ))
+        ) {
           showPendingWarnings(undefined, { silent: true })
           if (options.initiator === 'user')
             workflowStore.reportUserActivation(workflow)
