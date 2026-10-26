@@ -2235,10 +2235,11 @@ describe('useMediaAssetActions', () => {
         const groupMetadata = getOutputAssetMetadata(group.user_metadata)
         assert.exists(groupMetadata)
         const expanded = await resolveOutputAssetItems(groupMetadata)
-        const [child] = expanded
-        assert.exists(child)
+        const stackChildren = ref(expanded)
+        const [listedChild] = stackChildren.value
+        assert.exists(listedChild)
 
-        await actions.deleteAssets(child)
+        await actions.deleteAssets({ ...listedChild })
 
         expect(mockDeleteAsset.mock.calls).toEqual([[deletedAsset().id]])
         expect([...nodes, dragged].map(referenceState)).toEqual([
@@ -2249,9 +2250,9 @@ describe('useMediaAssetActions', () => {
       }
     )
 
-    it('ignores a stored hash without a stored root in server metadata', async () => {
-      const node = addLoadImageNode('ee55.png [output]')
-      const inputNode = addLoadImageNode('ee55.png')
+    it('ignores stored identity fields supplied in server metadata', async () => {
+      const unrelated = addLoadImageNode('unrelated.png')
+      const unrelatedOutput = addLoadImageNode('unrelated.png [output]')
       const { actions } = mountMediaActions()
 
       await actions.deleteAssets(
@@ -2262,14 +2263,15 @@ describe('useMediaAssetActions', () => {
           user_metadata: {
             jobId: 'job-2',
             subfolder: '',
-            storedHash: 'ee55.png'
+            storedHash: 'unrelated.png',
+            storedType: 'input'
           }
         })
       )
 
-      expect([node, inputNode].map(referenceState)).toEqual([
-        kept('ee55.png [output]'),
-        kept('ee55.png')
+      expect([unrelated, unrelatedOutput].map(referenceState)).toEqual([
+        kept('unrelated.png'),
+        kept('unrelated.png [output]')
       ])
     })
 

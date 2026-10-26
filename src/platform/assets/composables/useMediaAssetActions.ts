@@ -19,7 +19,6 @@ import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -33,7 +32,10 @@ import { clearDeletedAssetWidgetValues } from '@/platform/assets/utils/clearDele
 import { clearNodePreviewCacheForValues } from '@/platform/assets/utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '@/platform/assets/utils/markDeletedAssetsAsMissingMedia'
 import { getTotalAssetOutputCount } from '@/platform/assets/utils/outputAssetCountUtil'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import {
+  getStoredOutputIdentity,
+  resolveOutputAssetItems
+} from '@/platform/assets/utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -68,15 +70,6 @@ function widgetValueVariants(
   return compact([name, hash]).map((filename) =>
     createAnnotatedPath(filename, { rootFolder, subfolder })
   )
-}
-
-function readStoredIdentity(metadata: OutputAssetMetadata | null) {
-  const { storedHash, storedType } = metadata ?? {}
-  if (!isResultItemType(storedType)) return {}
-  return {
-    type: storedType,
-    hash: typeof storedHash === 'string' ? storedHash : undefined
-  }
 }
 
 export function useMediaAssetActions() {
@@ -628,12 +621,12 @@ export function useMediaAssetActions() {
         })
         if (childAssets.length > 0) return childAssets
 
-        const stored = readStoredIdentity(metadata)
+        const stored = getStoredOutputIdentity(asset)
         const variants = widgetValueVariants(
           asset.name,
-          stored.type ?? getAssetType(asset, 'input'),
+          stored?.type ?? getAssetType(asset, 'input'),
           metadata?.subfolder,
-          asset.hash ?? stored.hash
+          asset.hash ?? stored?.hash
         )
         return [
           {
