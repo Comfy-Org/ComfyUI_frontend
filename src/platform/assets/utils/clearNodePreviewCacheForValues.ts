@@ -6,8 +6,9 @@ import type {
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
-function toReferenceKey(value: string): string {
-  const { filepath, rootFolder } = parseAnnotatedPath(value)
+type ReferencePath = ReturnType<typeof parseAnnotatedPath>
+
+function toReferenceKey({ filepath, rootFolder }: ReferencePath): string {
   return JSON.stringify([rootFolder, filepath])
 }
 
@@ -15,9 +16,14 @@ function toReferenceKey(value: string): string {
 export function createDeletedValueMatcher(
   deletedValues: ReadonlySet<string>
 ): (value: unknown) => boolean {
-  const deletedKeys = new Set([...deletedValues].map(toReferenceKey))
+  const deletedPaths = [...deletedValues].map((value) =>
+    parseAnnotatedPath(value)
+  )
+  const deletedKeys = new Set(deletedPaths.map(toReferenceKey))
   return (value) =>
-    typeof value === 'string' && deletedKeys.has(toReferenceKey(value))
+    typeof value === 'string' &&
+    deletedPaths.some(({ filepath }) => value.startsWith(filepath)) &&
+    deletedKeys.has(toReferenceKey(parseAnnotatedPath(value)))
 }
 
 /** Clears the canvas and Vue preview state of every node referencing a deleted value. */

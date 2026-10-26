@@ -2086,7 +2086,9 @@ describe('useMediaAssetActions', () => {
           addLoadImageNode('aa7ecf08.png [output]'),
           addLoadImageNode('other/aa7ecf08.png [temp]'),
           addLoadImageNode('ComfyUI_temp_00001_.png [temp]'),
-          addLoadImageNode('bb12cd34.png [output]')
+          addLoadImageNode('bb12cd34.png [output]'),
+          addLoadImageNode('aa7ecf08.png'),
+          addLoadImageNode('bb12cd34.png [input]')
         ]
 
         await expect(actions.deleteAssets(deletionTargets())).resolves.toBe(
@@ -2111,7 +2113,9 @@ describe('useMediaAssetActions', () => {
           kept('aa7ecf08.png [output]'),
           kept('other/aa7ecf08.png [temp]'),
           kept('ComfyUI_temp_00001_.png [temp]'),
-          kept('bb12cd34.png [output]')
+          kept('bb12cd34.png [output]'),
+          kept('aa7ecf08.png'),
+          kept('bb12cd34.png [input]')
         ])
       }
     )

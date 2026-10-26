@@ -64,10 +64,9 @@ function widgetValueVariants(
   hash?: string
 ): string[] {
   const rootFolder = isResultItemType(type) ? type : undefined
-  const annotatedPaths = compact([name, hash]).map((filename) =>
+  return compact([name, hash]).map((filename) =>
     createAnnotatedPath(filename, { rootFolder, subfolder })
   )
-  return hash ? [...annotatedPaths, hash] : annotatedPaths
 }
 
 export function useMediaAssetActions() {
