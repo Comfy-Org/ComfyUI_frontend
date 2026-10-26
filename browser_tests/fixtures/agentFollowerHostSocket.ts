@@ -174,7 +174,6 @@ export class AgentFollowerHostSocket {
     this.hosts.set(workflowId, host)
   }
 
-  /** Serves another document; subscribe knobs still apply to the primary one only. */
   addWorkflow(workflowId: string, host: HostDoc): void {
     this.hosts.set(workflowId, host)
   }

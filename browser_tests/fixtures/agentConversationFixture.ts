@@ -774,7 +774,6 @@ export class AgentConversationHarness {
     return this.hostSocket.clientDocFrames()
   }
 
-  /** Serves and activates another empty workflow on the routed socket. */
   async activateEmptyWorkflow(workflowId: string, name: string): Promise<void> {
     const seed = structuredClone(this.conversation.workflow.seed)
     seed.nodes = []
@@ -793,11 +792,6 @@ export class AgentConversationHarness {
     await expect
       .poll(() => this.subscribeCount(workflowId))
       .toBeGreaterThanOrEqual(subscribes + 1)
-  }
-
-  /** Holds subscribe acknowledgements for `workflowId` until resumed. */
-  pauseWorkflowSubscribe(workflowId: string): void {
-    this.hostSocket.pauseSubscribes(workflowId)
   }
 
   resumeWorkflowSubscribe(workflowId: string): void {
@@ -820,7 +814,7 @@ export class AgentConversationHarness {
   /** Returns to the recorded workflow's tab (the first) and holds its subscribe ack. */
   async activateRecordedWorkflowBeforeSubscribeAck(): Promise<void> {
     const { id, name } = this.conversation.workflow
-    this.pauseWorkflowSubscribe(id)
+    this.hostSocket.pauseSubscribes(id)
     const sent = this.clientDocFrames().filter(
       (frame) => frame.type === 'doc_subscribe' && frame.workflowId === id
     ).length
@@ -918,7 +912,6 @@ export class AgentConversationHarness {
     return this.clientDocFrames().filter((frame) => frame.type === 'doc_ops')
   }
 
-  /** Waits for the human op adding `nodeId` to `workflowId`; returns its wire `base_version`. */
   async humanAddNodeBaseVersion(
     workflowId: string,
     nodeId: string
