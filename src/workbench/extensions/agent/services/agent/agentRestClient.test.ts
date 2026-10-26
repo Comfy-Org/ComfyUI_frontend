@@ -1124,7 +1124,8 @@ describe('error mapping', () => {
       operation: 'get_thread_messages',
       status: 401,
       authScheme: 'web-session',
-      credential: 'unreported'
+      credential: 'unreported',
+      ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 401)
     })
   })
 
