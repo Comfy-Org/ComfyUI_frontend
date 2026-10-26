@@ -1,3 +1,4 @@
+import type { ReleaseUnsupportedPack } from '@comfyorg/ingest-types'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,6 +6,7 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
@@ -52,6 +54,7 @@ vi.mock<unknown>(
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
+  escapeParameter: true,
   messages: {
     en: {
       g: {
@@ -67,7 +70,9 @@ const i18n = createI18n({
           installed: 'Installed',
           viewInManager: 'View in Manager',
           collapse: 'Collapse',
-          expand: 'Expand'
+          expand: 'Expand',
+          unsupportedOnBuild: 'Not supported on this build: {cause}',
+          unsupportedOnBuildNoCause: 'Not supported on this build'
         }
       }
     }
@@ -88,6 +93,30 @@ function makeGroup(
     isResolving: false,
     ...overrides
   }
+}
+
+const nvidiaVfx: ReleaseUnsupportedPack = {
+  folder: 'ComfyUI-NVIDIA-VFX',
+  registry_id: 'comfyui-nvidia-vfx',
+  repository: 'https://github.com/NVIDIA/ComfyUI-NVIDIA-VFX',
+  cause: 'needs a GPU'
+}
+
+function buildLeftOut(pack: ReleaseUnsupportedPack | undefined) {
+  return vi
+    .spyOn(useDeploymentPickStore(), 'unsupportedPackFor')
+    .mockImplementation((cnrId) =>
+      pack && cnrId === pack.registry_id ? pack : undefined
+    )
+}
+
+function packGroup(cnrId: string | undefined): MissingPackGroup {
+  return makeGroup({
+    packId: cnrId ?? 'comfyui-nvidia-vfx',
+    nodeTypes: [
+      { type: 'NVVFXSuperRes', nodeId: '7', cnrId, isReplaceable: false }
+    ]
+  })
 }
 
 function renderRow(
@@ -398,6 +427,85 @@ describe('MissingPackGroupRow', () => {
       const { user, onOpenManagerInfo } = renderRow({ showInfoButton: true })
       await user.click(screen.getByRole('button', { name: 'View in Manager' }))
       expect(onOpenManagerInfo).toHaveBeenCalledWith('my-pack')
+    })
+  })
+
+  describe('Pack the build could not load', () => {
+    it.for([
+      {
+        name: 'the cause',
+        pack: nvidiaVfx,
+        text: 'Not supported on this build: needs a GPU'
+      },
+      {
+        name: 'the cause as logged',
+        pack: { ...nvidiaVfx, cause: 'bad <module>: a/b & missing' },
+        text: 'Not supported on this build: bad <module>: a/b & missing'
+      },
+      {
+        name: 'only that, with no cause logged',
+        pack: { ...nvidiaVfx, cause: '' },
+        text: 'Not supported on this build'
+      }
+    ])('says $name', ({ pack, text }) => {
+      const lookup = buildLeftOut(pack)
+
+      renderRow({ group: packGroup('comfyui-nvidia-vfx') })
+
+      expect(lookup).toHaveBeenCalledWith('comfyui-nvidia-vfx')
+      expect(screen.getByText(text, { exact: true })).toBeInTheDocument()
+    })
+
+    it('says nothing for a pack whose nodes carry no registry id', () => {
+      const lookup = buildLeftOut(nvidiaVfx)
+
+      renderRow({ group: packGroup(undefined) })
+
+      expect(lookup).not.toHaveBeenCalled()
+      expect(
+        screen.queryByText(/Not supported on this build/)
+      ).not.toBeInTheDocument()
+    })
+
+    it('says the cause when a later node carries the matching registry id', () => {
+      buildLeftOut(nvidiaVfx)
+
+      renderRow({
+        group: makeGroup({
+          packId: 'comfyui-nvidia-vfx',
+          nodeTypes: [
+            {
+              type: 'OtherNode',
+              nodeId: '6',
+              cnrId: 'comfyui-impact-pack',
+              isReplaceable: false
+            },
+            {
+              type: 'NVVFXSuperRes',
+              nodeId: '7',
+              cnrId: 'comfyui-nvidia-vfx',
+              isReplaceable: false
+            }
+          ]
+        })
+      })
+
+      expect(
+        screen.getByText('Not supported on this build: needs a GPU', {
+          exact: true
+        })
+      ).toBeInTheDocument()
+    })
+
+    it('shows the row as before when the build left no matching pack out', () => {
+      buildLeftOut(undefined)
+
+      renderRow({ group: packGroup('comfyui-nvidia-vfx') })
+
+      expect(screen.getByText('comfyui-nvidia-vfx')).toBeInTheDocument()
+      expect(
+        screen.queryByText(/Not supported on this build/)
+      ).not.toBeInTheDocument()
     })
   })
 
