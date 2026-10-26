@@ -70,13 +70,13 @@ function widgetValueVariants(
   )
 }
 
-function storedOutputVariants(
-  name: string,
-  metadata: OutputAssetMetadata | null
-): string[] {
-  const { storedHash, storedType, subfolder } = metadata ?? {}
-  if (typeof storedHash !== 'string' || !isResultItemType(storedType)) return []
-  return widgetValueVariants(name, storedType, subfolder, storedHash)
+function readStoredIdentity(metadata: OutputAssetMetadata | null) {
+  const { storedHash, storedType } = metadata ?? {}
+  if (!isResultItemType(storedType)) return {}
+  return {
+    type: storedType,
+    hash: typeof storedHash === 'string' ? storedHash : undefined
+  }
 }
 
 export function useMediaAssetActions() {
@@ -628,15 +628,13 @@ export function useMediaAssetActions() {
         })
         if (childAssets.length > 0) return childAssets
 
-        const variants = [
-          ...widgetValueVariants(
-            asset.name,
-            getAssetType(asset, 'input'),
-            metadata?.subfolder,
-            asset.hash
-          ),
-          ...storedOutputVariants(asset.name, metadata)
-        ]
+        const stored = readStoredIdentity(metadata)
+        const variants = widgetValueVariants(
+          asset.name,
+          stored.type ?? getAssetType(asset, 'input'),
+          metadata?.subfolder,
+          asset.hash ?? stored.hash
+        )
         return [
           {
             kind: 'asset',

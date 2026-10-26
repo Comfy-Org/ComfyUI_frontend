@@ -2184,17 +2184,32 @@ describe('useMediaAssetActions', () => {
         'output',
         () => outputAsset,
         'runs/2026/bb12cd34.png [output]',
-        'runs/2026/ComfyUI_00001_.png [output]'
+        'runs/2026/ComfyUI_00001_.png [output]',
+        'runs/2026/ComfyUI_00001_.png [temp]'
       ],
       [
         'temp',
         () => tempAsset,
         'previews/aa7ecf08.png [temp]',
-        'previews/ComfyUI_temp_00001_.png [temp]'
+        'previews/ComfyUI_temp_00001_.png [temp]',
+        'previews/ComfyUI_temp_00001_.png [output]'
+      ],
+      [
+        'hashless temp',
+        () => createMockAsset({ ...tempAsset, hash: undefined }),
+        'previews/ComfyUI_temp_00001_.png [temp]',
+        'previews/ComfyUI_temp_00001_.png [temp]',
+        'previews/ComfyUI_temp_00001_.png [output]'
       ]
     ] as const)(
       'clears collapsed-card %s references when the output is deleted from the expanded stack',
-      async ([, deletedAsset, hashReference, nameReference]) => {
+      async ([
+        ,
+        deletedAsset,
+        addedReference,
+        draggedReference,
+        otherRootReference
+      ]) => {
         mockResolveOutputAssetItems.mockRestore()
         vi.mocked(api.getJobAssets).mockResolvedValue({
           assets: [
@@ -2215,7 +2230,8 @@ describe('useMediaAssetActions', () => {
         })
         const [group] = unflattenOutputAssets([deletedAsset()])
         const { actions, nodes } = await addReferencesTo([group])
-        const dragged = addLoadImageNode(nameReference)
+        const dragged = addLoadImageNode(draggedReference)
+        const otherRoot = addLoadImageNode(otherRootReference)
         const groupMetadata = getOutputAssetMetadata(group.user_metadata)
         assert.exists(groupMetadata)
         const expanded = await resolveOutputAssetItems(groupMetadata)
@@ -2226,9 +2242,10 @@ describe('useMediaAssetActions', () => {
 
         expect(mockDeleteAsset.mock.calls).toEqual([[deletedAsset().id]])
         expect([...nodes, dragged].map(referenceState)).toEqual([
-          cleared(hashReference),
-          cleared(nameReference)
+          cleared(addedReference),
+          cleared(draggedReference)
         ])
+        expect(referenceState(otherRoot)).toEqual(kept(otherRootReference))
       }
     )
 

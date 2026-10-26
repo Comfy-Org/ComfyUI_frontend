@@ -6,8 +6,6 @@ import type {
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
-type ReferencePath = ReturnType<typeof parseAnnotatedPath>
-
 const LONGEST_ANNOTATION = '[output]'
 
 function readAnnotationRoot(suffix: string): string | undefined {
@@ -17,32 +15,36 @@ function readAnnotationRoot(suffix: string): string | undefined {
   return filepath ? undefined : rootFolder
 }
 
-function referencesPath(value: string, deleted: ReferencePath): boolean {
-  if (value === deleted.filepath) {
-    const parsed = parseAnnotatedPath(value)
-    return (
-      parsed.filepath === deleted.filepath &&
-      parsed.rootFolder === deleted.rootFolder
-    )
+function indexRootsByPath(deletedValues: ReadonlySet<string>) {
+  const rootsByPath = new Map<string, Set<string>>()
+  for (const value of deletedValues) {
+    const { filepath, rootFolder } = parseAnnotatedPath(value)
+    if (!filepath) continue
+    const roots = rootsByPath.get(filepath) ?? new Set<string>()
+    rootsByPath.set(filepath, roots.add(rootFolder))
   }
-  if (!value.startsWith(deleted.filepath) || /\s$/.test(deleted.filepath))
-    return false
-  return (
-    readAnnotationRoot(value.slice(deleted.filepath.length)) ===
-    deleted.rootFolder
-  )
+  return rootsByPath
 }
 
 /** Matches widget values naming the same root folder and path as a deleted value. */
 export function createDeletedValueMatcher(
   deletedValues: ReadonlySet<string>
 ): (value: unknown) => boolean {
-  const deletedPaths = [...deletedValues]
-    .map((value) => parseAnnotatedPath(value))
-    .filter(({ filepath }) => filepath)
-  return (value) =>
-    typeof value === 'string' &&
-    deletedPaths.some((deleted) => referencesPath(value, deleted))
+  const rootsByPath = indexRootsByPath(deletedValues)
+  const hasRoot = (filepath: string, rootFolder: string | undefined) =>
+    rootFolder !== undefined && !!rootsByPath.get(filepath)?.has(rootFolder)
+
+  return (value) => {
+    if (typeof value !== 'string') return false
+    if (rootsByPath.has(value)) {
+      const parsed = parseAnnotatedPath(value)
+      if (hasRoot(parsed.filepath, parsed.rootFolder)) return true
+    }
+    const annotationStart = value.trimEnd().lastIndexOf('[')
+    if (annotationStart < 0) return false
+    const filepath = value.slice(0, annotationStart).trimEnd()
+    return hasRoot(filepath, readAnnotationRoot(value.slice(filepath.length)))
+  }
 }
 
 /** Clears the canvas and Vue preview state of every node referencing a deleted value. */
