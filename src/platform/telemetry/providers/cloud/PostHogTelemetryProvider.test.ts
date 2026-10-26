@@ -156,6 +156,13 @@ function setLocation(search: string): void {
   window.history.replaceState({}, '', `/${search}`)
 }
 
+function trackSignupOpened(
+  provider: PostHogTelemetryProvider,
+  count: number
+): void {
+  Array.from({ length: count }).forEach(() => provider.trackSignupOpened())
+}
+
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
     hoisted.refs.remoteConfig = remoteConfig
@@ -536,6 +543,19 @@ describe('PostHogTelemetryProvider', () => {
   })
 
   describe('event tracking', () => {
+    it('bounds events queued before PostHog initializes', async () => {
+      const provider = createProvider()
+
+      trackSignupOpened(provider, 101)
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockCapture).toHaveBeenCalledTimes(100)
+      expect(console.warn).toHaveBeenCalledOnce()
+      expect(console.warn).toHaveBeenCalledWith(
+        'PostHog pre-initialization event queue is full; dropping events'
+      )
+    })
+
     it('captures events after initialization', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
