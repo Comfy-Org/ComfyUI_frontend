@@ -331,9 +331,9 @@ const showSearchAction = computed(
 
 const unsupportedPack = computed(() => {
   for (const nodeType of group.nodeTypes) {
-    if (typeof nodeType !== 'string' && nodeType.cnrId) {
-      return deploymentPick.unsupportedPackFor(nodeType.cnrId)
-    }
+    if (typeof nodeType === 'string' || !nodeType.cnrId) continue
+    const pack = deploymentPick.unsupportedPackFor(nodeType.cnrId)
+    if (pack) return pack
   }
   return undefined
 })

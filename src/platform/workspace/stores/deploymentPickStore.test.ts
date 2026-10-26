@@ -2040,9 +2040,11 @@ describe('useDeploymentPickStore', () => {
             listing.items[1]
           ]
         })
+        await store.load()
         answer.resolve({ release_id: 'r-3', packs: [vfx] })
         await vi.advanceTimersByTimeAsync(0)
 
+        expect(store.pickedDeployment?.release_id).toBe(laterRelease)
         expect(store.bootDeployment?.release_id).toBe('r-2')
         expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
         expect(reportError).not.toHaveBeenCalled()

@@ -467,6 +467,36 @@ describe('MissingPackGroupRow', () => {
       ).not.toBeInTheDocument()
     })
 
+    it('says the cause when a later node carries the matching registry id', () => {
+      buildLeftOut(nvidiaVfx)
+
+      renderRow({
+        group: makeGroup({
+          packId: 'comfyui-nvidia-vfx',
+          nodeTypes: [
+            {
+              type: 'OtherNode',
+              nodeId: '6',
+              cnrId: 'comfyui-impact-pack',
+              isReplaceable: false
+            },
+            {
+              type: 'NVVFXSuperRes',
+              nodeId: '7',
+              cnrId: 'comfyui-nvidia-vfx',
+              isReplaceable: false
+            }
+          ]
+        })
+      })
+
+      expect(
+        screen.getByText('Not supported on this build: needs a GPU', {
+          exact: true
+        })
+      ).toBeInTheDocument()
+    })
+
     it('shows the row as before when the build left no matching pack out', () => {
       buildLeftOut(undefined)
 
