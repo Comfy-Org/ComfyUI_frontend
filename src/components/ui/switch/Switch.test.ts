@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import Switch from './Switch.vue'
 
@@ -71,5 +71,60 @@ describe('Switch', () => {
 
     expect(onUpdate).not.toHaveBeenCalled()
     expect(control).not.toBeChecked()
+  })
+
+  it.for([
+    ['Ctrl', '{Control>}{Enter}{/Control}'],
+    ['Meta', '{Meta>}{Enter}{/Meta}']
+  ])('ignores Enter while %s is held', async ([, keystrokes]) => {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn()
+
+    render(Switch, {
+      props: {
+        modelValue: false,
+        'onUpdate:modelValue': onUpdate
+      },
+      attrs: { 'aria-label': 'Notifications' }
+    })
+
+    const keysSeenByWindow: string[] = []
+    const recordKeydown = (event: KeyboardEvent) =>
+      keysSeenByWindow.push(event.key)
+    window.addEventListener('keydown', recordKeydown)
+    onTestFinished(() => {
+      window.removeEventListener('keydown', recordKeydown)
+    })
+
+    const control = screen.getByRole('switch', { name: 'Notifications' })
+    await user.tab()
+    expect(control).toHaveFocus()
+
+    await user.keyboard(keystrokes)
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(keysSeenByWindow).toContain('Enter')
+
+    await user.keyboard('[Enter]')
+    expect(onUpdate).toHaveBeenCalledWith(true)
+  })
+
+  it('stays interactive after a modified Enter is ignored', async () => {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn()
+
+    render(Switch, {
+      props: {
+        modelValue: false,
+        'onUpdate:modelValue': onUpdate
+      },
+      attrs: { 'aria-label': 'Notifications' }
+    })
+
+    const control = screen.getByRole('switch', { name: 'Notifications' })
+    await user.tab()
+    await user.keyboard('{Control>}{Enter}{/Control}')
+    await user.click(control)
+
+    expect(onUpdate).toHaveBeenCalledExactlyOnceWith(true)
   })
 })
