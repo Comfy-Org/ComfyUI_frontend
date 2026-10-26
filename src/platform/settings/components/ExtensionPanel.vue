@@ -161,13 +161,14 @@ const settingStore = useSettingStore()
 const editingEnabledExtensions = ref<Record<string, boolean>>({})
 
 function extensionBadge(extension: (typeof extensionStore.extensions)[number]) {
+  if (extensionStore.isAgentCreatedExtension(extension)) {
+    return { label: t('g.createdByAgent'), severity: 'info' as const }
+  }
   if (extensionStore.isCoreExtension(extension.name)) {
     return { label: t('g.core'), severity: undefined }
   }
   return {
-    label: extensionStore.isAgentCreatedExtension(extension)
-      ? t('g.createdByAgent')
-      : t('g.custom'),
+    label: t('g.custom'),
     severity: 'info' as const
   }
 }

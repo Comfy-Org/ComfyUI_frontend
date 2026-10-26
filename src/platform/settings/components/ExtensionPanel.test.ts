@@ -213,4 +213,18 @@ describe('ExtensionPanel', () => {
       screen.getByRole('button', { name: 'Reload to apply changes' })
     ).toBeVisible()
   })
+
+  it('labels a core extension created by Agent as created by Agent', () => {
+    const extensionStore = useExtensionStore()
+    extensionStore.registerExtension({ name: 'agent.cushions.toolbar' })
+    extensionStore.captureCoreExtensions()
+
+    renderPanel()
+
+    expect(
+      within(
+        screen.getByRole('row', { name: /agent\.cushions\.toolbar/ })
+      ).getByText('Created by agent')
+    ).toBeVisible()
+  })
 })
