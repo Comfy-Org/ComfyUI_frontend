@@ -22,6 +22,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
@@ -359,12 +360,7 @@ const agentScopedHasFunds = computed(
 const creditsExhausted = computed(() => {
   if (!consentAccepted.value) return false
   if (billingType.value !== 'workspace') return false
-  if (
-    isLocalAgentGrantHost() &&
-    (localGrantScope.value === null ||
-      verifiedLocalGrantStatusScope.value !== localGrantScope.value)
-  )
-    return false
+  if (isLocalAgentGrantHost() && !localGrantStatusVerified.value) return false
   // Same gate as the impression report above: an unsettled read cannot say
   // which presentation is right, and a card naming the wrong remediation is
   // worse than no card.
@@ -1658,7 +1654,16 @@ const localGrantScope = computed(() =>
 const { arm: localGrantArm } = useLocalAgentGrant(localGrantScope)
 const dismissedLocalFreeNoticeScope = ref<string | null>(null)
 const verifiedLocalGrantStatusScope = ref<string | null>(null)
+const localGrantStatusVerified = computed(
+  () =>
+    localGrantScope.value !== null &&
+    verifiedLocalGrantStatusScope.value === localGrantScope.value
+)
 let localGrantBillingReadId = 0
+
+function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+  freeUseExperiment?.reportNotice(metadata)
+}
 
 function refreshLocalGrantBilling(scope: string): void {
   const readId = ++localGrantBillingReadId
@@ -1715,7 +1720,7 @@ const localCreditNotice = computed(() => {
   if (
     localGrantArm.value === 'treatment' &&
     freeUseGrantActive.value &&
-    verifiedLocalGrantStatusScope.value === localGrantScope.value &&
+    localGrantStatusVerified.value &&
     dismissedLocalFreeNoticeScope.value !== localGrantScope.value
   )
     return 'free'
@@ -2447,7 +2452,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
       @starter-prompt-rendered="exposeStarterPromptSet"
-      @free-use-notice="freeUseExperiment?.reportNotice($event)"
+      @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
