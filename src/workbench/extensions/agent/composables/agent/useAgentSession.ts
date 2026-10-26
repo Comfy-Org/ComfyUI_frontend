@@ -673,12 +673,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function recordSupersededAnswerReport(askId: string): boolean {
-    if (supersededAnswerReports.has(askId)) return false
-    supersededAnswerReports.add(askId)
-    if (supersededAnswerReports.size > MAX_DELIVERED_ASKS) {
-      const oldest = supersededAnswerReports.values().next().value
-      if (oldest !== undefined) supersededAnswerReports.delete(oldest)
+  function recordAnswerReport(reports: Set<string>, askId: string): boolean {
+    if (reports.has(askId)) return false
+    reports.add(askId)
+    if (reports.size > MAX_DELIVERED_ASKS) {
+      const oldest = reports.values().next().value
+      if (oldest !== undefined) reports.delete(oldest)
     }
     return true
   }
@@ -1881,9 +1881,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     askId: string,
     resolutionChannelWasLost: boolean
   ): void {
-    if (!resolutionChannelWasLost || acceptedUnconfirmedReports.has(askId))
+    if (
+      !resolutionChannelWasLost ||
+      !recordAnswerReport(acceptedUnconfirmedReports, askId)
+    )
       return
-    acceptedUnconfirmedReports.add(askId)
     reportError(new Error('accepted restored approval cannot be verified'), {
       surface: 'agent',
       errorType: 'agent_ask_answer_winner_unconfirmed'
@@ -1892,8 +1894,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function reportUnconfirmedConflict(askId: string): void {
-    if (conflictUnconfirmedReports.has(askId)) return
-    conflictUnconfirmedReports.add(askId)
+    if (!recordAnswerReport(conflictUnconfirmedReports, askId)) return
     reportError(new Error('restored approval conflict cannot be verified'), {
       surface: 'agent',
       errorType: 'agent_ask_answer_unconfirmed'
@@ -2037,7 +2038,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         committed,
         Array.isArray(source.selected)
       ) ||
-      !recordSupersededAnswerReport(askId)
+      !recordAnswerReport(supersededAnswerReports, askId)
     )
       return
     reportError(
