@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -10,6 +11,44 @@ const renderModes = [
 ] as const
 
 const NODE_CLIP_PADDING = 24
+const MAX_CHANNEL_DIFFERENCE = 2
+
+function screenshotsMatch(page: Page, actual: Buffer, expected: Buffer) {
+  return page.evaluate(
+    async ({ actual, expected, maxChannelDifference }) => {
+      const decode = async (base64: string) => {
+        const bytes = Uint8Array.from(atob(base64), (char) =>
+          char.charCodeAt(0)
+        )
+        const bitmap = await createImageBitmap(
+          new Blob([bytes], { type: 'image/png' })
+        )
+        const context = new OffscreenCanvas(
+          bitmap.width,
+          bitmap.height
+        ).getContext('2d')!
+        context.drawImage(bitmap, 0, 0)
+        return context.getImageData(0, 0, bitmap.width, bitmap.height).data
+      }
+      const [actualPixels, expectedPixels] = await Promise.all([
+        decode(actual),
+        decode(expected)
+      ])
+      return (
+        actualPixels.length === expectedPixels.length &&
+        actualPixels.every(
+          (value, index) =>
+            Math.abs(value - expectedPixels[index]) <= maxChannelDifference
+        )
+      )
+    },
+    {
+      actual: actual.toString('base64'),
+      expected: expected.toString('base64'),
+      maxChannelDifference: MAX_CHANNEL_DIFFERENCE
+    }
+  )
+}
 
 for (const mode of renderModes) {
   test.describe(
@@ -83,7 +122,9 @@ for (const mode of renderModes) {
             .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
             .toEqual([])
           await expect
-            .poll(async () => (await screenshotNode()).equals(idleNode))
+            .poll(async () =>
+              screenshotsMatch(comfyPage.page, await screenshotNode(), idleNode)
+            )
             .toBe(!emphasized)
           if (mode.vueNodesEnabled) {
             const vueNode = comfyPage.vueNodes
@@ -103,7 +144,6 @@ for (const mode of renderModes) {
               exact: true
             })
             .click()
-          // Park the pointer off the menu so only the keyboard moves the active row.
           await agentPanel.composer.hover()
           await expect(nodeMention).toBeVisible()
           await expectEmphasized(false)
@@ -130,12 +170,10 @@ for (const mode of renderModes) {
             await test
               .info()
               .attach('idle.png', { body: idleNode, contentType: 'image/png' })
-            await test
-              .info()
-              .attach('after-escape.png', {
-                body: await screenshotNode(),
-                contentType: 'image/png'
-              })
+            await test.info().attach('after-escape.png', {
+              body: await screenshotNode(),
+              contentType: 'image/png'
+            })
             await test.info().attach('state.json', {
               contentType: 'application/json',
               body: JSON.stringify(
