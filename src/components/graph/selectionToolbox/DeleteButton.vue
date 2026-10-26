@@ -7,7 +7,7 @@
     data-testid="delete-button"
     @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
   >
-    <i class="icon-[lucide--trash-2]" />
+    <i class="icon-[lucide--trash-2] size-[1.2em]" />
   </Button>
 </template>
 

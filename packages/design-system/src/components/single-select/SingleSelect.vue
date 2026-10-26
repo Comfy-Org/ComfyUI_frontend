@@ -54,7 +54,9 @@
         <SelectValue :placeholder="label" class="truncate" />
       </div>
       <div :class="selectDropdownClass">
-        <i class="icon-[lucide--chevron-down] text-muted-foreground" />
+        <i
+          class="icon-[lucide--chevron-down] size-[1.2em] text-muted-foreground"
+        />
       </div>
     </SelectTrigger>
 

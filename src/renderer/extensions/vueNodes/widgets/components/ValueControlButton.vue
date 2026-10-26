@@ -47,7 +47,7 @@ const textMap: Record<ControlOptions, string | null> = {
       :class="
         cn(
           iconMap[mode] ?? '',
-          'text-xs',
+          'size-[0.9rem]',
           mode === 'fixed' ? 'text-muted-foreground' : 'text-primary'
         )
       "

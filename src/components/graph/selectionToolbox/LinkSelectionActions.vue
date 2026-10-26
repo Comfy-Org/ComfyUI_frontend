@@ -7,7 +7,7 @@
     data-testid="show-links-button"
     @click="() => commandStore.execute('Comfy.Canvas.ShowSelectedLinks')"
   >
-    <i class="icon-[lucide--eye]" />
+    <i class="icon-[lucide--eye] size-[1.2em]" />
   </Button>
   <Button
     v-else
@@ -17,7 +17,7 @@
     data-testid="hide-links-button"
     @click="() => commandStore.execute('Comfy.Canvas.HideSelectedLinks')"
   >
-    <i class="icon-[lucide--eye-off]" />
+    <i class="icon-[lucide--eye-off] size-[1.2em]" />
   </Button>
   <Button
     :tooltip="$t('commands.Comfy_Canvas_DeleteSelectedLinks.label')"
@@ -26,7 +26,7 @@
     data-testid="delete-links-button"
     @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedLinks')"
   >
-    <i class="icon-[lucide--trash-2]" />
+    <i class="icon-[lucide--trash-2] size-[1.2em]" />
   </Button>
 </template>
 

@@ -7,8 +7,8 @@
         :aria-label="t('g.arrange')"
       >
         <div class="flex items-center gap-1 px-0">
-          <i class="icon-[lucide--layout-grid]" />
-          <i class="icon-[lucide--chevron-down]" />
+          <i class="icon-[lucide--layout-grid] size-[1.2em]" />
+          <i class="icon-[lucide--chevron-down] size-[1.2em]" />
         </div>
       </Button>
     </PopoverTrigger>
@@ -34,7 +34,7 @@
           :aria-label="t('g.arrangeVertically')"
           @click="start('vertical')"
         >
-          <i class="icon-[lucide--stretch-horizontal]" />
+          <i class="icon-[lucide--stretch-horizontal] size-[1.2em]" />
         </Button>
         <Button
           :tooltip="t('g.arrangeHorizontally')"
@@ -42,7 +42,7 @@
           :aria-label="t('g.arrangeHorizontally')"
           @click="start('horizontal')"
         >
-          <i class="icon-[lucide--stretch-vertical]" />
+          <i class="icon-[lucide--stretch-vertical] size-[1.2em]" />
         </Button>
         <Button
           :tooltip="t('g.arrangeAsGrid')"
@@ -50,7 +50,7 @@
           :aria-label="t('g.arrangeAsGrid')"
           @click="start('grid')"
         >
-          <i class="icon-[lucide--grid-3x3]" />
+          <i class="icon-[lucide--grid-3x3] size-[1.2em]" />
         </Button>
       </div>
       <PopoverArrow class="fill-background stroke-border/50" />

@@ -9,7 +9,7 @@
     @click="(e) => onClick?.(e)"
   >
     {{ text }}
-    <i v-if="cssIcon" :class="cn(cssIcon)" />
+    <i v-if="cssIcon" :class="cn('size-[1.2em]', cssIcon)" />
   </div>
 </template>
 <script setup lang="ts">

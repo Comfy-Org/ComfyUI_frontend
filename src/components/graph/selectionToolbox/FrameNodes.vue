@@ -5,7 +5,7 @@
     :aria-label="$t('g.frameNodes')"
     @click="frameNodes"
   >
-    <i class="icon-[lucide--frame]" />
+    <i class="icon-[lucide--frame] size-[1.2em]" />
   </Button>
 </template>
 
