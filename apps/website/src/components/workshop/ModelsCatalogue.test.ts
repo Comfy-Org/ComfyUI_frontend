@@ -239,9 +239,9 @@ describe('ModelsCatalogue', () => {
       props: { models: launchModels, section: 'apps' }
     })
 
-    const shelf = await screen.findByTestId('app-shelf')
+    const grid = await screen.findByTestId('app-grid')
     expect(
-      within(shelf)
+      within(grid)
         .getAllByRole('link')
         .map((link) => link.getAttribute('href'))
     ).toEqual(['/hub/apps/cinematic-studio/', '/hub/apps/reshoot/'])
@@ -259,7 +259,7 @@ describe('ModelsCatalogue', () => {
       props: { models: launchModels, section: 'apps' }
     })
     const hrefs = () =>
-      within(screen.getByTestId('app-shelf'))
+      within(screen.getByTestId('app-grid'))
         .getAllByRole('link')
         .map((link) => link.getAttribute('href'))
 

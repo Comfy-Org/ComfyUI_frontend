@@ -7,7 +7,6 @@ import type { Locale, LocalizedText } from '@/i18n/translations'
  */
 const copy = {
   apps: { en: 'Apps', 'zh-CN': '应用' },
-  allApps: { en: 'All apps', 'zh-CN': '全部应用' },
   browseAllApps: { en: 'Browse all apps', 'zh-CN': '浏览全部应用' },
   studioName: { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
   studioTask: {
