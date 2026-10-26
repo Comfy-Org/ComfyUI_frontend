@@ -64,5 +64,24 @@ test.describe(
         ).toBeChecked()
       })
     })
+
+    test('disables the bulk action when every agent extension is read-only', async ({
+      comfyPage,
+      page
+    }) => {
+      await page.evaluate(() => {
+        window.app!.registerExtension({
+          name: 'pysssss.Locking',
+          provenance: { createdBy: 'comfy-agent' }
+        })
+      })
+
+      await comfyPage.settingDialog.open()
+      await comfyPage.settingDialog.category('Extension').click()
+      await comfyPage.settingDialog.openExtensionActions()
+      await expect(
+        comfyPage.contextMenu.menuItem('Disable all agent-created')
+      ).toBeDisabled()
+    })
   }
 )

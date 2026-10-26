@@ -355,7 +355,9 @@ const extensionActions = computed<MenuItem[]>(() => [
     label: t('g.disableAgentCreated'),
     icon: 'pi pi-times',
     command: disableAgentExtensions,
-    disabled: !extensionStore.hasAgentExtensions
+    disabled: !extensionStore.agentExtensions.some(
+      (extension) => !extensionStore.isExtensionReadOnly(extension.name)
+    )
   }
 ])
 </script>

@@ -227,4 +227,22 @@ describe('ExtensionPanel', () => {
       ).getByText('Created by agent')
     ).toBeVisible()
   })
+
+  it('disables the bulk action when all Agent extensions are read-only', async () => {
+    const user = userEvent.setup()
+    const extensionStore = useExtensionStore()
+    extensionStore.registerExtension({
+      name: 'pysssss.Locking',
+      provenance: { createdBy: 'comfy-agent' }
+    })
+
+    renderPanel()
+
+    await user.click(screen.getByRole('button', { name: 'More Options' }))
+    expect(
+      await screen.findByRole('menuitem', {
+        name: 'Disable all agent-created'
+      })
+    ).toHaveAttribute('aria-disabled', 'true')
+  })
 })
