@@ -126,7 +126,11 @@ export function useDeploymentRows() {
     deployment: WorkspaceDeployment | null,
     label: string
   ): string | null {
-    const key = deployment === null ? null : reasonKey(deployment)
+    const key =
+      deployment === null ||
+      deployment.deployment_id === pickedDeploymentId.value
+        ? null
+        : reasonKey(deployment)
     if (key === null) return null
     return t(key, { deployment: label }, { escapeParameter: false })
   }

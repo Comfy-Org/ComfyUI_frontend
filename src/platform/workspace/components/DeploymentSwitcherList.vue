@@ -56,7 +56,7 @@
         :tooltip="row.tooltip"
         :tone="row.tone"
         :note="row.note"
-        :muted="!row.pickable"
+        :muted="row.muted"
         :switching="row.switching"
         :disabled="row.disabled"
         :data-focus-row="row.value"
@@ -180,6 +180,7 @@ const listedSections = computed(() =>
       ...row,
       testId: `deployment-row-${row.deploymentId ?? 'cloud'}`,
       switching: isSwitching.value && switchingTo === row.value,
+      muted: !row.pickable && !isSwitching.value,
       disabled: isSwitching.value || !row.pickable
     }))
   }))

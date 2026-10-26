@@ -9,7 +9,7 @@
         cn(
           switcherItemClass,
           'aria-checked:bg-secondary aria-checked:data-highlighted:bg-accent',
-          muted && !switching && 'data-disabled:opacity-100'
+          muted && 'data-disabled:opacity-100'
         )
       "
       @select="emit('select', $event)"

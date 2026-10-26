@@ -450,6 +450,20 @@ describe('DeploymentSwitcher', () => {
     }
   )
 
+  it('gives no reason on the row this browser already runs on', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D1,
+      items: [listing.items[0], { ...listing.items[1], status: 'provisioning' }]
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    expect(
+      await screen.findByTestId(`deployment-row-${D1}`)
+    ).not.toHaveAccessibleDescription()
+  })
+
   it('refreshes the listing each time the list opens', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     const user = renderSwitcher()
