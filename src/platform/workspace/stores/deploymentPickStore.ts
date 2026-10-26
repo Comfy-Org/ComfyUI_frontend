@@ -160,11 +160,13 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   const unsupportedPacks = shallowRef<ReleaseUnsupportedPack[]>([])
 
   watch(bootDeployment, async (boot) => {
-    if (!boot) return
+    const workspaceId = workspaceStore.workspaceId
+    if (!boot || !workspaceId) return
     try {
-      unsupportedPacks.value = (
-        await workspaceApi.getReleaseUnsupportedPacks()
-      ).packs
+      const { packs } = await workspaceApi.getReleaseUnsupportedPacks()
+      if (packs.length > 0 && (await stillRunsRelease(workspaceId, boot))) {
+        unsupportedPacks.value = packs
+      }
     } catch (err) {
       reportError(err, {
         surface: 'workspace',
@@ -173,6 +175,24 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       })
     }
   })
+
+  /**
+   * True when a listing read now still shows this browser on `boot`'s
+   * Release. The unsupported-packs route answers for the deployment's
+   * current Release, so only a listing read after it answered proves the
+   * answer is about the build this page booted on. Not shown in the
+   * switcher.
+   */
+  async function stillRunsRelease(
+    workspaceId: string,
+    boot: WorkspaceDeployment
+  ): Promise<boolean> {
+    const now = loadedEvent(await workspaceApi.listDeployments(workspaceId))
+    const picked =
+      now.deployments.find((d) => d.deployment_id === now.pickedDeploymentId) ??
+      null
+    return changeBetween(boot, picked) === null
+  }
 
   /**
    * The pack the boot deployment's build could not load for this Comfy

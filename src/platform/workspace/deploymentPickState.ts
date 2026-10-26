@@ -94,7 +94,7 @@ export type DeploymentPickEvent =
 /** The `loaded` event for a listing from GET /api/workspaces/{id}/deployments. */
 export function loadedEvent(
   listing: WorkspaceDeploymentList
-): DeploymentPickEvent {
+): Extract<DeploymentPickEvent, { type: 'loaded' }> {
   return {
     type: 'loaded',
     deployments: listing.items,

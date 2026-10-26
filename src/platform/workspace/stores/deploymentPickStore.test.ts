@@ -1903,6 +1903,7 @@ describe('useDeploymentPickStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(mockWorkspaceApi.getReleaseUnsupportedPacks).toHaveBeenCalledOnce()
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
       expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
       expect(reportError).not.toHaveBeenCalled()
     })
@@ -1991,6 +1992,7 @@ describe('useDeploymentPickStore', () => {
     it("keeps the boot build's packs when a later listing names another deployment", async () => {
       mockWorkspaceApi.listDeployments
         .mockResolvedValueOnce(listing)
+        .mockResolvedValueOnce(listing)
         .mockResolvedValue({ ...listing, picked_deployment_id: 'dep-1' })
       mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
         packs: [vfx]
@@ -2006,6 +2008,76 @@ describe('useDeploymentPickStore', () => {
       expect(mockWorkspaceApi.getReleaseUnsupportedPacks).toHaveBeenCalledOnce()
       expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toEqual(vfx)
     })
+
+    it('reads the listing again once the answer lands and keeps the packs while it shows the boot Release', async () => {
+      const answer = deferred<{ packs: ReleaseUnsupportedPack[] }>()
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockReturnValue(
+        answer.promise
+      )
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+
+      answer.resolve({ packs: [vfx] })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith('ws-1')
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toEqual(vfx)
+    })
+
+    it('matches nothing when the deployment runs another Release by the time the answer lands', async () => {
+      const answer = deferred<{ packs: ReleaseUnsupportedPack[] }>()
+      mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockReturnValue(
+        answer.promise
+      )
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        items: [{ ...listing.items[0], release_id: 'r-3' }, listing.items[1]]
+      })
+      answer.resolve({ packs: [vfx] })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
+      expect(store.pickedDeployment?.release_id).toBe('r-2')
+      expect(store.changeSinceBoot).toBeNull()
+    })
+
+    it.for([
+      new WorkspaceApiError('Bad gateway', 502),
+      new WorkspaceApiError('Outside rollout', 403),
+      new WorkspaceApiError('Network Error')
+    ])(
+      'matches nothing and reports once when the listing after the answer fails: %s',
+      async (error) => {
+        mockWorkspaceApi.listDeployments
+          .mockResolvedValueOnce(listing)
+          .mockRejectedValue(error)
+        mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+          packs: [vfx]
+        })
+        const store = useDeploymentPickStore()
+
+        await store.loadOnce()
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
+        expect(store.pickedDeployment?.deployment_id).toBe('dep-2')
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+          surface: 'workspace',
+          errorType: 'error_loading_release_unsupported_packs',
+          level: 'warning'
+        })
+      }
+    )
 
     it('asks again for the build of the deployment a switch reloads onto', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
