@@ -5,6 +5,7 @@ import { api } from '@/scripts/api'
 
 import {
   invalidateRemoteConfig,
+  loadRemoteConfigUntilReady,
   refreshRemoteConfig
 } from './refreshRemoteConfig'
 import {
@@ -476,6 +477,26 @@ describe('refreshRemoteConfig', () => {
       expect(window.__CONFIG__).toEqual(existingConfig)
       expect(remoteConfigState.value).toBe('error')
       expect(remoteConfigErrorStatus.value).toBeNull()
+    })
+  })
+
+  describe('loadRemoteConfigUntilReady', () => {
+    it('retries until /features loads instead of leaving startup on build-time defaults', async () => {
+      vi.useFakeTimers()
+      const serverConfig = { firebase_config: { projectId: 'dreamboothy' } }
+      vi.mocked(global.fetch)
+        .mockRejectedValueOnce(new DOMException('Aborted', 'AbortError'))
+        .mockResolvedValueOnce(mockErrorResponse(503, 'Service Unavailable'))
+        .mockResolvedValueOnce(mockSuccessResponse(serverConfig))
+
+      const loading = loadRemoteConfigUntilReady()
+      await vi.runAllTimersAsync()
+      await loading
+
+      expect(global.fetch).toHaveBeenCalledTimes(3)
+      expect(remoteConfigState.value).toBe('anonymous')
+      expect(remoteConfig.value).toEqual(serverConfig)
+      vi.useRealTimers()
     })
   })
 })
