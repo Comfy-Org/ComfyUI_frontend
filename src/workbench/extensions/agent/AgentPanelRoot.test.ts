@@ -16025,6 +16025,46 @@ describe('AgentPanelRoot agent socket', () => {
     }
   )
 
+  // The socket credential is workspace-scoped off-cloud, and an off-cloud
+  // workspace switch does not reload the page, so nothing else re-handshakes
+  // the socket. Without the workspace in the key it keeps the previous
+  // workspace's bearer for the life of the connection (FE-3592).
+  it('reconnects the socket and looks the identity up again on a workspace switch', async () => {
+    const reset = vi.fn()
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset,
+      stop: () => {}
+    })
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    agentSocket.reconnect.mockClear()
+
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-b' })
+    await nextTick()
+
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+    expect(reset).toHaveBeenCalledOnce()
+  })
+
+  it('leaves the socket alone when neither the account nor the workspace moves', async () => {
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    agentSocket.reconnect.mockClear()
+
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    await nextTick()
+
+    expect(agentSocket.reconnect).not.toHaveBeenCalled()
+  })
+
   it('opens the events socket under the api base path', async () => {
     vi.mocked(api.apiURL).mockImplementation((route) => `/comfy/api${route}`)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })

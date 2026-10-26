@@ -270,10 +270,17 @@ onBeforeUnmount(() => agentIdentity.stop())
 
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
-const agentAccountId = computed(
-  () => authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null
-)
-watch(agentAccountId, () => {
+const teamWorkspaceStore = useTeamWorkspaceStore()
+// The socket credential is workspace-scoped off-cloud (agentAuth.ts mints a
+// workspace bearer and puts it in the socket URL), and an off-cloud workspace
+// switch does not reload the page the way the cloud path does, so the workspace
+// belongs in this key or the socket keeps the previous workspace's bearer.
+const agentSocketIdentity = computed(() => [
+  authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
+  teamWorkspaceStore.activeWorkspaceId ?? null
+])
+watch(agentSocketIdentity, (next, previous) => {
+  if (next[0] === previous[0] && next[1] === previous[1]) return
   events.reconnect()
   agentIdentity.reset()
 })
@@ -638,7 +645,7 @@ onBeforeUnmount(() =>
   })
 )
 const { withConsent } = useAgentConsent()
-const workspaceStore = useTeamWorkspaceStore()
+const workspaceStore = teamWorkspaceStore
 const onboardingKey = computed(() =>
   scopedOnboardingKey(
     resolvedUserInfo.value?.id,
