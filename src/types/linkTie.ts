@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 import type { LinkId } from '@/types/linkId'
 
 export type LinkTieId = number & { readonly __brand: 'LinkTieId' }
@@ -22,6 +24,23 @@ export interface SerialisableLinkTie {
   pos: [x: number, y: number]
   angle: number
   linkIds: number[]
+}
+
+const zSerialisableLinkTie = z.object({
+  id: z.number(),
+  pos: z.tuple([z.number(), z.number()]),
+  angle: z.number(),
+  linkIds: z.array(z.number())
+})
+
+/** The well-formed ties in an untrusted `extra.linkTies` value; anything else reads as no ties. */
+export function parseLinkTies(value: unknown): SerialisableLinkTie[] {
+  const ties = z.array(z.unknown()).safeParse(value)
+  if (!ties.success) return []
+  return ties.data.flatMap((tie) => {
+    const parsed = zSerialisableLinkTie.safeParse(tie)
+    return parsed.success ? [parsed.data] : []
+  })
 }
 
 export function serialiseLinkTie(tie: LinkTie): SerialisableLinkTie {

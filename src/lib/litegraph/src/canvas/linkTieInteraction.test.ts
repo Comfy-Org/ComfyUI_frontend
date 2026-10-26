@@ -1,4 +1,14 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 
 import {
   addNode,
@@ -16,7 +26,9 @@ import {
   getLinkPolyline,
   setLinkPolyline
 } from '@/renderer/core/canvas/linkPolylines'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkTieStore } from '@/stores/linkTieStore'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkTie } from '@/types/linkTie'
@@ -32,6 +44,7 @@ import { routeThroughTies } from './linkTieGeometry'
 vi.mock(import('@/services/litegraphService'))
 
 const TIE_AT: [number, number] = [600, 500]
+const TIE_ANGLE = 0.25
 const PRIMARY = {
   button: 0,
   altKey: false,
@@ -47,15 +60,30 @@ function tiedCanvas() {
   origin.addOutput('out', '*')
   target.addInput('in', '*')
   const link = origin.connect(0, target, 0)
-  if (!link) throw new Error('Failed to connect test link')
+  assert.exists(link)
   const canvas = createCanvas(graph)
   const scope = graphScopeOf(graph)
   const tie = useLinkTieStore().addTie(scope, {
     pos: TIE_AT,
-    angle: 0,
+    angle: TIE_ANGLE,
     linkIds: [link.id]
   })
+  canvas.renderedPaths.add(link)
+  canvas.visible_area.set([-100, -100, 1000, 800])
   return { canvas, graph, link, origin, scope, tie }
+}
+
+function drawCtx(): CanvasRenderingContext2D {
+  return createMockCanvasRenderingContext2D({
+    translate: vi.fn(),
+    rotate: vi.fn(),
+    roundRect: vi.fn(),
+    bezierCurveTo: vi.fn(),
+    measureText: vi.fn().mockReturnValue({ width: 50 }),
+    fillText: vi.fn(),
+    closePath: vi.fn(),
+    isPointInStroke: vi.fn().mockReturnValue(false)
+  })
 }
 
 function holdZ(canvas: LGraphCanvas) {
@@ -86,16 +114,19 @@ afterEach(() => {
 })
 
 describe('tie stroke arming', () => {
-  it('disarms when the window loses focus or the page is hidden', () => {
+  it.for([
+    { trigger: 'window blur', target: () => window, type: 'blur' },
+    {
+      trigger: 'a visibility change',
+      target: () => document,
+      type: 'visibilitychange'
+    }
+  ])('disarms on $trigger', ({ target, type }) => {
     const { canvas } = tiedCanvas()
-
     holdZ(canvas)
-    window.dispatchEvent(new Event('blur'))
-    const afterBlur = isLinkTieStroke(canvas, PRIMARY)
-    holdZ(canvas)
-    document.dispatchEvent(new Event('visibilitychange'))
 
-    expect(afterBlur).toBe(false)
+    target().dispatchEvent(new Event(type))
+
     expect(isLinkTieStroke(canvas, PRIMARY)).toBe(false)
   })
 
@@ -121,19 +152,23 @@ describe('tie stroke arming', () => {
   )
 
   it('leaves Alt-drag cloning to the node while Z is held', () => {
-    const { canvas, graph, origin } = tiedCanvas()
+    const { canvas, graph } = tiedCanvas()
     const cloning = LiteGraph.alt_drag_do_clone_nodes
     LiteGraph.alt_drag_do_clone_nodes = true
+    onTestFinished(() => {
+      LiteGraph.alt_drag_do_clone_nodes = cloning
+    })
+    const node = createTestNode(graph, [], ['*'])
+    node.pos = [100, 300]
+    node.size = [100, 60]
+    node.updateArea()
     canvas.visible_nodes = [...graph.nodes]
-    const cloned = vi.spyOn(canvas, '_deserializeItems')
+    const nodeCount = graph.nodes.length
     holdZ(canvas)
 
-    fire(canvas, 'pointerdown', [origin.pos[0] + 20, origin.pos[1] + 20], 1, {
-      altKey: true
-    })
-    LiteGraph.alt_drag_do_clone_nodes = cloning
+    fire(canvas, 'pointerdown', [120, 320], 1, { altKey: true })
 
-    expect(cloned).toHaveBeenCalledOnce()
+    expect(graph.nodes).toHaveLength(nodeCount + 1)
   })
 })
 
@@ -169,6 +204,43 @@ describe('tie dragging', () => {
   })
 })
 
+describe('tie visibility', () => {
+  it('draws and hit-tests a tie while one of its links is drawn', () => {
+    const { canvas, graph } = tiedCanvas()
+    const ctx = drawCtx()
+
+    canvas.drawConnections(ctx)
+
+    expect(ctx.rotate).toHaveBeenCalledWith(TIE_ANGLE)
+    expect(findLinkTieAtPoint(canvas, graph, TIE_AT)).toBeDefined()
+  })
+
+  it('keeps a tie whose link endpoints are off screen while the tie is on screen', () => {
+    const { canvas, graph } = tiedCanvas()
+    canvas.visible_area.set([TIE_AT[0] - 50, TIE_AT[1] - 50, 100, 100])
+    const ctx = drawCtx()
+
+    canvas.drawConnections(ctx)
+
+    expect(ctx.rotate).toHaveBeenCalledWith(TIE_ANGLE)
+    expect(findLinkTieAtPoint(canvas, graph, TIE_AT)).toBeDefined()
+  })
+
+  it('neither draws nor hit-tests a tie whose links are all hidden', () => {
+    const { canvas, graph, link, scope, tie } = tiedCanvas()
+    useLinkPresentationStore().patch(scope, link.id, { hidden: true })
+    const ctx = drawCtx()
+
+    canvas.drawConnections(ctx)
+    fire(canvas, 'pointerdown', TIE_AT, 1)
+    fire(canvas, 'pointerup', [TIE_AT[0] + 40, TIE_AT[1] + 30], 2)
+
+    expect(ctx.rotate).not.toHaveBeenCalledWith(TIE_ANGLE)
+    expect(findLinkTieAtPoint(canvas, graph, TIE_AT)).toBeUndefined()
+    expect(tiePos(scope, tie)).toEqual(TIE_AT)
+  })
+})
+
 describe('renderTiedLink', () => {
   it('publishes one hit path and one polyline covering every segment', () => {
     const { canvas, link, tie } = tiedCanvas()
@@ -195,7 +267,7 @@ describe('renderTiedLink', () => {
     renderTiedLink(canvas, canvas.ctx, link, segments)
 
     const published = link.path
-    if (!published) throw new Error('Expected a published hit path')
+    assert.exists(published)
     expect(drawn).toHaveLength(2)
     expect(drawn).not.toContain(published)
     expect(vi.mocked(published.addPath).mock.calls).toEqual(

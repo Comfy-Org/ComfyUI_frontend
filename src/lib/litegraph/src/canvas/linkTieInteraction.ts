@@ -91,14 +91,30 @@ function linkTiesShown(canvas: LGraphCanvas): boolean {
   return canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK
 }
 
+/** The graph's ties with at least one member link drawn in the canvas's last frame. */
+export function getVisibleLinkTies(
+  canvas: LGraphCanvas,
+  graph: LGraph
+): readonly LinkTie[] {
+  if (!linkTiesShown(canvas)) return []
+  const { renderedPaths } = canvas
+  return useLinkTieStore()
+    .getTies(graphScopeOf(graph))
+    .filter((tie) =>
+      tie.linkIds.some((linkId) => {
+        const link = graph.links.get(linkId)
+        return link !== undefined && renderedPaths.has(link)
+      })
+    )
+}
+
 export function findLinkTieAtPoint(
   canvas: LGraphCanvas,
   graph: LGraph,
   point: Point
 ): LinkTie | undefined {
-  if (!linkTiesShown(canvas)) return
   return findLinkTieAt(
-    useLinkTieStore().getTies(graphScopeOf(graph)),
+    getVisibleLinkTies(canvas, graph),
     point,
     strandSpacing(canvas.connections_width),
     HIT_PAD_PX / canvas.ds.scale
@@ -120,7 +136,8 @@ function applyStroke(canvas: LGraphCanvas, from: Point, to: Point): void {
   const store = useLinkTieStore()
   const ties = store.getTies(scope)
   const spacing = strandSpacing(canvas.connections_width)
-  const cut = tiesCrossedByStroke(ties, from, to, spacing)
+  const visible = getVisibleLinkTies(canvas, graph)
+  const cut = tiesCrossedByStroke(visible, from, to, spacing)
   for (const tie of cut) store.removeTie(scope, tie.id)
   if (cut.length) return
   const hits = strokeHits(tieablePolylines(canvas), from, to)

@@ -119,6 +119,7 @@ import {
   beginLinkTieStroke,
   bindLinkTieKey,
   drawLinkTies,
+  getVisibleLinkTies,
   isLinkTieStroke,
   renderTiedLink,
   routeLinkThroughTies,
@@ -6189,8 +6190,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         : nodesInRenderOrder(graph)
     const linkStore = useLinkStore()
     const graphScope = graphScopeOf(graph)
-    const tieStore = useLinkTieStore()
-    const linkTies = tieStore.getTiesByLink(graphScope)
+    const linkTies = useLinkTieStore().getTiesByLink(graphScope)
 
     for (const node of nodes) {
       if (node.flags.collapsed || !node._widgetSlotsDirty) continue
@@ -6378,7 +6378,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     drawHiddenLinkBadges(ctx, this, margin_area, (linkId) =>
       linkHideLabelScale(graphScope.rootGraphId, linkId, now)
     )
-    drawLinkTies(ctx, this, tieStore.getTies(graphScope))
+    drawLinkTies(ctx, this, getVisibleLinkTies(this, graph))
 
     if (hasLinkHideTransitions(graphScope.rootGraphId, now)) {
       this.dirty_bgcanvas = true

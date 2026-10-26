@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
@@ -24,7 +24,7 @@ vi.mock(import('@/services/litegraphService'))
 
 function connect(origin: LGraphNode, target: LGraphNode, slot = 0): LLink {
   const link = origin.connect(slot, target, slot)
-  if (!link) throw new Error('Failed to connect test link')
+  assert.exists(link)
   return link
 }
 
@@ -51,12 +51,14 @@ function createCanvas(graph: LGraph): LGraphCanvas {
 }
 
 describe('link tie serialization', () => {
-  it.for([0.4, 1])('round-trips ties through schema %s', (version) => {
+  it.for([
+    { schema: '0.4', serialise: (graph: LGraph) => graph.serialize() },
+    { schema: '1', serialise: (graph: LGraph) => graph.asSerialisable() }
+  ])('round-trips ties through schema $schema', ({ serialise }) => {
     const graph = createTestRootGraph()
     const { links } = tiedPair(graph)
 
-    const serialized =
-      version === 0.4 ? graph.serialize() : graph.asSerialisable()
+    const serialized = serialise(graph)
     const restored = new LGraph()
     restored.configure(structuredClone(serialized))
 
@@ -77,6 +79,61 @@ describe('link tie serialization', () => {
     )
 
     expect(graph.serialize().extra).not.toHaveProperty('linkTies')
+  })
+
+  it.for([
+    { shape: 'an object', linkTies: { 0: 'tie' } },
+    {
+      shape: 'a tie without link ids',
+      linkTies: [{ id: 1, pos: [0, 0], angle: 0 }]
+    },
+    {
+      shape: 'a tie with non-array link ids',
+      linkTies: [{ id: 1, pos: [0, 0], angle: 0, linkIds: 1 }]
+    },
+    {
+      shape: 'a tie with a non-array position',
+      linkTies: [{ id: 1, pos: 4, angle: 0, linkIds: [1, 2] }]
+    }
+  ])(
+    'loads the graph without ties when extra.linkTies is $shape',
+    ({ linkTies }) => {
+      const graph = createTestRootGraph()
+      const { links } = tiedPair(graph)
+      const serialized = graph.serialize()
+      assert.exists(serialized.extra)
+      Object.assign(serialized.extra, { linkTies })
+
+      const restored = new LGraph()
+      restored.configure(serialized)
+
+      expect([...restored.links.keys()]).toEqual(links.map((link) => link.id))
+      expect(tiesOf(restored)).toEqual([])
+    }
+  )
+
+  it('collapses duplicate link ids when a workflow loads', () => {
+    const graph = createTestRootGraph()
+    const [first, second] = tiedPair(graph).links
+    const serialized = graph.serialize()
+    serialized.extra = {
+      ...serialized.extra,
+      linkTies: [
+        {
+          id: 1,
+          pos: [0, 0],
+          angle: 0,
+          linkIds: [first.id, first.id, second.id, first.id]
+        }
+      ]
+    }
+
+    const restored = new LGraph()
+    restored.configure(serialized)
+
+    expect(tiesOf(restored).map((tie) => tie.linkIds)).toEqual([
+      [first.id, second.id]
+    ])
   })
 
   it('drops links that no longer exist when a workflow loads', () => {
@@ -134,7 +191,7 @@ describe('link tie lifecycle', () => {
       canvas._serializeItems([origin, target]),
       { position: [origin.pos[0] + 100, origin.pos[1]] }
     )
-    if (!pasted) throw new Error('Paste produced no results')
+    assert.exists(pasted)
 
     const pastedIds = links.map((link) => pasted.links.get(link.id)?.id)
     expect(tiesOf(graph)).toEqual([
@@ -198,7 +255,7 @@ describe('link tie recreation flows', () => {
     const unpackedOrigin = graph.nodes.find(
       (candidate) => candidate.outputs.length === 2
     )
-    if (!unpackedOrigin) throw new Error('Expected the unpacked origin node')
+    assert.exists(unpackedOrigin)
     const [tie] = tiesOf(graph)
     expect(tiesOf(graph)).toHaveLength(1)
     expect(tie.linkIds).toEqual(
@@ -219,7 +276,8 @@ describe('link tie recreation flows', () => {
     const squatter = connect(source, target, 0)
     const blocked = source.connect(0, target, 1)
     const free = source.connect(0, target, 2)
-    if (!blocked || !free) throw new Error('Failed to connect test links')
+    assert.exists(blocked)
+    assert.exists(free)
     useLinkTieStore().addTie(graphScopeOf(graph), {
       pos: [0, 0],
       angle: 0,

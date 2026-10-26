@@ -36,7 +36,7 @@ import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForL
 import { changeCanvasSelection } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { relinkLinkTies, useLinkTieStore } from '@/stores/linkTieStore'
-import { serialiseLinkTie, toLinkTieId } from '@/types/linkTie'
+import { parseLinkTies, serialiseLinkTie, toLinkTieId } from '@/types/linkTie'
 import type { LinkTie, SerialisableLinkTie } from '@/types/linkTie'
 import type { LinkPresentation } from '@/types/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
@@ -465,19 +465,16 @@ function withLinkTies(owner: LGraph, extra: LGraphExtra): LGraphExtra {
   return { ...extra, linkTies: ties.map(serialiseLinkTie) }
 }
 
-function loadLinkTies(
-  graph: LGraph,
-  ties: readonly SerialisableLinkTie[] = []
-): void {
+function loadLinkTies(graph: LGraph, ties: unknown): void {
   useLinkTieStore().setTies(
     graphScopeOf(graph),
-    ties.flatMap((tie): LinkTie[] => {
-      const linkIds = tie.linkIds
+    parseLinkTies(ties).flatMap((tie): LinkTie[] => {
+      const linkIds = [...new Set(tie.linkIds)]
         .map(toLinkId)
         .filter((id) => graph.links.has(id))
       if (!linkIds.length) return []
       const { id, pos, angle } = tie
-      return [{ id: toLinkTieId(id), pos: [pos[0], pos[1]], angle, linkIds }]
+      return [{ id: toLinkTieId(id), pos, angle, linkIds }]
     })
   )
 }
