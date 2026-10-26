@@ -14,6 +14,14 @@ const DECODED: BillingPlansData = {
       action: 'subscribe',
       availability: { available: true },
       credits_cents: 6900n,
+      feature_items: [
+        {
+          key: 'membersUpTo',
+          params: { count: 3n },
+          status: 'available',
+          text: 'Up to 3 members'
+        }
+      ],
       max_seats: 1n,
       price_cents: 2800n,
       seat_summary: {
@@ -58,6 +66,14 @@ describe('projectBillingPlans', () => {
         action: 'subscribe',
         availability: { available: true },
         credits_cents: 6900,
+        feature_items: [
+          {
+            key: 'membersUpTo',
+            params: { count: 3 },
+            status: 'available',
+            text: 'Up to 3 members'
+          }
+        ],
         max_seats: 1,
         price_cents: 2800,
         seat_summary: {
@@ -131,6 +147,27 @@ describe('projectBillingPlans', () => {
         {
           ...DECODED.plans[0],
           price_cents: BigInt(Number.MAX_SAFE_INTEGER) + 1n
+        }
+      ]
+    }
+
+    expect(projectBillingPlans(tooLarge)).toBeUndefined()
+  })
+
+  it('refuses a feature count a number cannot hold exactly', () => {
+    const tooLarge: BillingPlansData = {
+      ...DECODED,
+      plans: [
+        {
+          ...DECODED.plans[0],
+          feature_items: [
+            {
+              key: 'membersUpTo',
+              params: { count: BigInt(Number.MAX_SAFE_INTEGER) + 1n },
+              status: 'available',
+              text: 'Too many members'
+            }
+          ]
         }
       ]
     }
