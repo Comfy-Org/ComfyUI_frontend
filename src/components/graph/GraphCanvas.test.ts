@@ -34,6 +34,7 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
+import { loadExtensions } from '@/services/extensionLoader'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -330,6 +331,18 @@ describe('GraphCanvas legacy settings bridge', () => {
     await useSettingStore().set('Comfy.Locale', 'zh')
 
     expect(app.ui.settings.dispatchChange).not.toHaveBeenCalled()
+  })
+})
+
+describe('GraphCanvas late custom nodes', () => {
+  it('stops turning late custom nodes on once the canvas unmounts', async () => {
+    await mountGraphCanvas()
+    const [signal] = vi.mocked(loadExtensions).mock.calls[0]
+    expect(signal?.aborted).toBe(false)
+
+    cleanup()
+
+    expect(signal?.aborted).toBe(true)
   })
 })
 

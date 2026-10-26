@@ -60,7 +60,6 @@ test.describe(
         agent.finishTurn('Added a Load Image node named Reference Image.')
         await expect(agent.node(NODE_ID)).toContainText(RENAMED_TITLE)
 
-        test.fail()
         await expect(appearance.wrapper(NODE_ID)).toHaveCSS(
           'background-color',
           userColour
@@ -90,7 +89,6 @@ test.describe(
         agent.finishTurn('Added a Load Image node named Reference Image.')
         await expect(agent.node(NODE_ID)).toContainText(RENAMED_TITLE)
 
-        test.fail()
         await expect(appearance.wrapper(NODE_ID)).toHaveCSS(
           'border-top-left-radius',
           userRadius
