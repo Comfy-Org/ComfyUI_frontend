@@ -101,6 +101,76 @@
   }
 }
 
+@keyframes agent-shimmer {
+  from {
+    background-position: 150% center;
+  }
+  to {
+    background-position: -50% center;
+  }
+}
+
+.agent-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--muted-foreground) 35%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 65%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: agent-shimmer 1.8s linear infinite;
+}
+
+textarea.agent-shimmer-text:not(:disabled) {
+  background-clip: text;
+  background-color: transparent;
+}
+
+.disable-animations .agent-shimmer-text {
+  animation: none;
+  color: var(--muted-foreground);
+  -webkit-text-fill-color: currentcolor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-shimmer-text {
+    animation: none;
+    color: var(--muted-foreground);
+    -webkit-text-fill-color: currentcolor;
+  }
+}
+
+@keyframes agent-talk-word {
+  from {
+    opacity: 0;
+    transform: translateY(0.25em);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+.agent-talk-word {
+  display: inline-block;
+  animation: agent-talk-word 350ms cubic-bezier(0.25, 1, 0.5, 1) backwards;
+  animation-delay: var(--talk-delay, 0ms);
+}
+
+.disable-animations .agent-talk-word {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-talk-word {
+    animation: none;
+  }
+}
+
 /* Use 0.001ms instead of 0s so transitionend/animationend events still fire
    and JS listeners aren't broken. */
 .disable-animations *,

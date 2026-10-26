@@ -3,6 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { enhancePromptRequest } from '@/workbench/extensions/agent/services/enhancePromptRequest'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WidgetTextarea from './WidgetTextarea.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -19,6 +22,16 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
 vi.mock(import('@/composables/graph/useMoreOptionsMenu'), () => ({
   isNodeOptionsOpen: mockIsNodeOptionsOpen
 }))
+
+vi.mock(
+  import('@/workbench/extensions/agent/services/enhancePromptRequest'),
+  () => ({
+    enhancePromptRequest: vi.fn(async () => ({
+      ok: true as const,
+      prompt: 'enhanced prompt'
+    }))
+  })
+)
 
 function createTextareaWidget(
   value: string = 'default text',
@@ -37,13 +50,15 @@ function renderComponent(
   widget: SimplifiedWidget<string>,
   modelValue: string,
   placeholder?: string,
-  onUpdateModelValue?: (...args: unknown[]) => void
+  onUpdateModelValue?: (...args: unknown[]) => void,
+  nodeType?: string
 ) {
   return render(WidgetTextarea, {
     props: {
       widget,
       modelValue,
       placeholder,
+      nodeType,
       ...(onUpdateModelValue
         ? { 'onUpdate:modelValue': onUpdateModelValue }
         : {})
@@ -291,6 +306,105 @@ describe('WidgetTextarea Value Binding', () => {
 
       expect(onUpdateModelValue).toHaveBeenCalledWith(formattedText)
     })
+  })
+})
+
+describe('WidgetTextarea enhance prompt', () => {
+  beforeEach(() => {
+    useAgentPanelStore().enabled = false
+  })
+
+  it('hides the enhance button when the agent is unavailable', () => {
+    const widget = createTextareaWidget('a prompt')
+    renderComponent(widget, 'a prompt', undefined, undefined, 'CLIPTextEncode')
+
+    expect(
+      screen.queryByRole('button', { name: 'agent.enhancePrompt' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the enhance button on CLIP text encode nodes when the agent is enabled', () => {
+    useAgentPanelStore().enabled = true
+    const widget = createTextareaWidget('a prompt')
+    renderComponent(widget, 'a prompt', undefined, undefined, 'CLIPTextEncode')
+
+    expect(
+      screen.getByRole('button', { name: 'agent.enhancePrompt' })
+    ).toBeInTheDocument()
+  })
+
+  it('uses the small in-field icon button on the prompt label row', () => {
+    useAgentPanelStore().enabled = true
+    const widget = createTextareaWidget('a prompt')
+    renderComponent(widget, 'a prompt', undefined, undefined, 'CLIPTextEncode')
+
+    const button = screen.getByRole('button', { name: 'agent.enhancePrompt' })
+    expect(button).toHaveClass('size-5', 'absolute', 'top-1', 'right-4')
+    expect(button).toHaveClass('hover:bg-accent')
+    expect(button.dataset.variant).toBe('muted-textonly')
+    expect(button.innerHTML).toContain('size-3')
+  })
+
+  it('hides the enhance button in App Mode when the layout label is hidden', () => {
+    useAgentPanelStore().enabled = true
+    const widget = createTextareaWidget('a prompt')
+    render(WidgetTextarea, {
+      props: {
+        widget,
+        modelValue: 'a prompt',
+        nodeType: 'CLIPTextEncode'
+      },
+      global: {
+        provide: { [HideLayoutFieldKey as symbol]: true },
+        mocks: {
+          $t: (msg: string) => msg
+        }
+      }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: 'agent.enhancePrompt' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shimmers the textarea text in place and locks the input while enhance is in flight', async () => {
+    useAgentPanelStore().enabled = true
+    let resolveRequest: (result: { ok: true; prompt: string }) => void = () =>
+      undefined
+    vi.mocked(enhancePromptRequest).mockReturnValue(
+      new Promise((resolve) => {
+        resolveRequest = resolve
+      })
+    )
+    const widget = createTextareaWidget('a prompt')
+    renderComponent(widget, 'a prompt', undefined, undefined, 'CLIPTextEncode')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'agent.enhancePrompt' })
+    )
+
+    const textarea = screen.getByRole('textbox')
+    expect(textarea).toHaveAttribute('readonly')
+    expect(textarea).toHaveClass('agent-shimmer-text')
+    expect(textarea).toHaveValue('a prompt')
+    expect(screen.queryByText('a prompt')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'agent.enhancingPrompt' })
+    ).toBeDisabled()
+
+    resolveRequest({ ok: true, prompt: 'enhanced prompt' })
+    await vi.waitFor(() => {
+      expect(screen.getByText('enhanced')).toHaveClass('agent-talk-word')
+    })
+    expect(screen.getByRole('textbox')).toHaveClass('invisible')
+    expect(screen.getByRole('textbox')).toHaveAttribute('readonly')
+    expect(screen.getByRole('textbox')).toHaveValue('a prompt')
+
+    await vi.waitFor(() => {
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('readonly')
+    })
+    expect(screen.getByRole('textbox')).toHaveValue('enhanced prompt')
+    expect(screen.queryByText('enhanced')).not.toBeInTheDocument()
   })
 })
 
