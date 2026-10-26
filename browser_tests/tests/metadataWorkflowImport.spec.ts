@@ -110,5 +110,38 @@ test.describe(
         })
       })
     }
+
+    test(
+      'uploads a PNG after skipping corrupt compressed metadata',
+      {
+        tag: '@canvas'
+      },
+      async ({ comfyPage, page }) => {
+        const decompressionErrors: string[] = []
+        const onPageError = (error: Error) => {
+          if (error.message.includes('invalid distance too far back')) {
+            decompressionErrors.push(error.message)
+          }
+        }
+        page.on('pageerror', onPageError)
+
+        try {
+          await comfyPage.dragDrop.dragAndDropFilePath(
+            metadataFixturePath('corrupt_compressed_itxt.png'),
+            { waitForUpload: true }
+          )
+
+          await expect
+            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+            .toBe(1)
+          expect(
+            await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+          ).toHaveLength(1)
+          expect(decompressionErrors).toEqual([])
+        } finally {
+          page.off('pageerror', onPageError)
+        }
+      }
+    )
   }
 )
