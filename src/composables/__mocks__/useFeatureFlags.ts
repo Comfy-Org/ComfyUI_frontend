@@ -16,7 +16,6 @@ const defaultFlags: FeatureFlags = {
   assetDeletionEnabled: false,
   privateModelsEnabled: false,
   onboardingSurveyEnabled: false,
-  linearToggleEnabled: false,
   partnerNodeGovernanceEnabled: false,
   partnerRunGateEnabled: false,
   partnerNodeTokenEnabled: false,

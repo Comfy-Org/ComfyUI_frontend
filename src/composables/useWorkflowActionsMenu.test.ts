@@ -13,7 +13,6 @@ import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useEnterBuilder } from '@/components/builder/useEnterBuilder'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/composables/useWorkflowActionsMenu'
 import * as lazyDeployToComfyApiDialog from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -52,12 +51,16 @@ vi.mock(
   import('@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog')
 )
 
-vi.mock(import('@/composables/useFeatureFlags'))
-
-const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+const mockDistributionState = vi.hoisted(() => ({
+  isCloud: false,
+  isNightly: false
+}))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
+  },
+  get isNightly() {
+    return mockDistributionState.isNightly
   }
 }))
 
@@ -109,6 +112,7 @@ describe('useWorkflowActionsMenu', () => {
       lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
     ).mockResolvedValue(undefined)
     mockDistributionState.isCloud = false
+    mockDistributionState.isNightly = false
     mockMenuItemStore.hasSeenLinear = false
     mockAppModeStore.selectedInputs.length = 0
     mockAppModeStore.selectedOutputs.length = 0
@@ -155,14 +159,21 @@ describe('useWorkflowActionsMenu', () => {
     expect(labels).not.toContain('breadcrumbsMenu.deleteWorkflow')
   })
 
-  it('shows app mode items when linearToggleEnabled flag is set', () => {
-    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
+  it.for([
+    { distribution: 'cloud', isCloud: true, isNightly: false },
+    { distribution: 'nightly', isCloud: false, isNightly: true }
+  ])(
+    'shows app mode items on a $distribution build',
+    ({ isCloud, isNightly }) => {
+      mockDistributionState.isCloud = isCloud
+      mockDistributionState.isNightly = isNightly
 
-    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
-    const labels = menuLabels(menuItems.value)
+      const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+      const labels = menuLabels(menuItems.value)
 
-    expect(labels).toContain('breadcrumbsMenu.enterAppMode')
-  })
+      expect(labels).toContain('breadcrumbsMenu.enterAppMode')
+    }
+  )
 
   it('shows app mode items when user has seen linear mode', () => {
     mockMenuItemStore.hasSeenLinear = true
@@ -183,7 +194,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('hides app mode items when not root', () => {
-    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
+    mockDistributionState.isCloud = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: false })
     const labels = menuLabels(menuItems.value)
@@ -192,7 +203,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('shows "go to workflow mode" when in linear mode', () => {
-    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
+    mockDistributionState.isCloud = true
     mockWorkflowStore.activeWorkflow = fromPartial<
       NonNullable<typeof mockWorkflowStore.activeWorkflow>
     >({
@@ -219,7 +230,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('adds badge to app mode items', () => {
-    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
+    mockDistributionState.isCloud = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const appModeItem = findItem(
@@ -306,7 +317,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('enter builder mode calls enterBuilder', async () => {
-    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
+    mockDistributionState.isCloud = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     await findItem(
@@ -318,7 +329,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('shows "Edit app" when workflow has linear data', async () => {
-    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
+    mockDistributionState.isCloud = true
     mockWorkflowStore.activeWorkflow = fromPartial<
       NonNullable<typeof mockWorkflowStore.activeWorkflow>
     >({
@@ -336,7 +347,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('app mode toggle executes Comfy.ToggleLinear', async () => {
-    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
+    mockDistributionState.isCloud = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     await findItem(menuItems.value, 'breadcrumbsMenu.enterAppMode').command?.()
