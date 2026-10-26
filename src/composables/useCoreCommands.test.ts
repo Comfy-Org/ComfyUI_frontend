@@ -1,6 +1,7 @@
 import { useDialogService } from '@/services/dialogService'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { pick } from 'es-toolkit'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
@@ -545,8 +546,12 @@ describe('useCoreCommands', () => {
       graph.add(group)
       group.resizeTo([source, target])
       group.recomputeInsideNodes()
-      const { graph: previousGraph, selectedItems: previousSelection } =
-        app.canvas
+      const previousCanvas = pick(app.canvas, [
+        'graph',
+        'selectedItems',
+        'emitBeforeChange',
+        'emitAfterChange'
+      ])
       Object.assign(app.canvas, {
         graph,
         selectedItems: new Set([group]),
@@ -566,10 +571,7 @@ describe('useCoreCommands', () => {
           )?.hidden
         ).toBe(true)
       } finally {
-        Object.assign(app.canvas, {
-          graph: previousGraph,
-          selectedItems: previousSelection
-        })
+        Object.assign(app.canvas, previousCanvas)
       }
     })
   })
