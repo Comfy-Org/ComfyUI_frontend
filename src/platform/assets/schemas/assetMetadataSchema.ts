@@ -15,6 +15,7 @@ export interface OutputAssetMetadata extends Record<string, unknown> {
   outputCount?: number
   allOutputs?: AugmentedResultItem[]
   assetId?: string
+  storedHash?: string
 }
 
 /**

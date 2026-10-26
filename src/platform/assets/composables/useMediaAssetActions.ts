@@ -622,7 +622,7 @@ export function useMediaAssetActions() {
           asset.name,
           getAssetType(asset, 'input'),
           metadata?.subfolder,
-          asset.hash
+          asset.hash ?? metadata?.storedHash
         )
         return [
           {

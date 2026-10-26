@@ -7,13 +7,14 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -111,7 +112,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
+vi.mock(import('@/platform/assets/utils/outputAssetUtil'), { spy: true })
 const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
 const mockDeleteAsset = vi.hoisted(() =>
@@ -2167,6 +2168,34 @@ describe('useMediaAssetActions', () => {
         kept('photo.png [output]'),
         kept('photo.png [temp]'),
         kept('clipspace/photo.png [input]')
+      ])
+    })
+
+    it('clears a collapsed-card reference when its output is deleted from the expanded stack', async () => {
+      mockResolveOutputAssetItems.mockRestore()
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [
+          fromPartial({
+            id: 'output-asset',
+            name: 'ComfyUI_00001_.png',
+            hash: 'blake3:bb12cd34'
+          })
+        ],
+        complete: true
+      })
+      const [group] = unflattenOutputAssets([outputAsset])
+      const { actions, nodes } = await addReferencesTo([group])
+      const groupMetadata = getOutputAssetMetadata(group.user_metadata)
+      assert.exists(groupMetadata)
+      const expanded = await resolveOutputAssetItems(groupMetadata)
+      const child = expanded.find((item) => item.id === 'output-asset')
+      assert.exists(child)
+
+      await actions.deleteAssets(child)
+
+      expect(mockDeleteAsset.mock.calls).toEqual([['output-asset']])
+      expect(nodes.map(referenceState)).toEqual([
+        cleared('runs/2026/bb12cd34.png [output]')
       ])
     })
 
