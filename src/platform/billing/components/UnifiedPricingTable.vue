@@ -502,7 +502,6 @@ interface Props {
   loadingTier?: CheckoutTierKey | null
   /** Initial plan scope. */
   initialPlanMode?: 'personal' | 'team'
-  /** Bumped each time checkout is refused for an outstanding payment. */
   outstandingPaymentRefusals?: number
 }
 

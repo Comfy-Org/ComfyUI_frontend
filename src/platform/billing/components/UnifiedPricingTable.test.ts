@@ -10,6 +10,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
+import type { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type {
   BillingSubscriptionStatus,
@@ -84,13 +85,18 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/billing/composables/usePaymentRecoveryDialog'),
   () => ({
-    usePaymentRecoveryDialog: () => ({
+    isTopUpDeniedPastDue: vi.fn(),
+    usePaymentRecoveryDialog: (): ReturnType<
+      typeof usePaymentRecoveryDialog
+    > => ({
+      showPaymentRecoveryDialog: vi.fn(),
       updatePayment: mockUpdatePayment,
-      isUpdatingPayment: ref(false),
-      paymentRecoveryLock: computed(() => mockPaymentRecoveryLock.value)
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => mockPaymentRecoveryLock.value),
+      refreshCapabilities: vi.fn()
     })
   })
 )
@@ -123,7 +129,6 @@ function renderComponent(props: Record<string, unknown> = {}) {
 beforeEach(() => {
   mockApiPlans.value = []
   mockPaymentRecoveryLock.value = null
-  mockUpdatePayment.mockReset()
   const billingContext = useBillingContext()
   billingContext.plans = computed(() => mockApiPlans.value)
   billingContext.currentPlanSlug = computed(() => mockCurrentPlanSlug.value)

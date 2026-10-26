@@ -74,8 +74,6 @@ interface SelectedTeamCheckout {
 
 interface SubscriptionCheckoutOptions {
   tierPlanType?: 'personal' | 'team'
-  /** The host's pricing table shows the outstanding-payment notice, so a typed
-   *  refusal there replaces the fallback toasts. */
   rendersPastDueNotice?: boolean
 }
 
