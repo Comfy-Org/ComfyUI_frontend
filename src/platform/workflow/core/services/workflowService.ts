@@ -52,6 +52,17 @@ import type { AppMode } from '@/utils/appMode'
 import type { UUID } from '@/utils/uuid'
 import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
 
+export function readWorkflowDraftLineage(path: string) {
+  return useWorkflowDraftStoreV2().getDraft(path)?.lineage ?? null
+}
+
+export function writeWorkflowDraftLineage(
+  path: string,
+  lineage: { workflowId: string; lineageSeq: number }
+): void {
+  useWorkflowDraftStoreV2().setLineage(path, lineage)
+}
+
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
   return linearMode ? 'app' : 'graph'
