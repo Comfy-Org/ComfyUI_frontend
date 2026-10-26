@@ -25,6 +25,7 @@ import {
   zRowsDump,
   zSeedFixture
 } from './agentConversationAssemble'
+import { splitCommandLine } from './dev-agent-options'
 import {
   zAgentTurnAccepted,
   zAgentWsEvent
@@ -365,7 +366,6 @@ async function main(argv: string[]): Promise<void> {
     JSON.parse(readFileSync(seedPath, 'utf8')),
     `seed fixture ${seedPath}`
   )
-  // conversations/ is scanned for replay cases, so sidecars go one level down.
   const workDir = flags['--work'] || join(dirname(outPath), 'recordings')
   mkdirSync(workDir, { recursive: true })
   mkdirSync(dirname(resolve(outPath)), { recursive: true })
@@ -377,7 +377,6 @@ async function main(argv: string[]): Promise<void> {
     case_id: caseId,
     attempt,
     base: env.AGENT_FULLSTACK_URL.replace(/\/$/, ''),
-    // The note carries this shape; the concrete channel stays in the receipt.
     frame_source: 'redis SUBSCRIBE channel:ws:<workspace>:u:<user>',
     channel: `channel:ws:${env.AGENT_WORKSPACE_ID}:u:${env.AGENT_USER_ID}`,
     seed_sha256: sha256OfFile(seedPath),
@@ -407,14 +406,13 @@ async function main(argv: string[]): Promise<void> {
           ? { 'X-Comfy-Token': env.AGENT_TURN_TOKEN }
           : {})
       },
-      redisExec: env.AGENT_REDIS_EXEC.split(' ').filter(Boolean),
+      redisExec: splitCommandLine(env.AGENT_REDIS_EXEC),
       timeoutMs: env.AGENT_TURN_TIMEOUT,
       seed: seed.workflow.seed,
       prompts,
       cancel
     })
 
-    // One row set per turn; the last one also carries the final draft.
     const rows = raw.turns.map((turn, index) => {
       const ids = zAgentTurnAccepted.parse(turn.accepted?.body)
       return readRows(

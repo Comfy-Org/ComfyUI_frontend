@@ -9,8 +9,6 @@ import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSche
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 
-// A recording keeps every production field except ids the replay mints per
-// run (agentConversationFixture stampTurn and semantic-op replay).
 export const mintedIds: { thread_id: true; message_id: true } = {
   thread_id: true,
   message_id: true
