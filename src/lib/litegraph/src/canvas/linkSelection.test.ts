@@ -13,6 +13,7 @@ import type { Point } from '@/renderer/core/layout/types'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
+import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 
 import {
   areSelectedLinksHidden,
@@ -446,11 +447,7 @@ describe('going to the other end of a socket', () => {
     selectSlotLinks(host, node, type, 0, { x: 0, y: 0 })
   }
 
-  function goTo(
-    graph: LGraph,
-    node: { id: LGraphNode['id'] },
-    reducedMotion = false
-  ) {
+  function goTo(graph: LGraph, node: { id: LGraphNode['id'] }) {
     const host = {
       graph,
       ds: {
@@ -463,7 +460,7 @@ describe('going to the other end of a socket', () => {
     }
     const moved = goToLinkDestination(host, node.id, {
       viewport: VIEWPORT,
-      reducedMotion
+      reducedMotion: false
     })
     return { host, moved }
   }
@@ -707,22 +704,62 @@ describe('going to the other end of a socket', () => {
     expect(destinationIds(subgraph)).toEqual([target.id])
   })
 
-  it.for([
-    { name: 'animates the pan', reducedMotion: false, animated: 1, instant: 0 },
-    {
-      name: 'moves in one step when motion is reduced',
-      reducedMotion: true,
-      animated: 0,
-      instant: 1
-    }
-  ])('$name', ({ reducedMotion, animated, instant }) => {
+  it('leads from a node inside a subgraph to the subgraph outputs and back', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [{ name: 'value', type: 'number' }]
+    })
+    const source = createTestNode(subgraph, [], ['number'])
+    const output = subgraph.outputNode
+    output.slots[0].connect(source.outputs[0], source)
+    clickSocket(subgraph, source, 'output')
+
+    expect(
+      getSelectedLinkDestinations(subgraph).map(({ kind }) => kind)
+    ).toEqual(['subgraphOutputs'])
+    expect(goTo(subgraph, output).moved).toBe(true)
+
+    const [x, y] = output.slots[0].pos
+    expect(getSelectedLinksAnchor(subgraph)).toEqual({ x, y })
+    expect(destinationIds(subgraph)).toEqual([source.id])
+    expect(goTo(subgraph, source).moved).toBe(true)
+    expect(destinationIds(subgraph)).toEqual([output.id])
+  })
+
+  it('animates the pan without an instant move', () => {
     const { graph, source, targets } = createFanOut()
     clickSocket(graph, targets[0], 'input')
 
-    const { host } = goTo(graph, source, reducedMotion)
+    const { host } = goTo(graph, source)
 
-    expect(host.animateToBounds).toHaveBeenCalledTimes(animated)
-    expect(host.ds.fitToBounds).toHaveBeenCalledTimes(instant)
-    expect(host.setDirty).toHaveBeenCalledTimes(instant)
+    expect(host.animateToBounds).toHaveBeenCalledOnce()
+    expect(host.ds.fitToBounds).not.toHaveBeenCalled()
+    expect(host.setDirty).not.toHaveBeenCalled()
+  })
+
+  it('centres the source at the current zoom when motion is reduced', () => {
+    const { graph, source, targets } = createFanOut()
+    const ds = createTestDragAndScale()
+    ds.scale = 1.7
+    ds.offset = [13, 29]
+    const host = { graph, ds, animateToBounds: vi.fn(), setDirty: vi.fn() }
+    clickSocket(graph, targets[0], 'input')
+
+    expect(
+      goToLinkDestination(host, source.id, {
+        viewport: VIEWPORT,
+        reducedMotion: true
+      })
+    ).toBe(true)
+
+    const [x, y, width, height] = source.boundingRect
+    const [centreX, centreY] = ds.convertOffsetToCanvas([
+      x + width / 2,
+      y + height / 2
+    ])
+    expect(ds.scale).toBe(1.7)
+    expect(centreX).toBeCloseTo(400)
+    expect(centreY).toBeCloseTo(300)
+    expect(host.animateToBounds).not.toHaveBeenCalled()
+    expect(host.setDirty).toHaveBeenCalledWith(true, true)
   })
 })

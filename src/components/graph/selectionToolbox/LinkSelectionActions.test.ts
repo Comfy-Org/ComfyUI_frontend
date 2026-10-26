@@ -12,6 +12,8 @@ import {
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import enCommands from '@/locales/en/commands.json' with { type: 'json' }
+import enMain from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -20,23 +22,7 @@ import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: {
-    en: {
-      selectionToolbox: {
-        linkDestinations: {
-          goTo: 'Go to {node}',
-          goToLinkedNode: 'Go to a linked node',
-          subgraphInputs: 'Subgraph Inputs',
-          subgraphOutputs: 'Subgraph Outputs'
-        }
-      },
-      commands: {
-        Comfy_Canvas_HideSelectedLinks: { label: 'Hide Selected Links' },
-        Comfy_Canvas_ShowSelectedLinks: { label: 'Show Selected Links' },
-        Comfy_Canvas_DeleteSelectedLinks: { label: 'Delete Selected Links' }
-      }
-    }
-  }
+  messages: { en: { ...enMain, commands: enCommands } }
 })
 
 function createWorkflow() {
@@ -83,17 +69,6 @@ function renderActions() {
 }
 
 describe('LinkSelectionActions', () => {
-  it('names the source node on the button for an input socket', () => {
-    const { graph, targets } = createWorkflow()
-    clickSocket(graph, targets[0], 'input')
-
-    renderActions()
-
-    expect(
-      screen.getByRole('button', { name: 'Go to Load Checkpoint' })
-    ).toBeInTheDocument()
-  })
-
   it('names a node without a title by its type', () => {
     const { graph, source, targets } = createWorkflow()
     source.title = ''
@@ -180,6 +155,35 @@ describe('LinkSelectionActions', () => {
   it('moves the view in one step when animations are turned off', async () => {
     const { graph, source, targets, canvas } = createWorkflow()
     useSettingStore().settingValues['Comfy.Appearance.DisableAnimations'] = true
+    clickSocket(graph, targets[0], 'input')
+    const { user } = renderActions()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Go to Load Checkpoint' })
+    )
+
+    expect(canvas.ds.fitToBounds).toHaveBeenCalledWith(
+      source.boundingRect,
+      expect.anything()
+    )
+    expect(canvas.animateToBounds).not.toHaveBeenCalled()
+  })
+
+  it('moves the view in one step when the OS asks for reduced motion', async () => {
+    const matchMedia = window.matchMedia.bind(window)
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn<typeof window.matchMedia>((query) => {
+        const result = matchMedia(query)
+        vi.spyOn(result, 'matches', 'get').mockReturnValue(
+          query === '(prefers-reduced-motion: reduce)'
+        )
+        return result
+      })
+    )
+    const { graph, source, targets, canvas } = createWorkflow()
+    useSettingStore().settingValues['Comfy.Appearance.DisableAnimations'] =
+      false
     clickSocket(graph, targets[0], 'input')
     const { user } = renderActions()
 
