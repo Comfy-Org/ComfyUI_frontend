@@ -1,10 +1,10 @@
 <template>
   <section
-    class="flex items-start justify-between gap-4"
+    class="flex items-start justify-between gap-4 rounded-xl border border-card px-5 py-4"
     data-testid="billing-plan-row"
   >
     <div class="flex min-w-0 flex-col gap-1">
-      <h3 class="m-0 text-base font-semibold wrap-break-word text-foreground">
+      <h3 class="m-0 text-sm font-semibold wrap-break-word text-foreground">
         {{ title }}
       </h3>
       <p
@@ -18,8 +18,21 @@
     <div class="flex shrink-0 items-center gap-2">
       <BillingPlanLifecycle :state />
       <Button
-        v-if="action"
+        v-if="action === 'contactSales'"
+        as="a"
+        :href="CONTACT_SALES_URL"
+        target="_blank"
+        rel="noopener"
+        :variant="salesVariant"
+        class="shrink-0 no-underline"
+      >
+        {{ $t('workspacePanel.billingTab.plan.actions.contactSales') }}
+        <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
+      </Button>
+      <Button
+        v-else-if="action"
         :variant="action === 'manage' ? 'secondary' : 'inverted'"
+        size="md"
         class="shrink-0"
         @click="emit('openPlan')"
       >
@@ -35,16 +48,25 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import BillingPlanLifecycle from '@/platform/billing/components/billingTab/BillingPlanLifecycle.vue'
-import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
+import {
+  CONTACT_SALES_URL,
+  formatPlanDate
+} from '@/platform/billing/components/billingTab/planRow'
 import type {
   PlanRowAction,
   PlanRowState
 } from '@/platform/billing/components/billingTab/planRow'
 
-const { state, action, canManageSubscription } = defineProps<{
+const {
+  state,
+  action,
+  canManageSubscription,
+  salesVariant = 'secondary'
+} = defineProps<{
   state: PlanRowState
   action: PlanRowAction | null
   canManageSubscription: boolean
+  salesVariant?: 'inverted' | 'secondary'
 }>()
 
 const emit = defineEmits<{

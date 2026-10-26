@@ -4015,6 +4015,7 @@
           "agent/domain",
           "authentication/domain",
           "design-system/domain",
+          "dialog-host/domain",
           "error-reporting/domain",
           "extension-runtime/domain",
           "workbench-shell/domain",
@@ -4035,6 +4036,8 @@
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -4066,6 +4069,8 @@
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -4097,6 +4102,8 @@
           "design-system/domain",
           "design-system/application",
           "design-system/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
           "error-reporting/domain",
           "error-reporting/application",
           "extension-runtime/domain",
@@ -4110,6 +4117,7 @@
           "workflow-management/presentation",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/presentation/outer-1",
           "workflow-management/presentation/outer-1",
@@ -4134,6 +4142,9 @@
           "design-system/application",
           "design-system/infrastructure",
           "design-system/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/integration",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -4156,6 +4167,7 @@
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
@@ -4350,7 +4362,13 @@
       },
       {
         "from": "billing/domain",
-        "allow": ["billing/domain", "billing/domain/outer-1", "unclassified"]
+        "allow": [
+          "billing/domain",
+          "design-system/domain",
+          "billing/domain/outer-1",
+          "design-system/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "billing/application",
@@ -4358,9 +4376,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4371,9 +4393,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4384,8 +4410,13 @@
           "billing/domain",
           "billing/application",
           "billing/presentation",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
           "billing/domain/outer-1",
           "billing/application/outer-1",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4398,9 +4429,15 @@
           "billing/infrastructure",
           "billing/presentation",
           "billing/integration",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "design-system/presentation",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4926,6 +4963,7 @@
       {
         "from": "extension-runtime/integration",
         "allow": [
+          "webcam-capture/integration/public",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/infrastructure",
@@ -6746,6 +6784,9 @@
           "design-system/application",
           "design-system/infrastructure",
           "design-system/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/integration",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -6768,6 +6809,7 @@
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
@@ -6850,7 +6892,13 @@
       },
       {
         "from": "billing/domain/outer-1",
-        "allow": ["billing/domain", "billing/domain/outer-1", "unclassified"]
+        "allow": [
+          "billing/domain",
+          "design-system/domain",
+          "billing/domain/outer-1",
+          "design-system/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "billing/application/outer-1",
@@ -6858,9 +6906,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -6871,9 +6923,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -7561,9 +7617,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]

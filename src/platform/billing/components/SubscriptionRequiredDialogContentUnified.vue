@@ -49,6 +49,7 @@
       :initial-plan-mode="initialPlanMode"
       :is-loading="isLoadingPreview || isResubscribing"
       :loading-tier="loadingTier"
+      :outstanding-payment-refusals="outstandingPaymentRefusals"
       @subscribe="handleSubscribeClick"
       @resubscribe="handleResubscribe"
       @subscribe-team="handleSubscribeTeamClick"
@@ -132,8 +133,10 @@ import { onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import { isCloud } from '@/platform/distribution/types'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
@@ -159,11 +162,14 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
+const { paymentRecoveryLock } = usePaymentRecoveryDialog()
+
 const {
   checkoutStep,
   isLoadingPreview,
   loadingTier,
   isSubscribing,
+  outstandingPaymentRefusals,
   isResubscribing,
   previewData,
   reactivationRequired,
@@ -188,7 +194,9 @@ const {
   handleConfirmTransition,
   handleTeamSubscribe,
   handleResubscribe
-} = useSubscriptionCheckout(emit, paymentIntentSource)
+} = useSubscriptionCheckout(emit, paymentIntentSource, {
+  rendersPastDueNotice: () => isCloud && paymentRecoveryLock.value === 'owner'
+})
 
 onMounted(() => {
   if (!initialCheckout) return

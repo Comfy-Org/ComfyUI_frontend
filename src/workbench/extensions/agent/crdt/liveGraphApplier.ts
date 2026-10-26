@@ -11,6 +11,7 @@ import { z } from 'zod'
 
 import {
   applyRemoteDynamicGroupRowCount,
+  dynamicGroupRowAllocationBound,
   isDynamicGroupController,
   reachesDynamicGroupRowCount,
   reportRemoteDynamicGroupRowMismatch
@@ -67,7 +68,8 @@ export interface FrameChanges {
   nodes: ReadonlyMap<string, NodeChange>
   /** Widget names edited per node, or `'all'` when the storage was replaced. */
   widgets: ReadonlyMap<string, ReadonlySet<string> | 'all'>
-  resyncNodes: ReadonlySet<string>
+  /** Synced node-map keys edited per node. */
+  resyncNodes: ReadonlyMap<string, ReadonlySet<string>>
   links: ReadonlySet<string>
 
   interiors?: InteriorChanges
@@ -644,17 +646,6 @@ function regrownRow(
   return controller !== undefined && names.has(controller.name)
 }
 
-/** Rows the document carries values for under the DynamicGroup `name`. */
-function documentedRowCount(name: string, widgets: DocNode['widgets']): number {
-  if (widgets === undefined || Array.isArray(widgets)) return 0
-  const prefix = `${name}.`
-  const rows = new Set<string>()
-  for (const key of Object.keys(widgets)) {
-    if (key.startsWith(prefix)) rows.add(key.slice(prefix.length).split('.')[0])
-  }
-  return rows.size
-}
-
 function deferredRowCounts(
   node: LGraphNode,
   constructed: readonly IBaseWidget[],
@@ -755,6 +746,17 @@ function floorSizeToContent(node: LGraphNode): void {
   node.setSize([Math.max(width, minWidth), Math.max(height, minHeight)])
 }
 
+function configureRemoteNode(node: LGraphNode, info: ISerialisedNode): void {
+  applyRemoteDynamicGroupRowCount(node, () => node.configure(info))
+}
+
+function widgetAcceptedValue(widget: IBaseWidget, value: WidgetValue): boolean {
+  return (
+    !isDynamicGroupController(widget) ||
+    reachesDynamicGroupRowCount(widget, value)
+  )
+}
+
 export class LiveGraphApplier {
   private readonly deps: LiveGraphApplierDeps
   private readonly reported = new Set<string>()
@@ -801,9 +803,9 @@ export class LiveGraphApplier {
 
         this.deleteGroups(graph, changes.removedGroups, context)
 
-        for (const id of changes.resyncNodes) {
+        for (const [id, keys] of changes.resyncNodes) {
           if (touchedNodes.has(id)) continue
-          this.try(context, () => this.syncFields(graph, doc, id))
+          this.try(context, () => this.syncFields(graph, doc, id, keys))
         }
 
         for (const [id, names] of changes.widgets) {
@@ -1027,11 +1029,11 @@ export class LiveGraphApplier {
     }
     if (node.has_errors) {
       node.last_serialization = info
-      node.configure(info)
+      configureRemoteNode(node, info)
     } else {
       if (node.isSubgraphNode()) {
         const beforeConfigurePromotedIds = promotedWidgetIds(node)
-        node.configure(info)
+        configureRemoteNode(node, info)
         this.applyConfiguredHostWidgets(
           node,
           docNode.widgets,
@@ -1044,7 +1046,7 @@ export class LiveGraphApplier {
           node.widgets?.map((widget) => widget.name)
         )
         const deferred = deferredRowCounts(node, constructed, docNode.widgets)
-        node.configure({
+        configureRemoteNode(node, {
           ...info,
           widgets_values:
             docNode.widgetRecord === undefined
@@ -1069,23 +1071,38 @@ export class LiveGraphApplier {
     return node
   }
 
-  private applyFields(node: LGraphNode, docNode: DocNode): void {
+  private applyFields(
+    node: LGraphNode,
+    docNode: DocNode,
+    keys?: ReadonlySet<string>
+  ): void {
     const source = docNode.serialised
-    if (source.title !== undefined && node.title !== source.title)
+    const edited = (key: string): boolean => !keys || keys.has(key)
+    const flagsEdited =
+      !keys ||
+      keys.has('flags') ||
+      [...keys].some((key) => key.startsWith('flags.'))
+    if (
+      edited('title') &&
+      source.title !== undefined &&
+      node.title !== source.title
+    )
       node.title = source.title
-    if (node.mode !== source.mode && !node.changeMode(source.mode)) {
-      this.reportOnce(
-        `node-mode:${docNode.id}:${source.mode}`,
-        `Document node ${docNode.id} rejected mode ${source.mode}`,
-        'agent_graph_node_mode_rejected',
-        { nodeId: docNode.id, mode: source.mode }
-      )
-    }
-    applyFlags(node, source.flags)
-    for (const [key, value] of Object.entries(source.properties ?? {})) {
-      if (node.properties[key] !== value) node.setProperty(key, value)
-    }
-    applyAppearance(node, source)
+    if (edited('mode')) this.applyMode(node, docNode)
+    if (flagsEdited) applyFlags(node, source.flags, keys)
+    if (edited('properties')) applyProperties(node, source.properties)
+    applyAppearance(node, source, edited)
+  }
+
+  private applyMode(node: LGraphNode, docNode: DocNode): void {
+    const { mode } = docNode.serialised
+    if (node.mode === mode || node.changeMode(mode)) return
+    this.reportOnce(
+      `node-mode:${docNode.id}:${mode}`,
+      `Document node ${docNode.id} rejected mode ${mode}`,
+      'agent_graph_node_mode_rejected',
+      { nodeId: docNode.id, mode }
+    )
   }
 
   private readDocNode(doc: Y.Doc, id: string): DocNode | null {
@@ -1107,11 +1124,16 @@ export class LiveGraphApplier {
     return null
   }
 
-  private syncFields(graph: LGraph, doc: Y.Doc, id: string): void {
+  private syncFields(
+    graph: LGraph,
+    doc: Y.Doc,
+    id: string,
+    keys: ReadonlySet<string>
+  ): void {
     const docNode = this.readDocNode(doc, id)
     const node = graph.getNodeById(toNodeId(id))
     if (!docNode || !node || node.type !== docNode.type) return
-    this.applyFields(node, docNode)
+    this.applyFields(node, docNode, keys)
   }
 
   private syncWidgets(
@@ -1285,6 +1307,10 @@ export class LiveGraphApplier {
       this.applyHostWidgets(node, widgets, mode)
       return
     }
+    if (Array.isArray(widgets)) {
+      this.applyPositionalWidgets(node, widgets)
+      return
+    }
     const { documentWidgets = widgets, reportMissing = true } = options
     let pending = ordinaryWidgetEntries(node, widgets).filter(isWidgetEntry)
     while (pending.length > 0) {
@@ -1298,6 +1324,23 @@ export class LiveGraphApplier {
         return
       }
       pending = unresolved
+    }
+  }
+
+  private applyPositionalWidgets(node: LGraphNode, widgets: unknown[]): void {
+    let live = serializableWidgets(node)
+    for (
+      let index = 0;
+      index < Math.min(widgets.length, live.length);
+      index++
+    ) {
+      const widget = live[index]
+      const entry: [string, unknown] = [widget.name, widgets[index]]
+      if (!isWidgetEntry(entry)) continue
+      this.applyWidgetRound(node, [entry], widgets)
+      if (!isDynamicGroupController(widget)) continue
+      if (!reachesDynamicGroupRowCount(widget, entry[1])) return
+      live = serializableWidgets(node)
     }
   }
 
@@ -1322,7 +1365,7 @@ export class LiveGraphApplier {
       )
         continue
       if (isDynamicGroupController(widget))
-        this.applyDynamicGroupRowCount(node, widget, value, documentWidgets)
+        this.applyDynamicGroupRowCount(node, widget, value)
       else this.setWidgetValue(node, widget, value)
       resolved = true
     }
@@ -1455,25 +1498,31 @@ export class LiveGraphApplier {
   private applyDynamicGroupRowCount(
     node: LGraphNode,
     widget: IBaseWidget,
-    value: WidgetValue,
-    documentWidgets: DocNode['widgets']
+    value: WidgetValue
   ) {
-    const { max } = widget.options
-    const growsAboveMax =
-      typeof value === 'number' &&
-      max !== undefined &&
-      Math.trunc(value) >
-        Math.max(
-          max,
-          Number(widget.value),
-          documentedRowCount(widget.name, documentWidgets)
-        )
-    if (!growsAboveMax) {
-      applyRemoteDynamicGroupRowCount(node, () =>
-        this.setWidgetValue(node, widget, value)
-      )
-      if (reachesDynamicGroupRowCount(widget, value)) return
+    const requested =
+      typeof value === 'number' && Number.isFinite(value)
+        ? Math.max(widget.options.min ?? 0, Math.trunc(value))
+        : null
+    if (
+      requested !== null &&
+      requested > dynamicGroupRowAllocationBound(widget)
+    ) {
+      this.reportDynamicGroupRowMismatch(node, widget, value)
+      return
     }
+    const applied = applyRemoteDynamicGroupRowCount(node, () =>
+      this.setWidgetValue(node, widget, value)
+    )
+    if (applied && reachesDynamicGroupRowCount(widget, value)) return
+    this.reportDynamicGroupRowMismatch(node, widget, value)
+  }
+
+  private reportDynamicGroupRowMismatch(
+    node: LGraphNode,
+    widget: IBaseWidget,
+    value: WidgetValue
+  ) {
     this.incrementFailureCount()
     reportRemoteDynamicGroupRowMismatch(node, value, Number(widget.value), {
       ...AGENT_APPLY_TAGS,
@@ -1485,10 +1534,15 @@ export class LiveGraphApplier {
     node: LGraphNode,
     widget: IBaseWidget,
     value: WidgetValue
-  ) {
-    if (widget.type === 'button' || Object.is(widget.value, value)) return
+  ): boolean {
+    if (widget.type === 'button') return false
+    if (Object.is(widget.value, value)) return true
     const previous = widget.value
     const rollback = writeWidgetValue(node, widget, value)
+    if (!widgetAcceptedValue(widget, value)) {
+      rollback()
+      return false
+    }
     try {
       widget.callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
       node.onWidgetChanged?.(widget.name, value, previous, widget)
@@ -1497,6 +1551,7 @@ export class LiveGraphApplier {
       throw error
     }
     node.graph?.incrementVersion()
+    return true
   }
 
   private setPromotedWidgetValue(
@@ -1664,24 +1719,13 @@ function isWidgetEntry(
   return entry[1] !== undefined && isWidgetValue(entry[1])
 }
 
-/**
- * Ordinary node widget values by document name, ordered so Y.Map insertion
- * order cannot decide the outcome (`widgetEntryRank`); a positional list is
- * read in serializable-widget order.
- */
 function ordinaryWidgetEntries(
   node: LGraphNode,
-  widgets: NonNullable<DocNode['widgets']>
+  widgets: Record<string, unknown>
 ): [string, unknown][] {
-  if (!Array.isArray(widgets)) {
-    return Object.entries(widgets).sort(
-      ([a], [b]) => widgetEntryRank(node, a) - widgetEntryRank(node, b)
-    )
-  }
-  return serializableWidgets(node).map((widget, index) => [
-    widget.name,
-    widgets[index]
-  ])
+  return Object.entries(widgets).sort(
+    ([a], [b]) => widgetEntryRank(node, a) - widgetEntryRank(node, b)
+  )
 }
 
 function restoreWidgetRecord(
@@ -1694,7 +1738,7 @@ function restoreWidgetRecord(
     if (snapshot) node.last_serialization = { ...snapshot, widgets_values }
     return
   }
-  node.configure({
+  configureRemoteNode(node, {
     ...omit(node.serialize(), ['widgets_values_named']),
     widgets_values
   })
@@ -1805,11 +1849,19 @@ function writeWidgetValue(
   }
 }
 
-function applyFlags(node: LGraphNode, flags: INodeFlags): void {
-  if (node.collapsed !== !!flags.collapsed) node.collapse(true)
-  if (node.pinned !== !!flags.pinned) node.pin(!!flags.pinned)
+function applyFlags(
+  node: LGraphNode,
+  flags: INodeFlags,
+  keys?: ReadonlySet<string>
+): void {
+  const edited = (key: string) =>
+    !keys || keys.has('flags') || keys.has(`flags.${key}`)
+  if (edited('collapsed') && node.collapsed !== !!flags.collapsed)
+    node.collapse(true)
+  if (edited('pinned') && node.pinned !== !!flags.pinned)
+    node.pin(!!flags.pinned)
   for (const [key, value] of Object.entries({ ...node.flags, ...flags })) {
-    if (['ghost', 'collapsed', 'pinned'].includes(key)) continue
+    if (['ghost', 'collapsed', 'pinned'].includes(key) || !edited(key)) continue
     if (key in flags) {
       Object.assign(node.flags, { [key]: value })
     } else {
@@ -1818,16 +1870,31 @@ function applyFlags(node: LGraphNode, flags: INodeFlags): void {
   }
 }
 
-function applyAppearance(node: LGraphNode, source: ISerialisedNode): void {
-  const color = source.color ?? node.color
-  const bgcolor = source.bgcolor ?? node.bgcolor
+function applyProperties(
+  node: LGraphNode,
+  properties: ISerialisedNode['properties']
+): void {
+  for (const [key, value] of Object.entries(properties ?? {})) {
+    if (node.properties[key] !== value) node.setProperty(key, value)
+  }
+}
+
+function applyAppearance(
+  node: LGraphNode,
+  source: ISerialisedNode,
+  edited: (key: string) => boolean
+): void {
+  const target = (key: 'color' | 'bgcolor') =>
+    edited(key) ? (source[key] ?? node[key]) : node[key]
+  const color = target('color')
+  const bgcolor = target('bgcolor')
   if (node.color !== color || node.bgcolor !== bgcolor) {
     const option = Object.values(LGraphCanvas.node_colors).find(
       (option) => option.color === color && option.bgcolor === bgcolor
     )
     if (option) node.setColorOption(option)
   }
-  for (const key of SYNCED_APPEARANCE_FIELDS) {
+  for (const key of SYNCED_APPEARANCE_FIELDS.filter(edited)) {
     const value = source[key]
     if (value !== undefined && node[key] !== value) {
       Object.assign(node, { [key]: value })

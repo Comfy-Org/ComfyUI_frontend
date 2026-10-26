@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "בחירה מתוך קלטים מחוברים לפי שם. ניתן לשנות את שמות הקלטים בלחיצה כפולה עליהם.",
+    "display_name": "הסתעפות",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "פלט",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "הוספת אובייקט המתואר בטקסט חופשי לתמונה באמצעות Bria. ‏Bria מרנדרת מחדש את הפריים כולו בכמגה-פיקסל אחד, ולכן התוצאה אינה מיושרת ברמת הפיקסל לקלט.",
     "display_name": "Bria הוספת אובייקט",
@@ -9289,12 +9310,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "המר בין sRGB, ‏Rec.709 ליניארי, HDR (Rec.2020 HLG), ‏HDR PQ (Rec.2020 PQ), ‏HDR LogC3 ו־HDR ACEScct. ‏LogC3 משתמש בעקומת EI 800 עם צבעי יסוד Rec.709 ובקודים המוגבלים לטווח [0, 1]. ‏ACEScct משתמש בצבעי יסוד AP1 ובלבן D60, עם התאמת Bradford ל־D65. המר LogC3 או ACEScct לליניארי לצורך שמירה כ־EXR. ‏1.0 ליניארי משתמש באותו לבן ייחוס של 203 ניטים כמו sRGB; ‏HLG משתמש בתצוגת ייחוס של 1000 ניטים. פלטים ליניאריים ו־ACEScct שומרים על ערכים מורחבים. המרות מליניארי ל־HDR שומרות על ההדגשות ללא מיפוי גוונים; פלטי HLG ו־PQ חותכים ערוצים שליליים. פלט SDR והמרת PQ ל־HLG ממפים את עודף הבהיקות בגוונים על פני האצווה ודוחסים צבעים שמחוץ למכלול הצבעים. ההמרות מחושבות ב־float32 ומחזירות את ההתקן ואת סוג הנתונים של תוצאת הביניים. אלפא ישירה אינה עוברת המרת צבע.",
+    "description": "המרת sRGB, ‏Rec.709 ליניארי, HDR ‏(Rec.2020 HLG), ‏HDR PQ ‏(Rec.2020 PQ), ‏HDR LogC3, ‏ACEScg ליניארי ו־HDR ACEScct. ‏LogC3 משתמש בעקומת EI 800 עם צבעי יסוד של Rec.709 וערכים המוגבלים לטווח [0, 1]. ‏ACEScg הוא AP1 ליניארי לסצנה עם נקודת לבן D60. ‏ACEScct הוא קידוד הלוגריתמי של ACEScg. שניהם משתמשים בהתאמת Bradford ל־D65. יש להמיר LogC3 או ACEScct ל־ACEScg ליניארי (AP1 ליניארי לסצנה) או לליניארי (Rec.709) לפני שמירת EXR. ערך 1.0 ליניארי וערך 1.0 של ACEScg משתמשים באותו לבן ייחוס של 203 ניט כמו sRGB; ‏HLG משתמש בצג ייחוס של 1000 ניט. פלטים ליניאריים, ACEScg ו־ACEScct משמרים ערכים מורחבים. המרות מליניארי ל־HDR משמרות הבהקים ללא מיפוי גוונים; פלטי HLG ו־PQ חותכים ערוצים שליליים. פלט SDR והמרה מ־PQ ל־HLG ממפים גוונים של בהיקות עודפת לאורך האצווה ודוחסים צבעים שמחוץ לסולם הצבעים. ההמרות מחושבות ב־float32 ומחזירות את ההתקן ואת dtype הביניים. אלפא ישיר אינו עובר המרת צבע.",
     "display_name": "המרת מרחב הצבע של תמונה",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "מרחב הצבע של פיקסלי הפלט. יש להגדיר את צומת השמירה לאותו מרחב צבע. יש להמיר LogC3 או ACEScct לליניארי לפני שמירת EXR, או ל-sRGB/HDR/HDR PQ לפני שמירת וידאו."
+        "tooltip": "מרחב הצבע של פיקסלי הפלט. יש להגדיר את צומת השמירה לאותו מרחב צבע. יש להמיר LogC3 או ACEScct ל־ACEScg ליניארי עבור EXR של ACEScg, או לליניארי עבור EXR של Rec.709. יש להמיר ל־sRGB/HDR/HDR PQ לפני שמירת וידאו."
       },
       "image": {
         "name": "image"
@@ -16743,6 +16764,170 @@
       },
       "transformer_blocks_9_": {
         "name": "transformer_blocks.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "final_linear_video."
+      },
+      "final_norm_video_": {
+        "name": "final_norm_video."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "layers.23."
+      },
+      "layers_24_": {
+        "name": "layers.24."
+      },
+      "layers_25_": {
+        "name": "layers.25."
+      },
+      "layers_26_": {
+        "name": "layers.26."
+      },
+      "layers_27_": {
+        "name": "layers.27."
+      },
+      "layers_28_": {
+        "name": "layers.28."
+      },
+      "layers_29_": {
+        "name": "layers.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "layers.30."
+      },
+      "layers_31_": {
+        "name": "layers.31."
+      },
+      "layers_32_": {
+        "name": "layers.32."
+      },
+      "layers_33_": {
+        "name": "layers.33."
+      },
+      "layers_34_": {
+        "name": "layers.34."
+      },
+      "layers_35_": {
+        "name": "layers.35."
+      },
+      "layers_36_": {
+        "name": "layers.36."
+      },
+      "layers_37_": {
+        "name": "layers.37."
+      },
+      "layers_38_": {
+        "name": "layers.38."
+      },
+      "layers_39_": {
+        "name": "layers.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "layers.40."
+      },
+      "layers_41_": {
+        "name": "layers.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "video_head_modulation."
       }
     }
   },
@@ -25262,7 +25447,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "מקודד הוראת עריכה עם תמונות ייחוס עבור LoRA לעריכת MOSS-Image; השתמשו בו גם עבור הפרומפט השלילי. תמונות הייחוס משמשות בגודל שבו הן מתקבלות, לכן יש להתאים את גודלן תחילה.",
+    "description": "מקודד הנחיית עריכה עם תמונות ייחוס עבור LoRA לעריכת MOSS-Image; יש להשתמש בו גם עבור הפרומפט השלילי. תמונות הייחוס משמשות בגודל שבו הן מתקבלות, לכן יש לשנות את גודלן תחילה. ללא VAE, התמונות מועברות רק למקודד הטקסט.",
     "display_name": "קידוד טקסט לעריכת MOSS-Image",
     "inputs": {
       "clip": {
@@ -25272,6 +25457,10 @@
         "name": "edit_format",
         "tooltip": "הפריסה שבה אומן LoRA העריכה: MOSS-Image Edit Training של ai-toolkit ‏(כאשר אפשרות kv_cache שלו פעילה או מושבתת) או Moss-Image-Edit. כאשר kv_cache מושבת, תמונות הייחוס מפעילות קשב גם לתמונה הנוצרת, ולכן הן מחושבות מחדש בכל שלב."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "קובע את מידת תשומת הלב של המודל לתמונות שמקודד הטקסט רואה (בתבניות ai-toolkit, או ללא VAE): הערך 0 מתעלם מהן, 1 אינו משנה אותן, וערך גבוה מ-1 מדגיש אותן."
+      },
       "images": {
         "name": "תמונות"
       },
@@ -25279,7 +25468,8 @@
         "name": "פרומפט"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "מקודד את התמונות כ-latents ייחוס עבור LoRA העריכה."
       }
     },
     "outputs": {

@@ -44,9 +44,10 @@ const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
 
 async function loadRemoteConfigBeforeFirebase(): Promise<void> {
   await bootstrapTracer.settle('startup/remote-config', async () => {
-    const { refreshRemoteConfig } =
+    const { loadRemoteConfigUntilReady, refreshRemoteConfig } =
       await import('@/platform/remoteConfig/refreshRemoteConfig')
-    await refreshRemoteConfig({ useAuth: false })
+    if (isCloud) await loadRemoteConfigUntilReady()
+    else await refreshRemoteConfig({ useAuth: false })
   })
 }
 

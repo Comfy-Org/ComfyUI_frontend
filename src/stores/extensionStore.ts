@@ -45,6 +45,13 @@ export const useExtensionStore = defineStore('extension', () => {
     )
   })
 
+  const isAgentCreatedExtension = (extension: ComfyExtension) =>
+    extension.provenance?.createdBy === 'comfy-agent' ||
+    /^agent\.[^.]+\./.test(extension.name)
+  const agentExtensions = computed(() =>
+    extensions.value.filter(isAgentCreatedExtension)
+  )
+
   const isExtensionInstalled = (name: string) => name in extensionByName.value
 
   const isExtensionEnabled = (name: string) =>
@@ -106,6 +113,14 @@ export const useExtensionStore = defineStore('extension', () => {
         mode: 'holding',
         held: current.held.filter((held) => held !== extension)
       }
+  }
+
+  /** Returns the extensions held so far, in registration order; holding goes on. */
+  function takeHeldExtensions(): ComfyExtension[] {
+    const current = registration.value
+    if (current.mode !== 'holding') return []
+    registration.value = { mode: 'holding', held: [] }
+    return [...current.held]
   }
 
   /** Ends holding and returns the extensions still held; they stay pending until `finishLateExtensions`. */
@@ -172,9 +187,11 @@ export const useExtensionStore = defineStore('extension', () => {
 
   return {
     extensions,
+    agentExtensions,
     enabledExtensions,
     inactiveDisabledExtensionNames,
     isExtensionInstalled,
+    isAgentCreatedExtension,
     isExtensionEnabled,
     isExtensionReadOnly,
     registerExtension,
@@ -184,6 +201,7 @@ export const useExtensionStore = defineStore('extension', () => {
     holdNewExtensions,
     holdExtension,
     releaseHeldExtension,
+    takeHeldExtensions,
     stopHoldingExtensions,
     finishLateExtensions,
     oweNodeDefHooks,
