@@ -56,7 +56,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     // Load a template
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
@@ -359,7 +359,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     comfyPage
   }) => {
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     await comfyPage.page.route('**/templates/index.json', async (route) => {
       const response: WorkflowTemplates[] = [
@@ -457,7 +457,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(disclosure).toBeVisible()
     await expectOnTop()
     await expect(comfyPage.templates.content).toBeVisible()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
   })
 
   test('Can open associated tutorial', async ({ comfyPage }) => {

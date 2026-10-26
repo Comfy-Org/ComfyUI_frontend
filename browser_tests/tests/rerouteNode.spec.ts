@@ -32,9 +32,7 @@ test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
     await workflowsTab.tabButton.click()
     await workflowsTab.root.waitFor({ state: 'hidden' })
     await comfyPage.setFocusMode(true)
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(INSERTED_NODE_COUNT)
+    await comfyPage.expectNodeCount(INSERTED_NODE_COUNT)
 
     await expectRegionScreenshot(
       comfyPage.page,

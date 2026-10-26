@@ -58,7 +58,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
 
   test('Only optional inputs', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/only_optional_inputs')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     ).toBeHidden()

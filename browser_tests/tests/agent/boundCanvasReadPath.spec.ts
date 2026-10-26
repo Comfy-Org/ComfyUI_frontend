@@ -189,9 +189,7 @@ test.describe(
           .poll(() => comfyPage.nodeOps.getGraphNodesCount())
           .toBeLessThan(nodeCount)
         await comfyPage.menu.topbar.getTab(0).click()
-        await expect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-          .toBe(nodeCount)
+        await comfyPage.expectNodeCount(nodeCount)
       })
 
       await agentPanel.sendMessage(SECOND_PROMPT)

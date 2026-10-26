@@ -101,7 +101,7 @@ test.describe(
         comfyPage
       }) => {
         await comfyPage.nodeOps.clearGraph()
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+        await comfyPage.expectNodeCount(0)
 
         await comfyPage.page.evaluate(() => {
           window.app!.canvas.graph_mouse[0] = -9999
@@ -114,7 +114,7 @@ test.describe(
           waitForUpload: true
         })
 
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        await comfyPage.expectNodeCount(1)
 
         const { nodePos, expectedPos } = await comfyPage.page.evaluate(
           (drop) => {
