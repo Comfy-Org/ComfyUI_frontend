@@ -35,23 +35,24 @@ const filterScript = () => {
 }
 
 const GH_STUB = `#!/usr/bin/env bash
-state="" head="" base=""
+state="" head="" base="" filter="."
 while [ $# -gt 0 ]; do
   case "$1" in
     --state) state="$2"; shift 2 ;;
     --head) head="$2"; shift 2 ;;
     --base) base="$2"; shift 2 ;;
+    --jq) filter="$2"; shift 2 ;;
     *) shift ;;
   esac
 done
-while IFS='|' read -r s h b n; do
+matches="[]"
+while IFS='|' read -r s h b n cross; do
   [ -z "$s" ] && continue
   if [ "$s" = "$state" ] && [ "$h" = "$head" ] && { [ -z "$base" ] || [ "$b" = "$base" ]; }; then
-    echo "$n"
-    exit 0
+    matches=$(jq -c --argjson n "$n" --argjson cross "$cross" '. + [{number: $n, isCrossRepository: $cross}]' <<< "$matches")
   fi
 done <<< "$STUB_PRS"
-echo ""
+jq -r "$filter" <<< "$matches"
 `
 
 const GIT_STUB = `#!/usr/bin/env bash
@@ -65,6 +66,7 @@ interface StubPr {
   head: string
   base: string
   number: number
+  crossRepository?: boolean
 }
 
 interface Scenario {
@@ -111,7 +113,15 @@ function runFilter({
         PR_NUMBER: '21829',
         REQUESTED_TARGETS: targets.join(' '),
         STUB_PRS: prs
-          .map((pr) => [pr.state, pr.head, pr.base, pr.number].join('|'))
+          .map((pr) =>
+            [
+              pr.state,
+              pr.head,
+              pr.base,
+              pr.number,
+              pr.crossRepository ?? false
+            ].join('|')
+          )
           .join('\n'),
         STUB_BRANCHES: branches.join(' ')
       },
@@ -151,7 +161,11 @@ describe('pr-backport filter-targets', () => {
   it('skips the run when every target was already merged', () => {
     expect(
       runFilter({ targets: ['core/1.57'], prs: [mergedCore157] })
-    ).toMatchObject({ skip: 'true', 'pending-targets': '' })
+    ).toMatchObject({
+      skip: 'true',
+      'pending-targets': '',
+      'all-merged': 'true'
+    })
   })
 
   it('ignores a merged PR from the backport branch into a different base', () => {
@@ -159,6 +173,15 @@ describe('pr-backport filter-targets', () => {
       runFilter({
         targets: ['core/1.57'],
         prs: [{ ...mergedCore157, base: 'main' }]
+      })
+    ).toMatchObject({ skip: 'false', 'pending-targets': 'core/1.57' })
+  })
+
+  it('ignores a merged PR from a fork that reuses the backport branch name', () => {
+    expect(
+      runFilter({
+        targets: ['core/1.57'],
+        prs: [{ ...mergedCore157, crossRepository: true }]
       })
     ).toMatchObject({ skip: 'false', 'pending-targets': 'core/1.57' })
   })
@@ -182,6 +205,7 @@ describe('pr-backport filter-targets', () => {
       })
     ).toMatchObject({
       skip: 'true',
+      'all-merged': 'false',
       'already-exists': 'core/1.57 (PR #21881)'
     })
   })
