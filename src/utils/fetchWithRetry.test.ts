@@ -89,6 +89,77 @@ describe('fetchWithRetry', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1)
   })
 
+  describe('replaying a body', () => {
+    const optedIn = { ...DEFAULT_RETRY_POLICY, retryNonIdempotent: true }
+
+    function consumingFetch(...responses: Response[]) {
+      const bodies: string[] = []
+      const queue = [...responses]
+      const fetchImpl = vi.fn<typeof fetch>(async (input, init) => {
+        bodies.push(await new Request(input, init).text())
+        const next = queue.shift()
+        if (!next) throw new Error('fetch called more times than scripted')
+        return next
+      })
+      return { fetchImpl, bodies }
+    }
+
+    it('sends the body of a Request again on the second attempt', async () => {
+      const { fetchImpl, bodies } = consumingFetch(respond(503), respond(200))
+
+      const result = await fetchWithRetry(
+        new Request('https://api/x', { method: 'POST', body: 'payload' }),
+        {},
+        { fetchImpl, sleep, random, policy: optedIn }
+      )
+
+      expect(result.status).toBe(200)
+      expect(bodies).toEqual(['payload', 'payload'])
+    })
+
+    it('sends an init body again on the second attempt', async () => {
+      const { fetchImpl, bodies } = consumingFetch(respond(503), respond(200))
+
+      await fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: 'payload' },
+        { fetchImpl, sleep, random, policy: optedIn }
+      )
+
+      expect(bodies).toEqual(['payload', 'payload'])
+    })
+
+    it('leaves the caller request unconsumed', async () => {
+      const { fetchImpl } = consumingFetch(respond(503), respond(200))
+      const request = new Request('https://api/x', {
+        method: 'POST',
+        body: 'payload'
+      })
+
+      await fetchWithRetry(
+        request,
+        {},
+        { fetchImpl, sleep, random, policy: optedIn }
+      )
+
+      expect(request.bodyUsed).toBe(false)
+    })
+
+    it('does not retry a stream body that cannot be replayed', async () => {
+      const fetchImpl = scriptedFetch(respond(503))
+      const body = new ReadableStream<Uint8Array>()
+
+      const result = await fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body, duplex: 'half' } as RequestInit,
+        { fetchImpl, sleep, random, policy: optedIn }
+      )
+
+      expect(result.status).toBe(503)
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+    })
+  })
+
   it('retries a POST only when the policy opts in', async () => {
     const fetchImpl = scriptedFetch(respond(503), respond(200))
 

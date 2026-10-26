@@ -1,9 +1,18 @@
 import type { RetryPolicy } from '@/utils/retryPolicy'
-import { retryDelayMs, sleep as sleepFor } from '@/utils/retryPolicy'
+import {
+  canRetryMethod,
+  retryDelayMs,
+  sleep as sleepFor
+} from '@/utils/retryPolicy'
+
+type FetchLike = (
+  input: RequestInfo | URL,
+  init?: RequestInit
+) => Promise<Response>
 
 export interface RetryingFetchOptions {
   readonly policy?: RetryPolicy
-  readonly fetchImpl?: typeof fetch
+  readonly fetchImpl?: FetchLike
   readonly sleep?: (ms: number, signal?: AbortSignal) => Promise<void>
   readonly random?: () => number
 }
@@ -19,12 +28,14 @@ function requestSignal(
   return init.signal ?? (input instanceof Request ? input.signal : undefined)
 }
 
-/**
- * `fetch` that re-issues idempotent requests the server answered with a
- * retryable status, honoring `Retry-After`. Returns the last response once
- * attempts are spent; never retries a non-idempotent method unless the policy
- * opts in.
- */
+function isReplayable(input: RequestInfo | URL, init: RequestInit): boolean {
+  return (
+    !(init.body instanceof ReadableStream) &&
+    !(input instanceof Request && input.bodyUsed)
+  )
+}
+
+/** `fetch` that retries retryable statuses on idempotent methods, honoring `Retry-After`. */
 export async function fetchWithRetry(
   input: RequestInfo | URL,
   init: RequestInit = {},
@@ -32,10 +43,16 @@ export async function fetchWithRetry(
 ): Promise<Response> {
   const { policy, fetchImpl = fetch, sleep = sleepFor, random } = options
   const method = requestMethod(input, init)
+  if (!canRetryMethod(method, policy) || !isReplayable(input, init)) {
+    return fetchImpl(input, init)
+  }
+
   const signal = requestSignal(input, init)
+  const template =
+    input instanceof Request && input.body !== null ? input.clone() : undefined
 
   for (let attempt = 1; ; attempt++) {
-    const response = await fetchImpl(input, init)
+    const response = await fetchImpl(template?.clone() ?? input, init)
     const delay = retryDelayMs({
       method,
       status: response.status,
@@ -48,4 +65,14 @@ export async function fetchWithRetry(
     await response.body?.cancel()
     await sleep(delay, signal)
   }
+}
+
+/** Wraps a url-based send so it retries like {@link fetchWithRetry}. */
+export function retryingSend(
+  send: (url: string, init: RequestInit) => Promise<Response>
+): (url: string, init: RequestInit) => Promise<Response> {
+  return (url, init) =>
+    fetchWithRetry(url, init, {
+      fetchImpl: (input, attemptInit) => send(String(input), attemptInit ?? {})
+    })
 }

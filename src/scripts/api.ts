@@ -84,6 +84,7 @@ import type {
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { retryingSend } from '@/utils/fetchWithRetry'
 import {
   fetchHistory,
   fetchJobAssets,
@@ -617,7 +618,7 @@ export class ComfyApi extends EventTarget {
     const requests = webSessionRequests()
     if (!requests) return undefined
     const scope = await requests.scope()
-    return scope && ((url, init) => requests.send(url, init, scope))
+    return scope && retryingSend((url, init) => requests.send(url, init, scope))
   }
 
   /** Sends a same-origin request on the web session; undefined when this tab is not on it. */

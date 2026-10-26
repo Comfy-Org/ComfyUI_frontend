@@ -27,6 +27,13 @@ function isIdempotentMethod(method: string): boolean {
   return IDEMPOTENT_METHODS.has(method.toUpperCase())
 }
 
+export function canRetryMethod(
+  method: string,
+  policy: RetryPolicy = DEFAULT_RETRY_POLICY
+): boolean {
+  return policy.retryNonIdempotent || isIdempotentMethod(method)
+}
+
 /** Milliseconds a `Retry-After` header asks for (delta-seconds or HTTP-date). */
 export function parseRetryAfterMs(
   value: string | null | undefined,
@@ -50,11 +57,7 @@ interface RetryDecisionInput {
   readonly now?: () => number
 }
 
-/**
- * How long to wait before the next attempt, or `undefined` to stop retrying:
- * the request is not retryable, attempts are spent, or the server asked to
- * wait longer than the policy allows.
- */
+/** Delay before the next attempt, or `undefined` to stop retrying. */
 export function retryDelayMs({
   method,
   status,
@@ -66,9 +69,7 @@ export function retryDelayMs({
 }: RetryDecisionInput): number | undefined {
   if (attempt >= policy.maxAttempts) return undefined
   if (!isRetryableStatus(status)) return undefined
-  if (!policy.retryNonIdempotent && !isIdempotentMethod(method)) {
-    return undefined
-  }
+  if (!canRetryMethod(method, policy)) return undefined
 
   const retryAfterMs = parseRetryAfterMs(readRetryAfter(), now())
   if (retryAfterMs !== undefined && retryAfterMs > policy.maxDelayMs) {

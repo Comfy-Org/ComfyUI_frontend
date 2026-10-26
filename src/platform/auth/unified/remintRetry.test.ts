@@ -492,7 +492,7 @@ describe('attachUnifiedRemintInterceptor', () => {
   // A custom axios adapter is responsible for its own status handling (axios
   // only applies validateStatus inside its built-in adapters), so reject
   // non-2xx with a real AxiosError to mirror a live response.
-  function makeAdapter(statuses: number[]): ReturnType<typeof vi.fn> {
+  function makeAdapter(statuses: number[]) {
     let call = 0
     return vi.fn<AxiosAdapter>(async (config) => {
       const status = statuses[Math.min(call, statuses.length - 1)]
@@ -519,7 +519,7 @@ describe('attachUnifiedRemintInterceptor', () => {
 
   function makeClient(statuses: number[]) {
     const adapter = makeAdapter(statuses)
-    const client = axios.create({ adapter: adapter as unknown as AxiosAdapter })
+    const client = axios.create({ adapter })
     attachUnifiedRemintInterceptor(client)
     return { client, adapter }
   }
@@ -578,7 +578,7 @@ describe('attachUnifiedRemintInterceptor', () => {
 
   it('keeps the 503 retries and the 401 re-mint on separate budgets', async () => {
     const adapter = makeAdapter([503, 503, 401, 503, 200])
-    const client = axios.create({ adapter: adapter as unknown as AxiosAdapter })
+    const client = axios.create({ adapter })
     attachRetryableStatusRetry(client, { sleep: async () => {} })
     attachUnifiedRemintInterceptor(client)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
@@ -695,7 +695,7 @@ describe('attachUnifiedRemintInterceptor', () => {
         response
       )
     })
-    const client = axios.create({ adapter: adapter as unknown as AxiosAdapter })
+    const client = axios.create({ adapter })
     attachUnifiedRemintInterceptor(client)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
       'tokenB'

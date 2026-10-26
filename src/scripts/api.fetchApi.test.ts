@@ -1,5 +1,13 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ApiAuthProvider } from '@/platform/auth/apiAuthProvider'
@@ -11,6 +19,7 @@ import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useAuthStore } from '@/stores/authStore'
+import { DEFAULT_RETRY_POLICY } from '@/utils/retryPolicy'
 
 const { addBreadcrumb } = vi.hoisted(() => ({
   addBreadcrumb: vi.fn()
@@ -225,6 +234,68 @@ describe('api.fetchApi', () => {
 
       expect(onAuthScheme).toHaveBeenCalledExactlyOnceWith('web-session')
       expect(send).toHaveBeenCalledOnce()
+    })
+
+    describe('on the session with a retryable failure', () => {
+      function provideSessionSending(...answers: Response[]) {
+        const send = vi.fn<WebSessionRequests['send']>(async () => {
+          const answer = answers.shift()
+          if (!answer) throw new Error('send called more times than scripted')
+          return answer
+        })
+        onTestFinished(
+          provideWebSessionRequests(
+            fromPartial<WebSessionRequests>({
+              scope: async () => ({ session: fromPartial({}), epoch: 1 }),
+              send
+            })
+          )
+        )
+        return send
+      }
+
+      const unavailable = () => new Response(null, { status: 503 })
+
+      beforeEach(() => {
+        signInOnCloud()
+        vi.useFakeTimers()
+      })
+
+      it('recovers from a 503 with exactly two sends', async () => {
+        const send = provideSessionSending(
+          unavailable(),
+          new Response('ok', { status: 200 })
+        )
+
+        const pending = api.fetchApi('/test')
+        await vi.advanceTimersByTimeAsync(10_000)
+
+        expect((await pending).status).toBe(200)
+        expect(send).toHaveBeenCalledTimes(2)
+      })
+
+      it('stops at the policy attempt count on a persistent 503', async () => {
+        const send = provideSessionSending(
+          unavailable(),
+          unavailable(),
+          unavailable()
+        )
+
+        const pending = api.fetchApi('/test')
+        await vi.advanceTimersByTimeAsync(10_000)
+
+        expect((await pending).status).toBe(503)
+        expect(send).toHaveBeenCalledTimes(DEFAULT_RETRY_POLICY.maxAttempts)
+      })
+
+      it('does not retry a POST', async () => {
+        const send = provideSessionSending(unavailable())
+
+        const response = await api.fetchApi('/test', { method: 'POST' })
+
+        expect(response.status).toBe(503)
+        expect(send).toHaveBeenCalledOnce()
+      })
     })
 
     it('reports cloud-auth-header when a header was attached', async () => {

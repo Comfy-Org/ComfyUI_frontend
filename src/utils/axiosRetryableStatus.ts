@@ -71,13 +71,7 @@ function retryingAdapter(
   }
 }
 
-/**
- * Retries a retryable status around whichever adapter each request selects,
- * so a per-request adapter is covered too. The retry sits below the
- * interceptor chain: each request that reaches the adapter, including the one
- * an interceptor re-issues after a 401 re-mint, gets its own attempt budget,
- * and `timeout` bounds the attempts and the waits between them together.
- */
+/** Retries retryable statuses around each request's adapter, within its `timeout`. */
 export function attachRetryableStatusRetry(
   client: AxiosInstance,
   options: AxiosRetryableStatusOptions = {}

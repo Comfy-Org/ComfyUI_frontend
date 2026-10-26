@@ -7,6 +7,7 @@ import type {
 } from '@/platform/auth/session/webSessionFetch'
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+import { DEFAULT_RETRY_POLICY } from '@/utils/retryPolicy'
 
 import { workspaceApi } from './workspaceApi'
 import { installWorkspaceApiAuth } from './workspaceApiAuth'
@@ -57,6 +58,21 @@ describe('workspaceApi on the web session', () => {
 
     await expect(pending).resolves.toEqual({ workspaces: [] })
     expect(send).toHaveBeenCalledTimes(2)
+  })
+
+  it('sends no more than the policy attempt count on a persistent 503', async () => {
+    vi.useFakeTimers()
+    const send = provideSessionSending(
+      unavailable(),
+      unavailable(),
+      unavailable()
+    )
+
+    const pending = workspaceApi.list().catch((error: unknown) => error)
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(await pending).toMatchObject({ status: 503 })
+    expect(send).toHaveBeenCalledTimes(DEFAULT_RETRY_POLICY.maxAttempts)
   })
 
   it('does not retry a write that got a 503', async () => {
