@@ -4,12 +4,6 @@ import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import { addLoadImageNode } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { AgentRemoteApplyHarness } from '@e2e/fixtures/helpers/AgentRemoteApplyHarness'
 
-// FE-2247: closing the Agent panel unmounts AgentPanelRoot, the CRDT follower
-// it owns, and the agent socket; reopening mounts a fresh follower on a fresh
-// socket. The unit lifecycle test (`useAgentCrdtFollower.test.ts`, FE-2158)
-// pins the bridge and subscription bookkeeping. This pins what the user sees
-// across that remount: host updates reach the canvas again, land on the canvas
-// that was already there, and the follower never writes the shared document.
 test.describe(
   'Agent follower across an Agent panel close and reopen',
   { tag: ['@cloud', '@agent', '@canvas', '@vue-nodes'] },
@@ -59,7 +53,6 @@ test.describe(
       })
 
       await test.step('keep the existing canvas and never write the document', async () => {
-        // A node the remount removed and re-added would come back unselected.
         await expect(agent.vueNodes.selectedNodes).toHaveCount(1)
         await expect(agent.node(retainedNodeId)).toHaveClass(
           /outline-foreground/
@@ -67,8 +60,6 @@ test.describe(
         expect(await agent.settledCanvasNodeIds()).toEqual(
           [retainedNodeId, missedNodeId, liveNodeId].map(String).sort()
         )
-        // `doc_ops` would be the follower minting edits back and `doc_reseed`
-        // would be it pushing its whole canvas over the host's document.
         expect(
           agent.hostSocket
             .clientDocFrames()
