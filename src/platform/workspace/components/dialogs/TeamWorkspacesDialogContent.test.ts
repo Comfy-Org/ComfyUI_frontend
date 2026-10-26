@@ -4,7 +4,7 @@ import { getActivePinia } from 'pinia'
 import { useDialogStore } from '@/stores/dialogStore'
 /* oxlint-disable testing-library/no-container */
 /* oxlint-disable testing-library/no-node-access */
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -198,26 +198,39 @@ describe('TeamWorkspacesDialogContent', () => {
   })
 
   describe('when creation is refused', () => {
+    function expectNoCreateControls() {
+      expect(
+        screen.queryByLabelText(
+          'workspacePanel.createWorkspaceDialog.nameLabel'
+        )
+      ).toBeNull()
+      expect(
+        screen.queryByRole('button', {
+          name: 'teamWorkspacesDialog.createWorkspace'
+        })
+      ).toBeNull()
+    }
+
     it('replaces the create form with the organization notice', () => {
       setOwnedWorkspaces()
       workspaceStore.workspacesManagedByOrganization = true
-      const { container } = mountComponent()
-      expect(container.querySelector('#workspace-name-input')).toBeNull()
-      expect(container.textContent).toContain(
-        'workspaceSwitcher.managedByOrganization'
-      )
-      expect(container.textContent).toContain('Team Alpha')
+      mountComponent()
+      expectNoCreateControls()
+      expect(
+        screen.getByText('workspaceSwitcher.managedByOrganization')
+      ).toBeInTheDocument()
+      expect(screen.getByText('Team Alpha')).toBeInTheDocument()
     })
 
     it('explains the owned-workspace limit', () => {
       workspaceStore.workspaces = Array.from({ length: 10 }, (_, i) =>
         createTeamWorkspace({ id: `ws-${i}`, name: `Team ${i}`, role: 'owner' })
       )
-      const { container } = mountComponent()
-      expect(container.querySelector('#workspace-name-input')).toBeNull()
-      expect(container.textContent).toContain(
-        'workspaceSwitcher.maxWorkspacesReached'
-      )
+      mountComponent()
+      expectNoCreateControls()
+      expect(
+        screen.getByText('workspaceSwitcher.maxWorkspacesReached')
+      ).toBeInTheDocument()
     })
   })
 
