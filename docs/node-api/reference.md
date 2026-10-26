@@ -568,7 +568,10 @@ optional `min`, `max`, and `step`.
 - `remove(name): Promise<void>`
 
 Listed keys include the requested logical namespace and can be passed directly
-to `get()` or `remove()`. The host's physical user/pack prefix is never returned.
+to `get()` or `remove()`. Records belong to the current user. In ordinary local
+ComfyUI, dotted pack prefixes avoid collisions by convention; they do not
+isolate extensions from one another. An isolated host can enforce additional
+pack scoping. Physical user prefixes are not returned.
 
 ### `CommandsHandle`
 

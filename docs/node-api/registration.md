@@ -19,6 +19,12 @@ is useful in the browser console and for diagnosing a host. Extension modules
 should import `comfy` so the dependency is explicit and tooling can understand
 it.
 
+Ordinary local ComfyUI loads extension modules into the main page with full
+page access. This API provides compatibility and lifecycle contracts; it does
+not isolate those modules. An optional extension host can enforce additional
+permissions and pack namespaces. Check that host's documented support before
+depending on an isolated runtime.
+
 These legacy globals and modules are not part of this contract:
 
 - `window.comfyAPI`;

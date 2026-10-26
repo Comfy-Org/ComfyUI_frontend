@@ -2190,13 +2190,13 @@ type SlotRef = SlotId | string | { readonly index: number }
 // ─── storageHandle.ts ────────────────────────────────────────────
 
 /**
- * Logical text documents scoped by host-selected user and pack identity.
- * Keys never supply or select the physical storage namespace.
+ * Logical text documents scoped to the current user. Native hosts use dotted
+ * pack prefixes by convention; isolated hosts can enforce pack namespaces.
  */
 interface StorageHandle {
   /**
    * Lists logical keys including `namespace`, ready for `get()` or `remove()`.
-   * Physical user/pack prefixes stay hidden. Empty folders return an empty array.
+   * Physical user prefixes stay hidden. Empty folders return an empty array.
    */
   list(namespace: string): Promise<readonly string[]>
   /** The stored text, or `undefined` if there is none. */
