@@ -5,7 +5,7 @@ import { computed, onMounted, ref, useId, watch } from 'vue'
 
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import type { ElementKey } from './graphLayout'
-import { FLOW, PORTS, portPoint } from './graphLayout'
+import { FLOW, PORTS, portEdge, portPoint } from './graphLayout'
 
 const { positions } = defineProps<{
   positions: Record<ElementKey, { x: number; y: number }>
@@ -95,9 +95,6 @@ watch(() => positions, measure, { deep: true, flush: 'post' })
 const uid = useId()
 const geoId = (i: number) => `hero-wire-${uid}-${i}`
 
-// Every endpoint has a DOM dot on its element (input card, node headers, the
-// OUTPUT pill), so the splines carry no dots of their own. The layer renders
-// beneath the nodes, so wires dip under elements they cross.
 const links = computed(() => {
   const pairs = [
     [PORTS.inputOut, PORTS.angleIn],
@@ -108,16 +105,17 @@ const links = computed(() => {
   return pairs.map(([from, to], i) => {
     const a = portPoint(from, positions)
     const b = portPoint(to, positions)
-    const x1 = a.x * 10
-    const y1 = a.y * 10
-    const x2 = b.x * 10
-    const y2 = b.y * 10
+    const start = portEdge(from, positions)
+    const end = portEdge(to, positions)
+    const x1 = start.x * 10
+    const y1 = start.y * 10
+    const x2 = end.x * 10
+    const y2 = end.y * 10
     const d = Math.max(30, Math.abs(x2 - x1) * 0.5)
-    // Two slightly detuned oscillators per wire read as swing rather than pulse.
     const swing1 = Math.sin(t * 0.9 + i * 2.1) * SWAY
     const swing2 = Math.sin(t * 0.7 + i * 2.1 + 1.4) * SWAY
     const droop = SAG + Math.sin(t * 0.5 + i * 1.7) * (SAG * 0.25)
-    return `M ${x1} ${y1} C ${x1 + d} ${y1 + droop + swing1}, ${x2 - d} ${y2 + droop + swing2}, ${x2} ${y2}`
+    return `M ${a.x * 10} ${a.y * 10} L ${x1} ${y1} C ${x1 + d} ${y1 + droop + swing1}, ${x2 - d} ${y2 + droop + swing2}, ${x2} ${y2} L ${b.x * 10} ${b.y * 10}`
   })
 })
 
