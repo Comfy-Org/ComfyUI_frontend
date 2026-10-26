@@ -115,15 +115,7 @@ const FILE_HEADER = `/**
  */`
 
 function recorderBlock(pageExpr: string, safeOutputPath: string): string {
-  return `  // _enableRecorder is a private playwright-core API — same underlying
-  // machinery as \`playwright codegen -o <file>\`, just reached through the
-  // fixture-booted context instead of the standalone codegen CLI. It writes
-  // the generated code to disk continuously (debounced ~250ms) as you
-  // record, so closing the browser before copying no longer loses anything.
-  // If a future Playwright version removes/renames it, the catch below
-  // falls back to an ordinary pause — recording still works, just without
-  // the autosave.
-  interface RecorderEnabledContext {
+  return `  interface RecorderEnabledContext {
     _enableRecorder(params: {
       language: string
       mode: string
@@ -132,7 +124,6 @@ function recorderBlock(pageExpr: string, safeOutputPath: string): string {
     }): Promise<void>
   }
   try {
-    // eslint-disable-next-line no-underscore-dangle
     await (
       ${pageExpr}.context() as unknown as RecorderEnabledContext
     )._enableRecorder({
@@ -145,18 +136,6 @@ function recorderBlock(pageExpr: string, safeOutputPath: string): string {
     console.warn('Could not start the recorder toolbar:', error)
     await ${pageExpr}.pause()
   }
-  // 1. Turn off Pick locator (the arrow in the floating toolbar, top
-  //    middle of the app window). While it is on, your clicks pick
-  //    elements instead of using the app.
-  // 2. Get set up — sign in, look around. Nothing is being captured yet.
-  // 3. Press the Record button in the floating toolbar when you are
-  //    ready. From then on your clicks and typing are captured.
-  // 4. Add a proof step — required. It checks something visible really
-  //    happened (text appeared, a value changed). Use the toolbar's
-  //    assert buttons next to Record, then click the thing that shows
-  //    your action worked.
-  // 5. When done, close the browser window — the code is already
-  //    saved, no copy/paste needed.
   await ${pageExpr}.pause()
 `
 }

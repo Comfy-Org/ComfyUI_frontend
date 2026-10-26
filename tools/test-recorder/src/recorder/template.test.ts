@@ -119,6 +119,11 @@ describe('recording template', () => {
     }
   )
 
+  it('generates the local recording spec without line comments', () => {
+    const { code } = generate({ testName: 'demo' })
+    expect(code).not.toMatch(/^\s*\/\//m)
+  })
+
   it('enables the recorder to auto-save generated code, before pausing', () => {
     const { code } = generate({ testName: 'demo' })
     const enableAt = code.indexOf('_enableRecorder')

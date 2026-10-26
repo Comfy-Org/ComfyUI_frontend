@@ -75,15 +75,21 @@ export function listWorkflows(projectRoot: string): string[] {
   return results.sort()
 }
 
+function readRecordedCode(path: string): string | undefined {
+  if (!existsSync(path)) return undefined
+  try {
+    return readFileSync(path, 'utf-8')
+  } catch {
+    return undefined
+  }
+}
+
 export async function runRecording(
   options: RunnerOptions
 ): Promise<RecordingResult> {
   const browserTestsDir = join(options.projectRoot, 'browser_tests')
   const target = recordingTarget(options.distribution)
 
-  // A Ctrl-C'd session can leave a stale autosave behind — the playwright
-  // child flushes it after our signal handler runs. Start clean so this
-  // session can't pick up code recorded by a previous one.
   cleanupRecordedCode(browserTestsDir)
 
   let storageStateFile: string | undefined
@@ -125,7 +131,6 @@ export async function runRecording(
   ])
   console.log()
 
-  // The temp spec calls page.pause(), so a leaked copy hangs later test runs.
   const cleanUp = () => {
     cleanupRecordingTemplate(browserTestsDir)
     cleanupRecordedCode(browserTestsDir)
@@ -154,10 +159,8 @@ export async function runRecording(
         stdio: 'inherit',
         env: {
           ...process.env,
-          // No PWDEBUG: it breaks inside fixture setup, before the app loads.
           COMFY_TEST_RECORDING: '1',
           PLAYWRIGHT_LOCAL: '1',
-          // Without this the fixture records against :8188's bundled frontend.
           PLAYWRIGHT_TEST_URL:
             devServerUrl() +
             (target === 'cloud' ? buildFfQuery(options.featureFlags ?? {}) : '')
@@ -172,20 +175,8 @@ export async function runRecording(
       }
     }
 
-    // Read before cleanUp() runs in `finally` — it deletes this file.
-    const savedCodePath = recordedCodePath(browserTestsDir)
-    let recordedCode: string | undefined
-    if (existsSync(savedCodePath)) {
-      try {
-        recordedCode = readFileSync(savedCodePath, 'utf-8')
-      } catch {
-        // Fall through to the manual paste flow below.
-      }
-    }
+    const recordedCode = readRecordedCode(recordedCodePath(browserTestsDir))
 
-    // Closing the browser mid-pause makes playwright report a failure even
-    // though the recording itself finished fine — the autosaved code is the
-    // real signal of success.
     if (result.status !== 0 && !recordedCode) {
       return {
         success: false,
