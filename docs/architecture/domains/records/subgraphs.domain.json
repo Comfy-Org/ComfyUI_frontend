@@ -109,8 +109,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Converting, unpacking, and serialising subgraphs preserves links and definitions",

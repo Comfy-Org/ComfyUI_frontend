@@ -13,8 +13,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Workflow thumbnails are captured, cached, and shown on tab hover",
@@ -24,7 +22,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Existing workflow store, workflow service, and workflow tab imports of thumbnail internals remain visible as cross-domain coupling debt; classification does not grant dependency exceptions.",
     "Thumbnail rendering depends on minimap rendering internals without owning them."

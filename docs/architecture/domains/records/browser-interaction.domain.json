@@ -38,8 +38,6 @@
     "src/composables/useDismissableOverlay.ts"
   ],
   "publicConsumers": "all",
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Pointer and click-drag classification distinguish middle-button pans and drags from clicks",
@@ -56,10 +54,6 @@
       "name": "Pragmatic drag-and-drop adapters register droppables for canvas drops",
       "checks": ["src/composables/useCanvasDrop.test.ts"]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Existing exports and behavior stay stable. All domains may import the listed public entry points subject to role rules; internal imports remain restricted."
   ],
   "deepImports": "inventory"
 }

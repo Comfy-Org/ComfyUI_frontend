@@ -33,8 +33,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Preserved query parameters survive redirects and are merged back by namespace",
@@ -49,9 +47,7 @@
       "checks": ["src/platform/navigation/unmatchedRoute.test.ts"]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "Preserved-query namespaces and the Comfy.PreservedQuery session-storage prefix keep their names because auth, workspace, and settings URL loaders read them.",
     "preservedQueryDefinitions typing against the tracker remains visible as role-boundary debt; classification does not grant dependency exceptions."
   ],

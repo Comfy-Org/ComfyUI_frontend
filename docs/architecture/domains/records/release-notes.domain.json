@@ -25,8 +25,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Release store fetches the feed and decides when to surface new-release UI",
@@ -48,7 +46,6 @@
     "docs/adr/RELEASES-CHANGELOG-0012-cloud-release-notes-follow-the-comfyui-version.md"
   ],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "Release seen and dismissed setting ids keep their persisted names.",
     "releaseStore deferring to the onboarding tour and overlay stores and reading system stats remains visible as cross-domain coupling; classification does not grant dependency exceptions."
   ],

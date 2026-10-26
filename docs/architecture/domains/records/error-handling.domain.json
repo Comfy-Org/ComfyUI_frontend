@@ -29,20 +29,5 @@
     "src/composables/useErrorHandling.ts"
   ],
   "publicConsumers": "all",
-  "allowedDependencies": [],
-  "allowedConsumers": [],
-  "characterizationScenarios": [
-    {
-      "name": "Error normalization and recovery preserves its existing behavior",
-      "checks": [
-        "src/utils/errorUtil.test.ts",
-        "src/composables/useErrorHandling.test.ts"
-      ]
-    }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Existing exports and behavior stay stable. All domains may import the listed public entry points subject to role rules; internal imports remain restricted."
-  ],
   "deepImports": "inventory"
 }

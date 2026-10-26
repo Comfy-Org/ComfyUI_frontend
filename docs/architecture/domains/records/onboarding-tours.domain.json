@@ -77,8 +77,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Tour reducer and store start, advance, skip, and finish tours per entry path",
@@ -119,9 +117,7 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "TOUR_SEEN_SETTING and the replay session-storage key keep their persisted names.",
     "The release-notes store reading the tour and overlay stores to defer popups, and onboardingReset calling the backend through scripts/api and the auth store, remain visible as coupling debt; classification does not grant dependency exceptions."
   ],

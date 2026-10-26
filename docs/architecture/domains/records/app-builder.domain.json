@@ -65,8 +65,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Entering the builder guards empty workflows and walks the builder steps",
@@ -93,10 +91,6 @@
         "src/components/builder/builderViewOptions.test.ts"
       ]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
   ],
   "deepImports": "inventory"
 }

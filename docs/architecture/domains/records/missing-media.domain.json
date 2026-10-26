@@ -21,8 +21,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Missing media scan finds and verifies unavailable media inputs, including promoted widgets",
@@ -47,9 +45,7 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "The missing-media scan and store keep reading litegraph, node definitions, assets, canvas, and workflow stores; that coupling remains visible and classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"

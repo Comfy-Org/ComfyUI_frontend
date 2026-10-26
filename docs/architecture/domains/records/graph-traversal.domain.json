@@ -17,17 +17,5 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
-  "characterizationScenarios": [
-    {
-      "name": "Graph traversal and addressing preserves its existing behavior",
-      "checks": ["src/utils/graphTraversalUtil.test.ts"]
-    }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
-  ],
   "deepImports": "inventory"
 }

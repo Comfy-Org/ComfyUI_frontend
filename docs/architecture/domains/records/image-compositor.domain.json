@@ -77,8 +77,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Compositor sessions preserve layer state and save behavior",
@@ -123,7 +121,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "The core extension, Vue-node adapter, and LiteGraph widget remain the host integration seams.",
     "Layer state and save behavior remain characterized independently of presentation."

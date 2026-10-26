@@ -77,8 +77,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Missing model scan finds, verifies, and groups models absent from the installation",
@@ -102,9 +100,7 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "missingModelDownload mixes metadata fetching with download dispatch through electron and sidebar stores; that mix and the pure grouping and view helpers importing from application modules remain visible as role-boundary debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"

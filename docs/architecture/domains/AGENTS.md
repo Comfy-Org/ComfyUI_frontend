@@ -17,5 +17,13 @@ When `fallow audit` reports a `boundary-violation`, import a public entry
 point, or move the code so the import is not needed. Do not add a
 `fallow-ignore` comment to pass the gate.
 
-Leave unclassified files unclassified. Add a public entry point only together
-with a characterization test that covers it.
+Leave unclassified files unclassified.
+
+When editing records, follow README.md for defaults, directory public APIs,
+and exclusions. Preserve role restrictions and feature ownership overrides.
+Group pure utilities under `shared-foundation` rather than splitting records
+by utility name.
+
+Choose tests by the caller behavior or boundary rule they protect, following
+`docs/guidance/testing-principles.md`. Reuse existing coverage when it proves
+the contract. Cataloging an entry point alone does not require a new test.

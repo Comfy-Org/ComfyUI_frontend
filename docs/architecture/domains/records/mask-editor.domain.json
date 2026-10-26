@@ -49,8 +49,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Drawing operations preserve brush and canvas-history behavior",
@@ -71,7 +69,6 @@
       "checks": ["src/utils/pngEncodeUtil.test.ts"]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "The core extension remains the host integration seam for opening the editor.",
     "Image widget values and layer output remain covered by loader and saver characterization tests."

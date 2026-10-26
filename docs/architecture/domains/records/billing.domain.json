@@ -614,7 +614,6 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": ["design-system"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Billing context routes reads and actions to the legacy or workspace billing rail",

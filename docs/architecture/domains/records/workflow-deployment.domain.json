@@ -17,8 +17,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "API inputs and agent handoff content are derived deterministically from the workflow",
@@ -35,7 +33,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "The deploy-as-api action id stays stable for the workflow actions menu.",
     "Unclassified callers may import deployment internals during inventory; imports from classified domains remain subject to cross-domain rules.",

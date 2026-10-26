@@ -9,8 +9,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Run and missing-resource errors resolve to catalog messages and account preconditions",
@@ -20,9 +18,7 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "Catalog ids remain stable because telemetry and error-panel UI key on them.",
     "The resolvers typing against missing-media, missing-model, and node-replacement types and counting their groups remain visible as cross-domain coupling; classification does not grant dependency exceptions."
   ],

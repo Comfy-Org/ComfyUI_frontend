@@ -137,8 +137,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Model loading, adapters, and export preserve supported formats and scene state",
@@ -188,7 +186,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Existing imports and runtime behavior remain unchanged; classified callers such as the shared viewport and assets expose cross-domain findings rather than receiving new dependency permissions.",
     "Classification does not move the shared three.js viewport, shared interfaces, useViewportNodeWiring, or camera and light authoring into the model viewer capability.",

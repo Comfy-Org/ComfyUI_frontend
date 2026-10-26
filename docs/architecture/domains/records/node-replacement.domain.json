@@ -29,8 +29,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Missing nodes are scanned, recorded, and matched to available replacements",
@@ -51,9 +49,7 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "MissingNodeType remains importable by telemetry, error-catalog, and missing-model code during inventory.",
     "useNodeReplacement mutating LGraph, the link store, and app state directly, and the swap components typing against rightSidePanel error groups, remain visible as coupling debt; classification does not grant dependency exceptions."
   ],

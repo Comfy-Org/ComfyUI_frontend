@@ -25,6 +25,14 @@ pnpm test:unit tools/architecture
 
 Owners come from `CODEOWNERS`; records do not repeat them.
 
+Omitted `allowedDependencies`, `allowedConsumers`, and `adrs` default to empty
+lists. `characterizationScenarios` and `compatibilityPromises` are optional;
+include them when they document behavior or commitments worth preserving.
+
+Pure color, formatting, math, and type-guard utilities belong to
+`shared-foundation`. Separate records are useful when they express distinct
+ownership or dependency constraints, not just different utility names.
+
 ## Module paths
 
 A module path is a `src/` file or a `src/` directory ending in `/**`. Prefer
@@ -73,14 +81,22 @@ public entry points.
 Use `publicConsumers: "all"` for shared libraries whose public contracts are
 intended for any feature. It does not grant access to their internal files,
 approve their outgoing dependencies, or let domain logic import UI components.
-Omitting it keeps reciprocal domain approval. List public files explicitly;
-tests, stories, and implementation helpers do not become public with a component.
+Omitting it keeps reciprocal domain approval. List public files explicitly
+or declare a directory ending in `/**` in `publicEntryPoints`. A directory
+entry expands to source files owned by that domain. Tests, stories, mocks,
+fixtures, and files in private or internal directories are excluded. Use
+`publicExcludes` for additional files or directories that must remain private. More specific
+feature ownership and role assignments still apply inside a shared directory.
 
 The pre-push hook and the `CI: Fallow` job run `fallow audit` with the
 `new-only` gate, so only newly introduced violations fail. Existing violations
 are inherited findings, and `pnpm exec fallow dead-code --boundary-violations`
 lists them. An empty `publicEntryPoints` list means the domain has no supported
-API yet. To add one, list a tested entry point, then migrate callers to it.
+API yet. To add one, declare the supported entry point, then migrate callers
+to it. Tests protect meaningful caller behavior and compatibility contracts;
+cataloging an existing API does not require a new test per file or trivial icon.
+Boundary tests must still distinguish allowed reuse from forbidden imports,
+including role violations and access to excluded or feature-owned files.
 
 Fallow analyzes only files reachable from its entry points. A new file that
 nothing imports is reported as an unused file, not as a boundary violation.

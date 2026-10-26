@@ -49,8 +49,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Model library tab browses model folders and shows desktop download progress",
@@ -74,10 +72,6 @@
       "name": "Desktop model downloads track progress, pause, resume, and completion",
       "checks": ["src/stores/electronDownloadStore.test.ts"]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
   ],
   "deepImports": "inventory"
 }

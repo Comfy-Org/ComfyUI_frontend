@@ -25,8 +25,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Registering node definitions creates LiteGraph node types with inputs, outputs, widgets, and previews",
@@ -38,8 +36,5 @@
     }
   ],
   "adrs": ["docs/adr/ECS-0008-entity-component-system.md"],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
-  ],
   "deepImports": "inventory"
 }

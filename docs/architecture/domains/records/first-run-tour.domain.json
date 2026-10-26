@@ -45,8 +45,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Getting-started entry and nudge open the first-run experience",
@@ -73,7 +71,6 @@
       "checks": ["src/services/useNewUserService.test.ts"]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Existing onboarding, workspace, and settings callers may continue importing first-run tour internals during inventory; this record grants no new cross-domain permissions.",
     "Tour completion and dismissal state stored through the onboarding-tours engine and settings remains unchanged."

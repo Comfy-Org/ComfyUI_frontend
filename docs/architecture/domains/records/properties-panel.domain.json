@@ -45,8 +45,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Panel routes between tabs for the current selection and reports tab telemetry",
@@ -81,10 +79,6 @@
         "browser_tests/tests/propertiesPanel/widgetActionsMenu.spec.ts"
       ]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
   ],
   "deepImports": "inventory"
 }

@@ -197,8 +197,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Team workspace store and API list, switch, create, and leave workspaces",

@@ -317,8 +317,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Node library tabs browse node definitions, essentials, and bookmarks",
@@ -411,10 +409,6 @@
         "src/composables/useNodeHelpContent.test.ts"
       ]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
   ],
   "deepImports": "inventory"
 }

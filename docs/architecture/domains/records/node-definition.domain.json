@@ -29,7 +29,6 @@
     "src/schemas/nodeDef/nodeDefSchemaV2.ts"
   ],
   "publicConsumers": "all",
-  "allowedDependencies": [],
   "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [
     {
@@ -52,10 +51,6 @@
         "src/workbench/utils/nodeDefOrderingUtil.test.ts"
       ]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Existing exports and runtime behavior stay stable. All domains may import the listed V1 and V2 schema entry points subject to role rules; internal imports remain restricted."
   ],
   "deepImports": "inventory"
 }

@@ -53,8 +53,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Registry client and store fetch, cache, and abort pack and node requests",
@@ -71,10 +69,6 @@
         "src/services/providers/registrySearchProvider.test.ts"
       ]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
   ],
   "deepImports": "inventory"
 }

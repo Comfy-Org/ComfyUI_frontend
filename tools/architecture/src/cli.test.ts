@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, assert, describe, expect, it, vi } from 'vitest'
 
+import { buildBoundaries } from './boundaries'
 import { buildCatalog, parseCodeowners } from './catalog'
 import { formatReport, main, runArchitecture } from './cli'
 import { loadArchitectureConfiguration } from './records'
@@ -65,6 +66,86 @@ function createRepository(
 }
 
 describe('loadArchitectureConfiguration', () => {
+  it('generates boundaries when optional metadata is omitted', () => {
+    const root = createRepository({
+      allowedDependencies: undefined,
+      allowedConsumers: undefined,
+      characterizationScenarios: undefined,
+      adrs: undefined,
+      compatibilityPromises: undefined
+    })
+    expect(runArchitecture(root, 'update')).toEqual({
+      errors: [],
+      warnings: []
+    })
+    expect(runArchitecture(root, 'check')).toEqual({ errors: [], warnings: [] })
+  })
+
+  it.for([
+    { allowedDependencies: [' '] },
+    { allowedConsumers: [''] },
+    { characterizationScenarios: [{ name: '', checks: ['x'] }] },
+    { characterizationScenarios: [{ name: 'contract', checks: [''] }] },
+    { adrs: [''] },
+    { compatibilityPromises: [''] },
+    { publicExcludes: [''] }
+  ])('rejects empty supplied metadata: %j', (overrides) => {
+    expect(loadArchitectureConfiguration(createRepository(overrides)).ok).toBe(
+      false
+    )
+  })
+
+  it('expands public directories without exposing support files, exclusions or nested domains', () => {
+    const excluded = [
+      'src/images/Button.test.ts',
+      'src/images/Button.spec.tsx',
+      'src/images/Button.stories.ts',
+      'src/images/tests/helper.ts',
+      'src/images/__tests__/helper.ts',
+      'src/images/stories/helper.ts',
+      'src/images/mocks/helper.ts',
+      'src/images/__mocks__/helper.ts',
+      'src/images/fixtures/helper.ts',
+      'src/images/__fixtures__/helper.ts',
+      'src/images/private/helper.ts',
+      'src/images/internal/helper.ts',
+      'src/images/usePrivate.ts',
+      'src/images/helpers/private.ts',
+      'src/images/viewer/Viewer.vue',
+      'src/images/README.md'
+    ]
+    const root = createRepository(
+      {
+        modules: [
+          ...record.modules,
+          { path: 'src/images/toastStore.ts', role: 'application' }
+        ],
+        publicEntryPoints: ['src/images/**', 'src/imageView.vue'],
+        publicExcludes: ['src/images/usePrivate.ts', 'src/images/helpers/**']
+      },
+      {
+        ...Object.fromEntries(excluded.map((file) => [file, ''])),
+        'src/images/toastStore.ts': '',
+        'docs/architecture/domains/records/viewer.domain.json': JSON.stringify({
+          ...record,
+          id: 'viewer',
+          modules: [{ path: 'src/images/viewer/**', role: 'presentation' }],
+          publicEntryPoints: []
+        })
+      }
+    )
+    const configuration = loadValidConfiguration(root)
+    const { zones } = buildBoundaries(configuration).boundaries
+    expect(zones.filter(({ name }) => name.endsWith('/public'))).toEqual([
+      { name: 'images/domain/public', patterns: ['src/images/index.ts'] },
+      {
+        name: 'images/application/public',
+        patterns: ['src/images/toastStore.ts']
+      },
+      { name: 'images/presentation/public', patterns: ['src/imageView.vue'] }
+    ])
+  })
+
   it.for([
     {
       name: 'an unknown record field',
@@ -102,9 +183,22 @@ describe('loadArchitectureConfiguration', () => {
       name: 'a public entry point outside the domain',
       overrides: { publicEntryPoints: ['src/other.ts'] },
       error: 'public entry point is outside its modules'
+    },
+    {
+      name: 'a missing public directory',
+      overrides: { publicEntryPoints: ['src/gone/**'] },
+      error: 'images references missing file src/gone/**'
+    },
+    {
+      name: 'a public directory outside the domain',
+      overrides: { publicEntryPoints: ['src/other/**'] },
+      error: 'public entry point is outside its modules'
     }
   ])('rejects $name', ({ overrides, error }) => {
-    const root = createRepository(overrides, { 'src/other.ts': '' })
+    const root = createRepository(overrides, {
+      'src/other.ts': '',
+      'src/other/file.ts': ''
+    })
     expect(loadArchitectureConfiguration(root)).toEqual({
       ok: false,
       errors: [expect.stringContaining(error)]

@@ -165,7 +165,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
@@ -224,10 +223,6 @@
       "name": "Docked surfaces publish and release the workspace inset",
       "checks": ["src/composables/useWorkspaceInset.test.ts"]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
   ],
   "deepImports": "inventory"
 }

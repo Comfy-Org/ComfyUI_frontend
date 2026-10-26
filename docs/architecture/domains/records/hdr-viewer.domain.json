@@ -37,8 +37,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Gamut conversion and image statistics preserve numeric image interpretation",
@@ -56,7 +54,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Image-preview and asset callers keep their existing runtime behavior; classified cross-domain imports remain visible without new dependency permissions.",
     "The shared WebGL viewport and Load3D dialog configuration remain with their existing domains."

@@ -353,7 +353,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
   "allowedConsumers": ["agent", "settings"],
   "characterizationScenarios": [
     {

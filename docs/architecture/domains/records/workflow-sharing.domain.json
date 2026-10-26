@@ -41,8 +41,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Share and ComfyHub payloads are validated at the API boundary",
@@ -77,7 +75,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Share URLs using the existing share query parameter keep opening the shared workflow.",
     "Unclassified callers may import sharing internals during inventory; imports from classified domains remain subject to cross-domain rules.",

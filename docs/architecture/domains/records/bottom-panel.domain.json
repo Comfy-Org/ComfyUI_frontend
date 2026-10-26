@@ -30,7 +30,6 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": ["keybindings"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Terminal tabs stream server logs into a shared terminal base",
@@ -51,10 +50,6 @@
         "src/components/bottomPanel/tabs/terminal/LogsTerminal.test.ts"
       ]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
   ],
   "deepImports": "inventory"
 }

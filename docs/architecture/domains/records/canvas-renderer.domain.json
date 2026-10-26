@@ -181,8 +181,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Canvas store, interaction mode, and redraw scheduling preserve canvas state",

@@ -58,13 +58,12 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [
-    "color-conversion",
+    "shared-foundation",
     "design-system",
     "dialog-host",
     "graph-model",
     "vue-node-widgets"
   ],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Box geometry, hit testing, and editor state preserve region editing",
@@ -84,7 +83,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Existing widget registry and node callers may continue importing bounding-boxes internals during inventory.",
     "The capability reads canvas, node output, and graph state without owning their stores."

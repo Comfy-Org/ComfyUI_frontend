@@ -49,8 +49,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "System stats panel renders system and device information",
@@ -63,10 +61,6 @@
       "name": "System stats load, refetch, and classify the install form factor",
       "checks": ["src/stores/systemStatsStore.test.ts"]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
   ],
   "deepImports": "inventory"
 }

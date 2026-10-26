@@ -17,17 +17,5 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
-  "characterizationScenarios": [
-    {
-      "name": "Legacy graph utility adapters preserves its existing behavior",
-      "checks": ["src/utils/litegraphUtil.test.ts"]
-    }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
-  ],
   "deepImports": "inventory"
 }

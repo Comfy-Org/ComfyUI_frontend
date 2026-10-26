@@ -33,8 +33,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Preview scheduling and uniform reads follow workflow outputs and promoted widgets",
@@ -52,7 +50,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Existing Vue-node callers may continue importing preview internals during inventory.",
     "Classification does not move graph, widget, output, or curve state into the preview capability."

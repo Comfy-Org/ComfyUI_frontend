@@ -25,8 +25,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Viewport orchestration preserves sizing, render loop, and context-menu behavior",
@@ -65,7 +63,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Existing imports and runtime behavior remain unchanged; model-viewer, camera, and light cross-domain imports remain visible without new dependency permissions.",
     "Classification does not move model loading, animation, recording, serialization, or graph node state into the viewport capability."

@@ -177,7 +177,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
@@ -239,9 +238,6 @@
   ],
   "adrs": [
     "docs/adr/EXTENSIONS-PUBLIC-API-0005-bundle-vue-dependencies-in-extensions.md"
-  ],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
   ],
   "deepImports": "inventory"
 }

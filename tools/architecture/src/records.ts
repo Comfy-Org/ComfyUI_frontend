@@ -52,6 +52,39 @@ export interface Claim {
   module: Module
 }
 
+const PRIVATE_DIRECTORY =
+  /\/(?:__)?(?:tests?|stories|mocks?|fixtures?|private|internal)(?:__)?\//
+const SUPPORT_FILE = /\.(?:test|spec|stories|story|mock|fixture)\.[^.]+$/
+
+export function publicFiles(
+  record: DomainRecord,
+  claims: ReadonlyMap<string, Claim>
+): string[] {
+  const owned = [...claims]
+    .filter(([, claim]) => claim.record === record)
+    .map(([file]) => file)
+  return [
+    ...new Set(
+      record.publicEntryPoints.flatMap((entry) =>
+        entry.endsWith('/**')
+          ? owned.filter(
+              (file) =>
+                matchesModulePath(file, entry) &&
+                SOURCE_FILE.test(file) &&
+                !PRIVATE_DIRECTORY.test(file) &&
+                !SUPPORT_FILE.test(file)
+            )
+          : claims.get(entry)?.record === record
+            ? [entry]
+            : []
+      )
+    )
+  ].filter(
+    (file) =>
+      !record.publicExcludes.some((path) => matchesModulePath(file, path))
+  )
+}
+
 const specificity = (path: string) =>
   path.endsWith('/**') ? path.length : Number.MAX_SAFE_INTEGER
 
@@ -220,9 +253,13 @@ function referencedFileErrors(
   return records.flatMap((record) => {
     const missing = [
       ...record.publicEntryPoints,
+      ...record.publicExcludes,
       ...record.characterizationScenarios.flatMap(({ checks }) => checks),
       ...record.adrs
-    ].filter((filename) => !existsSync(join(repositoryRoot, filename)))
+    ].filter(
+      (filename) =>
+        !existsSync(join(repositoryRoot, filename.replace(/\/\*\*$/, '')))
+    )
     return [
       ...missing.map(
         (filename) => `${record.id} references missing file ${filename}`
@@ -230,7 +267,11 @@ function referencedFileErrors(
       ...record.publicEntryPoints
         .filter(
           (entry) =>
-            !missing.includes(entry) && claims.get(entry)?.record !== record
+            !missing.includes(entry) &&
+            ![...claims].some(
+              ([file, claim]) =>
+                claim.record === record && matchesModulePath(file, entry)
+            )
         )
         .map(
           (entry) =>

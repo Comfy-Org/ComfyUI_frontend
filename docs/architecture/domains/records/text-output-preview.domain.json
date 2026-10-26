@@ -41,8 +41,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Execution output updates preview widgets without serializing their transient values",
@@ -63,7 +61,6 @@
       "checks": ["src/utils/htmlEscape.test.ts"]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "PreviewAny and SaveText extension callbacks and preview widget behavior remain unchanged.",
     "Inventory adds no dependency permissions or supported public entry points."

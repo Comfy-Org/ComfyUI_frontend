@@ -45,8 +45,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Draft cache keeps a bounded, collision-safe LRU index of workflow drafts",
@@ -79,7 +77,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Existing localStorage and sessionStorage key formats remain readable so saved drafts and tab pointers survive upgrades.",
     "Unclassified callers may import persistence internals during inventory; imports from classified domains remain subject to cross-domain rules.",

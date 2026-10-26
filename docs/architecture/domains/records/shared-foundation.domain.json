@@ -1,0 +1,57 @@
+{
+  "id": "shared-foundation",
+  "capability": "Shared pure utilities",
+  "description": "Color conversion, value formatting, numeric geometry, and runtime narrowing. Feature state and browser effects remain outside this boundary.",
+  "modules": [
+    {
+      "path": "src/utils/colorUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/colorUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/mathUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/mathUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/typeGuardUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/typeGuardUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/dateTimeUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/dateTimeUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/numberUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/numberUtil.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [
+    "src/utils/colorUtil.ts",
+    "src/utils/mathUtil.ts",
+    "src/utils/typeGuardUtil.ts",
+    "src/utils/numberUtil.ts",
+    "src/utils/dateTimeUtil.ts"
+  ],
+  "publicConsumers": "all",
+  "allowedConsumers": ["bounding-boxes"],
+  "deepImports": "inventory"
+}

@@ -13,8 +13,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Saving, inserting, deleting, importing, and exporting preserve node template persistence",
@@ -24,7 +22,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "The core extension remains the host integration seam for the canvas menu and template dialog.",
     "Saved templates remain stored through the existing user data API."

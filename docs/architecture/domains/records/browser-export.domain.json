@@ -21,8 +21,6 @@
     "src/composables/useCopyToClipboard.ts"
   ],
   "publicConsumers": "all",
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Downloads resolve filenames, stream via blob on cloud, and open files in new tabs safely",
@@ -32,10 +30,6 @@
       "name": "Clipboard copy falls back to the legacy path and toasts success or failure",
       "checks": ["src/composables/useCopyToClipboard.test.ts"]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Existing exports and behavior stay stable. All domains may import the listed public entry points subject to role rules; internal imports remain restricted."
   ],
   "deepImports": "inventory"
 }

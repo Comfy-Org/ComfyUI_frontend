@@ -25,20 +25,5 @@
     "src/composables/useTextFileContent.ts"
   ],
   "publicConsumers": "all",
-  "allowedDependencies": [],
-  "allowedConsumers": [],
-  "characterizationScenarios": [
-    {
-      "name": "Shared media loading preserves its existing behavior",
-      "checks": [
-        "src/composables/media/useRetryableMediaSrc.test.ts",
-        "src/composables/useTextFileContent.test.ts"
-      ]
-    }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Existing exports and behavior stay stable. All domains may import the listed public entry points subject to role rules; internal imports remain restricted."
-  ],
   "deepImports": "inventory"
 }

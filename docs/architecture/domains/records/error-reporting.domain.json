@@ -129,7 +129,6 @@
     "src/platform/telemetry/reportError.ts"
   ],
   "publicConsumers": "all",
-  "allowedDependencies": [],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
@@ -172,7 +171,6 @@
     "docs/adr/TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md"
   ],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "reportError() remains the only sanctioned path to Sentry and Datadog error sinks; callers must not call captureException or datadogRum.addError directly.",
     "initDatadogRum and initSentry stay callable from src/bootstrap.ts and main.ts before Pinia and the telemetry registry exist.",
     "reportError reading the host telemetry gate from the telemetry record, and sentryBeforeSend recognizing workspace API errors, remain visible as cross-domain coupling; classification does not grant dependency exceptions."

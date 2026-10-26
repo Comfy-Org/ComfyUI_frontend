@@ -41,8 +41,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Light values normalize and light positions convert to and from orbit state",
@@ -69,7 +67,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Unclassified callers may continue importing light internals during inventory; classified callers receive no new dependency permissions.",
     "Classification does not move CameraInfo handles or orbit math, the shared Three.js renderer, Load3D viewport factory, load3d components, or viewport node wiring into light authoring.",

@@ -65,8 +65,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Upload, preview, and record widgets preserve audio node registration",
@@ -93,7 +91,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Existing widget registry, node content, linear mode, queue, asset, and agent callers may continue importing audio internals during inventory.",
     "The capability uses the shared upload, API, and widget value services without owning them."

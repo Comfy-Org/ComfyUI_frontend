@@ -17,8 +17,6 @@
     "src/platform/serverFacts/pendingServerFact.ts"
   ],
   "publicConsumers": "all",
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Local state may withhold a server fact but never grant it",
@@ -37,7 +35,6 @@
     "docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md"
   ],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "pendingServerFact stays importable from every layer as the ADR-API-SERVER-FACTS-0042 marker."
   ],
   "deepImports": "inventory"

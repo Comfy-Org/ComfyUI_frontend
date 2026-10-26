@@ -21,8 +21,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Skills API lists, publishes, and deletes packs and the store scopes them to the active user and workspace",
@@ -41,9 +39,7 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "The settings dialog and agent surfaces may keep importing skill pack internals during inventory.",
     "skillPacksStore reading the current user and team workspace store, and skillsApi calling scripts/api, remain visible as coupling; classification does not grant dependency exceptions."
   ],

@@ -29,8 +29,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Markdown widgets render, edit, and synchronize annotation values",
@@ -44,7 +42,6 @@
       "checks": ["browser_tests/tests/noteNode.spec.ts"]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Note and MarkdownNote node types and serialized annotation values remain unchanged.",
     "Other Markdown widget consumers remain supported at runtime; inventory grants no new cross-domain permissions."

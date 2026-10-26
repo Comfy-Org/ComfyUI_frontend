@@ -49,7 +49,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
   "allowedConsumers": ["agent", "bounding-boxes", "settings"],
   "characterizationScenarios": [
     {
@@ -83,10 +82,6 @@
         "browser_tests/tests/dialogs/errorDialog.spec.ts"
       ]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points."
   ],
   "deepImports": "inventory"
 }

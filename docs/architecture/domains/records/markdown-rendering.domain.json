@@ -14,17 +14,11 @@
   ],
   "publicEntryPoints": ["src/utils/markdownRendererUtil.ts"],
   "publicConsumers": "all",
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Markdown renders to sanitized HTML with safe links and media",
       "checks": ["src/utils/markdownRendererUtil.test.ts"]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Existing exports and behavior stay stable. All domains may import the listed public entry points subject to role rules; internal imports remain restricted."
   ],
   "deepImports": "inventory"
 }

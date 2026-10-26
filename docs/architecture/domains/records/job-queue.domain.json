@@ -153,8 +153,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Jobs client fetches queue, history pages, details, and assets with schema validation",
@@ -220,9 +218,7 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "useQueueStore and useQueueSettingsStore keep their store ids and exports because assets, linear mode, the action bar, auto-queue, and extensions read them.",
     "The queue store depending on execution and node-output stores, job menus calling workflowService, litegraph, and dialog services, presentation components reading asset, command, and sidebar stores, and the dialog launcher that loads presentation remain visible as coupling and role-boundary debt; classification does not grant dependency exceptions."
   ],

@@ -33,8 +33,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Image selection and compare-widget presentation remain stable",
@@ -44,7 +42,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "The core extension, Vue-node adapter, and LiteGraph widget remain the host integration seams.",
     "Image selection remains isolated from compare presentation."

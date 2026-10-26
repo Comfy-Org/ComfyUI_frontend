@@ -13,8 +13,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Blueprints publish, list in the node library, edit, delete, and copy safely",
@@ -27,10 +25,6 @@
       "name": "Subgraph blueprints are addressed by the blueprint type prefix",
       "checks": ["src/stores/subgraphStore.test.ts"]
     }
-  ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
   ],
   "deepImports": "inventory"
 }

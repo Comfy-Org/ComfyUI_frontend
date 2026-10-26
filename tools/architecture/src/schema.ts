@@ -47,14 +47,15 @@ export const domainRecordSchema = z
       .array(z.object({ path: sourcePath, role: z.enum(ROLES) }).strict())
       .min(1),
     publicEntryPoints: uniqueList(sourcePath),
+    publicExcludes: uniqueList(sourcePath).default([]),
     publicConsumers: z.literal('all').optional(),
-    allowedDependencies: uniqueList(text),
-    allowedConsumers: uniqueList(text),
+    allowedDependencies: uniqueList(text).default([]),
+    allowedConsumers: uniqueList(text).default([]),
     characterizationScenarios: z
       .array(z.object({ name: text, checks: uniqueList(text, 1) }).strict())
-      .min(1),
-    adrs: uniqueList(z.string().regex(/^docs\/adr\/[^/]+\.md$/)),
-    compatibilityPromises: uniqueList(text, 1),
+      .default([]),
+    adrs: uniqueList(z.string().regex(/^docs\/adr\/[^/]+\.md$/)).default([]),
+    compatibilityPromises: uniqueList(text).default([]),
     deepImports: z.enum(['enforced', 'inventory'])
   })
   .strict()

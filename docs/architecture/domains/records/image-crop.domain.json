@@ -25,8 +25,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Crop bounds and widget values preserve image-crop behavior",
@@ -36,7 +34,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "The core extension and LiteGraph widget remain the host integration seams.",
     "Crop dimensions and widget values remain covered by characterization tests."

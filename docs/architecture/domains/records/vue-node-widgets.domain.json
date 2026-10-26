@@ -405,7 +405,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
   "allowedConsumers": ["bounding-boxes"],
   "characterizationScenarios": [
     {

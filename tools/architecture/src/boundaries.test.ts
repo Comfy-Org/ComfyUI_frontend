@@ -15,6 +15,7 @@ function domain(
     description: `${id} fixture`,
     modules,
     publicEntryPoints: [],
+    publicExcludes: [],
     allowedDependencies: [],
     allowedConsumers: [],
     characterizationScenarios: [{ name: 'contract', checks: ['x.test.ts'] }],

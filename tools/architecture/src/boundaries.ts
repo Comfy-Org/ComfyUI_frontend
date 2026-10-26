@@ -1,4 +1,9 @@
-import { contains, modulesBySpecificity, sameRole } from './records'
+import {
+  contains,
+  modulesBySpecificity,
+  publicFiles,
+  sameRole
+} from './records'
 import type { ArchitectureConfiguration, Claim } from './records'
 import { ROLES, ROLE_DEPENDENCIES } from './schema'
 import type { ArchitecturalRole, DomainRecord } from './schema'
@@ -55,7 +60,7 @@ function domainZones(
     const own = layered.filter(
       ({ record, module }) => record === domain && module.role === role
     )
-    const entries = domain.publicEntryPoints.filter((entry) =>
+    const entries = publicFiles(domain, claims).filter((entry) =>
       own.some(({ module }) => module === claims.get(entry)?.module)
     )
     const layers = [...new Set(own.map(({ layer }) => layer))]

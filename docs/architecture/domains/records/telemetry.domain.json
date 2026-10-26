@@ -129,8 +129,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "TelemetryRegistry fans each event out to every registered provider and useTelemetry exposes the active registry",
@@ -181,7 +179,6 @@
     "docs/adr/BILLING-CHECKOUT-0031-checkout-journey-instrumentation-contract.md"
   ],
   "compatibilityPromises": [
-    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "useTelemetry() returning null until a registry is installed remains the contract every caller and cloud provider relies on.",
     "Cloud providers under providers/cloud and initTelemetry stay in the cloud record and may keep importing storeReadiness and types during inventory.",
     "Metadata builders that read workflow, setting, node-definition, panel, workspace-billing, and auth stores, and the localStorage keys duplicated from their writers, remain visible as coupling debt; classification does not grant dependency exceptions."

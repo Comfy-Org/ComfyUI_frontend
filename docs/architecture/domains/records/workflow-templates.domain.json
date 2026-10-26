@@ -45,8 +45,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Template ranking and display metadata remain deterministic",
@@ -94,7 +92,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Template data is validated before it reaches presentation code.",
     "Distribution eligibility and ranking remain host-independent domain policy."

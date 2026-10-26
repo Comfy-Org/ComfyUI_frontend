@@ -73,8 +73,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Compatibility and version policy determine pack conflicts and ordering",
@@ -101,7 +99,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Existing menus and missing-node panels may continue importing manager internals during inventory.",
     "Application-to-dialog and utility-to-store coupling remains visible as role-boundary debt; classification does not grant dependency exceptions."

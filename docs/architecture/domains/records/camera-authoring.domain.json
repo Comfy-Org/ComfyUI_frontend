@@ -53,8 +53,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Camera state math converts orbit, roll, look-at, and look-through drags without drift",
@@ -101,7 +99,6 @@
       ]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Existing imports and runtime behavior remain unchanged; classified callers such as light authoring expose cross-domain findings rather than receiving new dependency permissions.",
     "Classification does not move the shared Three.js renderer, Load3D viewport factory, load3d components, or viewport node wiring into camera authoring.",

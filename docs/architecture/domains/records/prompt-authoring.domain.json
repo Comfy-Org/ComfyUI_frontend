@@ -21,8 +21,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Dynamic prompt parsing expands alternatives and strips comments",
@@ -33,7 +31,6 @@
       "checks": ["src/extensions/core/editAttention.test.ts"]
     }
   ],
-  "adrs": [],
   "compatibilityPromises": [
     "Extension names, prompt serialization, and keyboard behavior remain unchanged.",
     "Inventory adds no dependency permissions or supported public entry points."
