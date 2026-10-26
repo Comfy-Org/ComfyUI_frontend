@@ -1090,6 +1090,33 @@ describe('LiveGraphApplier', () => {
     expect(widget.value).toBe(42)
   })
 
+  it('reverts only the rejected flag register', () => {
+    const { graph, doc, applier, applyCollected } = setup({
+      nodes: [sourceNode(1, { flags: { pinned: true } })],
+      links: []
+    })
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    assert.exists(node)
+    node.pin(false)
+    node.collapse()
+
+    applier.applyChanges(
+      doc,
+      changesForRejectedOps(doc, [
+        envelope({
+          op: 'set_node_field',
+          node_id: 1,
+          field: 'flags.collapsed',
+          value: true
+        })
+      ]),
+      CONTEXT
+    )
+
+    expect(node).toMatchObject({ collapsed: false, pinned: false })
+  })
+
   it('leaves an alias-shaped live widget addressing its own document entry', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [
@@ -1494,6 +1521,36 @@ describe('LiveGraphApplier', () => {
     }
   )
 
+  it('keeps a local colour, shape and property when a frame edits only the title (FE-3494)', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        sourceNode(1, {
+          color: '#232',
+          bgcolor: '#353',
+          shape: LiteGraph.CARD_SHAPE,
+          properties: { mode: 'document' }
+        })
+      ],
+      links: []
+    })
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    assert.exists(node)
+    Object.assign(node, { color: '#322', bgcolor: '#533' })
+    node.shape = LiteGraph.BOX_SHAPE
+    node.setProperty('mode', 'local')
+
+    applyEdit(() => nodesMap(doc).get('1')?.set('title', 'Renamed'))
+
+    expect(node).toMatchObject({
+      title: 'Renamed',
+      color: '#322',
+      bgcolor: '#533',
+      shape: LiteGraph.BOX_SHAPE,
+      properties: { mode: 'local' }
+    })
+  })
+
   it('replaces live flags with the document flags but keeps a live placement ghost', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1, { flags: { pinned: true } })],
@@ -1511,7 +1568,7 @@ describe('LiveGraphApplier', () => {
     expect(node.flags).toEqual({ collapsed: true, ghost: true })
   })
 
-  it('mirrors one flag register written inside the document flags map onto the live node', () => {
+  it('mirrors one flag register without replacing its locally edited sibling', () => {
     const { graph, doc, collector, applier, applyCollected } = setup({
       nodes: [sourceNode(1, { flags: { pinned: true } })],
       links: []
@@ -1519,6 +1576,7 @@ describe('LiveGraphApplier', () => {
     applyCollected()
     const node = graph.getNodeById(toNodeId(1))
     if (!node) throw new Error('node 1 was not created')
+    node.pin(false)
 
     const collapse = envelope({
       op: 'set_node_field',
@@ -1531,7 +1589,7 @@ describe('LiveGraphApplier', () => {
     ])
     applier.applyChanges(doc, collector.take(), CONTEXT)
 
-    expect(node.flags).toEqual({ pinned: true, collapsed: true })
+    expect(node).toMatchObject({ collapsed: true, pinned: false })
   })
 
   it('applies the rest of a frame when one operation throws, and reports it once', () => {
@@ -1584,7 +1642,7 @@ describe('LiveGraphApplier', () => {
         {
           nodes: new Map([['2', 'delete']]),
           widgets: new Map(),
-          resyncNodes: new Set(),
+          resyncNodes: new Map(),
           links: new Set()
         },
         { actor: 'agent:inner', opIds: ['op-inner'] }

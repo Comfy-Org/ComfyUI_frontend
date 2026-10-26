@@ -17,25 +17,18 @@ function withoutAppSrcAlias(alias: AliasOptions = []): Alias[] {
 }
 
 const config: StorybookConfig = {
-  stories: [
-    '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
-    '../apps/website/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'
-  ],
-  staticDirs: ['../public', '../apps/website/public'],
+  stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
+  staticDirs: ['../public'],
   addons: ['@storybook/addon-docs', '@storybook/addon-mcp'],
   framework: {
     name: '@storybook/vue3-vite',
     options: { docgen: 'vue-component-meta' }
   },
   async viteFinal(config) {
-    // Use dynamic import to avoid CJS deprecation warning
     const { mergeConfig } = await import('vite')
     const { default: tailwindcss } = await import('@tailwindcss/vite')
-
-    // Remove import-map plugins and replace the inherited Vue plugin below.
     if (config.plugins) {
       config.plugins = config.plugins
-        // Type guard: ensure we have valid plugin objects with names
         .filter(
           (plugin): plugin is NonNullable<typeof plugin> & { name: string } => {
             return (
@@ -60,7 +53,6 @@ const config: StorybookConfig = {
 
     return mergeConfig(config, {
       plugins: [
-        // Keep public asset URLs intact so staticDirs can serve them directly.
         vue({ template: { transformAssetUrls: { includeAbsolute: false } } }),
         tailwindcss(),
         Icons({
@@ -72,7 +64,7 @@ const config: StorybookConfig = {
           }
         }),
         Components({
-          dts: false, // Disable dts generation in Storybook
+          dts: false,
           resolvers: [
             IconsResolver({
               customCollections: ['comfy']
@@ -93,22 +85,6 @@ const config: StorybookConfig = {
       resolve: {
         tsconfigPaths: true,
         alias: [
-          {
-            find: '@comfyorg/website',
-            replacement: process.cwd() + '/apps/website'
-          },
-          {
-            find: 'astro:env/client',
-            replacement: process.cwd() + '/apps/website/src/test/astroEnv.ts'
-          },
-          {
-            find: /^\/animations\//,
-            replacement: process.cwd() + '/apps/website/public/animations/'
-          },
-          {
-            find: /^\/icons\//,
-            replacement: process.cwd() + '/apps/website/public/icons/'
-          },
           {
             find: '@/composables/queue/useJobList',
             replacement: process.cwd() + '/src/storybook/mocks/useJobList.ts'
@@ -177,14 +153,12 @@ const config: StorybookConfig = {
             strictExecutionOrder: true
           },
           onwarn: (warning, warn) => {
-            // Suppress specific warnings
             if (
               warning.code === 'UNUSED_EXTERNAL_IMPORT' &&
               warning.message.includes('resolveComponent')
             ) {
               return
             }
-            // Suppress Storybook font asset warnings
             if (
               warning.code === 'UNRESOLVED_IMPORT' &&
               warning.message.includes('nunito-sans')
