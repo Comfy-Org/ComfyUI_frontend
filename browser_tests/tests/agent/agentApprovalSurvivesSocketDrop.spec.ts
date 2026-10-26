@@ -100,11 +100,10 @@ test.describe(
     // restored again.
     test('does not redraw an approval the socket already delivered', async ({
       turnLock,
-      getWebSocket,
       page
     }) => {
       turnLock.parkOnApproval()
-      turnLock.push(await getWebSocket(), RUN_APPROVAL_EVENT)
+      turnLock.push(await turnLock.liveSocket(), RUN_APPROVAL_EVENT)
       await expect(turnLock.approvalCard).toBeVisible()
       let recoveryResponses = 0
       const secondRecoveryResponse = page.waitForResponse((response) => {
