@@ -50,7 +50,7 @@ export const useExtensionStore = defineStore('extension', () => {
   const extensions = computed(() => Object.values(extensionByName.value))
   const isAgentCreatedExtension = (extension: ComfyExtension) =>
     extension.provenance?.createdBy === 'comfy-agent' ||
-    extension.name.startsWith('agent.')
+    /^agent\.[^.]+\./.test(extension.name)
   const agentExtensions = computed(() =>
     extensions.value.filter(isAgentCreatedExtension)
   )

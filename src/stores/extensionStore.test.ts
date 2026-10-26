@@ -392,16 +392,21 @@ describe('extensionStore', () => {
       expect(store.getAgentExtensionPackPath({ name })).toBe(expected)
     })
 
-    it('recognizes explicit provenance without requiring the name prefix', () => {
+    it('attributes explicit provenance or an agent.<pack>. prefix, and nothing else', () => {
       const store = useExtensionStore()
       store.registerExtension({
         name: 'custom.toolbar',
         provenance: { createdBy: 'comfy-agent' }
       })
+      store.registerExtension({ name: 'agent.cushions.toolbar' })
+      store.registerExtension({ name: 'agentic.toolbar' })
+      store.registerExtension({ name: 'agent.tools' })
+      store.registerExtension({ name: 'agent..toolbar' })
       store.registerExtension({ name: 'custom.manual' })
 
       expect(store.agentExtensions.map((extension) => extension.name)).toEqual([
-        'custom.toolbar'
+        'custom.toolbar',
+        'agent.cushions.toolbar'
       ])
     })
   })
