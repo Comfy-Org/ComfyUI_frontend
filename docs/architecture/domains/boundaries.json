@@ -6,12 +6,42 @@
         "patterns": ["src/platform/remote/comfyui/execution/types.ts"]
       },
       {
+        "name": "graph-layout/domain/public",
+        "patterns": [
+          "src/renderer/core/layout/types.ts",
+          "src/renderer/core/layout/utils/layoutMath.ts"
+        ]
+      },
+      {
+        "name": "graph-layout/application/public",
+        "patterns": ["src/renderer/core/layout/transform/useTransformState.ts"]
+      },
+      {
+        "name": "graph-model/domain/public",
+        "patterns": ["src/types/nodeId.ts"]
+      },
+      {
         "name": "keybindings/integration/public",
         "patterns": ["src/platform/keybindings/composables/useShortcutsTab.ts"]
       },
       {
+        "name": "link-connection/application/public",
+        "patterns": ["src/lib/litegraph/src/canvas/LinkConnector.ts"]
+      },
+      {
+        "name": "litegraph-api/integration/public",
+        "patterns": ["src/lib/litegraph/src/litegraph.ts"]
+      },
+      {
         "name": "node-definition/domain/public",
         "patterns": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"]
+      },
+      {
+        "name": "vue-node-renderer/integration/public",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/composables/useViewportKeepAlive.ts",
+          "src/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins.ts"
+        ]
       },
       {
         "name": "webcam-capture/integration/public",
@@ -3982,6 +4012,43 @@
         ]
       },
       {
+        "from": "graph-layout/domain/public",
+        "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/domain",
+          "graph-layout/domain/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-layout/application/public",
+        "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
+          "graph-layout/application/outer-1",
+          "graph-layout/domain/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-model/domain/public",
+        "allow": [
+          "comfyui-api/domain/public",
+          "graph-model/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
+          "graph-model/domain",
+          "node-definition/domain",
+          "graph-model/domain/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "keybindings/integration/public",
         "allow": [
           "keybindings/integration/public",
@@ -3993,11 +4060,68 @@
         ]
       },
       {
+        "from": "link-connection/application/public",
+        "allow": [
+          "link-connection/application/public",
+          "link-connection/domain",
+          "link-connection/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "litegraph-api/integration/public",
+        "allow": [
+          "litegraph-api/integration/public",
+          "litegraph-api/infrastructure",
+          "litegraph-api/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "node-definition/domain/public",
         "allow": [
           "node-definition/domain/public",
           "node-definition/domain",
           "node-definition/domain/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "vue-node-renderer/integration/public",
+        "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
+          "graph-model/domain/public",
+          "link-connection/application/public",
+          "litegraph-api/integration/public",
+          "vue-node-renderer/integration/public",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
+          "graph-layout/presentation",
+          "graph-layout/integration",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "graph-model/integration",
+          "link-connection/domain",
+          "link-connection/application",
+          "link-connection/integration",
+          "litegraph-api/infrastructure",
+          "litegraph-api/integration",
+          "vue-node-renderer/domain",
+          "vue-node-renderer/application",
+          "vue-node-renderer/infrastructure",
+          "vue-node-renderer/presentation",
+          "vue-node-renderer/integration",
+          "graph-layout/application/outer-1",
+          "graph-layout/integration/outer-1",
+          "graph-model/domain/outer-1",
+          "graph-model/integration/outer-1",
+          "vue-node-renderer/application/outer-1",
+          "vue-node-renderer/presentation/outer-1",
+          "vue-node-renderer/integration/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
@@ -4190,7 +4314,12 @@
       },
       {
         "from": "app-host/domain",
-        "allow": ["app-host/domain", "app-host/domain/outer-1", "unclassified"]
+        "allow": [
+          "app-host/domain",
+          "vue-node-renderer/domain",
+          "app-host/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "app-host/application",
@@ -4198,7 +4327,11 @@
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
+          "vue-node-renderer/domain",
+          "vue-node-renderer/application",
+          "vue-node-renderer/infrastructure",
           "app-host/domain/outer-1",
+          "vue-node-renderer/application/outer-1",
           "unclassified"
         ]
       },
@@ -4208,7 +4341,11 @@
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
+          "vue-node-renderer/domain",
+          "vue-node-renderer/application",
+          "vue-node-renderer/infrastructure",
           "app-host/domain/outer-1",
+          "vue-node-renderer/application/outer-1",
           "unclassified"
         ]
       },
@@ -4218,21 +4355,35 @@
           "app-host/domain",
           "app-host/application",
           "app-host/presentation",
+          "vue-node-renderer/domain",
+          "vue-node-renderer/application",
+          "vue-node-renderer/presentation",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "vue-node-renderer/application/outer-1",
+          "vue-node-renderer/presentation/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "app-host/integration",
         "allow": [
+          "vue-node-renderer/integration/public",
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
           "app-host/presentation",
           "app-host/integration",
+          "vue-node-renderer/domain",
+          "vue-node-renderer/application",
+          "vue-node-renderer/infrastructure",
+          "vue-node-renderer/presentation",
+          "vue-node-renderer/integration",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "vue-node-renderer/application/outer-1",
+          "vue-node-renderer/presentation/outer-1",
+          "vue-node-renderer/integration/outer-1",
           "unclassified"
         ]
       },
@@ -4464,6 +4615,7 @@
       {
         "from": "bounding-boxes/domain",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "color-conversion/domain",
           "design-system/domain",
@@ -4478,6 +4630,7 @@
       {
         "from": "bounding-boxes/application",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "color-conversion/domain",
@@ -4500,6 +4653,7 @@
       {
         "from": "bounding-boxes/presentation",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
@@ -4526,6 +4680,7 @@
       {
         "from": "bounding-boxes/integration",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
@@ -5080,6 +5235,7 @@
       {
         "from": "graph-layout/domain",
         "allow": [
+          "graph-layout/domain/public",
           "graph-layout/domain",
           "graph-layout/domain/outer-2",
           "unclassified"
@@ -5088,6 +5244,8 @@
       {
         "from": "graph-layout/application",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/infrastructure",
@@ -5099,6 +5257,8 @@
       {
         "from": "graph-layout/infrastructure",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/infrastructure",
@@ -5110,6 +5270,8 @@
       {
         "from": "graph-layout/presentation",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/presentation",
@@ -5121,6 +5283,8 @@
       {
         "from": "graph-layout/integration",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/infrastructure",
@@ -5136,6 +5300,7 @@
         "from": "graph-model/domain",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -5150,6 +5315,7 @@
         "from": "graph-model/application",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -5166,6 +5332,7 @@
         "from": "graph-model/infrastructure",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -5182,6 +5349,7 @@
         "from": "graph-model/integration",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -5478,6 +5646,7 @@
       {
         "from": "link-connection/application",
         "allow": [
+          "link-connection/application/public",
           "link-connection/domain",
           "link-connection/application",
           "unclassified"
@@ -5486,6 +5655,7 @@
       {
         "from": "link-connection/integration",
         "allow": [
+          "link-connection/application/public",
           "link-connection/domain",
           "link-connection/application",
           "link-connection/integration",
@@ -5520,6 +5690,7 @@
       {
         "from": "litegraph-api/integration",
         "allow": [
+          "litegraph-api/integration/public",
           "litegraph-api/infrastructure",
           "litegraph-api/integration",
           "unclassified"
@@ -6400,50 +6571,131 @@
       },
       {
         "from": "vue-node-renderer/domain",
-        "allow": ["vue-node-renderer/domain", "unclassified"]
+        "allow": [
+          "graph-layout/domain/public",
+          "graph-model/domain/public",
+          "graph-layout/domain",
+          "graph-model/domain",
+          "link-connection/domain",
+          "vue-node-renderer/domain",
+          "graph-model/domain/outer-1",
+          "graph-layout/domain/outer-2",
+          "unclassified"
+        ]
       },
       {
         "from": "vue-node-renderer/application",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
+          "graph-model/domain/public",
+          "link-connection/application/public",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "link-connection/domain",
+          "link-connection/application",
+          "litegraph-api/infrastructure",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/infrastructure",
+          "graph-layout/application/outer-1",
+          "graph-model/domain/outer-1",
           "vue-node-renderer/application/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "vue-node-renderer/infrastructure",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
+          "graph-model/domain/public",
+          "link-connection/application/public",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "link-connection/domain",
+          "link-connection/application",
+          "litegraph-api/infrastructure",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/infrastructure",
+          "graph-layout/application/outer-1",
+          "graph-model/domain/outer-1",
           "vue-node-renderer/application/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "vue-node-renderer/presentation",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
+          "graph-model/domain/public",
+          "link-connection/application/public",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/presentation",
+          "graph-model/domain",
+          "graph-model/application",
+          "link-connection/domain",
+          "link-connection/application",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/presentation",
+          "graph-layout/application/outer-1",
+          "graph-model/domain/outer-1",
           "vue-node-renderer/application/outer-1",
           "vue-node-renderer/presentation/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "vue-node-renderer/integration",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
+          "graph-model/domain/public",
+          "link-connection/application/public",
+          "litegraph-api/integration/public",
+          "vue-node-renderer/integration/public",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
+          "graph-layout/presentation",
+          "graph-layout/integration",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "graph-model/integration",
+          "link-connection/domain",
+          "link-connection/application",
+          "link-connection/integration",
+          "litegraph-api/infrastructure",
+          "litegraph-api/integration",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/infrastructure",
           "vue-node-renderer/presentation",
           "vue-node-renderer/integration",
+          "graph-layout/application/outer-1",
+          "graph-layout/integration/outer-1",
+          "graph-model/domain/outer-1",
+          "graph-model/integration/outer-1",
           "vue-node-renderer/application/outer-1",
           "vue-node-renderer/presentation/outer-1",
           "vue-node-renderer/integration/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
@@ -6829,7 +7081,12 @@
       },
       {
         "from": "app-host/domain/outer-1",
-        "allow": ["app-host/domain", "app-host/domain/outer-1", "unclassified"]
+        "allow": [
+          "app-host/domain",
+          "vue-node-renderer/domain",
+          "app-host/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "app-host/presentation/outer-1",
@@ -6837,8 +7094,13 @@
           "app-host/domain",
           "app-host/application",
           "app-host/presentation",
+          "vue-node-renderer/domain",
+          "vue-node-renderer/application",
+          "vue-node-renderer/presentation",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "vue-node-renderer/application/outer-1",
+          "vue-node-renderer/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -6951,6 +7213,7 @@
       {
         "from": "bounding-boxes/application/outer-1",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "color-conversion/domain",
@@ -7149,6 +7412,8 @@
       {
         "from": "graph-layout/application/outer-1",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/infrastructure",
@@ -7160,6 +7425,8 @@
       {
         "from": "graph-layout/integration/outer-1",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/infrastructure",
@@ -7175,6 +7442,7 @@
         "from": "graph-model/domain/outer-1",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -7189,6 +7457,7 @@
         "from": "graph-model/integration/outer-1",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -7488,35 +7757,90 @@
       {
         "from": "vue-node-renderer/application/outer-1",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
+          "graph-model/domain/public",
+          "link-connection/application/public",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "link-connection/domain",
+          "link-connection/application",
+          "litegraph-api/infrastructure",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/infrastructure",
+          "graph-layout/application/outer-1",
+          "graph-model/domain/outer-1",
           "vue-node-renderer/application/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "vue-node-renderer/presentation/outer-1",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
+          "graph-model/domain/public",
+          "link-connection/application/public",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/presentation",
+          "graph-model/domain",
+          "graph-model/application",
+          "link-connection/domain",
+          "link-connection/application",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/presentation",
+          "graph-layout/application/outer-1",
+          "graph-model/domain/outer-1",
           "vue-node-renderer/application/outer-1",
           "vue-node-renderer/presentation/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "vue-node-renderer/integration/outer-1",
         "allow": [
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
+          "graph-model/domain/public",
+          "link-connection/application/public",
+          "litegraph-api/integration/public",
+          "vue-node-renderer/integration/public",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
+          "graph-layout/presentation",
+          "graph-layout/integration",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "graph-model/integration",
+          "link-connection/domain",
+          "link-connection/application",
+          "link-connection/integration",
+          "litegraph-api/infrastructure",
+          "litegraph-api/integration",
           "vue-node-renderer/domain",
           "vue-node-renderer/application",
           "vue-node-renderer/infrastructure",
           "vue-node-renderer/presentation",
           "vue-node-renderer/integration",
+          "graph-layout/application/outer-1",
+          "graph-layout/integration/outer-1",
+          "graph-model/domain/outer-1",
+          "graph-model/integration/outer-1",
           "vue-node-renderer/application/outer-1",
           "vue-node-renderer/presentation/outer-1",
           "vue-node-renderer/integration/outer-1",
+          "graph-layout/domain/outer-2",
           "unclassified"
         ]
       },
@@ -7667,6 +7991,7 @@
       {
         "from": "graph-layout/domain/outer-2",
         "allow": [
+          "graph-layout/domain/public",
           "graph-layout/domain",
           "graph-layout/domain/outer-2",
           "unclassified"
@@ -7745,8 +8070,14 @@
         "from": "unclassified",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-layout/domain/public",
+          "graph-layout/application/public",
+          "graph-model/domain/public",
           "keybindings/integration/public",
+          "link-connection/application/public",
+          "litegraph-api/integration/public",
           "node-definition/domain/public",
+          "vue-node-renderer/integration/public",
           "webcam-capture/integration/public",
           "agent/domain",
           "agent/application",
