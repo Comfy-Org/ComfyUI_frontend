@@ -51,7 +51,8 @@ export function remapLinkReferences(
     ),
     ...(data.inputs ?? []).map((slot) => slot.linkIds),
     ...(data.outputs ?? []).map((slot) => slot.linkIds),
-    ...(data.reroutes ?? []).map((reroute) => reroute.linkIds)
+    ...(data.reroutes ?? []).map((reroute) => reroute.linkIds),
+    ...(data.extra?.linkTies ?? []).map((tie) => tie.linkIds)
   ]
   for (const ids of linkIdLists) {
     if (ids) ids.splice(0, ids.length, ...new Set(ids.map(remap)))

@@ -46,6 +46,7 @@ import {
 } from '@/core/selection/selectionIntent'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { restrictLinkTies, useLinkTieStore } from '@/stores/linkTieStore'
 import {
   applyLogicalCanvasStyle,
   applyViewport,
@@ -56,6 +57,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
+import { serialiseLinkTie } from '@/types/linkTie'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -111,6 +113,14 @@ import {
   toggleLinkBadgeStack
 } from './canvas/linkBadges'
 import { layoutGraphLinkBadges } from './canvas/linkBadgeRenderer'
+import {
+  beginLinkTieDrag,
+  beginLinkTieStroke,
+  drawLinkTies,
+  isLinkTieKeyHeld,
+  renderLinkThroughTies,
+  trackLinkTieKey
+} from './canvas/linkTieInteraction'
 import {
   getLinkMenuOptions,
   getLinkStackMenuOptions,
@@ -2798,6 +2808,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
     }
 
+    if (isLinkTieKeyHeld(this)) {
+      beginLinkTieStroke(this, pointer, e)
+      return
+    }
+
     // clone node ALT dragging
     if (
       !LiteGraph.vueNodesMode &&
@@ -2911,6 +2926,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         pointer.onDragEnd = (e) => this._processDraggedItems(e)
         return
       }
+
+      case 'linkTie':
+        beginLinkTieDrag(this, graph, pointer, target.tie, e)
+        return
 
       case 'linkCentre':
         pointer.onClick = () => this.showLinkMenu(target.segment, e)
@@ -4301,6 +4320,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   processKey(e: KeyboardEvent): void {
     this._shiftDown = e.shiftKey
+    trackLinkTieKey(this, e)
 
     if (e.type == 'keyup' && e.key === ' ') {
       const held = this._spaceKeyHeld
@@ -4380,7 +4400,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       groups: [],
       reroutes: [],
       links: [],
-      subgraphs: []
+      subgraphs: [],
+      linkTies: []
     }
 
     // NOTE: logic for traversing nested subgraphs depends on this being a set.
@@ -4426,6 +4447,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // Reroutes
         serialisable.reroutes.push(item.asSerialisable())
       }
+    }
+
+    if (this.graph) {
+      const copiedLinkIds = new Set(serialisable.links.map((link) => link.id))
+      serialisable.linkTies = restrictLinkTies(
+        useLinkTieStore().getTies(graphScopeOf(this.graph)),
+        (id) => copiedLinkIds.has(id)
+      ).map(serialiseLinkTie)
     }
 
     // Add unique subgraph entries
@@ -4572,6 +4601,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       createClipboardReroutes(context)
       for (const info of items.links) createClipboardLink(context, info)
       removeUnusedClipboardReroutes(context)
+      createClipboardLinkTies(context)
       positionClipboardItems(context)
       updateClipboardNodeLayout(context)
 
@@ -6370,6 +6400,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     drawHiddenLinkBadges(ctx, this, margin_area, (linkId) =>
       linkHideLabelScale(graphScope.rootGraphId, linkId, now)
     )
+    drawLinkTies(ctx, this, graph)
 
     if (hasLinkHideTransitions(graphScope.rootGraphId, now)) {
       this.dirty_bgcanvas = true
@@ -6619,14 +6650,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       )
       // Skip normal render when link is being dragged
     } else if (!link._dragging) {
-      this.renderLink(
+      renderLinkThroughTies(
+        this,
         ctx,
+        link,
+        graph,
         startPos,
         endPos,
-        link,
-        false,
-        0,
-        null,
         start_dir,
         end_dir
       )
@@ -9083,7 +9113,8 @@ function initializeClipboardItems(
     links: items.links ?? [],
     nodes: items.nodes ?? [],
     reroutes: items.reroutes ?? [],
-    subgraphs: items.subgraphs ?? []
+    subgraphs: items.subgraphs ?? [],
+    linkTies: items.linkTies ?? []
   }
 }
 
@@ -9258,6 +9289,22 @@ function clipboardLinkOrigin(
   }
 
   return [originNode, afterRerouteId]
+}
+
+function createClipboardLinkTies(context: ClipboardPasteContext): void {
+  const { dx, dy, graph, items, result } = context
+  const scope = graphScopeOf(graph)
+  for (const tie of items.linkTies) {
+    const linkIds = tie.linkIds.flatMap(
+      (id) => result.links.get(toLinkId(id))?.id ?? []
+    )
+    if (!linkIds.length) continue
+    useLinkTieStore().addTie(scope, {
+      pos: [tie.pos[0] + dx, tie.pos[1] + dy],
+      angle: tie.angle,
+      linkIds
+    })
+  }
 }
 
 function removeUnusedClipboardReroutes(context: ClipboardPasteContext): void {

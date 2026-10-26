@@ -7,6 +7,7 @@ import type {
 } from '@/lib/litegraph/src/types/entityRegistry'
 import type { UUID } from '@/utils/uuid'
 import type { LinkPresentation } from '@/types/linkPresentation'
+import type { SerialisableLinkTie } from '@/types/linkTie'
 
 import type { NodeProperty } from '@/types/nodeProperty'
 import type { SerializedNodeId } from '@/types/nodeId'
@@ -215,6 +216,7 @@ export interface ClipboardItems {
   reroutes?: SerialisableReroute[]
   links?: SerialisableLLink[]
   subgraphs?: ExportedSubgraph[]
+  linkTies?: SerialisableLinkTie[]
 }
 
 export interface SerialisableReroute {

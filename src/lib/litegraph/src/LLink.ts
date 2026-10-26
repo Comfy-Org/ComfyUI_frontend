@@ -12,6 +12,7 @@ import {
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkTieStore } from '@/stores/linkTieStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -711,6 +712,7 @@ export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
   if (useLinkStore().deleteLink(link._graphScope, link._state)) {
     useLinkPresentationStore().take(link._graphScope, link.id)
+    useLinkTieStore().releaseLinks(link._graphScope, [link.id])
   }
   linkByTopology.delete(toRaw(link._state))
   link._graphScope = undefined

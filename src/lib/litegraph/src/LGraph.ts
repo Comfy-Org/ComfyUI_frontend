@@ -35,6 +35,9 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { changeCanvasSelection } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkTieStore } from '@/stores/linkTieStore'
+import { serialiseLinkTie, toLinkTieId } from '@/types/linkTie'
+import type { LinkTie, SerialisableLinkTie } from '@/types/linkTie'
 import type { LinkPresentation } from '@/types/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
@@ -289,6 +292,7 @@ export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
   linkPresentation?: Record<string, LinkPresentation>
+  linkTies?: SerialisableLinkTie[]
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
 }
@@ -453,6 +457,29 @@ function serialiseOwnedTopology(owner: LGraph) {
       : undefined,
     reroutes: reroutes.length ? reroutes : undefined
   }
+}
+
+function withLinkTies(owner: LGraph, extra: LGraphExtra): LGraphExtra {
+  const ties = useLinkTieStore().getTies(graphScopeOf(owner))
+  if (!ties.length) return extra
+  return { ...extra, linkTies: ties.map(serialiseLinkTie) }
+}
+
+function loadLinkTies(
+  graph: LGraph,
+  ties: readonly SerialisableLinkTie[] = []
+): void {
+  useLinkTieStore().setTies(
+    graphScopeOf(graph),
+    ties.flatMap((tie): LinkTie[] => {
+      const linkIds = tie.linkIds
+        .map(toLinkId)
+        .filter((id) => graph.links.has(id))
+      if (!linkIds.length) return []
+      const { id, pos, angle } = tie
+      return [{ id: toLinkTieId(id), pos: [pos[0], pos[1]], angle, linkIds }]
+    })
+  )
 }
 
 function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
@@ -870,6 +897,7 @@ export class LGraph
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(toRootGraphId(graphId))
       useLinkPresentationStore().clearGraph(toRootGraphId(graphId))
+      useLinkTieStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
       useSelectionStore().clearRoot(toRootGraphId(graphId))
@@ -2286,6 +2314,10 @@ export class LGraph
 
     // Inputs, outputs, and links
     const links = internalLinks.map((x) => x.asSerialisable())
+    const linkTies = useLinkTieStore().releaseLinks(
+      scope,
+      internalLinks.map((link) => link.id)
+    )
 
     const internalReroutes = new Map([...reroutes].map((r) => [r.id, r]))
     const externalReroutes = new Map(
@@ -2339,7 +2371,8 @@ export class LGraph
       reroutes: structuredClone(
         [...reroutes].map((reroute) => reroute.asSerialisable())
       ),
-      groups: structuredClone([...groups].map((group) => group.serialize()))
+      groups: structuredClone([...groups].map((group) => group.serialize())),
+      extra: { linkTies: linkTies.map(serialiseLinkTie) }
     } satisfies ExportedSubgraph
 
     // Remove the originals before configuring the subgraph: its internal links
@@ -3032,7 +3065,7 @@ export class LGraph
     const topology = serialiseOwnedTopology(this)
 
     // Save scale and offset
-    const extra = { ...this.extra }
+    const extra = withLinkTies(this, { ...this.extra })
     if (LiteGraph.saveViewportWithGraph) extra.ds = this._getDragAndScale()
     if (!extra.ds) delete extra.ds
 
@@ -3084,6 +3117,7 @@ export class LGraph
     // Ensure auto-generated serialisation data is removed from extra
     delete this.extra.linkExtensions
     delete this.extra.linkPresentation
+    delete this.extra.linkTies
   }
 
   /**
@@ -3133,6 +3167,7 @@ export class LGraph
           if (this.isRootGraph) {
             useLinkStore().clearGraph(topologyScope.rootGraphId)
             useLinkPresentationStore().clearGraph(topologyScope.rootGraphId)
+            useLinkTieStore().clearGraph(topologyScope.rootGraphId)
             useRerouteStore().clearGraph(topologyScope.rootGraphId)
             useNodeDataStore().clearGraph(this.id)
             useWidgetValueStore().clearGraph(this.id)
@@ -3141,6 +3176,7 @@ export class LGraph
           } else {
             useLinkStore().clearOwner(topologyScope)
             useLinkPresentationStore().clearOwner(topologyScope)
+            useLinkTieStore().clearOwner(topologyScope)
             useRerouteStore().clearOwner(topologyScope)
             useNodeDataStore().clearOwner(topologyScope)
           }
@@ -3229,6 +3265,8 @@ export class LGraph
 
           reroutes = data.reroutes
         }
+
+        loadLinkTies(this, data.extra?.linkTies)
 
         // Reroutes
         if (Array.isArray(reroutes)) {
@@ -3805,7 +3843,7 @@ export class Subgraph
       groups: serialiseStoredGroups(this),
       ...topology,
       links: topology.links ?? [],
-      extra: this.extra
+      extra: withLinkTies(this, this.extra)
     }
   }
 }

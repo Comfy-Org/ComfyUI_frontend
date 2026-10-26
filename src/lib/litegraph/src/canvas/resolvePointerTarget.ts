@@ -21,6 +21,7 @@ import {
   LinkRenderType
 } from '@/lib/litegraph/src/types/globalEnums'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { LinkTie } from '@/types/linkTie'
 import {
   findRerouteAtPoint,
   queryRenderedLinkSegmentsAtPoint
@@ -29,6 +30,7 @@ import {
   queryHiddenLinkBadgeAtPoint,
   queryHiddenLinkStackAtPoint
 } from './linkBadgeRenderer'
+import { findLinkTieAtPoint } from './linkTieInteraction'
 
 export type PointerTarget =
   | { kind: 'node'; node: LGraphNode }
@@ -36,6 +38,7 @@ export type PointerTarget =
   | { kind: 'linkBadgeStack'; stackKey: string }
   | { kind: 'subgraphIO'; ioNode: SubgraphInputNode | SubgraphOutputNode }
   | { kind: 'reroute'; reroute: Reroute; part: 'body' | 'input' | 'output' }
+  | { kind: 'linkTie'; tie: LinkTie }
   | { kind: 'link'; segment: LinkSegment }
   | { kind: 'linkCentre'; segment: LinkSegment }
   | { kind: 'groupResize'; group: LGraphGroup }
@@ -72,6 +75,9 @@ export function resolvePointerTarget(
     const reroute = findReroute(canvas, graph, point)
     if (reroute) return reroute
   }
+
+  const tie = findLinkTieAtPoint(canvas, graph, point)
+  if (tie) return { kind: 'linkTie', tie }
 
   const link = findLinkSegment(canvas, e, point)
   if (link) return link
