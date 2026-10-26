@@ -31,7 +31,7 @@
       '--min-node-width': `${MIN_NODE_WIDTH}px`,
       transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
       zIndex: zIndex,
-      opacity: Math.min(nodeOpacity, OPACITY_THAT_KEEPS_NODE_COMPOSITED)
+      opacity: nodeOpacity
     }"
     :inert="isGhostPlacing"
     v-bind="pointerHandlers"
@@ -380,8 +380,6 @@ const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
-
-const OPACITY_THAT_KEEPS_NODE_COMPOSITED = 0.999
 
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
