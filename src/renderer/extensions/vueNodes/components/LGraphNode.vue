@@ -12,7 +12,7 @@
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        'drop-shadow-lg',
+        hasTransparentSurface ? 'drop-shadow-lg' : ['shadow-node', shapeClass],
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
@@ -511,6 +511,12 @@ const shapeClass = computed(() =>
     card: 'rounded-tl-xl rounded-br-xl',
     default: 'rounded-xl'
   })
+)
+
+const hasTransparentSurface = computed(() =>
+  [nodeData.color, nodeData.bgcolor].some(
+    (color) => !!color && isTransparent(color)
+  )
 )
 
 const isTransparentHeaderless = computed(
