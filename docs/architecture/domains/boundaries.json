@@ -162,7 +162,9 @@
           "src/workbench/extensions/agent/utils/workflowReferenceParts.test.ts",
           "src/workbench/extensions/agent/utils/workflowReferenceParts.ts",
           "src/workbench/extensions/agent/utils/workflowReferenceText.test.ts",
-          "src/workbench/extensions/agent/utils/workflowReferenceText.ts"
+          "src/workbench/extensions/agent/utils/workflowReferenceText.ts",
+          "src/workbench/extensions/agent/crdt/agentCrdtStatus.ts",
+          "src/workbench/extensions/agent/services/agent/agentMessageParts.test.ts"
         ]
       },
       {
@@ -203,7 +205,10 @@
           "src/workbench/extensions/agent/utils/getPageVisibilityMetadata.test.ts",
           "src/workbench/extensions/agent/utils/getPageVisibilityMetadata.ts",
           "src/workbench/extensions/agent/services/agent/agentIdentity.ts",
-          "src/workbench/extensions/agent/services/agent/agentIdentity.test.ts"
+          "src/workbench/extensions/agent/services/agent/agentIdentity.test.ts",
+          "src/workbench/extensions/agent/composables/agent/useAttachment.validation.test.ts",
+          "src/workbench/extensions/agent/utils/attachmentMessages.test.ts",
+          "src/workbench/extensions/agent/utils/attachmentMessages.ts"
         ]
       },
       {
@@ -321,7 +326,11 @@
           "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.test.ts",
           "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts",
           "src/workbench/extensions/agent/services/agent/workflowTabActivityTracker.test.ts",
-          "src/workbench/extensions/agent/services/agent/workflowTabActivityTracker.ts"
+          "src/workbench/extensions/agent/services/agent/workflowTabActivityTracker.ts",
+          "src/workbench/extensions/agent/crdt/agentBuiltWidgetInputLink.regression.test.ts",
+          "src/workbench/extensions/agent/crdt/agentDisplayIntAdd.regression.test.ts",
+          "src/workbench/extensions/agent/crdt/agentInsertWorkflowOutputs.integration.test.ts",
+          "src/workbench/extensions/agent/crdt/agentSubgraphInteriorFollower.test.ts"
         ]
       },
       {
@@ -4107,6 +4116,7 @@
         "from": "agent/domain",
         "allow": [
           "agent/domain",
+          "app-host/domain",
           "authentication/domain",
           "design-system/domain",
           "dialog-host/domain",
@@ -4115,6 +4125,7 @@
           "keybindings/domain",
           "workbench-shell/domain",
           "workflow-management/domain",
+          "app-host/domain/outer-1",
           "design-system/domain/outer-1",
           "unclassified"
         ]
@@ -4126,6 +4137,9 @@
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -4147,6 +4161,7 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "app-host/domain/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
@@ -4161,6 +4176,9 @@
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -4182,6 +4200,7 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "app-host/domain/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
@@ -4196,6 +4215,9 @@
           "agent/domain",
           "agent/application",
           "agent/presentation",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/presentation",
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
@@ -4217,6 +4239,8 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "app-host/domain/outer-1",
+          "app-host/presentation/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
@@ -4237,6 +4261,11 @@
           "agent/infrastructure",
           "agent/presentation",
           "agent/integration",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "app-host/presentation",
+          "app-host/integration",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -4271,6 +4300,8 @@
           "workflow-management/presentation",
           "workflow-management/integration",
           "agent/integration/outer-1",
+          "app-host/domain/outer-1",
+          "app-host/presentation/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
@@ -7586,6 +7617,11 @@
           "agent/infrastructure",
           "agent/presentation",
           "agent/integration",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "app-host/presentation",
+          "app-host/integration",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -7620,6 +7656,8 @@
           "workflow-management/presentation",
           "workflow-management/integration",
           "agent/integration/outer-1",
+          "app-host/domain/outer-1",
+          "app-host/presentation/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
