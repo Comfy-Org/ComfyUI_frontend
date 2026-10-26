@@ -6,6 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { I18nT } from 'vue-i18n'
 import AuthEmailForm from './AuthEmailForm.vue'
 import AuthFlagTimeout from './AuthFlagTimeout.vue'
 import AuthSpinnerIcon from './AuthSpinnerIcon.vue'
@@ -88,20 +89,26 @@ const {
       </template>
       <template v-else>
         {{ t('auth.signIn.newHere') }}
-        <a
-          href="/signup/"
-          :class="
-            cn(
-              'text-brand-yellow no-underline transition-all duration-300 hover:underline',
-              busy && 'pointer-events-none opacity-50'
-            )
-          "
-          :aria-disabled="busy || undefined"
-          @click="switchMode('signUp', $event)"
+        <I18nT
+          keypath="auth.signIn.signUpPrompt"
+          :i18n="translationsFor(locale)"
         >
-          {{ t('auth.signIn.signUpLink') }}
-        </a>
-        <span>{{ ' ' + t('auth.signIn.freeRunsSuffix') }}</span>
+          <template #link>
+            <a
+              href="/signup/"
+              :class="
+                cn(
+                  'text-brand-yellow no-underline transition-all duration-300 hover:underline',
+                  busy && 'pointer-events-none opacity-50'
+                )
+              "
+              :aria-disabled="busy || undefined"
+              @click="switchMode('signUp', $event)"
+            >
+              {{ t('auth.signIn.signUpLink') }}
+            </a>
+          </template>
+        </I18nT>
       </template>
     </p>
 

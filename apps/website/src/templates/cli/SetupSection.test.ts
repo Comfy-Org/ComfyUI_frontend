@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -7,6 +7,7 @@ import {
   captureCliConnectionTabClick,
   captureCliClientTabClick
 } from '@/scripts/posthog'
+import { wholeText } from '@/test/wholeText'
 import SetupSection from './SetupSection.vue'
 
 vi.mock(import('@/scripts/posthog'))
@@ -69,5 +70,31 @@ describe('SetupSection', () => {
 
     await selectTab('Codex')
     expect(captureCliClientTabClick).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the key and local requirement links inside their sentences', async () => {
+    render(SetupSection, { props: { locale: 'en' } })
+
+    await selectTab('CI / Headless')
+    const keyLine = screen.getByText(
+      wholeText('Create your key at platform.comfy.org'),
+      { selector: 'p' }
+    )
+    expect(
+      within(keyLine).getByRole('link', { name: 'platform.comfy.org' })
+    ).toBeInTheDocument()
+
+    await selectConnection(/Local ComfyUI/)
+    const localRequirement = screen.getByText(
+      wholeText(
+        'Local runs are free on your own hardware, and the CLI is open source on GitHub.'
+      ),
+      { selector: 'p' }
+    )
+    expect(
+      within(localRequirement).getByRole('link', {
+        name: 'open source on GitHub'
+      })
+    ).toBeInTheDocument()
   })
 })

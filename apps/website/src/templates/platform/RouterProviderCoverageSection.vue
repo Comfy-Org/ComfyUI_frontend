@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { translationsFor } from '@/i18n/translations'
+import { I18nT } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 import { Check } from '@lucide/vue'
 
@@ -142,10 +143,16 @@ const browseAll = t('platform.router.coverage.browseAll', {
       <div
         class="pointer-events-none absolute inset-x-2 bottom-2 flex h-50 flex-col items-center justify-end gap-3 rounded-b-4xl bg-linear-to-b from-transparent to-primary-comfy-ink to-70% px-6 pb-8 text-center"
       >
-        <p class="text-lg text-primary-warm-white lg:text-xl">
-          <span class="text-primary-comfy-yellow">{{ moreModels }}</span>
-          {{ t('platform.router.coverage.moreModelsSuffix') }}
-        </p>
+        <I18nT
+          keypath="platform.router.coverage.moreModelsLine"
+          tag="p"
+          :i18n="translationsFor(locale)"
+          class="text-lg text-primary-warm-white lg:text-xl"
+        >
+          <template #models>
+            <span class="text-primary-comfy-yellow">{{ moreModels }}</span>
+          </template>
+        </I18nT>
         <Button
           as="a"
           :href="getRoutes(locale).workshop"

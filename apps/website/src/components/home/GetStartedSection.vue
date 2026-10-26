@@ -3,6 +3,7 @@ import type { Locale } from '@/i18n/translations'
 
 import { externalLinks, getRoutes } from '@/config/routes'
 import { translationsFor } from '@/i18n/translations'
+import { I18nT } from 'vue-i18n'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
@@ -80,12 +81,18 @@ const steps = [
             v-else-if="step.number === '2'"
             class="flex-1 text-sm text-primary-comfy-canvas"
           >
-            {{ t('getStarted.step2.descriptionPrefix')
-            }}<a
-              :href="externalLinks.workflows"
-              class="text-primary-comfy-yellow hover:underline"
-              >{{ t('getStarted.step2.descriptionLink') }}</a
-            >{{ t('getStarted.step2.descriptionSuffix') }}
+            <I18nT
+              keypath="getStarted.step2.descriptionWithLink"
+              :i18n="translationsFor(locale)"
+            >
+              <template #link>
+                <a
+                  :href="externalLinks.workflows"
+                  class="text-primary-comfy-yellow hover:underline"
+                  >{{ t('getStarted.step2.descriptionLink') }}</a
+                >
+              </template>
+            </I18nT>
           </p>
           <p v-if="step.links" class="flex-1 text-sm">
             <template v-for="(link, i) in step.links" :key="link.href">
