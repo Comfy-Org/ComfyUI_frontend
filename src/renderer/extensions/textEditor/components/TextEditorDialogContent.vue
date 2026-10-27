@@ -17,7 +17,7 @@
 import type { TextareaHTMLAttributes } from 'vue'
 import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 
 const {
   readText,
