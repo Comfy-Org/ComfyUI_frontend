@@ -18,6 +18,7 @@ import type {
   HitMode,
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import {
   locateWidgetNode,
@@ -77,9 +78,9 @@ export function useBoundingBoxes(
 
   const { width: containerWidth } = useElementSize(canvasContainer)
 
-  const litegraphNode = computed(() => {
+  const litegraphNode = useLiveGraphNode(() => {
     const location = locateWidgetNode(widget, nodeId)
-    return location?.graph.getNodeById(location.nodeId) ?? null
+    return location?.graph.getNodeById(location.nodeId)
   })
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
   const isNodeSelected = computed(() => selectedNodeIds.value.has(nodeId))
@@ -636,22 +637,42 @@ export function useBoundingBoxes(
     requestDraw()
   }
 
-  function restoreRegions(value: unknown) {
-    if (!isRegionList(value)) return
-    state.value.regions = value
+  function replaceRegions(regions: Region[]) {
+    state.value.regions = regions
     activeIndex.value = Math.min(
       activeIndex.value,
       state.value.regions.length - 1
     )
     inlineEditor.value = null
+  }
+
+  function restoreRegions(value: unknown) {
+    if (!isRegionList(value)) return
+    replaceRegions(value)
     syncState()
   }
 
-  const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
-    scope: () => widgetHistoryScope(widget, nodeId),
-    read: () => state.value.regions,
-    apply: restoreRegions
-  })
+  function adoptExternalValue(boxes: BoundingBox[]) {
+    if (drawing.value) return
+    const current = toBoundingBoxes(
+      state.value.regions,
+      widthValue.value,
+      heightValue.value
+    )
+    if (isEqual(boxes, current)) return
+    replaceRegions(
+      fromBoundingBoxes(boxes, widthValue.value, heightValue.value)
+    )
+    syncBaseline()
+    requestDraw()
+  }
+
+  const { canUndo, canRedo, undo, redo, commit, syncBaseline } =
+    useWidgetValueHistory({
+      scope: () => widgetHistoryScope(widget, nodeId),
+      read: () => state.value.regions,
+      apply: restoreRegions
+    })
 
   function commitEdit(mergeKey?: string) {
     syncState()
@@ -659,12 +680,13 @@ export function useBoundingBoxes(
   }
 
   watch(containerWidth, () => requestDraw())
+  watch(modelValue, adoptExternalValue)
   watch(
     () => state.value.regions.length,
     () => requestDraw()
   )
   watch(isNodeSelected, () => requestDraw())
-  watch([widthValue, heightValue], () => syncState())
+  watch([widthValue, heightValue], () => syncState(), { flush: 'post' })
 
   watch(
     litegraphNode,
