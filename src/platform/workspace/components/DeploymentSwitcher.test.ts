@@ -257,7 +257,8 @@ describe('DeploymentSwitcher', () => {
   }
 
   it.for([
-    { cell: 'name', text: 'production' },
+    { cell: 'Build name', text: 'Studio Build' },
+    { cell: 'deployment name', text: 'production' },
     { cell: 'version', text: 'v2' }
   ])(
     'spells out a row beside the menu when its $cell is cut off',
@@ -381,6 +382,38 @@ describe('DeploymentSwitcher', () => {
     await waitFor(() =>
       expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
     )
+  })
+
+  it('keeps keyboard focus on a row that the refreshed listing moves', async () => {
+    let refresh: (listing: WorkspaceDeploymentList) => void = () => {}
+    mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
+    mockWorkspaceApi.listDeployments.mockReturnValueOnce(
+      new Promise<WorkspaceDeploymentList>((resolve) => {
+        refresh = resolve
+      })
+    )
+    const user = renderSwitcher()
+    await openList(user)
+    const unnamed = screen.getByTestId(`deployment-row-${D9}`)
+    unnamed.focus()
+    await waitFor(() => expect(unnamed).toHaveFocus())
+
+    const [production, staging, unnamedItem] = listing.items
+    refresh({ ...listing, items: [unnamedItem, production, staging] })
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('menuitemradio').map((row) => row.dataset.testid)
+      ).toEqual([
+        'deployment-row-cloud',
+        `deployment-row-${D9}`,
+        `deployment-row-${D2}`,
+        `deployment-row-${D1}`
+      ])
+    )
+
+    await waitFor(() => expect(unnamed).toHaveFocus())
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByTestId(`deployment-row-${D2}`)).toHaveFocus()
   })
 
   it.for([

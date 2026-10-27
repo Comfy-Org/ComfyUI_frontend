@@ -23,7 +23,7 @@ export function useKeepRowFocus(source: WatchSource) {
       const focused = focusedRow()
       if (!focused) return
       await nextTick()
-      if (focused.row.isConnected) return
+      if (document.activeElement === focused.row) return
       focused.menu
         .querySelector<HTMLElement>(
           `[${FOCUS_ROW_ATTRIBUTE}="${CSS.escape(focused.value)}"]`
