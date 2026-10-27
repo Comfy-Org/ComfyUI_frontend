@@ -17,10 +17,6 @@ popovers sit outside their dialog in the DOM, so no DOM walk finds their
 owner. Extensions veto core shortcuts by stopping the event before core
 handles it.
 
-The unmerged first implementation (KEYBINDINGS-0027) unified dispatch but
-ranked bindings by source before location and ran commands ahead of those
-extension vetoes.
-
 ## Decision
 
 Resolve every keydown in one resolver at window capture, installed before
