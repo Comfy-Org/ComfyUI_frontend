@@ -16,7 +16,6 @@ const props = {
   title: 'Meet Comfy Agent',
   paragraphs: ['First paragraph.', 'Second paragraph.']
 }
-const saveError = i18n.global.t('agent.consent.saveError')
 
 function renderCard(
   overrides: Partial<ComponentProps<typeof AgentConsentCard>> = {}
@@ -86,11 +85,15 @@ describe('AgentConsentCard', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('announces a persistence error as an inline toast', () => {
-    renderCard({ error: saveError })
+  it.for([
+    { kind: 'save' as const, title: "Couldn't start Comfy Agent" },
+    { kind: 'load' as const, title: "Couldn't load your Agent settings" },
+    { kind: 'signIn' as const, title: "Couldn't open sign-in" }
+  ])('announces a $kind failure as an inline toast', ({ kind, title }) => {
+    renderCard({ error: kind })
 
     const alert = screen.getByRole('alert')
-    expect(alert).toHaveTextContent("Couldn't start Comfy Agent")
+    expect(alert).toHaveTextContent(title)
     expect(alert).toHaveTextContent(
       'Please check your connection and try again. If you continue having issues, please use the contact form.'
     )
@@ -103,7 +106,7 @@ describe('AgentConsentCard', () => {
 
   it('opens the agent feedback form from the contact form link', async () => {
     const user = userEvent.setup()
-    renderCard({ error: saveError })
+    renderCard({ error: 'save' })
 
     await user.click(screen.getByRole('button', { name: 'contact form' }))
 
@@ -112,7 +115,7 @@ describe('AgentConsentCard', () => {
 
   it('dismisses the toast and keeps the retry action', async () => {
     const user = userEvent.setup()
-    renderCard({ error: saveError })
+    renderCard({ error: 'save' })
 
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
@@ -124,7 +127,7 @@ describe('AgentConsentCard', () => {
   it('retries accept from Try again after a failed save', async () => {
     const user = userEvent.setup()
     const { emitted } = renderCard({
-      error: saveError
+      error: 'save'
     })
 
     await user.click(screen.getByRole('button', { name: 'Try again' }))
@@ -136,7 +139,7 @@ describe('AgentConsentCard', () => {
     const user = userEvent.setup()
     const { emitted } = renderCard({
       requiresSignIn: true,
-      error: saveError
+      error: 'save'
     })
 
     expect(
@@ -153,7 +156,7 @@ describe('AgentConsentCard', () => {
   it('shows the toast again when a new error arrives', async () => {
     const user = userEvent.setup()
     const { rerender } = renderCard({
-      error: saveError
+      error: 'save'
     })
 
     await user.click(screen.getByRole('button', { name: 'Close' }))
@@ -162,7 +165,7 @@ describe('AgentConsentCard', () => {
     await rerender({ ...props, error: '' })
     await rerender({
       ...props,
-      error: saveError
+      error: 'save'
     })
 
     expect(screen.getByRole('alert')).toHaveTextContent(

@@ -142,7 +142,7 @@ export function useAgentConsent() {
           key: CONSENT_DIALOG_KEY,
           contentProps: {
             accepting: false,
-            error: t('agent.consent.saveError')
+            error: 'save'
           },
           dialogComponentProps: {
             closable: true,

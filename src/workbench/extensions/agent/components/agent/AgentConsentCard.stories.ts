@@ -64,7 +64,12 @@ export const Loading: Story = {
 }
 
 export const Error: Story = {
-  args: { error: enMessages.agent.consent.saveError }
+  args: { error: 'save' }
+}
+
+export const SignInError: Story = {
+  ...SignedOut,
+  args: { ...SignedOut.args, error: 'signIn' }
 }
 
 export const InLightApp: Story = {

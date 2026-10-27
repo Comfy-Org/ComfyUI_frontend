@@ -364,9 +364,7 @@ describe('useAgentConsent', () => {
     await renderConsentCard(dialog)
     await clickCardAction('accept')
     await vi.waitFor(() => {
-      expect(dialog.contentProps.error).toBe(
-        i18n.global.t('agent.consent.saveError')
-      )
+      expect(dialog.contentProps.error).toBe('save')
     })
 
     expect(
@@ -402,9 +400,7 @@ describe('useAgentConsent', () => {
 
     await clickCardAction('accept')
     await vi.waitFor(() => {
-      expect(dialog.contentProps.error).toBe(
-        i18n.global.t('agent.consent.saveError')
-      )
+      expect(dialog.contentProps.error).toBe('save')
     })
     ;(dialog.dialogComponentProps.onClose as () => void)()
     await request
@@ -762,9 +758,7 @@ describe('useAgentConsent', () => {
     ;(dialog.contentProps.onAccept as () => void)()
 
     await vi.waitFor(() => {
-      expect(dialog.contentProps.error).toBe(
-        i18n.global.t('agent.consent.saveError')
-      )
+      expect(dialog.contentProps.error).toBe('save')
     })
     expect(dialog.contentProps.accepting).toBe(false)
     expect(onOpen).not.toHaveBeenCalled()
@@ -778,11 +772,7 @@ describe('useAgentConsent', () => {
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValueOnce(null)
 
     ;(dialog.contentProps.onAccept as () => void)()
-    await vi.waitFor(() =>
-      expect(dialog.contentProps.error).toBe(
-        i18n.global.t('agent.consent.saveError')
-      )
-    )
+    await vi.waitFor(() => expect(dialog.contentProps.error).toBe('save'))
     expect(useDialogStore().dialogStack).toHaveLength(1)
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(onOpen).not.toHaveBeenCalled()

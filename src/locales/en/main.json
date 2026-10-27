@@ -6161,6 +6161,8 @@
       "signInError": "Could not open sign-in. Please try again.",
       "saveError": "Could not save your preference. Try again.",
       "errorTitle": "Couldn't start Comfy Agent",
+      "loadErrorTitle": "Couldn't load your Agent settings",
+      "signInErrorTitle": "Couldn't open sign-in",
       "errorContact": "Please check your connection and try again. If you continue having issues, please use the {contactForm}.",
       "contactForm": "contact form",
       "tryAgain": "Try again"

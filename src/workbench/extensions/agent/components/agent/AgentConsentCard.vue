@@ -33,7 +33,7 @@ const {
   docsUrl?: string
   requiresSignIn?: boolean
   accepting?: boolean
-  error?: string
+  error?: 'save' | 'load' | 'signIn' | ''
 }>()
 
 const emit = defineEmits<{
@@ -42,6 +42,11 @@ const emit = defineEmits<{
 }>()
 
 const WIDE_MIN_WIDTH = 576
+const ERROR_TITLE_KEY = {
+  save: 'agent.consent.errorTitle',
+  load: 'agent.consent.loadErrorTitle',
+  signIn: 'agent.consent.signInErrorTitle'
+} as const
 const CARD_SHELL =
   'grid max-h-[85dvh] overflow-y-auto overscroll-contain rounded-2xl border bg-background shadow-2xl'
 const MEDIA_SHELL = 'w-full rounded-lg object-cover'
@@ -241,7 +246,7 @@ onMounted(() => {
             </template>
             <div class="flex min-w-0 flex-col gap-0.5">
               <p class="my-0 font-medium">
-                {{ $t('agent.consent.errorTitle') }}
+                {{ $t(ERROR_TITLE_KEY[error || 'save']) }}
               </p>
               <p class="my-0 text-muted-foreground">
                 <i18n-t keypath="agent.consent.errorContact" tag="span">
