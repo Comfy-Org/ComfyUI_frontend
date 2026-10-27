@@ -12,7 +12,7 @@
         class="text-sm font-normal"
         @click="rightSidePanelStore.openPanel('parameters')"
       >
-        <i class="icon-[lucide--arrow-left] size-4" />
+        <i class="icon-[lucide--arrow-left]" />
         {{ $t('textEditor.nodeSettings') }}
       </Button>
       <div class="flex items-center gap-1">
@@ -24,7 +24,7 @@
           :aria-label="$t('textEditor.focusView')"
           @click="openFocusView(editing)"
         >
-          <i class="icon-[lucide--expand] size-4" />
+          <i class="icon-[lucide--expand]" />
         </Button>
         <Button
           variant="secondary"

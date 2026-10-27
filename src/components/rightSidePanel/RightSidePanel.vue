@@ -397,7 +397,7 @@ function handleTitleCancel() {
             size="md"
             @click="promptPanelStore.isPromptViewShown = true"
           >
-            <i class="icon-[lucide--text-cursor-input] size-4" />
+            <i class="icon-[lucide--text-cursor-input]" />
             {{ t('textEditor.prompt') }}
           </Button>
           <Button
