@@ -1109,7 +1109,7 @@ function waitingInCapture(
   return {
     kind: 'waiting',
     operation,
-    sibling: true,
+    ...(operation.awaitedHere ? {} : { sibling: true }),
     ...(awaitsUnansweredPay(page) ? { unanswered: true } : {}),
     rail: page.rail
   }

@@ -106,8 +106,8 @@ const {
   amountCents: number
   currency: string
   copy: StripePaymentCopy
-  /** Stripe payment method configuration governing which methods Elements
-   *  offers (served per-environment by the preview). */
+  /** Stripe payment method configuration governing which methods a subscription
+   *  offers (served per-environment by the preview); paying once is card only. */
   paymentMethodConfigurationId?: string
   isLoading?: boolean
   /** A 3DS verification is pending: the host's own verification action is
@@ -247,8 +247,12 @@ function mountAddressElement(
 
 function intentOptions() {
   return payOnce
-    ? ({ mode: 'payment' } as const)
-    : ({ mode: 'subscription', setupFutureUsage: 'off_session' } as const)
+    ? { mode: 'payment' as const, paymentMethodTypes: ['card'] }
+    : {
+        mode: 'subscription' as const,
+        setupFutureUsage: 'off_session' as const,
+        paymentMethodConfiguration: paymentMethodConfigurationId
+      }
 }
 
 onMounted(async () => {
@@ -272,7 +276,6 @@ onMounted(async () => {
     ...intentOptions(),
     amount: amountCents,
     currency: currency.toLowerCase(),
-    paymentMethodConfiguration: paymentMethodConfigurationId,
     appearance: resolveAppearance(paymentElementTarget.value)
   })
   mountPaymentElement(stripeElements.value, paymentElementTarget.value)
