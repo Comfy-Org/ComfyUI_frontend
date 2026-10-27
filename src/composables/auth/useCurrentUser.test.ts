@@ -31,17 +31,25 @@ describe('useCurrentUser', () => {
 
   afterEach(() => stopDesktopHostSession())
 
-  it('treats a key-only session as an API-key login', () => {
+  it("treats a key-only session as an API-key login with the key's account details", () => {
     Object.assign(mockApiKeyState, { isAuthenticated: true })
     mockApiKeyState.currentUser = fromPartial<
       NonNullable<typeof mockApiKeyState.currentUser>
-    >({ id: 'key-user' })
+    >({ id: 'key-user', name: 'Key Owner', email: 'key-owner@example.com' })
 
-    const { isApiKeyLogin, isLoggedIn, resolvedUserInfo } = useCurrentUser()
+    const {
+      isApiKeyLogin,
+      isLoggedIn,
+      resolvedUserInfo,
+      userDisplayName,
+      userEmail
+    } = useCurrentUser()
 
     expect(isApiKeyLogin.value).toBe(true)
     expect(isLoggedIn.value).toBe(true)
     expect(resolvedUserInfo.value).toEqual({ id: 'key-user' })
+    expect(userDisplayName.value).toBe('Key Owner')
+    expect(userEmail.value).toBe('key-owner@example.com')
   })
 
   it('gives the Firebase session precedence over a stored API key', () => {

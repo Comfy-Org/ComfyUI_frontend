@@ -163,7 +163,7 @@ describe('UserPanel account deletion', () => {
 
       expect(link).toHaveAttribute(
         'href',
-        'https://comfysupport.portal.usepylon.com/forms/request-account-deletion?name=Ada+Lovelace&email=ada%40example.com&user_id=uid-123'
+        'https://comfysupport.portal.usepylon.com/forms/request-account-deletion?name=Ada+Lovelace&email=ada%40example.com&comfy_cloud_user_id=uid-123'
       )
       expect(link).toHaveAttribute('target', '_blank')
       expect(link).toHaveAttribute('rel', 'noopener noreferrer')
@@ -175,11 +175,12 @@ describe('UserPanel account deletion', () => {
     signInAs({ isApiKeyLogin: false })
     await renderPanel()
 
-    await userEvent.click(screen.getByRole('link', deleteAccount))
+    const link = screen.getByRole('link', deleteAccount)
+    await userEvent.click(link)
+    await userEvent.click(link)
 
-    expect(
-      useTelemetry()?.trackHelpResourceClicked
-    ).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackHelpResourceClicked).toHaveBeenCalledTimes(2)
+    expect(useTelemetry()?.trackHelpResourceClicked).toHaveBeenCalledWith({
       resource_type: 'account_deletion',
       is_external: true,
       source: 'user_panel'

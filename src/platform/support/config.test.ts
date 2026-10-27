@@ -96,7 +96,7 @@ describe('buildAccountDeletionUrl', () => {
     {
       known: 'every detail',
       user: { name: 'Ada Lovelace', email: 'ada@example.com', id: 'uid-123' },
-      expected: `${formUrl}?name=Ada+Lovelace&email=ada%40example.com&user_id=uid-123`
+      expected: `${formUrl}?name=Ada+Lovelace&email=ada%40example.com&comfy_cloud_user_id=uid-123`
     },
     {
       known: 'only the email',
