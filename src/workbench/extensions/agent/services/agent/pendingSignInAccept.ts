@@ -35,9 +35,7 @@ function readPendingSignInAccept(): PendingSignInAccept | null {
     const parsed = zPendingSignInAccept.safeParse(JSON.parse(raw))
     if (!parsed.success) return null
     const age = Date.now() - parsed.data.savedAt
-    return age >= 0 && age <= PENDING_SIGN_IN_ACCEPT_TTL_MS
-      ? parsed.data
-      : null
+    return age >= 0 && age <= PENDING_SIGN_IN_ACCEPT_TTL_MS ? parsed.data : null
   } catch {
     return null
   }
