@@ -1079,6 +1079,51 @@ describe('useAgentConsent', () => {
       })
     })
 
+    it('saves nothing for a kept accept when a later card is skipped and the browser sign-in then finishes in the page', async () => {
+      signedOut()
+      holdDraft('make it blue')
+      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
+      const accept = vi.spyOn(useAgentConsentStore(), 'accept')
+      const first = useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await first
+
+      const second = useAgentConsent().withConsent('first_message', vi.fn())
+      const card = await waitForConsentDialog()
+      ;(card.contentProps.onReject as () => void)()
+      await second
+      signedIn()
+      await setImmediate()
+
+      expect(accept).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
+
+    it('leaves a newer Agree in place when an older sign-in dialog was closed first', async () => {
+      signedOut()
+      holdDraft('first message')
+      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
+      const first = useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await first
+
+      holdDraft('second message')
+      const secondSignIn = deferred<boolean>()
+      vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(
+        secondSignIn.promise
+      )
+      void useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await vi.waitFor(() =>
+        expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledTimes(2)
+      )
+      await setImmediate()
+
+      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
+        draft: 'second message'
+      })
+    })
+
     it.for(['reject', 'dismiss'] as const)(
       'drops a kept accept when a later card is answered with %s',
       async (answer) => {
