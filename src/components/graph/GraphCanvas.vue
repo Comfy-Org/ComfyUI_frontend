@@ -396,7 +396,10 @@ watchEffect(() => {
 })
 
 watch(
-  () => settingStore.get('Comfy.WidgetControlMode'),
+  [
+    () => settingStore.get('Comfy.WidgetControlMode'),
+    () => comfyApp.rootGraphOrUndefined
+  ],
   () => {
     if (!canvasStore.canvas) return
 

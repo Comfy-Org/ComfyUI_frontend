@@ -800,25 +800,36 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('executed', ({ detail }) => {
-      if (!useExecutionStore().belongsToActiveWorkflow(detail.prompt_id)) return
-      const nodeOutputStore = useNodeOutputStore()
+      const executionStore = useExecutionStore()
+      const isActive = executionStore.belongsToActiveWorkflow(detail.prompt_id)
+      const workflow = executionStore.queuedJobs[detail.prompt_id]?.workflow
+      const graph = workflow ? workflow.graph : isActive ? this.rootGraph : null
       const executionId = tryNormalizeNodeExecutionId(
         detail.display_node || detail.node
       )
       if (!executionId) return
 
-      nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
-        merge: detail.merge
-      })
+      if (isActive) {
+        useNodeOutputStore().setNodeOutputsByExecutionId(
+          executionId,
+          detail.output,
+          { merge: detail.merge }
+        )
+      }
 
-      const node = getNodeByExecutionId(this.rootGraph, executionId)
+      if (!graph) return
+      const node = getNodeByExecutionId(graph, executionId)
       if (node && node.onExecuted) {
         node.onExecuted(detail.output)
       }
     })
 
-    api.addEventListener('execution_start', () => {
-      triggerCallbackOnAllNodes(this.rootGraph, 'onExecutionStart')
+    api.addEventListener('execution_start', ({ detail }) => {
+      const executionStore = useExecutionStore()
+      const isActive = executionStore.belongsToActiveWorkflow(detail.prompt_id)
+      const workflow = executionStore.queuedJobs[detail.prompt_id]?.workflow
+      const graph = workflow ? workflow.graph : isActive ? this.rootGraph : null
+      if (graph) triggerCallbackOnAllNodes(graph, 'onExecutionStart')
     })
 
     api.addEventListener('execution_error', ({ detail }) => {

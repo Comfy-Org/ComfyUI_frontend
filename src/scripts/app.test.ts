@@ -4184,6 +4184,68 @@ describe('ComfyApp', () => {
       expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
     })
 
+    it.for([
+      {
+        event: 'execution_start',
+        dispatch: () =>
+          api.dispatchCustomEvent('execution_start', {
+            prompt_id: 'job-b',
+            timestamp: 0
+          })
+      },
+      {
+        event: 'executed',
+        dispatch: () =>
+          api.dispatchCustomEvent('executed', {
+            node: '1',
+            display_node: '1',
+            prompt_id: 'job-b',
+            output: { text: ['background result'] }
+          })
+      }
+    ])(
+      'routes $event callbacks to the background job graph',
+      ({ dispatch }) => {
+        const visible = new LGraph()
+        const background = new LGraph()
+        const visibleNode = new LGraphNode('visible')
+        const backgroundNode = new LGraphNode('background')
+        visibleNode.onExecutionStart = () => {
+          visibleNode.title = 'updated'
+        }
+        visibleNode.onExecuted = () => {
+          visibleNode.title = 'updated'
+        }
+        backgroundNode.onExecutionStart = () => {
+          backgroundNode.title = 'updated'
+        }
+        backgroundNode.onExecuted = () => {
+          backgroundNode.title = 'updated'
+        }
+        visible.add(visibleNode)
+        background.add(backgroundNode)
+        const workflowA = markLoaded(
+          new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+        )
+        const workflowB = markLoaded(
+          new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+        )
+        workflowA.adoptGraph(visible)
+        workflowB.adoptGraph(background)
+        useWorkflowStore().activeWorkflow = workflowA
+        Reflect.set(app, 'rootGraphInternal', visible)
+        useExecutionStore().registerJobOwner('job-b', workflowB)
+        Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+
+        dispatch()
+
+        expect([visibleNode.title, backgroundNode.title]).toEqual([
+          'visible',
+          'updated'
+        ])
+      }
+    )
+
     it('keeps outputs and previews of a background run off the visible workflow', () => {
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       const workflowA = markLoaded(
