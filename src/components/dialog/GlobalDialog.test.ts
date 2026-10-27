@@ -162,6 +162,31 @@ describe('GlobalDialog', () => {
     expect(dialog.className).toContain('[--workspace-inset-right:0px]')
   })
 
+  it('does not shift a maximized dialog that is also viewport-centered', async () => {
+    mountDialog()
+    const store = useDialogStore()
+    const user = userEvent.setup()
+
+    store.showDialog({
+      key: 'reka-viewport-center-maximized',
+      title: 'Viewport max',
+      component: Body,
+      dialogComponentProps: { centerOnViewport: true, maximizable: true }
+    })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Viewport max' })
+    expect(dialog.className).toContain('-translate-x-1/2')
+    expect(dialog.className).toContain('[--workspace-inset-right:0px]')
+
+    await user.click(within(dialog).getByRole('button', { name: 'Maximize' }))
+    expect(dialog.className).not.toContain('-translate-x-1/2')
+    expect(dialog.className).not.toContain('[--workspace-inset-right:0px]')
+
+    await user.click(within(dialog).getByRole('button', { name: 'Restore' }))
+    expect(dialog.className).toContain('-translate-x-1/2')
+    expect(dialog.className).toContain('[--workspace-inset-right:0px]')
+  })
+
   it('keeps default dialogs offset by the workspace inset', async () => {
     mountDialog()
     const store = useDialogStore()
