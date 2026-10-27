@@ -3096,6 +3096,31 @@ export const zCccjson = z.object({
   uid: z.uuid().readonly().optional()
 })
 
+export const zCccCreatorSummary = z.object({
+  avatar_url: z.string(),
+  display_name: z.string(),
+  username: z.string(),
+  workflow_count: z.int().gte(1)
+})
+
+export const zCccCreatorsPage = z.object({
+  items: z.array(zCccCreatorSummary).max(100),
+  next_cursor: z.string().max(200).optional()
+})
+
+export const zCccCreatorLink = z.object({
+  label: z.string(),
+  url: z.url()
+})
+
+export const zCccCreatorProfile = z.object({
+  avatar_url: z.string(),
+  bio: z.string().max(5000),
+  display_name: z.string(),
+  links: z.array(zCccCreatorLink).max(8),
+  username: z.string()
+})
+
 export const zCccCatalogState = z.object({
   draft_generation: z.coerce
     .bigint()
@@ -6273,13 +6298,33 @@ export const zListCccWebsiteCardsQuery = z.object({
   use: z.array(z.string().max(200)).max(30).optional(),
   modality: z.array(z.string().max(200)).max(30).optional(),
   provider: z.array(z.string().max(200)).max(30).optional(),
-  capability: z.array(z.string().max(200)).max(30).optional()
+  capability: z.array(z.string().max(200)).max(30).optional(),
+  author: z.string().min(1).max(30).optional()
 })
 
 /**
  * At most 24 card summaries; no graphs, inputs, examples or long bodies. Anonymous responses omit total, generation and facet counts. Cursors are audience, filter, clock and state bound and expire after five minutes.
  */
 export const zListCccWebsiteCardsResponse = zCccWebsiteCardsPage
+
+export const zListCccCreatorsQuery = z.object({
+  limit: z.int().gte(1).lte(100).optional().default(24),
+  cursor: z.string().max(200).optional()
+})
+
+/**
+ * One page of creators
+ */
+export const zListCccCreatorsResponse = zCccCreatorsPage
+
+export const zGetCccCreatorPath = z.object({
+  username: z.string().min(1).max(30)
+})
+
+/**
+ * Public creator profile
+ */
+export const zGetCccCreatorResponse = zCccCreatorProfile
 
 /**
  * Build-coupled catalog instructions, permissions and endpoint contracts

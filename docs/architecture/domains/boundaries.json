@@ -14,6 +14,10 @@
         "patterns": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"]
       },
       {
+        "name": "webcam-capture/integration/public",
+        "patterns": ["src/extensions/core/webcamCapture.ts"]
+      },
+      {
         "name": "agent/domain",
         "patterns": [
           "src/workbench/extensions/agent/crdt/agentSubgraphDefinitions.test.ts",
@@ -3998,6 +4002,14 @@
         ]
       },
       {
+        "from": "webcam-capture/integration/public",
+        "allow": [
+          "webcam-capture/integration/public",
+          "webcam-capture/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "agent/domain",
         "allow": [
           "agent/domain",
@@ -6433,7 +6445,11 @@
       },
       {
         "from": "webcam-capture/integration",
-        "allow": ["webcam-capture/integration", "unclassified"]
+        "allow": [
+          "webcam-capture/integration/public",
+          "webcam-capture/integration",
+          "unclassified"
+        ]
       },
       {
         "from": "workbench-shell/domain",
@@ -7671,6 +7687,7 @@
           "comfyui-api/domain/public",
           "keybindings/integration/public",
           "node-definition/domain/public",
+          "webcam-capture/integration/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -7926,7 +7943,6 @@
           "vue-node-widgets/application",
           "vue-node-widgets/presentation",
           "vue-node-widgets/integration",
-          "webcam-capture/integration",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/infrastructure",
