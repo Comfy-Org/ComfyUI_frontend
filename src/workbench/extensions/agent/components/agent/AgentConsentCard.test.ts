@@ -47,6 +47,23 @@ describe('AgentConsentCard', () => {
     expect(emitted().reject).toHaveLength(1)
   })
 
+  it('ties the next sign-in step to the continue action', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderCard({ requiresSignIn: true })
+
+    const accept = screen.getByRole('button', { name: 'Agree and continue' })
+    expect(accept).toHaveAccessibleDescription("You'll sign in next.")
+    expect(
+      screen.queryByRole('button', { name: 'Start using Comfy Agent' })
+    ).not.toBeInTheDocument()
+
+    await user.click(accept)
+    await user.click(screen.getByRole('button', { name: 'Skip for now' }))
+
+    expect(emitted().accept).toHaveLength(1)
+    expect(emitted().reject).toHaveLength(1)
+  })
+
   it('shows only the busy Start action while acceptance is being saved', () => {
     renderCard({ accepting: true })
 

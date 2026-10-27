@@ -31,6 +31,9 @@ const meta: Meta<typeof AgentConsentCard> = {
     videoSources: VIDEO_SOURCES,
     posterSrc: POSTER_SRC,
     docsUrl: AGENT_DOCS_URL,
+    requiresSignIn: false,
+    accepting: false,
+    error: '',
     onAccept: fn(),
     onReject: fn()
   },

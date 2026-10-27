@@ -35,29 +35,79 @@ const emit = defineEmits<{
   accept: []
 }>()
 
+const CARD_SHELL =
+  'grid max-h-[85dvh] overflow-y-auto overscroll-contain rounded-2xl border bg-background shadow-2xl'
+const MEDIA_SHELL = 'w-full object-cover'
+const FALLBACK_SHELL =
+  'grid w-full place-items-center bg-secondary text-xs text-muted-foreground'
+const COPY_SHELL = 'my-0 text-sm/5 text-muted-foreground'
+const SECTION_SHELL = 'flex min-w-0 flex-col gap-3'
+const FOOTER_SHELL =
+  'flex min-w-0 flex-wrap items-end justify-between gap-x-3 gap-y-2'
+
+const LAYOUTS = {
+  stacked: {
+    width: 'w-[min(600px,calc(100vw-2rem))]',
+    card: cn(CARD_SHELL, 'gap-0 p-0'),
+    videoWrap: 'w-full min-w-0',
+    media: cn(MEDIA_SHELL, 'aspect-video rounded-none'),
+    fallback: cn(FALLBACK_SHELL, 'aspect-video rounded-none'),
+    heading: 'my-0 text-2xl/7.5',
+    copy: COPY_SHELL,
+    section: cn(SECTION_SHELL, 'px-6 pt-4.5'),
+    footer: cn(FOOTER_SHELL, 'px-6 pt-4.5 pb-6')
+  },
+  compact: {
+    width: 'w-[min(600px,calc(100vw-2rem))]',
+    card: cn(CARD_SHELL, 'gap-0 p-0'),
+    videoWrap: 'w-full min-w-0',
+    media: cn(MEDIA_SHELL, 'h-41.5 rounded-none'),
+    fallback: cn(FALLBACK_SHELL, 'h-41.5 rounded-none'),
+    heading: 'my-0 text-2xl/7.5 text-[22px]/7',
+    copy: cn(COPY_SHELL, 'text-[13px]/4.5'),
+    section: cn(SECTION_SHELL, 'gap-2 px-4.5 pt-3'),
+    footer: cn(FOOTER_SHELL, 'px-4.5 pt-3 pb-4.5')
+  },
+  columns: {
+    width: 'w-[min(960px,calc(100vw-2rem))]',
+    card: cn(
+      CARD_SHELL,
+      'grid-cols-2 grid-rows-[auto_auto] gap-x-7 gap-y-3.5 p-5'
+    ),
+    videoWrap: 'w-full min-w-0 row-span-2 self-center',
+    media: cn(
+      MEDIA_SHELL,
+      'aspect-video max-h-[calc(85dvh-2.5rem)] rounded-lg'
+    ),
+    fallback: cn(
+      FALLBACK_SHELL,
+      'aspect-video max-h-[calc(85dvh-2.5rem)] rounded-lg'
+    ),
+    heading: 'my-0 text-2xl/7.5',
+    copy: COPY_SHELL,
+    section: cn(SECTION_SHELL, 'col-start-2 row-start-1 gap-2.5'),
+    footer: cn(FOOTER_SHELL, 'col-start-2 row-start-2')
+  }
+} as const
+
 const containerRef = ref<HTMLElement>()
 const isTwoColumn = useMediaQuery('(min-width: 700px) and (height < 650px)')
 const isShortViewport = useMediaQuery('(height < 680px)')
-const isCompact = computed(() => isShortViewport.value && !isTwoColumn.value)
-const layoutClasses = computed(() => ({
-  width: isTwoColumn.value
-    ? 'w-[min(960px,calc(100vw-2rem))]'
-    : 'w-[min(600px,calc(100vw-2rem))]',
-  heading: isCompact.value ? 'text-[22px]/7' : undefined,
-  video: isCompact.value
-    ? 'max-h-41.5'
-    : isTwoColumn.value
-      ? 'max-h-[calc(85dvh-2.5rem)]'
-      : 'max-h-[min(238px,calc(85dvh-22rem))]',
-  fallback: isCompact.value ? 'max-h-41.5' : 'max-h-59.5'
-}))
+
+function layoutMode(): keyof typeof LAYOUTS {
+  if (isTwoColumn.value) return 'columns'
+  if (isShortViewport.value) return 'compact'
+  return 'stacked'
+}
+
+const layout = computed(() => LAYOUTS[layoutMode()])
 const signInHintId = useId()
-const hasConsentHelp = computed(() => Boolean(docsUrl || requiresSignIn))
 const acceptAction = computed(() =>
   requiresSignIn
     ? { labelKey: 'agent.consent.agreeAndContinue', describedBy: signInHintId }
     : { labelKey: 'agent.consent.accept', describedBy: undefined }
 )
+const actionButtonClass = 'h-auto min-h-11 w-fit max-w-full whitespace-normal'
 
 onMounted(() => {
   if (containerRef.value) applyDarkPaletteTheme(containerRef.value.style)
@@ -65,19 +115,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div ref="containerRef" :class="cn('max-w-full', layoutClasses.width)">
-    <div
-      data-testid="agent-consent-card"
-      :class="
-        cn(
-          'grid max-h-[85dvh] gap-4.5 overflow-y-auto overscroll-contain rounded-2xl border bg-background p-6 shadow-2xl',
-          isTwoColumn &&
-            'grid-cols-2 grid-rows-[auto_auto] gap-x-7 gap-y-3.5 p-5',
-          isCompact && 'gap-3 p-4.5'
-        )
-      "
-    >
-      <div :class="cn('min-w-0', isTwoColumn && 'row-span-2 self-center')">
+  <div ref="containerRef" :class="cn('max-w-full', layout.width)">
+    <div data-testid="agent-consent-card" :class="layout.card">
+      <div :class="layout.videoWrap">
         <Video
           :sources="videoSources"
           :poster-src="posterSrc"
@@ -86,49 +126,24 @@ onMounted(() => {
           loop
           plays-inline
           data-testid="agent-consent-video"
-          :class="
-            cn(
-              'mx-auto aspect-video w-full max-w-full rounded-lg object-contain',
-              layoutClasses.video
-            )
-          "
+          :class="layout.media"
         >
           <template #fallback>
-            <div
-              :class="
-                cn(
-                  'grid aspect-video w-full place-items-center rounded-lg bg-secondary text-xs text-muted-foreground',
-                  layoutClasses.fallback
-                )
-              "
-            >
+            <div :class="layout.fallback">
               {{ $t('agent.consent.videoPlaceholder') }}
             </div>
           </template>
         </Video>
       </div>
 
-      <section
-        :class="
-          cn(
-            'flex min-w-0 flex-col gap-3',
-            isTwoColumn && 'col-start-2 row-start-1 gap-2.5',
-            isCompact && 'gap-2'
-          )
-        "
-      >
-        <DialogTitle :class="cn('my-0 text-2xl/7.5', layoutClasses.heading)">
+      <section :class="layout.section">
+        <DialogTitle :class="layout.heading">
           {{ title }}
         </DialogTitle>
         <p
           v-for="(paragraph, index) in paragraphs"
           :key="index"
-          :class="
-            cn(
-              'my-0 text-sm/5 text-muted-foreground',
-              isCompact && 'text-[13px]/4.5'
-            )
-          "
+          :class="layout.copy"
         >
           {{ paragraph }}
         </p>
@@ -137,31 +152,21 @@ onMounted(() => {
         </p>
       </section>
 
-      <footer
-        :class="
-          cn(
-            'flex min-w-0 flex-col gap-2.5',
-            isTwoColumn && 'col-start-2 row-start-2'
-          )
-        "
-      >
-        <div
-          v-if="hasConsentHelp"
-          class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1"
+      <footer :class="layout.footer">
+        <Button
+          v-if="docsUrl"
+          variant="link"
+          size="link"
+          class="w-fit py-0 text-xs/5"
+          as="a"
+          :href="docsUrl"
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          <Button
-            v-if="docsUrl"
-            variant="link"
-            size="link"
-            class="w-fit py-0 text-xs/5"
-            as="a"
-            :href="docsUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {{ $t('agent.consent.readDocs') }}
-            <span class="icon-[lucide--square-arrow-out-up-right] size-3" />
-          </Button>
+          {{ $t('agent.consent.readDocs') }}
+          <span class="icon-[lucide--square-arrow-out-up-right] size-3" />
+        </Button>
+        <div class="ml-auto flex flex-col items-end gap-1">
           <p
             v-if="requiresSignIn"
             :id="signInHintId"
@@ -169,28 +174,28 @@ onMounted(() => {
           >
             {{ $t('agent.consent.signInNext') }}
           </p>
-        </div>
-        <div class="flex flex-wrap gap-2.5">
-          <Button
-            v-if="!accepting"
-            variant="secondary"
-            size="lg"
-            class="h-auto min-h-11 max-w-full whitespace-normal"
-            @click="emit('reject')"
-          >
-            {{ $t('agent.consent.reject') }}
-          </Button>
-          <Button
-            variant="inverted"
-            size="lg"
-            class="h-auto min-h-11 max-w-full flex-1 whitespace-normal"
-            :loading="accepting"
-            :disabled="accepting"
-            :aria-describedby="acceptAction.describedBy"
-            @click="emit('accept')"
-          >
-            {{ $t(acceptAction.labelKey) }}
-          </Button>
+          <div class="flex flex-wrap justify-end gap-2.5">
+            <Button
+              v-if="!accepting"
+              variant="secondary"
+              size="lg"
+              :class="actionButtonClass"
+              @click="emit('reject')"
+            >
+              {{ $t('agent.consent.reject') }}
+            </Button>
+            <Button
+              variant="inverted"
+              size="lg"
+              :class="actionButtonClass"
+              :loading="accepting"
+              :disabled="accepting"
+              :aria-describedby="acceptAction.describedBy"
+              @click="emit('accept')"
+            >
+              {{ $t(acceptAction.labelKey) }}
+            </Button>
+          </div>
         </div>
       </footer>
     </div>
