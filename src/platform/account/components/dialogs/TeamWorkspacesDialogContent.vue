@@ -13,11 +13,7 @@
           {{ $t('teamWorkspacesDialog.title') }}
         </DialogTitle>
         <p class="m-0 text-sm text-muted-foreground">
-          {{
-            ownedTeamWorkspaces.length > 0
-              ? $t('teamWorkspacesDialog.subtitle')
-              : $t('teamWorkspacesDialog.subtitleNoWorkspaces')
-          }}
+          {{ subtitle }}
         </p>
       </div>
       <button
@@ -80,53 +76,56 @@
     <hr v-if="ownedTeamWorkspaces.length > 0" class="mx-5 my-4" />
 
     <!-- New workspace section -->
-    <section
-      class="flex flex-col gap-3 px-5 pb-5"
-      :class="{ 'pt-5': ownedTeamWorkspaces.length === 0 }"
-    >
-      <h3
-        class="m-0 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+    <div :class="{ 'pt-5': ownedTeamWorkspaces.length === 0 }">
+      <p
+        v-if="createRefusal"
+        class="m-0 px-5 pb-5 text-sm text-muted-foreground"
       >
-        {{ $t('teamWorkspacesDialog.newWorkspace') }}
-      </h3>
-      <div class="flex flex-col gap-2">
-        <label for="workspace-name-input" class="text-sm">
-          {{ $t('workspacePanel.createWorkspaceDialog.nameLabel') }}
-        </label>
-        <input
-          id="workspace-name-input"
-          v-model="workspaceName"
-          type="text"
-          class="w-full rounded-lg border bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-none"
-          :placeholder="$t('teamWorkspacesDialog.namePlaceholder')"
-          :aria-invalid="workspaceName.length > 0 && !isValidName"
-          :aria-describedby="
-            workspaceName.length > 0 && !isValidName
-              ? 'workspace-name-error'
-              : undefined
-          "
-          @keydown.enter="isValidName && !loading && onCreate()"
-        />
-        <p
-          v-if="workspaceName.length > 0 && !isValidName"
-          id="workspace-name-error"
-          class="m-0 text-xs text-destructive"
+        {{ createRefusal }}
+      </p>
+      <section v-else class="flex flex-col gap-3 px-5 pb-5">
+        <h3
+          class="m-0 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
         >
-          {{ $t('teamWorkspacesDialog.nameValidationError') }}
-        </p>
-      </div>
-      <Button
-        variant="secondary"
-        size="lg"
-        class="w-full"
-        :loading
-        :disabled="!isValidName || loading"
-        @click="onCreate"
-      >
-        <i class="icon-[lucide--plus] size-3" aria-hidden="true" />
-        {{ $t('teamWorkspacesDialog.createWorkspace') }}
-      </Button>
-    </section>
+          {{ $t('teamWorkspacesDialog.newWorkspace') }}
+        </h3>
+        <div class="flex flex-col gap-2">
+          <label for="workspace-name-input" class="text-sm">
+            {{ $t('workspacePanel.createWorkspaceDialog.nameLabel') }}
+          </label>
+          <input
+            id="workspace-name-input"
+            v-model="workspaceName"
+            type="text"
+            class="w-full rounded-lg border bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-none"
+            :placeholder="$t('teamWorkspacesDialog.namePlaceholder')"
+            :aria-invalid="showNameError"
+            :aria-describedby="
+              showNameError ? 'workspace-name-error' : undefined
+            "
+            @keydown.enter="isValidName && !loading && onCreate()"
+          />
+          <p
+            v-if="showNameError"
+            id="workspace-name-error"
+            class="m-0 text-xs text-destructive"
+          >
+            {{ $t('teamWorkspacesDialog.nameValidationError') }}
+          </p>
+        </div>
+        <Button
+          variant="secondary"
+          size="lg"
+          class="w-full"
+          :loading
+          :disabled="!isValidName || loading"
+          @click="onCreate"
+        >
+          <i class="icon-[lucide--plus] size-3" aria-hidden="true" />
+          {{ $t('teamWorkspacesDialog.createWorkspace') }}
+        </Button>
+      </section>
+    </div>
   </Card>
 </template>
 
@@ -140,6 +139,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import { useCreateWorkspaceRefusal } from '@/platform/workspace/composables/useCreateWorkspaceRefusal'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
@@ -161,7 +161,8 @@ const workspaceStore = useTeamWorkspaceStore()
 const billingState = useWorkspaceBillingStateStore()
 const { switchWorkspace } = useWorkspaceSwitch()
 const { getTierLabel } = useWorkspaceTierLabel()
-const { sharedWorkspaces } = storeToRefs(workspaceStore)
+const { sharedWorkspaces, canCreateWorkspace } = storeToRefs(workspaceStore)
+const createRefusal = useCreateWorkspaceRefusal()
 
 const loading = ref(false)
 const workspaceName = ref('')
@@ -177,6 +178,16 @@ const tierLabels = computed(
         (w) => [w.id, getTierLabel(billingState.getSummary(w))] as const
       )
     )
+)
+
+const subtitle = computed(() =>
+  ownedTeamWorkspaces.value.length > 0
+    ? t('teamWorkspacesDialog.subtitle')
+    : t('teamWorkspacesDialog.subtitleNoWorkspaces')
+)
+
+const showNameError = computed(
+  () => workspaceName.value.length > 0 && !isValidName.value
 )
 
 const isValidName = computed(() => {
@@ -200,7 +211,7 @@ async function handleSwitch(workspaceId: string) {
 }
 
 async function onCreate() {
-  if (!isValidName.value || loading.value) return
+  if (!canCreateWorkspace.value || !isValidName.value || loading.value) return
   loading.value = true
   try {
     const name = workspaceName.value.trim()

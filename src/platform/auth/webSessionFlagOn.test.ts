@@ -177,8 +177,6 @@ vi.mock(import('@/views/UserSelectView.vue'), async () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const { cloudSessionCookieExtension } =
   await import('@/extensions/core/cloudSessionCookie')
 useExtensionService().registerExtension(cloudSessionCookieExtension)

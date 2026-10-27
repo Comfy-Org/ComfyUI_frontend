@@ -109,6 +109,7 @@ describe('SelectionToolbox', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Color' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Frame Nodes' })).toBeNull()
+    expect(screen.getAllByRole('separator')).toHaveLength(2)
 
     setCanvasSelection([new LGraphNode('A'), new LGraphNode('B')])
     await nextTick()
@@ -128,6 +129,7 @@ describe('SelectionToolbox', () => {
     expect(screen.getAllByRole('button')).toEqual([
       screen.getByRole('button', { name: 'More Options' })
     ])
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument()
   })
 
   it.for([
