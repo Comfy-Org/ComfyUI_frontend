@@ -1150,7 +1150,8 @@ describe('useAgentConsent', () => {
       await vi.waitFor(() =>
         expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
           expect.anything(),
-          expect.objectContaining({ method: 'POST' })
+          expect.objectContaining({ method: 'POST' }),
+          false
         )
       )
 
