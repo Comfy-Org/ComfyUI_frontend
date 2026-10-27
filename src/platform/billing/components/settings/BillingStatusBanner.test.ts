@@ -16,7 +16,7 @@ import type {
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
 import type { BillingStatus } from '@comfyorg/billing-core'
-import type { WorkspaceType } from '@/platform/workspace/api/workspaceApi'
+import type { WorkspaceWithRole } from '@comfyorg/ingest-types'
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 
 interface Subscription {
@@ -39,7 +39,7 @@ const state = vi.hoisted(() => ({
     scheduledChange: null
   } as Subscription | null,
   renewalDate: null as string | null,
-  workspaceType: 'team' as WorkspaceType,
+  workspaceType: 'team' as WorkspaceWithRole['type'],
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
   canReactivatePlan: true,

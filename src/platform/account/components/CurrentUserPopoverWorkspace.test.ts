@@ -1,4 +1,6 @@
 import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useWorkspaceDialogs } from '@/platform/account/composables/useWorkspaceDialogs'
@@ -753,13 +755,59 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('hides the processing line while unified billing settings are off', () => {
-    useBillingCapabilities().canTopUp = computed(() => true)
-    renderComponent()
+  describe('credits flyout payment processing', () => {
+    const PROCESSING_LINE = "Payment processing. You don't need to pay again."
 
-    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
-    expect(
-      screen.queryByText("Payment processing. You don't need to pay again.")
-    ).not.toBeInTheDocument()
+    function serveCheckout(checkoutState: HostedTopupCheckout['state']) {
+      vi.spyOn(billingApi, 'listTopupCheckouts').mockResolvedValue({
+        checkouts: [
+          {
+            amount_cents: 2500,
+            created_at: '2026-10-20T00:00:00Z',
+            session_id: 'cs_bank'
+          }
+        ],
+        next_cursor: null
+      })
+      vi.spyOn(billingApi, 'getTopupCheckout').mockResolvedValue({
+        amount_cents: 2500,
+        payment_amount_cents: 2500,
+        session_id: 'cs_bank',
+        state: checkoutState
+      })
+    }
+
+    beforeEach(() => {
+      useBillingCapabilities().canTopUp = computed(() => true)
+    })
+
+    it('does not read checkouts while unified billing settings are off', () => {
+      const list = vi.spyOn(billingApi, 'listTopupCheckouts')
+      renderComponent()
+
+      expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
+      expect(screen.queryByText(PROCESSING_LINE)).not.toBeInTheDocument()
+      expect(list).not.toHaveBeenCalled()
+    })
+
+    it('shows the processing line from the checkout state', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveCheckout('payment_processing')
+      renderComponent()
+
+      expect(await screen.findByText(PROCESSING_LINE)).toBeInTheDocument()
+      expect(billingApi.getTopupCheckout).toHaveBeenCalledWith('cs_bank')
+    })
+
+    it('leaves the line out when the checkout is still open', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveCheckout('open')
+      renderComponent()
+
+      await waitFor(() =>
+        expect(billingApi.getTopupCheckout).toHaveBeenCalledWith('cs_bank')
+      )
+      expect(screen.queryByText(PROCESSING_LINE)).not.toBeInTheDocument()
+    })
   })
 })

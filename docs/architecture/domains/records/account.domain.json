@@ -144,11 +144,13 @@
     "src/platform/account/auth/WorkspaceAuthGate.vue",
     "src/platform/account/components/CurrentUserPopoverWorkspace.vue",
     "src/platform/account/components/WorkspaceSwitcherPopover.vue",
+    "src/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue",
     "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue",
     "src/platform/account/composables/useCreateWorkspaceUrlLoader.ts",
-    "src/platform/account/composables/useInviteUrlLoader.ts"
+    "src/platform/account/composables/useInviteUrlLoader.ts",
+    "src/platform/account/composables/useWorkspaceDialogs.ts"
   ],
-  "allowedDependencies": ["ingest-api", "server-facts"],
+  "allowedDependencies": ["billing", "ingest-api", "server-facts", "workspace"],
   "allowedConsumers": ["app-host", "authentication", "settings"],
   "characterizationScenarios": [
     {
@@ -161,10 +163,15 @@
         "src/platform/account/components/CurrentUserPopoverWorkspace.test.ts",
         "src/platform/account/components/SubscriptionPanelContentWorkspace.test.ts",
         "src/platform/account/components/WorkspaceSwitcherPopover.test.ts",
+        "src/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.test.ts",
         "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.test.ts",
         "src/platform/account/composables/useMembersPanel.test.ts",
         "src/platform/account/composables/useWorkspaceMenuItems.test.ts"
       ]
+    },
+    {
+      "name": "Account dialog routing preserves the host workspace creation callback",
+      "checks": ["src/platform/account/composables/useWorkspaceDialogs.test.ts"]
     },
     {
       "name": "Account coordinators apply workspace creation and invitation deep links",
@@ -177,7 +184,7 @@
   "adrs": ["docs/adr/BILLING-0049-billing-and-workspace-ownership.md"],
   "compatibilityPromises": [
     "Account UI integrates billing and membership; neither lower domain depends on account coordinators.",
-    "Hosts import characterized account views and URL coordinators; dialog-routing callbacks remain private until characterized."
+    "Hosts import characterized account views, URL coordinators, and dialog routing."
   ],
   "deepImports": "enforced"
 }

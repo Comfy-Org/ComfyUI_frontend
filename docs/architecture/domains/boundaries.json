@@ -7,7 +7,9 @@
           "src/platform/account/auth/WorkspaceAuthGate.vue",
           "src/platform/account/components/CurrentUserPopoverWorkspace.vue",
           "src/platform/account/components/WorkspaceSwitcherPopover.vue",
-          "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue"
+          "src/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue",
+          "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue",
+          "src/platform/account/composables/useWorkspaceDialogs.ts"
         ]
       },
       {
@@ -3996,6 +3998,15 @@
           "ingest-api/domain/public",
           "server-facts/domain/public",
           "account/presentation",
+          "billing/domain",
+          "billing/application",
+          "billing/presentation",
+          "workspace/domain",
+          "workspace/application",
+          "workspace/presentation",
+          "billing/domain/outer-1",
+          "billing/application/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
@@ -4009,6 +4020,20 @@
           "server-facts/domain/public",
           "account/presentation",
           "account/integration",
+          "billing/domain",
+          "billing/application",
+          "billing/infrastructure",
+          "billing/presentation",
+          "billing/integration",
+          "workspace/domain",
+          "workspace/application",
+          "workspace/infrastructure",
+          "workspace/presentation",
+          "workspace/integration",
+          "billing/domain/outer-1",
+          "billing/application/outer-1",
+          "billing/infrastructure/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
@@ -4082,6 +4107,15 @@
           "ingest-api/domain/public",
           "server-facts/domain/public",
           "account/presentation",
+          "billing/domain",
+          "billing/application",
+          "billing/presentation",
+          "workspace/domain",
+          "workspace/application",
+          "workspace/presentation",
+          "billing/domain/outer-1",
+          "billing/application/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
@@ -4095,6 +4129,20 @@
           "server-facts/domain/public",
           "account/presentation",
           "account/integration",
+          "billing/domain",
+          "billing/application",
+          "billing/infrastructure",
+          "billing/presentation",
+          "billing/integration",
+          "workspace/domain",
+          "workspace/application",
+          "workspace/infrastructure",
+          "workspace/presentation",
+          "workspace/integration",
+          "billing/domain/outer-1",
+          "billing/application/outer-1",
+          "billing/infrastructure/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
