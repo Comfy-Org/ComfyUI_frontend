@@ -2050,7 +2050,7 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
-  it('withholds the automatic card as storage-unavailable when storage cannot be read', async () => {
+  it('treats unreadable storage as past the automatic launches', async () => {
     setAgentReady(true)
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
@@ -2061,12 +2061,11 @@ describe('AgentPanel extension flag gate', () => {
     await flush()
 
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-      reason: 'storage_unavailable'
+    expect(await offerExited()).toHaveBeenCalledWith({
+      exit: 'activation_window_complete',
+      stage: 'startup',
+      retry_armed: false
     })
-    expect(await offerExited()).not.toHaveBeenCalledWith(
-      expect.objectContaining({ exit: 'activation_window_complete' })
-    )
   })
 
   it('stays silent when the saved consent cannot be read', async () => {

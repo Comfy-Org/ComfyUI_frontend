@@ -79,6 +79,8 @@ offer retries when that surface clears. `agent_consent_offer_exited` covers
 every other ending. Some exits are correct (`consent_already_accepted`,
 `card_already_seen`, `activation_window_complete`) and the rest are offers that
 were owed and not made, so split queries by `exit`; a total is not a quantity.
+Unreadable storage also reports `activation_window_complete`, since the launch
+count cannot be read.
 There is no exit for "the agent flag is off": it would fire on every page load
 outside the rollout, and every event already carries
 `$feature/agent-in-app-experience`.
