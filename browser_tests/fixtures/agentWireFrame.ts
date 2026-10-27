@@ -1,6 +1,5 @@
 import { DEFERRED_OPS, FROZEN_OPS } from '@comfyorg/comfy-multi-player'
-
-import { isRecord } from '@e2e/fixtures/utils/isRecord'
+import { isPlainObject } from 'es-toolkit'
 
 const WIRE_OP_KINDS: readonly string[] = [...FROZEN_OPS, ...DEFERRED_OPS]
 
@@ -18,7 +17,7 @@ export interface WireOpEnvelope {
 }
 
 function isWireEnvelopeShaped(value: unknown): value is WireOpEnvelope {
-  if (!isRecord(value)) return false
+  if (!isPlainObject(value)) return false
   const { op, op_id } = value
   return (
     typeof op === 'string' &&

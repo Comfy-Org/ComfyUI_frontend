@@ -27,7 +27,7 @@ import type {
   ParsedWireBatch,
   WireOpEnvelope
 } from '@e2e/fixtures/agentWireFrame'
-import { isRecord } from '@e2e/fixtures/utils/isRecord'
+import { isPlainObject } from 'es-toolkit'
 
 const SUBSCRIBE_TIMEOUT = 15_000
 /** The sid the fake ComfyUI reports on its first `status` frame. */
@@ -87,10 +87,10 @@ function docFrameEnvelope(
   raw: string | Buffer
 ): { type: string; data: Record<string, unknown> } | null {
   const frame: unknown = JSON.parse(raw.toString())
-  if (!isRecord(frame)) return null
+  if (!isPlainObject(frame)) return null
   const { type, data } = frame
   if (typeof type !== 'string' || !type.startsWith('doc_')) return null
-  if (!isRecord(data)) return null
+  if (!isPlainObject(data)) return null
   return { type, data }
 }
 
