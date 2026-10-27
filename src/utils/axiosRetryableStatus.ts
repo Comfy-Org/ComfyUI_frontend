@@ -41,6 +41,30 @@ function cancellationSignal(
     : controller.signal
 }
 
+function fitsBudget(
+  delay: number | undefined,
+  remaining: number | undefined
+): delay is number {
+  return delay !== undefined && (remaining === undefined || delay < remaining)
+}
+
+async function runAttempt(
+  adapter: AxiosAdapter,
+  config: InternalAxiosRequestConfig,
+  remaining: number | undefined
+): Promise<AxiosResponse> {
+  try {
+    const response = await adapter(
+      remaining === undefined ? config : { ...config, timeout: remaining }
+    )
+    response.config = config
+    return response
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.config) error.config = config
+    throw error
+  }
+}
+
 function retryingAdapter(
   adapter: AxiosAdapter,
   { policy, sleep = sleepFor, random }: AxiosRetryableStatusOptions
@@ -80,19 +104,11 @@ function retryingAdapter(
       const remaining = remainingMs()
       if (remaining !== undefined && remaining <= 0) throw lastError
       try {
-        const response = await adapter(
-          remaining === undefined ? config : { ...config, timeout: remaining }
-        )
-        response.config = config
-        return response
+        return await runAttempt(adapter, config, remaining)
       } catch (error) {
-        if (axios.isAxiosError(error) && error.config) error.config = config
         lastError = error
         const delay = waitBeforeRetry(error, config, attempt)
-        const left = remainingMs()
-        if (delay === undefined || (left !== undefined && delay >= left)) {
-          throw error
-        }
+        if (!fitsBudget(delay, remainingMs())) throw error
         await pause(delay, config)
       }
     }
