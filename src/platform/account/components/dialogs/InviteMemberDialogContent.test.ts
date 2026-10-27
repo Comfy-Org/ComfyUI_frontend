@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import InviteMemberDialogContent from '@/platform/account/components/dialogs/InviteMemberDialogContent.vue'
 
@@ -22,6 +23,7 @@ const mockOccupiedSeats = ref<number | null>(0)
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const i18n = createI18n({
   legacy: false,
@@ -223,7 +225,10 @@ describe('InviteMemberDialogContent', () => {
     ).toBeInTheDocument()
     expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
     await waitFor(() =>
-      expect(console.error).toHaveBeenCalledWith(refreshError)
+      expect(reportError).toHaveBeenCalledWith(refreshError, {
+        errorType: 'error_refreshing_billing_after_invite',
+        surface: 'billing'
+      })
     )
   })
 
