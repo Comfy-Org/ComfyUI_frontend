@@ -19,7 +19,7 @@ import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useAuthStore } from '@/stores/authStore'
-import { DEFAULT_RETRY_POLICY } from '@/utils/retryPolicy'
+import { DEFAULT_RETRY_POLICY, NO_RETRY_POLICY } from '@/utils/retryPolicy'
 
 const { addBreadcrumb } = vi.hoisted(() => ({
   addBreadcrumb: vi.fn()
@@ -288,6 +288,45 @@ describe('api.fetchApi', () => {
         expect(send).toHaveBeenCalledTimes(DEFAULT_RETRY_POLICY.maxAttempts)
       })
 
+      it('rejects with the timeout, not the last 503, when it fires mid-backoff', async () => {
+        const send = provideSessionSending(
+          new Response(null, { status: 503, headers: { 'Retry-After': '5' } })
+        )
+
+        const settled = api
+          .fetchApi('/test', { timeoutMs: 1_000 })
+          .catch((reason: unknown) => reason)
+        await vi.advanceTimersByTimeAsync(1_000)
+
+        expect(await settled).toMatchObject(fetchTimeoutRejection.reason)
+        expect(send).toHaveBeenCalledOnce()
+      })
+
+      it('rejects with the caller reason when it cancels mid-backoff', async () => {
+        const controller = new AbortController()
+        const send = provideSessionSending(
+          new Response(null, { status: 503, headers: { 'Retry-After': '5' } })
+        )
+
+        const settled = api
+          .fetchApi('/test', { signal: controller.signal })
+          .catch((reason: unknown) => reason)
+        await vi.advanceTimersByTimeAsync(500)
+        controller.abort('dialog closed')
+
+        expect(await settled).toBe('dialog closed')
+        expect(send).toHaveBeenCalledOnce()
+      })
+
+      it('sends once on a 503 when skipStatusRetry is set', async () => {
+        const send = provideSessionSending(unavailable())
+
+        const response = await api.fetchApi('/test', { skipStatusRetry: true })
+
+        expect(response.status).toBe(503)
+        expect(send).toHaveBeenCalledOnce()
+      })
+
       it('does not retry a POST', async () => {
         const send = provideSessionSending(unavailable())
 
@@ -458,6 +497,28 @@ describe('api.fetchApi', () => {
       )
       expect(global.fetch).not.toHaveBeenCalled()
     })
+
+    it.for([
+      { skipStatusRetry: true, expected: NO_RETRY_POLICY },
+      { skipStatusRetry: undefined, expected: undefined }
+    ])(
+      'passes retry policy $expected when skipStatusRetry is $skipStatusRetry',
+      async ({ skipStatusRetry, expected }) => {
+        mockDistribution.isCloud = true
+        const provider: ApiAuthProvider = {
+          ...anonymousApiAuthProvider,
+          fetch: vi.fn().mockResolvedValue(new Response())
+        }
+        api.setAuthProvider(provider)
+
+        await api.fetchApi('/test', { skipStatusRetry })
+
+        const [, init, , , retryPolicy] = vi.mocked(provider.fetch).mock
+          .calls[0]
+        expect(retryPolicy).toBe(expected)
+        expect(init).not.toHaveProperty('skipStatusRetry')
+      }
+    )
   })
 
   describe('socketAuthParams', () => {

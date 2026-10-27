@@ -97,6 +97,7 @@ function retryingAdapter(
   }
 
   return async (config) => {
+    if (config.__skipStatusRetry) return adapter(config)
     const remainingMs = timeBudget(config.timeout)
     let lastError: unknown
 

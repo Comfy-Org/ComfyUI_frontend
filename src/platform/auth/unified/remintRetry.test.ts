@@ -15,6 +15,7 @@ import {
   fetchWithUnifiedRemint
 } from '@/platform/auth/unified/remintRetry'
 import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
+import { NO_RETRY_POLICY } from '@/utils/retryPolicy'
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -167,6 +168,21 @@ describe('fetchWithUnifiedRemint', () => {
       expect(await pending).toBe(ok)
       expect(fetch).toHaveBeenCalledTimes(6)
       expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
+    })
+
+    it('sends once on a 503 under the no-retry policy', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(unavailable())
+
+      const result = await fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { headers: { Authorization: 'Bearer tokenA' as const } },
+        true,
+        undefined,
+        NO_RETRY_POLICY
+      )
+
+      expect(result.status).toBe(503)
+      expect(fetch).toHaveBeenCalledTimes(1)
     })
 
     it('does not retry a POST that got a 503', async () => {

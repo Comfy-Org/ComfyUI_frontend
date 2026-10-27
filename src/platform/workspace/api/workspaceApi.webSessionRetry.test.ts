@@ -75,6 +75,24 @@ describe('workspaceApi on the web session', () => {
     expect(send).toHaveBeenCalledTimes(DEFAULT_RETRY_POLICY.maxAttempts)
   })
 
+  it('sends a read once when the caller opts out of the status retry', async () => {
+    const send = provideSessionSending(unavailable())
+
+    await expect(
+      workspaceApi.list({ skipStatusRetry: true })
+    ).rejects.toMatchObject({ status: 503 })
+    expect(send).toHaveBeenCalledTimes(1)
+  })
+
+  it('sends the deployment listing once, leaving retries to its boot loop', async () => {
+    const send = provideSessionSending(unavailable())
+
+    await expect(workspaceApi.listDeployments('ws-1')).rejects.toMatchObject({
+      status: 503
+    })
+    expect(send).toHaveBeenCalledTimes(1)
+  })
+
   it('does not retry a write that got a 503', async () => {
     const send = provideSessionSending(unavailable())
 

@@ -12,6 +12,12 @@ export const DEFAULT_RETRY_POLICY: RetryPolicy = {
   retryNonIdempotent: false
 }
 
+/** Sends once: for callers that already retry on their own backoff. */
+export const NO_RETRY_POLICY: RetryPolicy = {
+  ...DEFAULT_RETRY_POLICY,
+  maxAttempts: 1
+}
+
 const RETRYABLE_STATUSES: ReadonlySet<number> = new Set([429, 502, 503, 504])
 const IDEMPOTENT_METHODS: ReadonlySet<string> = new Set([
   'GET',

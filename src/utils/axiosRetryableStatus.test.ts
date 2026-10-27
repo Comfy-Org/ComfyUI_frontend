@@ -113,6 +113,17 @@ describe('attachRetryableStatusRetry', () => {
     await expect(client.get('https://api/x')).rejects.toBe(networkError)
     expect(adapter).toHaveBeenCalledTimes(1)
   })
+
+  it('sends once when the request opts out of the status retry', async () => {
+    const { client, adapter, sleep } = makeClient([{ status: 503 }])
+
+    await expect(
+      client.get('https://api/x', { __skipStatusRetry: true })
+    ).rejects.toMatchObject({ response: { status: 503 } })
+    expect(adapter).toHaveBeenCalledTimes(1)
+    expect(sleep).not.toHaveBeenCalled()
+  })
+
   it('retries through an adapter the request selects for itself', async () => {
     const { client, adapter: defaultAdapter } = makeClient([{ status: 200 }])
     const requestAdapter = scriptedAdapter([{ status: 503 }, { status: 200 }])
@@ -211,6 +222,23 @@ describe('attachRetryableStatusRetry', () => {
       controller.abort()
 
       expect(axios.isCancel(await outcome)).toBe(true)
+    })
+
+    it('reports a timeout signal fired during the wait as a cancellation, not a stale 503', async () => {
+      vi.useFakeTimers()
+      const { client, adapter } = makeTimedClient([
+        { status: 503, headers: { 'retry-after': '5' } }
+      ])
+      const controller = new AbortController()
+
+      const outcome = client
+        .get('https://api/x', { signal: controller.signal })
+        .catch((reason: unknown) => reason)
+      await vi.advanceTimersByTimeAsync(1_000)
+      controller.abort(new DOMException('Fetch timeout', 'TimeoutError'))
+
+      expect(axios.isCancel(await outcome)).toBe(true)
+      expect(adapter).toHaveBeenCalledTimes(1)
     })
 
     it('reports a cancel token fired during the wait as a cancellation', async () => {

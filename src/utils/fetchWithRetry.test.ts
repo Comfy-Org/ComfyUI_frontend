@@ -224,20 +224,38 @@ describe('fetchWithRetry', () => {
       expect(fetchImpl).toHaveBeenCalledTimes(2)
     })
 
-    it('returns the last response when the timeout signal fires mid-wait', async () => {
+    it('rejects with the timeout reason when the timeout signal fires mid-wait', async () => {
       const controller = new AbortController()
-      const last = respond(503, { 'Retry-After': '5' })
-      const fetchImpl = scriptedFetch(last)
+      const fetchImpl = scriptedFetch(respond(503, { 'Retry-After': '5' }))
+      const timeout = new DOMException('Fetch timeout', 'TimeoutError')
 
       const pending = fetchWithRetry(
         'https://api/x',
         { signal: controller.signal },
         { fetchImpl }
       )
+      const outcome = pending.catch((reason: unknown) => reason)
       await vi.advanceTimersByTimeAsync(1_000)
-      controller.abort(new DOMException('Fetch timeout', 'TimeoutError'))
+      controller.abort(timeout)
 
-      expect(await pending).toBe(last)
+      expect(await outcome).toBe(timeout)
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+    })
+
+    it('rejects when the signal was already aborted before the wait began', async () => {
+      const controller = new AbortController()
+      const fetchImpl = vi.fn(async () => {
+        controller.abort('gone')
+        return respond(503)
+      })
+
+      await expect(
+        fetchWithRetry(
+          'https://api/x',
+          { signal: controller.signal },
+          { fetchImpl }
+        )
+      ).rejects.toBe('gone')
       expect(fetchImpl).toHaveBeenCalledTimes(1)
     })
 

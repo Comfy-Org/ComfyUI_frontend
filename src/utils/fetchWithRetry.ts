@@ -28,14 +28,6 @@ function requestSignal(
   return init.signal ?? (input instanceof Request ? input.signal : undefined)
 }
 
-function timedOut(signal: AbortSignal | undefined): boolean {
-  return (
-    signal?.aborted === true &&
-    signal.reason instanceof DOMException &&
-    signal.reason.name === 'TimeoutError'
-  )
-}
-
 function isReplayable(input: RequestInfo | URL, init: RequestInit): boolean {
   return (
     !(init.body instanceof ReadableStream) &&
@@ -70,22 +62,19 @@ export async function fetchWithRetry(
       random
     })
     if (delay === undefined) return response
-    try {
-      await sleep(delay, signal)
-    } catch (error) {
-      if (timedOut(signal)) return response
-      throw error
-    }
+    await sleep(delay, signal)
     await response.body?.cancel()
   }
 }
 
 /** Wraps a url-based send so it retries like {@link fetchWithRetry}. */
 export function retryingSend(
-  send: (url: string, init: RequestInit) => Promise<Response>
+  send: (url: string, init: RequestInit) => Promise<Response>,
+  policy?: RetryPolicy
 ): (url: string, init: RequestInit) => Promise<Response> {
   return (url, init) =>
     fetchWithRetry(url, init, {
+      policy,
       fetchImpl: (input, attemptInit) => send(String(input), attemptInit ?? {})
     })
 }
