@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { unrefElement } from '@vueuse/core'
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import type {
   FilterOption,
   OwnershipFilterOption,
@@ -15,7 +14,7 @@ import type {
 } from '@/platform/assets/types/filterTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import { DROPDOWN_PANEL_CLASS } from './shared'
 import type { LayoutMode, SortOption } from './types'
 
@@ -130,7 +129,7 @@ function handleSearchEnter(event: KeyboardEvent) {
       {{ t('widgets.uploadSelect.topResult', { result: candidateLabel }) }}
     </span>
 
-    <Popover v-model:open="isSortPopoverOpen">
+    <PopoverRoot v-model:open="isSortPopoverOpen">
       <PopoverTrigger as-child>
         <Button
           ref="sortTriggerRef"
@@ -152,11 +151,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           <i class="icon-[lucide--arrow-up-down] size-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        :collision-padding="8"
-        :class="actionPopoverClass"
-      >
+      <PopoverContent align="start" :class="actionPopoverClass">
         <div
           :class="
             cn(
@@ -182,9 +177,9 @@ function handleSearchEnter(event: KeyboardEvent) {
           </Button>
         </div>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
-    <Popover
+    <PopoverRoot
       v-if="showOwnershipFilter && ownershipOptions?.length"
       v-model:open="isOwnershipPopoverOpen"
     >
@@ -209,11 +204,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           <i class="icon-[lucide--user] size-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        :collision-padding="8"
-        :class="actionPopoverClass"
-      >
+      <PopoverContent align="start" :class="actionPopoverClass">
         <div
           :class="
             cn(
@@ -239,9 +230,9 @@ function handleSearchEnter(event: KeyboardEvent) {
           </Button>
         </div>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
-    <Popover
+    <PopoverRoot
       v-if="showBaseModelFilter && baseModelOptions?.length"
       v-model:open="isBaseModelPopoverOpen"
     >
@@ -266,11 +257,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           <i class="icon-[comfy--ai-model] size-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        :collision-padding="8"
-        :class="actionPopoverClass"
-      >
+      <PopoverContent align="start" :class="actionPopoverClass">
         <div
           :class="
             cn(
@@ -305,7 +292,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           </Button>
         </div>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
     <div
       :class="

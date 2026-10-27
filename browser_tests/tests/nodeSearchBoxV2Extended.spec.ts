@@ -143,7 +143,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const refsAfter = await comfyPage.nodeOps.getNodeRefsByType(NODE_TYPE)
       const newNode = refsAfter.find((n) => !idsBefore.has(n.id))
       expect(newNode, 'expected a new CLIPTextEncode node').toBeDefined()
-      const clipInput = await newNode!.getInput(0)
+      const clipInput = await newNode!.getInputByName('clip')
       await clipInput.expectLinkCount(1)
     })
   })

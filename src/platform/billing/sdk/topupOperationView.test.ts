@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import { failedTopup, pendingTopup, settledTopup } from './billingSdkTestUtils'
 import {

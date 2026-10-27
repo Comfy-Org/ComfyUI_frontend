@@ -38,7 +38,7 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 
-import TextTickerMultiLine from '@/components/common/TextTickerMultiLine.vue'
+import TextTickerMultiLine from '@comfyorg/design-system/common/TextTickerMultiLine'
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
