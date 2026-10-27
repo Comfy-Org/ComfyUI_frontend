@@ -11,7 +11,7 @@ import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspace
 
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import {
   readDeploymentHint,
@@ -32,19 +32,9 @@ const mockWorkspaceApi = vi.hoisted(() => ({
   getReleaseUnsupportedPacks: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), async () => {
-  class WorkspaceApiError extends Error {
-    constructor(
-      message: string,
-      public readonly status?: number,
-      public readonly code?: string
-    ) {
-      super(message)
-      this.name = 'WorkspaceApiError'
-    }
-  }
-  return { workspaceApi: mockWorkspaceApi, WorkspaceApiError }
-})
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
+  workspaceApi: mockWorkspaceApi
+}))
 
 vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
 

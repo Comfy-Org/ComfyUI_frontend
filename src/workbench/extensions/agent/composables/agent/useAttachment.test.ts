@@ -15,8 +15,6 @@ import {
   useAttachment
 } from './useAttachment'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 function fileOfSize(name: string, size: number, type = 'image/png'): File {
   const file = new File(['x'], name, { type })
   Object.defineProperty(file, 'size', { value: size })

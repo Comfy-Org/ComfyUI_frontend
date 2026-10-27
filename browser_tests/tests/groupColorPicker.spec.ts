@@ -42,9 +42,10 @@ test.describe(
       await comfyPage.page.mouse.click(toolbarGroupPos.x, toolbarGroupPos.y)
       await comfyPage.nextFrame()
 
-      const colorPickerButton = comfyPage.page.getByTestId(
-        TestIds.selectionToolbox.colorPickerButton
-      )
+      const colorPickerButton = comfyPage.selectionToolbox.getByRole('button', {
+        name: 'Color',
+        exact: true
+      })
       await expect(colorPickerButton).toBeVisible()
       await colorPickerButton.click()
 

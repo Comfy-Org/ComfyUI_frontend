@@ -24,8 +24,8 @@ import type {
   BillingAuthenticationState,
   BillingOperationPhase,
   CreateTopupResponse
-} from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 export interface TopupOperationView {
   readonly opId: string

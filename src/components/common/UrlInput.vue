@@ -19,7 +19,7 @@
         :data-validation-state="validationState"
         @click="validateUrl(modelValue)"
       >
-        <i :class="cn(validationIcon, 'size-4')" />
+        <i :class="validationIcon" />
       </InputGroupButton>
     </InputGroupAddon>
   </InputGroup>
@@ -27,8 +27,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import InputGroup from '@comfyorg/design-system/input-group/InputGroup'
 import InputGroupAddon from '@comfyorg/design-system/input-group/InputGroupAddon'

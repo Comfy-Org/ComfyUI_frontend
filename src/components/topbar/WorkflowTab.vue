@@ -57,7 +57,7 @@
               v-else-if="isAgentEditing"
               role="img"
               :aria-label="t('g.agentWorking')"
-              class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-muted-foreground motion-safe:animate-spin"
+              class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] -translate-1/2 text-muted-foreground motion-safe:animate-spin"
             />
             <span
               v-else-if="showUnseenAgentDot"
@@ -72,7 +72,7 @@
               :aria-label="workflowStatusLabel"
               :class="
                 cn(
-                  'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2',
+                  'absolute top-1/2 left-1/2 z-10 -translate-1/2',
                   workflowStatusIconClasses[workflowStatus]
                 )
               "
@@ -103,10 +103,7 @@
           data-testid="close-workflow-button"
           @click.stop="onCloseWorkflow(workflowOption)"
         >
-          <i
-            data-testid="close-workflow-icon"
-            class="icon-[lucide--x] size-4"
-          />
+          <i data-testid="close-workflow-icon" class="icon-[lucide--x]" />
         </Button>
       </div>
     </ContextMenuTrigger>

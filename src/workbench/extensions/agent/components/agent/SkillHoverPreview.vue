@@ -28,7 +28,7 @@ const { t } = useI18n()
       >
         <div v-if="unavailable" class="flex items-start gap-1.5">
           <i
-            class="mt-0.5 icon-[lucide--circle-minus] size-3 shrink-0"
+            class="mt-0.5 icon-[lucide--circle-minus] size-3"
             aria-hidden="true"
           />
           <span>{{ t('agent.skillNotAvailable') }}</span>

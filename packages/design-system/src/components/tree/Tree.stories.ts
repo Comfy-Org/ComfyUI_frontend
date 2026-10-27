@@ -81,8 +81,8 @@ const meta: Meta<TreeStoryArgs> = {
             <i
               :class="
                 item.hasChildren
-                  ? 'icon-[lucide--folder] size-4 shrink-0'
-                  : 'icon-[lucide--file] size-4 shrink-0'
+                  ? 'icon-[lucide--folder]'
+                  : 'icon-[lucide--file]'
               "
             />
             <span class="truncate text-sm">{{ item.value.label }}</span>

@@ -11,7 +11,7 @@ import {
   fakeBillingSdk,
   settledTopup
 } from '@/platform/billing/sdk/billingSdkTestUtils'
-import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
+import type { BillingSdk } from '@comfyorg/billing-core/sdk'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -35,11 +35,9 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
-import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import type { CreateTopupResponse } from '@comfyorg/billing-core'
 import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import type { BillingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -77,7 +75,7 @@ vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/useFeatureFlags'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
-vi.mock(import('@/platform/billing/sdk/createBillingSdk'), () => ({
+vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 
@@ -780,7 +778,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     }
 
     function checkoutOpensAt(url: string) {
-      vi.spyOn(workspaceApi, 'createTopupCheckout').mockResolvedValue({
+      vi.spyOn(billingApi, 'createTopupCheckout').mockResolvedValue({
         checkout_url: url
       })
     }
@@ -788,7 +786,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     it('offers hosted checkout for the selected amount instead of a dead-end error', async () => {
       refuseForNoPaymentMethod()
       const createCheckout = vi
-        .spyOn(workspaceApi, 'createTopupCheckout')
+        .spyOn(billingApi, 'createTopupCheckout')
         .mockResolvedValue({ checkout_url: checkoutUrl })
       const { tab, open } = stubCheckoutTab()
       const { continueButton } = await payAndGetRefused()
@@ -930,7 +928,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     it('hands checkout to the Desktop host and returns it to the billing-web return page', async () => {
       refuseForNoPaymentMethod()
       const createCheckout = vi
-        .spyOn(workspaceApi, 'createTopupCheckout')
+        .spyOn(billingApi, 'createTopupCheckout')
         .mockResolvedValue({ checkout_url: checkoutUrl })
       window.__comfyDesktop2 = {}
       remoteConfig.value = { billing_web_url: 'https://testbilling.comfy.org' }
@@ -981,7 +979,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         trigger: 'Set a default card',
         session: () =>
           vi
-            .spyOn(workspaceApi, 'getPaymentPortalUrl')
+            .spyOn(billingApi, 'getPaymentPortalUrl')
             .mockResolvedValue({ url: portalUrl })
       }
     ])(
@@ -1019,7 +1017,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     it('mints the checkout session only once Open checkout gets a tab', async () => {
       refuseForNoPaymentMethod()
       const createCheckout = vi
-        .spyOn(workspaceApi, 'createTopupCheckout')
+        .spyOn(billingApi, 'createTopupCheckout')
         .mockResolvedValue({ checkout_url: checkoutUrl })
       const checkoutTab = newCheckoutTab()
       const open = vi
@@ -1049,7 +1047,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     it('returns to Pay when the blocked checkout fails to start a session', async () => {
       refuseForNoPaymentMethod()
-      vi.spyOn(workspaceApi, 'createTopupCheckout').mockRejectedValue(
+      vi.spyOn(billingApi, 'createTopupCheckout').mockRejectedValue(
         new WorkspaceApiError('Checkout down', 502)
       )
       vi.spyOn(window, 'open')
@@ -1092,7 +1090,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     it('abandons a checkout still opening once this tab starts switching workspace, then opens the next attempt', async () => {
       refuseForNoPaymentMethod()
       const handedSignals: AbortSignal[] = []
-      vi.spyOn(workspaceApi, 'createTopupCheckout')
+      vi.spyOn(billingApi, 'createTopupCheckout')
         .mockImplementationOnce((_amountCents, _returnUrl, signal) => {
           if (signal) handedSignals.push(signal)
           return new Promise((_resolve, reject) =>
@@ -1141,7 +1139,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       }) {
         refuseForNoPaymentMethod()
         const createCheckout = vi
-          .spyOn(workspaceApi, 'createTopupCheckout')
+          .spyOn(billingApi, 'createTopupCheckout')
           .mockResolvedValueOnce({ checkout_url: checkoutUrl })
           .mockImplementationOnce(reopened)
         const open = vi
@@ -1347,7 +1345,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     it('abandons a checkout that resolves after the dialog was dismissed', async () => {
       refuseForNoPaymentMethod()
       let resolveCheckout: (value: { checkout_url: string }) => void = () => {}
-      vi.spyOn(workspaceApi, 'createTopupCheckout').mockReturnValue(
+      vi.spyOn(billingApi, 'createTopupCheckout').mockReturnValue(
         new Promise((resolve) => {
           resolveCheckout = resolve
         })
@@ -1367,7 +1365,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     it('keeps the dialog open and explains a checkout that could not start', async () => {
       refuseForNoPaymentMethod()
-      vi.spyOn(workspaceApi, 'createTopupCheckout').mockRejectedValue(
+      vi.spyOn(billingApi, 'createTopupCheckout').mockRejectedValue(
         new WorkspaceApiError('Bad return url', 400, 'INVALID_RETURN_URL')
       )
       const { tab } = stubCheckoutTab()
@@ -1388,7 +1386,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     describe('setting a default card', () => {
       function portalOpensAt(url: string) {
         return vi
-          .spyOn(workspaceApi, 'getPaymentPortalUrl')
+          .spyOn(billingApi, 'getPaymentPortalUrl')
           .mockResolvedValue({ url })
       }
 
@@ -1400,7 +1398,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
       it('re-sends Pay for the same amount when the customer returns from the portal', async () => {
         refuseForNoPaymentMethod()
-        const listCards = vi.spyOn(workspaceApi, 'listSavedPaymentMethods')
+        const listCards = vi.spyOn(billingApi, 'listSavedPaymentMethods')
         const getPortal = portalOpensAt(portalUrl)
         const { tab, open } = stubCheckoutTab()
         await payAndGetRefused()
@@ -1435,7 +1433,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
       it('keeps the refusal when the retried Pay still has no default card', async () => {
         refuseForNoPaymentMethod()
-        const listCards = vi.spyOn(workspaceApi, 'listSavedPaymentMethods')
+        const listCards = vi.spyOn(billingApi, 'listSavedPaymentMethods')
         portalOpensAt(portalUrl)
         const { tab } = stubCheckoutTab()
         await payAndGetRefused()
@@ -1518,7 +1516,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           failure: 'a rejected request',
           arrange: () =>
             vi
-              .spyOn(workspaceApi, 'getPaymentPortalUrl')
+              .spyOn(billingApi, 'getPaymentPortalUrl')
               .mockRejectedValue(new WorkspaceApiError('Portal down', 502))
         },
         {
@@ -1554,7 +1552,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           resolve: (_value: { url: string }) => {},
           reject: (_error: Error) => {}
         }
-        vi.spyOn(workspaceApi, 'getPaymentPortalUrl').mockReturnValue(
+        vi.spyOn(billingApi, 'getPaymentPortalUrl').mockReturnValue(
           new Promise((resolve, reject) => {
             settle.resolve = resolve
             settle.reject = reject
@@ -1624,7 +1622,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
       it('re-sends Pay once a customer who followed the blocked portal link comes back', async () => {
         refuseForNoPaymentMethod()
-        const listCards = vi.spyOn(workspaceApi, 'listSavedPaymentMethods')
+        const listCards = vi.spyOn(billingApi, 'listSavedPaymentMethods')
         portalOpensAt(portalUrl)
         blockNewTabs()
         stopBrowserFollowingLinks()
@@ -1653,7 +1651,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           failure: 'a rejected request',
           arrange: () =>
             vi
-              .spyOn(workspaceApi, 'getPaymentPortalUrl')
+              .spyOn(billingApi, 'getPaymentPortalUrl')
               .mockRejectedValue(new WorkspaceApiError('Portal down', 502))
         },
         {
@@ -2455,7 +2453,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   function serveProcessingCheckout(paymentAmountCents: number | null) {
-    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+    vi.spyOn(billingApi, 'listTopupCheckouts').mockResolvedValue({
       checkouts: [
         {
           amount_cents: 2500,
@@ -2465,7 +2463,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       ],
       next_cursor: null
     })
-    vi.spyOn(workspaceApi, 'getTopupCheckout').mockResolvedValue({
+    vi.spyOn(billingApi, 'getTopupCheckout').mockResolvedValue({
       amount_cents: 2500,
       payment_amount_cents: paymentAmountCents,
       session_id: 'cs_bank',
@@ -2515,7 +2513,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     })
 
     it('leaves the dialog unchanged while unified billing settings are off', () => {
-      const list = vi.spyOn(workspaceApi, 'listTopupCheckouts')
+      const list = vi.spyOn(billingApi, 'listTopupCheckouts')
       renderDialog()
 
       expect(screen.queryByRole('status')).not.toBeInTheDocument()
@@ -2525,7 +2523,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     it('hides the notice when the checkout list cannot be read', async () => {
       vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
-      vi.spyOn(workspaceApi, 'listTopupCheckouts').mockRejectedValue(
+      vi.spyOn(billingApi, 'listTopupCheckouts').mockRejectedValue(
         new WorkspaceApiError('unavailable', 503)
       )
       renderDialog()

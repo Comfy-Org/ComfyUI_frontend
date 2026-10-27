@@ -22,7 +22,6 @@ type IdentityListener = (user: User | null) => void
 const identityListeners = vi.hoisted(() => new Set<IdentityListener>())
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true

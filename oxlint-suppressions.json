@@ -432,6 +432,11 @@
       "count": 1
     }
   },
+  "src/platform/account/auth/WorkspaceAuthGate.vue": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
   "src/platform/assets/components/AssetBrowserModal.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
@@ -523,11 +528,6 @@
     }
   },
   "src/platform/billing/components/UnifiedPricingTable.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/billing/components/settings/PlanCreditsPanelContent.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -797,34 +797,9 @@
       "count": 1
     }
   },
-  "src/platform/workspace/api/workspaceApi.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/platform/workspace/auth/WorkspaceAuthGate.vue": {
-    "comfy/no-new-error-throw": {
-      "count": 4
-    }
-  },
   "src/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/platform/workspace/composables/useMembersPanel.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 10
-    }
-  },
-  "src/platform/workspace/composables/useWorkspaceUI.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 4
     }
   },
   "src/platform/workspace/stores/teamWorkspaceStore.test.ts": {

@@ -84,11 +84,7 @@ function viewNodes(): void {
         class="max-w-full flex-wrap gap-3"
       >
         <template #icon>
-          <i
-            :class="presentation.iconClass"
-            class="size-4 shrink-0"
-            aria-hidden="true"
-          />
+          <i :class="presentation.iconClass" aria-hidden="true" />
         </template>
         <template #title>
           {{ presentation.title }}
@@ -114,7 +110,7 @@ function viewNodes(): void {
               :aria-label="t('agent.close')"
               @click="activity.dismiss()"
             >
-              <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+              <i class="icon-[lucide--x]" aria-hidden="true" />
             </Button>
           </div>
         </template>
