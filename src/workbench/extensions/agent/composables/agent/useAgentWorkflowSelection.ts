@@ -258,26 +258,34 @@ export function useAgentWorkflowSelection({
   ): Promise<RestorationOutcome> {
     const listed = await refreshCloudWorkflowIds()
     if (!isCurrent()) return { outcome: 'superseded' }
-    let target =
-      boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+    const target = localOwnerFor(workflowId)
     if (!listed || !cloudListingOmits(workflowId))
       return { outcome: 'open', target }
-    if (target === null && !workflowStore.tabsRestored) {
-      // A reload can hydrate the chat before startup recreates its unsaved
-      // draft tab from local storage, the only local owner such a draft has.
-      await until(() => workflowStore.tabsRestored).toBe(true)
-      await nextTick()
-      if (!isCurrent()) return { outcome: 'superseded' }
-      target =
-        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+    if (target === null) {
+      if (!(await startupTabsRestored(isCurrent)))
+        return { outcome: 'superseded' }
+      if (localOwnerFor(workflowId) === null) return { outcome: 'deleted' }
     }
-    if (target === null) return { outcome: 'deleted' }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
-    return restorationOutcomeFor(
-      lifecycle,
-      boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
-    )
+    return restorationOutcomeFor(lifecycle, localOwnerFor(workflowId))
+  }
+
+  function localOwnerFor(workflowId: string): ComfyWorkflow | null {
+    return boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+  }
+
+  /**
+   * A reload can hydrate the chat before startup recreates its unsaved draft
+   * tab from local storage, the only local owner such a draft has.
+   */
+  async function startupTabsRestored(
+    isCurrent: () => boolean
+  ): Promise<boolean> {
+    if (workflowStore.tabsRestored) return true
+    await until(() => workflowStore.tabsRestored).toBe(true)
+    await nextTick()
+    return isCurrent()
   }
 
   async function onWorkflowRestored(

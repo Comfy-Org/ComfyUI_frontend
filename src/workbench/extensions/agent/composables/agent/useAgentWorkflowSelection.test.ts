@@ -1,12 +1,12 @@
 import { render, waitFor } from '@testing-library/vue'
 import type { WorkflowResponse } from '@comfyorg/ingest-types'
+import { getActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -702,16 +702,18 @@ describe('historical workflow restoration', () => {
   it('PM-2332 waits for a page reload to restore the unsaved draft tab before calling the chat target unavailable', async () => {
     const draftPath = 'workflows/Agent draft.json'
     const draftGraphId = '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
-    localStorage.setItem(
-      StorageKeys.agentWorkflowTabBindings('personal'),
-      JSON.stringify({
-        'wf-draft': {
-          tabPath: draftPath,
-          graphId: draftGraphId,
-          confirmedAt: Date.now()
-        }
-      })
-    )
+    const beforeReload = useWorkflowStore()
+    const draft = beforeReload.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: draftGraphId
+    })
+    beforeReload.openWorkflowsInBackground({ right: [draft.path] })
+    const bindingsBeforeReload = useAgentWorkflowTabBindingStore()
+    bindingsBeforeReload.bind('wf-draft', draft.path)
+    await nextTick()
+    bindingsBeforeReload.$dispose()
+    delete getActivePinia()?.state.value[bindingsBeforeReload.$id]
+    await beforeReload.closeWorkflow(draft)
     const {
       selection,
       workflows,
