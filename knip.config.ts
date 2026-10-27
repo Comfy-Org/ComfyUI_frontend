@@ -79,6 +79,10 @@ const config: KnipConfig = {
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
+    // Served to custom nodes at runtime as /comfy/api/v2.js. Nothing in
+    // the build imports it — that is the point: it is the entry point
+    // packs import from, so knip cannot see a consumer.
+    'public/comfy/api/v2.js',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically
