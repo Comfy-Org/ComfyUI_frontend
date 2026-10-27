@@ -289,11 +289,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function currentAccountIdentity(): string | null {
-    return sessionUser.value?.id ?? currentUser.value?.uid ?? null
+    return currentUser.value?.uid ?? sessionUser.value?.id ?? null
   }
 
   function nextAccountIdentity(user: User | null): string | null {
-    return sessionUser.value?.id ?? user?.uid ?? null
+    return user?.uid ?? sessionUser.value?.id ?? null
   }
 
   function nextStorageIdentity(user: User | null): string | null {
