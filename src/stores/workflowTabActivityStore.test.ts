@@ -22,6 +22,17 @@ describe('useWorkflowTabActivityStore', () => {
     expect(store.awaitingApprovalPaths.size).toBe(0)
   })
 
+  it('holds a page-wide approval flag that clearing agent activity resets', () => {
+    const store = useWorkflowTabActivityStore()
+    expect(store.agentAwaitingApproval).toBe(false)
+
+    store.setAgentAwaitingApproval(true)
+    expect(store.agentAwaitingApproval).toBe(true)
+
+    store.clearAgentActivity()
+    expect(store.agentAwaitingApproval).toBe(false)
+  })
+
   it('toggles the tab-creation flag', () => {
     const store = useWorkflowTabActivityStore()
 

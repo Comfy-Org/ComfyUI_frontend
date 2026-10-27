@@ -2768,6 +2768,85 @@ describe('useAgentConversationStore', () => {
       }
     )
 
+    const pendingAsks = [
+      {
+        kind: 'ask_user',
+        stashed: false,
+        overrides: {
+          kind: 'ask_user',
+          prompt: 'Allow network access to github.com?',
+          options: [
+            { id: 'allow', label: 'Allow' },
+            { id: 'deny', label: 'Deny' }
+          ]
+        }
+      },
+      {
+        kind: 'ask_user',
+        stashed: true,
+        overrides: {
+          kind: 'ask_user',
+          prompt: 'Allow network access to github.com?',
+          options: [
+            { id: 'allow', label: 'Allow' },
+            { id: 'deny', label: 'Deny' }
+          ]
+        }
+      },
+      {
+        kind: 'delete_approval',
+        stashed: false,
+        overrides: {
+          kind: 'delete_approval',
+          prompt: 'Delete 1 node you added?',
+          options: [
+            { id: 'delete', label: 'Delete' },
+            { id: 'keep', label: 'Keep' }
+          ],
+          context: {
+            action: 'delete_nodes',
+            nodes: [{ id: '7', title: 'Load Video' }]
+          }
+        }
+      }
+    ]
+
+    it.for(pendingAsks)(
+      'awaits approval for a $kind card until it is answered (stashed: $stashed)',
+      ({ stashed, overrides }) => {
+        openTab('workflows/a.json')
+        const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
+        expect(store.awaitingApproval).toBe(false)
+
+        store.ingest(runApproval('t1', 'ask-1', overrides))
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: true }
+        ])
+        expect(store.awaitingApproval).toBe(true)
+
+        store.setAskAnswering('ask-1', true)
+        expect(store.awaitingApproval).toBe(false)
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: false }
+        ])
+      }
+    )
+
+    it.for([false, true])(
+      'awaits approval for a turn whose tab is not open (stashed: %s)',
+      (stashed) => {
+        const store = storeWithTurnOn({ status: 'none' }, stashed)
+
+        store.ingest(runApproval('t1', 'ask-1'))
+
+        expect(store.turnTabs).toEqual([])
+        expect(store.awaitingApproval).toBe(true)
+
+        store.retireAsk('ask-1', { status: 'retired' }, 'th')
+        expect(store.awaitingApproval).toBe(false)
+      }
+    )
+
     it.for([false, true])(
       'follows the tab of a live turn through a move, a rename and a close (stashed: %s)',
       async (stashed) => {

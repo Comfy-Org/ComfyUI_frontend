@@ -381,6 +381,7 @@
     "recordingFailedToStart": "Could not start recording",
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
+    "agentApprovalNeededShort": "Approval needed",
     "duplicate": "Duplicate",
     "itemsCopiedToClipboard": "Items copied to clipboard",
     "selectItemsToCopy": "Select items to copy",

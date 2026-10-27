@@ -69,7 +69,7 @@ interface BackgroundTurn {
   skillReference?: SkillReference
   settled: boolean
   tab: TurnTab
-  approvalAskIds: readonly string[]
+  pendingAskIds: readonly string[]
 }
 
 interface ActiveTurnSlot {
@@ -106,9 +106,13 @@ function isLoadSkillPart(part: AssistantMessage['parts'][number]): boolean {
   return part.type === 'tool' && part.name === 'load_skill'
 }
 
-function runApprovalAskIds(message: AssistantMessage): string[] {
+/**
+ * Every card in the message still waiting on the user: run approvals,
+ * questions (the host-permission ask is one) and delete approvals.
+ */
+function pendingAskIdsOf(message: AssistantMessage): string[] {
   return message.parts.flatMap((part) =>
-    part.type === 'runApproval' ? [part.askId] : []
+    isPendingAskPart(part) ? [part.askId] : []
   )
 }
 
@@ -336,9 +340,7 @@ export const useAgentConversationStore = defineStore(
 
     function updateBackgroundTurn(
       turnId: TurnId,
-      change: Partial<
-        Pick<BackgroundTurn, 'settled' | 'tab' | 'approvalAskIds'>
-      >
+      change: Partial<Pick<BackgroundTurn, 'settled' | 'tab' | 'pendingAskIds'>>
     ): void {
       const entry = backgroundTurns.get(turnId)
       if (entry) backgroundTurns.set(turnId, { ...entry, ...change })
@@ -379,9 +381,9 @@ export const useAgentConversationStore = defineStore(
       replaceActive(message)
       const entry = backgroundTurns.get(turnId)
       if (!entry) return
-      const approvalAskIds = runApprovalAskIds(message)
-      if (!isEqual(approvalAskIds, entry.approvalAskIds))
-        updateBackgroundTurn(turnId, { approvalAskIds })
+      const pendingAskIds = pendingAskIdsOf(message)
+      if (!isEqual(pendingAskIds, entry.pendingAskIds))
+        updateBackgroundTurn(turnId, { pendingAskIds })
     }
 
     function recordApprovalShown(askId: string, shownAt: number): boolean {
@@ -796,7 +798,7 @@ export const useAgentConversationStore = defineStore(
         skillReference: userSkillReferences.value.get(slot.message.id),
         settled: false,
         tab: slot.tab,
-        approvalAskIds: runApprovalAskIds(slot.message)
+        pendingAskIds: pendingAskIdsOf(slot.message)
       })
       clearActive()
     }
@@ -1349,8 +1351,8 @@ export const useAgentConversationStore = defineStore(
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
 
-    function awaitsAnswer(approvalAskIds: readonly string[]): boolean {
-      return approvalAskIds.some((askId) => !answeringAskIds.value.has(askId))
+    function awaitsAnswer(pendingAskIds: readonly string[]): boolean {
+      return pendingAskIds.some((askId) => !answeringAskIds.value.has(askId))
     }
 
     const activeTurnTabPath = computed(() => {
@@ -1359,17 +1361,29 @@ export const useAgentConversationStore = defineStore(
     })
     const activeTurnAwaitsAnswer = computed(() =>
       activeMessage.value
-        ? awaitsAnswer(runApprovalAskIds(activeMessage.value))
+        ? awaitsAnswer(pendingAskIdsOf(activeMessage.value))
         : false
+    )
+    /**
+     * Whether any live turn waits on the user, whether or not its tab is
+     * open; `turnTabs` drops turns with no open tab.
+     */
+    const awaitingApproval = computed(
+      () =>
+        (isStreaming.value && activeTurnAwaitsAnswer.value) ||
+        [...backgroundTurns.values()].some(
+          ({ settled, pendingAskIds }) =>
+            !settled && awaitsAnswer(pendingAskIds)
+        )
     )
     const turnTabs = computed<AgentTurnTab[]>(() => {
       const activePath = activeTurnTabPath.value
       const background = [...backgroundTurns.values()].flatMap(
-        ({ settled, tab, approvalAskIds }) => {
+        ({ settled, tab, pendingAskIds }) => {
           const path = settled ? null : openPathOf(tab)
           return path === null
             ? []
-            : [{ path, awaitingApproval: awaitsAnswer(approvalAskIds) }]
+            : [{ path, awaitingApproval: awaitsAnswer(pendingAskIds) }]
         }
       )
       return activePath === null
@@ -1395,6 +1409,7 @@ export const useAgentConversationStore = defineStore(
       activeMessageId,
       activeTurnTabPath,
       turnTabs,
+      awaitingApproval,
       onTurnCompleted: turnCompleted.on,
       setTurnTabResolver,
       moveTurnToTab,
