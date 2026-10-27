@@ -15,7 +15,7 @@ import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import type { WidgetState } from '@/types/widgetState'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 
 function addMultilineWidget(
   node: LGraphNode,

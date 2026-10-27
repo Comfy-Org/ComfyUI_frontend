@@ -3,9 +3,9 @@ import type {
   SubgraphInput,
   SubgraphNode,
   SubgraphOutput
-} from '@comfyorg/graph-model/entityRegistry'
+} from './entityRegistry'
 
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { IBaseWidget } from './widgets'
 
 import type { LGraphEventMap } from './LGraphEventMap'
 

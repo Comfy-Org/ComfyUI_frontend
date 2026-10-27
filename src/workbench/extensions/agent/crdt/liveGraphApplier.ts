@@ -48,7 +48,7 @@ import {
   readSubgraphDefinitions,
   readSubgraphInteriorWidgets
 } from './agentSubgraphDefinitions'
-import type { PlacementRect } from './batchPlacement'
+import type { Bounds as PlacementRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { placementOffset } from './batchPlacement'
 
 export type NodeChange = 'add' | 'update' | 'delete'

@@ -1,10 +1,10 @@
 import type {
   CompassCorners,
-  Point,
+  PointTuple as Point,
   ReadOnlyRect,
   ReadOnlyTypedArray,
-  Size
-} from '@comfyorg/graph-model/interfaces'
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 
 /**

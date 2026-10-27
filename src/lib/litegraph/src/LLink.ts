@@ -29,7 +29,7 @@ import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 import type { EndpointPatch } from '@/stores/linkStore'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkTopology } from '@/types/linkTopology'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
@@ -37,14 +37,17 @@ import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   CanvasColour,
   ISlotType,
-  LinkSegment,
-  Point
+  LinkSegment
 } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import type { LinkNetwork, ReadonlyLinkNetwork } from './types/linkNetwork'
+import type {
+  LinkNetwork,
+  ReadonlyLinkNetwork
+} from '@comfyorg/graph-model/linkNetwork'
 import type {
   Serialisable,
   SerialisableLLink,

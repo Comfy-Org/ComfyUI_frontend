@@ -4,8 +4,8 @@ import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
+import type { SizedExtents as MinimapBounds } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
-  MinimapBounds,
   MinimapGroupData,
   MinimapLinkData,
   MinimapNodeData,

@@ -28,7 +28,7 @@ import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkTopology } from '@/types/linkTopology'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 interface ReplacementGroup {

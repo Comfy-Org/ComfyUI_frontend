@@ -8,7 +8,12 @@ import type { LLink, Reroute } from '@comfyorg/graph-model/entityRegistry'
  * Maintains backward compatibility with existing litegraph integration.
  */
 
-import type { CanvasColour, Point } from '@comfyorg/graph-model/interfaces'
+import type { CanvasColour } from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  Point2D as PointObj,
+  Bounds
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import {
   LinkDirection,
@@ -21,12 +26,10 @@ import type {
   Direction,
   LinkRenderData,
   RenderContext as PathRenderContext,
-  Point as PointObj,
   RenderMode
 } from '@/renderer/core/canvas/pathRenderer'
 import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Bounds } from '@/renderer/core/layout/types'
 
 export interface LinkRenderContext {
   // Canvas settings

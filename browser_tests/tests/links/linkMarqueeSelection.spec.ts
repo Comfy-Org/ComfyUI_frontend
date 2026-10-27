@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import type { Point } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import {

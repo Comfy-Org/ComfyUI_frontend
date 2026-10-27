@@ -64,7 +64,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
 import { revealDynamicInputSlot } from '@/core/graph/widgets/revealDynamicInputSlot'
-import type { Point } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
 import DialogContent from '@comfyorg/design-system/dialog/DialogContent'

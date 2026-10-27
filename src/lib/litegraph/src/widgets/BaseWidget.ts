@@ -6,7 +6,10 @@ import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import type { Point, Size } from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
@@ -20,7 +23,7 @@ import {
   ensureUniqueWidgetNames,
   widgetId
 } from '@comfyorg/graph-model/widgetId'
-import type { WidgetState } from '@/types/widgetState'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import {
   applyLegacyAdvancedWrite,
   applyLegacyCanvasOnlyWrite,

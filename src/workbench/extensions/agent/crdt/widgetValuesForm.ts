@@ -28,7 +28,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetState } from '@/types/widgetState'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 /** The post-hook halves of a serialized node this module reads. */

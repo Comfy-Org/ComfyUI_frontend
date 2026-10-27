@@ -19,7 +19,11 @@ import type {
 } from '@comfyorg/graph-model/rerouteChain'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { UUID } from '@/utils/uuid'
-import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
+import type {
+  Point2D as LayoutPoint,
+  PointTuple as Point,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 function isPointLike(value: unknown): value is ArrayLike<number> {
   return (
@@ -43,15 +47,16 @@ import { createMutationView } from './infrastructure/createMutationView'
 import type {
   CanvasColour,
   LinkSegment,
-  Point,
-  Positionable,
-  ReadOnlyRect
+  Positionable
 } from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import type { LinkNetwork, ReadonlyLinkNetwork } from './types/linkNetwork'
+import type {
+  LinkNetwork,
+  ReadonlyLinkNetwork
+} from '@comfyorg/graph-model/linkNetwork'
 import { litegraph } from './litegraphInstance'
 import { distance, isPointInRect } from './measure'
 import type {

@@ -8,7 +8,7 @@ import { isEqual } from 'es-toolkit'
 
 import type { Position, Size } from '@e2e/fixtures/types'
 import { SELECTION_BOUNDS_PADDING } from '@/base/common/selectionBounds'
-import type { Rect } from '@comfyorg/graph-model/interfaces'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 
 type PageRect = Position & Size
 

@@ -7,8 +7,8 @@ import type {
   RootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkTopology } from '@/types/linkTopology'
-import { isFloatingTopology } from '@/types/linkTopology'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
+import { isFloatingTopology } from '@comfyorg/graph-model/linkTopology'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export type EndpointPatch = Partial<

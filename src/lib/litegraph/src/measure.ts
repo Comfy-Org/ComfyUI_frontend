@@ -1,9 +1,9 @@
 import type {
   HasBoundingRect,
-  Point,
+  PointTuple as Point,
   ReadOnlyRect,
   Rect
-} from '@comfyorg/graph-model/interfaces'
+} from '@comfyorg/shared-frontend-utils/geometry'
 import {
   Alignment,
   LinkDirection,

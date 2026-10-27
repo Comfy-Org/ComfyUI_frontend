@@ -1,6 +1,6 @@
-import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
+import type { IBaseWidget, IWidgetOptions } from './widgets'
+import type { NodeId } from './nodeId'
+import type { WidgetValue } from './widgetValue'
 
 export interface WidgetState<
   TValue = WidgetValue,

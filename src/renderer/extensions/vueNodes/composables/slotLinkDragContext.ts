@@ -1,4 +1,4 @@
-import type { SlotLayout } from '@/renderer/core/layout/types'
+import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SlotId } from '@comfyorg/graph-model/slotId'
 

@@ -4,13 +4,13 @@ import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
 import type {
-  LinkSegment,
-  ReadOnlyRect
-} from '@comfyorg/graph-model/interfaces'
+  ReadOnlyRect,
+  Point2D as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
-import type { Point } from '@/renderer/core/layout/types'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'

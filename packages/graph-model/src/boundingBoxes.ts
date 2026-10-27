@@ -1,3 +1,4 @@
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 type RegionType = 'obj' | 'text'
 
 export interface BoundingBoxMetadata {
@@ -7,10 +8,6 @@ export interface BoundingBoxMetadata {
   palette: string[]
 }
 
-export interface BoundingBox {
-  x: number
-  y: number
-  width: number
-  height: number
+export interface BoundingBox extends Bounds {
   metadata: BoundingBoxMetadata
 }

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import type { Rect } from '@comfyorg/graph-model/interfaces'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraph, LGraphNode, LiteGraph } from './litegraph'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'

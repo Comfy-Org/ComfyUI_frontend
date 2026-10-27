@@ -7,7 +7,7 @@ import type { UUID } from '@/utils/uuid'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import type { WidgetState } from '@/types/widgetState'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 
 import { stripGraphPrefix, useWidgetValueStore } from './widgetValueStore'

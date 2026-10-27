@@ -43,7 +43,7 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
-import { isFloatingTopology } from '@/types/linkTopology'
+import { isFloatingTopology } from '@comfyorg/graph-model/linkTopology'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import {
@@ -109,7 +109,12 @@ import {
   endNamedValuesShadowDiffLoad
 } from './utils/namedValuesShadowDiffTelemetry'
 
-import type { DragAndScaleState } from './DragAndScale'
+import type {
+  PanZoom as DragAndScaleState,
+  HasBoundingRect,
+  PointTuple as Point,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 import { canvasClass } from './canvas/canvasClassAccess'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -133,24 +138,21 @@ import {
 } from './Reroute'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
-import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
+import type { SubgraphEventMap } from '@comfyorg/graph-model/SubgraphEventMap'
 import type {
   DefaultConnectionColors,
   Dictionary,
-  HasBoundingRect,
   LinkSegment,
   MethodNames,
   OptionalProps,
-  Point,
-  Positionable,
-  Size
+  Positionable
 } from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import type { LinkNetwork } from './types/linkNetwork'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 import { LiteGraph } from './litegraphInstance'
 import { SubgraphNode } from './subgraph/SubgraphNode'
 import {
@@ -190,8 +192,8 @@ import type {
   LGraphTriggerEvent,
   LGraphTriggerHandler,
   LGraphTriggerParam
-} from './types/graphTriggers'
-import { LGraphTriggerActions } from './types/graphTriggers'
+} from '@comfyorg/graph-model/graphTriggers'
+import { LGraphTriggerActions } from '@comfyorg/graph-model/graphTriggers'
 import type {
   ExportedSubgraph,
   ExposedWidget,
@@ -219,7 +221,7 @@ import {
 export type {
   LGraphTriggerAction,
   LGraphTriggerParam
-} from './types/graphTriggers'
+} from '@comfyorg/graph-model/graphTriggers'
 
 const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
 

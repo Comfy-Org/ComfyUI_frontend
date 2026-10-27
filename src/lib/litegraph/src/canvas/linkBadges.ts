@@ -3,10 +3,10 @@ import { textOnColor } from '@/utils/colorUtil'
 
 import type {
   HasBoundingRect,
-  Point,
+  PointTuple as Point,
   ReadOnlyRect,
   Rect
-} from '@comfyorg/graph-model/interfaces'
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
 
 import type { LinkId } from '@comfyorg/graph-model/linkId'

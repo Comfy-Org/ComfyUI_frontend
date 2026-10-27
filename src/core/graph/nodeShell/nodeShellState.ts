@@ -18,7 +18,7 @@ import type {
 } from '@comfyorg/graph-model/slots'
 
 import type { TitleMode } from '@comfyorg/graph-model/globalEnums'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 
 /**
  * Wraps a node's `inputs` array with a rehydration view — e.g.

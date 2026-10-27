@@ -10,7 +10,7 @@ import type {
   OwningGraphId,
   RootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 

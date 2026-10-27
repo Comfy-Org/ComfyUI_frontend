@@ -10,10 +10,10 @@ import type {
   SubgraphInputNode,
   SubgraphOutputNode,
   RenderLink
-} from '@comfyorg/graph-model/entityRegistry'
+} from './entityRegistry'
 
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-import type { IWidget } from '@comfyorg/graph-model/widgets'
+import type { CanvasPointerEvent } from './events'
+import type { IWidget } from './widgets'
 
 export interface LinkConnectorEventMap {
   reset: boolean

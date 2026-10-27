@@ -2,7 +2,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ReadOnlyRect } from '@comfyorg/graph-model/interfaces'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'

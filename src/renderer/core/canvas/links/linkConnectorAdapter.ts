@@ -1,5 +1,5 @@
-import type { SlotLayout } from '@/renderer/core/layout/types'
-import type { Point } from '@comfyorg/graph-model/interfaces'
+import type { SlotLayout } from '@comfyorg/graph-model/layout'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'

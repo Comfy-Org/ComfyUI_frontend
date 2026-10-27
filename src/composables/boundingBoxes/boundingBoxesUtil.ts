@@ -1,3 +1,4 @@
+import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   BoundingBox,
   BoundingBoxMetadata
@@ -15,23 +16,14 @@ export type HitMode =
   | 'resize-l'
   | 'resize-r'
 
-export interface Region extends BoundingBoxMetadata {
-  x: number
-  y: number
-  w: number
-  h: number
-}
+export interface Region extends BoundingBoxMetadata, CompactRect {}
 
 interface BoxCandidate {
   index: number
   mode: HitMode
 }
 
-interface TagRect {
-  x: number
-  y: number
-  w: number
-  h: number
+interface TagRect extends CompactRect {
   tag: string
 }
 

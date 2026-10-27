@@ -13,10 +13,10 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   DefaultConnectionColors,
-  Point,
   Positionable,
   CanvasColour
 } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   Hoverable,
   CanvasPointerEvent

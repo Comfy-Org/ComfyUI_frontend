@@ -1,4 +1,4 @@
-import type { ReadOnlyRect } from '@comfyorg/graph-model/interfaces'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 

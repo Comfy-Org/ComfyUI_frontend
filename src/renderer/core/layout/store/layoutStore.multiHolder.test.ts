@@ -3,7 +3,7 @@ import { effectScope, watchEffect } from 'vue'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'

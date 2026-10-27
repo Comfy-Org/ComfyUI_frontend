@@ -151,18 +151,20 @@ import type {
   ColorOption,
   DefaultConnectionColors,
   Dictionary,
-  Direction,
   IColorable,
   INodeSlot,
   ISlotType,
   LinkSegment,
   NullableProperties,
-  Point,
-  Positionable,
+  Positionable
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  RectSide as Direction,
+  PointTuple as Point,
   ReadOnlyRect,
   Rect,
-  Size
-} from '@comfyorg/graph-model/interfaces'
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   ConnectingLink,
   INodeInputSlot,

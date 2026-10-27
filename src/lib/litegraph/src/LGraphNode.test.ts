@@ -3,10 +3,12 @@ import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
   INodeInputSlot,
-  Point,
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
-import type { Rect } from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'

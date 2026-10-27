@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { Rect } from '@comfyorg/graph-model/interfaces'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { SerialisableLLink } from '@comfyorg/graph-model/serialisation'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'

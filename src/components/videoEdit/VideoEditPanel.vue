@@ -251,6 +251,8 @@
 </template>
 
 <script setup lang="ts">
+import type { Size2D, Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { useEventListener } from '@vueuse/core'
 import { computed, ref, toRef, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -274,7 +276,6 @@ import { useVideoEditFormats } from '@/composables/video/useVideoEditFormats'
 import { DEFAULT_VIDEO_FPS } from '@/composables/video/useVideoFilmstrip'
 import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import type { VideoEditFeature } from '@comfyorg/graph-model/widgets'
-import type { Bounds } from '@/renderer/core/layout/types'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { frameToTime, timeToFrame } from '@/utils/videoFrameUtil'
@@ -293,20 +294,20 @@ const {
   height,
   loading = false,
   error = null
-} = defineProps<{
-  features: VideoEditFeature[]
-  videoUrl?: string
-  hasSource?: boolean
-  thumbnail: string
-  totalFrames: number
-  duration: number
-  fps: number
-  fileSize?: number
-  width: number
-  height: number
-  loading?: boolean
-  error?: FilmstripError | null
-}>()
+} = defineProps<
+  Size2D & {
+    features: VideoEditFeature[]
+    videoUrl?: string
+    hasSource?: boolean
+    thumbnail: string
+    totalFrames: number
+    duration: number
+    fps: number
+    fileSize?: number
+    loading?: boolean
+    error?: FilmstripError | null
+  }
+>()
 
 const emit = defineEmits<{
   retry: []
@@ -325,7 +326,7 @@ const { t } = useI18n()
 const { formatDuration, formatFileSize, formatTimecode } = useVideoEditFormats()
 
 const videoRef = useTemplateRef<HTMLVideoElement>('videoRef')
-const videoIntrinsicSize = ref<{ width: number; height: number } | null>(null)
+const videoIntrinsicSize = ref<Size2D | null>(null)
 const isMuted = ref(false)
 const isFullscreen = ref(false)
 

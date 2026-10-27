@@ -12,14 +12,11 @@ import type { NodeProperty } from './nodeProperty'
 import type { SerializedNodeId } from './nodeId'
 
 import type { FloatingRerouteSlot } from './rerouteChain'
+import type { Dictionary, INodeFlags, INodeSlot, ISlotType } from './interfaces'
 import type {
-  Dictionary,
-  INodeFlags,
-  INodeSlot,
-  ISlotType,
-  Point,
-  Size
-} from './interfaces'
+  PointTuple as Point,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type { INodeInputSlot, INodeOutputSlot } from './slots'
 import type { RenderShape } from './globalEnums'
 import type { TWidgetValue } from './widgets'

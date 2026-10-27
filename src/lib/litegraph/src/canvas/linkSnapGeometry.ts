@@ -1,7 +1,8 @@
-import type { Point } from '@comfyorg/graph-model/interfaces'
+import type {
+  CubicBezier,
+  PointTuple as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
-
-export type CubicBezier = readonly [Point, Point, Point, Point]
 
 const SPLINE_CONTROL_RATIO = 0.25
 

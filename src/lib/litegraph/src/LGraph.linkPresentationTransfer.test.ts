@@ -15,7 +15,7 @@ import { MovingOutputLink } from '@/lib/litegraph/src/canvas/MovingOutputLink'
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
 import {
   createTestRootGraph,

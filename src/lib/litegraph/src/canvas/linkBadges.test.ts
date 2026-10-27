@@ -1,7 +1,10 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import type { Point, ReadOnlyRect } from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'

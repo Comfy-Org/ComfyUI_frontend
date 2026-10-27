@@ -10,7 +10,8 @@ import {
   pointerEvent,
   selectedTitles
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
-import type { Positionable, Rect } from '@comfyorg/graph-model/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import {
   LGraph,

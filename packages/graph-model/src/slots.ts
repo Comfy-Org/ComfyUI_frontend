@@ -4,7 +4,8 @@ import type { RerouteId } from './rerouteId'
 import type { SlotIndex } from './slotId'
 import type { WidgetId } from './widgetId'
 
-import type { ISlotType, INodeSlot, Point } from './interfaces'
+import type { ISlotType, INodeSlot } from './interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 
 import type { LinkDirection } from './globalEnums'
 import type { IBaseWidget, IWidgetLocator } from './widgets'

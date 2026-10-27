@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
-import type { Point } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot

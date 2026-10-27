@@ -60,6 +60,8 @@
 </template>
 
 <script setup lang="ts">
+import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -84,7 +86,7 @@ const nodeOutputStore = useNodeOutputStore()
 const { openCompositorEditor } = useCompositorEditor()
 const { exporting, downloadPsd } = useCompositorPsdDownload()
 
-const naturalSize = ref<{ w: number; h: number } | null>(null)
+const naturalSize = ref<CompactSize | null>(null)
 const outputUrl = ref<string | null>(null)
 
 const litegraphNode = useLiveGraphNode(() =>

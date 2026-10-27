@@ -1,7 +1,8 @@
 import { reactive, readonly } from 'vue'
 
 import type { LinkDirection } from '@comfyorg/graph-model/globalEnums'
-import type { Point, SlotLayout } from '@/renderer/core/layout/types'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 /**

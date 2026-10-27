@@ -18,6 +18,7 @@
   "dependencies": {
     "@comfyorg/layer-editor": "workspace:*",
     "@comfyorg/object-info-parser": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/viewport3d": "workspace:*",
     "zod": "catalog:",
     "zod-validation-error": "catalog:"

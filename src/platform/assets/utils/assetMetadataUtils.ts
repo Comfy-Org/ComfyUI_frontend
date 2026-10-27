@@ -1,3 +1,4 @@
+import type { Size2D as ImageDimensions } from '@comfyorg/shared-frontend-utils/geometry'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { isCivitaiUrl } from '@/utils/formatUtil'
@@ -474,11 +475,7 @@ export function getAssetCardTitle(asset: AssetItem): string {
   if (curatedName && curatedName !== asset.name) return curatedName
   return getAssetDisplayFilename(asset)
 }
-
-export interface ImageDimensions {
-  width: number
-  height: number
-}
+export type { Size2D as ImageDimensions } from '@comfyorg/shared-frontend-utils/geometry'
 
 /**
  * Type guard: a pixel dimension is a finite positive integer. `metadata` is

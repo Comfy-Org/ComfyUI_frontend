@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { PlacementRect } from './batchPlacement'
+import type { Bounds as PlacementRect } from '@comfyorg/shared-frontend-utils/geometry'
 import {
   DISCONNECTED_GAP_PX,
   PLACEMENT_GUTTER_PX,

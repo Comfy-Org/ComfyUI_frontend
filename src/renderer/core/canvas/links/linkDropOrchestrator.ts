@@ -5,7 +5,7 @@ import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDra
 import { getGraphSlotLayout } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { SlotLayout } from '@/renderer/core/layout/types'
+import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import type { SlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'

@@ -1,4 +1,12 @@
 import type {
+  Size2D,
+  PointTuple as Point,
+  ReadOnlyRect,
+  Rect,
+  SizeTuple as Size,
+  CompassCorners
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type {
   ExecutableLGraphNode,
   ExecutionId,
   LGraph,
@@ -52,7 +60,7 @@ import {
   serializeNodeId
 } from '@comfyorg/graph-model/nodeId'
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import {
   deriveWidgetVisibility,
@@ -122,7 +130,6 @@ import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
 import type {
   ColorOption,
-  CompassCorners,
   DefaultConnectionColors,
   Dictionary,
   IColorable,
@@ -130,11 +137,7 @@ import type {
   INodeSlot,
   IPinnable,
   ISlotType,
-  Point,
   Positionable,
-  ReadOnlyRect,
-  Rect,
-  Size,
   SlotIndex
 } from '@comfyorg/graph-model/interfaces'
 import type { IContextMenuValue } from './types/contextMenu'
@@ -195,7 +198,7 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
 
-export type { NodeProperty } from '@/types/nodeState'
+export type { NodeProperty } from '@comfyorg/graph-model/nodeState'
 
 interface INodePropertyInfo {
   name?: string
@@ -852,7 +855,7 @@ export class LGraphNode
   declare runningInternalNodeId?: SerializedNodeId
 
   /** Used internally for sizing the node during creation */
-  declare _initialMinSize?: { width: number; height: number }
+  declare _initialMinSize?: Size2D
 
   /** Raw widget values from the last `configure`; litegraph does not read it. */
   declare widgets_values?: TWidgetValue[]

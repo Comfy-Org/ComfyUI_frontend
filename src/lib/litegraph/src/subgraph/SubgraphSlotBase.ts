@@ -13,12 +13,12 @@ import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { SlotShape } from '@/lib/litegraph/src/draw'
 import { ConstrainedSize } from '@/lib/litegraph/src/infrastructure/ConstrainedSize'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type { DefaultConnectionColors } from '@comfyorg/graph-model/interfaces'
 import type {
-  DefaultConnectionColors,
-  Point,
+  PointTuple as Point,
   ReadOnlyRect,
-  Size
-} from '@comfyorg/graph-model/interfaces'
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot

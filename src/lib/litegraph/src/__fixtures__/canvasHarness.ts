@@ -1,4 +1,4 @@
-import type { Rect } from '@comfyorg/graph-model/interfaces'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphCanvas,

@@ -11,9 +11,9 @@ import type {
 
 import type {
   LinkSegment,
-  Point,
   Positionable
 } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 
 import {

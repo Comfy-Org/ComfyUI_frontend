@@ -12,7 +12,7 @@ import type {
   VideoEditValue
 } from '@comfyorg/graph-model/widgets'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'

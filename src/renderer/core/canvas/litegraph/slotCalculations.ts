@@ -7,7 +7,10 @@ import type { LGraphNode, LGraph } from '@comfyorg/graph-model/entityRegistry'
  * calculation logic while providing their own position data.
  */
 
-import type { Point } from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  Point2D as LayoutPoint
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -17,10 +20,7 @@ import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type {
-  Point as LayoutPoint,
-  SlotLayout
-} from '@/renderer/core/layout/types'
+import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import { pointInBounds } from '@/renderer/core/layout/utils/layoutMath'
 
 export interface SlotPositionContext {

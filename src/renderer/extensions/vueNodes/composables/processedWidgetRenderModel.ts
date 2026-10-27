@@ -30,8 +30,8 @@ import type {
   NodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeState } from '@/types/nodeState'
-import type { LinkTopology } from '@/types/linkTopology'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { getControlWidget } from '@/types/simplifiedWidget'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'

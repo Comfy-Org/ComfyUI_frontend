@@ -5,7 +5,7 @@ import type { UUID } from '@/utils/uuid'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
 
 import {
   LGraph,

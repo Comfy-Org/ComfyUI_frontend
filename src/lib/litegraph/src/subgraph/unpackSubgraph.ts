@@ -4,7 +4,7 @@ import { createUuidv4 } from '@/utils/uuid'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { Point } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'

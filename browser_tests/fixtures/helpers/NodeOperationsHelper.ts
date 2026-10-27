@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator } from '@playwright/test'
 
 import type {
@@ -251,7 +252,7 @@ export class NodeOperationsHelper {
    */
   async growNodeByDrag(
     title: string,
-    delta: { x: number; y: number }
+    delta: Point2D
   ): Promise<{ nodeRef: NodeReference; node: VueNodeFixture; size: Size }> {
     const nodeRefs = await this.getNodeRefsByTitle(title)
     if (nodeRefs.length === 0) {

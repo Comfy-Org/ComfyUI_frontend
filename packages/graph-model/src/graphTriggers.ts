@@ -1,5 +1,5 @@
-import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import type { SerializedNodeId } from './nodeId'
+import type { NodeSlotType } from './globalEnums'
 
 interface NodePropertyChangedEvent {
   type: 'node:property:changed'

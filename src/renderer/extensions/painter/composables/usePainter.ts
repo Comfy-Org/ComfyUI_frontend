@@ -11,7 +11,7 @@ import {
 import { StrokeProcessor } from '@comfyorg/mask-editor/StrokeProcessor'
 import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { hexToRgb } from '@/utils/colorUtil'
-import type { Point } from '@comfyorg/mask-editor/types'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'

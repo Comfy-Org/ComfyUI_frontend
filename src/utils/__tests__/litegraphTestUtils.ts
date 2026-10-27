@@ -4,7 +4,7 @@ import type {
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   ISerialisedGraph,
@@ -27,7 +27,7 @@ import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { zeroUuid } from '@/utils/uuid'

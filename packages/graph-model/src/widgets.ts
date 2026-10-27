@@ -4,7 +4,11 @@ import type {
   LGraphNode,
   CanvasPointer
 } from './entityRegistry'
-import type { Bounds } from './bounds'
+import type {
+  Bounds,
+  PointTuple as Point,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type { CompositorWidgetValue } from './compositor'
 import type { CurveData } from './curve'
 import type { BoundingBox } from './boundingBoxes'
@@ -18,13 +22,7 @@ import type {
 import type { ColorFormat } from './color'
 import type { InputSpec } from '@comfyorg/object-info-parser'
 
-import type {
-  CanvasColour,
-  ColorStop,
-  Point,
-  RequiredProps,
-  Size
-} from './interfaces'
+import type { CanvasColour, ColorStop, RequiredProps } from './interfaces'
 import type { CanvasPointerEvent } from './events'
 
 export type { NodeBindable } from './nodeBindable'

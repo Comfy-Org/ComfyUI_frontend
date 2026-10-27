@@ -31,7 +31,7 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { LinkTopology } from '@/types/linkTopology'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 

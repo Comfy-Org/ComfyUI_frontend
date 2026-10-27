@@ -11,14 +11,14 @@ import { createPromotionErrorReconciler } from '@/core/graph/subgraph/createProm
 import type {
   NodeBeforeRemovedEvent,
   NodeLifecycleEvent
-} from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+} from '@comfyorg/graph-model/LGraphEventMap'
 import { LiteGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
   NodeSlotType
 } from '@comfyorg/graph-model/globalEnums'
-import type { LGraphTriggerEvent } from '@/lib/litegraph/src/types/graphTriggers'
+import type { LGraphTriggerEvent } from '@comfyorg/graph-model/graphTriggers'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'

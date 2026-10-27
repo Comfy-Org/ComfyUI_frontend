@@ -12,7 +12,7 @@ import {
   BADGE_GAP,
   queryLinkBadgeAtPoint
 } from '@/lib/litegraph/src/canvas/linkBadges'
-import type { Point } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {

@@ -24,7 +24,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
 interface Press {

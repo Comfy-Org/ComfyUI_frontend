@@ -11,7 +11,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 
 import { ToInputRenderLink } from './ToInputRenderLink'
 import { ToOutputRenderLink } from './ToOutputRenderLink'

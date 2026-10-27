@@ -9,7 +9,7 @@ import type {
   RootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
-import { isFloatingTopology } from '@/types/linkTopology'
+import { isFloatingTopology } from '@comfyorg/graph-model/linkTopology'
 import type { RerouteChain } from '@comfyorg/graph-model/rerouteChain'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 

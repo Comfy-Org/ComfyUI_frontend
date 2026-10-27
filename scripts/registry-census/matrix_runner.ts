@@ -13,9 +13,9 @@ import defaultWorkflow from '../../browser_tests/assets/default.json'
 import type {
   LGraph,
   LGraphCanvas,
-  LGraphNode,
-  Point
+  LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'

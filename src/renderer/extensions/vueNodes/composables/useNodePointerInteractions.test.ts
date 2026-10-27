@@ -21,7 +21,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))

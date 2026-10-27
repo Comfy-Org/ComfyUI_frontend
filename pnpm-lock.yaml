@@ -1220,6 +1220,9 @@ importers:
       '@comfyorg/object-info-parser':
         specifier: workspace:*
         version: link:../object-info-parser
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
       '@comfyorg/viewport3d':
         specifier: workspace:*
         version: link:../viewport3d
@@ -1254,6 +1257,9 @@ importers:
 
   packages/layer-editor:
     dependencies:
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
       es-toolkit:
         specifier: 'catalog:'
         version: 1.49.0
@@ -1276,6 +1282,9 @@ importers:
       '@alloc/quick-lru':
         specifier: 'catalog:'
         version: 5.2.0
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
@@ -1403,6 +1412,9 @@ importers:
       '@comfyorg/quad-wireframe-three':
         specifier: ^0.1.0
         version: 0.1.0(three@0.186.1)
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
       '@sparkjsdev/spark':
         specifier: 'catalog:'
         version: 2.3.1(three@0.186.1)
@@ -1416,9 +1428,6 @@ importers:
         specifier: 'catalog:'
         version: 6.2.1(three@0.186.1)
     devDependencies:
-      '@comfyorg/shared-frontend-utils':
-        specifier: workspace:*
-        version: link:../shared-frontend-utils
       '@total-typescript/shoehorn':
         specifier: 'catalog:'
         version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)

@@ -2,7 +2,7 @@ import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { NodeLifecycleEvent } from '@comfyorg/graph-model/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'

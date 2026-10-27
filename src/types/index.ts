@@ -131,12 +131,14 @@ export type {
   IColorable,
   INodeFlags,
   INodeSlot,
-  ISlotType,
-  Point,
+  ISlotType
+} from '@comfyorg/graph-model/interfaces'
+export type {
+  PointTuple as Point,
   ReadOnlyRect,
   Rect,
-  Size
-} from '@comfyorg/graph-model/interfaces'
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 export type { CreateNodeOptions } from '@/lib/litegraph/src/LiteGraphGlobal'
 export type {
   IContextMenuOptions,
@@ -145,7 +147,7 @@ export type {
 export type {
   LinkNetwork,
   ReadonlyLinkNetwork
-} from '@/lib/litegraph/src/types/linkNetwork'
+} from '@comfyorg/graph-model/linkNetwork'
 export type {
   ConnectingLink,
   INodeInputSlot,
@@ -232,7 +234,7 @@ export type { SlotShape, SlotType } from '@/lib/litegraph/src/draw'
 
 export type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 export type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
-export type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+export type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 
 declare global {
   interface Window {

@@ -1,3 +1,4 @@
+import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
 import type { BlendFn } from '@comfyorg/layer-editor/mode'
 import type { Transform } from '@comfyorg/layer-editor/node'
 
@@ -19,7 +20,7 @@ export interface CompositorBackgroundEntry {
 
 export interface CompositorLayerState {
   version?: 1
-  canvas?: { w: number; h: number }
+  canvas?: CompactSize
   inputs?: string[]
   background?: CompositorBackgroundEntry
   order?: number[]

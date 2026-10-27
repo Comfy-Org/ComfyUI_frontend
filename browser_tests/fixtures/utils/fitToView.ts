@@ -1,4 +1,4 @@
-import type { ReadOnlyRect } from '@comfyorg/graph-model/interfaces'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 interface FitToViewOptions {

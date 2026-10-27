@@ -24,7 +24,7 @@ import {
   hideSelectedLinks,
   showSelectedLinks
 } from '@/lib/litegraph/src/canvas/linkSelection'
-import type { Point } from '@/lib/litegraph/src/litegraph'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'

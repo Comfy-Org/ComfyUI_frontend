@@ -11,7 +11,10 @@ import {
 } from '@/lib/litegraph/src/idAllocation'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import type { Point, ReadOnlyRect } from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot

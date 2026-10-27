@@ -22,25 +22,30 @@ import type {
   CreateRerouteOperation,
   DeleteNodeOperation,
   DeleteRerouteOperation,
-  GroupLayout,
   LayoutChange,
   LayoutOperation,
   LinkLayout,
   LinkSegmentLayout,
   MoveNodeOperation,
   MoveRerouteOperation,
-  NodeBoundsUpdate,
   NodeId,
-  NodeLayout,
-  Point,
-  RerouteLayout,
   ResizeNodeOperation,
   SetGroupBoundsOperation,
-  SetNodeZIndexOperation,
-  Size,
+  SetNodeZIndexOperation
+} from '@/renderer/core/layout/types'
+import type {
+  GroupLayout,
+  NodeBoundsUpdate,
+  NodeLayout,
+  RerouteLayout,
   SlotOffset,
   SlotOffsetMode
-} from '@/renderer/core/layout/types'
+} from '@comfyorg/graph-model/layout'
+import type {
+  Point2D as Point,
+  Size2D as Size,
+  RectTuple as StoredRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type { SlotDirection, SlotIndex } from '@comfyorg/graph-model/slotId'
 import {
   isBoundsEqual,
@@ -60,8 +65,7 @@ import {
 } from '@/renderer/core/layout/utils/mappers'
 import type {
   GroupLayoutMap,
-  NodeLayoutMap,
-  StoredRect
+  NodeLayoutMap
 } from '@/renderer/core/layout/utils/mappers'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 

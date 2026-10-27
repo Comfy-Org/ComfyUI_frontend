@@ -15,11 +15,13 @@ import type {
   Dictionary,
   INodeFlags,
   ISlotType,
-  Point,
-  Rect,
-  Size,
   WhenNullish
 } from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  Rect,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { distance, isInsideRectangle, overlapBounding } from './measure'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphSlot } from './subgraph/SubgraphSlotBase'

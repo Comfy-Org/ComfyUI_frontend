@@ -4,7 +4,7 @@ import type {
 } from '@comfyorg/graph-model/entityRegistry'
 
 import { LiteGraphGlobal } from './LiteGraphGlobal'
-import type { Point } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { ConnectingLink } from '@comfyorg/graph-model/slots'
 import type { IContextMenuOptions } from './types/contextMenu'
 import { registerLiteGraphInstance } from './litegraphInstance'
@@ -68,22 +68,24 @@ export { ContextMenu } from './ContextMenu'
 export { DragAndScale } from './DragAndScale'
 
 export { Rectangle } from './infrastructure/Rectangle'
-export type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
+export type { SubgraphEventMap } from '@comfyorg/graph-model/SubgraphEventMap'
 export type {
   CanvasColour,
   ColorOption,
   INodeSlot,
   ISlotType,
-  Point,
   Positionable,
-  Size,
   SlotIndex
 } from '@comfyorg/graph-model/interfaces'
+export type {
+  PointTuple as Point,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 export type {
   IContextMenuOptions,
   IContextMenuValue
 } from './types/contextMenu'
-export type { LinkNetwork } from './types/linkNetwork'
+export type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 export type {
   INodeInputSlot,
   INodeOutputSlot
@@ -95,7 +97,7 @@ export {
   type GraphAddOptions,
   type SubgraphId
 } from './LGraph'
-export type { LGraphTriggerEvent } from './types/graphTriggers'
+export type { LGraphTriggerEvent } from '@comfyorg/graph-model/graphTriggers'
 export { LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
 export { LGraphGroup } from './LGraphGroup'

@@ -8,12 +8,14 @@ import type {
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
-  Point as LegacyPoint,
-  Size as LegacySize
-} from '@comfyorg/graph-model/interfaces'
+  PointTuple as LegacyPoint,
+  SizeTuple as LegacySize,
+  Point2D as Point,
+  Size2D as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { LayoutOperation, Point, Size } from '@/renderer/core/layout/types'
+import type { LayoutOperation } from '@/renderer/core/layout/types'
 import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 

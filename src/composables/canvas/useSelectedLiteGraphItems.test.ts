@@ -13,7 +13,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { ReadOnlyRect } from '@comfyorg/graph-model/interfaces'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 
 vi.mock(import('@/scripts/app'))
 

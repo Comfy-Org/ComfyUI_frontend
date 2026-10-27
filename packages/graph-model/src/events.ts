@@ -8,7 +8,10 @@ import type {
  * Event interfaces for event extension
  */
 
-import type { HasBoundingRect, Point } from './interfaces'
+import type {
+  HasBoundingRect,
+  PointTuple as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 /** For Canvas*Event - adds graph space co-ordinates (property names are shipped) */
 interface ICanvasPosition {

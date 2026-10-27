@@ -1,7 +1,10 @@
 // TODO: Fix these tests after migration
 import { test as baseTest } from 'vitest'
 
-import type { Point, Rect } from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import {
   addDirectionalOffset,
   containsCentre,

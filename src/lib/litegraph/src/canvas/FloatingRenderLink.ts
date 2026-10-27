@@ -14,13 +14,14 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
-import type { Point, SlotIndex } from '@comfyorg/graph-model/interfaces'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotIndex } from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 
 import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 

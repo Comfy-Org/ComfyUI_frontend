@@ -6,7 +6,7 @@ import {
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkTopology } from '@/types/linkTopology'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type { RerouteChain } from '@comfyorg/graph-model/rerouteChain'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'

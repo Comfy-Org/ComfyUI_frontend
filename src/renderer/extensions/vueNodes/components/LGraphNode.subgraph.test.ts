@@ -15,7 +15,7 @@ import type {
   LGraphNode as LGLGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'

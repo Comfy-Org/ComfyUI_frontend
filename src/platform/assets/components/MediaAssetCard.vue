@@ -152,6 +152,8 @@
 </template>
 
 <script setup lang="ts">
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
@@ -236,7 +238,7 @@ const emit = defineEmits<{
 }>()
 
 // Store actual image dimensions
-const imageDimensions = ref<{ width: number; height: number } | undefined>()
+const imageDimensions = ref<Size2D | undefined>()
 
 const actions = useMediaAssetActions()
 

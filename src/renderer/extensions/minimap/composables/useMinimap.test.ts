@@ -7,7 +7,7 @@ import { nextTick, ref, shallowRef } from 'vue'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import {

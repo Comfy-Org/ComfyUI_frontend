@@ -22,11 +22,13 @@ import type {
   ColorOption,
   IColorable,
   IPinnable,
-  Point,
-  Positionable,
-  Rect,
-  Size
+  Positionable
 } from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  Rect,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type { IContextMenuValue } from './types/contextMenu'
 import { LiteGraph } from './litegraphInstance'
 import { Rectangle } from './infrastructure/Rectangle'

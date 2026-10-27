@@ -6,7 +6,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 
-import type { Point, Positionable } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type {
   LGraph,
   LGraphCanvas,

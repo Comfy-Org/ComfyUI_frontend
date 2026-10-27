@@ -3,7 +3,8 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { LayoutSource, Point } from '@/renderer/core/layout/types'
+import type { LayoutSource } from '@/renderer/core/layout/types'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 
 export function useLayoutMutations(source: LayoutSource) {
   const moveNode = (

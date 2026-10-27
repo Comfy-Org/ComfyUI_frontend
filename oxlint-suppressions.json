@@ -277,7 +277,7 @@
       "count": 7
     },
     "comfy/no-reexports": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/litegraph/src/LGraphCanvas.ts": {
@@ -296,9 +296,6 @@
     },
     "comfy/no-positional-boolean-params": {
       "count": 22
-    },
-    "comfy/no-reexports": {
-      "count": 1
     }
   },
   "src/lib/litegraph/src/LiteGraphGlobal.ts": {
@@ -353,7 +350,7 @@
   },
   "src/lib/litegraph/src/litegraph.ts": {
     "comfy/no-reexports": {
-      "count": 47
+      "count": 44
     }
   },
   "src/lib/litegraph/src/litegraphInstance.ts": {
@@ -1142,7 +1139,7 @@
   },
   "src/types/index.ts": {
     "comfy/no-reexports": {
-      "count": 52
+      "count": 50
     }
   },
   "src/types/slotId.test.ts": {

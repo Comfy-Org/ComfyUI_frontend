@@ -3,9 +3,9 @@ import type {
   CanvasColour,
   DefaultConnectionColors,
   INodeSlot,
-  ISlotType,
-  Point
+  ISlotType
 } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type {
   LinkDirection,

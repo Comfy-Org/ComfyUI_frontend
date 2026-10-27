@@ -1,3 +1,9 @@
+import type {
+  HasBoundingRect,
+  PointTuple as Point,
+  SizeTuple as Size,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type { GroupId } from './groupId'
 import type { LinkId } from './linkId'
 import type { NodeId } from './nodeId'
@@ -45,22 +51,6 @@ export type CanvasColour = string | CanvasGradient | CanvasPattern
 export interface ColorStop {
   readonly offset: number
   readonly color: readonly [r: number, g: number, b: number]
-}
-
-/**
- * Any object that has a {@link boundingRect}.
- */
-export interface HasBoundingRect {
-  /**
-   * A rectangle that represents the outer edges of the item.
-   *
-   * Used for various calculations, such as overlap, selective rendering, and click checks.
-   * For most items, this is cached position & size as `x, y, width, height`.
-   * Some items (such as nodes and slots) may extend above and/or to the left of their {@link pos}.
-   * @readonly
-   * @see {@link move}
-   */
-  readonly boundingRect: ReadOnlyRect
 }
 
 /** An object containing a set of child objects */
@@ -174,27 +164,6 @@ export interface LinkSegment {
   readonly origin_slot: SlotIndex | undefined
 }
 
-/** A point represented as `[x, y]` co-ordinates */
-export type Point = [x: number, y: number]
-
-/** A size represented as `[width, height]` */
-export type Size = [width: number, height: number]
-
-/** A rectangle starting at top-left coordinates `[x, y, width, height]` */
-export type Rect =
-  | [x: number, y: number, width: number, height: number]
-  | Float64Array
-
-/** A rectangle starting at top-left coordinates `[x, y, width, height]` that will not be modified */
-export type ReadOnlyRect =
-  | readonly [x: number, y: number, width: number, height: number]
-  | ReadOnlyTypedArray<Float64Array>
-
-export type ReadOnlyTypedArray<T extends Float64Array> = Omit<
-  Readonly<T>,
-  'fill' | 'copyWithin' | 'reverse' | 'set' | 'sort' | 'subarray'
->
-
 /** Union of property names that are of type Match */
 type KeysOfType<T, Match> = Exclude<
   { [P in keyof T]: T[P] extends Match ? P : never }[keyof T],
@@ -207,10 +176,10 @@ export type MethodNames<T> = KeysOfType<
   ((...args: unknown[]) => unknown) | undefined
 >
 
-export type Direction = 'top' | 'bottom' | 'left' | 'right'
-
-/** Resize handle positions (compass points) */
-export type CompassCorners = 'NE' | 'SE' | 'SW' | 'NW'
+export type {
+  RectSide as Direction,
+  CompassCorners
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 /**
  * A value that represents a specific data / slot type, e.g. `STRING`.

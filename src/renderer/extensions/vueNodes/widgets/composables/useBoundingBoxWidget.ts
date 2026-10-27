@@ -5,7 +5,7 @@ import type {
   IImageCropWidget,
   INumericWidget
 } from '@comfyorg/graph-model/widgets'
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   BoundingBoxInputSpec,
   InputSpec as InputSpecV2

@@ -1,9 +1,9 @@
-export interface PlacementRect {
-  x: number
-  y: number
-  width: number
-  height: number
-}
+import type {
+  Bounds as PlacementRect,
+  RectEdges as Bounds
+} from '@comfyorg/shared-frontend-utils/geometry'
+
+export type { Bounds as PlacementRect } from '@comfyorg/shared-frontend-utils/geometry'
 
 interface PlacementOffset {
   dx: number
@@ -19,13 +19,6 @@ interface PlacementInput {
 
 export const DISCONNECTED_GAP_PX = 600
 export const PLACEMENT_GUTTER_PX = 80
-
-interface Bounds {
-  left: number
-  top: number
-  right: number
-  bottom: number
-}
 
 function toBounds(rect: PlacementRect): Bounds {
   return {

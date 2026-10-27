@@ -19,7 +19,7 @@ import {
 } from '@comfyorg/graph-model/nodeIdentification'
 import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { UUID } from '@/utils/uuid'
 import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 

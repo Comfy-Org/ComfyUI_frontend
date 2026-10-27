@@ -28,9 +28,9 @@ import type {
   GraphAddOptions,
   IContextMenuValue,
   INodeInputSlot,
-  Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import type {
   ExportedSubgraphInstance,

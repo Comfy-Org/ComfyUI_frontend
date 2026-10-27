@@ -12,7 +12,10 @@ import {
 } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
-import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+import type {
+  WidgetState,
+  WidgetStateInit
+} from '@comfyorg/graph-model/widgetState'
 import {
   applyLegacyHiddenWrite,
   deriveWidgetVisibility,

@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { expect } from '@playwright/test'
 import type { ConsoleMessage, Locator, Page } from '@playwright/test'
 
@@ -90,7 +91,7 @@ export class SubgraphHelper {
         }
 
         type SlotInteractionResult =
-          | { success: true; slotName: string; x: number; y: number }
+          | (Point2D & { success: true; slotName: string })
           | { success: false }
 
         const createCanvasPointerEvent = (

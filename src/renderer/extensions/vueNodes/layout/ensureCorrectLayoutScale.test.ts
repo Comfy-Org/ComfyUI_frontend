@@ -4,7 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
-import type { Point, Rect } from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { attachGroupLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
