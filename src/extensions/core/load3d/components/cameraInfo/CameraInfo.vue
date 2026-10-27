@@ -84,9 +84,9 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import ViewportWidgetShell from '@/extensions/core/load3d/components/ViewportWidgetShell.vue'
+import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
 import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCameraInfo } from '@/extensions/core/load3d/composables/useCameraInfo'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { TransformGizmoMode } from '@comfyorg/viewport3d/cameraInfo/CameraInfoViewport'
