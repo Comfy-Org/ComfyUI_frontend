@@ -744,11 +744,19 @@ describe('historical workflow restoration', () => {
   })
 
   it('still calls the target unavailable once a reload restores no tab for it', async () => {
-    const { selection, panel, getCloudWorkflow, workflows } = setup({
-      tabsRestored: false
-    })
+    const {
+      selection,
+      panel,
+      getCloudWorkflow,
+      listCloudWorkflows,
+      workflows
+    } = setup({ tabsRestored: false })
 
     const restoration = selection.restoreTarget('wf-deleted', () => true)
+    await vi.waitFor(() => expect(listCloudWorkflows).toHaveBeenCalled())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(panel.targetUnavailable).toBe(false)
+
     workflows.markTabsRestored()
 
     expect(await restoration).toEqual({
