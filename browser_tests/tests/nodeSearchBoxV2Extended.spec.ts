@@ -145,7 +145,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const refsAfter = await comfyPage.nodeOps.getNodeRefsByType(NODE_TYPE)
       const newNode = refsAfter.find((n) => !idsBefore.has(n.id))
       expect(newNode, 'expected a new CLIPTextEncode node').toBeDefined()
-      const clipInput = await newNode!.getInput(0)
+      const clipInput = await newNode!.getInputByName('clip')
       await clipInput.expectLinkCount(1)
     })
   })
@@ -298,7 +298,9 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
         await comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
           name: blueprintName
         })
-        await expect(comfyPage.visibleToasts).toHaveCount(1, { timeout: 5000 })
+        await expect(comfyPage.toast.visibleToasts).toHaveCount(1, {
+          timeout: 5000
+        })
         await comfyPage.toast.closeToasts(1)
 
         const { searchBoxV2 } = comfyPage

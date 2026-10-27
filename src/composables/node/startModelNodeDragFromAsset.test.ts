@@ -5,7 +5,7 @@ import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
@@ -36,7 +36,9 @@ describe('startModelNodeDragFromAsset', () => {
 
     expect(error).toBeUndefined()
     expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(nodeDef, {
-      widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' },
+      widgetValues: [
+        { selector: 'ckpt_name', value: 'sd_xl_base_1.0.safetensors' }
+      ],
       source: 'sidebar_drag'
     })
   })
@@ -53,7 +55,9 @@ describe('startModelNodeDragFromAsset', () => {
     startModelNodeDragFromAsset(createAsset(), 'asset_browser')
 
     expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(nodeDef, {
-      widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' },
+      widgetValues: [
+        { selector: 'ckpt_name', value: 'sd_xl_base_1.0.safetensors' }
+      ],
       source: 'asset_browser'
     })
   })

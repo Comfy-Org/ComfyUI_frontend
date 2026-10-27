@@ -17,7 +17,7 @@
           v-model="dontShowAgain"
           type="checkbox"
           data-testid="linear-vue-node-switch-dont-show-again"
-          class="accent-primary-background"
+          class="accent-primary"
         />
         {{ $t('appBuilder.vueNodeSwitch.dontShowAgain') }}
       </label>
@@ -41,7 +41,7 @@
 import { ref } from 'vue'
 
 import NotificationPopup from '@/components/common/NotificationPopup.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAppModeStore } from '@/stores/appModeStore'

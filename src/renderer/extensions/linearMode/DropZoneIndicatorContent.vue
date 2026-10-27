@@ -23,7 +23,7 @@ const {
         'flex h-full max-w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[7px] p-3 text-center text-sm/tight transition-colors',
         isHovered &&
           !mediaUrl &&
-          'border border-dashed border-component-node-foreground-secondary bg-component-node-widget-background-hovered'
+          'border border-dashed border-muted-foreground bg-muted'
       )
     "
   >
@@ -58,9 +58,7 @@ const {
       <span v-if="label" v-text="label" />
       <i
         v-if="iconClass"
-        :class="
-          cn('size-4 text-component-node-foreground-secondary', iconClass)
-        "
+        :class="cn('size-4 text-muted-foreground', iconClass)"
       />
     </template>
   </div>

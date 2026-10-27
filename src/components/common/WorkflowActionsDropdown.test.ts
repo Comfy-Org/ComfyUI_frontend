@@ -36,7 +36,7 @@ vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), async () => {
     useWorkflowActionsMenu: () => ({
       menuItems: ref([
         {
-          id: 'test-action',
+          id: 'test-action-id',
           label: 'Test action',
           badge: 'NEW',
           command: spies.action
@@ -79,8 +79,7 @@ function renderDropdown() {
   const result = render(WorkflowActionsDropdown, {
     props: { source: 'test' },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: {} }
+      plugins: [i18n]
     }
   })
   return { ...result, user }
@@ -155,7 +154,7 @@ describe('WorkflowActionsDropdown', () => {
 
     await user.click(screen.getByRole('button', { name: 'Enter app mode' }))
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.ToggleLinear',
       {
         metadata: { source: 'test' }
@@ -175,7 +174,7 @@ describe('WorkflowActionsDropdown', () => {
 
     await user.click(active)
 
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
     expect(active).toHaveAttribute('aria-expanded', 'true')
     expect(spies.markAsSeen).toHaveBeenCalled()
     expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
@@ -192,6 +191,17 @@ describe('WorkflowActionsDropdown', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Test action' }))
 
     expect(spies.action).toHaveBeenCalledOnce()
+    expect(vi.mocked(useTelemetry()?.trackUiButtonClicked)?.mock.calls).toEqual(
+      [
+        [{ button_id: 'test', element_group: 'workflow_actions' }],
+        [
+          {
+            button_id: 'workflow_actions_test_action_id_clicked',
+            element_group: 'workflow_actions'
+          }
+        ]
+      ]
+    )
   })
 
   it('closes the menu when the open trigger is clicked again', async () => {
@@ -211,7 +221,7 @@ describe('WorkflowActionsDropdown', () => {
     inactive.focus()
     await user.keyboard('{Enter}')
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.ToggleLinear',
       {
         metadata: { source: 'test' }
@@ -247,7 +257,7 @@ describe('WorkflowActionsDropdown', () => {
     active.focus()
     await user.keyboard('{Enter}')
 
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
     expect(active).toHaveAttribute('aria-expanded', 'true')
   })
 

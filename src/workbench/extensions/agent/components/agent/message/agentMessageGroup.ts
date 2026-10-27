@@ -1,33 +1,29 @@
 import type {
   ActivityPart,
+  AskUnavailablePart,
+  AskUserPart,
+  DeleteApprovalPart,
   MessagePart,
   NoticePart,
   PaywallPart,
   RunApprovalPart,
   TabLinkPart,
   TextPart
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 export type AgentMessageGroup =
   | { kind: 'text'; parts: TextPart[] }
-  | { kind: 'notice'; part: NoticePart }
+  | { kind: 'notice'; part: NoticePart | AskUnavailablePart }
   | { kind: 'paywall'; part: PaywallPart }
   | { kind: 'trace' }
   | { kind: 'tabLinks'; parts: TabLinkPart[] }
   | { kind: 'runApproval'; part: RunApprovalPart }
+  | { kind: 'askUser'; part: AskUserPart }
+  | { kind: 'deleteApproval'; part: DeleteApprovalPart }
 
 type TextGroup = Extract<AgentMessageGroup, { kind: 'text' }>
 type InterruptingPart = Exclude<MessagePart, TextPart | ActivityPart>
 
-/**
- * Consecutive text parts separated only by tool calls or thinking steps
- * collapse into one text group, so MarkdownStream renders their joined text
- * as a single flowing reply: standalone assets that end up adjacent in that
- * joined text (no prose between them) still coalesce into one grid, exactly
- * as they would within a single text part. Every activity part folds into
- * one trace group placed where the first one occurs; anything user-facing
- * (tab link, run approval, paywall, notice) closes the open text group.
- */
 export function groupMessageParts(
   parts: readonly MessagePart[]
 ): AgentMessageGroup[] {
@@ -69,21 +65,29 @@ function pushInterruptingGroup(
   out: AgentMessageGroup[],
   part: InterruptingPart
 ): void {
+  if (part.type !== 'tabLink') {
+    out.push(cardGroup(part))
+    return
+  }
+  const prev = out.at(-1)
+  if (prev?.kind === 'tabLinks') prev.parts.push(part)
+  else out.push({ kind: 'tabLinks', parts: [part] })
+}
+
+function cardGroup(
+  part: Exclude<InterruptingPart, TabLinkPart>
+): AgentMessageGroup {
   switch (part.type) {
-    case 'tabLink': {
-      const prev = out.at(-1)
-      if (prev?.kind === 'tabLinks') prev.parts.push(part)
-      else out.push({ kind: 'tabLinks', parts: [part] })
-      return
-    }
     case 'runApproval':
-      out.push({ kind: 'runApproval', part })
-      return
+      return { kind: 'runApproval', part }
+    case 'askUser':
+      return { kind: 'askUser', part }
+    case 'deleteApproval':
+      return { kind: 'deleteApproval', part }
     case 'paywall':
-      out.push({ kind: 'paywall', part })
-      return
+      return { kind: 'paywall', part }
     case 'notice':
-      out.push({ kind: 'notice', part })
-      return
+    case 'askUnavailable':
+      return { kind: 'notice', part }
   }
 }

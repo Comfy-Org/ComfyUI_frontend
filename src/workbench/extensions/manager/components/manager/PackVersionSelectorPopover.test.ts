@@ -1,13 +1,12 @@
 import { render, screen, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockInstance } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
+import VerifiedIcon from '@comfyorg/design-system/icon/VerifiedIcon'
 import { api } from '@/scripts/api'
 import type { components } from '@/types/comfyRegistryTypes'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -138,8 +137,7 @@ describe('PackVersionSelectorPopover', () => {
           }
         },
         plugins: [i18n],
-        components: { VerifiedIcon },
-        directives: { tooltip: Tooltip }
+        components: { VerifiedIcon }
       }
     })
     return { ...result, user }

@@ -21,23 +21,24 @@ import {
 import type { LGraphTriggerEvent } from '@/lib/litegraph/src/types/graphTriggers'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import {
   scanNodeModelCandidates,
   verifyAssetSupportedCandidates
-} from '@/platform/missingModel/missingModelScan'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+} from '@/platform/workflowErrors/missingModel/missingModelScan'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { cloudReleaseModelOptions } from '@/platform/workflowErrors/missingModel/releaseModelOptions'
 import {
   isMissingMediaCandidateActive,
   isMissingMediaCandidateScopeActive,
   scanNodeMediaCandidates,
   verifyMediaCandidates
-} from '@/platform/missingMedia/missingMediaScan'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
-import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
+} from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { toNodeId } from '@/types/nodeId'
@@ -219,7 +220,8 @@ function scanSingleNodeModelsAndTypes(
     rootGraph,
     node,
     assetService.shouldUseWidgetAssetPicker,
-    (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
+    (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType),
+    cloudReleaseModelOptions()
   )
   const confirmedModels = modelCandidates.filter((c) => c.isMissing === true)
   if (confirmedModels.length) {

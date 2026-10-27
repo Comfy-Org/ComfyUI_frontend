@@ -24,7 +24,7 @@ const zDimensionsSchema = z.object({
 const zMediaAssetDisplayItemSchema = assetItemSchema.extend({
   // New required fields
   kind: zMediaKindSchema,
-  src: z.string().url(),
+  src: z.url(),
 
   // New optional fields
   duration: z.number().nonnegative().optional(),
@@ -56,8 +56,8 @@ const zDraggedAssetInfo = zResultItem.and(
   z.object({
     attachment_ref: z.string().min(1).optional(),
     media_kind: zMediaKindSchema.optional(),
-    preview_url: z.string().url().optional(),
-    media_url: z.string().url().optional()
+    preview_url: z.url().optional(),
+    media_url: z.url().optional()
   })
 )
 

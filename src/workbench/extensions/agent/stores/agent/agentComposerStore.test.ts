@@ -1,10 +1,74 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import { useAgentComposerStore } from './agentComposerStore'
 
 describe('composer reference ownership', () => {
+  it('does not let late pasted-name metadata overwrite a submitted draft or invalidate failure recovery', () => {
+    const store = useAgentComposerStore()
+    store.setSkillScope('scope')
+    const reference = {
+      kind: 'skill' as const,
+      name: 'portrait',
+      description: '',
+      scope: 'scope',
+      textOffset: 0,
+      resolvePastedName: true as const
+    }
+    store.restorePrompt({ text: ' colors', references: [reference] })
+    const snapshot = {
+      prompt: store.prompt,
+      attachments: [],
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    }
+    const resolved = {
+      text: ' colors',
+      references: [
+        { ...reference, description: 'Resolved', resolvePastedName: undefined }
+      ]
+    }
+    const id = store.startSubmission(snapshot)
+    store.resolveSkillMetadata(resolved)
+    expect(store.prompt).toEqual({ text: '', references: [] })
+    store.settleSubmission(id, false)
+    const failed = store.takeFailedSubmission()
+    expect(failed).toEqual(snapshot)
+    assert.exists(failed)
+    store.restorePrompt(failed.prompt, failed.attachments)
+    store.resolveSkillMetadata(resolved)
+    expect(store.prompt.references[0]).toMatchObject({
+      description: 'Resolved'
+    })
+  })
+
+  it('invalidates the old-scope skill and undo history on scope change while preserving other references', () => {
+    const store = useAgentComposerStore()
+    store.setSkillScope('workspace-a')
+    const skill = {
+      kind: 'skill' as const,
+      name: 'portrait',
+      description: 'Use defaults',
+      scope: 'workspace-a',
+      textOffset: 0
+    }
+    const workflow = {
+      kind: 'workflow' as const,
+      id: 'workflow',
+      name: 'Reference',
+      textOffset: 0
+    }
+    store.restorePrompt({ text: 'Keep this', references: [skill, workflow] })
+    const previous = store.prompt
+    const epoch = store.promptEpoch
+    store.setSkillScope('workspace-b')
+    expect(store.prompt).toEqual({ text: 'Keep this', references: [workflow] })
+    expect(store.promptEpoch).toBeGreaterThan(epoch)
+    store.applyEditorPrompt(previous)
+    expect(store.prompt).toEqual({ text: 'Keep this', references: [workflow] })
+  })
+
   it('releases invalidated snapshot previews while retaining the current tray and ignoring repeated invalidation and stale settlement', () => {
     const store = useAgentComposerStore()
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
@@ -250,6 +314,69 @@ describe('composer draft reset (PM-1331)', () => {
 
     expect(store.nodes).toEqual([])
     expect(store.draft).toBe('')
+  })
+})
+
+describe('composer draft presence', () => {
+  type ComposerStore = ReturnType<typeof useAgentComposerStore>
+
+  it.for([
+    { draft: 'empty', fill: () => {}, expected: false },
+    {
+      draft: 'whitespace only',
+      fill: (store: ComposerStore) => store.setText('  \n '),
+      expected: false
+    },
+    {
+      draft: 'text',
+      fill: (store: ComposerStore) => store.setText('make it blue'),
+      expected: true
+    },
+    {
+      draft: 'an attachment',
+      fill: (store: ComposerStore) =>
+        store.addAttachment({ id: 'a-1', name: 'cat.png', ref: 'cat.png' }),
+      expected: true
+    },
+    {
+      draft: 'a node reference',
+      fill: (store: ComposerStore) => {
+        store.setNodeScope('workflow-A')
+        store.setNodes([{ id: '1', title: 'KSampler' }])
+      },
+      expected: true
+    },
+    {
+      draft: 'a workflow reference',
+      fill: (store: ComposerStore) =>
+        store.setWorkflowReferences([
+          { id: 'wf-portrait', name: 'portrait', textOffset: 0 }
+        ]),
+      expected: true
+    },
+    {
+      draft: 'a skill reference',
+      fill: (store: ComposerStore) => {
+        store.setSkillScope('workspace-a')
+        store.restorePrompt({
+          text: ' ',
+          references: [
+            {
+              kind: 'skill',
+              name: 'portrait',
+              description: '',
+              scope: 'workspace-a',
+              textOffset: 0
+            }
+          ]
+        })
+      },
+      expected: true
+    }
+  ])('reports $draft as a draft: $expected', ({ fill, expected }) => {
+    const store = useAgentComposerStore()
+    fill(store)
+    expect(store.hasDraft).toBe(expected)
   })
 })
 

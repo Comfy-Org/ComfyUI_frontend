@@ -2,7 +2,7 @@
 import { computed, provide, ref, toRef, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
+import { SUPPORTED_EXTENSIONS_ACCEPT } from '@comfyorg/viewport3d/load3d/constants'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -94,11 +94,12 @@ const {
 })
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
-  modelValue: stringModelValue,
   dropdownItems,
-  widget: () => props.widget,
+  locatorId: props.widget.nodeLocatorId,
+  modelValue: stringModelValue,
   uploadFolder: () => props.uploadFolder,
-  uploadSubfolder: () => props.uploadSubfolder
+  uploadSubfolder: () => props.uploadSubfolder,
+  widget: () => props.widget
 })
 
 const mediaPlaceholder = computed(() => {

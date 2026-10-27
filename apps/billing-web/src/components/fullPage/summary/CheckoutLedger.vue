@@ -10,10 +10,10 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div class="mt-16 flex flex-col gap-2">
-    <p class="m-0 text-sm text-muted-foreground">{{ ledger.eyebrow }}</p>
+  <div class="mt-16 flex flex-col gap-2 text-muted-foreground">
+    <p class="m-0 text-sm">{{ ledger.eyebrow }}</p>
     <p
-      class="m-0 flex items-baseline gap-1.5 text-2xl font-semibold text-base-foreground tabular-nums"
+      class="m-0 flex items-baseline gap-1.5 text-2xl font-semibold text-foreground tabular-nums"
     >
       <i
         v-if="ledger.headline.icon"
@@ -28,10 +28,7 @@ const { t } = useI18n()
         </template>
       </span>
     </p>
-    <p
-      v-if="ledger.credits"
-      class="m-0 flex items-start gap-1.5 text-base text-muted-foreground"
-    >
+    <p v-if="ledger.credits" class="m-0 flex items-start gap-1.5 text-base">
       <i class="mt-1 icon-[lucide--coins] size-4 shrink-0" aria-hidden="true" />
       <span>
         <span class="tabular-nums">{{ ledger.credits.count }}</span>
@@ -46,12 +43,14 @@ const { t } = useI18n()
     <slot />
   </div>
 
-  <hr class="mt-6 mb-0 border-border-default" />
-  <div class="flex items-center justify-between gap-4 pt-6">
-    <span class="text-base font-semibold text-base-foreground">
+  <hr class="mt-6 mb-0" />
+  <div
+    class="flex items-center justify-between gap-4 pt-6 text-base font-semibold text-foreground"
+  >
+    <span>
       {{ t('checkout.totalDueToday') }}
     </span>
-    <span class="text-base font-semibold text-base-foreground tabular-nums">
+    <span class="tabular-nums">
       {{ ledger.total }}
     </span>
   </div>

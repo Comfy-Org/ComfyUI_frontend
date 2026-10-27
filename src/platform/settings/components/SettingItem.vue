@@ -11,18 +11,16 @@
         severity="primary"
         class="pi pi-language"
       />
-      <Badge
-        v-if="setting.experimental"
-        v-tooltip="{
-          value: $t('g.experimental'),
-          showDelay: 600
-        }"
-        severity="primary"
-      >
-        <template #icon>
-          <i-material-symbols:experiment-outline />
-        </template>
-      </Badge>
+      <Tooltip v-if="setting.experimental">
+        <TooltipTrigger as-child>
+          <Badge severity="primary">
+            <template #icon>
+              <i-material-symbols:experiment-outline />
+            </template>
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent>{{ $t('g.experimental') }}</TooltipContent>
+      </Tooltip>
     </template>
   </FormItem>
 </template>
@@ -32,7 +30,10 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {

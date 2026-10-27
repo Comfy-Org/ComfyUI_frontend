@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { User, UserCredential } from 'firebase/auth'
 import {
   afterEach,
@@ -26,6 +27,7 @@ import { OPERATION_POLL_TIMING } from '@comfyorg/account-core/billing'
 import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecovery'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
+import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 
 import {
   clearPreservedQuery,
@@ -57,27 +59,29 @@ import {
   webSessionResourceHeader,
   webSessionSend
 } from '@/platform/auth/session/webSessionFetch'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
+import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
 import {
   getGlobalSetting,
   setGlobalSetting
 } from '@/platform/settings/globalSettingsApi'
-import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type { ComfyApp } from '@/scripts/app'
-import type { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -175,8 +179,14 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
-await import('@/extensions/core/cloudSessionCookie')
-const { default: router } = await import('@/router')
+const { cloudSessionCookieExtension } =
+  await import('@/extensions/core/cloudSessionCookie')
+useExtensionService().registerExtension(cloudSessionCookieExtension)
+const { createAppRouter } = await import('@/router')
+const router = await createAppRouter()
+
+installCloudApiAuth()
+installWorkspaceApiAuth()
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
 
@@ -580,10 +590,10 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
     expect(
       sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
     ).toBeNull()
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'info',
-        detail: expect.stringContaining('user-b@example.com')
+        kind: 'info',
+        description: expect.stringContaining('user-b@example.com')
       })
     ])
   })
@@ -618,11 +628,12 @@ function currentWorkspaceResponse(workspaceId: string | undefined): Response {
     return jsonResponse({ code: 'workspace_access_denied', message: 'no' }, 403)
   }
   const isTeam = workspaceId === 'ws-team'
+  const isSharedPersonal = workspaceId === 'ws-shared-personal'
   return jsonResponse({
     id: workspaceId ?? 'ws-personal',
     name: isTeam ? 'Team' : 'Personal',
     type: isTeam ? 'team' : 'personal',
-    role: 'owner',
+    role: isSharedPersonal ? 'member' : 'owner',
     auth_method: 'web_session',
     permissions: ['owner:*']
   })
@@ -656,6 +667,19 @@ function capabilitiesResponse({
       can_revert_scheduled_change: false,
       can_change_seats: false,
       can_invite_members: false,
+      can_manage_members: false,
+      can_delete_workspace: false,
+      can_leave_workspace: false,
+      can_manage_billing: false,
+      can_manage_partner_node_access: false,
+      can_view_pending_invites: false,
+      can_view_team_usage: false,
+      can_edit_workspace: false,
+      can_manage_auto_top_up: false,
+      can_manage_subscription: false,
+      can_open_plans: false,
+      can_run_workflows: false,
+      can_upgrade: false,
       can_downgrade_to_personal: false
     },
     rollout_defaults_applied: {
@@ -739,6 +763,7 @@ function installIngest(features: Record<string, boolean> = {}) {
     return jsonResponse({
       token: `session-jwt-${ingest.mints}`,
       expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+      user_id: 'uid-1',
       workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
       role: 'owner',
       permissions: []
@@ -851,7 +876,7 @@ const sessionRequest = (
   method,
   path,
   headers: { 'x-comfy-client': COMFY_CLIENT, ...headers },
-  credentials: 'include'
+  credentials: 'same-origin'
 })
 
 const LISTED = {
@@ -894,7 +919,8 @@ describe('cloud API requests on the shared web session', () => {
       workspaces: [
         { ...LISTED, id: 'ws-personal', name: 'Personal', type: 'personal' },
         { ...LISTED, id: 'ws-team', name: 'Team', type: 'team' }
-      ]
+      ],
+      can_create_workspace: true
     })
 
     await useTeamWorkspaceStore().initialize()
@@ -918,7 +944,10 @@ describe('cloud API requests on the shared web session', () => {
       sessionRequest('GET', '/api/workspaces/current', {
         'x-comfy-workspace-id': 'ws-personal'
       }),
-      sessionRequest('GET', '/api/queue', { 'comfy-user': '' })
+      sessionRequest('GET', '/api/queue', {
+        'x-comfy-workspace-id': 'ws-personal',
+        'comfy-user': ''
+      })
     ])
     expect(workspaceAuth.currentWorkspace).toEqual({
       id: 'ws-personal',
@@ -972,6 +1001,28 @@ describe('cloud API requests on the shared web session', () => {
       ).toEqual(tokens)
     }
   )
+
+  it("names a member's Team-plan workspace on requests even when its type is personal", async () => {
+    const ingest = await bootOnSession()
+    const workspaceAuth = useWorkspaceAuthStore()
+    await workspaceAuth.switchWorkspace('ws-shared-personal')
+    ingest.requests.length = 0
+
+    await postPrompt()
+
+    expect(workspaceAuth.currentWorkspace).toMatchObject({
+      id: 'ws-shared-personal',
+      type: 'personal',
+      role: 'member'
+    })
+    expect(ingest.requests).toEqual([
+      sessionRequest('POST', '/api/prompt', {
+        'x-comfy-workspace-id': 'ws-shared-personal',
+        ...PROMPT_HEADERS,
+        'x-csrf-token': 'csrf-1'
+      })
+    ])
+  })
 
   it('workspace_access_denied drops the selection, is never replayed, and never falls back to Personal while the reload is held', async () => {
     const ingest = await bootOnSession()
@@ -1089,7 +1140,10 @@ describe('workspace API and global settings on the shared web session', () => {
 
   it.for<{ workspace: string; headers: Record<string, string> }>([
     { workspace: 'ws-team', headers: { 'x-comfy-workspace-id': 'ws-team' } },
-    { workspace: 'ws-personal', headers: {} }
+    {
+      workspace: 'ws-personal',
+      headers: { 'x-comfy-workspace-id': 'ws-personal' }
+    }
   ])(
     'reads billing status in $workspace on the session cookie',
     async ({ workspace, headers }) => {
@@ -1098,7 +1152,7 @@ describe('workspace API and global settings on the shared web session', () => {
       await useTeamWorkspaceStore().initialize()
       ingest.requests.length = 0
 
-      await workspaceApi.getBillingStatus()
+      await billingApi.getBillingStatus()
 
       expect(ingest.requests).toEqual([
         sessionRequest('GET', '/api/billing/status', {
@@ -1115,8 +1169,8 @@ describe('workspace API and global settings on the shared web session', () => {
     localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, 'ws-team')
 
     await useTeamWorkspaceStore().initialize()
-    await workspaceApi.getBillingStatus()
-    await workspaceApi.getBillingStatus()
+    await billingApi.getBillingStatus()
+    await billingApi.getBillingStatus()
 
     expect(ingest.requests.map(({ path }) => path)).toEqual([
       '/api/workspaces',
@@ -1131,7 +1185,7 @@ describe('workspace API and global settings on the shared web session', () => {
     ingest.refusals.push('csrf_invalid')
     ingest.csrfToken = 'csrf-2'
 
-    await workspaceApi.createTopup(500)
+    await billingApi.createTopup(500)
 
     expect(
       ingest.requests.map(({ path, headers }) =>
@@ -1149,7 +1203,7 @@ describe('workspace API and global settings on the shared web session', () => {
     const ingest = await bootOnSession()
     ingest.refusals.push('plan_required')
 
-    await expect(workspaceApi.getBillingStatus()).rejects.toMatchObject({
+    await expect(billingApi.getBillingStatus()).rejects.toMatchObject({
       name: 'WorkspaceApiError',
       status: 403,
       code: 'plan_required',
@@ -1161,7 +1215,7 @@ describe('workspace API and global settings on the shared web session', () => {
     const ingest = await bootOnSession()
     ingest.refusals.push('no_workspace_access')
 
-    await expect(workspaceApi.getBillingStatus()).rejects.toBeInstanceOf(
+    await expect(billingApi.getBillingStatus()).rejects.toBeInstanceOf(
       NoWorkspaceAccessError
     )
   })
@@ -1300,7 +1354,9 @@ describe('live updates and media on the shared web session', () => {
     )
     await workspaceAuth.switchWorkspace('ws-personal')
     await vi.waitFor(() =>
-      expect(api.socket).toEqual(expect.objectContaining({ path: '/ws' }))
+      expect(api.socket).toEqual(
+        expect.objectContaining({ path: '/ws?workspace_id=ws-personal' })
+      )
     )
 
     expect(api.socket).toBe(FakeSocket.created.at(-1))
@@ -1318,9 +1374,9 @@ describe('live updates and media on the shared web session', () => {
 
   it.for([
     { workspace: 'ws-team', suffix: '&workspace_id=ws-team' },
-    { workspace: 'ws-personal', suffix: '' }
+    { workspace: 'ws-personal', suffix: '&workspace_id=ws-personal' }
   ])(
-    'media URLs name the workspace only for a team ($workspace)',
+    'media URLs name the selected workspace ($workspace)',
     async ({ workspace, suffix }) => {
       await bootOnSession()
       await useWorkspaceAuthStore().switchWorkspace(workspace)
@@ -1668,7 +1724,7 @@ describe('comfy-api calls on the shared web session', () => {
 
     await webSessionResourceHeader().catch(() => undefined)
 
-    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(reported ? 1 : 0)
+    expect(reportError).toHaveBeenCalledTimes(reported ? 1 : 0)
   })
 
   it('mints again once the cached token is within a minute of expiry', async () => {
@@ -1727,7 +1783,7 @@ describe('billing SDK rails on a tab that arrived by session', () => {
   })
 
   it.for([
-    { workspace: 'ws-personal', mintedFor: 'personal' },
+    { workspace: 'ws-personal', mintedFor: 'ws-personal' },
     { workspace: 'ws-team', mintedFor: 'ws-team' }
   ])(
     'reads billing in $workspace with a token minted from the session cookie alone',
@@ -1765,7 +1821,7 @@ describe('billing SDK rails on a tab that arrived by session', () => {
       status: 'completed'
     })
     expect(useAuthStore().currentUser).toBeNull()
-    expect(ingest.mintedFor).toEqual(['personal'])
+    expect(ingest.mintedFor).toEqual(['ws-personal'])
     expect(
       sent(ingest).filter(({ path }) => path === '/api/billing/topup')
     ).toEqual([
@@ -1815,7 +1871,7 @@ describe('billing SDK rails on a tab that arrived by session', () => {
     await useWorkspaceAuthStore().switchWorkspace('ws-team')
     await rail.readStatus()
 
-    expect(ingest.mintedFor).toEqual(['personal', 'ws-team'])
+    expect(ingest.mintedFor).toEqual(['ws-personal', 'ws-team'])
     expect(
       sent(ingest)
         .filter(({ path }) => path === '/api/billing/status')
@@ -1893,6 +1949,7 @@ describe.for([{ unified: false }, { unified: true }])(
       const authStore = useAuthStore()
       const workspaceAuth = useWorkspaceAuthStore()
 
+      await workspaceAuth.switchWorkspace('ws-personal')
       const personal = await authStore.getWorkspaceAuthToken()
       await workspaceAuth.switchWorkspace('ws-team')
       const team = await authStore.getWorkspaceAuthToken()
@@ -1904,7 +1961,7 @@ describe.for([{ unified: false }, { unified: true }])(
         'session-jwt-2',
         'session-jwt-1'
       ])
-      expect(ingest.mintedFor).toEqual(['personal', 'ws-team'])
+      expect(ingest.mintedFor).toEqual(['ws-personal', 'ws-team'])
     })
 
     it('resolves undefined for a revoked session and mints again once it recovers', async () => {
@@ -2387,15 +2444,24 @@ describe('billing on a tab that arrived by session', () => {
   })
 
   it.for([
-    { name: 'resolves', capabilitiesDown: false, authoritative: true },
     {
-      name: 'is unavailable, falling back to the owner',
+      name: 'resolves',
+      capabilitiesDown: false,
+      canTopUp: true,
+      authoritative: true
+    },
+    {
+      name: 'is unavailable, withholding top-up',
       capabilitiesDown: true,
+      canTopUp: false,
       authoritative: false
     }
   ])(
     'billing capabilities for the session user: the read $name',
-    async ({ capabilitiesDown, authoritative }, { onTestFinished }) => {
+    async (
+      { capabilitiesDown, canTopUp, authoritative },
+      { onTestFinished }
+    ) => {
       const { ingest } = await bootSessionOnly()
       ingest.capabilitiesDown = capabilitiesDown
       localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, 'ws-team')
@@ -2411,7 +2477,7 @@ describe('billing on a tab that arrived by session', () => {
         isReady: capabilities.isReady.value,
         canTopUp: capabilities.canTopUp.value,
         authoritative: capabilities.snapshotAuthoritative.value
-      }).toEqual({ isReady: true, canTopUp: true, authoritative })
+      }).toEqual({ isReady: true, canTopUp, authoritative })
     }
   )
 })
@@ -2512,6 +2578,7 @@ describe.for([{ unified: false }, { unified: true }])(
           return jsonResponse({
             token: 'session-jwt-1',
             expires_at: new Date(Date.now() + TEN_MINUTES_MS).toISOString(),
+            user_id: 'uid-1',
             workspace: {
               id: 'ws-personal',
               name: 'Personal',
@@ -2738,7 +2805,7 @@ describe.for([{ unified: false }, { unified: true }])(
       await vi.advanceTimersByTimeAsync(60_000)
       await response
       expect(queueReads().map(([, init]) => init?.credentials)).toEqual([
-        'include'
+        'same-origin'
       ])
     })
 
@@ -2861,18 +2928,32 @@ describe.for([{ unified: false }, { unified: true }])(
         await expect(enterApp()).resolves.toBe('/user-select')
       })
 
-      it('sends a session-only tab holding a desktop login code to sign in, not into the app', async () => {
-        await install({ userId: 'user-a' })
-        identity.resolve(null)
-        await router.push('/cloud/login')
+      it.for(['/user-select', '/cloud/login', '/cloud/user-check'])(
+        'sends a session-only tab holding a desktop login code at %s to sign in without looping',
+        async (path) => {
+          await install({ userId: 'user-a' })
+          identity.resolve(null)
+          await router.push('/cloud/forgot-password')
+          const visited = new Set<string>()
+          onTestFinished(
+            router.beforeEach((to) => {
+              expect(visited.has(to.fullPath)).toBe(false)
+              visited.add(to.fullPath)
+            })
+          )
 
-        await router.push(
-          `/user-select?desktop_login_code=dlc_${'A'.repeat(43)}`
-        )
+          await router.push(`${path}?desktop_login_code=dlc_${'A'.repeat(43)}`)
 
-        expect(router.currentRoute.value.path).toBe('/cloud/login')
-        expect(router.currentRoute.value.query.switchAccount).toBeDefined()
-      })
+          expect(router.currentRoute.value.path).toBe('/cloud/login')
+          expect(router.currentRoute.value.query.switchAccount).toBe('true')
+          expect(
+            getPreservedQueryParam(
+              PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
+              'desktop_login_code'
+            )
+          ).toBe(`dlc_${'A'.repeat(43)}`)
+        }
+      )
 
       it('sends a revoked session to the login page', async () => {
         await install('revoked')
@@ -3193,6 +3274,93 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
     return landings
   }
+
+  describe('the sign-in telemetry', () => {
+    afterEach(() => {
+      ssoFlowStore.finish()
+    })
+
+    const ssoSignIns = () =>
+      vi
+        .mocked(useTelemetry()!.trackSsoEvent)
+        .mock.calls.filter(
+          ([event]) => event.name === 'app:sso_sign_in_completed'
+        )
+
+    it('reports an SSO session after an attempt this tab continued, by id only', async () => {
+      const attempt = ssoFlowStore.markContinued('cloud_login')
+
+      await loadPage(SSO_SESSION)
+
+      expect(ssoSignIns()).toEqual([
+        [
+          {
+            name: 'app:sso_sign_in_completed',
+            properties: { surface: 'cloud_login', flow_id: attempt.flowId }
+          }
+        ]
+      ])
+      expect(ssoFlowStore.current()).toBeUndefined()
+      expect(useTelemetry()?.trackAuth).not.toHaveBeenCalled()
+    })
+
+    it('reports a lapse sent straight to SSO, then the SSO session it brings back', async () => {
+      await inAppThenLapsed(true)
+      await vi.waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      const [[shown]] = vi.mocked(useTelemetry()!.trackSsoEvent).mock.calls
+      expect(shown).toEqual({
+        name: 'app:sso_required_shown',
+        properties: {
+          surface: 'cloud_app',
+          trigger: 'session_expired',
+          presentation: 'redirect',
+          flow_id: expect.any(String)
+        }
+      })
+
+      await loadPage(SSO_SESSION)
+
+      expect(ssoSignIns()).toEqual([
+        [
+          {
+            name: 'app:sso_sign_in_completed',
+            properties: {
+              surface: 'cloud_app',
+              flow_id: shown.properties.flow_id
+            }
+          }
+        ]
+      ])
+    })
+
+    it.for<{
+      name: string
+      arrange: () => void
+      session: ServerSession
+    }>([
+      {
+        name: 'an SSO session with no attempt',
+        arrange: () => {},
+        session: SSO_SESSION
+      },
+      {
+        name: 'an SSO session after an attempt only shown, never continued',
+        arrange: () => ssoFlowStore.start('cloud_login'),
+        session: SSO_SESSION
+      },
+      {
+        name: 'a Google session during an attempt',
+        arrange: () => ssoFlowStore.markContinued('cloud_login'),
+        session: { userId: 'user-a' }
+      }
+    ])('reports nothing for $name', async ({ arrange, session }) => {
+      arrange()
+
+      await loadPage(session)
+
+      expect(ssoSignIns()).toEqual([])
+    })
+  })
 
   describe('the hint', () => {
     it.for<{
@@ -3576,9 +3744,10 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
       await router.push(`/user-select?desktop_login_code=${desktopCode}`)
 
       const { path, query } = router.currentRoute.value
-      const ssoNotice = useToastStore().messagesToAdd.filter(
-        ({ summary }) =>
-          summary === "Desktop sign-in isn't available for SSO accounts yet"
+      const ssoNotice = useToast().toasts.filter(
+        (toast) =>
+          'title' in toast &&
+          toast.title === "Desktop sign-in isn't available for SSO accounts yet"
       )
       expect({
         path,

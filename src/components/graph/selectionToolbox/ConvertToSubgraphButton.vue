@@ -1,10 +1,7 @@
 <template>
   <Button
     v-if="isUnpackVisible"
-    v-tooltip.top="{
-      value: $t('commands.Comfy_Graph_UnpackSubgraph.label'),
-      showDelay: 1000
-    }"
+    :tooltip="$t('commands.Comfy_Graph_UnpackSubgraph.label')"
     variant="muted-textonly"
     :aria-label="$t('commands.Comfy_Graph_UnpackSubgraph.label')"
     data-testid="convert-to-subgraph-button"
@@ -14,10 +11,7 @@
   </Button>
   <Button
     v-else-if="isConvertVisible"
-    v-tooltip.top="{
-      value: $t('commands.Comfy_Graph_ConvertToSubgraph.label'),
-      showDelay: 1000
-    }"
+    :tooltip="$t('commands.Comfy_Graph_ConvertToSubgraph.label')"
     variant="muted-textonly"
     size="icon"
     :aria-label="$t('commands.Comfy_Graph_ConvertToSubgraph.label')"
@@ -31,7 +25,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCommandStore } from '@/stores/commandStore'
 

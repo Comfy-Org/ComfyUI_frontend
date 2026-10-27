@@ -10,6 +10,8 @@ import type { RequestTarget } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import { createSessionTokenMint } from '@comfyorg/account-core/sessionTokenMint'
 
+import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { bootCloudIdentity } from '@/platform/auth/session/cloudIdentityBoot'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
@@ -25,7 +27,7 @@ import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSession
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { useDialogService } from '@/services/dialogService'
-import type { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/services/extensionService'
 import type { ComfyExtension } from '@/types/comfy'
 
 type IdentityObserver = (user: User | null) => void
@@ -102,7 +104,9 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
-await import('@/extensions/core/cloudSessionCookie')
+const { cloudSessionCookieExtension } =
+  await import('@/extensions/core/cloudSessionCookie')
+useExtensionService().registerExtension(cloudSessionCookieExtension)
 
 const ONE_HOUR_MS = 60 * 60 * 1000
 const API_KEY = 'comfyui-test-api-key'
@@ -158,6 +162,7 @@ function installFetchRecorder(features: Record<string, unknown>) {
     return {
       token: `cloud-jwt-${mintCount}`,
       expires_at: new Date(Date.now() + ONE_HOUR_MS).toISOString(),
+      user_id: 'uid-1',
       workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
       role: 'owner',
       permissions: ['owner:*']
@@ -330,6 +335,7 @@ describe('clients the web session leaves on tokens', () => {
 
   beforeEach(() => {
     identity.reset()
+    installCloudApiAuth()
     vi.mocked(distributionTypes).isCloud = true
   })
 
@@ -431,6 +437,7 @@ describe('clients the web session leaves on tokens', () => {
     'a localhost frontend signs in, refreshes and calls the API with no session or cloud credential ($name)',
     async (row) => {
       vi.mocked(distributionTypes).isCloud = false
+      api.setAuthProvider(anonymousApiAuthProvider)
       const recorder = installFetchRecorder(featuresFor(row))
       await refreshRemoteConfig({ useAuth: false })
       hooks = wireSessionCookieExtension()

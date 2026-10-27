@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useFullscreen, usePointerSwipe } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import MenuRadioGroup from '@/components/ui/menu/MenuRadioGroup.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { APP_MODE_FEEDBACK_FORM_URL } from '@/platform/surveys/appModeFeedback'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -89,7 +89,8 @@ const activeWorkflowPath = computed({
   get: () => workflowStore.activeWorkflow?.path ?? '',
   set: (path: string) => {
     const workflow = workflowStore.getWorkflowByPath(path)
-    if (workflow) void workflowService.openWorkflow(workflow)
+    if (workflow)
+      void workflowService.openWorkflow(workflow, { initiator: 'user' })
   }
 })
 
@@ -127,7 +128,7 @@ const menuEntries = computed<MenuItem[]>(() => [
   {
     label: t('linearMode.enterNodeGraph'),
     icon: 'icon-[comfy--workflow]',
-    new: true,
+    badge: t('contextMenu.new'),
     command: () => (canvasStore.linearMode = false)
   },
   { separator: true },
@@ -149,7 +150,7 @@ const menuEntries = computed<MenuItem[]>(() => [
   },
   {
     label: t('linearMode.giveFeedback'),
-    icon: 'icon-[lucide--clipboard-pen]',
+    icon: 'icon-[lucide--megaphone] size-4',
     command: () =>
       window.open(APP_MODE_FEEDBACK_FORM_URL, '_blank', 'noopener,noreferrer')
   },
@@ -162,11 +163,11 @@ const menuEntries = computed<MenuItem[]>(() => [
 </script>
 <template>
   <section
-    class="absolute flex size-full flex-col bg-secondary-background"
+    class="absolute flex size-full flex-col bg-secondary"
     data-testid="linear-mobile"
   >
     <header
-      class="flex h-16 w-full items-center gap-3 border-b border-border-subtle bg-base-background px-4 py-3"
+      class="flex h-16 w-full items-center gap-3 border-b border-border/50 bg-background px-4 py-3"
     >
       <Menu :items="menuEntries" :label="$t('linearMode.appModeToolbar.apps')">
         <template #trigger>
@@ -221,7 +222,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         </div>
         <div
           id="mobile-app-preview-panel"
-          class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"
+          class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-background"
           role="tabpanel"
           :aria-hidden="activeIndex !== 1"
           aria-labelledby="mobile-app-preview-tab"
@@ -235,7 +236,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         </div>
         <AssetsSidebarTab
           id="mobile-app-output-panel"
-          class="absolute top-0 left-[200vw] h-full w-screen bg-base-background"
+          class="absolute top-0 left-[200vw] h-full w-screen bg-background"
           role="tabpanel"
           :aria-hidden="activeIndex !== 2"
           aria-labelledby="mobile-app-output-tab"
@@ -246,7 +247,7 @@ const menuEntries = computed<MenuItem[]>(() => [
     </div>
     <div
       ref="sliderPaneRef"
-      class="flex h-22 w-full items-center justify-around gap-4 bg-secondary-background p-4"
+      class="flex h-22 w-full items-center justify-around gap-4 bg-secondary p-4"
       role="tablist"
     >
       <Button
@@ -264,7 +265,7 @@ const menuEntries = computed<MenuItem[]>(() => [
           <i :class="cn('size-4', icon)" />
           <div
             v-if="index === 1 && isErrorOverlayVisible"
-            class="absolute -top-1 -right-1 size-2 rounded-full bg-error"
+            class="absolute -top-1 -right-1 size-2 rounded-full bg-destructive"
           />
           <div
             v-else-if="
@@ -272,7 +273,7 @@ const menuEntries = computed<MenuItem[]>(() => [
               (queueStore.runningTasks.length > 0 ||
                 queueStore.pendingTasks.length > 0)
             "
-            class="absolute -top-1 -right-1 size-2 animate-pulse rounded-full bg-primary-background"
+            class="absolute -top-1 -right-1 size-2 animate-pulse rounded-full bg-primary"
           />
         </div>
         {{ t(label) }}

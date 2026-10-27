@@ -6,11 +6,12 @@ import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
 
-import { publishSkillPack } from '../api/skillsApi'
-import type { SkillPack } from '../types'
+import { publishSkillPack } from '@/platform/skills/api/skillsApi'
+import type { SkillPack } from '@/platform/skills/types'
 import SkillPackFormDialog from './SkillPackFormDialog.vue'
 
-vi.mock(import('../api/skillsApi'), { spy: true })
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 
 const pack: SkillPack = {
   id: 'pack-1',

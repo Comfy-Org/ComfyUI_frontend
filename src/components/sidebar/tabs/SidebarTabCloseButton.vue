@@ -1,6 +1,7 @@
 <template>
   <Button
-    v-tooltip.bottom="{ value: $t('sideToolbar.closeSidebar'), showDelay: 300 }"
+    :tooltip="$t('sideToolbar.closeSidebar')"
+    tooltip-side="bottom"
     variant="muted-textonly"
     size="icon"
     class="shrink-0"
@@ -13,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const sidebarTabStore = useSidebarTabStore()

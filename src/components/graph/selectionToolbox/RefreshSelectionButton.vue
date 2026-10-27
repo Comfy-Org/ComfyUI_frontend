@@ -1,7 +1,7 @@
 <template>
   <Button
-    v-show="isRefreshable"
-    v-tooltip.top="t('g.refreshNode')"
+    v-if="isRefreshable"
+    :tooltip="t('g.refreshNode')"
     variant="muted-textonly"
     :aria-label="t('g.refreshNode')"
     data-testid="refresh-button"
@@ -14,7 +14,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useRefreshableSelection } from '@/composables/useRefreshableSelection'
 
 const { t } = useI18n()

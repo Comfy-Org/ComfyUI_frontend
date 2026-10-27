@@ -250,6 +250,8 @@ import { readWorkspaceLink } from '@comfyorg/account-core/workspaceLink'
 import type { AuthMethod } from '@comfyorg/account-core/telemetry'
 import { SESSION_TELEMETRY_EVENT } from '@comfyorg/account-core/telemetry'
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
+import type { TokenResult } from '@comfyorg/account-core/oauthPkce'
+import { authorizeUrl } from '@comfyorg/account-core/oauthPkce'
 import type { BillingEntry, ReturnTarget } from '@comfyorg/billing-contract'
 import { buildBillingEntryUrl, parseBillingEntry } from '@comfyorg/billing-contract'
 import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
@@ -339,6 +341,8 @@ export interface Types {
   workspaceLink: WorkspaceLinkRead
   telemetry: AuthMethod
   webviewDetection: ReturnType<typeof isEmbeddedWebView>
+  oauthPkce: TokenResult
+  oauthAuthorizeUrl: ReturnType<typeof authorizeUrl>
   billingContract: BillingEntry
   returnTarget: ReturnTarget
   ingestTypes: ExchangeTokenResponse

@@ -95,16 +95,16 @@
 
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
-import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type {
   OnboardingSurvey,
   OnboardingSurveyField
 } from '@/platform/remoteConfig/types'
+import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 import DynamicSurveyField from './DynamicSurveyField.vue'
 import {

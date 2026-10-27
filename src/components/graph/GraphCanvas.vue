@@ -7,7 +7,7 @@
       <div
         v-if="workflowTabsPosition === 'Topbar'"
         data-testid="topbar-workflow-tabs"
-        class="workflow-tabs-container pointer-events-auto relative flex h-(--workflow-tabs-height) w-full items-center border-b border-interface-stroke/50 bg-comfy-menu-bg shadow-interface"
+        class="workflow-tabs-container pointer-events-auto relative flex h-(--workflow-tabs-height) w-full items-center border-b border-border/50 bg-background shadow-md"
       >
         <WorkflowTabs />
       </div>
@@ -42,10 +42,6 @@
       />
     </template>
     <template #graph-canvas-panel>
-      <div
-        ref="canvasPanelBoundsRef"
-        class="pointer-events-none absolute inset-0"
-      />
       <GraphCanvasMenu
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
@@ -73,6 +69,7 @@
   <!-- TransformPane for Vue node rendering -->
   <TransformPane
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    ref="transformPaneRef"
     :canvas="comfyApp.canvas"
     :inert="canvasStore.isPickingNodes"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
@@ -97,11 +94,7 @@
     @dispose="onLinkOverlayDispose"
   />
 
-  <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
-  <SelectionRectangle
-    v-if="comfyAppReady"
-    :panel-el="canvasPanelBoundsRef ?? undefined"
-  />
+  <SelectionRectangle v-if="comfyAppReady" />
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
@@ -119,7 +112,12 @@
   </template>
 </template>
 
+<script lang="ts">
+let activeStartup: symbol | undefined
+</script>
+
 <script setup lang="ts">
+import { LIGHT_THEME_NODE_LIGHTNESS } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
@@ -164,6 +162,7 @@ import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { NodeState } from '@/types/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
+import { useNodeEmphasis } from '@/systems/nodeEmphasisSystem'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
@@ -175,8 +174,10 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { isCloud } from '@/platform/distribution/types'
+import { waitForDeploymentPick } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
@@ -195,7 +196,9 @@ import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
+import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
+import { loadExtensions } from '@/services/extensionLoader'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {
@@ -223,7 +226,12 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
+const transformPaneRef =
+  useTemplateRef<InstanceType<typeof TransformPane>>('transformPaneRef')
+const vueNodeDropTarget = computed(() => {
+  const element: unknown = transformPaneRef.value?.$el
+  return element instanceof HTMLElement ? element : null
+})
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
@@ -244,7 +252,7 @@ const { linearMode } = storeToRefs(canvasStore)
 const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
-const toastStore = useToastStore()
+const toast = useToast()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const canvasInteractions = useCanvasInteractions()
@@ -357,9 +365,10 @@ watchEffect(() => {
   LiteGraph.nodeOpacity = settingStore.get('Comfy.Node.Opacity')
 })
 watchEffect(() => {
-  LiteGraph.nodeLightness = colorPaletteStore.completedActivePalette.light_theme
-    ? 0.5
-    : undefined
+  LiteGraph.nodeLightness =
+    colorPaletteStore.colorScheme === 'light'
+      ? LIGHT_THEME_NODE_LIGHTNESS
+      : undefined
 })
 
 watchEffect(() => {
@@ -391,7 +400,10 @@ watch(
   () => {
     if (!canvasStore.canvas) return
 
-    forEachNode(comfyApp.rootGraph, (n) => {
+    const rootGraph = comfyApp.rootGraphOrUndefined
+    if (!rootGraph) return
+
+    forEachNode(rootGraph, (n) => {
       if (!n.widgets) return
       for (const w of n.widgets) {
         if (!w[IS_CONTROL_WIDGET]) continue
@@ -473,15 +485,16 @@ watch(
   }
 )
 
+watch(
+  () => canvasStore.selectedNodeIds,
+  () => canvasStore.canvas?.setDirty(true, true)
+)
+
 useEventListener(
   canvasRef,
   'litegraph:no-items-selected',
   () => {
-    toastStore.add({
-      severity: 'warn',
-      summary: t('toastMessages.nothingSelected'),
-      life: 2000
-    })
+    toast.warning(t('toastMessages.nothingSelected'), { duration: 2000 })
   },
   { passive: true }
 )
@@ -490,8 +503,10 @@ const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
 const { runUrlActionLoaders } = useUrlActionLoaders()
 useCanvasDrop(canvasRef)
+useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
+useNodeEmphasis()
 
 useGlobalLitegraph()
 useContextMenuTranslation()
@@ -526,7 +541,30 @@ useEventListener(
   }
 )
 
+let disposed = false
+const lateExtensionWork = new AbortController()
+const startupOwner = Symbol()
+
+function finishStartup(outcome: 'completed' | 'failed') {
+  if (activeStartup !== startupOwner) return
+  activeStartup = undefined
+  workspaceStore.spinner = false
+  bootstrapTracer.complete(outcome)
+}
+
+function showDeploymentLookupToast() {
+  toast.error(t('deploymentSwitcher.lookupUnavailable'), {
+    description: t('deploymentSwitcher.lookupUnavailableDetail'),
+    action: {
+      label: t('deploymentSwitcher.reload'),
+      onClick: () => window.location.reload()
+    }
+  })
+}
+
 onMounted(async () => {
+  activeStartup = startupOwner
+  bootstrapTracer.resumeWatchdog()
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
   let startupOutcome: StartupOutcome | undefined
@@ -554,7 +592,9 @@ onMounted(async () => {
 
     await Promise.all([
       until(() => isI18nReady.value || !!i18nError.value).toBe(true),
-      useNewUserService().initializeIfNewUser()
+      bootstrapTracer.settle('bootstrap/new-user', () =>
+        useNewUserService().initializeIfNewUser()
+      )
     ])
     if (i18nError.value) {
       console.warn(
@@ -563,8 +603,19 @@ onMounted(async () => {
       )
     }
 
+    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
+      loadExtensions(lateExtensionWork.signal)
+    )
+
     const canvas = canvasRef.value
     if (!canvas) throw new TypeError('GraphCanvas mounted without a canvas')
+    const deploymentConfirmed =
+      !isCloud ||
+      (await bootstrapTracer.settle('bootstrap/deployment-pick', () =>
+        waitForDeploymentPick(showDeploymentLookupToast)
+      ))
+    if (disposed) return
+    if (!deploymentConfirmed) showDeploymentLookupToast()
     await comfyApp.setup(canvas)
     canvasStore.canvas = comfyApp.canvas
     canvasStore.canvas.render_canvas_border = false
@@ -586,14 +637,17 @@ onMounted(async () => {
     )
 
     // Restore saved workflow and workflow tabs state
-    startupOutcome = await workflowPersistence.initializeWorkflow()
-    await workflowPersistence.restoreWorkflowTabsState()
-    urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
-    await useFirstRunEntry().handleStartupOutcome(startupOutcome)
+    await bootstrapTracer.settle('bootstrap/workflow-restore', async () => {
+      startupOutcome = await workflowPersistence.initializeWorkflow()
+      await workflowPersistence.restoreWorkflowTabsState()
+      urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
+      await useFirstRunEntry().handleStartupOutcome(startupOutcome)
+    })
     bootstrapOutcome = 'completed'
   } finally {
-    workspaceStore.spinner = false
-    bootstrapTracer.complete(bootstrapOutcome)
+    if (!disposed) {
+      finishStartup(bootstrapOutcome)
+    }
   }
   const sharedStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
@@ -623,6 +677,14 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  disposed = true
+  lateExtensionWork.abort()
+  void nextTick(() => {
+    if (activeStartup !== startupOwner) return
+    activeStartup = undefined
+    workspaceStore.spinner = false
+    bootstrapTracer.suspendWatchdog()
+  })
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
 })

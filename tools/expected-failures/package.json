@@ -1,0 +1,15 @@
+{
+  "name": "@comfyorg/expected-failures",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Inventory of Vitest and Playwright expected failures, ratcheted against a classified baseline",
+  "type": "module",
+  "dependencies": {
+    "typescript": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "vitest": "catalog:"
+  }
+}

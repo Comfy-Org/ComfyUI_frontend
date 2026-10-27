@@ -24,15 +24,15 @@
 
     <template #header>
       <div
-        :ref="primeVueOverlay.overlayScopeRef"
         class="flex w-full items-center justify-between gap-2"
         @click.self="focusedAsset = null"
       >
         <SearchInput
           v-model="searchQuery"
+          :clear-label="$t('g.clear')"
           :autofocus="true"
           size="lg"
-          :aria-label="$t('assetBrowser.searchModels')"
+          :accessible-label="$t('assetBrowser.searchModels')"
           :placeholder="$t('g.searchPlaceholder', { subject: '' })"
           class="max-w-lg flex-1"
         />
@@ -56,7 +56,6 @@
       <AssetFilterBar
         :assets="categoryFilteredAssets"
         :show-ownership-filter
-        :content-style="selectContentStyle"
         @filter-change="updateFilters"
         @click.self="focusedAsset = null"
       />
@@ -77,15 +76,10 @@
     </template>
 
     <template #rightPanel>
-      <ModelInfoPanel
-        v-if="focusedAsset"
-        :asset="focusedAsset"
-        :cache-key
-        :select-content-style="selectContentStyle"
-      />
+      <ModelInfoPanel v-if="focusedAsset" :asset="focusedAsset" :cache-key />
       <div
         v-else
-        class="flex h-full items-center justify-center p-6 text-center wrap-break-word text-muted"
+        class="flex h-full items-center justify-center p-6 text-center wrap-break-word text-muted-foreground"
       >
         {{ $t('assetBrowser.modelInfo.selectModelPrompt') }}
       </div>
@@ -98,12 +92,11 @@ import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Button from '@/components/ui/button/Button.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Button from '@comfyorg/design-system/button/Button'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
 import ModelInfoPanel from '@/platform/assets/components/modelInfo/ModelInfoPanel.vue'
@@ -123,8 +116,6 @@ const { flags } = useFeatureFlags()
 const assetStore = useAssetsStore()
 const modelToNodeStore = useModelToNodeStore()
 const breakpoints = useBreakpoints(breakpointsTailwind)
-const primeVueOverlay = usePrimeVueOverlayChildStyle()
-const selectContentStyle = primeVueOverlay.contentStyle
 
 const props = defineProps<AssetBrowserModalProps>()
 

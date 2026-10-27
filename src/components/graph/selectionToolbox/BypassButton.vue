@@ -1,13 +1,10 @@
 <template>
   <Button
-    v-tooltip.top="{
-      value: $t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label'),
-      showDelay: 1000
-    }"
+    :tooltip="$t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label')"
     variant="muted-textonly"
     :aria-label="$t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label')"
     data-testid="bypass-button"
-    class="hover:bg-secondary-background"
+    class="hover:bg-secondary"
     @click="toggleBypass"
   >
     <i class="icon-[lucide--redo-dot] size-4" />
@@ -15,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCommandStore } from '@/stores/commandStore'
 
 const commandStore = useCommandStore()

@@ -1,0 +1,37 @@
+{
+  "id": "test-support",
+  "capability": "Shared test infrastructure",
+  "description": "Shared technical module for disposable Pinia fixtures, Vitest setup contracts and type augmentation, graph/canvas builders, Path2D stubs, and i18n fixtures. This is test infrastructure, not a product domain or production extraction target.",
+  "modules": [
+    {
+      "path": "src/testing/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/types/vitest.d.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/__tests__/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/vitestSetup.test.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Shared test infrastructure preserves its existing behavior",
+      "checks": ["src/testing/pinia.test.ts", "src/vitestSetup.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
+  ],
+  "deepImports": "inventory"
+}

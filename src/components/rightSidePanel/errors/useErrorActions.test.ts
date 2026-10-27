@@ -76,7 +76,7 @@ describe('useErrorActions', () => {
         is_external: true,
         source: 'error_dialog'
       })
-      expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
         'Comfy.ContactSupport'
       )
       expect(result).toBeUndefined()
@@ -105,7 +105,7 @@ describe('useErrorActions', () => {
       void contactSupport()
 
       expect(mocks.trackHelpResourceClicked).not.toHaveBeenCalled()
-      expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
         'Comfy.ContactSupport'
       )
     })

@@ -1,11 +1,10 @@
 import { defineConfig } from '@hey-api/openapi-ts'
 
 export default defineConfig({
-  input: './openapi.yaml',
+  input: process.env.INGEST_OPENAPI_SOURCE ?? './openapi.yaml',
   output: {
     path: './src',
-    clean: true,
-    importFileExtension: '.js'
+    clean: true
   },
   parser: {
     filters: {
@@ -23,7 +22,7 @@ export default defineConfig({
     '@hey-api/typescript',
     {
       name: 'zod',
-      compatibilityVersion: 3,
+      compatibilityVersion: 4,
       definitions: true,
       requests: true,
       responses: true
