@@ -1962,25 +1962,38 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
-  it('withholds the automatic card when storage fits a shorter entry but not the visit count', async () => {
-    setAgentReady(true)
-    Object.assign(consentStore, { accepted: false, isChecking: false })
-    const visitEntryLength = ACTIVATION_VISITS_STORAGE_KEY.length + 1
-    const setItem = localStorage.setItem.bind(localStorage)
-    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
-      if (key.length + value.length >= visitEntryLength)
-        throw new DOMException('Quota exceeded', 'QuotaExceededError')
-      setItem(key, value)
-    })
+  it.for([
+    {
+      entry: 'the visit count',
+      entryLength: ACTIVATION_VISITS_STORAGE_KEY.length + 1
+    },
+    {
+      entry: 'the introduction response',
+      entryLength:
+        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a'
+          .length + 'true'.length
+    }
+  ])(
+    'withholds the automatic card when storage cannot fit $entry',
+    async ({ entryLength }) => {
+      setAgentReady(true)
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      const setItem = localStorage.setItem.bind(localStorage)
+      vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+        if (key.length + value.length >= entryLength)
+          throw new DOMException('Quota exceeded', 'QuotaExceededError')
+        setItem(key, value)
+      })
 
-    await loadEntryAndSetup()
-    await flush()
+      await loadEntryAndSetup()
+      await flush()
 
-    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-      reason: 'storage_unavailable'
-    })
-  })
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'storage_unavailable'
+      })
+    }
+  )
 
   it('stays silent for an answered scope when storage cannot be written', async () => {
     setAgentReady(true)
