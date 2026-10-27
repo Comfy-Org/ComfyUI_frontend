@@ -188,6 +188,26 @@ class NodeWidgetReference {
    * @returns The position of the widget's center
    */
   async getPosition(): Promise<Position> {
+    if (this.node.comfyPage.isVueNodes) {
+      const selector = await this.node.comfyPage.page.evaluate(
+        ([id, index]) => {
+          const widget = window
+            .app!.canvas.graph!.getNodeById(id)
+            ?.widgets?.at(index)
+          if (!widget)
+            throw new Error(`Widget ${index} on node ${id} not found.`)
+          return `[data-widget-name="${CSS.escape(widget.name)}"]`
+        },
+        [this.node.id, this.index] as const
+      )
+      const widget = this.node.comfyPage.vueNodes
+        .getNodeLocator(String(this.node.id))
+        .locator(selector)
+      await expect(widget).toBeVisible()
+      const bounds = await widget.boundingBox()
+      if (!bounds) throw new Error('Widget position is unavailable')
+      return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
+    }
     const position = await this.node.comfyPage.page.waitForFunction(
       ([id, index]) => {
         const node = window.app!.canvas.graph!.getNodeById(id)
@@ -522,8 +542,9 @@ export class NodeReference {
   }
   async getContextMenuOptionNames() {
     await this.click('title', { button: 'right' })
-    const ctx = this.comfyPage.page.locator('.litecontextmenu')
-    return await ctx.locator('.litemenu-entry').allInnerTexts()
+    const items = this.comfyPage.contextMenu.menuItems
+    await expect(items.first()).toBeVisible()
+    return await items.allInnerTexts()
   }
   async clickContextMenuOption(optionText: string) {
     await this.click('title', { button: 'right' })
