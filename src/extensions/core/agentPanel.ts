@@ -356,8 +356,9 @@ export function registerAgentPanelExtension(): void {
       )
 
       const loadConsentIfEligible = (resume = true): void => {
-        if (!agentPanelStore.enabled || !isAuthInitialized.value) return
+        if (!isAuthInitialized.value) return
         if (resumingAccept || (resume && resumePendingAccept())) return
+        if (!agentPanelStore.enabled) return
         if (!isLoggedIn.value) {
           if (!signedInThisPage) offerWhenStartupDecided()
           return

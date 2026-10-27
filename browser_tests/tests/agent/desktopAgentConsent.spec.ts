@@ -126,9 +126,16 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
     await test.step('Consent is saved once and the draft waits for Send', async () => {
       await expect.poll(() => agentConsentWrites).toEqual([true])
       await expect(agentPanel.composer).toHaveText(message)
+    })
+
+    await test.step('Send posts the restored draft once, with no card', async () => {
+      expect(postedMessages).toEqual([])
+      await agentPanel.sendButton.click()
+      await expect.poll(() => postedMessages.length).toBe(1)
+      expect(JSON.parse(postedMessages[0])).toMatchObject({ content: message })
       await expect(agentPanel.consentDialog).toHaveCount(0)
       expect(agentConsentWrites).toEqual([true])
-      expect(postedMessages).toEqual([])
+      expect(postedMessages).toHaveLength(1)
     })
   })
 

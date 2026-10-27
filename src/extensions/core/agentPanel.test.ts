@@ -2257,6 +2257,23 @@ describe('AgentPanel extension flag gate', () => {
       expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
     })
 
+    it('is resumed before the Agent is ready', async () => {
+      setAgentReady(false)
+
+      await loadEntryAndSetup()
+
+      expect(useAgentConsent().resumeAcceptAfterReload).toHaveBeenCalledOnce()
+    })
+
+    it('is dropped on sign-out before the Agent is ready', async () => {
+      setAgentReady(false)
+      currentUser.value = null
+
+      await loadEntryAndSetup()
+
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
+
     it('waits for the signed-in account to resolve', async () => {
       vi.mocked(useCurrentUser()).isLoggedIn = computed(() => true)
       currentUser.value = null
@@ -2265,6 +2282,11 @@ describe('AgentPanel extension flag gate', () => {
 
       expect(useAgentConsent().resumeAcceptAfterReload).not.toHaveBeenCalled()
       expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+
+      currentUser.value = { id: 'account-a' }
+      await nextTick()
+
+      expect(useAgentConsent().resumeAcceptAfterReload).toHaveBeenCalledOnce()
     })
 
     it('is kept while auth has not settled on signed out', async () => {
