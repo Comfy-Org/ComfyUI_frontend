@@ -1,22 +1,30 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
-import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import type {
+  BalanceInfo,
+  SubscriptionInfo
+} from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import enMessages from '@/locales/en/main.json'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
@@ -53,16 +61,16 @@ const state = vi.hoisted(() => {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/composables/billing/useBillingRouting'))
+vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
@@ -73,13 +81,14 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock<unknown>(import('@/config/billingWeb'), () => ({
+vi.mock<unknown>(import('@/platform/billing/billingWeb'), () => ({
   getBillingWebUrl: () => state.billingWebUrl
 }))
 
@@ -125,10 +134,7 @@ function renderComponent(
   return render(CurrentUserPopoverWorkspace, {
     props: { accountActionsOnly },
     global: {
-      plugins: [getActivePinia()!, PrimeVue, i18n],
-      directives: {
-        tooltip: Tooltip
-      },
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
         SubscribeButton: SubscribeButtonStub,
@@ -187,8 +193,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     workspaceUI.permissions = computed(() => ({
       canViewOtherMembers: false,
       canViewPendingInvites: false,
-      canLeaveWorkspace: false,
-      canAccessWorkspaceMenu: false,
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle,
       canDowngradeToPersonal: false
@@ -212,13 +216,12 @@ describe('CurrentUserPopoverWorkspace', () => {
       screen.queryByTestId('workspace-switcher-panel')
     ).not.toBeInTheDocument()
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
-    expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
-    expect(trigger).toHaveAttribute('aria-controls', 'workspace-switcher-panel')
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
 
     await user.click(trigger)
-    const panel = screen.getByTestId('workspace-switcher-panel')
-    expect(panel).toHaveAttribute('id', 'workspace-switcher-panel')
-    expect(panel).toHaveAttribute('role', 'menu')
+    const panel = screen.getByRole('dialog')
+    expect(panel).toBe(screen.getByTestId('workspace-switcher-panel'))
+    expect(trigger).toHaveAttribute('aria-controls', panel.id)
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
 
     await user.click(trigger)
@@ -240,6 +243,21 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('dismisses the keyboard-opened workspace name tooltip on Escape', async () => {
+    const user = userEvent.setup()
+    renderComponent('team')
+
+    await user.tab()
+    expect(screen.getByTestId('workspace-switcher-trigger')).toHaveFocus()
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      'Team Workspace'
+    )
+
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
   it('keeps account actions available without workspace context', () => {
     renderComponent('personal', true)
 
@@ -252,6 +270,40 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('workspace-settings-menu-item')
     ).not.toBeInTheDocument()
+    expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
+  })
+
+  describe('with a Desktop host session', () => {
+    const signedIn = {
+      status: 'signed_in',
+      userId: 'host-user',
+      workspaceId: 'ws-1'
+    } as const
+    const hostBridge = (canSwitch: boolean): DesktopHostAuthBridge => ({
+      getState: async () => signedIn,
+      getWorkspaceToken: async () => 'host-token',
+      requestSignIn: async () => signedIn,
+      signOut: async () => ({ status: 'signed_out' }),
+      ...(canSwitch && { switchWorkspace: async () => signedIn }),
+      onChanged: () => () => {}
+    })
+
+    afterEach(() => stopDesktopHostSession())
+
+    it.for([
+      { name: 'offers the switcher when Desktop can switch', canSwitch: true },
+      { name: 'shows a fixed workspace on an older Desktop', canSwitch: false }
+    ])('$name', async ({ canSwitch }) => {
+      await startDesktopHostSession(hostBridge(canSwitch))
+      renderComponent('team')
+
+      expect(screen.queryByTestId('workspace-switcher-trigger') !== null).toBe(
+        canSwitch
+      )
+      expect(screen.queryByTestId('workspace-context-row') !== null).toBe(
+        !canSwitch
+      )
+    })
   })
 
   it('exposes the full workspace name on hover', async () => {
@@ -261,7 +313,9 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.hover(screen.getByTestId('workspace-switcher-trigger'))
 
     await waitFor(() => {
-      expect(screen.getByRole('tooltip')).toHaveTextContent('Team Workspace')
+      expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
+        'Team Workspace'
+      )
     })
   })
 
@@ -284,7 +338,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('workspace-switcher-trigger'))
     await user.click(screen.getByTestId('stub-create-workspace'))
 
-    expect(useDialogService().showCreateWorkspaceDialog).toHaveBeenCalled()
+    expect(useWorkspaceDialogs().showCreateWorkspaceDialog).toHaveBeenCalled()
     expect(emitted('close')).toHaveLength(1)
     expect(
       screen.queryByTestId('workspace-switcher-panel')
@@ -296,9 +350,6 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     expect(screen.getByText('211')).toBeInTheDocument()
     expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
-    expect(
-      screen.queryByTestId('upgrade-to-add-credits-button')
-    ).not.toBeInTheDocument()
     expect(
       screen.queryByTestId('plans-pricing-menu-item')
     ).not.toBeInTheDocument()
@@ -332,18 +383,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     }
   )
 
-  it('offers subscription when top-up is denied but self-serve is allowed', async () => {
-    const user = userEvent.setup()
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-    renderComponent('team')
-
-    await user.click(screen.getByTestId('upgrade-to-add-credits-button'))
-
-    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
-      reason: 'upgrade_to_add_credits'
-    })
-  })
-
   it.for(['payment_failed', 'paused'] as const)(
     'keeps Manage plan available for an existing %s subscription',
     (billingStatus) => {
@@ -360,7 +399,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     }
   )
 
-  it('shows the upgrade upsell instead of Manage plan when payment_failed has no plan', () => {
+  it('hides Manage plan and add-credits when payment_failed has no plan and top-up is denied', () => {
     state.billingStatus = 'payment_failed'
     state.canAccessSubscriptionFeatures = false
     state.canManageSubscription = true
@@ -372,9 +411,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('manage-plan-menu-item')
     ).not.toBeInTheDocument()
-    expect(
-      screen.getByTestId('upgrade-to-add-credits-button')
-    ).toBeInTheDocument()
+    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
@@ -410,13 +447,10 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     renderComponent('personal')
 
-    expect(
-      screen.queryByTestId('upgrade-to-add-credits-button')
-    ).not.toBeInTheDocument()
     await user.click(screen.getByTestId('add-credits-button'))
 
     expect(
-      useDialogService().showTopUpCreditsDialog
+      useBillingDialogs().showTopUpCreditsDialog
     ).toHaveBeenCalledExactlyOnceWith({ source: 'avatar_menu_plans' })
   })
 
@@ -430,9 +464,6 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
     expect(
-      screen.queryByTestId('upgrade-to-add-credits-button')
-    ).not.toBeInTheDocument()
-    expect(
       screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
   })
@@ -443,25 +474,32 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     renderComponent('personal')
 
-    expect(
-      screen.queryByTestId('upgrade-to-add-credits-button')
-    ).not.toBeInTheDocument()
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
   })
 
-  it('shows one subscription CTA on the Cloud free tier', () => {
+  it('hides add-credits when top-up is denied even though self-serve subscribe is allowed', () => {
     state.canAccessSubscriptionFeatures = false
+    useBillingCapabilities().canTopUp = computed(() => false)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
     renderComponent('personal')
 
-    expect(
-      screen.getByTestId('upgrade-to-add-credits-button')
-    ).toBeInTheDocument()
     expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+  })
+
+  it('keeps Add credits for a past-due owner so it can open Update payment', async () => {
+    const user = userEvent.setup()
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().paymentRecoveryAvailable =
+      paymentRecoveryAvailableFact(true)
+
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('add-credits-button'))
+
     expect(
-      screen.queryByRole('button', { name: 'Subscribe' })
-    ).not.toBeInTheDocument()
+      useBillingDialogs().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'avatar_menu_plans' })
   })
 
   it('keeps Resubscribe hidden on Local for a cancelled plan', () => {
@@ -708,6 +746,16 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     expect(
       screen.queryByTestId('plans-credits-menu-item')
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides the processing line while unified billing settings are off', () => {
+    useBillingCapabilities().canTopUp = computed(() => true)
+    renderComponent()
+
+    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
+    expect(
+      screen.queryByText("Payment processing. You don't need to pay again.")
     ).not.toBeInTheDocument()
   })
 })

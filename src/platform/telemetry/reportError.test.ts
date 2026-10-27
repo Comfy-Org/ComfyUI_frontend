@@ -1,3 +1,5 @@
+import type { DatadogRum } from '@datadog/browser-rum'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
@@ -7,6 +9,9 @@ const isEnabled = vi.fn()
 const addError = vi.fn()
 const getInitConfiguration = vi.fn()
 const mockIsCloud = { value: false }
+const mockFrontendBucket = {
+  value: undefined as 'canary' | 'stable' | undefined
+}
 const captureDesktopException = vi.fn()
 const hostTelemetryEnabled = vi.fn(() => true)
 
@@ -16,6 +21,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
+vi.mock(import('@/platform/telemetry/rumContext'), () => ({
+  getFrontendBucket: () => mockFrontendBucket.value,
+  getDatadogRum: () =>
+    fromPartial<DatadogRum>({
+      addError: (...args: unknown[]) => addError(...args),
+      getInitConfiguration: () => getInitConfiguration()
+    })
+}))
+
 vi.mock(import('@/platform/telemetry/hostTelemetryEnabled'), () => ({
   isHostTelemetryEnabled: () => hostTelemetryEnabled()
 }))
@@ -23,13 +37,6 @@ vi.mock(import('@/platform/telemetry/hostTelemetryEnabled'), () => ({
 vi.mock(import('@sentry/vue'), () => ({
   captureException: (...args: unknown[]) => captureException(...args),
   isEnabled: () => isEnabled()
-}))
-
-vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
-  datadogRum: {
-    addError: (...args: unknown[]) => addError(...args),
-    getInitConfiguration: () => getInitConfiguration()
-  }
 }))
 
 async function loadReportError() {
@@ -50,10 +57,80 @@ function installDesktopBridge(capture: unknown = captureDesktopException) {
 describe('reportError', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+    mockFrontendBucket.value = undefined
     delete window.__comfyDesktop2
     hostTelemetryEnabled.mockReturnValue(true)
     sentryLive(true)
     datadogLive(true)
+  })
+
+  it('tags Sentry and Datadog with the resolved canary bucket', async () => {
+    mockFrontendBucket.value = 'canary'
+    installDesktopBridge()
+    const { reportError } = await loadReportError()
+    const error = new Error('boom')
+
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'workspace_auth_gate_initialization_failure',
+      fingerprint: ['workspace_auth_gate_initialization_failure']
+    })
+
+    expect(captureException).toHaveBeenCalledWith(
+      error,
+      expect.objectContaining({
+        fingerprint: ['workspace_auth_gate_initialization_failure'],
+        tags: expect.objectContaining({ bucket: 'canary' })
+      })
+    )
+    expect(addError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ bucket: 'canary' })
+    )
+    expect(captureDesktopException).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ bucket: 'canary' })
+    )
+  })
+
+  it('never lets a caller tag override the resolved bucket', async () => {
+    mockFrontendBucket.value = 'canary'
+    installDesktopBridge()
+    const { reportError } = await loadReportError()
+    const error = new Error('boom')
+
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'workspace_auth_gate_initialization_failure',
+      tags: { bucket: 'stable' }
+    })
+
+    expect(captureException).toHaveBeenCalledWith(
+      error,
+      expect.objectContaining({
+        tags: expect.objectContaining({ bucket: 'canary' })
+      })
+    )
+    expect(captureDesktopException).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ bucket: 'canary' })
+    )
+  })
+
+  it('omits the bucket tag before it resolves', async () => {
+    const { reportError } = await loadReportError()
+    const error = new Error('boom')
+
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'workspace_auth_gate_initialization_failure'
+    })
+
+    const [, sentryOptions] = captureException.mock.calls[0] as [
+      unknown,
+      { tags: Record<string, unknown> }
+    ]
+    expect(sentryOptions.tags).not.toHaveProperty('bucket')
   })
 
   it('reaches both Sentry and Datadog from a single call', async () => {
@@ -100,9 +177,42 @@ describe('reportError', () => {
     expect(addError).not.toHaveBeenCalled()
   })
 
+  it('overrides Sentry grouping only when a fingerprint is given', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed',
+      fingerprint: ['agent-request-failure', '/agent/threads']
+    })
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed'
+    })
+
+    expect(captureException.mock.calls[0][1]).toMatchObject({
+      fingerprint: ['agent-request-failure', '/agent/threads']
+    })
+    expect(captureException.mock.calls[1][1]).not.toHaveProperty('fingerprint')
+  })
+
+  it('does not send a fingerprint to Datadog, which groups on errorType', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_history_load_failed',
+      fingerprint: ['agent-request-failure']
+    })
+
+    expect(addError.mock.calls[0][1]).not.toHaveProperty('fingerprint')
+  })
+
   it('names a Datadog copy without changing the original error', async () => {
     const { reportError } = await loadReportError()
-    const cause = new Error('Connection closed')
+    const cause = new Error(
+      'Connection closed https://example.com/model.glb?token=private'
+    )
     const error = Object.freeze(
       Object.assign(
         new TypeError('Failed to fetch /assets/app-123.js', { cause }),
@@ -125,10 +235,13 @@ describe('reportError', () => {
       name: 'resource_load_error',
       message: error.message,
       stack: error.stack,
-      cause,
       dd_fingerprint: error.dd_fingerprint,
       dd_context: error.dd_context
     })
+    expect(datadogError.cause).toMatchObject({
+      message: 'Connection closed https://example.com/model.glb'
+    })
+    expect(datadogError.cause).not.toBe(cause)
     expect(captureException.mock.calls[0][0]).toBe(error)
     expect(error.name).toBe('TypeError')
   })
@@ -289,7 +402,6 @@ describe('reportError', () => {
   })
 
   it('does not throw out of flushErrorReports when the sink probe throws', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     sentryLive(false)
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
@@ -308,7 +420,6 @@ describe('reportError', () => {
     datadogLive(true)
     flushErrorReports()
     expect(addError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
   })
 
   it('buffers reports raised before any sink is live, then flushes them', async () => {
@@ -542,7 +653,6 @@ describe('reportError', () => {
   })
 
   it('writes the failure to the console so callers need no second sink', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { reportError } = await loadReportError()
     const error = new Error('listener failed')
 
@@ -551,15 +661,13 @@ describe('reportError', () => {
       errorType: 'canvas_layout_listener_failed'
     })
 
-    expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+    expect(console.error).toHaveBeenCalledExactlyOnceWith(
       `${REPORTED_ERROR_PREFIX}canvas_layout_listener_failed`,
       error
     )
   })
 
   it('logs a warning-level report through console.warn', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { reportError } = await loadReportError()
 
     reportError(new Error('cookie denied'), {
@@ -568,15 +676,14 @@ describe('reportError', () => {
       level: 'warning'
     })
 
-    expect(consoleWarn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       `${REPORTED_ERROR_PREFIX}session_cookie_creation_failure`,
       expect.any(Error)
     )
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('skips the console line for a caller that already logged', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { reportError } = await loadReportError()
 
     reportError(new Error('[Assertion failed]: graph must exist'), {
@@ -585,12 +692,11 @@ describe('reportError', () => {
       logToConsole: false
     })
 
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
     expect(addError).toHaveBeenCalledOnce()
   })
 
   it('logs a buffered report once, when it is raised', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     sentryLive(false)
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
@@ -602,7 +708,7 @@ describe('reportError', () => {
     datadogLive(true)
     flushErrorReports()
 
-    expect(consoleError).toHaveBeenCalledOnce()
+    expect(console.error).toHaveBeenCalledOnce()
   })
 
   it('still reports to Datadog when Sentry throws', async () => {
@@ -621,7 +727,6 @@ describe('reportError', () => {
   })
 
   it('delivers a report that re-enters through a sink once, then accepts the next report', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { reportError } = await loadReportError()
     const nested = new Error('Graph serialization state mismatch')
     captureException.mockImplementationOnce(() => {
@@ -638,7 +743,7 @@ describe('reportError', () => {
 
     expect(captureException).toHaveBeenCalledOnce()
     expect(addError).toHaveBeenCalledOnce()
-    expect(consoleError).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('graph_serialization_state_mismatch'),
       nested
     )
@@ -653,8 +758,6 @@ describe('reportError', () => {
   })
 
   it('skips the console line for a suppressed re-entrant report that opted out', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { reportError } = await loadReportError()
     captureException.mockImplementationOnce(() => {
       reportError(new Error('nested'), {
@@ -670,13 +773,11 @@ describe('reportError', () => {
       logToConsole: false
     })
 
-    expect(consoleError).not.toHaveBeenCalled()
-    expect(consoleWarn).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   it('logs a suppressed warning-level re-entrant report through console.warn', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { reportError } = await loadReportError()
     const nested = new Error('nested')
     captureException.mockImplementationOnce(() => {
@@ -693,10 +794,10 @@ describe('reportError', () => {
       logToConsole: false
     })
 
-    expect(consoleWarn).toHaveBeenCalledExactlyOnceWith(
+    expect(console.warn).toHaveBeenCalledExactlyOnceWith(
       `${REPORTED_ERROR_PREFIX}session_cookie_creation_failure (suppressed: raised while reporting)`,
       nested
     )
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 })

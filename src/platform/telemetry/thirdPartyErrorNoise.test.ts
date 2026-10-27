@@ -38,6 +38,77 @@ describe('third-party error noise', () => {
     }
   )
 
+  it.for([
+    {
+      event: { type: undefined },
+      hint: {
+        originalException: new DOMException(
+          'The user aborted a request.',
+          'AbortError'
+        )
+      }
+    },
+    {
+      event: {
+        type: undefined,
+        exception: {
+          values: [{ type: 'AbortError', value: 'The user aborted a request.' }]
+        }
+      },
+      hint: {}
+    },
+    {
+      event: {
+        type: undefined,
+        exception: {
+          values: [
+            { type: 'TypeError', value: 'cause' },
+            { type: 'AbortError', value: 'The user aborted a request.' }
+          ]
+        }
+      },
+      hint: {}
+    }
+  ] satisfies Array<{ event: ErrorEvent; hint: EventHint }>)(
+    'drops intentional AbortErrors from Sentry',
+    ({ event, hint }) => {
+      expect(sentryThirdPartyErrorFilter(event, hint)).toBeNull()
+    }
+  )
+
+  it('keeps a first-party error that wraps an AbortError cause', () => {
+    const event = {
+      type: undefined,
+      exception: {
+        values: [
+          { type: 'AbortError', value: 'The user aborted a request.' },
+          { type: 'Error', value: 'Failed to load model list' }
+        ]
+      }
+    } satisfies ErrorEvent
+
+    expect(
+      sentryThirdPartyErrorFilter(event, {
+        originalException: new Error('Failed to load model list', {
+          cause: new DOMException('The user aborted a request.', 'AbortError')
+        })
+      })
+    ).toBe(event)
+  })
+
+  it('keeps other error types', () => {
+    const event = {
+      type: undefined,
+      exception: { values: [{ type: 'TypeError', value: 'Failed to fetch' }] }
+    } satisfies ErrorEvent
+
+    expect(
+      sentryThirdPartyErrorFilter(event, {
+        originalException: new TypeError('Failed to fetch')
+      })
+    ).toBe(event)
+  })
+
   it('keeps ordinary Sentry events unchanged', () => {
     const event = {
       type: undefined,

@@ -1,10 +1,13 @@
 import { t } from '@/i18n'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { VueOnlyWidget } from '@/lib/litegraph/src/widgets/VueOnlyWidget'
 import {
   captureInputLayout,
+  inputLink,
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import {
@@ -14,11 +17,19 @@ import {
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { zDynamicGroupInputSpec } from '@/schemas/nodeDefSchema'
-import { useLitegraphService } from '@/services/litegraphService'
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { deriveWidgetSurfaces } from '@/types/widgetVisibility'
+import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
+
+import {
+  dynamicGroupRowAllocationBound,
+  isRemoteDynamicGroupRowWrite,
+  markDynamicGroupController,
+  reportDynamicGroupRowRefusal
+} from './dynamicGroupDiagnostics'
 
 export function dynamicGroupWidget(
   node: LGraphNode,
@@ -33,7 +44,7 @@ export function dynamicGroupWidget(
   } = zDynamicGroupInputSpec.parse(inputData)[1]
   const fields = { ...template.required, ...template.optional }
   const store = useWidgetValueStore()
-  const { addNodeInput } = useLitegraphService()
+  const { addNodeInput } = useLitegraphServiceAccess()
   const controller: IBaseWidget = node.addCustomWidget({
     name: inputName,
     type: 'number',
@@ -42,6 +53,7 @@ export function dynamicGroupWidget(
     hidden: true,
     options: { min, max, socketless: true, serialize: false }
   })
+  markDynamicGroupController(controller, Object.keys(fields).length)
   node.addCustomWidget(
     new DynamicGroupNoticeWidget(
       {
@@ -77,7 +89,11 @@ export function dynamicGroupWidget(
     },
     callback: () =>
       changeRows(() => {
-        if (rows().length < max) controller.value = rows().length + 1
+        if (
+          rows().length < max &&
+          rows().length < dynamicGroupRowAllocationBound(controller)
+        )
+          controller.value = rows().length + 1
       })
   })
 
@@ -99,7 +115,10 @@ export function dynamicGroupWidget(
       })
       header.options.disabled = headers.length <= min
     })
-    add.options.disabled = headers.length >= max
+    add.options.disabled =
+      min > dynamicGroupRowAllocationBound(controller) ||
+      headers.length >= max ||
+      headers.length >= dynamicGroupRowAllocationBound(controller)
     if (controller.widgetId) store.setValue(controller.widgetId, headers.length)
     const graphId = resolveNodeRootGraphId(node)
     if (graphId && node.widgets)
@@ -120,14 +139,14 @@ export function dynamicGroupWidget(
     }
   }
 
-  function removeRow(index: number) {
+  function removeRow(index: number, hosts = createPromotionHostLookup()) {
     if (!node.widgets) return false
     const prefix = `${inputName}.${index}`
     const removed = node.widgets.filter(
       (widget) => widget.name === prefix || widget.name.startsWith(`${prefix}.`)
     )
     if (!removed.length) return false
-    if (!removeRowInputs(prefix)) return false
+    if (!removeRowInputs(prefix, hosts)) return false
     for (const widget of removed.reverse()) {
       if (node.widgets.includes(widget)) node.removeWidget(widget)
     }
@@ -136,15 +155,26 @@ export function dynamicGroupWidget(
       const row = Number(oldPrefix.slice(inputName.length + 1))
       if (row <= index) continue
       const newPrefix = `${inputName}.${row - 1}`
-      renameRow(oldPrefix, newPrefix)
+      renameRow(oldPrefix, newPrefix, hosts)
     }
     return true
   }
 
-  function removeRowInputs(prefix: string) {
+  function removeRowInputs(prefix: string, hosts: PromotionHostLookup) {
     const previous = captureInputLayout(node)
     const inputs = previous.inputs.filter(
       (input) => !input.name.startsWith(`${prefix}.`)
+    )
+    const graph = node.graph
+    const promotedInputs = new Set(
+      previous.inputs.flatMap((input) => {
+        const link = previous.links.get(input)
+        return isSubgraph(graph) &&
+          !inputs.includes(input) &&
+          link?.origin_id === SUBGRAPH_INPUT_ID
+          ? [graph.inputs[link.origin_slot]]
+          : []
+      })
     )
     const result = replaceNodeInputs(
       node,
@@ -163,6 +193,9 @@ export function dynamicGroupWidget(
     previous.inputs.forEach((input, slot) => {
       if (!inputs.includes(input)) node.onInputRemoved?.(slot, input)
     })
+    if (isSubgraph(graph))
+      for (const input of promotedInputs)
+        disconnectOrphanedPromotion(graph, graph.inputs.indexOf(input), hosts)
     return true
   }
 
@@ -174,22 +207,10 @@ export function dynamicGroupWidget(
     return `${row} ${fields[field][1]?.display_name ?? field}`
   }
 
-  function renamePromotedInputLabel(
-    slot: number,
-    previous: string,
-    next: string
-  ) {
-    const graph = node.graph
-    if (!graph || !isSubgraph(graph)) return
-    const link = node.getInputLink(slot)
-    if (link?.origin_id !== SUBGRAPH_INPUT_ID) return
-    const promoted = graph.inputs[link.origin_slot]
-    if (promoted.label === previous) graph.renameInput(promoted, next)
-  }
-
   function renameRowLabels(
     oldIndex: number,
     newIndex: number,
+    hosts: PromotionHostLookup,
     rowLabel?: string
   ) {
     for (const field of Object.keys(fields)) {
@@ -204,16 +225,33 @@ export function dynamicGroupWidget(
       if (!input) continue
       if (input.label === previous) input.label = next
       input.localized_name = next
-      renamePromotedInputLabel(slot, previous, next)
+      renamePromotedInputLabel(node, slot, previous, next, hosts)
     }
   }
 
-  function renameRow(oldPrefix: string, newPrefix: string) {
-    const rowLabel = rows().find((row) => row.name === oldPrefix)?.label
+  function renameRowWidgets(oldPrefix: string, newPrefix: string) {
     for (const widget of node.widgets ?? []) {
-      if (widget.name === oldPrefix || widget.name.startsWith(`${oldPrefix}.`))
-        widget.name = newPrefix + widget.name.slice(oldPrefix.length)
+      if (widget.name !== oldPrefix && !widget.name.startsWith(`${oldPrefix}.`))
+        continue
+      const name = newPrefix + widget.name.slice(oldPrefix.length)
+      widget.name = name
+      if (
+        widget.name === name &&
+        widget.serialize !== false &&
+        widget.type !== 'button' &&
+        widget.widgetId
+      )
+        store.announceValue(widget.widgetId)
     }
+  }
+
+  function renameRow(
+    oldPrefix: string,
+    newPrefix: string,
+    hosts: PromotionHostLookup
+  ) {
+    const rowLabel = rows().find((row) => row.name === oldPrefix)?.label
+    renameRowWidgets(oldPrefix, newPrefix)
     for (const input of node.inputs) {
       if (!input.name.startsWith(`${oldPrefix}.`)) continue
       input.name = newPrefix + input.name.slice(oldPrefix.length)
@@ -222,11 +260,12 @@ export function dynamicGroupWidget(
     renameRowLabels(
       Number(oldPrefix.slice(inputName.length + 1)),
       Number(newPrefix.slice(inputName.length + 1)),
+      hosts,
       rowLabel
     )
   }
 
-  function addRow(index: number) {
+  function addRow(index: number, hosts: PromotionHostLookup) {
     const previousSize: [number, number] = [...node.size]
     const start = node.widgets?.length ?? 0
     const previous = captureInputLayout(node)
@@ -244,12 +283,19 @@ export function dynamicGroupWidget(
       callback: () => {
         if (rows().length <= min) return
         changeRows(() => {
-          removeRow(Number(header.name.slice(inputName.length + 1)))
+          const requested = rows().length - 1
+          if (!removeRow(Number(header.name.slice(inputName.length + 1))))
+            reportDynamicGroupRowRefusal(
+              node,
+              'remove_row',
+              requested,
+              rows().length
+            )
           publish()
         })
       }
     })
-    addRowFields(index)
+    addRowFields(index, hosts)
     const addedInputs = node.inputs.splice(previous.inputs.length)
     const inputs = [
       ...previous.inputs,
@@ -277,18 +323,22 @@ export function dynamicGroupWidget(
     return true
   }
 
-  function updateInputLabel(name: string, label: string) {
+  function updateInputLabel(
+    name: string,
+    label: string,
+    hosts: PromotionHostLookup
+  ) {
     const slot = node.findInputSlot(name)
     if (slot === -1) return
     const input = node.inputs[slot]
     const previous = input.localized_name
     if (!input.label || input.label === previous) input.label = label
     input.localized_name = label
-    if (previous) renamePromotedInputLabel(slot, previous, label)
+    if (previous) renamePromotedInputLabel(node, slot, previous, label, hosts)
     return input
   }
 
-  function addRowFields(index: number) {
+  function addRowFields(index: number, hosts: PromotionHostLookup) {
     for (const [fields, isOptional] of [
       [template.required, false],
       [template.optional, true]
@@ -302,7 +352,7 @@ export function dynamicGroupWidget(
             transformInputSpecV1ToV2(spec, { name, isOptional })),
           display_name: fieldLabel(index, field)
         })
-        const input = updateInputLabel(name, fieldLabel(index, field))
+        const input = updateInputLabel(name, fieldLabel(index, field), hosts)
         let auxiliaryIndex = 0
         node.widgets?.slice(fieldStart).forEach((widget) => {
           const options = widget.options
@@ -322,24 +372,44 @@ export function dynamicGroupWidget(
     }
   }
 
-  function validateSavedRowCount(value: number, requested: number) {
-    const graphId = resolveNodeRootGraphId(node)
-    if (!graphId) return
-    const widgets = node.widgets ?? []
-    const position = widgets
-      .filter((widget) => widget.serialize !== false)
-      .indexOf(controller)
-    const restored = store.getRestoredWidgetValue(
-      graphId,
-      node.id,
-      inputName,
-      position
+  function announceAddedValues(existing: Set<IBaseWidget>) {
+    for (const widget of node.widgets ?? []) {
+      if (
+        !existing.has(widget) &&
+        widget.serialize !== false &&
+        widget.type !== 'button' &&
+        widget.widgetId
+      )
+        store.announceValue(widget.widgetId)
+    }
+  }
+
+  function exceedsAllocationBound(requested: number) {
+    if (requested <= dynamicGroupRowAllocationBound(controller)) return false
+    if (!isRemoteDynamicGroupRowWrite(node))
+      reportDynamicGroupRowRefusal(node, 'add_row', requested, rowCount)
+    throw new RangeError(
+      `Row count exceeds the allocation bound for DynamicGroup '${inputName}'`
     )
-    if (restored?.value !== value) return
-    const savedValueCount = store.getRestoredWidgetValueCount(graphId, node.id)
-    if (requested > Math.max(max, savedValueCount ?? 0))
-      throw new RangeError(
-        `Invalid saved row count for DynamicGroup '${inputName}'`
+  }
+
+  function resizeRows(count: number) {
+    const hosts = createPromotionHostLookup()
+    for (let index = rows().length - 1; index >= count; index--) {
+      if (!removeRow(index, hosts)) break
+    }
+    const existing = new Set(node.widgets)
+    while (rows().length < count) {
+      if (!addRow(rows().length, hosts)) break
+    }
+    publish()
+    announceAddedValues(existing)
+    if (rowCount !== count)
+      reportDynamicGroupRowRefusal(
+        node,
+        rowCount > count ? 'remove_row' : 'add_row',
+        count,
+        rowCount
       )
   }
 
@@ -348,19 +418,83 @@ export function dynamicGroupWidget(
     set(value: unknown) {
       if (typeof value !== 'number' || !Number.isFinite(value)) return
       const requested = Math.max(0, Math.trunc(value))
-      validateSavedRowCount(value, requested)
       const count = Math.max(min, requested)
-      for (let index = rows().length - 1; index >= count; index--) {
-        if (!removeRow(index)) break
-      }
-      while (rows().length < count) {
-        if (!addRow(rows().length)) break
-      }
-      publish()
+      if (exceedsAllocationBound(count)) return
+      resizeRows(count)
     }
   })
   controller.value = initialCount
   return { widget: controller }
+}
+
+type PromotionHostLookup = (subgraph: Subgraph) => SubgraphNode[]
+
+function createPromotionHostLookup(): PromotionHostLookup {
+  let hosts: Map<Subgraph, SubgraphNode[]> | undefined
+  return (subgraph) => {
+    if (!hosts) {
+      hosts = new Map()
+      for (const host of mapUniqueNodes(subgraph.rootGraph, (node) =>
+        node.isSubgraphNode() ? node : undefined
+      )) {
+        const instances = hosts.get(host.subgraph) ?? []
+        instances.push(host)
+        hosts.set(host.subgraph, instances)
+      }
+    }
+    return hosts.get(subgraph) ?? []
+  }
+}
+
+function renamePromotedInputLabel(
+  node: LGraphNode,
+  slot: number,
+  previous: string,
+  next: string,
+  hosts: PromotionHostLookup
+) {
+  const graph = node.graph
+  if (!isSubgraph(graph)) return
+  const link = inputLink(graph, node.id, slot)
+  if (link?.origin_id !== SUBGRAPH_INPUT_ID) return
+  const promoted = graph.inputs[link.origin_slot]
+  if (promoted.label !== previous) return
+  graph.renameInput(promoted, next)
+  for (const host of hosts(graph))
+    renamePromotedInputLabel(host, link.origin_slot, previous, next, hosts)
+}
+
+function disconnectOrphanedPromotion(
+  graph: LGraph | Subgraph | null,
+  slot: number,
+  hosts: PromotionHostLookup
+) {
+  if (!isSubgraph(graph) || graph.inputs[slot]?.linkIds.length !== 0) return
+  const input = graph.inputs[slot]
+  for (const host of hosts(graph)) {
+    removeFloatingHostLinks(host, slot)
+    const link = host.graph && inputLink(host.graph, host.id, slot)
+    if (!link) continue
+    host.disconnectInput(slot)
+    if (link.origin_id === SUBGRAPH_INPUT_ID)
+      disconnectOrphanedPromotion(host.graph, link.origin_slot, hosts)
+  }
+  graph.removeInput(input)
+  if (!graph.inputs.includes(input)) removeFloatingLinksFrom(graph, slot)
+}
+
+function removeFloatingLinksFrom(graph: Subgraph, slot: number) {
+  for (const link of graph.floatingLinks.values()) {
+    if (link.origin_id !== SUBGRAPH_INPUT_ID) continue
+    if (link.origin_slot === slot) graph.removeFloatingLink(link)
+    else if (link.origin_slot > slot) link.origin_slot--
+  }
+}
+
+function removeFloatingHostLinks(host: SubgraphNode, slot: number) {
+  for (const link of host.graph?.floatingLinks.values() ?? [])
+    if (link.target_id === host.id && link.target_slot === slot)
+      host.graph?.removeFloatingLink(link)
 }
 
 class DynamicGroupNoticeWidget extends VueOnlyWidget<IBaseWidget> {

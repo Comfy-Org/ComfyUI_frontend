@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
-import type { FormItem } from '@/platform/settings/types'
+import type { ServerConfig } from '@/constants/serverConfig'
+import type { FormItem, ServerConfigValue } from '@/platform/settings/types'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 
 const dummyFormItem: FormItem = {

@@ -1,0 +1,103 @@
+{
+  "id": "workflow-templates",
+  "capability": "Workflow templates",
+  "description": "Template discovery, ranking, metadata, education, and thumbnail presentation.",
+  "modules": [
+    {
+      "path": "src/components/actionbar/PartnerNodesEducationCard.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/actionbar/PartnerNodesEducationCard.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SidebarTemplatesButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SidebarTemplatesButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/workflow/templates/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/templates/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/workflow/templates/repositories/workflowTemplatesStore.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workflow/templates/schemas/templateSchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/templates/types/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/templates/utils/**",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Template ranking and display metadata remain deterministic",
+      "checks": [
+        "packages/shared-frontend-utils/src/templateRanking.test.ts",
+        "src/platform/workflow/templates/utils/templateDisplay.test.ts"
+      ]
+    },
+    {
+      "name": "Template loading validates and prepares workflow inputs",
+      "checks": [
+        "src/platform/workflow/templates/composables/useTemplateWorkflows.test.ts",
+        "src/platform/workflow/templates/services/templateInputService.test.ts"
+      ]
+    },
+    {
+      "name": "Template selector dialog filters templates, shows detail and model download status",
+      "checks": [
+        "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.test.ts",
+        "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.detail.test.ts",
+        "src/platform/workflow/templates/components/TemplateFilterControls.test.ts",
+        "src/platform/workflow/templates/components/WorkflowTemplateDownloadFailure.test.ts"
+      ]
+    },
+    {
+      "name": "Template entry points and partner-node education card open templates",
+      "checks": [
+        "src/components/sidebar/SidebarTemplatesButton.test.ts",
+        "src/components/actionbar/PartnerNodesEducationCard.test.ts"
+      ]
+    },
+    {
+      "name": "Template ranking scores and desktop template input downloads track their state",
+      "checks": [
+        "src/platform/workflow/templates/stores/templateRankingStore.test.ts",
+        "src/platform/workflow/templates/stores/templateInputDownloadStore.test.ts"
+      ]
+    },
+    {
+      "name": "Template selector dialog filters, sorts, and lazily paginates templates",
+      "checks": [
+        "src/platform/workflow/templates/composables/useTemplateFiltering.test.ts",
+        "src/platform/workflow/templates/composables/useLazyPagination.test.ts",
+        "src/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Template data is validated before it reaches presentation code.",
+    "Distribution eligibility and ranking remain host-independent domain policy."
+  ],
+  "deepImports": "inventory"
+}

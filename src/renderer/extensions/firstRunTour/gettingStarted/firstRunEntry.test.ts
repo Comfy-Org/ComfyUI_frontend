@@ -8,7 +8,7 @@ import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import {
   isFirstRunReplayRequested,
   requestOnboardingReplay
@@ -35,17 +35,17 @@ const mocks = vi.hoisted<{
 }))
 
 const sharedComposable = vi.hoisted(() => {
-  let reset = () => {}
+  const resets: (() => void)[] = []
 
   function create<T>(composable: () => T): () => T {
     let result: T | undefined
-    reset = () => {
+    resets.push(() => {
       result = undefined
-    }
+    })
     return () => (result ??= composable())
   }
 
-  return { create, reset: () => reset() }
+  return { create, reset: () => resets.forEach((reset) => reset()) }
 })
 
 const OWNER_ID = 'account-a'
@@ -61,7 +61,7 @@ vi.mocked(VueUse.createSharedComposable).mockImplementation(
   sharedComposable.create
 )
 
-vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
+vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => ({ isNewUser: () => mocks.isNewUser })
@@ -70,12 +70,15 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
 vi.mock(import('@/platform/telemetry/reportError'))
-vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
-  useFirstRunTourController: () => ({
-    beginTour: mocks.beginTour,
-    cancelPendingStart: mocks.cancelPendingStart
+vi.mock<unknown>(
+  import('@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'),
+  () => ({
+    useFirstRunTourController: () => ({
+      beginTour: mocks.beginTour,
+      cancelPendingStart: mocks.cancelPendingStart
+    })
   })
-}))
+)
 
 const { useFirstRunEntry } = await import('./firstRunEntry')
 

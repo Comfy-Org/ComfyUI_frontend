@@ -1,4 +1,4 @@
-import type { IColorsWidget } from '../types/widgets'
+import type { IColorsWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 

@@ -71,7 +71,6 @@ describe('copyTextSilently', () => {
 
   it('reports failure without throwing when the clipboard rejects', async () => {
     stubClipboard(vi.fn().mockRejectedValue(new Error('denied')))
-    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     await expect(copyTextSilently('hello')).resolves.toBe(false)
   })
@@ -97,7 +96,6 @@ describe('copyTextSilently', () => {
     // The unsupported path: without a `finally` the textarea stays in the
     // body — invisible but focusable — and accumulates one per attempt.
     stubClipboard(vi.fn().mockRejectedValue(new Error('denied')))
-    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     await copyTextSilently('hello')
     await copyTextSilently('hello again')
@@ -120,7 +118,7 @@ describe('copyTextSilently', () => {
     vi.mocked(reportError).mockImplementation(() => undefined)
 
     await expect(copyTextSilently('text')).resolves.toBe(false)
-    expect(vi.mocked(reportError)).toHaveBeenCalledWith(
+    expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ errorType: 'error_copying_invite_link' })
     )
@@ -135,7 +133,6 @@ describe('copyTextSilently', () => {
       value: undefined,
       configurable: true
     })
-    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     await expect(copyTextSilently('hello')).resolves.toBe(false)
   })

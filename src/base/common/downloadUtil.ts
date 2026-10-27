@@ -4,8 +4,8 @@
 import { t } from '@/i18n'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { isCloud } from '@/platform/distribution/types'
-// oxlint-disable-next-line comfy/no-restricted-paths
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 // Constants
 const DEFAULT_DOWNLOAD_FILENAME = 'download.png'
@@ -220,9 +220,9 @@ export async function openFileInNewTab(url: string): Promise<void> {
   } catch (error) {
     tab?.close()
     console.error('Failed to open image:', error)
-    useToastStore().addAlert(
+    useToast().warning(
       t('toastMessages.errorOpenImage', {
-        error: error instanceof Error ? error.message : String(error)
+        error: getErrorMessage(error) ?? t('g.unknownError')
       })
     )
   }

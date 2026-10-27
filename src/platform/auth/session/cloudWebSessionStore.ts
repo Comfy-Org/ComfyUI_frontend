@@ -25,7 +25,10 @@ import {
   createSessionTokenMint,
   SessionTokenError
 } from '@comfyorg/account-core/sessionTokenMint'
-import { revokeAllWebSessions } from '@comfyorg/account-core/webSession'
+import {
+  readWebSession,
+  revokeAllWebSessions
+} from '@comfyorg/account-core/webSession'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import {
@@ -38,11 +41,22 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import {
+  endSsoFlow,
+  trackSsoSignInCompleted
+} from '@/platform/auth/sso/ssoTelemetry'
+import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import {
   clearInteractiveSignIn,
   markInteractiveSignIn,
   takeInteractiveSignIn
 } from '@/platform/auth/session/interactiveSignInMarker'
+import {
+  forgetSsoHint,
+  isSsoSession,
+  rememberSignedInSession
+} from '@/platform/auth/session/ssoReentryStorage'
 import type { WebSessionRequestScope } from '@/platform/auth/session/webSessionFetch'
 import {
   fetchOnWebSession,
@@ -51,7 +65,7 @@ import {
 } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
@@ -62,6 +76,13 @@ interface InteractiveSignIn {
 }
 
 type Phase = WebSessionIdentityState['phase']
+
+/** Why this tab holds no session; `lapsed` is the server's, not a person's, doing. */
+export type WebSessionEnd =
+  | 'lapsed'
+  | 'signed_out_here'
+  | 'revoked'
+  | 'restore_failed'
 
 const BOOTING_PHASES: ReadonlySet<Phase> = new Set([
   'idle',
@@ -87,10 +108,14 @@ const TOKEN_FAILURE_COPY: Readonly<
   SESSION_UNAVAILABLE: 'auth.webSession.token.unavailable',
   CSRF_STALE: 'auth.webSession.token.refused',
   WORKSPACE_ACCESS_DENIED: 'auth.webSession.token.workspaceDenied',
-  SESSION_REQUEST_REFUSED: 'auth.webSession.token.refused'
+  SESSION_REQUEST_REFUSED: 'auth.webSession.token.refused',
+  SSO_REQUIRED: 'auth.webSession.token.refused'
 }
 
 export function webSessionFailureMessage(code: WebSessionErrorCode): string {
+  if (code === 'SSO_REQUIRED' && useFeatureFlags().flags.ssoEnabled) {
+    return t('auth.webSession.token.ssoRequired')
+  }
   return t(TOKEN_FAILURE_COPY[code])
 }
 
@@ -117,19 +142,17 @@ function resetForAccountChange(change: WebSessionAccountChange): void {
   useTeamWorkspaceStore().resetForIdentityChange()
   void api.resetSocket()
   if (change.reason !== 'user_changed') return
-  useToastStore().add({
-    severity: 'info',
-    summary: t('auth.accountChanged.title'),
-    detail: t('auth.accountChanged.detail', {
+  useToast().info(t('auth.accountChanged.title'), {
+    description: t('auth.accountChanged.detail', {
       email: change.session.user.email
     }),
-    life: 8000
+    duration: 8000
   })
 }
 
-function teamWorkspaceId(): string | undefined {
-  const workspace = useWorkspaceAuthStore().currentWorkspace
-  return workspace?.type === 'team' ? workspace.id : undefined
+function selectedWorkspaceId(): string | undefined {
+  const { currentWorkspace, deniedWorkspaceId } = useWorkspaceAuthStore()
+  return currentWorkspace?.id ?? deniedWorkspaceId ?? undefined
 }
 
 function sessionOptions(): WebSessionOptions {
@@ -137,6 +160,11 @@ function sessionOptions(): WebSessionOptions {
     apiBaseUrl: api.apiURL(''),
     fetchImpl: (input, init) => fetch(input, init)
   }
+}
+
+/** One read of the session cookie that leaves the page load undecided. */
+export async function readsSignedInWebSession(): Promise<boolean> {
+  return (await readWebSession(sessionOptions())).status === 'ok'
 }
 
 function createCloudIdentity(
@@ -176,12 +204,14 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   let decided = false
   let identity: WebSessionIdentity | null = null
   let ready: Promise<void> = Promise.resolve()
-  let creating: Promise<void> = Promise.resolve()
+  let creating: Promise<WebSessionErrorCode | undefined> =
+    Promise.resolve(undefined)
   let decidedForRequests: Promise<void> = Promise.resolve()
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined
   let pendingSignIn: InteractiveSignIn | null = null
   let releaseRequests = () => {}
   let signingOut = false
+  let signedOutHere = false
   const signedOutElsewhere = createEventHook()
   const state = shallowRef<WebSessionIdentityState>({ phase: 'idle' })
   const signedInUser = computed(() =>
@@ -191,9 +221,18 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   watch(
     () =>
       signedInUser.value?.id &&
-      JSON.stringify([signedInUser.value.id, teamWorkspaceId()]),
+      JSON.stringify([signedInUser.value.id, selectedWorkspaceId()]),
     (socketScope) => {
       if (socketScope) void api.reconnectSocket()
+    }
+  )
+
+  // A unified credential from a token-rail fallback would adopt a sibling's
+  // token and overwrite the workspace this tab's session requests carry.
+  watch(
+    () => signedInUser.value?.id,
+    (userId) => {
+      if (userId) useWorkspaceAuthStore().clearUnifiedContext()
     }
   )
 
@@ -218,20 +257,22 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     identity?.dispose()
   })
 
+  /** Resolves the refusal's code when the session was not created. */
   async function createSession(
     session: WebSessionIdentity,
     getProof: () => Promise<string>
-  ): Promise<void> {
+  ): Promise<WebSessionErrorCode | undefined> {
     const result = await session.signedIn(getProof).catch(() => null)
     if (result?.status === 'ok') {
       clearInteractiveSignIn()
-      return
+      return undefined
     }
     reportError(new Error('Web session creation failed'), {
       surface: 'auth',
       errorType: 'session_cookie_creation_failure',
       level: 'warning'
     })
+    return result?.code
   }
 
   async function bootAfter(
@@ -244,7 +285,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       signIn ??
       (reloaded ? { uid: user.uid, getProof: () => user.getIdToken() } : null)
     if (interactive && interactive.uid === user?.uid) {
-      await createSession(session, interactive.getProof)
+      creating = createSession(session, interactive.getProof)
+      await creating
     }
     session.boot()
   }
@@ -263,6 +305,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     identity = session
     session.subscribe((next) => {
       state.value = next
+      webSessionUser.value =
+        next.phase === 'signed_in' ? next.session.user : undefined
+      followSsoHint(next)
     })
     const mint = createSessionTokenMint({
       ...sessionOptions(),
@@ -273,7 +318,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     })
     releaseRequests = provideWebSessionRequests({
       scope: requestScope,
-      workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
+      workspaceId: () => (currentSession() ? selectedWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),
       workspaceToken: async (scope) =>
         settleScopedToken(scope, await mint.mint(scope.workspaceId)),
@@ -300,6 +345,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
               tags: { code: failure.code, http_status: failure.httpStatus }
             })
           }
+          if (failure.code === 'SSO_REQUIRED') {
+            presentSsoRequired('session_refused', { email: session.user.email })
+          }
           throw new WebSessionTokenError(
             error,
             webSessionFailureMessage(failure.code)
@@ -314,9 +362,31 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     return true
   }
 
+  function followSsoHint(next: WebSessionIdentityState): void {
+    if (next.phase === 'signed_in') {
+      signedOutHere = false
+      if (useFeatureFlags().flags.ssoEnabled) {
+        rememberSignedInSession(next.session.user)
+        if (isSsoSession(next.session.user)) {
+          trackSsoSignInCompleted()
+        }
+      }
+    } else if (next.phase === 'signed_out' && next.outcome === 'revoked') {
+      forgetSsoHint()
+    }
+  }
+
+  function sessionEnd(): WebSessionEnd | undefined {
+    const current = identity?.getState()
+    if (current?.phase !== 'signed_out') return undefined
+    if (signedOutHere) return 'signed_out_here'
+    return current.outcome === 'signed_out' ? 'lapsed' : current.outcome
+  }
+
   /** Only after an interactive sign-in; a token refresh never calls this. */
   function signedInInteractively(user: User): void {
     const getProof = () => user.getIdToken()
+    endSsoFlow()
     if (isCloud) markInteractiveSignIn(user.uid)
     if (identity) creating = createSession(identity, getProof)
     else if (!decided) pendingSignIn = { uid: user.uid, getProof }
@@ -325,6 +395,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   async function signOut(): Promise<void> {
     pendingSignIn = null
     clearInteractiveSignIn()
+    forgetSsoHint()
+    signedOutHere = true
     signingOut = true
     const result = await identity?.signOut().finally(() => {
       signingOut = false
@@ -389,7 +461,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     await decidedForRequests
     const session = currentSession()
     if (!identity || !session) return undefined
-    const workspaceId = teamWorkspaceId()
+    const workspaceId = selectedWorkspaceId()
     return {
       session,
       epoch: identity.getEpoch(),
@@ -416,7 +488,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       authorize,
       refresh: refreshFor,
       workspaceDenied: (workspaceId) =>
-        useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId)
+        useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId),
+      ssoRequired: ({ session }) =>
+        presentSsoRequired('session_refused', { email: session.user.email })
     })
   }
 
@@ -433,6 +507,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     signedInUser,
     reconnecting,
     isActive: () => identity !== null,
+    sessionEnd,
     whenReady: () => ready,
     whenSessionCreated: () => creating,
     whenDecided,

@@ -1,0 +1,89 @@
+{
+  "id": "workflow-persistence",
+  "capability": "Workflow persistence",
+  "description": "Browser-local workflow draft persistence: the V2 draft cache and LRU index, workspace- and tab-scoped storage keys, localStorage/sessionStorage IO, the draft store, autosave, and the boot-time restore that reopens tabs and the active workflow. Workflow files, the workflow store, and workflowService remain in workflow management and core; shared-URL and template-URL loading are consumed from their own capabilities.",
+  "modules": [
+    {
+      "path": "src/platform/workflow/persistence/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/persistence/base/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/persistence/base/storageIO.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workflow/persistence/base/storageIO.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workflow/persistence/base/storageKeys.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workflow/persistence/base/storageKeys.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workflow/persistence/composables/useWorkflowPersistenceV2.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/workflow/persistence/composables/useWorkflowPersistenceV2.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/workflow/persistence/composables/useWorkflowTabState.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workflow/persistence/composables/useWorkflowTabState.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Draft cache keeps a bounded, collision-safe LRU index of workflow drafts",
+      "checks": [
+        "src/platform/workflow/persistence/base/draftCacheV2.test.ts",
+        "src/platform/workflow/persistence/base/draftCacheV2.property.test.ts",
+        "src/platform/workflow/persistence/base/draftCacheV2.collision.test.ts"
+      ]
+    },
+    {
+      "name": "Storage keys and IO scope drafts by workspace and tab pointers by client",
+      "checks": [
+        "src/platform/workflow/persistence/base/storageKeys.test.ts",
+        "src/platform/workflow/persistence/base/storageIO.test.ts",
+        "src/platform/workflow/persistence/composables/useWorkflowTabState.test.ts"
+      ]
+    },
+    {
+      "name": "Draft store transitions persist, load, and evict drafts consistently",
+      "checks": [
+        "src/platform/workflow/persistence/stores/workflowDraftStoreV2.fsm.test.ts",
+        "src/platform/workflow/persistence/stores/workflowDraftStoreV2.test.ts"
+      ]
+    },
+    {
+      "name": "Autosave and boot restore reopen saved tabs and the active workflow",
+      "checks": [
+        "src/platform/workflow/persistence/composables/useWorkflowAutoSave.test.ts",
+        "src/platform/workflow/persistence/composables/useWorkflowPersistenceV2.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Existing localStorage and sessionStorage key formats remain readable so saved drafts and tab pointers survive upgrades.",
+    "Unclassified callers may import persistence internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "The workflow-management cycle (workflowStore importing the draft store while persistence composables import workflowStore) and the restore composable's direct use of sharing and template URL loaders remain visible as coupling debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

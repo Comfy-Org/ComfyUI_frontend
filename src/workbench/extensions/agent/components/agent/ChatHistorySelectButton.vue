@@ -2,7 +2,7 @@
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const {
   title,
@@ -51,7 +51,7 @@ const errorId = useId()
       v-if="failed"
       :id="errorId"
       role="alert"
-      class="pl-6 text-xs whitespace-normal text-destructive-background"
+      class="pl-6 text-xs whitespace-normal text-destructive"
       >{{ t('agent.historyOpenFailed') }}</span
     >
   </div>

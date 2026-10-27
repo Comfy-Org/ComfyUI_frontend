@@ -10,9 +10,13 @@ const RGB_CANVAS_INDEX = 1
 type BrushSliderLabel = 'thickness'
 
 class MaskEditorHelper {
+  public readonly dialog: Locator
   public readonly previewImage: Locator
 
   constructor(private comfyPage: ComfyPage) {
+    this.dialog = comfyPage.page.locator(
+      '[data-dialog-key="global-mask-editor"]'
+    )
     this.previewImage = comfyPage.page.locator('.image-preview img').first()
   }
 
@@ -46,7 +50,7 @@ class MaskEditorHelper {
     await imagePreview.getByRole('region').hover()
     await this.page.getByLabel('Edit or mask image').click()
 
-    const dialog = this.page.locator('.mask-editor-dialog')
+    const dialog = this.dialog
     await expect(dialog).toBeVisible()
     await expect(
       dialog.getByRole('heading', { name: 'Mask Editor' })
@@ -65,7 +69,7 @@ class MaskEditorHelper {
     await imagePreview.getByRole('region').hover()
     await this.page.getByLabel('Edit or mask image').click()
 
-    const dialog = this.page.locator('.mask-editor-dialog')
+    const dialog = this.dialog
     await expect(dialog).toBeVisible()
     await expect(dialog.getByTestId('pointer-zone')).toBeVisible()
 

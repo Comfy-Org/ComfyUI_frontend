@@ -12,6 +12,7 @@ const { mockAxiosInstance } = vi.hoisted(() => ({
   mockAxiosInstance: {
     get: vi.fn(),
     post: vi.fn(),
+    put: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
     interceptors: { response: { use: vi.fn() } }
@@ -45,9 +46,24 @@ beforeEach(() => {
 })
 
 import { workspaceApi } from './workspaceApi'
+import { installWorkspaceApiAuth } from './workspaceApiAuth'
+import { NoWorkspaceAccessError } from './workspaceApiError'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
+installWorkspaceApiAuth()
+
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
+
+function axiosRejection(status: number, data: unknown) {
+  return {
+    isAxiosError: true,
+    name: 'AxiosError',
+    code: 'ERR_BAD_RESPONSE',
+    message: `Request failed with status code ${status}`,
+    status,
+    response: { status, statusText: '', headers: {}, data }
+  }
+}
 
 describe('workspaceApi', () => {
   beforeEach(() => {
@@ -176,6 +192,57 @@ describe('workspaceApi', () => {
       })
     })
 
+    it.for([
+      {
+        operation: 'getBillingOpStatus',
+        call: () => workspaceApi.getBillingOpStatus('op-1'),
+        code: undefined
+      },
+      {
+        operation: 'acceptInvite',
+        call: () => workspaceApi.acceptInvite('token'),
+        code: undefined
+      },
+      {
+        operation: 'getCurrentWorkspace',
+        call: () => workspaceApi.getCurrentWorkspace(),
+        code: 'no_workspace_access'
+      }
+    ])(
+      'names $operation as the failed operation',
+      async ({ operation, call, code }) => {
+        const axiosErr = {
+          isAxiosError: true,
+          response: { status: 403, data: { message: 'Forbidden', code } },
+          message: 'Request failed'
+        }
+        mockAxiosInstance.get.mockRejectedValue(axiosErr)
+        mockAxiosInstance.post.mockRejectedValue(axiosErr)
+
+        await expect(call()).rejects.toMatchObject({ operation })
+      }
+    )
+
+    it.for([
+      { status: 403, code: 'no_workspace_access', typed: true },
+      { status: 403, code: undefined, typed: false },
+      { status: 404, code: 'no_workspace_access', typed: false }
+    ])(
+      'a $status with code $code is NoWorkspaceAccessError: $typed',
+      async ({ status, code, typed }) => {
+        mockAxiosInstance.get.mockRejectedValue({
+          isAxiosError: true,
+          response: { status, data: { message: 'No workspace', code } },
+          message: 'Request failed'
+        })
+
+        const error = await workspaceApi.list().catch((e: unknown) => e)
+
+        expect(error instanceof NoWorkspaceAccessError).toBe(typed)
+        expect(error).toMatchObject({ status, code })
+      }
+    )
+
     it('falls back to err.message when response data has no message', async () => {
       const axiosErr = {
         isAxiosError: true,
@@ -294,6 +361,299 @@ describe('workspaceApi', () => {
         { headers: AUTH_HEADER }
       )
     })
+  })
+
+  describe('deployment picking', () => {
+    it('listDeployments() sends GET /workspaces/:id/deployments with a 30 second timeout', async () => {
+      const data = { items: [], builds_visible: true }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.listDeployments('ws-1')
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments',
+        { headers: AUTH_HEADER, timeout: 30_000 }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getDeploymentCpuServer() sends GET /workspaces/:id/deployment/cpu-server and reads the step', async () => {
+      const data = { deployment_id: 'dep-1', cpu_server: 'building' }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getDeploymentCpuServer('ws-1')
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment/cpu-server',
+        { headers: AUTH_HEADER, timeout: 15_000 }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getDeploymentCpuServer() rejects a step it does not know instead of reading it as one', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: { cpu_server: 'exists' }
+      })
+
+      await expect(
+        workspaceApi.getDeploymentCpuServer('ws-1')
+      ).rejects.toThrow()
+    })
+
+    it.for([
+      { status: 404, code: 'NOT_FOUND' },
+      { status: 502, code: 'cpu_server_unknown' }
+    ])(
+      'getDeploymentCpuServer() turns a $status into a WorkspaceApiError with code $code',
+      async ({ status, code }) => {
+        mockAxiosInstance.get.mockRejectedValue(
+          axiosRejection(status, { code, message: 'Refused' })
+        )
+
+        await expect(
+          workspaceApi.getDeploymentCpuServer('ws-1')
+        ).rejects.toMatchObject({
+          name: 'WorkspaceApiError',
+          status,
+          code,
+          message: 'Refused',
+          operation: 'getDeploymentCpuServer'
+        })
+      }
+    )
+
+    it('getReleaseUnsupportedPacks() sends GET /release/unsupported-packs and reads the packs and their release', async () => {
+      const data = {
+        release_id: 'release-2',
+        packs: [
+          {
+            folder: 'ComfyUI-NVIDIA-VFX',
+            registry_id: 'comfyui-nvidia-vfx',
+            repository: 'https://github.com/NVIDIA/ComfyUI-NVIDIA-VFX',
+            cause: 'needs a GPU'
+          }
+        ]
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getReleaseUnsupportedPacks()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/release/unsupported-packs',
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getReleaseUnsupportedPacks() reads a pack not installed from the registry, with its cause', async () => {
+      const data = {
+        release_id: 'rel-picked',
+        packs: [
+          {
+            folder: 'ComfyUI_Nvidia_RTX_Nodes',
+            registry_id: '',
+            repository: '',
+            cause: 'needs a GPU'
+          }
+        ]
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getReleaseUnsupportedPacks()
+
+      expect(result.packs).toEqual([
+        {
+          folder: 'ComfyUI_Nvidia_RTX_Nodes',
+          registry_id: '',
+          repository: '',
+          cause: 'needs a GPU'
+        }
+      ])
+    })
+
+    it('getReleaseUnsupportedPacks() rejects a pack whose registry id is in camelCase', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: {
+          release_id: 'rel-picked',
+          packs: [
+            {
+              folder: 'ComfyUI_Nvidia_RTX_Nodes',
+              registryId: '',
+              repository: '',
+              cause: 'needs a GPU'
+            }
+          ]
+        }
+      })
+
+      await expect(workspaceApi.getReleaseUnsupportedPacks()).rejects.toThrow()
+    })
+
+    it('getReleaseUnsupportedPacks() rejects a body without packs', async () => {
+      mockAxiosInstance.get.mockResolvedValue({ data: { items: [] } })
+
+      await expect(workspaceApi.getReleaseUnsupportedPacks()).rejects.toThrow()
+    })
+
+    it('pickDeployment() sends PUT /workspaces/:id/deployment with the deployment', async () => {
+      mockAxiosInstance.put.mockResolvedValue({})
+
+      await workspaceApi.pickDeployment('ws-1', { deployment_id: 'dep-1' })
+
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment',
+        { deployment_id: 'dep-1' },
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('does not dispatch a canceled deployment selection when authorization finishes late', async () => {
+      let finishAuth!: (headers: typeof AUTH_HEADER) => void
+      const auth = new Promise<typeof AUTH_HEADER>((resolve) => {
+        finishAuth = resolve
+      })
+      vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockReturnValue(
+        auth
+      )
+      const controller = new AbortController()
+      const selected = workspaceApi.pickDeployment(
+        'ws-1',
+        { deployment_id: 'dep-1' },
+        controller.signal
+      )
+      controller.abort()
+      finishAuth(AUTH_HEADER)
+      await expect(selected).rejects.toMatchObject({ name: 'AbortError' })
+      expect(mockAxiosInstance.put).not.toHaveBeenCalled()
+    })
+
+    it('does not mint a canceled top-up checkout when authorization finishes late', async () => {
+      let finishAuth!: (headers: typeof AUTH_HEADER) => void
+      const auth = new Promise<typeof AUTH_HEADER>((resolve) => {
+        finishAuth = resolve
+      })
+      vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockReturnValue(
+        auth
+      )
+      const controller = new AbortController()
+      const checkout = workspaceApi.createTopupCheckout(
+        1000,
+        'https://cloud.comfy.org/topup-return',
+        controller.signal
+      )
+      controller.abort()
+      finishAuth(AUTH_HEADER)
+      await expect(checkout).rejects.toMatchObject({ name: 'AbortError' })
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled()
+    })
+
+    it('forwards deployment selection cancellation to the transport', async () => {
+      mockAxiosInstance.put.mockResolvedValue({})
+      const controller = new AbortController()
+      await workspaceApi.pickDeployment(
+        'ws-1',
+        { deployment_id: 'dep-1' },
+        controller.signal
+      )
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment',
+        { deployment_id: 'dep-1' },
+        { headers: AUTH_HEADER, signal: controller.signal }
+      )
+    })
+
+    it('clearDeployment() sends DELETE /workspaces/:id/deployment, with follow=workspace only when asked', async () => {
+      mockAxiosInstance.delete.mockResolvedValue({})
+
+      await workspaceApi.clearDeployment('ws-1')
+      await workspaceApi.clearDeployment('ws-1', { follow: 'workspace' })
+
+      expect(mockAxiosInstance.delete).toHaveBeenNthCalledWith(
+        1,
+        '/api/workspaces/ws-1/deployment',
+        { headers: AUTH_HEADER, params: undefined }
+      )
+      expect(mockAxiosInstance.delete).toHaveBeenNthCalledWith(
+        2,
+        '/api/workspaces/ws-1/deployment',
+        { headers: AUTH_HEADER, params: { follow: 'workspace' } }
+      )
+    })
+
+    it('setDefaultDeployment() sends PUT /workspaces/:id/default-deployment with the deployment', async () => {
+      mockAxiosInstance.put.mockResolvedValue({})
+
+      await workspaceApi.setDefaultDeployment('ws-1', {
+        deployment_id: 'dep-1'
+      })
+
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/default-deployment',
+        { deployment_id: 'dep-1' },
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('clearDefaultDeployment() sends DELETE /workspaces/:id/default-deployment', async () => {
+      mockAxiosInstance.delete.mockResolvedValue({})
+
+      await workspaceApi.clearDefaultDeployment('ws-1')
+
+      expect(mockAxiosInstance.delete).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/default-deployment',
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('checkDeploymentCompatibility() sends POST /workspaces/:id/deployments/compatibility with the node types', async () => {
+      const data = {
+        deployments: [
+          { deployment_id: 'dep-1', missing_node_types: [], unknown: false }
+        ],
+        cloud: { missing_node_types: ['Power Lora Loader (rgthree)'] }
+      }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      const result = await workspaceApi.checkDeploymentCompatibility('ws-1', [
+        'KSampler',
+        'Power Lora Loader (rgthree)'
+      ])
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments/compatibility',
+        { node_types: ['KSampler', 'Power Lora Loader (rgthree)'] },
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it.for([
+      {
+        answer: 'a Comfy Cloud answer with no missing list',
+        data: {
+          deployments: [
+            { deployment_id: 'dep-1', missing_node_types: [], unknown: false }
+          ],
+          cloud: {}
+        }
+      },
+      {
+        answer: 'a deployment answer with no unknown flag',
+        data: {
+          deployments: [{ deployment_id: 'dep-1', missing_node_types: [] }],
+          cloud: { missing_node_types: [] }
+        }
+      }
+    ])(
+      'checkDeploymentCompatibility() rejects $answer instead of reading it as runs',
+      async ({ data }) => {
+        mockAxiosInstance.post.mockResolvedValue({ data })
+
+        await expect(
+          workspaceApi.checkDeploymentCompatibility('ws-1', ['KSampler'])
+        ).rejects.toMatchObject({ name: 'ZodError' })
+      }
+    )
   })
 
   describe('member management', () => {
@@ -473,6 +833,13 @@ describe('workspaceApi', () => {
           can_reactivate: true,
           can_change_seats: true,
           can_invite_members: true,
+          can_manage_members: true,
+          can_delete_workspace: false,
+          can_leave_workspace: false,
+          can_manage_billing: false,
+          can_manage_partner_node_access: false,
+          can_view_pending_invites: false,
+          can_view_team_usage: false,
           can_downgrade_to_personal: false
         }
       }
@@ -489,6 +856,19 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('getBillingAutoReload() sends GET /billing/auto-reload with a 10 second timeout', async () => {
+      const data = { status: 'off' }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getBillingAutoReload()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/auto-reload',
+        { headers: AUTH_HEADER, timeout: 10_000 }
+      )
+      expect(result).toEqual(data)
+    })
+
     it('getBillingPlans() sends GET /billing/plans', async () => {
       const data = { plans: [] }
       mockAxiosInstance.get.mockResolvedValue({ data })
@@ -501,59 +881,101 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
-    it.for([undefined, 'sub_offer_1'])(
-      'getChurnkeyAuth() retains the optional offer subscription %s',
-      async (offerSubscriptionId) => {
-        const data = {
-          customer_id: 'cus_test_1',
-          auth_hash: 'hash-1',
-          mode: 'test',
-          offer_subscription_id: offerSubscriptionId
-        }
-        mockAxiosInstance.get.mockResolvedValue({ data })
-
-        await expect(workspaceApi.getChurnkeyAuth()).resolves.toEqual(data)
-        expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-          '/api/billing/churnkey/auth',
-          { headers: AUTH_HEADER }
-        )
+    const retentionFlow = {
+      session_id: '00000000-0000-4000-8000-000000000001',
+      expires_at: 2_000_000_000,
+      subscription: {
+        currency: 'usd',
+        unit_amount: 2000,
+        quantity: 1,
+        period_end: 2_000_000_000
       }
-    )
+    }
 
-    it.for([{ auth_hash: '' }, { offer_subscription_id: '' }])(
-      'getChurnkeyAuth() rejects malformed credentials %j',
-      async (malformed) => {
-        mockAxiosInstance.get.mockResolvedValue({
-          data: {
-            customer_id: 'cus_test_1',
-            auth_hash: 'hash',
-            mode: 'test',
-            ...malformed
+    it.for([
+      { name: 'without an offer', data: retentionFlow },
+      {
+        name: 'with an offer',
+        data: {
+          ...retentionFlow,
+          experiment_variant: 'save_30_next_3_v1',
+          offer: {
+            id: 'save_30_next_3_v1',
+            percent_off: 30,
+            duration_in_months: 3
           }
-        })
-
-        await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
-          name: 'ZodError'
-        })
+        }
       }
-    )
+    ])('prepareRetentionFlow() returns a session $name', async ({ data }) => {
+      mockAxiosInstance.post.mockResolvedValue({ data })
 
-    it('getChurnkeyAuth() normalizes Axios failures', async () => {
-      mockAxiosInstance.get.mockRejectedValue({
+      await expect(workspaceApi.prepareRetentionFlow()).resolves.toEqual(data)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/retention/prepare',
+        {},
+        { headers: AUTH_HEADER, timeout: 5_000 }
+      )
+    })
+
+    it('prepareRetentionFlow() rejects a malformed session', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { ...retentionFlow, session_id: 'not-a-session' }
+      })
+
+      await expect(workspaceApi.prepareRetentionFlow()).rejects.toMatchObject({
+        name: 'ZodError'
+      })
+    })
+
+    it('acceptRetentionOffer() sends only the session', async () => {
+      const data = { billing_op_id: 'op-1', status: 'pending' }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      await expect(
+        workspaceApi.acceptRetentionOffer(retentionFlow.session_id)
+      ).resolves.toEqual(data)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/retention/accept',
+        { session_id: retentionFlow.session_id },
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('recordRetentionFlowEvent() posts the event', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: undefined })
+      const event = {
+        session_id: retentionFlow.session_id,
+        event: 'offer_shown'
+      } as const
+
+      await workspaceApi.recordRetentionFlowEvent(event)
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/retention/events',
+        event,
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('prepareRetentionFlow() normalizes Axios failures', async () => {
+      mockAxiosInstance.post.mockRejectedValue({
         isAxiosError: true,
         response: {
           status: 503,
-          data: { message: 'Churnkey auth unavailable', code: 'UNAVAILABLE' }
+          data: {
+            message: 'cancellation offers are unavailable',
+            code: 'RETENTION_UNAVAILABLE'
+          }
         },
         message: 'Request failed',
         config: { headers: AUTH_HEADER }
       })
 
-      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
+      await expect(workspaceApi.prepareRetentionFlow()).rejects.toMatchObject({
         name: 'WorkspaceApiError',
         status: 503,
-        code: 'UNAVAILABLE',
-        message: 'Churnkey auth unavailable'
+        code: 'RETENTION_UNAVAILABLE',
+        message: 'cancellation offers are unavailable'
       })
     })
   })
@@ -808,9 +1230,29 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/payment-portal',
         { return_url: 'https://app.com/settings' },
-        { headers: AUTH_HEADER }
+        { headers: AUTH_HEADER, timeout: 30_000 }
       )
       expect(result).toEqual(data)
+    })
+
+    it('getPaymentPortalUrl() asks for the payment-method update flow when named', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { url: 'https://stripe.com/portal' }
+      })
+
+      await workspaceApi.getPaymentPortalUrl(
+        'https://app.com/settings',
+        'payment_method_update'
+      )
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/payment-portal',
+        {
+          return_url: 'https://app.com/settings',
+          flow_type: 'payment_method_update'
+        },
+        { headers: AUTH_HEADER, timeout: 30_000 }
+      )
     })
 
     it('createTopup() sends POST with amount_cents and idempotency_key', async () => {

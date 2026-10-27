@@ -14,7 +14,7 @@
       @keydown="handleSearchKeydown"
     />
   </div>
-  <DropdownMenuSeparator class="my-1 h-px bg-border-subtle" />
+  <DropdownMenuSeparator class="my-1 h-px bg-border/50" />
 
   <template v-if="isSearching">
     <template v-if="matchingMediaTypes.length">
@@ -71,7 +71,7 @@
     {{ $t('sideToolbar.mediaAssets.filterGroupAttribute') }}
   </DropdownMenuLabel>
 
-  <DropdownMenuSub v-if="!isSearching">
+  <MenuSub v-if="!isSearching">
     <DropdownMenuSubTrigger :class="menuItemClass">
       <i class="icon-[lucide--image] size-4 shrink-0 text-muted-foreground" />
       <span class="flex-1 text-left">
@@ -81,33 +81,30 @@
         class="icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground"
       />
     </DropdownMenuSubTrigger>
-
-    <DropdownMenuPortal>
-      <DropdownMenuSubContent
-        :side-offset="8"
-        :align-offset="-9"
-        :collision-padding="10"
-        :prioritize-position="false"
-        :class="submenuClass"
+    <MenuSubContent
+      :side-offset="8"
+      :align-offset="-9"
+      :collision-padding="10"
+      :prioritize-position="false"
+      class="min-w-40"
+    >
+      <DropdownMenuCheckboxItem
+        v-for="filter in mediaTypeFilterOptions"
+        :key="filter.value"
+        :model-value="mediaTypeFilters.includes(filter.value)"
+        :class="menuItemClass"
+        @click="toggleMediaType(filter.value)"
+        @select.prevent
       >
-        <DropdownMenuCheckboxItem
-          v-for="filter in mediaTypeFilterOptions"
-          :key="filter.value"
-          :model-value="mediaTypeFilters.includes(filter.value)"
-          :class="menuItemClass"
-          @click="toggleMediaType(filter.value)"
-          @select.prevent
-        >
-          <span class="flex-1">{{ $t(filter.label) }}</span>
-          <DropdownMenuItemIndicator class="size-4 shrink-0">
-            <i class="icon-[lucide--check]" />
-          </DropdownMenuItemIndicator>
-        </DropdownMenuCheckboxItem>
-      </DropdownMenuSubContent>
-    </DropdownMenuPortal>
-  </DropdownMenuSub>
+        <span class="flex-1">{{ $t(filter.label) }}</span>
+        <DropdownMenuItemIndicator class="size-4 shrink-0">
+          <i class="icon-[lucide--check]" />
+        </DropdownMenuItemIndicator>
+      </DropdownMenuCheckboxItem>
+    </MenuSubContent>
+  </MenuSub>
 
-  <DropdownMenuSub v-if="!isSearching">
+  <MenuSub v-if="!isSearching">
     <DropdownMenuSubTrigger :class="menuItemClass">
       <i
         class="icon-[lucide--calendar] size-4 shrink-0 text-muted-foreground"
@@ -119,33 +116,30 @@
         class="icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground"
       />
     </DropdownMenuSubTrigger>
-
-    <DropdownMenuPortal>
-      <DropdownMenuSubContent
-        :side-offset="8"
-        :align-offset="-9"
-        :collision-padding="10"
-        :prioritize-position="false"
-        :class="submenuClass"
-      >
-        <DropdownMenuRadioGroup :model-value="dateFilter">
-          <DropdownMenuRadioItem
-            v-for="filter in dateFilterOptions"
-            :key="filter.value"
-            :value="filter.value"
-            :class="menuItemClass"
-            @click="dateFilter = filter.value"
-            @select.prevent
-          >
-            <span class="flex-1">{{ $t(filter.label) }}</span>
-            <DropdownMenuItemIndicator class="size-4 shrink-0">
-              <i class="icon-[lucide--check]" />
-            </DropdownMenuItemIndicator>
-          </DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
-      </DropdownMenuSubContent>
-    </DropdownMenuPortal>
-  </DropdownMenuSub>
+    <MenuSubContent
+      :side-offset="8"
+      :align-offset="-9"
+      :collision-padding="10"
+      :prioritize-position="false"
+      class="min-w-40"
+    >
+      <DropdownMenuRadioGroup :model-value="dateFilter">
+        <DropdownMenuRadioItem
+          v-for="filter in dateFilterOptions"
+          :key="filter.value"
+          :value="filter.value"
+          :class="menuItemClass"
+          @click="dateFilter = filter.value"
+          @select.prevent
+        >
+          <span class="flex-1">{{ $t(filter.label) }}</span>
+          <DropdownMenuItemIndicator class="size-4 shrink-0">
+            <i class="icon-[lucide--check]" />
+          </DropdownMenuItemIndicator>
+        </DropdownMenuRadioItem>
+      </DropdownMenuRadioGroup>
+    </MenuSubContent>
+  </MenuSub>
 </template>
 
 <script setup lang="ts">
@@ -153,17 +147,17 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuItemIndicator,
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
   DropdownMenuSubTrigger
 } from 'reka-ui'
+import MenuSub from '@comfyorg/design-system/menu/MenuSub'
+import MenuSubContent from '@comfyorg/design-system/menu/MenuSubContent'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { menuItemClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 import {
   dateFilterOptions,
   mediaTypeFilterOptions
@@ -196,12 +190,8 @@ const hasSearchResults = computed(
   () => matchingMediaTypes.value.length > 0 || matchingDates.value.length > 0
 )
 
-const menuItemClass =
-  'flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm outline-none data-highlighted:bg-secondary-background-hover'
 const groupLabelClass =
   'px-2 pt-1 pb-1.5 text-xs font-semibold text-muted-foreground uppercase'
-const submenuClass =
-  'z-1700 min-w-40 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm'
 
 onMounted(() => {
   void nextTick(() => searchInput.value?.focus())

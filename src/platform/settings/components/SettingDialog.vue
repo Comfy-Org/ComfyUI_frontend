@@ -1,21 +1,26 @@
 <template>
   <BaseModalLayout
-    content-title=""
+    :content-title="$t('g.settings')"
     data-testid="settings-dialog"
-    size="full"
+    size="md"
     :content-padding="isWorkspaceCategoryActive ? 'none' : 'default'"
     header-padding="symmetric"
+    :close-button-variant="closeButtonVariant"
+    :close-icon="closeIcon"
   >
     <template #leftPanelHeaderTitle>
-      <i class="icon-[lucide--settings]" />
-      <h2 class="text-base text-base-foreground">{{ $t('g.settings') }}</h2>
+      <i class="icon-[lucide--settings] size-4" />
+      <h2 class="text-base text-foreground">{{ $t('g.settings') }}</h2>
     </template>
 
     <template #leftPanel>
       <div class="px-3">
         <SearchInput
           v-model:model-value="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="$t('g.search')"
           size="md"
+          class="rounded-lg ring-1 ring-border/50"
           :placeholder="$t('g.searchSettings') + '...'"
           :debounce-time="128"
           :autofocus="activeCategoryKey !== 'keybinding'"
@@ -25,7 +30,7 @@
 
       <nav
         ref="navRef"
-        class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
+        class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3 pt-1 pb-4"
       >
         <div
           v-for="(group, index) in navGroups"
@@ -60,6 +65,7 @@
         :workspace-name="workspaceName"
         :subscription-tier="activeWorkspace?.subscriptionTier"
         :collapsed="isHeaderCollapsed"
+        :large="unifiedBillingSettingsEnabled"
       />
     </template>
 
@@ -111,13 +117,13 @@
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
 
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import SettingsWorkspaceHeader from '@/platform/settings/components/SettingsWorkspaceHeader.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
-import NavTitle from '@/components/widget/nav/NavTitle.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import NavTitle from '@comfyorg/design-system/navigation/NavTitle'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -126,20 +132,17 @@ import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import type {
   ISettingGroup,
-  SettingPanelType,
+  SettingDialogProps,
   SettingParams
 } from '@/platform/settings/types'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { flattenTree } from '@/utils/treeUtil'
 
-const { onClose, defaultPanel, scrollToSettingId } = defineProps<{
-  onClose: () => void
-  defaultPanel?: SettingPanelType
-  scrollToSettingId?: string
-}>()
+const { onClose, defaultPanel, scrollToSettingId } =
+  defineProps<SettingDialogProps>()
 
 provide(OnCloseKey, onClose)
 
@@ -147,6 +150,7 @@ const {
   defaultCategory,
   settingCategories,
   navGroups,
+  unifiedBillingSettingsEnabled,
   findCategoryByKey,
   findPanelByKey
 } = useSettingUI(defaultPanel, scrollToSettingId)
@@ -170,6 +174,14 @@ const WORKSPACE_CATEGORY_KEYS = new Set([
   'workspace-members',
   'workspace-allowlist'
 ])
+const closeButtonVariant = computed(() =>
+  unifiedBillingSettingsEnabled.value ? 'textonly' : undefined
+)
+const closeIcon = computed(() =>
+  unifiedBillingSettingsEnabled.value
+    ? 'icon-[lucide--x] size-4 shrink-0'
+    : undefined
+)
 const isWorkspaceCategoryActive = computed(
   () =>
     activeCategoryKey.value !== null &&
@@ -318,11 +330,7 @@ watch(activeCategoryKey, (newKey, oldKey) => {
     background-color: transparent;
   }
   30% {
-    background-color: color-mix(
-      in srgb,
-      var(--p-primary-color) 15%,
-      transparent
-    );
+    background-color: color-mix(in srgb, var(--primary) 15%, transparent);
   }
 }
 </style>

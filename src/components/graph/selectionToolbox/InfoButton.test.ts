@@ -1,14 +1,12 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
 
 import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { openNodeInfoMock } = vi.hoisted(() => ({
   openNodeInfoMock: vi.fn()
@@ -42,8 +40,7 @@ describe('InfoButton', () => {
   const renderComponent = () => {
     return render(InfoButton, {
       global: {
-        plugins: [i18n, PrimeVue],
-        directives: { tooltip: Tooltip },
+        plugins: [i18n],
         components: { Button }
       }
     })

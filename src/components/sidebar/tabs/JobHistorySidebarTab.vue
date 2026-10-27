@@ -28,11 +28,11 @@
         :search-placeholder="t('g.searchPlaceholder', { subject: t('g.jobs') })"
       />
       <div
-        class="flex items-center justify-between px-4 pb-2 text-xs leading-none text-text-primary"
+        class="flex items-center justify-between px-4 pb-2 text-xs leading-none"
       >
-        <span class="text-text-secondary">{{ activeQueueSummary }}</span>
+        <span class="text-muted-foreground">{{ activeQueueSummary }}</span>
         <div class="flex items-center gap-2">
-          <span class="text-xs text-base-foreground">
+          <span>
             {{ t('sideToolbar.queueProgressOverlay.clearQueueTooltip') }}
           </span>
           <Button
@@ -66,11 +66,7 @@
             @menu="onMenuItem"
           />
         </div>
-        <JobContextMenu
-          ref="jobContextMenuRef"
-          :entries="jobMenuEntries"
-          @action="onJobMenuAction"
-        />
+        <Menu v-bind="jobMenuProps" :items="jobMenuEntries" />
         <MediaLightbox
           v-model:active-index="galleryActiveIndex"
           :all-gallery-items="galleryItems"
@@ -84,12 +80,12 @@
 import { computed, defineAsyncComponent, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
 import JobAssetsList from '@/components/queue/job/JobAssetsList.vue'
-import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
-import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { getVisibleJobTabs, jobTabLabelKeys } from '@/composables/queue/jobTabs'
 import type { JobTab } from '@/composables/queue/jobTabs'
@@ -100,9 +96,9 @@ import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
-import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -111,7 +107,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import { is3DResult } from '@/utils/resultItem'
 
 const Load3dViewerContent = defineAsyncComponent(
-  () => import('@/components/load3d/Load3dViewerContent.vue')
+  () => import('@/extensions/core/load3d/components/Load3dViewerContent.vue')
 )
 
 const { t, n } = useI18n()
@@ -215,13 +211,16 @@ const onInspectAsset = (item: JobListItem) => {
 }
 
 const currentMenuItem = ref<JobListItem | null>(null)
-const jobContextMenuRef = ref<InstanceType<typeof JobContextMenu> | null>(null)
+const {
+  menuProps: jobMenuProps,
+  show: showJobMenu,
+  toggle: toggleJobMenu
+} = usePointMenu()
 
 const { jobMenuEntries, cancelJob } = useJobMenu(
   () => currentMenuItem.value,
   onInspectAsset
 )
-
 const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   trackFeatureUsed()
   await cancelJob(item)
@@ -234,13 +233,9 @@ const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
 })
 
 const onMenuItem = (item: JobListItem, event: Event) => {
+  const isSameJob = currentMenuItem.value?.id === item.id
   currentMenuItem.value = item
-  jobContextMenuRef.value?.open(event)
+  if (event.type === 'click' && isSameJob) toggleJobMenu(event)
+  else showJobMenu(event)
 }
-
-const onJobMenuAction = wrapWithErrorHandlingAsync(async (entry: MenuEntry) => {
-  if (entry.kind === 'divider') return
-  if (entry.onClick) await entry.onClick()
-  jobContextMenuRef.value?.hide()
-})
 </script>

@@ -4,12 +4,35 @@ import {
   comfyExpect as expect,
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
+import { GraphCanvasMenu } from '@e2e/fixtures/components/GraphCanvasMenu'
 import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 const test = mergeTests(comfyPageFixture, subgraphBreadcrumbFixture)
 
 test.describe('App mode usage', () => {
+  test('keeps both side panels at least 312px wide', async ({ comfyPage }) => {
+    await test.step('Open app mode with both side panels', async () => {
+      await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+      await comfyPage.menu.assetsTab.open({ waitForAssets: false })
+    })
+
+    await test.step('Verify both panels keep their minimum width', async () => {
+      const sidePanels = comfyPage.page
+        .getByTestId('linear-left-panel')
+        .or(comfyPage.page.getByTestId('linear-right-panel'))
+      await expect(sidePanels).toHaveCount(2)
+      await expect
+        .poll(async () => {
+          const widths = await sidePanels.evaluateAll((panels) =>
+            panels.map((panel) => panel.getBoundingClientRect().width)
+          )
+          return Math.min(...widths)
+        })
+        .toBeGreaterThanOrEqual(312)
+    })
+  })
+
   test('Drag and Drop @vue-nodes', async ({ comfyPage, comfyFiles }) => {
     const { centerPanel } = comfyPage.appMode
     await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
@@ -240,7 +263,7 @@ test.describe('App mode usage', () => {
     await expect(comfyPage.appMode.centerPanel).toBeHidden()
   })
 
-  test('Mode toggle survives a sidebar tab remounting the app panel', async ({
+  test('Mode toggle survives sidebar visibility changes', async ({
     comfyPage
   }) => {
     const toggle = comfyPage.appMode.workflowActions.viewModeToggle
@@ -248,14 +271,21 @@ test.describe('App mode usage', () => {
     await expect(comfyPage.appMode.centerPanel).toBeVisible()
     await expect(toggle).toBeVisible()
 
-    // Opening a sidebar tab remounts the app panel; the toggle re-renders with it.
     await comfyPage.menu.assetsTab.tabButton.click()
     await expect(toggle).toBeVisible()
   })
 
   test.describe('Mobile', { tag: ['@mobile'] }, () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+    })
+
     test('panel navigation', async ({ comfyPage }) => {
       const { mobile } = comfyPage.appMode
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+      const canvasMenu = new GraphCanvasMenu(comfyPage.page)
+      await expect(canvasMenu.root).toBeVisible()
+      await expect(canvasMenu.root).toBeInViewport({ ratio: 1 })
       await comfyPage.appMode.enterAppModeWithInputs([['3', 'steps']])
       await expect(mobile.view).toBeVisible()
       await expect(mobile.navigation).toBeVisible()
@@ -294,8 +324,12 @@ test.describe('App mode usage', () => {
       const widgets = comfyPage.appMode.linearWidgets
       await comfyPage.appMode.mobile.navigateTab('run')
       for (let i = 0; i < widgetNames.length; i++) {
-        await comfyPage.appMode.mobile.switchWorkflow(`(${i + 2})`)
-        await expect(widgets.getByText(widgetNames[i])).toBeVisible()
+        await comfyPage.appMode.mobile.switchWorkflow(
+          `Unsaved Workflow (${i + 2})`
+        )
+        await expect(
+          widgets.getByTestId(TestIds.builder.widgetLabel)
+        ).toHaveText([widgetNames[i]])
       }
     })
   })

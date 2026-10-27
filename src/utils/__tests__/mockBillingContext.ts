@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 
 export function mockBillingContext() {
   const billing = useBillingContext()

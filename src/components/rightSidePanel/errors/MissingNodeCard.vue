@@ -1,14 +1,15 @@
 <template>
   <div data-testid="missing-node-card" class="px-3">
+    <MissingNodeDeploymentOffer v-if="isCloud" />
     <!-- Core node version warning (OSS only) -->
     <div
       v-if="!isCloud && hasMissingCoreNodes"
       role="alert"
-      class="mb-3 flex gap-2.5 rounded-lg border border-warning-background/30 bg-warning-background/10 p-3"
+      class="mb-3 flex gap-2.5 rounded-lg border border-warning/30 bg-warning/10 p-3"
     >
       <i
         aria-hidden="true"
-        class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0 text-warning-background"
+        class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0 text-warning"
       />
       <div class="flex flex-col gap-1.5 text-xs/relaxed text-muted-foreground">
         <p class="m-0">
@@ -45,13 +46,13 @@
     >
       <template #pipCmd>
         <code
-          class="rounded-sm bg-comfy-menu-bg px-1 py-0.5 font-mono text-xs text-comfy-input-foreground"
+          class="rounded-sm bg-background px-1 py-0.5 font-mono text-xs text-foreground"
           >pip install -U --pre comfyui-manager</code
         >
       </template>
       <template #flag>
         <code
-          class="rounded-sm bg-comfy-menu-bg px-1 py-0.5 font-mono text-xs text-comfy-input-foreground"
+          class="rounded-sm bg-background px-1 py-0.5 font-mono text-xs text-foreground"
           >--enable-manager</code
         >
       </template>
@@ -78,7 +79,7 @@
       variant="secondary"
       size="sm"
       :disabled="isRestarting"
-      class="mt-2 h-8 w-full min-w-0 rounded-md text-xs"
+      class="mt-2 h-8 w-full min-w-0 rounded-md"
       @click="applyChanges()"
     >
       <DotSpinner v-if="isRestarting" duration="1s" :size="12" />
@@ -98,8 +99,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { compare, valid } from 'semver'
-import Button from '@/components/ui/button/Button.vue'
-import DotSpinner from '@/components/common/DotSpinner.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import { useApplyChanges } from '@/workbench/extensions/manager/composables/useApplyChanges'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { isCloud } from '@/platform/distribution/types'
@@ -110,6 +111,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import MissingPackGroupRow from '@/components/rightSidePanel/errors/MissingPackGroupRow.vue'
 import { someNodeTypeInSelection } from '@/components/rightSidePanel/errors/selectionEmphasis'
+import MissingNodeDeploymentOffer from '@/platform/workspace/components/MissingNodeDeploymentOffer.vue'
 
 const { showInfoButton, missingPackGroups } = defineProps<{
   showInfoButton: boolean

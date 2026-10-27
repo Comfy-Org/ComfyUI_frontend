@@ -1,7 +1,8 @@
 /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
-import { fireEvent, render } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
@@ -12,14 +13,14 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useExtensionService } from '@/services/extensionService'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useCommandStore } from '@/stores/commandStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 import * as nodeFilterUtil from '@/utils/nodeFilterUtil'
 
 function createMockExtensionService(): ReturnType<typeof useExtensionService> {
   return {
     extensionCommands: { value: new Map() },
-    loadExtensions: vi.fn(),
     registerExtension: vi.fn(),
     invokeExtensions: vi.fn(() => []),
     invokeExtensionsAsync: vi.fn()
@@ -79,6 +80,10 @@ vi.mock<unknown>(import('@/services/extensionService'), () => ({
 
 vi.mock(import('@/utils/litegraphUtil'))
 
+vi.mock(import('@comfyorg/design-system/common/VerticalDivider'), () => ({
+  default: defineComponent({ template: '<div class="vertical-divider" />' })
+}))
+
 vi.mock(import('@/utils/nodeFilterUtil'), () => ({
   isOutputNode: vi.fn(() => false),
   filterOutputNodes: vi.fn((nodes) => nodes.filter(() => false))
@@ -135,7 +140,7 @@ describe('SelectionToolbox', () => {
     const { container } = render(SelectionToolbox, {
       props,
       global: {
-        plugins: [i18n, PrimeVue],
+        plugins: [i18n],
         provide: {
           [Symbol.for('SelectionOverlay')]: mockProvide
         },
@@ -180,8 +185,7 @@ describe('SelectionToolbox', () => {
           MoreOptions: {
             template:
               '<button data-testid="more-options-button" class="more-options" />'
-          },
-          VerticalDivider: { template: '<div class="vertical-divider" />' }
+          }
         }
       }
     })
@@ -409,10 +413,11 @@ describe('SelectionToolbox', () => {
             ['test-command', { id: 'test-command', title: 'Test Command' }]
           ])
         },
-        loadExtensions: vi.fn(),
         registerExtension: vi.fn(),
+        registerExtensionNow: vi.fn(),
         invokeExtensions: vi.fn(() => ['test-command']),
-        invokeExtensionsAsync: vi.fn()
+        invokeExtensionsAsync: vi.fn(),
+        invokeStartupHook: vi.fn(async () => [])
       } as ReturnType<typeof useExtensionService>)
 
       setCanvasSelection([new LGraphNode('Test Node')])
@@ -475,6 +480,30 @@ describe('SelectionToolbox', () => {
       expect(container.querySelector('.color-picker-button')).toBeFalsy()
       expect(container.querySelector('.frame-nodes')).toBeFalsy()
       expect(container.querySelector('.bookmark-button')).toBeFalsy()
+    })
+  })
+
+  describe('Tooltips', () => {
+    beforeEach(() => {
+      vi.mocked(useExtensionService).mockReturnValue(
+        createMockExtensionService()
+      )
+    })
+
+    it('waits a full second before showing a tooltip over the canvas', async () => {
+      vi.useFakeTimers()
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      setCanvasSelection([new LGraphNode('Test Node')])
+      renderComponent()
+
+      await user.hover(screen.getByRole('button', { name: 'More Options' }))
+      await vi.advanceTimersByTimeAsync(500)
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+      await vi.advanceTimersByTimeAsync(500)
+      expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
+        'More Options'
+      )
     })
   })
 })

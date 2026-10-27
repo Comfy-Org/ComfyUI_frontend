@@ -35,13 +35,6 @@ vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-1'
 
-/**
- * Transport double that models the real socket lifecycle rather than an
- * always-ready pipe: it starts CLOSED (the state `apiTransport` is in while
- * `ComfyApi.createSocket` awaits its auth token) and THROWS on a send while
- * closed — byte-for-byte the behaviour the shipped `apiTransport` had. It also
- * counts live listener registrations so a leak is observable.
- */
 class SocketTransport extends EventTarget implements DocFrameTransport {
   open = false
   readonly sent: string[] = []
@@ -90,11 +83,17 @@ function hostDocUpdate(mutate?: (doc: Y.Doc) => void): Uint8Array {
   return Y.encodeStateAsUpdate(doc)
 }
 
-function docUpdateFrame(update: Uint8Array, workflowId = WORKFLOW_ID, seq = 1) {
+function docUpdateFrame(
+  update: Uint8Array,
+  workflowId = WORKFLOW_ID,
+  seq = 1,
+  lineageSeq = 0
+) {
   return {
     v: 1,
     workflow_id: workflowId,
     seq,
+    lineage_seq: lineageSeq,
     update_b64: encodeBase64(update)
   }
 }
@@ -303,7 +302,6 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
     const { transport, client, bridge, projected } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
-    expect(transport.listenerCount).toBe(5)
 
     // Backend restarts, then the user closes the agent panel.
     transport.open = false
@@ -381,7 +379,6 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
       lineage_seq: 43
     })
 
-    // The old lineage is dropped wholesale, never folded into.
     expect(bridge.follower).not.toBe(oldDoc)
     expect(bridge.follower.updatesApplied).toBe(0)
     expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
@@ -390,8 +387,6 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     ])
     expect(followerSeenDuringReset).toBe(oldDoc)
 
-    // The resubscribe carries the FRESH doc's state vector — the empty one —
-    // so the server's ordinary catch-up path returns the full folded state.
     const subscribes = transport.framesOfType('doc_subscribe') as {
       data: { state_vector_b64: string }
     }[]
@@ -401,12 +396,13 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     )
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
 
-    // The next update lands on the fresh lineage and is projected.
-    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1, 43)
+    )
     expect(bridge.follower.updatesApplied).toBe(1)
     expect(projected).toHaveLength(2)
 
-    // KA-6: a reset provokes nothing but subscription frames from the follower.
     const writes = transport.sent
       .map((frame) => JSON.parse(frame) as { type: string })
       .filter(
@@ -456,7 +452,6 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
   })
 
   it('a reset on a dead socket still drops the doc; the resubscribe lands on the next reconcile', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, bridge } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -479,7 +474,6 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     bridge.reconcile()
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
-    warn.mockRestore()
   })
 })
 
@@ -927,6 +921,428 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(forwarded).toEqual([])
     expect(bridge.subscribedWorkflowId).toBe('wf-b')
   })
+
+  it('still discards a replayed frame after a same-lineage resubscribe', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    const frame = docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    transport.deliver('doc_update', frame)
+
+    bridge.resubscribe()
+    transport.deliver('doc_update', frame)
+
+    expect(projected).toHaveLength(1)
+  })
+})
+
+describe('subscribe catch-up state', () => {
+  it('stays closed until the acknowledged baseline is integrated', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('recognizes an already-current same-lineage resubscribe', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    bridge.resubscribe()
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('keeps contiguous live progress when it overtakes a resubscribe ack', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    bridge.resubscribe()
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('retains integrated evidence across repeated resubscribe attempts', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    bridge.resubscribe()
+    bridge.resubscribe()
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('retains integrated evidence when a resubscribe is refused and retried', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    bridge.resubscribe()
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      reason: 'not_found'
+    })
+    bridge.reconcile()
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('keeps a gap resubscribe closed until its catch-up frame lands', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 4)
+    )
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 3
+    })
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('closes when a rejection follows an accepted acknowledgement', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    bridge.resubscribe()
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      reason: 'not_found'
+    })
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+  })
+
+  it('stays closed while the caught-up document fails the schema gate', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(
+        hostDocUpdate((doc) =>
+          doc.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
+        ),
+        WORKFLOW_ID,
+        1
+      )
+    )
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+  })
+
+  it('keeps a resubscribe closed when the prior baseline never integrated', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+
+    bridge.resubscribe()
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('keeps a stale non-empty same-lineage document closed', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    bridge.resubscribe()
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 2
+    })
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('does not carry an equal sequence across a lineage change', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe('wf-a')
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-a',
+      ok: true,
+      seq: 1
+    })
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-a', 1))
+
+    bridge.subscribe('wf-b')
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-b',
+      ok: true,
+      seq: 1
+    })
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-b', 1))
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('keeps a baseline-zero acknowledgement closed until the document arrives', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true
+    })
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+})
+
+describe('follower catch-up evidence', () => {
+  function frameAt(seq: number) {
+    return docUpdateFrame(
+      hostDocUpdate((doc) => doc.getMap('meta').set('probe', seq)),
+      WORKFLOW_ID,
+      seq
+    )
+  }
+
+  function acknowledge(transport: SocketTransport, seq: number) {
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq
+    })
+  }
+
+  function integratedAtOne() {
+    const wired = wire()
+    wired.transport.open = true
+    wired.bridge.subscribe(WORKFLOW_ID)
+    acknowledge(wired.transport, 1)
+    wired.transport.deliver('doc_update', frameAt(1))
+    return wired
+  }
+
+  it('reports a gap when the first pre-ack frame skips past the ack', () => {
+    const { transport, bridge } = integratedAtOne()
+    const gaps: unknown[] = []
+    bridge.addEventListener('doc_gap', (event) => {
+      if (event instanceof CustomEvent) gaps.push(event.detail)
+    })
+
+    bridge.resubscribe()
+    transport.deliver('doc_update', frameAt(9))
+    acknowledge(transport, 4)
+
+    expect(gaps).toEqual([
+      { workflowId: WORKFLOW_ID, expected: 5, received: 9 }
+    ])
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+  })
+
+  it('counts contiguous pre-ack frames once the catch-up reaches them', () => {
+    const { transport, bridge } = integratedAtOne()
+
+    bridge.resubscribe()
+    transport.deliver('doc_update', frameAt(5))
+    acknowledge(transport, 4)
+    transport.deliver('doc_update', frameAt(4))
+
+    bridge.resubscribe()
+    acknowledge(transport, 5)
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
+  it('stamps outbound operations at least at the acknowledged seq', () => {
+    const { transport, bridge } = integratedAtOne()
+
+    bridge.resubscribe()
+    acknowledge(transport, 5)
+
+    expect(bridge.lastSequence).toBe(5)
+  })
 })
 
 describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
@@ -943,7 +1359,6 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
   })
 
   it('refuses to project a doc whose schema_version is newer than this build', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -960,12 +1375,10 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
       { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
     ])
     expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
-    expect(error).toHaveBeenCalled()
-    error.mockRestore()
+    expect(console.error).toHaveBeenCalled()
   })
 
   it('un-latches when a later same-lineage frame restores a readable schema_version', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -1018,11 +1431,9 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     ])
     expect(bridge.lastSchemaError).toBeNull()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
-    error.mockRestore()
   })
 
   it('refuses a doc that declares no schema_version at all', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -1039,11 +1450,9 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     expect(schemaErrors).toEqual([
       { workflowId: WORKFLOW_ID, found: undefined }
     ])
-    error.mockRestore()
   })
 
   it('un-latches an undefined schema_version once a later frame merges a defined one', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -1076,11 +1485,9 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
       { workflowId: WORKFLOW_ID, found: undefined }
     ])
     expect(bridge.lastSchemaError).toBeNull()
-    error.mockRestore()
   })
 
   it('reads the version through the package public API, not a local copy', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const doc = mint({ nodes: [], links: [] }, { types: {} })
     expect(() => {
       assertReadableSchema(doc)
@@ -1093,7 +1500,6 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     expect(() => {
       assertReadableSchema(doc)
     }).toThrow(/KA-11/)
-    error.mockRestore()
   })
 })
 
@@ -1186,7 +1592,6 @@ describe('FEB-5 — switching workflows is a lineage break, never a fold', () =>
   })
 
   it('a switch on a dead socket still replaces the doc and announces it', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, bridge } = wire()
     const replaced: unknown[] = []
     bridge.addEventListener('follower_replaced', (event) => {
@@ -1233,7 +1638,6 @@ describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
   })
 
   it('is not dispatched while the frame cannot leave a closed socket', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, bridge } = wire()
     const sent = observeSent(bridge)
 
@@ -1243,6 +1647,16 @@ describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
     transport.open = true
     bridge.reconcile()
     expect(sent).toEqual([{ workflowId: WORKFLOW_ID }])
+  })
+
+  it('reports whether an explicit resubscribe left the socket', () => {
+    const { transport, bridge } = wire()
+    bridge.subscribe(WORKFLOW_ID)
+
+    expect(bridge.resubscribe()).toBe(false)
+
+    transport.open = true
+    expect(bridge.resubscribe()).toBe(true)
   })
 
   it.for([

@@ -1,0 +1,737 @@
+{
+  "id": "billing",
+  "capability": "Billing",
+  "description": "Billing for personal and team workspaces: the billing context that routes between legacy and workspace rails, billing dialogs, the billing SDK store and its operation projections, billing operation tracking, subscription checkout, plan change, resubscribe, downgrade, top-ups and pending top-ups, billing capabilities and capability revisions, billing banners, invoices, plan credits, pricing tables, hosted billing hand-off, and checkout journey telemetry. Cloud subscription plans, tier constants, and cancellation live under platform/billing/subscription; identity belongs to authentication and membership to workspace; the account packages outside src are not in this catalog.",
+  "modules": [
+    {
+      "path": "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/TopUpCreditsDialogContentLegacy.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/TopbarSubscribeButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/TopbarSubscribeButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/credit-slider/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/composables/__mocks__/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/billingRail.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/billing/composables/billingRail.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/billing/composables/topupBalanceRefresh.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/topupBalanceRefresh.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingContext.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingContext.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingDialogs.cancelSubscription.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingDialogs.comingSoon.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingDialogs.downgrade.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingDialogs.subscriptionRequired.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingDialogs.topUpCredits.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingDialogs.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingRouting.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingRouting.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useLegacyBilling.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useLegacyBilling.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useNextInvoice.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useNextInvoice.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/usePendingTopup.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/usePendingTopup.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/billingWeb.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/billingWeb.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/api/capabilityRevision.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/api/capabilityRevision.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/customerActionParity.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/billing/customerAttention.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/billing/customerAttention.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/billing/hostedBillingRoutes.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/hostedBillingRoutes.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/openHostedBillingTab.handoff.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/openHostedBillingTab.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/openHostedBillingTab.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/refreshOnReturn.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/refreshOnReturn.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/sdk/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/sdk/billingSdkStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/sdk/billingSdkStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/sdk/billingSdkTelemetryOwnership.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/subscribeInput.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/components/InsufficientCreditsMemberDialog.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/PricingTableWorkspace.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/PricingTableWorkspace.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionAddPaymentPreviewWorkspace.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionAddPaymentPreviewWorkspace.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionCheckoutSteps.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionInactiveMemberDialog.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionInactiveMemberDialog.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionPanelContentWorkspace.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionPanelContentWorkspace.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionPausedDialog.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionPausedDialog.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionRequiredDialogContentUnified.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionSuccessWorkspace.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionSuccessWorkspace.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/UnifiedPricingTable.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/UnifiedPricingTable.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/UnifiedPricingTable.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/billingTab/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/dialogs/InviteMemberUpsellDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/CreditsPanel.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/CreditsPanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/UsageLogsTable.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/UsageLogsTable.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/BillingStatusBanner.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/BillingStatusBanner.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/BillingStatusBanner.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/MemberUpsellBanner.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/MemberUpsellBanner.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/MemberUpsellBanner.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/PlanCreditsPanelContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/PlanCreditsPanelContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/WorkspaceInvoicesContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/WorkspaceInvoicesContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/subscriptionPanelWorkspace.logic.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/billing/composables/activateBillingScope.testUtils.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/deriveAutoTopUpBanner.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/deriveAutoTopUpBanner.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useAutoTopUpBannerKind.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useAutoTopUpBannerKind.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useAutoTopUpCardViewed.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingAutoTopUpCard.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingAutoTopUpCard.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/billingOperationTestUtils.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/deriveBillingBanner.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/readOnRail.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/readOnRail.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingBanner.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingBanner.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingCapabilities.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingCapabilities.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingReadRail.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useCheckoutCopy.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/composables/useDowngradeToPersonal.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useDowngradeToPersonal.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/usePlanEnded.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useResubscribe.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useResubscribe.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useScheduledPlanChange.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useSubscriptionCheckout.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useSubscriptionCheckout.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useSubscriptionOperationView.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useSubscriptionRail.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useTeamPlan.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useTeamPlan.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useTopupOperation.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useTopupOperation.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useWorkspaceBilling.sdk.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useWorkspaceBilling.subscriptionRail.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useWorkspaceBilling.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useWorkspaceBilling.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useWorkspacePlanPricing.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useWorkspaceTierLabel.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/composables/useWorkspaceTierLabel.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/stores/billingOperationStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/stores/billingOperationStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/subscription/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/subscription/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/subscription/constants/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/checkoutAttributionLoader.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/paymentReturnUrl.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/paymentReturnUrl.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/utils/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/utils/checkoutJourney.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/billing/utils/checkoutJourney.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/services/__mocks__/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/customerEventsService.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/customerEventsService.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/storybook/**",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/__tests__/mockBillingContext.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": ["design-system"],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Billing context routes reads and actions to the legacy or workspace billing rail",
+      "checks": [
+        "src/platform/billing/composables/useBillingContext.test.ts",
+        "src/platform/billing/composables/useBillingRouting.test.ts",
+        "src/platform/billing/composables/billingRail.test.ts",
+        "src/platform/billing/composables/useLegacyBilling.test.ts",
+        "src/platform/billing/composables/useWorkspaceBilling.test.ts",
+        "src/platform/billing/composables/useWorkspaceBilling.sdk.test.ts",
+        "src/platform/billing/composables/useWorkspaceBilling.subscriptionRail.test.ts",
+        "src/platform/billing/composables/readOnRail.test.ts"
+      ]
+    },
+    {
+      "name": "Subscription checkout, plan change, resubscribe, and downgrade keep attempt context and journey telemetry",
+      "checks": [
+        "src/platform/billing/composables/useSubscriptionCheckout.test.ts",
+        "src/platform/billing/composables/useResubscribe.test.ts",
+        "src/platform/billing/composables/useDowngradeToPersonal.test.ts",
+        "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.test.ts",
+        "src/platform/billing/components/SubscriptionAddPaymentPreviewWorkspace.test.ts",
+        "src/platform/billing/components/UnifiedPricingTable.test.ts",
+        "src/platform/billing/utils/checkoutJourney.test.ts",
+        "src/platform/billing/utils/checkoutJourneyTelemetry.test.ts",
+        "src/platform/billing/utils/pendingSubscriptionCheckout.test.ts"
+      ]
+    },
+    {
+      "name": "Billing SDK operations and top-ups settle, poll, and refresh balances",
+      "checks": [
+        "src/platform/billing/sdk/billingSdkStore.test.ts",
+        "src/platform/billing/sdk/createBillingSdk.test.ts",
+        "src/platform/billing/sdk/webSessionBillingSession.test.ts",
+        "src/platform/billing/sdk/topupOperationView.test.ts",
+        "src/platform/billing/sdk/subscriptionOperationView.test.ts",
+        "src/platform/billing/sdk/operationRecordView.test.ts",
+        "src/platform/billing/stores/billingOperationStore.test.ts",
+        "src/platform/billing/composables/useTopupOperation.test.ts",
+        "src/platform/billing/composables/usePendingTopup.test.ts",
+        "src/platform/billing/composables/topupBalanceRefresh.test.ts",
+        "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.test.ts"
+      ]
+    },
+    {
+      "name": "Capabilities, banners, dialogs, invoices, and hosted billing hand-off render server billing facts",
+      "checks": [
+        "src/platform/billing/composables/useBillingCapabilities.test.ts",
+        "src/platform/billing/api/capabilityRevision.test.ts",
+        "src/platform/billing/composables/useBillingBanner.test.ts",
+        "src/platform/billing/composables/deriveBillingBanner.test.ts",
+        "src/platform/billing/components/settings/BillingStatusBanner.test.ts",
+        "src/platform/billing/customerAttention.test.ts",
+        "src/platform/billing/customerActionParity.test.ts",
+        "src/platform/billing/hostedBillingRoutes.test.ts",
+        "src/platform/billing/openHostedBillingTab.test.ts",
+        "src/platform/billing/refreshOnReturn.test.ts",
+        "src/platform/billing/composables/useBillingDialogs.topUpCredits.test.ts",
+        "src/platform/billing/composables/useBillingDialogs.subscriptionRequired.test.ts",
+        "src/platform/billing/composables/useNextInvoice.test.ts",
+        "src/platform/billing/components/settings/WorkspaceInvoicesContent.test.ts"
+      ]
+    },
+    {
+      "name": "Credits panel, usage logs, and legacy top-up dialog show balances and start top-ups",
+      "checks": [
+        "src/platform/billing/components/settings/CreditsPanel.test.ts",
+        "src/platform/billing/components/settings/UsageLogsTable.test.ts",
+        "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts",
+        "src/platform/billing/components/credit-slider/CreditSlider.test.ts"
+      ]
+    },
+    {
+      "name": "Topbar subscribe button routes to subscription checkout",
+      "checks": [
+        "src/platform/billing/components/TopbarSubscribeButton.test.ts"
+      ]
+    },
+    {
+      "name": "Customer events service pages credit and API-usage events with re-mint retry and formats them for usage logs",
+      "checks": ["src/services/customerEventsService.test.ts"]
+    },
+    {
+      "name": "The shared billing-context fixture drives workspace billing operation tests",
+      "checks": ["src/platform/billing/stores/billingOperationStore.test.ts"]
+    },
+    {
+      "name": "Hosted billing web URL and destination normalization accept only known destinations",
+      "checks": ["src/platform/billing/billingWeb.test.ts"]
+    },
+    {
+      "name": "Subscription plans, checkout, and cancellation follow tier policy",
+      "checks": [
+        "src/platform/billing/subscription/constants/tierPricing.test.ts",
+        "src/platform/billing/subscription/utils/subscriptionTierRank.test.ts",
+        "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.test.ts",
+        "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.test.ts",
+        "src/platform/billing/subscription/utils/retentionOffer.test.ts",
+        "src/platform/billing/subscription/composables/useSubscription.test.ts",
+        "src/platform/billing/subscription/launchCancellationFlow.test.ts",
+        "src/platform/billing/subscription/components/CancelSubscriptionDialogContent.test.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/BILLING-WEB-0038-checkout-only-hosts-own-plan-selection.md",
+    "docs/adr/AUTH-BILLING-0014-billing-attempt-context-and-workspace-scope.md",
+    "docs/adr/AUTH-BILLING-0032-billing-stays-outside-the-account-package-in-v1.md",
+    "docs/adr/BILLING-CHECKOUT-0031-checkout-journey-instrumentation-contract.md",
+    "docs/adr/BILLING-WEB-0031-static-spa-boundary.md",
+    "docs/adr/PACKAGES-ACCOUNT-UI-0034-payment-ui-belongs-to-the-shared-account-ui-package.md",
+    "docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md"
+  ],
+  "compatibilityPromises": [
+    "Unclassified callers, authentication, workspace, and the cloud record may continue importing billing internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "useBillingContext remains the shared billing seam for the legacy and workspace rails, and plan selection stays in the host app while hosted billing handles checkout only.",
+    "Billing code that reads teamWorkspaceStore, authStore, or cloud subscription constants, workspaceApi billing endpoints owned by the workspace record, and dialog launchers or stores that import presentation remain visible as cross-domain and role-boundary debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

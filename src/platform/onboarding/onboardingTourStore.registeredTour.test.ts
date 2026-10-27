@@ -51,7 +51,6 @@ beforeEach(() => {
 describe('onboardingTourStore — runtime-resolved tours', () => {
   afterEach(() => {
     clearCoachmarks()
-    trackOnboardingTour.mockClear()
   })
 
   it('reports no start for an entry no one registered', async () => {
@@ -103,7 +102,6 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
   })
 
   it('stays startable after a resolver rejects', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     registerTour('firstRun', () =>
       Promise.reject(new Error('unreadable graph'))
     )
@@ -119,7 +117,6 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
   })
 
   it('tells a resolver that crashed apart from one with nothing to show', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     registerTour('firstRun', () =>
       Promise.reject(new Error('unreadable graph'))
     )

@@ -1,5 +1,5 @@
 import { expect, mergeTests } from '@playwright/test'
-import type { Page, Response } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
@@ -155,16 +155,6 @@ async function mockInputFiles(page: Page, files: readonly string[]) {
   })
 }
 
-function isGeneratedAssetVerificationResponse(response: Response): boolean {
-  const url = new URL(response.url())
-  return (
-    response.request().method().toUpperCase() === 'GET' &&
-    response.status() === 200 &&
-    url.pathname.endsWith('/api/jobs') &&
-    url.searchParams.get('status')?.split(',').includes('completed') === true
-  )
-}
-
 const bulkInsertionTest = comfyPageFixture.extend({
   page: async ({ page }, use) => {
     const jobsRoutes = new JobsRouteMocker(page)
@@ -182,6 +172,36 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await jobsRoutes.mockJobsHistory(generatedJobs)
     await mockInputFiles(page, ['imported.png'])
     await mockViewFiles(page, viewFiles)
+  })
+
+  for (const area of ['padding', 'content'] as const) {
+    test(`uses one hover background over asset menu ${area}`, async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+      const menu = comfyPage.contextMenu
+      await tab.open()
+      await tab.rightClickAsset('alpha')
+
+      await menu.hoverItem('Export workflow', area)
+      await expect(async () => {
+        const { row, content } =
+          await menu.getItemBackgrounds('Export workflow')
+        expect(content).toBe(row)
+      }).toPass({ timeout: 5000 })
+    })
+  }
+
+  test('opens the asset inspector from the context menu', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const menu = comfyPage.contextMenu
+    await tab.open()
+    await tab.rightClickAsset('alpha')
+
+    await menu.clickMenuItemExact('Inspect asset')
+    await expect(comfyPage.mediaLightbox.root).toBeVisible()
   })
 
   test('renders generated and imported assets with image previews', async ({
@@ -383,24 +403,17 @@ bulkInsertionTest.describe(
         await comfyPage.page.keyboard.up('ControlOrMeta')
         await expect(tab.selectedCards).toHaveCount(2)
 
-        const generatedAssetVerificationResponse =
-          comfyPage.page.waitForResponse(isGeneratedAssetVerificationResponse)
-
         await tab.getAssetCardByName('alpha').dispatchEvent('contextmenu', {
           bubbles: true,
           cancelable: true,
           button: 2
         })
-        await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+        await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
         await tab.contextMenuItem('Insert all assets as nodes').click()
 
         await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
 
-        await expectNoErrorUiAfterVerification(
-          comfyPage,
-          panel,
-          generatedAssetVerificationResponse
-        )
+        await expectNoErrorUiAfterVerification(comfyPage, panel)
       }
     )
   }

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="absolute top-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border-default bg-base-background p-1 shadow-lg"
+    class="absolute top-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full border bg-background p-1 shadow-lg"
   >
     <ToggleGroup
       type="single"
@@ -25,13 +25,13 @@
       </ToggleGroupItem>
     </ToggleGroup>
 
-    <Popover v-model:open="zoomOpen">
+    <PopoverRoot v-model:open="zoomOpen">
       <PopoverTrigger as-child>
         <button
           :class="
             cn(
-              'flex h-8 cursor-pointer items-center gap-1 rounded-full border-0 bg-transparent px-2 text-xs text-base-foreground transition-colors',
-              'hover:bg-secondary-background-hover'
+              'flex h-8 cursor-pointer items-center gap-1 rounded-full border-0 bg-transparent px-2 text-xs text-foreground transition-colors',
+              'hover:bg-accent'
             )
           "
           :title="t('layerEditor.zoom')"
@@ -43,22 +43,21 @@
       </PopoverTrigger>
       <PopoverContent
         :side-offset="8"
-        class="z-1700 flex w-auto min-w-20 flex-col border-border-default p-1"
-        :style="zoomContentStyle"
+        :class="cn(menuContentClass, 'flex w-auto min-w-20 flex-col')"
       >
         <button
           v-for="item in zoomItems"
           :key="item.label"
-          :class="zoomItemClass"
+          :class="menuButtonClass"
           @click="applyZoom(item.ratio)"
         >
           {{ item.label }}
         </button>
-        <button :class="zoomItemClass" @click="applyZoom(null)">
+        <button :class="menuButtonClass" @click="applyZoom(null)">
           {{ t('layerEditor.fitView') }}
         </button>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
     <button
       :class="toolButtonClass(false)"
@@ -92,17 +91,19 @@
 
 <script setup lang="ts">
 import type { AcceptableValue } from 'reka-ui'
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
-import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import {
+  menuContentClass,
+  menuButtonClass
+} from '@comfyorg/design-system/lib/menu/menuStyles'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useLayerEditorExport } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
@@ -112,7 +113,6 @@ const { pointerMode, canUndo, canRedo, zoomRatio } = session
 const { exporting, exportPsd } = useLayerEditorExport(session)
 
 const zoomOpen = ref(false)
-const zoomContentStyle = useModalLiftedZIndex(zoomOpen)
 
 const zoomItems = [
   { label: '25%', ratio: 0.25 },
@@ -120,9 +120,6 @@ const zoomItems = [
   { label: '100%', ratio: 1 },
   { label: '200%', ratio: 2 }
 ]
-
-const zoomItemClass =
-  'cursor-pointer rounded-md border-0 bg-transparent px-2 py-1 text-left text-xs text-base-foreground hover:bg-secondary-background-hover'
 
 function onPointerModeChange(value: AcceptableValue | AcceptableValue[]): void {
   if (value === 'pointer' || value === 'hand') session.setPointerMode(value)
@@ -142,9 +139,9 @@ const zoomPercent = computed(() => `${Math.round(zoomRatio.value * 100)}%`)
 
 function toolButtonClass(active: boolean): string {
   return cn(
-    'flex size-8 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-base-foreground transition-colors',
-    'hover:bg-secondary-background-hover disabled:cursor-default disabled:opacity-40',
-    active && 'bg-secondary-background-selected'
+    'flex size-8 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-foreground transition-colors',
+    'hover:bg-accent disabled:cursor-default disabled:opacity-40',
+    active && 'bg-muted'
   )
 }
 </script>

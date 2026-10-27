@@ -9,13 +9,12 @@
   >
     <div v-if="show" class="ml-2 flex items-center overflow-hidden">
       <Button
-        v-tooltip.bottom="
-          isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')
-        "
+        :tooltip="isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')"
+        tooltip-side="bottom"
         :aria-label="isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')"
-        variant="textonly"
+        variant="muted-textonly"
         size="icon-sm"
-        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+        class="size-8 shrink-0 hover:text-foreground"
         @click="toggle"
       >
         <i
@@ -36,7 +35,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { t } = useI18n()
 
