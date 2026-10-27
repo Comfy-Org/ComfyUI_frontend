@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
@@ -11,6 +11,7 @@ import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import CancellationStepLayout from '@/platform/billing/subscription/components/CancellationStepLayout.vue'
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
 import SubscriptionRequiredDialogContentUnified from '@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue'
+import type { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock<unknown>(
@@ -46,6 +47,22 @@ vi.mock<unknown>(
       })
     }
   }
+)
+
+vi.mock(
+  import('@/platform/billing/composables/usePaymentRecoveryDialog'),
+  () => ({
+    isTopUpDeniedPastDue: vi.fn(),
+    usePaymentRecoveryDialog: (): ReturnType<
+      typeof usePaymentRecoveryDialog
+    > => ({
+      showPaymentRecoveryDialog: vi.fn(),
+      updatePayment: vi.fn(),
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => null),
+      refreshCapabilities: vi.fn()
+    })
+  })
 )
 
 const i18n = createI18n({
