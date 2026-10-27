@@ -4,9 +4,9 @@ import type {
   BillingStatusResponse as IngestBillingStatusResponse
 } from '@comfyorg/ingest-types'
 
+import type { Plan } from '@comfyorg/billing-core'
 import type {
   Member,
-  Plan,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'

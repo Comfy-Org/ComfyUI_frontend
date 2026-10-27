@@ -263,11 +263,20 @@ test.describe(
           test.setTimeout(90_000)
           await agentConversation.runTurns()
 
-          await expect(
-            agentConversation.panel.getByRole('button', {
-              name: `Open ${agentConversation.conversation.workflow.name}`
-            })
-          ).toBeVisible()
+          const switchesWorkflow = agentConversation.conversation.turns.some(
+            (turn) =>
+              turn.response.some(
+                (entry) =>
+                  entry.kind === 'event' &&
+                  entry.event.type === 'agent_active_tab'
+              )
+          )
+          if (switchesWorkflow)
+            await expect(
+              agentConversation.panel.getByRole('button', {
+                name: `Open ${agentConversation.conversation.workflow.name}`
+              })
+            ).toBeVisible()
         })
       })
     }

@@ -86,7 +86,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
@@ -105,7 +105,7 @@ import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/billing/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
 import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 type BannerAction =
@@ -121,7 +121,7 @@ const { section } = defineProps<{
 
 const { t, d } = useI18n()
 const { renewalDate, subscription } = useBillingContext()
-const { permissions, canReactivatePlan, workspaceType } = useWorkspaceUI()
+const { permissions, canReactivatePlan, workspaceType } = useBillingUI()
 const { canTopUp, topUpDenial, canManageBilling, runDeniedPaymentPastDue } =
   useBillingCapabilities()
 const { kind, audience, dismiss } = useBillingBanner()

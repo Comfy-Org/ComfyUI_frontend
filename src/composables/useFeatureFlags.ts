@@ -239,6 +239,13 @@ export function useFeatureFlags() {
         false
       )
     },
+    get lateCustomNodesEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.LATE_CUSTOM_NODES_ENABLED,
+        remoteConfig.value.late_custom_nodes_enabled,
+        false
+      )
+    },
     get hostedBillingDestination() {
       return hostedBillingDestination()
     },
@@ -356,13 +363,6 @@ export function useFeatureFlags() {
         false
       )
     },
-    get onboardingTourEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.ONBOARDING_TOUR_ENABLED,
-        remoteConfig.value.onboarding_tour_enabled,
-        false
-      )
-    },
     get assetsEnabled() {
       return isCloud || resolveFlag('assets', undefined, false)
     },
@@ -429,7 +429,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
-      [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,
       [ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE]:
         flags.agentInAppExperienceEnabled,
       assets: flags.assetsEnabled

@@ -138,85 +138,17 @@
       </div>
     </template>
 
-    <!-- Preset amount buttons -->
-    <div v-if="step === 'amount'" class="px-8">
-      <h3 class="m-0 text-sm font-normal text-muted-foreground">
-        {{ $t('credits.topUp.selectAmount') }}
-      </h3>
-      <div class="flex gap-2 pt-3">
-        <Button
-          v-for="amount in TOPUP_AMOUNT_PRESETS_USD"
-          :key="amount"
-          :autofocus="amount === 50"
-          variant="secondary"
-          size="lg"
-          :class="
-            cn(
-              'h-10 w-full text-base focus-visible:ring-ring',
-              selectedPreset === amount && 'bg-muted'
-            )
-          "
-          @click="handlePresetClick(amount)"
-        >
-          ${{ amount }}
-        </Button>
-      </div>
-      <p
-        v-if="planCreditCopy"
-        class="m-0 pt-3 text-sm text-muted-foreground"
-        data-testid="top-up-plan-credit-line"
-      >
-        {{ planCreditCopy }}
-      </p>
-    </div>
-    <!-- Amount (USD) / Credits -->
-    <div v-if="step === 'amount'" class="flex gap-2 px-8 pt-8">
-      <!-- You Pay -->
-      <div
-        class="flex min-w-0 flex-1 flex-col gap-3"
-        data-testid="top-up-pay-amount"
-      >
-        <div class="text-sm text-muted-foreground">
-          {{ $t('credits.topUp.youPay') }}
-        </div>
-        <FormNumberField
-          class="w-full"
-          :aria-label="$t('credits.topUp.youPay')"
-          input-class="text-lg font-medium"
-          :model-value="payAmount"
-          :min="0"
-          :max="MAX_AMOUNT"
-          :step="getStepAmount(payAmount)"
-          :format-options="{ maximumFractionDigits: 0 }"
-          @update:model-value="handlePayAmountChange"
-        >
-          <template #prefix>
-            <span class="shrink-0 text-base font-semibold">$</span>
-          </template>
-        </FormNumberField>
-      </div>
-
-      <!-- You Get -->
-      <div class="flex min-w-0 flex-1 flex-col gap-3">
-        <div class="text-sm text-muted-foreground">
-          {{ $t('credits.topUp.youGet') }}
-        </div>
-        <FormNumberField
-          v-model="creditsModel"
-          class="w-full"
-          :aria-label="$t('credits.topUp.youGet')"
-          input-class="text-lg font-medium"
-          :min="0"
-          :max="usdToCredits(MAX_AMOUNT)"
-          :step="getCreditsStepAmount(creditsModel)"
-          :format-options="{ maximumFractionDigits: 0 }"
-        >
-          <template #prefix>
-            <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
-          </template>
-        </FormNumberField>
-      </div>
-    </div>
+    <TopUpAmountFields
+      v-if="step === 'amount'"
+      :pay-amount="payAmount"
+      :credits="creditsModel"
+      :selected-preset="selectedPreset"
+      :max-amount="MAX_AMOUNT"
+      :plan-credit-copy="planCreditCopy"
+      @preset="handlePresetClick"
+      @pay-amount="handlePayAmountChange"
+      @credits="creditsModel = $event"
+    />
 
     <!-- Warnings -->
 
@@ -344,6 +276,25 @@
         <i class="icon-[lucide--external-link] size-4" />
       </Button>
       <div v-else class="flex flex-col gap-2">
+        <div
+          v-if="processingPayment && step === 'amount'"
+          role="status"
+          class="flex flex-col gap-1 rounded-2xl border border-border/60 p-4"
+          data-testid="topup-payment-processing-notice"
+        >
+          <div class="flex items-center gap-2">
+            <i
+              class="icon-[lucide--circle-alert] size-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span class="text-sm text-foreground">{{
+              processingNoticeTitle
+            }}</span>
+          </div>
+          <p class="m-0 pl-6 text-sm text-muted-foreground">
+            {{ $t('credits.topUp.paymentProcessingBody') }}
+          </p>
+        </div>
         <Button
           v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
@@ -410,13 +361,10 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
-import {
-  getTopupAmountPreset,
-  TOPUP_AMOUNT_PRESETS_USD
-} from '@comfyorg/account-core/billing'
+import { getTopupAmountPreset } from '@comfyorg/account-core/billing'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -424,11 +372,12 @@ import { useI18n } from 'vue-i18n'
 import {
   centsToCredits,
   creditsToUsd,
+  formatUsdFromCents,
   usdToCredits
 } from '@/base/credits/comfyCredits'
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import FormNumberField from '@/components/common/FormNumberField.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import TopUpAmountFields from './TopUpAmountFields.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -439,11 +388,9 @@ import { isCloud } from '@/platform/distribution/types'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import type { CreateTopupResponse } from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import type { BillingTab } from '@/platform/billing/billingTab'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
@@ -451,8 +398,9 @@ import { topupCheckoutReturnUrl } from '@/platform/billing/topupCheckoutReturnUr
 import { isBlockedOnCustomerPhase } from '@/platform/billing/customerAttention'
 import { UncreditedTopupResponse } from '@/platform/billing/sdk/topupOperationView'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
 import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import {
   bindOperationToCheckoutJourney,
   clearCheckoutJourney,
@@ -469,14 +417,31 @@ import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@/utils/errorUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
   source?: PaymentIntentSource
 }>()
 
-const { n, t } = useI18n()
+const { locale, n, t } = useI18n()
+const { payment: processingPayment } = useProcessingTopupPayment()
+const processingNoticeTitle = computed(() => {
+  const cents = processingPayment.value?.paymentAmountCents
+  if (typeof cents !== 'number')
+    return t('credits.topUp.paymentProcessingTitleNoAmount')
+  return t('credits.topUp.paymentProcessingTitle', {
+    amount: formatUsdFromCents({
+      cents,
+      locale: locale.value,
+      numberOptions: {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+        maximumFractionDigits: cents % 100 === 0 ? 0 : 2
+      }
+    })
+  })
+})
 const dialogStore = useDialogStore()
 const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
@@ -487,7 +452,7 @@ const planCreditCopy = useTopUpPlanCreditCopy()
 const billingCapabilities = useBillingCapabilities()
 const { canTopUp } = billingCapabilities
 
-const workspaceStore = useTeamWorkspaceStore()
+const workspaceStore = useWorkspaceIdentity()
 
 function enterTopupJourney(): void {
   const workspaceId = workspaceStore.activeWorkspaceId
@@ -672,18 +637,6 @@ watch(
 // Utility functions
 function formatNumber(num: number): string {
   return num.toLocaleString('en-US')
-}
-
-// Step amount functions
-function getStepAmount(currentAmount: number): number {
-  if (currentAmount < 100) return 5
-  if (currentAmount < 1000) return 50
-  return 100
-}
-
-function getCreditsStepAmount(currentCredits: number): number {
-  const usdAmount = creditsToUsd(currentCredits)
-  return usdToCredits(getStepAmount(usdAmount))
 }
 
 // Event handlers
@@ -971,7 +924,7 @@ async function setDefaultCard() {
   const portalTab = reserveBillingTab()
   openingDefaultCardPortal.value = true
   try {
-    const { url } = await workspaceApi.getPaymentPortalUrl(
+    const { url } = await billingApi.getPaymentPortalUrl(
       window.location.href,
       'payment_method_update'
     )

@@ -6,7 +6,7 @@
       target="_blank"
       rel="noopener"
       variant="inverted"
-      size="lg"
+      size="md"
       class="shrink-0"
       @click="track"
     >
@@ -20,9 +20,9 @@
   >
     <div
       role="status"
-      class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
+      class="flex flex-col gap-3 rounded-xl border border-border/60 bg-background p-3 @2xl:flex-row @2xl:items-center @2xl:gap-2"
     >
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
+      <div class="flex min-w-0 flex-1 flex-col gap-2">
         <div class="flex items-center gap-2">
           <i
             class="icon-[lucide--triangle-alert] size-4 shrink-0 text-warning"
@@ -38,7 +38,7 @@
         <Button
           v-if="banner.dismissible"
           variant="textonly"
-          size="lg"
+          size="md"
           @click="dismiss"
         >
           {{ $t('workspacePanel.billingStatus.outOfCredits.dismiss') }}
@@ -46,7 +46,7 @@
         <Button
           v-if="banner.action === 'addCredits'"
           variant="secondary"
-          size="lg"
+          size="md"
           @click="handleAddCredits"
         >
           {{ $t('workspacePanel.billingStatus.outOfCredits.addCredits') }}
@@ -54,7 +54,7 @@
         <Button
           v-else-if="banner.action === 'updatePayment'"
           variant="inverted"
-          size="lg"
+          size="md"
           :loading="isUpdatingPayment"
           @click="updatePayment"
         >
@@ -70,7 +70,7 @@ import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import BillingAutoTopUpBanner from '@/platform/billing/components/billingTab/BillingAutoTopUpBanner.vue'
 import { useAutoTopUpBannerKind } from '@/platform/billing/composables/useAutoTopUpBannerKind'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -83,8 +83,8 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 type BannerAction = 'addCredits' | 'updatePayment'
 
@@ -103,7 +103,7 @@ const { suppressed = false } = defineProps<{
 
 const billing = useBillingContext()
 const { flags } = useFeatureFlags()
-const { permissions } = useWorkspaceUI()
+const { permissions } = useBillingUI()
 const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()

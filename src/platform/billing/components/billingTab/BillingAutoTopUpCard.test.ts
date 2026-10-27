@@ -9,13 +9,11 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import type { AutoReloadSettings } from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { activateBillingScope } from '@/platform/billing/composables/activateBillingScope.testUtils'
+import { activateBillingScope } from '@/platform/billing/__tests__/activateBillingScope'
 import { canManageAutoTopUpFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -28,8 +26,8 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/usePausedBanner'))
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
+vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/telemetry'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
@@ -91,7 +89,7 @@ function renderCard(
   setup: AutoTopUpSetup | null = null
 ) {
   activateBillingScope('actor-a', 'workspace-a')
-  vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValue(settings)
+  vi.mocked(billingApi.getBillingAutoReload).mockResolvedValue(settings)
   const setupRef = ref(setup)
   vi.mocked(useBillingCapabilities)().autoTopUpSetup = computed(
     () => setupRef.value
@@ -131,7 +129,7 @@ async function returnToTab() {
 describe('BillingAutoTopUpCard', () => {
   it('reports no view while the read is shared with a banner that mounted first', async () => {
     activateBillingScope('actor-a', 'workspace-a')
-    vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValue(configured)
+    vi.mocked(billingApi.getBillingAutoReload).mockResolvedValue(configured)
     vi.mocked(usePausedBanner).mockReturnValue({
       isPaused: computed(() => false)
     })
@@ -139,7 +137,7 @@ describe('BillingAutoTopUpCard', () => {
     useBillingCapabilities().canManageAutoTopUp = canManageAutoTopUpFact(true)
     render(BillingLocalCreditBanner, i18nOptions())
     await vi.waitFor(() =>
-      expect(workspaceApi.getBillingAutoReload).toHaveBeenCalledTimes(1)
+      expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(1)
     )
     await nextTick()
     expect(trackedEvents()).not.toHaveBeenCalled()
@@ -151,7 +149,7 @@ describe('BillingAutoTopUpCard', () => {
     await nextTick()
 
     expect(screen.queryByTestId('billing-auto-top-up-card')).toBeNull()
-    expect(workspaceApi.getBillingAutoReload).toHaveBeenCalledTimes(1)
+    expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(1)
     expect(trackedEvents()).not.toHaveBeenCalled()
   })
 
@@ -162,12 +160,14 @@ describe('BillingAutoTopUpCard', () => {
     label: string
     lines: string[]
     action: string
+    expectedIcon: string
   }>([
     {
       status: 'failed',
       label: 'Failed',
       lines: [FAILED],
-      action: 'Update payment'
+      action: 'Update payment',
+      expectedIcon: 'icon-[lucide--external-link]'
     },
     {
       status: 'failed',
@@ -176,14 +176,16 @@ describe('BillingAutoTopUpCard', () => {
       lines: [
         'Turned off after 3 declined charges. Update your payment method, then turn it back on.'
       ],
-      action: 'Update payment'
+      action: 'Update payment',
+      expectedIcon: 'icon-[lucide--external-link]'
     },
     {
       status: 'off',
       settings: notConfigured,
       label: 'Off',
       lines: ['Refills credits when your balance runs low'],
-      action: 'Turn on'
+      action: 'Turn on',
+      expectedIcon: 'icon-[lucide--external-link]'
     },
     {
       status: 'on_hold',
@@ -192,19 +194,22 @@ describe('BillingAutoTopUpCard', () => {
         RULE,
         'No default payment method. Set one to resume auto top-up.'
       ],
-      action: 'Update payment'
+      action: 'Update payment',
+      expectedIcon: 'icon-[lucide--external-link]'
     },
     {
       status: 'paused_by_budget',
       label: 'Paused',
       lines: [RULE, 'Monthly limit reached. Resumes November 28.'],
-      action: 'Manage'
+      action: 'Manage',
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
       status: 'on',
       label: 'On',
       lines: [RULE, 'Monthly limit: $50 of $200 used'],
-      action: 'Manage'
+      action: 'Manage',
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
     }
   ])(
     'renders the served $status status as $label',
@@ -214,7 +219,8 @@ describe('BillingAutoTopUpCard', () => {
       disabledReason = null,
       label,
       lines,
-      action
+      action,
+      expectedIcon
     }) => {
       renderCard({ ...settings, status, disabled_reason: disabledReason })
 
@@ -226,11 +232,22 @@ describe('BillingAutoTopUpCard', () => {
           .getAllByTestId('billing-auto-top-up-line')
           .map((line) => line.textContent.trim())
       ).toEqual(lines)
-      expect(screen.getByRole('link', { name: action })).toHaveAttribute(
+      const link = screen.getByRole('link', { name: action })
+      expect(link).toHaveAttribute(
         'href',
         expect.stringMatching(
           /^https:\/\/platform\.test\/profile\/billing\?correlation_id=.+$/
         )
+      )
+      expect(link).toContainHTML(expectedIcon)
+      expect(screen.getByTestId('billing-auto-top-up-card')).toContainHTML(
+        'rounded-xl'
+      )
+      expect(screen.getByRole('heading', { name: /Auto top-up/ })).toHaveClass(
+        'font-medium'
+      )
+      expect(screen.getByTestId('billing-auto-top-up-status')).toContainHTML(
+        'size-1.75'
       )
       expect(trackedEvents()).toHaveBeenCalledExactlyOnceWith({
         operation: 'auto_top_up_card',
@@ -272,9 +289,9 @@ describe('BillingAutoTopUpCard', () => {
 
     await returnToTab()
     await vi.waitFor(() =>
-      expect(workspaceApi.getBillingAutoReload).toHaveBeenCalledTimes(2)
+      expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(2)
     )
-    vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValue(configured)
+    vi.mocked(billingApi.getBillingAutoReload).mockResolvedValue(configured)
     await returnToTab()
     await vi.waitFor(() =>
       expect(
@@ -294,7 +311,7 @@ describe('BillingAutoTopUpCard', () => {
   })
 
   it('reports no view while loading or when the first read fails', async () => {
-    vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
+    vi.mocked(billingApi.getBillingAutoReload).mockRejectedValueOnce(
       new WorkspaceApiError('boom', 500)
     )
     renderCard(configured)
@@ -328,7 +345,7 @@ describe('BillingAutoTopUpCard', () => {
     })
 
     await vi.waitFor(() =>
-      expect(workspaceApi.getBillingAutoReload).toHaveBeenCalled()
+      expect(billingApi.getBillingAutoReload).toHaveBeenCalled()
     )
     expect(
       screen.queryByTestId('billing-auto-top-up-card')
@@ -341,7 +358,7 @@ describe('BillingAutoTopUpCard', () => {
       reason: 'billing_rail_not_supported'
     })
     await vi.waitFor(() =>
-      expect(workspaceApi.getBillingAutoReload).toHaveBeenCalled()
+      expect(billingApi.getBillingAutoReload).toHaveBeenCalled()
     )
     expect(trackedEvents()).not.toHaveBeenCalled()
 
@@ -362,7 +379,7 @@ describe('BillingAutoTopUpCard', () => {
     const { setupRef } = renderCard(configured)
     await screen.findByTestId('billing-auto-top-up-status')
 
-    vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
+    vi.mocked(billingApi.getBillingAutoReload).mockRejectedValueOnce(
       new WorkspaceApiError('boom', 500)
     )
     await returnToTab()
@@ -395,7 +412,7 @@ describe('BillingAutoTopUpCard', () => {
       const { setupRef } = renderCard(configured)
       await screen.findByTestId('billing-auto-top-up-status')
       let settleReread: (value: AutoReloadSettings) => void = () => {}
-      vi.mocked(workspaceApi.getBillingAutoReload).mockReturnValueOnce(
+      vi.mocked(billingApi.getBillingAutoReload).mockReturnValueOnce(
         new Promise((resolve) => {
           settleReread = resolve
         })
@@ -429,7 +446,7 @@ describe('BillingAutoTopUpCard', () => {
       error: new WorkspaceApiError('timeout of 10000ms exceeded', undefined)
     }
   ])('offers a retry when the settings read $case', async ({ error }) => {
-    vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(error)
+    vi.mocked(billingApi.getBillingAutoReload).mockRejectedValueOnce(error)
     renderCard(configured)
 
     expect(
@@ -449,7 +466,7 @@ describe('BillingAutoTopUpCard', () => {
       await screen.findByTestId('billing-auto-top-up-status')
     ).toHaveTextContent('Off')
 
-    vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValue(configured)
+    vi.mocked(billingApi.getBillingAutoReload).mockResolvedValue(configured)
     await returnToTab()
 
     await vi.waitFor(() =>
@@ -465,7 +482,7 @@ describe('BillingAutoTopUpCard', () => {
       await screen.findByTestId('billing-auto-top-up-status')
     ).toHaveTextContent('On')
 
-    vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
+    vi.mocked(billingApi.getBillingAutoReload).mockRejectedValueOnce(
       new WorkspaceApiError('boom', 500)
     )
     await returnToTab()
@@ -481,7 +498,7 @@ describe('BillingAutoTopUpCard', () => {
     renderCard(notConfigured)
     await screen.findByTestId('billing-auto-top-up-status')
     let settle: (value: AutoReloadSettings) => void = () => {}
-    vi.mocked(workspaceApi.getBillingAutoReload).mockReturnValueOnce(
+    vi.mocked(billingApi.getBillingAutoReload).mockReturnValueOnce(
       new Promise((resolve) => {
         settle = resolve
       })
@@ -496,6 +513,6 @@ describe('BillingAutoTopUpCard', () => {
         screen.getByTestId('billing-auto-top-up-status')
       ).toHaveTextContent('On')
     )
-    expect(workspaceApi.getBillingAutoReload).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(2)
   })
 })
