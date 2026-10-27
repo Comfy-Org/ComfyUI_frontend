@@ -84,24 +84,25 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
-  () => {
-    const consent = fromPartial<ReturnType<typeof useAgentConsent>>({
-      withConsent: vi.fn(
-        async (
-          _trigger: AgentConsentTrigger,
-          onAccept: () => void,
-          hooks?: ConsentOfferHooks
-        ) => {
-          if (hooks?.canShow?.() === false) return
-          onAccept()
-        }
-      ),
-      resumeAcceptAfterReload: vi.fn(async () => {})
-    })
-    const CONSENT_DIALOG_KEY = 'agent-consent' as const
-    return { CONSENT_DIALOG_KEY, useAgentConsent: () => consent }
-  }
+  { spy: true }
 )
+
+const mockedConsent = fromPartial<ReturnType<typeof useAgentConsent>>({
+  withConsent: vi.fn(
+    async (
+      _trigger: AgentConsentTrigger,
+      onAccept: () => void,
+      hooks?: ConsentOfferHooks
+    ) => {
+      if (hooks?.canShow?.() === false) return
+      onAccept()
+    }
+  ),
+  resumeAcceptAfterReload: vi.fn(async () => {})
+})
+let realResumeAcceptAfterReload: ReturnType<
+  typeof useAgentConsent
+>['resumeAcceptAfterReload']
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
@@ -233,6 +234,8 @@ describe('AgentPanel extension flag gate', () => {
     currentUser.value = { id: 'account-a' }
     isAuthInitialized.value = true
     consentStore = useAgentConsentStore()
+    realResumeAcceptAfterReload = useAgentConsent().resumeAcceptAfterReload
+    vi.mocked(useAgentConsent).mockReturnValue(mockedConsent)
     workspaceStore = useTeamWorkspaceStore()
     Object.assign(workspaceStore, {
       activeWorkspaceId: 'workspace-a',
@@ -2416,12 +2419,7 @@ describe('AgentPanel extension flag gate', () => {
     })
 
     it('drops it when another account takes over during the switch wait, through the real resume', async () => {
-      const actual = await vi.importActual<
-        typeof import('@/workbench/extensions/agent/composables/agent/useAgentConsent')
-      >('@/workbench/extensions/agent/composables/agent/useAgentConsent')
-      resume().mockImplementation((draft) =>
-        actual.useAgentConsent().resumeAcceptAfterReload(draft)
-      )
+      resume().mockImplementation(realResumeAcceptAfterReload)
       vi.mocked(consentStore.ensureScope).mockResolvedValue(
         'account-b/workspace-a'
       )
