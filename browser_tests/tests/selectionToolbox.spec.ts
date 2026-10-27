@@ -21,8 +21,8 @@ async function selectionTargets(comfyPage: ComfyPage, nodeTitles: string[]) {
   return [...nodes.flat(), comfyPage.selectionToolbox]
 }
 
-const getColorPickerButton = (comfyPage: { page: Page }) =>
-  comfyPage.page.getByTestId(TestIds.selectionToolbox.colorPickerButton)
+const getColorPickerButton = (comfyPage: ComfyPage) =>
+  comfyPage.selectionToolbox.getByRole('button', { name: 'Color', exact: true })
 
 const getColorPickerCurrentColor = (comfyPage: { page: Page }) =>
   comfyPage.page.getByTestId(TestIds.selectionToolbox.colorPickerCurrentColor)
@@ -130,17 +130,17 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
   test('displays bypass button in toolbox when nodes are selected', async ({
     comfyPage
   }) => {
-    // A group + a KSampler node
     await comfyPage.workflow.loadWorkflow('groups/single_group')
-    const bypass = comfyPage.page.getByTestId(TestIds.selectionToolbox.bypass)
+    const bypass = comfyPage.selectionToolbox.getByRole('button', {
+      name: 'Bypass/Unbypass Selected Nodes',
+      exact: true
+    })
 
-    // Select group + node should show bypass button
     await comfyPage.canvas.focus()
     await comfyPage.nodeOps.selectNodes(['KSampler'])
     await expect(bypass).toBeVisible()
     await comfyPage.keyboard.delete()
 
-    // (Only empty group is selected) should hide bypass button
     await comfyPage.keyboard.selectAll()
     await expect(comfyPage.selectionToolbox).toBeVisible()
     await expect(bypass).toBeHidden()
