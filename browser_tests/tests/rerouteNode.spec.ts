@@ -2,6 +2,9 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+
+const INSERTED_NODE_COUNT = 3
 
 test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
   test.afterEach(async ({ comfyPage }) => {
@@ -13,24 +16,31 @@ test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
     await comfyPage.workflow.setupWorkflowsDirectory({
       [`${workflowName}.json`]: `links/${workflowName}.json`
     })
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
 
-    // Insert the workflow
     const workflowsTab = comfyPage.menu.workflowsTab
     await workflowsTab.open()
     await workflowsTab.getPersistedItem(workflowName).click({ button: 'right' })
-    const insertButton = comfyPage.page.locator('.p-contextmenu-item-link', {
-      hasText: 'Insert'
+    const insertButton = comfyPage.page.getByRole('menuitem', {
+      name: 'Insert',
+      exact: true
     })
     await insertButton.click()
 
-    // Close the sidebar tab
     await workflowsTab.tabButton.click()
     await workflowsTab.root.waitFor({ state: 'hidden' })
     await comfyPage.setFocusMode(true)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(INSERTED_NODE_COUNT)
 
-    await expect(comfyPage.canvas).toHaveScreenshot('reroute_inserted.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'reroute_inserted.png'
+    )
   })
 })
 
@@ -38,14 +48,20 @@ test.describe(
   'LiteGraph Native Reroute Node',
   { tag: ['@screenshot', '@node'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.settings.setSetting('LiteGraph.Reroute.SplineOffset', 80)
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'LiteGraph.Reroute.SplineOffset': 80
+      }
     })
 
     test('loads from workflow', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('reroute/native_reroute')
-      await expect(comfyPage.canvas).toHaveScreenshot('native_reroute.png')
+      await expectRegionScreenshot(
+        comfyPage.page,
+        await comfyPage.nodeOps.getAllNodeRefs(),
+        'native_reroute.png'
+      )
     })
 
     test('@2x @0.5x Can add reroute by alt clicking on link', async ({
@@ -59,7 +75,7 @@ test.describe(
       )[0]
 
       const slot1 = await loadCheckpointNode.getOutput(1)
-      const slot2 = await clipEncodeNode.getInput(0)
+      const slot2 = await clipEncodeNode.getInputByName('clip')
       const middlePoint = getMiddlePoint(
         await slot1.getPosition(),
         await slot2.getPosition()
@@ -69,7 +85,9 @@ test.describe(
       await comfyPage.page.mouse.click(middlePoint.x, middlePoint.y)
       await comfyPage.page.keyboard.up('Alt')
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [loadCheckpointNode, clipEncodeNode, middlePoint],
         'native_reroute_alt_click.png'
       )
     })
@@ -85,7 +103,7 @@ test.describe(
       )[0]
 
       const slot1 = await loadCheckpointNode.getOutput(1)
-      const slot2 = await clipEncodeNode.getInput(0)
+      const slot2 = await clipEncodeNode.getInputByName('clip')
       const middlePoint = getMiddlePoint(
         await slot1.getPosition(),
         await slot2.getPosition()
@@ -96,7 +114,9 @@ test.describe(
         .locator('.litecontextmenu .litemenu-entry', { hasText: 'Add Reroute' })
         .click()
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [loadCheckpointNode, clipEncodeNode, middlePoint],
         'native_reroute_context_menu.png'
       )
     })
@@ -114,8 +134,8 @@ test.describe(
       const negativeClipNode = await comfyPage.nodeOps.getNodeRefById(7)
 
       const checkpointClipOutput = await checkpointNode.getOutput(1)
-      const positiveClipInput = await positiveClipNode.getInput(0)
-      const negativeClipInput = await negativeClipNode.getInput(0)
+      const positiveClipInput = await positiveClipNode.getInputByName('clip')
+      const negativeClipInput = await negativeClipNode.getInputByName('clip')
 
       // Dynamically read the rendered link marker position from the canvas,
       // targeting link 5 (CLIP from CheckpointLoaderSimple to negative CLIPTextEncode).
@@ -123,7 +143,7 @@ test.describe(
         const canvas = window['app']?.canvas
         if (!canvas?.renderedPaths) return null
         for (const segment of canvas.renderedPaths) {
-          if (segment.id === 5 && segment._pos) {
+          if (segment.id === 5) {
             return { x: segment._pos[0], y: segment._pos[1] }
           }
         }

@@ -1,9 +1,6 @@
 <template>
   <Button
-    v-tooltip.top="{
-      value: $t('g.frameNodes'),
-      showDelay: 1000
-    }"
+    :tooltip="$t('g.frameNodes')"
     variant="muted-textonly"
     :aria-label="$t('g.frameNodes')"
     @click="frameNodes"
@@ -13,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useFrameNodes } from '@/composables/graph/useFrameNodes'
 
 const { frameNodes } = useFrameNodes()

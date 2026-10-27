@@ -1,42 +1,353 @@
-import { useLocalStorage } from '@vueuse/core'
+import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
+import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  readonly,
+  ref,
+  shallowRef,
+  toRaw,
+  watch
+} from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  SIDEBAR_MIN_WIDTH,
+  SIDE_TOOLBAR_WIDTH
+} from '@/constants/splitterConstants'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+import type { ServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
-import type { AgentPanelCloseSource } from '@/platform/telemetry/types'
+import type {
+  AgentPanelCloseSource,
+  AgentPanelOpenedMetadata
+} from '@/platform/telemetry/types'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { api } from '@/scripts/api'
+import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+
+import type {
+  CreditTransitionNoticeEvent,
+  CreditTransitionNoticeState
+} from './creditTransitionNoticeState'
+import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
+const FUNDS_RECHECK_TIMEOUT_MS = 10_000
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
+const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
+
+interface AgentOnboardingPolicy {
+  startup: 'activationVisits' | 'lockedUntilConsent'
+  offerMemory: 'shown' | 'answered'
+  agentButton: 'requestConsent' | 'togglePanel'
+  persistSkipAsRefusal: boolean
+  introduceBeforeSignIn: boolean
+}
+
+const DEFAULT_ONBOARDING: AgentOnboardingPolicy = {
+  startup: 'activationVisits',
+  offerMemory: 'shown',
+  agentButton: 'requestConsent',
+  persistSkipAsRefusal: true,
+  introduceBeforeSignIn: false
+}
+
+const DESKTOP_ONBOARDING: AgentOnboardingPolicy = {
+  startup: 'lockedUntilConsent',
+  offerMemory: 'answered',
+  agentButton: 'togglePanel',
+  persistSkipAsRefusal: false,
+  introduceBeforeSignIn: true
+}
+
+function isLocalDesktopApp(): boolean {
+  if (isCloud) return false
+  if (isDesktop) return true
+  const bridge = window.__comfyDesktop2
+  if (!bridge) return false
+  return !(bridge.isRemote?.() ?? window.__comfyDesktop2Remote ?? false)
+}
+
+type TargetTracking =
+  | { mode: 'uninitialized' }
+  | { mode: 'following' }
+  | { mode: 'restoring' }
+  | { mode: 'retained'; workflow: ComfyWorkflow }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath?: never
+      unavailable?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath: string
+      unavailable?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath?: never
+      unavailable: true
+    }
+
+export type AgentPanelView =
+  | { screen: 'chat' }
+  | {
+      screen: 'history'
+      previousThreadId: string | null
+      selection:
+        | { status: 'idle' }
+        | { status: 'loading' | 'failed'; id: string }
+    }
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
+  const consentAccepted = ref(false)
   // writeDefaults false: no storage key planted for flag-off users.
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
     writeDefaults: false
   })
+  /** Whether the panel has ever been shown to this user, on any visit. */
+  const hasEverOpened = useLocalStorage(DISCOVERED_STORAGE_KEY, false, {
+    writeDefaults: false
+  })
   const gateSettled = ref(false)
-  const width = ref(PANEL_MIN_WIDTH)
+  const view = shallowRef<AgentPanelView>({ screen: 'chat' })
+  const { flags: featureFlags } = useFeatureFlags()
+  const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
+  const onboarding = computed<
+    ServerFact<'agent.onboarding', AgentOnboardingPolicy>
+  >(() =>
+    pendingServerFact(
+      'BE-22051',
+      isLocalDesktopApp() ? DESKTOP_ONBOARDING : DEFAULT_ONBOARDING
+    )
+  )
+  /** The server's `agent` feature; undefined unless its state is known. */
+  const comfyAgent = computed(() => {
+    if (import.meta.env.VITE_AGENT_STANDALONE === 'true') return undefined
+    const agent = featureFlags.agent
+    return agent?.state === 'starting' ||
+      agent?.state === 'ready' ||
+      agent?.state === 'failed'
+      ? (agent as AgentServerFeature)
+      : undefined
+  })
+  const maximized = ref(false)
+  const draggedWidth = ref(PANEL_MIN_WIDTH)
+  /**
+   * Width the workspace left of the panel needs: the side toolbar, plus the
+   * sidebar when one is open. The layout that owns those keeps it current, so
+   * the panel gives way the moment it would meet the sidebar.
+   */
+  const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
+  const reportedExhaustionIdentity = ref<string | null>(null)
+  const reportedFreeUseExposure = ref(false)
+  const reportedFreeUseImpression = ref(false)
+  const fundsRechecks = ref(new Map<number, string>())
+  const fundsRecheckTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
+  const fundsRecheckFinished = new Map<number, () => void>()
+  let nextFundsRecheckId = 0
+  const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
+    null
+  )
   const dismissedSelectionSignature = ref<string | null>(null)
+  const workflowStore = useWorkflowStore()
+  const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
+  const followsVisibleWorkflow = computed(
+    () => targetTracking.value.mode === 'following'
+  )
+  const selectedWorkflow = computed(() => {
+    const target = targetTracking.value
+    if (target.mode === 'following') return workflowStore.activeWorkflow
+    return target.mode === 'retained' ? target.workflow : null
+  })
+  const targetUnavailable = computed(
+    () =>
+      targetTracking.value.mode === 'retained' &&
+      targetTracking.value.workflow === null &&
+      targetTracking.value.unavailable === true
+  )
+  const canRestoreWorkflow = computed(
+    () => targetTracking.value.mode === 'restoring'
+  )
 
-  let openedAt: number | null = null
+  function beginWorkflowRestoration(): void {
+    targetTracking.value = { mode: 'restoring' }
+  }
 
+  function interruptHistorySelection(): void {
+    if (
+      view.value.screen === 'history' &&
+      view.value.selection.status === 'loading'
+    )
+      view.value = {
+        ...view.value,
+        selection: { status: 'failed', id: view.value.selection.id }
+      }
+  }
+
+  function initializeTargetTracking(hasThread: boolean): void {
+    if (targetTracking.value.mode !== 'uninitialized') return
+    targetTracking.value = { mode: hasThread ? 'restoring' : 'following' }
+  }
+
+  function retainWorkflowTarget(): void {
+    if (targetTracking.value.mode === 'retained') return
+    setWorkflowTarget(selectedWorkflow.value)
+  }
+
+  function startFollowingVisibleWorkflow(): void {
+    targetTracking.value = { mode: 'following' }
+  }
+
+  function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
+    targetTracking.value =
+      workflow === null
+        ? { mode: 'retained', workflow: null }
+        : { mode: 'retained', workflow }
+  }
+
+  function markWorkflowTargetUnavailable(): void {
+    targetTracking.value = {
+      mode: 'retained',
+      workflow: null,
+      unavailable: true
+    }
+  }
+
+  function detachClosedTarget(workflow: ComfyWorkflow): void {
+    targetTracking.value = workflow.isTemporary
+      ? { mode: 'retained', workflow: null }
+      : { mode: 'retained', workflow: null, closedPath: workflow.path }
+  }
+
+  // Only a retained target can become detached. A following target belongs to
+  // the editor, including its replacement when the visible tab closes.
   watch(
-    () => enabled.value && isOpen.value,
-    (docked) => {
-      if (!docked || openedAt !== null) return
-      openedAt = Date.now()
-      useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
+    () => [targetTracking.value, ...workflowStore.openWorkflows],
+    () => {
+      const target = targetTracking.value
+      if (target.mode !== 'retained') return
+      if (target.workflow !== null) {
+        if (!workflowStore.openWorkflows.includes(target.workflow))
+          detachClosedTarget(target.workflow)
+      } else if (
+        workflowStore.openWorkflows.some(
+          ({ path }) => path === target.closedPath
+        )
+      )
+        setWorkflowTarget(null)
     }
   )
 
-  const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
+  function isRetainedTarget(workflow: ComfyWorkflow): boolean {
+    const target = targetTracking.value
+    if (target.mode !== 'retained') return false
+    return target.workflow === null
+      ? target.closedPath === workflow.path
+      : toRaw(target.workflow) === toRaw(workflow)
+  }
 
-  function open(): void {
+  function followClosedTargetRename(oldPath: string, newPath: string): void {
+    const target = targetTracking.value
+    if (
+      target.mode === 'retained' &&
+      target.workflow === null &&
+      target.closedPath === oldPath
+    )
+      targetTracking.value = {
+        mode: 'retained',
+        workflow: null,
+        closedPath: newPath
+      }
+  }
+
+  workflowStore.$onAction(({ name, args, after }) => {
+    if (name === 'deleteWorkflow') {
+      const [workflow] = args
+      if (!workflow.isTemporary)
+        after(() => {
+          if (isRetainedTarget(workflow)) markWorkflowTargetUnavailable()
+        })
+    } else if (name === 'renameWorkflow') {
+      const [workflow] = args
+      const oldPath = workflow.path
+      after(() => followClosedTargetRename(oldPath, workflow.path))
+    }
+  })
+
+  let openedAt: number | null = null
+  // Guards the pagehide teardown report below: true once this open epoch has
+  // reported a close, so a bfcache-frozen page that fires pagehide again
+  // (background/resume/close) can't emit a second overlapping duration for
+  // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
+  let teardownReported = false
+
+  function startOpenEpoch(): void {
+    openedAt = Date.now()
+    teardownReported = false
+    reportedFreeUseExposure.value = false
+    reportedFreeUseImpression.value = false
+  }
+
+  const isVisible = computed(() => enabled.value && isOpen.value)
+
+  watch(isVisible, (visible) => {
+    if (!visible) {
+      openedAt = null
+      return
+    }
+    hasEverOpened.value = true
+    if (openedAt !== null) return
+    startOpenEpoch()
+    useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
+  })
+
+  const { width: windowWidth } = useWindowSize()
+
+  /**
+   * Falls below `PANEL_MIN_WIDTH` when the window leaves less room than that.
+   * A panel narrower than its minimum still beats one that leaves the window.
+   */
+  const maxWidth = computed(() =>
+    clamp(windowWidth.value - reservedWorkspaceWidth.value, 0, PANEL_MAX_WIDTH)
+  )
+
+  /**
+   * The rendered width. Narrowing the window clamps it; widening restores the
+   * width the user asked for, so a maximized panel never leaves the viewport.
+   */
+  const width = computed(() =>
+    Math.min(
+      maxWidth.value,
+      maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
+    )
+  )
+  const requestedWidth = computed(() =>
+    maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
+  )
+  const isOverlay = computed(
+    () =>
+      windowWidth.value <= requestedWidth.value + reservedWorkspaceWidth.value
+  )
+
+  const isMaximized = computed(() => maximized.value)
+
+  function open(
+    source: AgentPanelOpenedMetadata['source'] = 'topbar_button'
+  ): void {
     if (isOpen.value) return
     isOpen.value = true
-    openedAt = Date.now()
-    useTelemetry()?.trackAgentPanelOpened({ source: 'topbar_button' })
+    startOpenEpoch()
+    useTelemetry()?.trackAgentPanelOpened({ source })
   }
 
   function close(source: AgentPanelCloseSource): void {
@@ -50,29 +361,163 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     })
   }
 
+  function suppressRestoredOpen(): void {
+    if (!isOpen.value || isVisible.value) return
+    isOpen.value = false
+    openedAt = null
+  }
+
+  // pagehide is the reliable teardown signal on tab close/reload and even on
+  // some mobile Safari backgrounding, where nothing else is guaranteed to
+  // fire again. Reports the open duration without mutating isOpen/local
+  // storage, so the localStorage-backed restore-on-reload behaviour
+  // (FE-1284/PM-648) is untouched.
+  useEventListener(window, 'pagehide', () => {
+    if (!isVisible.value || openedAt === null || teardownReported) return
+    teardownReported = true
+    useTelemetry()?.trackAgentPanelClosed({
+      source: 'pagehide',
+      open_duration_ms: Date.now() - openedAt
+    })
+  })
+
+  // A bfcache restore resumes this same frozen interval rather than starting
+  // a new one, so the pagehide report above already closed it out. Starting
+  // a fresh interval here keeps a later close()/pagehide measuring only the
+  // time since resume, instead of re-including (and double counting) the
+  // span already reported.
+  useEventListener(window, 'pageshow', (event: PageTransitionEvent) => {
+    if (!event.persisted || !isVisible.value) return
+    openedAt = Date.now()
+    teardownReported = false
+  })
+
   function toggle(): void {
     if (isOpen.value) close('topbar_button')
     else open()
   }
 
+  function setReservedWorkspaceWidth(px: number): void {
+    reservedWorkspaceWidth.value = Math.max(0, px)
+  }
+
   function setWidth(px: number): void {
-    width.value = Math.min(PANEL_MAX_WIDTH, Math.max(PANEL_MIN_WIDTH, px))
+    maximized.value = false
+    draggedWidth.value = clamp(px, PANEL_MIN_WIDTH, PANEL_MAX_WIDTH)
   }
 
   function toggleMaximize(): void {
-    setWidth(isMaximized.value ? PANEL_MIN_WIDTH : PANEL_MAX_WIDTH)
+    maximized.value = !maximized.value
+    if (!maximized.value) draggedWidth.value = PANEL_MIN_WIDTH
   }
+
+  function dispatchCreditTransitionNotice(
+    event: CreditTransitionNoticeEvent
+  ): boolean {
+    const before = creditTransitionNotice.value
+    creditTransitionNotice.value = reduceCreditTransitionNotice(before, event)
+    return creditTransitionNotice.value !== before
+  }
+
+  function observeAgentScopedFunds(
+    identity: string,
+    scopedHasFunds: boolean
+  ): void {
+    dispatchCreditTransitionNotice({
+      type: 'scopedRead',
+      identity,
+      scopedHasFunds
+    })
+  }
+
+  function claimCreditTransitionNoticeImpression(identity: string): boolean {
+    return dispatchCreditTransitionNotice({
+      type: 'shown',
+      identity
+    })
+  }
+
+  function dismissCreditTransitionNotice(identity: string): void {
+    dispatchCreditTransitionNotice({ type: 'dismissed', identity })
+  }
+
+  function beginFundsRecheck(
+    identity: string,
+    onFinished?: () => void
+  ): number {
+    const id = ++nextFundsRecheckId
+    fundsRechecks.value.set(id, identity)
+    if (onFinished) fundsRecheckFinished.set(id, onFinished)
+    fundsRecheckTimeouts.set(
+      id,
+      setTimeout(() => finishFundsRecheck(id), FUNDS_RECHECK_TIMEOUT_MS)
+    )
+    return id
+  }
+
+  function finishFundsRecheck(id: number): void {
+    clearTimeout(fundsRecheckTimeouts.get(id))
+    fundsRecheckTimeouts.delete(id)
+    fundsRechecks.value.delete(id)
+    fundsRecheckFinished.get(id)?.()
+    fundsRecheckFinished.delete(id)
+  }
+
+  function cancelFundsRechecks(): void {
+    for (const id of fundsRechecks.value.keys()) finishFundsRecheck(id)
+  }
+
+  function hasPendingFundsRecheck(identity: string): boolean {
+    return [...fundsRechecks.value.values()].includes(identity)
+  }
+
+  onScopeDispose(cancelFundsRechecks)
 
   return {
     enabled,
+    consentAccepted,
     isOpen,
+    isVisible,
+    hasEverOpened,
     gateSettled,
+    view,
+    interruptHistorySelection,
+    flagsSettled,
+    comfyAgent,
+    onboarding,
+    reportedExhaustionIdentity,
+    reportedFreeUseExposure,
+    reportedFreeUseImpression,
+    creditTransitionNotice: readonly(creditTransitionNotice),
+    observeAgentScopedFunds,
+    claimCreditTransitionNoticeImpression,
+    dismissCreditTransitionNotice,
+    beginFundsRecheck,
+    finishFundsRecheck,
+    cancelFundsRechecks,
+    hasPendingFundsRecheck,
     width,
+    requestedWidth,
+    isOverlay,
     isMaximized,
     dismissedSelectionSignature,
+    open,
+    targetTracking,
+    followsVisibleWorkflow,
+    initializeTargetTracking,
+    retainWorkflowTarget,
+    startFollowingVisibleWorkflow,
+    selectedWorkflow,
+    targetUnavailable,
+    markWorkflowTargetUnavailable,
+    canRestoreWorkflow,
+    beginWorkflowRestoration,
+    setWorkflowTarget,
     toggle,
     close,
+    suppressRestoredOpen,
     setWidth,
+    setReservedWorkspaceWidth,
     toggleMaximize
   }
 })

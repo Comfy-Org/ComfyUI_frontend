@@ -1,6 +1,6 @@
-import { $el } from '../../ui'
-import { prop } from '../../utils'
-import { ComfyButton } from './button'
+import { $el } from '@/scripts/ui/utils'
+import { prop } from '@/scripts/utils'
+import type { ComfyButton } from './button'
 
 export class ComfyButtonGroup {
   element = $el('div.comfyui-button-group')
@@ -32,7 +32,10 @@ export class ComfyButtonGroup {
   }
 
   update() {
-    // @ts-expect-error fixme ts strict error
-    this.element.replaceChildren(...this.buttons.map((b) => b['element'] ?? b))
+    this.element.replaceChildren(
+      ...this.buttons.map((button) =>
+        button instanceof HTMLElement ? button : button.element
+      )
+    )
   }
 }

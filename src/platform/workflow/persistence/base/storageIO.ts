@@ -70,6 +70,11 @@ function isStorageReadable(): boolean {
     : workflowStorageState.availability === 'available'
 }
 
+/** @internal Test-only: do not call from production code paths. */
+export function resetStorageAvailable(): void {
+  workflowStorageState = { status: 'ready', availability: 'available' }
+}
+
 function isQuotaExceeded(error: unknown): boolean {
   return (
     error instanceof DOMException &&
@@ -240,7 +245,8 @@ export function deleteOrphanPayloads(
 function findAndMigratePointer<T extends { workspaceId: string }>(
   newKey: string,
   prefix: string,
-  targetWorkspaceId: string
+  targetWorkspaceId: string,
+  isValid: (value: unknown) => value is T
 ): T | null {
   for (let i = 0; i < sessionStorage.length; i++) {
     const storageKey = sessionStorage.key(i)
@@ -250,8 +256,8 @@ function findAndMigratePointer<T extends { workspaceId: string }>(
     if (!json) continue
 
     try {
-      const pointer = JSON.parse(json) as T
-      if (pointer.workspaceId === targetWorkspaceId) {
+      const pointer: unknown = JSON.parse(json)
+      if (isValid(pointer) && pointer.workspaceId === targetWorkspaceId) {
         sessionStorage.setItem(newKey, json)
         sessionStorage.removeItem(storageKey)
         return pointer
@@ -272,13 +278,19 @@ function findAndMigratePointer<T extends { workspaceId: string }>(
 function readSessionPointer<T extends { workspaceId: string }>(
   key: string,
   prefix: string,
-  targetWorkspaceId?: string
+  targetWorkspaceId: string | undefined,
+  isValid: (value: unknown) => value is T
 ): T | null {
   try {
     const json = sessionStorage.getItem(key)
     if (json) {
-      const pointer = JSON.parse(json) as T
-      if (targetWorkspaceId && pointer.workspaceId !== targetWorkspaceId) {
+      const pointer: unknown = JSON.parse(json)
+      if (!isValid(pointer)) {
+        sessionStorage.removeItem(key)
+      } else if (
+        targetWorkspaceId &&
+        pointer.workspaceId !== targetWorkspaceId
+      ) {
         sessionStorage.removeItem(key)
       } else {
         return pointer
@@ -286,7 +298,7 @@ function readSessionPointer<T extends { workspaceId: string }>(
     }
 
     if (targetWorkspaceId) {
-      return findAndMigratePointer<T>(key, prefix, targetWorkspaceId)
+      return findAndMigratePointer(key, prefix, targetWorkspaceId, isValid)
     }
 
     return null
@@ -301,15 +313,18 @@ function readSessionPointer<T extends { workspaceId: string }>(
  * then to localStorage when sessionStorage is empty (browser restart).
  */
 export function readActivePath(
-  clientId: string,
+  clientId: string | null,
   targetWorkspaceId?: string
 ): ActivePathPointer | null {
   return (
-    readSessionPointer<ActivePathPointer>(
-      StorageKeys.activePath(clientId),
-      StorageKeys.prefixes.activePath,
-      targetWorkspaceId
-    ) ??
+    (clientId
+      ? readSessionPointer<ActivePathPointer>(
+          StorageKeys.activePath(clientId),
+          StorageKeys.prefixes.activePath,
+          targetWorkspaceId,
+          isValidActivePathPointer
+        )
+      : null) ??
     (targetWorkspaceId
       ? readLocalPointer<ActivePathPointer>(
           StorageKeys.lastActivePath(targetWorkspaceId),
@@ -352,15 +367,18 @@ export function clearActivePath(clientId: string, workspaceId: string): void {
  * then to localStorage when sessionStorage is empty (browser restart).
  */
 export function readOpenPaths(
-  clientId: string,
+  clientId: string | null,
   targetWorkspaceId?: string
 ): OpenPathsPointer | null {
   return (
-    readSessionPointer<OpenPathsPointer>(
-      StorageKeys.openPaths(clientId),
-      StorageKeys.prefixes.openPaths,
-      targetWorkspaceId
-    ) ??
+    (clientId
+      ? readSessionPointer<OpenPathsPointer>(
+          StorageKeys.openPaths(clientId),
+          StorageKeys.prefixes.openPaths,
+          targetWorkspaceId,
+          isValidOpenPathsPointer
+        )
+      : null) ??
     (targetWorkspaceId
       ? readLocalPointer<OpenPathsPointer>(
           StorageKeys.lastOpenPaths(targetWorkspaceId),
@@ -440,6 +458,14 @@ const legacyLocalRestoreKeys = [
   'workflow'
 ]
 
+const legacyAgentKeys = [
+  'Comfy.Agent.ThreadId',
+  'Comfy.Agent.WorkflowTabBindings',
+  'Comfy.Agent.WorkflowTabBindings.v2',
+  'Comfy.Agent.ChatTitles',
+  'Comfy.Agent.DeletedThreads'
+]
+
 const sessionRestorePrefixes = [
   StorageKeys.prefixes.activePath,
   StorageKeys.prefixes.openPaths,
@@ -478,6 +504,10 @@ function removeStorageKeys(
   } catch {
     return
   }
+}
+
+export function clearLegacyAgentStorage(): void {
+  removeStorageKeys(localStorage, legacyAgentKeys)
 }
 
 export function clearWorkflowRestoreState(): void {
@@ -550,4 +580,19 @@ export function clearAllWorkflowStorage(): void {
 
   removeStorageKeys(localStorage, legacyLocalRestoreKeys, localPrefixes)
   removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
+}
+
+export function clearAllWorkspaceStorage(): void {
+  clearAllWorkflowStorage()
+  clearLegacyAgentStorage()
+  removeStorageKeys(
+    localStorage,
+    [],
+    [
+      StorageKeys.prefixes.agentThread,
+      StorageKeys.prefixes.agentWorkflowTabBindings,
+      StorageKeys.prefixes.agentChatTitles,
+      StorageKeys.prefixes.agentDeletedThreads
+    ]
+  )
 }

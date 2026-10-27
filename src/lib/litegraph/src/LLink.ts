@@ -1,10 +1,17 @@
+import type {
+  SubgraphInput,
+  SubgraphOutput,
+  LGraph,
+  LGraphNode,
+  Reroute
+} from '@/lib/litegraph/src/types/entityRegistry'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -17,20 +24,12 @@ import type { EndpointPatch } from '@/stores/linkStore'
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { RerouteId } from '@/types/rerouteId'
-import type { LGraph } from './LGraph'
-import type { LGraphNode } from './LGraphNode'
+
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import type { Reroute } from './Reroute'
-import type {
-  CanvasColour,
-  INodeInputSlot,
-  INodeOutputSlot,
-  ISlotType,
-  LinkNetwork,
-  LinkSegment,
-  Point,
-  ReadonlyLinkNetwork
-} from './interfaces'
+
+import type { CanvasColour, ISlotType, LinkSegment, Point } from './interfaces'
+import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
+import type { LinkNetwork, ReadonlyLinkNetwork } from './types/linkNetwork'
 import type { Serialisable, SerialisableLLink } from './types/serialisation'
 import { toRaw } from 'vue'
 
@@ -682,6 +681,9 @@ export function replaceLinkTopology(
   )
   if (!registered) return false
   if (incumbent) {
+    if (incumbent._graphScope) {
+      useLinkPresentationStore().take(incumbent._graphScope, incumbent.id)
+    }
     linkByTopology.delete(toRaw(incumbent._state))
     incumbent._graphScope = undefined
   }
@@ -707,7 +709,9 @@ function adoptLinkTopology(
  */
 export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
-  useLinkStore().deleteLink(link._graphScope, link._state)
+  if (useLinkStore().deleteLink(link._graphScope, link._state)) {
+    useLinkPresentationStore().take(link._graphScope, link.id)
+  }
   linkByTopology.delete(toRaw(link._state))
   link._graphScope = undefined
 }
@@ -727,4 +731,16 @@ export function unregisterAllLinkTopologies(
   ]) {
     unregisterLinkTopology(link)
   }
+}
+
+type RegisteredLLink = LLink
+type RegisteredSerialisedLLinkArray = SerialisedLLinkArray
+type RegisteredResolvedConnection = ResolvedConnection
+
+declare module './types/entityRegistry' {
+  interface LitegraphEntityRegistry {
+    SerialisedLLinkArray: RegisteredSerialisedLLinkArray
+    ResolvedConnection: RegisteredResolvedConnection
+  }
+  interface LLink extends RegisteredLLink {}
 }

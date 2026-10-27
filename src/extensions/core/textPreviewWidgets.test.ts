@@ -1,7 +1,10 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { ComfyApp } from '@/scripts/app'
 
 interface MockWidget {
   name: string
@@ -10,54 +13,54 @@ interface MockWidget {
   serialize?: boolean
 }
 
-vi.mock('@/scripts/app', () => ({ app: { rootGraph: { id: 'graph-1' } } }))
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({ rootGraph: { id: 'graph-1' } })
+}))
 
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
+vi.mock(import('@/lib/litegraph/src/litegraph'), () => ({
   resolveNodeRootGraphId: () => 'graph-1'
 }))
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue',
+  import('@/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue'),
   () => ({
-    default: {}
+    default: defineComponent({ render: () => null })
   })
 )
 
-vi.mock('@/stores/widgetValueStore', () => ({
-  useWidgetValueStore: () => ({ getWidget: () => undefined })
-}))
-
-vi.mock('@/scripts/domWidget', () => ({
-  ComponentWidgetImpl: class {
-    name: string
-    options: Record<string, unknown>
-    type: string
-    serialize?: boolean
-    constructor(obj: {
+vi.mock(import('@/scripts/domWidget'), () => ({
+  ComponentWidgetImpl: fromAny(
+    class {
       name: string
       options: Record<string, unknown>
       type: string
-    }) {
-      this.name = obj.name
-      this.options = obj.options
-      this.type = obj.type
+      serialize?: boolean
+      constructor(obj: {
+        name: string
+        options: Record<string, unknown>
+        type: string
+      }) {
+        this.name = obj.name
+        this.options = obj.options
+        this.type = obj.type
+      }
     }
-  },
-  addWidget: (node: { widgets?: MockWidget[] }, widget: MockWidget) => {
+  ),
+  addWidget: fromAny((node: { widgets?: MockWidget[] }, widget: MockWidget) => {
     node.widgets = node.widgets ?? []
     node.widgets.push(widget)
-  }
+  })
 }))
 
-vi.mock('@/scripts/widgets', () => ({
-  ComfyWidgets: {
+vi.mock(import('@/scripts/widgets'), () => ({
+  ComfyWidgets: fromPartial({
     BOOLEAN: (node: { widgets?: MockWidget[] }, name: string) => {
       const widget: MockWidget = { name, options: {}, value: false }
       node.widgets = node.widgets ?? []
       node.widgets.push(widget)
       return { widget }
     }
-  }
+  })
 }))
 
 const { addTextPreviewWidgets, updateTextPreviewWidgets } =
@@ -118,25 +121,32 @@ describe('updateTextPreviewWidgets', () => {
   )
 
   it('drops null entries instead of rendering blank separators', () => {
-    updateTextPreviewWidgets(node, {
-      text: ['first', null, 'second']
-    } as unknown as NodeExecutionOutput)
+    updateTextPreviewWidgets(
+      node,
+      fromAny<NodeExecutionOutput, unknown>({
+        text: ['first', null, 'second']
+      })
+    )
 
     expect(node.widgets[0].value).toBe('first\n\nsecond')
   })
 
   it('renders non-string entries rather than blanking the node', () => {
-    updateTextPreviewWidgets(node, {
-      text: ['first', 23.976, null, 'second']
-    } as unknown as NodeExecutionOutput)
+    updateTextPreviewWidgets(
+      node,
+      fromAny<NodeExecutionOutput, unknown>({
+        text: ['first', 23.976, null, 'second']
+      })
+    )
 
     expect(node.widgets[0].value).toBe('first\n\n23.976\n\nsecond')
   })
 
   it('stringifies a bare non-string scalar payload', () => {
-    updateTextPreviewWidgets(node, {
-      text: 23.976
-    } as unknown as NodeExecutionOutput)
+    updateTextPreviewWidgets(
+      node,
+      fromAny<NodeExecutionOutput, unknown>({ text: 23.976 })
+    )
     expect(node.widgets[0].value).toBe('23.976')
   })
 })

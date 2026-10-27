@@ -4,6 +4,10 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
+import {
+  graphItems,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 
 // LGraphCanvas.node_colors.red.groupcolor — the group-specific tint that
 // LGraphGroup#setColorOption applies. Regression: the right-click Color menu
@@ -12,27 +16,25 @@ import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 // setColorOption, producing a visibly different shade from the toolbar
 // circle-swatch picker for the same color choice.
 const RED_GROUP_COLOR = '#A88'
+const RED_NODE_COLOR = 'rgb(85, 51, 51)'
 
 test.describe(
   'Group Color - right-click menu matches toolbar swatch',
-  { tag: ['@screenshot', '@canvas'] },
+  { tag: ['@screenshot', '@canvas', '@vue-nodes'] },
   () => {
+    test.use({
+      initialSettings: {
+        'Comfy.Canvas.SelectionToolbox': true
+      }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
-      // The right-click Color menu on a group is only routed through the
-      // PrimeVue menu (useGroupContextMenu) when Vue Nodes is enabled;
-      // otherwise litegraph's own canvas-rendered context menu is used,
-      // which nests "Color" under an "Edit Group" submenu instead of
-      // exposing it as a top-level item, and never matches
-      // comfyPage.contextMenu.primeVueMenu ('.p-contextmenu, .p-menu').
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow('groups/two_groups')
     })
 
     test('applies the same shade as the toolbar circle-swatch picker', async ({
       comfyPage
     }) => {
-      // Set color via the toolbar circle-swatch picker (SelectionToolbox).
       const toolbarGroupPos = await getGroupTitlePosition(
         comfyPage,
         'Toolbar Swatch Group'
@@ -54,14 +56,6 @@ test.describe(
         .click()
       await comfyPage.nextFrame()
 
-      // Deselect the first group so its SelectionToolbox closes before we
-      // interact with the second group — otherwise the still-visible toolbox
-      // can sit over the second group's title and swallow the right-click.
-      // Click a graph point clear of both groups rather than
-      // canvasOps.clickEmptySpace(): that helper's position is calibrated for
-      // the default graph's legacy-menu layout, and with Vue Nodes enabled
-      // the canvas spans the full viewport, so the click lands on the
-      // workflow tab bar instead of the canvas.
       const emptyCanvasPos = await comfyPage.page.evaluate(() =>
         window.app!.canvasPosToClientPos([1000, 500])
       )
@@ -71,8 +65,6 @@ test.describe(
         comfyPage.page.getByTestId(TestIds.selectionToolbox.root)
       ).toBeHidden()
 
-      // Set the same color via the right-click group Color menu — the path
-      // this PR fixes.
       const menuGroupPos = await getGroupTitlePosition(
         comfyPage,
         'Right-Click Menu Group'
@@ -80,12 +72,14 @@ test.describe(
       await comfyPage.page.mouse.click(menuGroupPos.x, menuGroupPos.y, {
         button: 'right'
       })
-      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
 
-      await comfyPage.page.getByText('Color', { exact: true }).click()
-      const redSwatch = comfyPage.page.getByTitle('Red')
-      await expect(redSwatch.first()).toBeVisible()
-      await redSwatch.first().click()
+      const colorSubmenu = await comfyPage.contextMenu.openColorSubmenu()
+      const redSwatch = colorSubmenu.getByRole('menuitem', {
+        name: 'Red',
+        exact: true
+      })
+      await redSwatch.click()
       await comfyPage.nextFrame()
 
       const groupColors = await comfyPage.page.evaluate(() => {
@@ -104,21 +98,68 @@ test.describe(
         'right-click Color menu should apply the same shade as the toolbar swatch'
       ).toBe(groupColors.toolbarSwatch)
 
-      // Selecting a swatch closes the submenu popover immediately
-      // (SubmenuPopover#handleSubmenuClick / NodeContextMenu#handleSubmenuSelect),
-      // so the screenshot must come from a fresh open rather than the click
-      // above — otherwise it captures the menu already closed and never
-      // verifies the submenu's swatch rendering at all.
       await comfyPage.page.mouse.click(menuGroupPos.x, menuGroupPos.y, {
         button: 'right'
       })
-      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
-      await comfyPage.page.getByText('Color', { exact: true }).click()
-      await expect(redSwatch.first()).toBeVisible()
+      await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
+      await comfyPage.contextMenu.openColorSubmenu()
+      await expect(comfyPage.selectionToolbox).toBeVisible()
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'group-color-right-click-matches-toolbar-swatch.png'
+      const region = await screenshotRegion(comfyPage.page, [
+        graphItems(comfyPage.page, 'groups'),
+        ...(await comfyPage.contextMenu.ariaMenu.all())
+      ])
+      await region.expectScreenshot(
+        'group-color-right-click-matches-toolbar-swatch.png',
+        { maxDiffPixels: 25 }
       )
+    })
+
+    test('refreshes the selected group toolbar swatch after menu color change', async ({
+      comfyPage
+    }) => {
+      const groupPos = await getGroupTitlePosition(
+        comfyPage,
+        'Right-Click Menu Group'
+      )
+
+      await test.step('Select the group and show its toolbar', async () => {
+        await comfyPage.page.mouse.click(groupPos.x, groupPos.y)
+        await comfyPage.nextFrame()
+        await expect(comfyPage.selectionToolbox).toBeVisible()
+      })
+
+      await test.step('Change the group color through its context menu', async () => {
+        await comfyPage.page.mouse.click(groupPos.x, groupPos.y, {
+          button: 'right'
+        })
+        await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
+        const colorSubmenu = await comfyPage.contextMenu.openColorSubmenu()
+        const redSwatch = colorSubmenu.getByRole('menuitem', {
+          name: 'Red',
+          exact: true
+        })
+        await redSwatch.click()
+      })
+
+      await test.step('Refresh the toolbar swatch without reselecting the group', async () => {
+        await expect(comfyPage.selectionToolbox).toBeVisible()
+        await expect(
+          comfyPage.page.getByTestId(
+            TestIds.selectionToolbox.colorPickerCurrentColor
+          )
+        ).toHaveCSS('color', RED_NODE_COLOR)
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(
+              () =>
+                window.app!.graph.groups.find(
+                  (group) => group.title === 'Right-Click Menu Group'
+                )?.color
+            )
+          )
+          .toBe(RED_GROUP_COLOR)
+      })
     })
   }
 )

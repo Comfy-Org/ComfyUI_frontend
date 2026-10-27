@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { knownTool, toolGlyph } from './agentToolGlyph'
+import { toolGlyph, toolLabel } from './agentToolGlyph'
+
+const asKey = (key: string) => key
 
 describe('toolGlyph', () => {
   it.for([
@@ -9,17 +11,19 @@ describe('toolGlyph', () => {
     ['remember', 'icon-[lucide--save]'],
     ['forget', 'icon-[lucide--circle-question-mark]']
   ])('gives %s its dedicated icon', ([name, icon]) => {
-    expect(toolGlyph(name, 'done', true)).toBe(icon)
+    expect(toolGlyph(name, 'done', { ok: true })).toBe(icon)
   })
 
   it('falls back to a generic wrench for an unknown tool', () => {
-    expect(toolGlyph('resize_image_node', 'done', true)).toBe(
+    expect(toolGlyph('resize_image_node', 'done', { ok: true })).toBe(
       'icon-[lucide--wrench]'
     )
   })
 
   it('shows the failure glyph instead of the tool icon on a failed call', () => {
-    expect(toolGlyph('new_tab', 'done', false)).toBe('icon-[lucide--circle-x]')
+    expect(toolGlyph('new_tab', 'done', { ok: false })).toBe(
+      'icon-[lucide--circle-x]'
+    )
   })
 
   it('spins while the call streams', () => {
@@ -29,17 +33,28 @@ describe('toolGlyph', () => {
   })
 })
 
-describe('knownTool', () => {
-  it('pairs every known tool with both a label key and an icon', () => {
-    for (const name of ['new_tab', 'switch_tab', 'remember', 'forget']) {
-      const tool = knownTool(name)
-      expect(tool?.labelKey).toMatch(/^agent\./)
-      expect(tool?.icon).toMatch(/^icon-\[lucide--/)
+describe('toolLabel', () => {
+  it.for(['new_tab', 'switch_tab', 'remember', 'forget'])(
+    'gives %s a key for both the running and the finished state',
+    (name) => {
+      expect(toolLabel(name, 'streaming', asKey)).toMatch(/^agent\./)
+      expect(toolLabel(name, 'done', asKey)).toMatch(/^agent\./)
+      expect(toolLabel(name, 'streaming', asKey)).not.toBe(
+        toolLabel(name, 'done', asKey)
+      )
     }
+  )
+
+  it('humanizes an unknown tool name', () => {
+    expect(toolLabel('resize_image_node', 'done', asKey)).toBe(
+      'Resize image node'
+    )
   })
 
   it('does not resolve a tool name that collides with Object.prototype', () => {
-    expect(knownTool('constructor')).toBeUndefined()
-    expect(knownTool('toString')).toBeUndefined()
+    expect(toolLabel('constructor', 'done', asKey)).toBe('Constructor')
+    expect(toolGlyph('constructor', 'done', { ok: true })).toBe(
+      'icon-[lucide--wrench]'
+    )
   })
 })

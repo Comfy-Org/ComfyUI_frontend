@@ -1,0 +1,11 @@
+{
+  "name": "@comfyorg/cicd-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static dashboard for CI reports",
+  "type": "module",
+  "scripts": {
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check"
+  }
+}

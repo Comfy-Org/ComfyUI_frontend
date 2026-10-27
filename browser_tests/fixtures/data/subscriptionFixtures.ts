@@ -1,6 +1,6 @@
 import type { operations } from '@comfyorg/registry-types'
 
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 export type BalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -16,6 +16,7 @@ export function createSubscriptionStatus(
     max_seats: 0,
     occupied_seats: 0,
     team_credit_stop: null,
+    scheduled_change: null,
     ...overrides
   }
 }

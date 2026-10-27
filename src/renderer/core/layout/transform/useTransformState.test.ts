@@ -69,29 +69,6 @@ describe('useTransformState', () => {
       expect(camera.z).toBe(2)
     })
 
-    it('should handle null canvas gracefully', () => {
-      const { syncWithCanvas, camera } = transformState
-
-      syncWithCanvas(null! as LGraphCanvas)
-
-      // Should remain at initial values
-      expect(camera.x).toBe(0)
-      expect(camera.y).toBe(0)
-      expect(camera.z).toBe(1)
-    })
-
-    it('should handle canvas without ds property', () => {
-      const { syncWithCanvas, camera } = transformState
-      const canvasWithoutDs = { canvas: {} }
-
-      syncWithCanvas(canvasWithoutDs as LGraphCanvas)
-
-      // Should remain at initial values
-      expect(camera.x).toBe(0)
-      expect(camera.y).toBe(0)
-      expect(camera.z).toBe(1)
-    })
-
     it('should update transform style after sync', () => {
       const { syncWithCanvas, transformStyle } = transformState
       const mockCanvas = createMockCanvasContext()

@@ -28,7 +28,7 @@ function togglePromotion() {
 <template>
   <div
     v-if="enable"
-    class="pointer-events-auto relative col-span-2 flex cursor-pointer flex-row gap-1"
+    class="pointer-events-auto relative col-span-2 flex cursor-pointer gap-1"
     @pointerdown.capture.stop.prevent="togglePromotion"
     @click.capture.stop.prevent
     @pointerup.capture.stop.prevent
@@ -38,27 +38,27 @@ function togglePromotion() {
     <div
       :class="
         cn(
-          'm-1 size-4 self-center rounded-sm border border-primary-background',
-          isPromoted && 'flex items-center bg-primary-background'
+          'm-1 size-4 self-center rounded-sm border border-primary',
+          isPromoted && 'flex items-center bg-primary'
         )
       "
     >
       <i
         v-if="isPromoted"
-        class="bg-primary-foreground place-center icon-[lucide--check]"
+        class="place-center icon-[lucide--check] bg-background"
       />
     </div>
     <div
       :class="
         cn(
-          'pointer-events-none grid flex-1 grid-cols-2 items-stretch rounded-lg ring-primary-background',
+          'pointer-events-none grid flex-1 grid-cols-2 items-stretch rounded-lg ring-primary',
           isPromoted && 'ring-2'
         )
       "
     >
       <slot />
     </div>
-    <div class="absolute size-full rounded-lg hover:bg-primary-background/10" />
+    <div class="absolute size-full rounded-lg hover:bg-primary/10" />
   </div>
   <slot v-else />
 </template>

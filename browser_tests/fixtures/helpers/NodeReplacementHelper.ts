@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { NodeReplacementResponse } from '@/platform/nodeReplacement/types'
+import type { NodeReplacementResponse } from '@/platform/workflowErrors/nodeReplacement/types'
 
 /**
  * Mock `/api/node_replacements` and enable the node replacement feature.
@@ -25,12 +25,6 @@ export async function setupNodeReplacement(
   await comfyPage.page.route('**/api/node_replacements', (route) =>
     route.fulfill({ json: replacements })
   )
-
-  await comfyPage.settings.setSetting(
-    'Comfy.RightSidePanel.ShowErrorsTab',
-    true
-  )
-  await comfyPage.settings.setSetting('Comfy.NodeReplacement.Enabled', true)
 
   await comfyPage.page.addInitScript(() => {
     const proto = window.WebSocket.prototype
@@ -59,15 +53,15 @@ export async function setupNodeReplacement(
                   origin: msgEvent.origin,
                   lastEventId: msgEvent.lastEventId
                 })
-                return (listener as EventListener).call(this, patched)
+                return listener.call(this, patched)
               }
             } catch {
               // not JSON or not a feature_flags message - pass through
             }
           }
-          return (listener as EventListener).call(this, event)
+          return listener.call(this, event)
         }
-        return originalAdd.call(this, type, wrapped as EventListener, options)
+        return originalAdd.call(this, type, wrapped, options)
       }
       return originalAdd.call(
         this,

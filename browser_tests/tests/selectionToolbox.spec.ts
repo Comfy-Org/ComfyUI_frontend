@@ -1,17 +1,25 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import {
+  expectRegionScreenshot,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 
 const test = comfyPageFixture
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
 const BLUE_COLOR = 'rgb(51, 51, 85)'
 const RED_COLOR = 'rgb(85, 51, 51)'
+
+async function selectionTargets(comfyPage: ComfyPage, nodeTitles: string[]) {
+  const nodes = await Promise.all(
+    nodeTitles.map((title) => comfyPage.nodeOps.getNodeRefsByTitle(title))
+  )
+  return [...nodes.flat(), comfyPage.selectionToolbox]
+}
 
 const getColorPickerButton = (comfyPage: { page: Page }) =>
   comfyPage.page.getByTestId(TestIds.selectionToolbox.colorPickerButton)
@@ -25,26 +33,23 @@ const getColorPickerGroup = (comfyPage: { page: Page }) =>
   })
 
 test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Disabled',
+      'Comfy.Canvas.SelectionToolbox': true
+    }
   })
 
   test('shows selection toolbox', async ({ comfyPage }) => {
-    // By default, selection toolbox should be enabled
+    const selectedTitles = ['KSampler', 'CLIP Text Encode (Prompt)']
     await expect(comfyPage.selectionToolbox).toBeHidden()
 
-    // Select multiple nodes
-    await comfyPage.nodeOps.selectNodes([
-      'KSampler',
-      'CLIP Text Encode (Prompt)'
-    ])
+    await comfyPage.nodeOps.selectNodes(selectedTitles)
 
-    // Selection toolbox should be visible with multiple nodes selected
     await expect(comfyPage.selectionToolbox).toBeVisible()
-    // Border is now drawn on canvas, check via screenshot
-    // Allow small anti-aliasing variance on the canvas-drawn selection border
-    // (see flake history: commits 1cafa4be9, 53165033e, fbcd36d35)
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await selectionTargets(comfyPage, selectedTitles),
       'selection-toolbox-multiple-nodes-border.png',
       { maxDiffPixels: 100 }
     )
@@ -94,32 +99,30 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
   })
 
   test('shows border only with multiple selections', async ({ comfyPage }) => {
-    // Select single node
     await comfyPage.nodeOps.selectNodes(['KSampler'])
 
-    // Selection toolbox should be visible but without border
     await expect(comfyPage.selectionToolbox).toBeVisible()
-    // Border is now drawn on canvas, check via screenshot
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'selection-toolbox-single-node-no-border.png'
+    const region = await screenshotRegion(
+      comfyPage.page,
+      await selectionTargets(comfyPage, [
+        'KSampler',
+        'CLIP Text Encode (Prompt)'
+      ])
     )
+    await region.expectScreenshot('selection-toolbox-single-node-no-border.png')
 
-    // Select multiple nodes
     await comfyPage.nodeOps.selectNodes([
       'KSampler',
       'CLIP Text Encode (Prompt)'
     ])
 
-    // Selection border should show with multiple selections (canvas-based)
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await region.expectScreenshot(
       'selection-toolbox-multiple-selections-border.png'
     )
 
-    // Deselect to single node
     await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
 
-    // Border should be hidden again (canvas-based)
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await region.expectScreenshot(
       'selection-toolbox-single-selection-no-border.png'
     )
   })
@@ -181,7 +184,6 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     test('color picker shows current color of selected nodes', async ({
       comfyPage
     }) => {
-      // Select multiple nodes
       await comfyPage.nodeOps.selectNodes([
         'KSampler',
         'CLIP Text Encode (Prompt)'
@@ -190,17 +192,16 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       const colorPickerButton = getColorPickerButton(comfyPage)
       const colorPickerCurrentColor = getColorPickerCurrentColor(comfyPage)
 
-      // Initially should show default color
       await expect(colorPickerButton).not.toHaveAttribute('color')
+      await expect(colorPickerCurrentColor).toHaveCSS('width', '16px')
+      await expect(colorPickerCurrentColor).toHaveCSS('height', '16px')
 
-      // Click color picker and select a color
       await colorPickerButton.click()
       const redColorOption = getColorPickerGroup(comfyPage).getByTestId(
         TestIds.selectionToolbox.colorRed
       )
       await redColorOption.click()
 
-      // Button should now show the selected color
       await expect(colorPickerCurrentColor).toHaveCSS('color', RED_COLOR)
     })
 

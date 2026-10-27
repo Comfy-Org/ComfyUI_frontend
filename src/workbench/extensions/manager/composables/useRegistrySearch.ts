@@ -1,121 +1,203 @@
-import { watchDebounced } from '@vueuse/core'
-import { orderBy } from 'es-toolkit/compat'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, toValue, watch } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 
-import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
+import {
+  DEFAULT_PAGE_SIZE,
+  PACK_SEARCHABLE_ATTRIBUTES,
+  USER_SEARCH_ANALYTICS_TAG
+} from '@/constants/searchConstants'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
-import type { SearchAttribute } from '@/types/algoliaTypes'
+import type {
+  SearchAttribute,
+  SearchNodePacksParams
+} from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
-import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
-import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import type {
+  QuerySuggestion,
+  SearchMode,
+  SearchPacksResult
+} from '@/types/searchServiceTypes'
+import { usePreemptableQueue } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
 
 type RegistryNodePack = components['schemas']['Node']
 
-const SEARCH_DEBOUNCE_TIME = 320
-const DEFAULT_SORT_FIELD = SortableAlgoliaField.Downloads // Set in the index configuration
+type FirstPage =
+  | { status: 'loading' }
+  | { status: 'failed'; query: string }
+  | { status: 'loaded'; query: string; rawResultsEmpty: boolean }
+
+const LOADING_FIRST_PAGE: FirstPage = { status: 'loading' }
+
+type PageFreshness = 'current' | 'stale'
 
 /**
- * Composable for managing UI state of Comfy Node Registry search.
+ * Offset-paged registry search as a {@link PagedList} that reloads from the
+ * first page whenever its inputs change.
  */
-export function useRegistrySearch(
-  options: {
-    initialSortField?: string
-    initialSearchMode?: SearchMode
-    initialSearchQuery?: string
-    initialPageNumber?: number
-  } = {}
-) {
-  const {
-    initialSortField = DEFAULT_SORT_FIELD,
-    initialSearchMode = 'packs',
-    initialSearchQuery = '',
-    initialPageNumber = 0
-  } = options
+export function useRegistrySearch(inputs: {
+  query: MaybeRefOrGetter<string>
+  searchMode: MaybeRefOrGetter<SearchMode>
+  /** Whether the query came from the user typing, for analytics tagging. */
+  isTypedQuery?: MaybeRefOrGetter<boolean>
+  /** Whether the results are on screen; only on-screen failures are reported. */
+  isVisible?: MaybeRefOrGetter<boolean>
+}): PagedList<RegistryNodePack> & {
+  suggestions: Readonly<Ref<QuerySuggestion[]>>
+  /**
+   * The first page for the current inputs: loading from an input change
+   * until its search settles, then the query it searched and its outcome.
+   */
+  firstPage: Readonly<Ref<FirstPage>>
+  /** Whether the page after the loaded ones failed and waits for a retry. */
+  isNextPageFailed: Readonly<Ref<boolean>>
+  /** Loads the failed next page again for the same search. */
+  retryNextPage: () => Promise<boolean>
+} {
+  const { searchPacks, resetCircuits } = useRegistrySearchGateway()
 
-  const isLoading = ref(false)
-  const sortField = ref<string>(initialSortField)
-  const searchMode = ref<SearchMode>(initialSearchMode)
-  const pageSize = ref(DEFAULT_PAGE_SIZE)
-  const pageNumber = ref(initialPageNumber)
-  const searchQuery = ref(initialSearchQuery)
-  const searchResults = ref<RegistryNodePack[]>([])
+  let pageNumber = 0
+  let generation = 0
+  let failureReportedSinceSuccess = false
+  let isDisposed = false
+  const items = ref<RegistryNodePack[]>([])
+  const morePages = ref(true)
+  const isNextPageFailed = ref(false)
   const suggestions = ref<QuerySuggestion[]>([])
+  const firstPage = ref<FirstPage>(LOADING_FIRST_PAGE)
+  const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
+  const searchedQuery = () => toValue(inputs.query).trim()
 
-  const searchAttributes = computed<SearchAttribute[]>(() =>
-    searchMode.value === 'nodes' ? ['comfy_nodes'] : ['name', 'description']
+  const searchableAttributes = (searchMode: SearchMode): SearchAttribute[] =>
+    searchMode === 'nodes' ? ['comfy_nodes'] : [...PACK_SEARCHABLE_ATTRIBUTES]
+
+  function analyticsParams(
+    query: string
+  ): Pick<SearchNodePacksParams, 'analyticsTags'> {
+    const isTypedSearch =
+      pageNumber === 0 &&
+      query !== '' &&
+      (toValue(inputs.isTypedQuery) ?? false)
+    return isTypedSearch ? { analyticsTags: [USER_SEARCH_ANALYTICS_TAG] } : {}
+  }
+
+  function reportFirstFailureSinceSuccess(cause: unknown) {
+    if (failureReportedSinceSuccess || !(toValue(inputs.isVisible) ?? true)) {
+      return
+    }
+    failureReportedSinceSuccess = true
+    reportError(cause, {
+      errorType: 'error_searching_registry_packs',
+      surface: 'platform',
+      level: 'warning',
+      tags: { outcome: 'degraded' }
+    })
+  }
+
+  function applyPage(query: string, result: SearchPacksResult) {
+    const { nodePacks } = result
+    morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
+    if (pageNumber === 0) {
+      firstPage.value = {
+        status: 'loaded',
+        query,
+        rawResultsEmpty: result.rawResultsEmpty ?? nodePacks.length === 0
+      }
+    }
+    items.value.push(...nodePacks)
+    suggestions.value = result.querySuggestions
+    pageNumber++
+  }
+
+  function applyFailure(query: string, cause: unknown) {
+    reportFirstFailureSinceSuccess(cause)
+    if (pageNumber > 0) {
+      isNextPageFailed.value = true
+      return
+    }
+    morePages.value = false
+    firstPage.value = { status: 'failed', query }
+    suggestions.value = []
+  }
+
+  async function doLoadMore(): Promise<PageFreshness> {
+    if (!morePages.value || isNextPageFailed.value) return 'current'
+    const requestGeneration = generation
+    const query = searchedQuery()
+    const outcome = await searchPacks(query, {
+      pageSize: DEFAULT_PAGE_SIZE,
+      pageNumber,
+      restrictSearchableAttributes: searchableAttributes(
+        toValue(inputs.searchMode)
+      ),
+      ...analyticsParams(query)
+    })
+    if (outcome.ok) failureReportedSinceSuccess = false
+    if (isDisposed || requestGeneration !== generation) return 'stale'
+    if (outcome.ok) applyPage(query, outcome.result)
+    else applyFailure(query, outcome.cause)
+    return 'current'
+  }
+
+  async function loadCurrentFirstPage(): Promise<void> {
+    if ((await doLoadMore()) === 'stale' && !isDisposed) {
+      return loadCurrentFirstPage()
+    }
+  }
+
+  function reload() {
+    generation++
+    pageNumber = 0
+    morePages.value = true
+    isNextPageFailed.value = false
+    firstPage.value = LOADING_FIRST_PAGE
+    items.value = []
+    return preempt(loadCurrentFirstPage)
+  }
+
+  async function loadMore() {
+    const startingPage = pageNumber
+    await enqueue('loadMore', async () => {
+      await doLoadMore()
+    })
+    return pageNumber > startingPage
+  }
+
+  function retry() {
+    resetCircuits()
+    return reload()
+  }
+
+  async function retryNextPage() {
+    if (!isNextPageFailed.value) return false
+    resetCircuits()
+    isNextPageFailed.value = false
+    return loadMore()
+  }
+
+  onScopeDispose(() => {
+    isDisposed = true
+  }, true)
+
+  watch(
+    [searchedQuery, () => toValue(inputs.searchMode)],
+    () => void reload(),
+    {
+      immediate: true
+    }
   )
 
-  const searchGateway = useRegistrySearchGateway()
-
-  const { searchPacks, clearSearchCache, getSortValue, getSortableFields } =
-    searchGateway
-
-  const updateSearchResults = async (options: { append?: boolean }) => {
-    isLoading.value = true
-    if (!options.append) {
-      pageNumber.value = 0
-    }
-    const { nodePacks, querySuggestions } = await searchPacks(
-      searchQuery.value,
-      {
-        pageSize: pageSize.value,
-        pageNumber: pageNumber.value,
-        restrictSearchableAttributes: searchAttributes.value
-      }
-    )
-
-    let sortedPacks = nodePacks
-
-    // Results are sorted by the default field to begin with -- so don't manually sort again
-    if (sortField.value && sortField.value !== DEFAULT_SORT_FIELD) {
-      // Get the sort direction from the provider's sortable fields
-      const sortableFields = getSortableFields()
-      const fieldConfig = sortableFields.find((f) => f.id === sortField.value)
-      const direction = fieldConfig?.direction || 'desc'
-
-      sortedPacks = orderBy(
-        nodePacks,
-        [(pack) => getSortValue(pack, sortField.value)],
-        [direction]
-      )
-    }
-
-    if (options.append && searchResults.value?.length) {
-      searchResults.value = searchResults.value.concat(sortedPacks)
-    } else {
-      searchResults.value = sortedPacks
-    }
-    suggestions.value = querySuggestions
-    isLoading.value = false
-  }
-
-  const onQueryChange = () => void updateSearchResults({ append: false })
-  const onPageChange = () => {
-    if (pageNumber.value === 0) return
-    void updateSearchResults({ append: true })
-  }
-
-  watch([sortField, searchMode], onQueryChange)
-  watch(pageNumber, onPageChange)
-  watchDebounced(searchQuery, onQueryChange, {
-    debounce: SEARCH_DEBOUNCE_TIME,
-    immediate: true
-  })
-
-  const sortOptions = computed(() => {
-    return getSortableFields()
-  })
-
   return {
+    items,
+    hasMore: computed(() => morePages.value && !isNextPageFailed.value),
     isLoading,
-    pageNumber,
-    pageSize,
-    sortField,
-    searchMode,
-    searchQuery,
+    loadMore,
+    loadNew: retry,
+    invalidate: reload,
     suggestions,
-    searchResults,
-    sortOptions,
-    clearCache: clearSearchCache
+    firstPage,
+    isNextPageFailed,
+    retryNextPage
   }
 }

@@ -72,19 +72,13 @@ testWithMockedObjectInfo.describe(
   'Credit helper pricing badges',
   { tag: '@node' },
   () => {
-    testWithMockedObjectInfo.use({ locale: 'en-US' })
-
-    testWithMockedObjectInfo.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
-      await comfyPage.settings.setSetting(
-        'Comfy.LinkRelease.Action',
-        'search box'
-      )
-      await comfyPage.settings.setSetting(
-        'Comfy.LinkRelease.ActionShift',
-        'search box'
-      )
+    testWithMockedObjectInfo.use({
+      locale: 'en-US',
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.LinkRelease.Action': 'search box',
+        'Comfy.LinkRelease.ActionShift': 'search box'
+      }
     })
 
     testWithMockedObjectInfo(
@@ -108,8 +102,8 @@ testWithMockedObjectInfo.describe(
 
     testWithMockedObjectInfo(
       'shows pricing badge in VueNodes node header',
+      { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
         await comfyPage.settings.setSetting(
           'Comfy.NodeBadge.ShowApiPricing',
           true
@@ -119,11 +113,9 @@ testWithMockedObjectInfo.describe(
 
         const nodeId = await comfyPage.page.evaluate(() => {
           const node = window.LiteGraph!.createNode('TestCreditApiNodeUsd')
-          window.app!.graph.add(node!)
+          window.app!.graph.add(node)
           return node!.id
         })
-
-        await comfyPage.vueNodes.waitForNodes(1)
 
         const header = comfyPage.page.locator(
           `[data-testid="node-header-${nodeId}"]`
@@ -144,8 +136,8 @@ testWithMockedObjectInfo.describe(
 
     testWithMockedObjectInfo(
       'shows range pricing in VueNodes node header',
+      { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
         await comfyPage.settings.setSetting(
           'Comfy.NodeBadge.ShowApiPricing',
           true
@@ -155,11 +147,9 @@ testWithMockedObjectInfo.describe(
 
         const nodeId = await comfyPage.page.evaluate(() => {
           const node = window.LiteGraph!.createNode('TestCreditApiNodeRange')
-          window.app!.graph.add(node!)
+          window.app!.graph.add(node)
           return node!.id
         })
-
-        await comfyPage.vueNodes.waitForNodes(1)
 
         const header = comfyPage.page.locator(
           `[data-testid="node-header-${nodeId}"]`
@@ -176,8 +166,8 @@ testWithMockedObjectInfo.describe(
 
     testWithMockedObjectInfo(
       'shows list pricing in VueNodes node header',
+      { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
         await comfyPage.settings.setSetting(
           'Comfy.NodeBadge.ShowApiPricing',
           true
@@ -187,11 +177,9 @@ testWithMockedObjectInfo.describe(
 
         const nodeId = await comfyPage.page.evaluate(() => {
           const node = window.LiteGraph!.createNode('TestCreditApiNodeList')
-          window.app!.graph.add(node!)
+          window.app!.graph.add(node)
           return node!.id
         })
-
-        await comfyPage.vueNodes.waitForNodes(1)
 
         const header = comfyPage.page.locator(
           `[data-testid="node-header-${nodeId}"]`

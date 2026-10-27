@@ -4,7 +4,7 @@
     :aria-label="t('builderToolbar.label')"
   >
     <div
-      class="inline-flex items-center gap-1 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
+      class="inline-flex items-center gap-1 rounded-2xl border bg-background p-2 shadow-md"
     >
       <template v-for="(step, index) in steps" :key="step.id">
         <button
@@ -12,8 +12,8 @@
             cn(
               stepClasses,
               activeStep === step.id
-                ? 'bg-interface-builder-mode-background'
-                : 'bg-transparent hover:bg-secondary-background'
+                ? 'bg-ocean-600/40'
+                : 'bg-transparent hover:bg-secondary'
             )
           "
           :aria-current="activeStep === step.id ? 'step' : undefined"
@@ -25,7 +25,7 @@
 
         <div
           v-if="index < steps.length - 1"
-          class="mx-1 h-px w-4 bg-border-default"
+          class="mx-1 h-px w-4 bg-border"
           role="separator"
         />
       </template>

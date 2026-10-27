@@ -4,8 +4,11 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Node search box V2', { tag: '@node' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.searchBoxV2.setup()
+  test.use({
+    initialSettings: {
+      'Comfy.LinkRelease.Action': 'search box',
+      'Comfy.LinkRelease.ActionShift': 'search box'
+    }
   })
 
   test('Can open search and add node', async ({ comfyPage }) => {
@@ -21,6 +24,14 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
     await expect
       .poll(() => comfyPage.nodeOps.getGraphNodesCount())
       .toBe(initialCount + 1)
+  })
+
+  test('Opens fully inside the viewport', async ({ comfyPage }) => {
+    const { searchBoxV2 } = comfyPage
+
+    await searchBoxV2.open()
+
+    await expect(searchBoxV2.dialog).toBeInViewport({ ratio: 1 })
   })
 
   test('Can add first default result with Enter', async ({ comfyPage }) => {
@@ -39,6 +50,26 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
   })
 
   test.describe('Category navigation', () => {
+    test('Leaf category labels align with expandable category labels', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+      await searchBoxV2.open()
+
+      const branch = searchBoxV2.categoryButton('model')
+      const leaf = searchBoxV2.categoryButton('logic')
+      await expect(branch).toHaveAttribute('aria-expanded', 'false')
+      await expect(leaf).not.toHaveAttribute('aria-expanded')
+      const branchLabel = await branch
+        .getByText('model', { exact: true })
+        .boundingBox()
+      const leafLabel = await leaf
+        .getByText('logic', { exact: true })
+        .boundingBox()
+      expect(branchLabel).not.toBeNull()
+      expect(leafLabel?.x).toBe(branchLabel?.x)
+    })
+
     test('Bookmarked filter shows only bookmarked nodes', async ({
       comfyPage
     }) => {

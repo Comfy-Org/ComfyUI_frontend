@@ -1,16 +1,24 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@comfyorg/design-system/button/Button'
+import { useAgentTargetNavigation } from '@/workbench/extensions/agent/composables/agent/useAgentTargetNavigation'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
-import { useAgentWorkflowTabBindingStore } from '../../../stores/agent/agentWorkflowTabBindingStore'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
+import { AgentTargetNavigationError } from '@/workbench/extensions/agent/services/agent/targetAwareAgentNavigation'
 
-const { workflowId, name } = defineProps<{
+const { workflowId, locatorId, name } = defineProps<{
   workflowId: string
+  locatorId?: string
   name?: string
 }>()
 
@@ -18,6 +26,9 @@ const { t } = useI18n()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
+const toast = useToast()
+const { enabled: agentEnabled } = storeToRefs(useAgentPanelStore())
+const targetNavigation = useAgentTargetNavigation()
 
 const tab = computed(() => {
   const path = bindingStore.tabPathFor(workflowId)
@@ -51,45 +62,58 @@ useEventListener(
 
 async function open(): Promise<void> {
   const target = tab.value
-  if (target) await workflowService.openWorkflow(target)
+  if (!target) return
+  if (locatorId === undefined) await workflowService.openWorkflow(target)
+  else {
+    try {
+      await targetNavigation.navigate({ workflowId, locatorId })
+    } catch (error) {
+      if (!(error instanceof AgentTargetNavigationError))
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_target_navigation_failure'
+        })
+      toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
+    }
+  }
 }
 </script>
 
 <template>
-  <button
-    v-if="tab"
+  <Button
+    v-if="agentEnabled && tab"
     type="button"
+    variant="outline"
+    size="unset"
     :aria-label="t('agent.openWorkflowTab', { name: label })"
     :aria-describedby="nodeCount === undefined ? undefined : nodeCountId"
-    class="border-agent-border hover:bg-agent-surface-hover flex h-[53px] w-full cursor-pointer items-center gap-2.5 rounded-[10px] border px-3 py-2.5 text-left transition-colors"
+    class="h-[53px] w-full justify-start gap-2.5 px-3 py-2.5 text-left whitespace-normal"
     @click="open"
   >
     <span
       aria-hidden="true"
       data-testid="workflow-link-media"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg-subtle flex size-8 shrink-0 items-center justify-center rounded-md border"
+      class="flex size-8 shrink-0 items-center justify-center rounded-md border bg-secondary text-muted-foreground"
     >
-      <span class="icon-[comfy--workflow] size-4" />
+      <i aria-hidden="true" class="icon-[comfy--workflow]" />
     </span>
     <span
       data-testid="workflow-link-content"
       class="flex min-w-0 flex-1 flex-col gap-0.5"
     >
-      <span class="text-agent-fg truncate text-sm/4 font-medium">{{
-        label
-      }}</span>
+      <span class="truncate text-sm/4 text-foreground">{{ label }}</span>
       <span
         v-if="nodeCount !== undefined"
         :id="nodeCountId"
-        class="text-agent-fg-subtle text-xs"
+        class="text-xs text-muted-foreground"
       >
         {{ t('g.nodesCount', nodeCount) }}
       </span>
     </span>
-    <span
+    <i
       aria-hidden="true"
       data-testid="workflow-link-navigation"
-      class="text-agent-fg-subtle icon-[lucide--arrow-right] size-4 shrink-0"
+      class="icon-[lucide--arrow-right] text-muted-foreground"
     />
-  </button>
+  </Button>
 </template>

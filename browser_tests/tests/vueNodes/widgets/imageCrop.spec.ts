@@ -6,6 +6,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { toNodeId } from '@/types/nodeId'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 type CropValue = { x: number; y: number; width: number; height: number } | null
 
@@ -78,6 +79,32 @@ async function waitForImageNaturalSize(
     .toBe(true)
 }
 
+/**
+ * Rewires the Crop Image node's `image` input in the `image_crop_with_source`
+ * fixture, where node 1 is the Load Image source and node 2 is the crop node.
+ */
+async function setImageInputConnected(
+  comfyPage: ComfyPage,
+  connected: boolean
+) {
+  await comfyPage.page.evaluate(
+    ({ shouldConnect, sourceId, cropId }) => {
+      const graph = window.app!.graph
+      const source = graph.getNodeById(sourceId)
+      const crop = graph.getNodeById(cropId)
+      if (!source || !crop) throw new Error('fixture nodes not found')
+      if (shouldConnect) {
+        source.connect(0, crop, 0)
+      } else {
+        crop.disconnectInput(0)
+      }
+    },
+    { shouldConnect: connected, sourceId: toNodeId(1), cropId: toNodeId(2) }
+  )
+  await comfyPage.nextFrame()
+  await comfyPage.nextFrame()
+}
+
 async function dragOnLocator(
   comfyPage: ComfyPage,
   target: Locator,
@@ -118,10 +145,6 @@ async function dragOnLocator(
 }
 
 test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-  })
-
   test.describe('without source image', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('widgets/image_crop_widget')
@@ -177,7 +200,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         await expect(node, 'image crop node should render').toBeVisible()
         await comfyPage.nextFrame()
         await comfyPage.nextFrame()
-        await expect(node).toHaveScreenshot('image-crop-empty-state.png', {
+        await expectElementScreenshot(node, 'image-crop-empty-state.png', {
           maxDiffPixelRatio: 0.05
         })
       }
@@ -278,11 +301,36 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
 
           await comfyPage.nextFrame()
           await comfyPage.nextFrame()
-          await expect(node).toHaveScreenshot('image-crop-with-source.png', {
+          await expectElementScreenshot(node, 'image-crop-with-source.png', {
             maxDiffPixelRatio: 0.05
           })
         }
       )
+
+      test('Preview follows the image input being disconnected and reconnected', async ({
+        comfyPage
+      }) => {
+        const node = comfyPage.vueNodes.getNodeLocator('2')
+        await expect(node.locator('img'), 'preview before edit').toBeVisible()
+
+        await setImageInputConnected(comfyPage, false)
+        await expect
+          .soft(node, 'empty state after disconnect')
+          .toContainText('No input image connected')
+        await expect
+          .soft(node.locator('img'), 'no preview after disconnect')
+          .toHaveCount(0)
+
+        await setImageInputConnected(comfyPage, true)
+        await expect(
+          node.locator('img'),
+          'preview returns after reconnect'
+        ).toBeVisible()
+        await expect(
+          node.getByTestId('crop-overlay'),
+          'crop overlay returns after reconnect'
+        ).toBeVisible()
+      })
 
       test(
         'Drag crop box updates crop position',
@@ -355,7 +403,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
             )
             .not.toBeNull()
 
-          await expect(node).toHaveScreenshot('image-crop-after-drag.png', {
+          await expectElementScreenshot(node, 'image-crop-after-drag.png', {
             maxDiffPixelRatio: 0.05
           })
         }
@@ -618,7 +666,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
 
           await comfyPage.nextFrame()
           await comfyPage.nextFrame()
-          await expect(node).toHaveScreenshot('image-crop-resize-se.png', {
+          await expectElementScreenshot(node, 'image-crop-resize-se.png', {
             maxDiffPixelRatio: 0.05
           })
         }
@@ -664,7 +712,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
 
           await comfyPage.nextFrame()
           await comfyPage.nextFrame()
-          await expect(node).toHaveScreenshot('image-crop-resize-nw.png', {
+          await expectElementScreenshot(node, 'image-crop-resize-nw.png', {
             maxDiffPixelRatio: 0.05
           })
         }
@@ -767,7 +815,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
 
           await comfyPage.nextFrame()
           await comfyPage.nextFrame()
-          await expect(node).toHaveScreenshot('image-crop-eight-handles.png', {
+          await expectElementScreenshot(node, 'image-crop-eight-handles.png', {
             maxDiffPixelRatio: 0.05
           })
         }
@@ -840,20 +888,24 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
             await route.abort('failed')
             return
           }
-          await route.continue()
+          await route.fallback()
         })
         try {
           failExamplePng = true
-          const runDone = comfyPage.runButton.click()
+          // Remount the widget so it requests the preview again. The widget
+          // only re-requests when its own source changes, so a run that leaves
+          // the source's outputs untouched would never retry the fetch.
+          await comfyPage.workflow.reloadAndWaitForApp()
+
+          const reloaded = comfyPage.vueNodes.getNodeLocator('2')
           await expect(
-            node.getByTestId('crop-empty-state'),
+            reloaded.getByTestId('crop-empty-state'),
             'failed view fetch should show empty state'
           ).toBeVisible({ timeout: 15_000 })
           await expect(
-            node.getByTestId('crop-overlay'),
+            reloaded.getByTestId('crop-overlay'),
             'crop overlay should hide when image fails'
           ).toHaveCount(0)
-          await runDone
         } finally {
           await comfyPage.page.unroute('**/api/view**')
         }
@@ -1207,20 +1259,19 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         await comfyPage.page.route('**/api/view**', async (route) => {
           const url = route.request().url()
           if (!url.includes('example.png')) {
-            await route.continue()
+            await route.fallback()
             return
           }
           await new Promise<void>((resolve) => {
             setTimeout(resolve, 500)
           })
-          await route.continue()
+          await route.fallback()
         })
 
         try {
           await comfyPage.workflow.loadWorkflow(
             'widgets/image_crop_with_source'
           )
-          await comfyPage.vueNodes.waitForNodes()
           const node = comfyPage.vueNodes.getNodeLocator('2')
           const runDone = comfyPage.runButton.click()
           await expect(

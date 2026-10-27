@@ -26,18 +26,6 @@ describe('LocateNodeButton', () => {
     expect(emitted().locate).toHaveLength(1)
   })
 
-  it('emits locate on keyboard activation', async () => {
-    const user = userEvent.setup()
-    const { emitted } = render(LocateNodeButton, {
-      props: { label: 'Locate node on canvas' }
-    })
-
-    await user.tab()
-    await user.keyboard('{Enter}')
-
-    expect(emitted().locate).toHaveLength(1)
-  })
-
   it('stops click propagation so an ancestor handler does not also fire', async () => {
     const user = userEvent.setup()
     const onAncestorClick = vi.fn()
@@ -53,5 +41,20 @@ describe('LocateNodeButton', () => {
     )
 
     expect(onAncestorClick).not.toHaveBeenCalled()
+  })
+
+  it('emits locate on keyboard activation', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(LocateNodeButton, {
+      props: { label: 'Locate node on canvas' }
+    })
+
+    await user.tab()
+    expect(
+      screen.getByRole('button', { name: 'Locate node on canvas' })
+    ).toHaveFocus()
+    await user.keyboard('{Enter}')
+
+    expect(emitted().locate).toHaveLength(1)
   })
 })

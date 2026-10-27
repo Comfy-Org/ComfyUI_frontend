@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, readonly, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { JobId } from '@/schemas/apiSchema'
+import type { JobId } from '@/platform/remote/comfyui/execution/types'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
@@ -38,8 +38,10 @@ export const useJobPreviewStore = defineStore('jobPreview', () => {
   ) {
     if (!promptId || !isPreviewEnabled.value) return
     const current = nodePreviewsByPromptId.value[promptId]
-    if (current?.url === url) return
-    if (current) releaseSharedObjectUrl(current.url)
+    if (promptId in nodePreviewsByPromptId.value) {
+      if (current.url === url) return
+      releaseSharedObjectUrl(current.url)
+    }
     retainSharedObjectUrl(url)
     nodePreviewsByPromptId.value = {
       ...nodePreviewsByPromptId.value,
@@ -49,8 +51,8 @@ export const useJobPreviewStore = defineStore('jobPreview', () => {
 
   function clearPreview(promptId: JobId | undefined) {
     if (!promptId) return
+    if (!(promptId in nodePreviewsByPromptId.value)) return
     const current = nodePreviewsByPromptId.value[promptId]
-    if (!current) return
     releaseSharedObjectUrl(current.url)
     const next = { ...nodePreviewsByPromptId.value }
     delete next[promptId]

@@ -1,28 +1,30 @@
 import { whenever } from '@vueuse/core'
 import { orderBy } from 'es-toolkit/compat'
-import type { Ref } from 'vue'
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
-import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import {
+  PACK_SORTABLE_FIELDS,
+  getPackSortValue
+} from '@/workbench/extensions/manager/utils/nodePackSort'
 import { getPackUpdateStatus } from '@/workbench/extensions/manager/utils/packUpdateStatus'
 
 type NodePack = components['schemas']['Node']
 
 export function useManagerDisplayPacks(
-  selectedTabId: Ref<string | null>,
-  searchResults: Ref<NodePack[]>,
-  searchQuery: Ref<string>,
-  sortField: Ref<string>
+  selectedTabId: MaybeRefOrGetter<string | null>,
+  searchResults: MaybeRefOrGetter<NodePack[]>,
+  searchQuery: MaybeRefOrGetter<string>,
+  sortField: MaybeRefOrGetter<string>
 ) {
   const comfyManagerStore = useComfyManagerStore()
   const conflictDetectionStore = useConflictDetectionStore()
-  const { getSortValue, getSortableFields } = useRegistrySearchGateway()
 
   const {
     startFetchInstalled,
@@ -40,20 +42,19 @@ export function useManagerDisplayPacks(
     isReady: workflowPacksReady
   } = useWorkflowPacks()
 
-  const tabType = computed(() => selectedTabId.value as ManagerTab | null)
-  const isEmptySearch = computed(() => searchQuery.value === '')
+  const tabType = computed(() => toValue(selectedTabId) as ManagerTab | null)
+  const isEmptySearch = computed(() => toValue(searchQuery) === '')
 
-  // Sorting function for packs not from searchResults
   const sortPacks = (packs: NodePack[]) => {
-    if (!sortField.value || packs.length === 0) return packs
+    const field = toValue(sortField)
+    if (!field || packs.length === 0) return packs
 
-    const sortableFields = getSortableFields()
-    const fieldConfig = sortableFields.find((f) => f.id === sortField.value)
+    const fieldConfig = PACK_SORTABLE_FIELDS.find((f) => f.id === field)
     const direction = fieldConfig?.direction || 'desc'
 
     return orderBy(
       packs,
-      [(pack) => getSortValue(pack, sortField.value)],
+      [(pack) => getPackSortValue(pack, field)],
       [direction]
     )
   }
@@ -91,6 +92,14 @@ export function useManagerDisplayPacks(
     )
   )
 
+  // Sorting only applies to fully-fetched tabs with no active search; paged
+  // search/listing results (All, NotInstalled) are shown in the API's order.
+  const isSortable = computed(
+    () =>
+      isEmptySearch.value &&
+      (needsInstalledPacks.value || needsWorkflowPacks.value)
+  )
+
   whenever(
     () =>
       needsInstalledPacks.value &&
@@ -120,55 +129,45 @@ export function useManagerDisplayPacks(
   const displayPacks = computed(() => {
     const tab = tabType.value
     const hasSearch = !isEmptySearch.value
+    const results = toValue(searchResults)
 
     switch (tab) {
       case ManagerTab.All:
-        return searchResults.value
+        return results
 
       case ManagerTab.NotInstalled:
-        return filterNotInstalled(searchResults.value)
+        return filterNotInstalled(results)
 
       case ManagerTab.AllInstalled:
         return hasSearch
-          ? filterInstalledPack(searchResults.value)
+          ? filterInstalledPack(results)
           : sortPacks(installedPacks.value)
 
       case ManagerTab.UpdateAvailable:
-        return sortPacks(
-          filterOutdated(
-            hasSearch
-              ? filterInstalledPack(searchResults.value)
-              : installedPacks.value
-          )
-        )
+        return hasSearch
+          ? filterOutdated(filterInstalledPack(results))
+          : sortPacks(filterOutdated(installedPacks.value))
 
       case ManagerTab.Conflicting:
-        return sortPacks(
-          filterConflicting(
-            hasSearch
-              ? filterInstalledPack(searchResults.value)
-              : installedPacks.value
-          )
-        )
-
-      case ManagerTab.Workflow: {
         return hasSearch
-          ? filterWorkflowPack(searchResults.value)
-          : sortPacks(workflowPacks.value)
-      }
+          ? filterConflicting(filterInstalledPack(results))
+          : sortPacks(filterConflicting(installedPacks.value))
 
-      case ManagerTab.Missing: {
-        const base = hasSearch
-          ? filterWorkflowPack(searchResults.value)
-          : workflowPacks.value
-        return sortPacks(filterNotInstalled(base))
-      }
+      case ManagerTab.Workflow:
+        return hasSearch
+          ? filterWorkflowPack(results)
+          : sortPacks(workflowPacks.value)
+
+      case ManagerTab.Missing:
+        return hasSearch
+          ? filterNotInstalled(filterWorkflowPack(results))
+          : sortPacks(filterNotInstalled(workflowPacks.value))
 
       case ManagerTab.Unresolved:
         return []
 
       default:
-        return searchResults.value
+        return results
     }
   })
 
@@ -196,6 +195,7 @@ export function useManagerDisplayPacks(
 
   return {
     displayPacks,
+    isSortable,
     isLoading,
     isLoadingInstalled,
     isLoadingWorkflow,

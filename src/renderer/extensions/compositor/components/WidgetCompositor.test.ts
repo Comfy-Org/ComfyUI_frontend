@@ -1,39 +1,31 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 
 import {
   clearCompositorLayers,
   setCompositorLayers
-} from '../composables/useCompositorLayers'
+} from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import WidgetCompositor from './WidgetCompositor.vue'
 
-const { getNodeById } = vi.hoisted(() => ({
-  getNodeById: vi.fn<() => unknown>(() => undefined)
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: { getNodeById } } }
-}))
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => ({
-    getNodeImageUrls: () => undefined,
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  })
-}))
+const openCompositorEditor = vi.hoisted(() => vi.fn())
+
 vi.mock(
-  '@/renderer/extensions/compositor/composables/useCompositorEditor',
+  import('@/renderer/extensions/compositor/composables/useCompositorEditor'),
   () => ({
-    useCompositorEditor: () => ({ openCompositorEditor: vi.fn() })
+    useCompositorEditor: () => ({ openCompositorEditor })
   })
 )
 vi.mock(
-  '@/renderer/extensions/compositor/composables/useCompositorPsdDownload',
+  import('@/renderer/extensions/compositor/composables/useCompositorPsdDownload'),
   () => ({
     useCompositorPsdDownload: () => ({
       exporting: ref(false),
@@ -63,18 +55,17 @@ function renderWidget() {
   return render(WidgetCompositor, {
     props: { nodeId },
     global: {
-      plugins: [i18n],
-      stubs: {
-        Button: { template: '<button v-bind="$attrs"><slot /></button>' }
-      }
+      plugins: [i18n]
     }
   })
 }
 
 describe('WidgetCompositor', () => {
   beforeEach(() => {
+    const graph = app.canvas.graph
+    if (!graph) throw new Error('Expected the app mock to provide a graph')
+    vi.spyOn(graph, 'getNodeById').mockReturnValue(null)
     clearCompositorLayers(graphNode)
-    getNodeById.mockReturnValue(undefined)
   })
 
   it('renders the empty state when the node is not in the graph (search preview)', () => {
@@ -89,7 +80,9 @@ describe('WidgetCompositor', () => {
   })
 
   it('enables opening once the graph node exists with cached layers', () => {
-    getNodeById.mockReturnValue(graphNode)
+    const graph = app.canvas.graph
+    if (!graph) throw new Error('Expected the app mock to provide a graph')
+    vi.mocked(graph.getNodeById).mockReturnValue(graphNode)
     setCompositorLayers(graphNode, [
       { filename: 'a.png', subfolder: '', type: 'temp' }
     ])
@@ -98,5 +91,22 @@ describe('WidgetCompositor', () => {
 
     const open = screen.getByTestId('compositor-open-button')
     expect(open.hasAttribute('disabled')).toBe(false)
+  })
+
+  it('opens the editor for the node a reloaded graph holds', async () => {
+    const graph = app.canvas.graph
+    if (!graph) throw new Error('Expected the app mock to provide a graph')
+    vi.mocked(graph.getNodeById).mockReturnValue(graphNode)
+    setCompositorLayers(graphNode, [
+      { filename: 'a.png', subfolder: '', type: 'temp' }
+    ])
+    renderWidget()
+    const reloadedNode = structuredClone(graphNode)
+    vi.mocked(graph.getNodeById).mockReturnValue(reloadedNode)
+
+    app.rootGraph.events.dispatch('configured')
+    await userEvent.click(screen.getByTestId('compositor-open-button'))
+
+    expect(openCompositorEditor.mock.lastCall?.[0]).toBe(reloadedNode)
   })
 })

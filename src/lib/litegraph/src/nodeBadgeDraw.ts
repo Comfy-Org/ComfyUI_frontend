@@ -1,10 +1,10 @@
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
 import { truncate } from 'es-toolkit/compat'
 
 import type { BadgeData, CoreBadgeData } from '@/types/badgeData'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphIconOptions } from './LGraphIcon'
-import type { LGraphNode } from './LGraphNode'
 
 const CORE_TEXT_LIMIT = 31
 
@@ -35,17 +35,15 @@ function buildDrawObjects(rows: readonly BadgeData[]): LGraphBadge[] {
 
   const coreRows = rows.filter((row) => row.kind === 'core')
   const [firstCore] = coreRows
-  if (firstCore) {
-    const coreText = joinedCoreText(coreRows)
-    if (coreText) {
-      badges.push(
-        new LGraphBadge({
-          text: coreText,
-          fgColor: firstCore.fgColor,
-          bgColor: firstCore.bgColor
-        })
-      )
-    }
+  const coreText = joinedCoreText(coreRows)
+  if (coreText) {
+    badges.push(
+      new LGraphBadge({
+        text: coreText,
+        fgColor: firstCore.fgColor,
+        bgColor: firstCore.bgColor
+      })
+    )
   }
 
   for (const row of rows) {

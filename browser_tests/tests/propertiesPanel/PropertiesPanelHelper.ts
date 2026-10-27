@@ -60,6 +60,24 @@ export class PropertiesPanelHelper {
     return this.sectionWidgetsList.locator('.widget-item')
   }
 
+  get widgetActionsButtons(): Locator {
+    return this.root.getByTestId(TestIds.subgraphEditor.widgetActionsMenuButton)
+  }
+
+  get widgetActionsMenu(): Locator {
+    return this.page.getByRole('menu')
+  }
+
+  widgetAction(name: string): Locator {
+    return this.widgetActionsMenu.getByRole('menuitem', { name, exact: true })
+  }
+
+  async widgetActionLabelLeft(name: string): Promise<number> {
+    return this.widgetAction(name)
+      .getByText(name, { exact: true })
+      .evaluate((element) => element.getBoundingClientRect().left)
+  }
+
   /**
    * Drag the widget row at `fromIndex` down onto the row at `toIndex`.
    * Grabs the row by its header strip (`y + 8`): the widget body owns its own
@@ -76,6 +94,7 @@ export class PropertiesPanelHelper {
     )
 
     const rows = this.sectionWidgetRows
+    await rows.nth(fromIndex).scrollIntoViewIfNeeded()
     const from = await rows.nth(fromIndex).boundingBox()
     const to = await rows.nth(toIndex).boundingBox()
     if (!from || !to) throw new Error('widget row not visible')
@@ -88,10 +107,20 @@ export class PropertiesPanelHelper {
 
     await mouse.move(from.x + from.width / 2, from.y + grabOffsetY)
     await mouse.down()
-    await mouse.move(to.x + to.width / 2, dropY, {
-      steps: 20
-    })
-    await mouse.up()
+    try {
+      await expect(rows.nth(fromIndex)).toHaveClass(/\bis-draggable\b/)
+      await mouse.move(to.x + to.width / 2, dropY, {
+        steps: 20
+      })
+      await expect
+        .poll(async () => {
+          await mouse.move(to.x + to.width / 2, dropY)
+          return rows.nth(toIndex).getAttribute('data-is-toggled')
+        })
+        .toBe('')
+    } finally {
+      await mouse.up()
+    }
   }
 
   get errorsTabIcon(): Locator {

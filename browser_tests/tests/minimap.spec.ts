@@ -9,6 +9,7 @@ import {
   MINIMAP_POINTER_OPTS,
   readMainCanvasOffset
 } from '@e2e/fixtures/utils/minimapUtils'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 function hasCanvasContent(canvas: Locator): Promise<boolean> {
   return canvas.evaluate((el: HTMLCanvasElement) => {
@@ -50,9 +51,14 @@ async function clickMinimapAt(
 }
 
 test.describe('Minimap', { tag: '@canvas' }, () => {
+  test.use({
+    initialSettings: {
+      'Comfy.Minimap.Visible': true,
+      'Comfy.Graph.CanvasMenu': true
+    }
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Minimap.Visible', true)
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.page.waitForFunction(() => window.app && window.app.canvas)
   })
@@ -63,6 +69,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(container).toBeVisible()
     await expect(canvas).toBeVisible()
     await expect(viewport).toBeVisible()
+    await expect.poll(() => comfyPage.canvasOps.getMinimapRightInset()).toBe(8)
 
     await expect(container).toHaveCSS('position', 'relative')
 
@@ -150,7 +157,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       const { container } = getMinimapLocators(comfyPage)
       await expect(container).toBeVisible()
 
-      await expect(container).toHaveScreenshot('minimap-before-pan.png')
+      await expectElementScreenshot(container, 'minimap-before-pan.png')
 
       await comfyPage.page.evaluate(() => {
         const canvas = window.app!.canvas
@@ -159,7 +166,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
         canvas.ds.offset[1] = -600
         canvas.setDirty(true, true)
       })
-      await expect(container).toHaveScreenshot('minimap-after-pan.png')
+      await expectElementScreenshot(container, 'minimap-after-pan.png')
     }
   )
 
@@ -186,7 +193,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       expect(viewportBox!.x).toBeLessThan(minimapBox!.x + minimapBox!.width)
       expect(viewportBox!.y).toBeLessThan(minimapBox!.y + minimapBox!.height)
 
-      await expect(container).toHaveScreenshot('minimap-with-viewport.png')
+      await expectElementScreenshot(container, 'minimap-with-viewport.png')
     }
   )
 
@@ -510,9 +517,13 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
 })
 
 test.describe('Minimap mobile', { tag: ['@mobile', '@canvas'] }, () => {
+  test.use({
+    initialSettings: {
+      'Comfy.Graph.CanvasMenu': true
+    }
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.page.waitForFunction(() => window.app && window.app.canvas)
   })

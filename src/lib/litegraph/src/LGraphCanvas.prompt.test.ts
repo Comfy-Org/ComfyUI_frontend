@@ -4,7 +4,7 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import {
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 function createCanvas(
   rect: Pick<DOMRect, 'left' | 'top' | 'width' | 'height'> = {

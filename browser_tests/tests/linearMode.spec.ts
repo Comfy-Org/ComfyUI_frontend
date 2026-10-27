@@ -57,7 +57,11 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
     const username = `playwright-test-${parallelIndex}`
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
+    await comfyPage.setupSettings({ userId })
 
+    await page.route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
+      route.fulfill({ json: [] })
+    )
     await page.goto(`${comfyPage.url}/api/users`)
     await page.evaluate((id) => {
       localStorage.clear()
@@ -77,7 +81,7 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
     await page.route('**/templates/default.json', async (route) => {
       notifyWorkflowRequested()
       await requestUnblocked
-      return route.continue()
+      return route.fallback()
     })
 
     await comfyPage.goto({ url: `${comfyPage.url}/?template=default` })

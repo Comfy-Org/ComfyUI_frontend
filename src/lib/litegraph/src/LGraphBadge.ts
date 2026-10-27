@@ -15,6 +15,8 @@ export interface LGraphBadgeOptions {
   onClick?: (e: MouseEvent) => void
   xOffset?: number
   yOffset?: number
+  /** Centres the text on its cap height instead of the em box. */
+  centerOnCapHeight?: boolean
 }
 
 export class LGraphBadge {
@@ -29,6 +31,7 @@ export class LGraphBadge {
   onClick?: (e: MouseEvent) => void
   xOffset: number
   yOffset: number
+  centerOnCapHeight: boolean
 
   readonly _boundingRect: [number, number, number, number] = [0, 0, 0, 0]
   get boundingRect(): ReadOnlyRect {
@@ -46,7 +49,8 @@ export class LGraphBadge {
     iconOptions,
     onClick,
     xOffset = 0,
-    yOffset = 0
+    yOffset = 0,
+    centerOnCapHeight = false
   }: LGraphBadgeOptions) {
     this.text = text
     this.fgColor = fgColor
@@ -61,10 +65,11 @@ export class LGraphBadge {
     this.onClick = onClick
     this.xOffset = xOffset
     this.yOffset = yOffset
+    this.centerOnCapHeight = centerOnCapHeight
   }
 
   get visible() {
-    return (this.text?.length ?? 0) > 0 || !!this.icon
+    return this.text.length > 0 || !!this.icon
   }
 
   getWidth(ctx: CanvasRenderingContext2D) {
@@ -102,12 +107,7 @@ export class LGraphBadge {
     // Draw badge background
     ctx.fillStyle = this.bgColor
     ctx.beginPath()
-    if (ctx.roundRect) {
-      ctx.roundRect(x + badgeX, y, badgeWidth, this.height, this.cornerRadius)
-    } else {
-      // Fallback for browsers that don't support roundRect
-      ctx.rect(x + badgeX, y, badgeWidth, this.height)
-    }
+    ctx.roundRect(x + badgeX, y, badgeWidth, this.height, this.cornerRadius)
     ctx.fill()
 
     let drawX = x + badgeX + this.padding
@@ -123,9 +123,17 @@ export class LGraphBadge {
     // Draw badge text
     if (this.text) {
       ctx.fillStyle = this.fgColor
-      ctx.textBaseline = 'middle'
       ctx.textAlign = 'left'
-      ctx.fillText(this.text, drawX, centerY + 1)
+      ctx.textBaseline = 'alphabetic'
+      const capHeight = this.centerOnCapHeight
+        ? ctx.measureText('H').actualBoundingBoxAscent
+        : Number.NaN
+      if (Number.isFinite(capHeight)) {
+        ctx.fillText(this.text, drawX, centerY + capHeight / 2)
+      } else {
+        ctx.textBaseline = 'middle'
+        ctx.fillText(this.text, drawX, centerY + 1)
+      }
     }
 
     ctx.font = font

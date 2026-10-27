@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Sauvegarder et restaurer la position et le niveau de zoom du canevas dans les flux de travail"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "Afficher les modèles manquants dans l’onglet Problèmes",
+    "tooltip": "Lorsqu’ils sont désactivés, les fichiers de modèles introuvables ne sont pas répertoriés dans l’onglet Problèmes et leurs nœuds ne sont pas mis en évidence."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "Méthode d’aperçu en direct",
     "options": {
@@ -335,10 +339,6 @@
     "name": "Afficher les mises à jour de version",
     "tooltip": "Afficher les mises à jour pour les nouveaux modèles et les nouvelles fonctionnalités majeures."
   },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "Délai de dérive du clic du pointeur",
-    "tooltip": "Après avoir appuyé sur un bouton de pointeur, c'est le temps maximum (en millisecondes) que le mouvement du pointeur peut être ignoré.\n\nAide à prévenir que les objets soient déplacés involontairement si le pointeur est déplacé lors du clic."
-  },
   "Comfy_Pointer_ClickDrift": {
     "name": "Dérive du clic du pointeur (distance maximale)",
     "tooltip": "Si le pointeur se déplace plus que cette distance en maintenant un bouton enfoncé, il est considéré comme un glissement (plutôt qu'un clic).\n\nAide à prévenir que les objets soient déplacés involontairement si le pointeur est déplacé lors du clic."
@@ -461,8 +461,13 @@
   "Comfy_Workflow_Persist": {
     "name": "Persiste l'état du flux de travail et restaure lors du (re)chargement de la page"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Afficher l'avertissement des modèles manquants"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Afficher les médias manquants dans l’onglet Problèmes",
+    "tooltip": "Lorsqu’ils sont désactivés, les images, vidéos et fichiers audio d’entrée introuvables ne sont pas répertoriés dans l’onglet Problèmes et leurs nœuds ne sont pas mis en évidence."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "Afficher les nœuds manquants dans l’onglet Problèmes",
+    "tooltip": "Lorsqu’ils sont désactivés, les packs de nœuds manquants ne sont pas répertoriés dans l’onglet Problèmes et leurs nœuds ne sont pas mis en évidence. Le workflow ne peut toujours pas s’exécuter tant qu’ils ne sont pas installés."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Trier les ID de nœuds lors de l'enregistrement du flux de travail"

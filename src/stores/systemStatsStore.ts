@@ -2,7 +2,7 @@ import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import type { SystemStats } from '@/schemas/apiSchema'
+import type { SystemStats } from '@/platform/remote/comfyui/types'
 import { api } from '@/scripts/api'
 
 export const useSystemStatsStore = defineStore('systemStats', () => {
@@ -34,7 +34,7 @@ export const useSystemStatsStore = defineStore('systemStats', () => {
       return 'cloud'
     }
 
-    if (!systemStats.value?.system?.os) {
+    if (!systemStats.value?.system.os) {
       return 'other'
     }
 

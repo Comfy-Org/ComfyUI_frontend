@@ -90,17 +90,18 @@ class ConversionContext {
    */
   private _getRerouteChain(node: RerouteNode): RerouteNode[] {
     const nodes: RerouteNode[] = []
-    let currentNode: RerouteNode = node
+    let currentNode: RerouteNode | undefined = node
     while (currentNode?.type === 'Reroute') {
       nodes.push(currentNode)
-      const inputLink: ComfyLinkObject | undefined =
-        this.linkById[currentNode.inputs?.[0]?.link ?? 0]
+      const linkId = currentNode.inputs?.[0]?.link ?? 0
+      const inputLink = Object.hasOwn(this.linkById, linkId)
+        ? this.linkById[linkId]
+        : undefined
+      if (!inputLink) break
 
-      if (!inputLink) {
-        break
-      }
-
-      currentNode = this.nodeById[inputLink.origin_id] as RerouteNode
+      currentNode = this.nodeById[inputLink.origin_id] as
+        | RerouteNode
+        | undefined
     }
 
     return nodes
@@ -216,10 +217,10 @@ class ConversionContext {
     // Reconnect the links
     for (const link of links) {
       const sourceNode = nodesById[link.origin_id]
-      sourceNode.outputs![link.origin_slot]!.links!.push(link.id)
+      sourceNode.outputs![link.origin_slot].links!.push(link.id)
 
       const targetNode = nodesById[link.target_id]
-      targetNode.inputs![link.target_slot]!.link = link.id
+      targetNode.inputs![link.target_slot].link = link.id
     }
   }
 
@@ -230,8 +231,8 @@ class ConversionContext {
     const endingLinks: ComfyLinkObject[] = []
 
     for (const link of Object.values(this.linkById)) {
-      const sourceIsReroute = !!this.rerouteByNodeId[link.origin_id]
-      const targetIsReroute = !!this.rerouteByNodeId[link.target_id]
+      const sourceIsReroute = Boolean(this.rerouteByNodeId[link.origin_id])
+      const targetIsReroute = Boolean(this.rerouteByNodeId[link.target_id])
 
       // Process links that are not connected to reroute nodes
       if (!sourceIsReroute && !targetIsReroute) {
@@ -246,11 +247,10 @@ class ConversionContext {
         endingLink.origin_id
       ] as RerouteNode
       const rerouteNodes = this._getRerouteChain(endingRerouteNode)
-      const startingLink =
-        this.linkById[
-          rerouteNodes[rerouteNodes.length - 1]?.inputs?.[0]?.link ?? -1
-        ]
-      if (startingLink) {
+      const startingLinkId =
+        rerouteNodes[rerouteNodes.length - 1]?.inputs?.[0]?.link ?? -1
+      if (Object.hasOwn(this.linkById, startingLinkId)) {
+        const startingLink = this.linkById[startingLinkId]
         // Valid link found, create a new link
         links.push(this._createNewLink(startingLink, endingLink, rerouteNodes))
       } else {
@@ -271,11 +271,10 @@ class ConversionContext {
 
     for (const rerouteNode of floatingEndingRerouteNodes) {
       const rerouteNodes = this._getRerouteChain(rerouteNode)
-      const startingLink =
-        this.linkById[
-          rerouteNodes[rerouteNodes.length - 1]?.inputs?.[0]?.link ?? -1
-        ]
-      if (startingLink) {
+      const startingLinkId =
+        rerouteNodes[rerouteNodes.length - 1]?.inputs?.[0]?.link ?? -1
+      if (Object.hasOwn(this.linkById, startingLinkId)) {
+        const startingLink = this.linkById[startingLinkId]
         floatingLinks.push(
           this._createNewOutputFloatingLink(startingLink, rerouteNodes)
         )

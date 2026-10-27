@@ -19,7 +19,7 @@ export const usePackUpdateStatus = (
 
   const isInstalled = computed(() => status.value.isInstalled)
   const isEnabled = computed(() =>
-    managerStore.isPackEnabled(nodePack.value?.id)
+    managerStore.isPackEnabled(nodePack.value.id)
   )
   const installedVersion = computed(() => status.value.installedVersion)
   const latestVersion = computed(() => status.value.latestVersion)

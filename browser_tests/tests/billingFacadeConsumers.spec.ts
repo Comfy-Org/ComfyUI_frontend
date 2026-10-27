@@ -5,14 +5,15 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+} from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
   mockWorkspaceTokenMint,
@@ -60,6 +61,7 @@ async function mockCloudBoot(
     max_seats: 0,
     occupied_seats: 0,
     team_credit_stop: null,
+    scheduled_change: null,
     ...subscriptionStatus,
     ...(billingRail === undefined ? {} : { billing_rail: billingRail })
   }
@@ -136,6 +138,9 @@ async function mockCloudBoot(
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute({ plans: [] }))
   )
+  await page.route('**/api/billing/capabilities', (r) =>
+    r.fulfill(jsonRoute(createBillingCapabilities('ws-personal')))
+  )
 
   return billingRequests
 }
@@ -206,7 +211,7 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     expect(billingRequests.legacyBalance).toBeGreaterThan(0)
   })
 
-  test('rollout flag migrates a legacy Stripe workspace to workspace billing', async ({
+  test('legacy Stripe workspaces retain legacy billing with stale config', async ({
     page
   }) => {
     test.setTimeout(60_000)
@@ -225,10 +230,13 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     await bootApp(page)
 
     await expect
-      .poll(() => billingRequests.workspaceBalance, { timeout: 30_000 })
+      .poll(() => billingRequests.legacyBalance, { timeout: 30_000 })
       .toBeGreaterThan(0)
+    await page.getByRole('button', { name: 'Current user' }).click()
+    const popover = page.locator('.current-user-popover')
+    await expect(popover.getByText('12,660')).toBeVisible()
+    await expect(popover.getByText('0', { exact: true })).toHaveCount(0)
     expect(billingRequests.legacyStatus).toBe(0)
-    expect(billingRequests.legacyBalance).toBe(0)
   })
 
   test('subscribe-to-run routes an inactive FREE user to the pricing table', async ({
@@ -264,5 +272,53 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     await expect(
       page.getByRole('heading', { name: 'Choose a Plan' })
     ).toBeVisible()
+  })
+
+  test('keeps the free-tier quota inside the top action bars', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    const freeTierRemoteConfig = {
+      subscription_required: true,
+      free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
+    } satisfies RemoteConfig
+
+    await mockCloudBoot(
+      page,
+      {
+        is_active: false,
+        subscription_tier: 'FREE',
+        subscription_duration: 'MONTHLY',
+        renewal_date: '2099-02-20T10:00:00Z',
+        has_funds: false
+      },
+      freeTierRemoteConfig,
+      'stripe'
+    )
+    await bootApp(page)
+
+    const actionBars = page.getByTestId('top-menu-actionbars')
+    const quota = actionBars.getByTestId('free-tier-quota')
+    await expect(quota).toBeVisible()
+
+    await expect
+      .poll(async () => {
+        const [quotaBox, actionBarsBox] = await Promise.all([
+          quota.boundingBox(),
+          actionBars.boundingBox()
+        ])
+        if (!quotaBox || !actionBarsBox) return Number.POSITIVE_INFINITY
+
+        return Math.max(
+          actionBarsBox.x - quotaBox.x,
+          actionBarsBox.y - quotaBox.y,
+          quotaBox.x + quotaBox.width - (actionBarsBox.x + actionBarsBox.width),
+          quotaBox.y +
+            quotaBox.height -
+            (actionBarsBox.y + actionBarsBox.height)
+        )
+      })
+      .toBeLessThanOrEqual(0)
   })
 })

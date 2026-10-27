@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import { isInputPreviewOutput } from '@/utils/nodeOutputUtil'
 
 const LINKED_CORE_MEDIA_LOADERS = {
@@ -27,6 +27,7 @@ function getCoreMediaLoaderClass(
     !nodeData ||
     !('isCoreNode' in nodeData) ||
     nodeData.isCoreNode !== true ||
+    nodeClass === undefined ||
     !isLinkedCoreMediaLoaderClass(nodeClass)
   )
     return undefined
@@ -39,11 +40,10 @@ function isMediaLoaderSelectorLinked(
   nodeClass: LinkedCoreMediaLoaderClass
 ): boolean {
   const { selectorName } = LINKED_CORE_MEDIA_LOADERS[nodeClass]
-  const selectorSlotIndex =
-    node.inputs?.findIndex(
-      (input) =>
-        input.widget?.name === selectorName || input.name === selectorName
-    ) ?? -1
+  const selectorSlotIndex = node.inputs.findIndex(
+    (input) =>
+      input.widget?.name === selectorName || input.name === selectorName
+  )
   return selectorSlotIndex >= 0 && node.isInputConnected(selectorSlotIndex)
 }
 

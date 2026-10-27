@@ -1,4 +1,4 @@
-import type { IBoundingBoxWidget } from '../types/widgets'
+import type { IBoundingBoxWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
@@ -10,8 +10,6 @@ export class BoundingBoxWidget
   extends BaseWidget<IBoundingBoxWidget>
   implements IBoundingBoxWidget
 {
-  override type = 'boundingbox' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(ctx, options, 'BoundingBox')
   }

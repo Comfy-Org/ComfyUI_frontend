@@ -10,6 +10,8 @@ import { nodeBadges } from '@/systems/badgeSystem'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { resolveNode } from '@/utils/litegraphUtil'
 
+const COMFY_CLOUD_PYTHON_MODULE = 'comfy_api_nodes.nodes_comfy_cloud'
+
 function splitAroundFirstSpace(text: string): [string, string | undefined] {
   const index = text.indexOf(' ')
   if (index === -1) return [text, undefined]
@@ -27,18 +29,20 @@ export function usePartitionedBadges(nodeData: NodeState) {
   const nodeDefStore = useNodeDefStore()
 
   return computed(() => {
-    const nodeDef = nodeDefStore.nodeDefsByName[nodeData.type]
+    const rootGraph = canvasStore.currentGraph?.rootGraph
+    const node = rootGraph ? resolveNode(nodeData.id, rootGraph) : undefined
+    const nodeDef = node ? nodeDefStore.fromLGraphNode(node) : null
     const showComfyLogo =
-      !!nodeDef?.isCoreNode &&
+      nodeDef?.isCoreNode === true &&
       settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode') ===
         NodeBadgeMode.ShowAll
+    const isComfyCloudNode =
+      nodeDef?.python_module === COMFY_CLOUD_PYTHON_MODULE
 
     const core: NodeBadgeProps[] = []
     const extension: NodeBadgeProps[] = []
     const pricing: { required: string; rest?: string }[] = []
 
-    const rootGraph = canvasStore.currentGraph?.rootGraph
-    const node = rootGraph ? resolveNode(nodeData.id, rootGraph) : undefined
     for (const row of node ? nodeBadges(node) : []) {
       if (row.kind === 'credits') {
         const [required, rest] = splitAroundFirstSpace(row.text)
@@ -57,7 +61,9 @@ export function usePartitionedBadges(nodeData: NodeState) {
     }
 
     return {
-      hasComfyBadge: showComfyLogo && pricing.length === 0,
+      hasComfyBadge:
+        (showComfyLogo && pricing.length === 0) || isComfyCloudNode,
+      hasComfyCloudBadge: isComfyCloudNode,
       core,
       extension,
       pricing
