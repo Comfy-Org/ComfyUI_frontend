@@ -155,7 +155,7 @@ describe('invokeExtensionsAsync', () => {
 
   type HookApp = ReturnType<typeof useApp>
 
-  it.for([
+  const nestedEntrypoints = [
     {
       entrypoint: 'loadGraphData',
       call: (app: HookApp) => app.loadGraphData()
@@ -163,8 +163,14 @@ describe('invokeExtensionsAsync', () => {
     {
       entrypoint: 'loadApiJson',
       call: (app: HookApp) => app.loadApiJson({}, 'nested.json')
+    },
+    {
+      entrypoint: 'handleFile',
+      call: (app: HookApp) => app.handleFile(new File([], 'nested.png'))
     }
-  ])(
+  ]
+
+  it.for(nestedEntrypoints)(
     'rejects $entrypoint started directly in a graph-load hook',
     async ({ call }) => {
       let nested: Promise<unknown> | undefined
@@ -184,14 +190,77 @@ describe('invokeExtensionsAsync', () => {
     }
   )
 
-  it('uses the real app so an extension can retain and patch an entrypoint', async () => {
+  it.for(nestedEntrypoints)(
+    'rejects $entrypoint started after an await in a graph-load hook',
+    async ({ call }) => {
+      let nested: Promise<unknown> | undefined
+      register({
+        name: 'nested-loader',
+        beforeLoadGraph: async (app: HookApp) => {
+          await Promise.resolve()
+          nested = call(app)
+          await nested.catch(() => {})
+        }
+      })
+
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+      await expect(nested).rejects.toThrow(
+        'A graph-load lifecycle hook cannot start a nested graph load'
+      )
+    }
+  )
+
+  it('rejects a nested load reached through the global app during dispatch', async () => {
+    let nested: Promise<unknown> | undefined
+    register({
+      name: 'global-app-loader',
+      beforeLoadGraph: () => {
+        nested = useApp().loadGraphData()
+        nested.catch(() => {})
+      }
+    })
+
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+    await expect(nested).rejects.toThrow(
+      'A graph-load lifecycle hook cannot start a nested graph load'
+    )
+  })
+
+  it('reports the hook that attempted the nested load in each rejection', async () => {
+    const rejections: unknown[] = []
+    register(
+      {
+        name: 'first-nested-loader',
+        beforeLoadGraph: async (app: HookApp) => {
+          await app.loadGraphData().catch((error: unknown) => {
+            rejections.push(error)
+          })
+        }
+      },
+      {
+        name: 'second-nested-loader',
+        beforeLoadGraph: async (app: HookApp) => {
+          await app.loadGraphData().catch((error: unknown) => {
+            rejections.push(error)
+          })
+        }
+      }
+    )
+
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+    expect(rejections).toHaveLength(2)
+    expect(rejections[0]).not.toBe(rejections[1])
+  })
+
+  it('writes an entrypoint patch through to the real app', async () => {
     const app = useApp()
     const original = app.loadGraphData
-    let received: HookApp | undefined
     register({
       name: 'patching-extension',
       beforeLoadGraph: (hookApp: HookApp) => {
-        received = hookApp
         hookApp.loadGraphData = async function (...args) {
           return original.apply(this, args)
         }
@@ -201,7 +270,6 @@ describe('invokeExtensionsAsync', () => {
     try {
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-      expect(received).toBe(app)
       expect(app.loadGraphData).not.toBe(original)
     } finally {
       app.loadGraphData = original
@@ -209,6 +277,9 @@ describe('invokeExtensionsAsync', () => {
   })
 
   it('lets a retained hook app load once the hook dispatch has finished', async () => {
+    const handleFile = vi
+      .spyOn(useApp(), 'handleFile')
+      .mockResolvedValue(undefined)
     let retained: HookApp | undefined
     register({
       name: 'retaining-extension',
@@ -217,14 +288,36 @@ describe('invokeExtensionsAsync', () => {
       }
     })
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-    const handleFile = vi
-      .spyOn(useApp(), 'handleFile')
-      .mockResolvedValue(undefined)
     const file = new File([], 'later.png')
 
     await retained?.handleFile(file)
 
     expect(handleFile).toHaveBeenCalledWith(file)
+  })
+
+  it('does not recurse when a hook wraps a retained entrypoint', async () => {
+    const app = useApp()
+    const original = app.loadGraphData
+    const loadGraphData = vi.fn().mockResolvedValue(undefined)
+    app.loadGraphData = loadGraphData
+    register({
+      name: 'wrapping-extension',
+      beforeLoadGraph: (hookApp: HookApp) => {
+        const retained = hookApp.loadGraphData
+        hookApp.loadGraphData = async function (...args) {
+          return retained.apply(this, args)
+        }
+      }
+    })
+
+    try {
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+      await expect(app.loadGraphData()).resolves.toBeUndefined()
+      expect(loadGraphData).toHaveBeenCalledOnce()
+    } finally {
+      app.loadGraphData = original
+    }
   })
 
   it('silently ignores a non-function property of the same name', async () => {

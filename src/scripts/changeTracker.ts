@@ -344,24 +344,17 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   static isLoadingGraph = false
 
-  /** Runs synchronous graph replacement work without capturing an undo state. */
-  static withCaptureSuppressed<T>(operation: () => T): T {
+  /**
+   * Stops capturing undo states until the returned release runs. Call it once
+   * graph replacement work can no longer be mistaken for a user edit; the
+   * outgoing workflow must already be flushed. Releasing twice is a no-op.
+   */
+  static beginCaptureSuppression(): () => void {
     ChangeTracker.captureSuppressionDepth++
-    try {
-      return operation()
-    } finally {
-      ChangeTracker.captureSuppressionDepth--
-    }
-  }
-
-  /** Runs asynchronous graph replacement work without capturing an undo state. */
-  static async withCaptureSuppressedAsync<T>(
-    operation: () => Promise<T>
-  ): Promise<T> {
-    ChangeTracker.captureSuppressionDepth++
-    try {
-      return await operation()
-    } finally {
+    let released = false
+    return () => {
+      if (released) return
+      released = true
       ChangeTracker.captureSuppressionDepth--
     }
   }

@@ -15,7 +15,10 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { useApp } from '@/scripts/appInstance'
-import { duringGraphLoadHook } from '@/scripts/graphLoadGuard'
+import {
+  createGraphLoadHookDispatch,
+  duringGraphLoadHook
+} from '@/scripts/graphLoadGuard'
 import { provideExtensionService } from '@/services/extensionServiceAccess'
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
@@ -224,8 +227,11 @@ export const useExtensionService = () => {
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
+    const graphLoadDispatch = graphLoadLifecycleHooks.has(method)
+      ? createGraphLoadHookDispatch(useApp())
+      : undefined
     const invokeAll = () => {
-      const app = useApp()
+      const app = graphLoadDispatch?.hookApp ?? useApp()
       const logError = (ext: ComfyExtension, error: unknown) =>
         console.error(
           `Error calling extension '${ext.name}' method '${method}'`,
@@ -234,18 +240,13 @@ export const useExtensionService = () => {
           { args }
         )
 
-      // This runs once per node def per extension, so avoid allocating promises
-      // or closures for extensions that do not define the hook.
       const pending: unknown[] = []
       for (const ext of extensionStore.enabledExtensions) {
-        // The property read is inside the try so a throwing getter or Proxy trap
-        // only affects its own extension.
         try {
           const fn = ext[method]
           if (typeof fn !== 'function') continue
 
           if (method === 'setup') {
-            // Track the current extension for legacy compatibility
             pending.push(
               (async () => {
                 legacyMenuCompat.setCurrentExtension(ext.name)
@@ -271,10 +272,14 @@ export const useExtensionService = () => {
       }
       return pending
     }
-    const pending = graphLoadLifecycleHooks.has(method)
+    const pending = graphLoadDispatch
       ? duringGraphLoadHook(invokeAll)
       : invokeAll()
-    return Promise.all(pending)
+    try {
+      return await Promise.all(pending)
+    } finally {
+      graphLoadDispatch?.endDispatch()
+    }
   }
 
   /** Runs one startup step on the given extensions only, in order; returns the ones that threw. */
