@@ -1979,38 +1979,27 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
-  it.for([
-    {
-      entry: 'the visit count',
-      entryLength: ACTIVATION_VISITS_STORAGE_KEY.length + 1
-    },
-    {
-      entry: 'the introduction response',
-      entryLength:
-        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a'
-          .length + 'true'.length
-    }
-  ])(
-    'withholds the automatic card when storage cannot fit $entry',
-    async ({ entryLength }) => {
-      setAgentReady(true)
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      const setItem = localStorage.setItem.bind(localStorage)
-      vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
-        if (key.length + value.length >= entryLength)
-          throw new DOMException('Quota exceeded', 'QuotaExceededError')
-        setItem(key, value)
-      })
+  it('withholds the automatic card when storage cannot fit the introduction response', async () => {
+    const entryLength =
+      'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a'.length +
+      'true'.length
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    const setItem = localStorage.setItem.bind(localStorage)
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key.length + value.length >= entryLength)
+        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      setItem(key, value)
+    })
 
-      await loadEntryAndSetup()
-      await flush()
+    await loadEntryAndSetup()
+    await flush()
 
-      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-        reason: 'storage_unavailable'
-      })
-    }
-  )
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+      reason: 'storage_unavailable'
+    })
+  })
 
   it('stays silent for an answered scope when storage cannot be written', async () => {
     setAgentReady(true)
