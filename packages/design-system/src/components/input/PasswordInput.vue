@@ -41,10 +41,7 @@ defineOptions({ inheritAttrs: false })
         :aria-pressed="visible"
         @click="visible = !visible"
       >
-        <i
-          :class="visible ? 'icon-[lucide--eye-off]' : 'icon-[lucide--eye]'"
-          class=""
-        />
+        <i :class="visible ? 'icon-[lucide--eye-off]' : 'icon-[lucide--eye]'" />
       </InputGroupButton>
     </InputGroupAddon>
   </InputGroup>

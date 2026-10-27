@@ -16,7 +16,7 @@ const { hasSubmenu, item } = defineProps<{
 
 <template>
   <OverlayIcon v-if="item.overlayIcon" v-bind="item.overlayIcon" />
-  <i v-else-if="item.icon" :class="cn(item.icon, 'shrink-0')" />
+  <i v-else-if="item.icon" :class="item.icon" />
   <span class="min-w-0 flex-1">
     <span class="block truncate">{{ toValue(item.label) }}</span>
     <span

@@ -1,5 +1,5 @@
 <template>
-  <span class="relative inline-flex size-4 items-center justify-center">
+  <span class="relative inline-flex items-center justify-center">
     <i :class="mainIcon" />
     <i
       :class="

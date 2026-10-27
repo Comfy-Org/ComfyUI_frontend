@@ -78,7 +78,7 @@
           )
         "
       />
-      <i :class="cn(item.value.icon, 'shrink-0 text-muted-foreground')" />
+      <i :class="cn(item.value.icon, 'text-muted-foreground')" />
       <span class="min-w-0 flex-1 truncate">
         <slot name="folder" :node="item.value">
           {{ item.value.label }}

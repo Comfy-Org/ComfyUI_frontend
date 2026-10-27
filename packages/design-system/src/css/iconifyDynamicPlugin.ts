@@ -9,8 +9,7 @@ import { COMFY_ICON_PREFIX, loadComfyIconSet } from './comfyIconSet.js'
 const SIZE = 'calc(var(--spacing) * 4)'
 
 const options = {
-  iconSets: { [COMFY_ICON_PREFIX]: loadComfyIconSet() },
-  scale: 0
+  iconSets: { [COMFY_ICON_PREFIX]: loadComfyIconSet() }
 }
 
 function getModeCSSRules(icon: string, mode: 'mask' | 'background') {

@@ -62,7 +62,7 @@ const WithoutTooltip: FunctionalComponent = (_, { slots }) =>
         <span class="sr-only"><slot /></span>
       </template>
       <template v-else>
-        <i v-if="icon" :class="cn(icon, 'shrink-0')" aria-hidden="true" />
+        <i v-if="icon" :class="icon" aria-hidden="true" />
         <slot />
       </template>
       <span
