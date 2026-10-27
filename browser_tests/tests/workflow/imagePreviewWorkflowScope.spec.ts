@@ -2,30 +2,45 @@ import type { Route } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { UserDataHelper } from '@e2e/fixtures/helpers/UserDataHelper'
-import type { WorkspaceStore } from '@e2e/types/globals'
 import {
   hasHandledImageLoad,
   restoreImageSrc,
   trackHandledImageLoads
 } from '@e2e/fixtures/utils/imageLoadSpy'
 
+const VIEW_ROUTE = '**/api/view?**'
+const WORKFLOW_B = 'preview-scope-b'
+const SHARED_NODE = { id: '10', type: 'LoraLoaderModelOnly' }
+
 for (const mode of ['canvas', 'vue'] as const) {
   test.describe(
     `Image preview workflow scope (${mode} mode)`,
     { tag: mode === 'vue' ? ['@vue-nodes'] : [] },
     () => {
+      const held: Route[] = []
+
+      test.beforeEach(async ({ comfyPage }) => {
+        held.length = 0
+        await comfyPage.workflow.setupWorkflowsDirectory({
+          [`${WORKFLOW_B}.json`]: 'nodes/lora_loader_model_only_id_10.json'
+        })
+        await comfyPage.page.route(VIEW_ROUTE, async (route) => {
+          if (route.request().url().includes('example.png')) held.push(route)
+          else await route.fallback()
+        })
+        await trackHandledImageLoads(comfyPage.page)
+      })
+
+      test.afterEach(async ({ comfyPage }) => {
+        await restoreImageSrc(comfyPage.page)
+        await comfyPage.page.unroute(VIEW_ROUTE)
+        await comfyPage.workflow.setupWorkflowsDirectory({})
+      })
+
       test('a late preview load does not land on another workflow node with the same id', async ({
         comfyPage
       }) => {
         const { page } = comfyPage
-        const workflowB = `preview-scope-b-${Date.now().toString(36)}`
-        const workflowBFile = `workflows/${workflowB}.json`
-        const userData = new UserDataHelper(
-          comfyPage.request,
-          comfyPage.id,
-          comfyPage.url
-        )
         function firstNodeState() {
           return page.evaluate(() => {
             const node = window.app!.graph.nodes.at(0)
@@ -39,67 +54,20 @@ for (const mode of ['canvas', 'vue'] as const) {
           })
         }
 
-        const held: Route[] = []
-        await page.route('**/api/view?**', async (route) => {
-          if (route.request().url().includes('example.png')) held.push(route)
-          else await route.fallback()
-        })
+        await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+        await expect.poll(() => held.length).toBeGreaterThan(0)
 
-        try {
-          await trackHandledImageLoads(page)
-          await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-          const { id } = await comfyPage.nodeOps.addNode('LoadImage')
-          const sharedId = String(id)
-          await expect.poll(() => held.length).toBeGreaterThan(0)
+        const workflowsTab = comfyPage.menu.workflowsTab
+        await workflowsTab.open()
+        await workflowsTab.getPersistedItem(WORKFLOW_B).dblclick()
+        await expect.poll(firstNodeState).toEqual(SHARED_NODE)
 
-          await userData.write(workflowBFile, {
-            last_node_id: Number(id),
-            last_link_id: 0,
-            nodes: [
-              {
-                id: Number(id),
-                type: 'LoraLoaderModelOnly',
-                pos: [100, 100],
-                size: [315, 82],
-                flags: {},
-                order: 0,
-                mode: 0,
-                properties: {},
-                widgets_values: []
-              }
-            ],
-            links: [],
-            groups: [],
-            config: {},
-            extra: {},
-            version: 0.4
-          })
-          await page.evaluate(() =>
-            (
-              window.app!.extensionManager as WorkspaceStore
-            ).workflow.syncWorkflows()
-          )
-          const workflowsTab = comfyPage.menu.workflowsTab
-          await workflowsTab.open()
-          await workflowsTab.getPersistedItem(workflowB).dblclick()
-          await expect
-            .poll(firstNodeState)
-            .toEqual({ id: sharedId, type: 'LoraLoaderModelOnly' })
+        for (const route of held.splice(0)) await route.fallback()
+        await expect
+          .poll(() => hasHandledImageLoad(page, 'example.png'))
+          .toBe(true)
 
-          for (const route of held.splice(0)) await route.fallback()
-          await expect
-            .poll(() => hasHandledImageLoad(page, 'example.png'))
-            .toBe(true)
-
-          expect(await firstNodeState()).toEqual({
-            id: sharedId,
-            type: 'LoraLoaderModelOnly'
-          })
-        } finally {
-          await restoreImageSrc(page)
-          await page.unroute('**/api/view?**')
-          await userData.delete(workflowBFile)
-        }
+        expect(await firstNodeState()).toEqual(SHARED_NODE)
       })
     }
   )
