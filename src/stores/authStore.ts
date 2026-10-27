@@ -56,6 +56,8 @@ import type { operations } from '@/types/comfyRegistryTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
+const BILLING_PORTAL_REQUEST_TIMEOUT_MS = 30_000
+
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
 type CreditPurchasePayload =
@@ -674,6 +676,14 @@ export const useAuthStore = defineStore('auth', () => {
     return authHeader
   }
 
+  const getWorkspaceAuthTokenOrThrow = async (): Promise<string> => {
+    const token = await getWorkspaceAuthToken()
+    if (!token) {
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    return token
+  }
+
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     if (!hasPersonalWorkspace.value) return null
     isFetchingBalance.value = true
@@ -703,14 +713,16 @@ export const useAuthStore = defineStore('auth', () => {
           // Customer not found is expected for new users
           return null
         }
-        const { message } = await parseErrorResponse(response)
+        const { message, code } = await parseErrorResponse(response)
         if (!requestIsCurrent()) {
           return null
         }
         throw new AuthStoreError(
           t('toastMessages.failedToFetchBalance', {
             error: message
-          })
+          }),
+          response.status,
+          code
         )
       }
 
@@ -1107,6 +1119,7 @@ export const useAuthStore = defineStore('auth', () => {
       buildApiUrl('/customers/billing'),
       {
         method: 'POST',
+        signal: AbortSignal.timeout(BILLING_PORTAL_REQUEST_TIMEOUT_MS),
         headers: {
           ...authHeader,
           'Content-Type': 'application/json'
@@ -1180,6 +1193,7 @@ export const useAuthStore = defineStore('auth', () => {
     getWorkspaceAuthHeaderOrThrow,
     getAuthToken,
     getWorkspaceAuthToken,
+    getWorkspaceAuthTokenOrThrow,
     notifyTokenRefreshed
   }
 })

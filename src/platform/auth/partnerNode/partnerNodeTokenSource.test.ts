@@ -24,6 +24,7 @@ function mintResponse(
   return Response.json({
     token,
     expires_at: new Date(NOW + lifetimeMs).toISOString(),
+    user_id: 'uid-1',
     workspace: { id: workspaceId, name: 'Team', type: 'team' },
     role: 'owner',
     permissions: []

@@ -4,7 +4,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-import type { ShellLayoutMetadata } from '../types'
+import type { ShellLayoutMetadata } from '@/platform/telemetry/types'
 import { getActionbarDockState } from './getActionbarDockState'
 
 type ShellLayoutMode = Pick<ShellLayoutMetadata, 'view_mode' | 'is_app_mode'>

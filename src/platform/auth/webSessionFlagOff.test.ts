@@ -21,7 +21,7 @@ import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSession
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
-import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -30,7 +30,7 @@ import {
   resultItemUrl,
   resultItemVhsAdvancedPreviewUrl
 } from '@/utils/resultItemUrl'
-import type { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/services/extensionService'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -107,9 +107,9 @@ vi.mock(import('@/services/extensionService'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
-await import('@/extensions/core/cloudSessionCookie')
+const { cloudSessionCookieExtension } =
+  await import('@/extensions/core/cloudSessionCookie')
+useExtensionService().registerExtension(cloudSessionCookieExtension)
 
 const ONE_HOUR_MS = 60 * 60 * 1000
 
@@ -172,7 +172,13 @@ const CAPABILITIES = {
     can_manage_billing: false,
     can_manage_partner_node_access: false,
     can_view_pending_invites: false,
-    can_view_team_usage: false
+    can_view_team_usage: false,
+    can_edit_workspace: false,
+    can_manage_auto_top_up: false,
+    can_manage_subscription: false,
+    can_open_plans: false,
+    can_run_workflows: false,
+    can_upgrade: false
   } satisfies BillingCapabilities,
   rollout_defaults_applied: {
     can_downgrade_to_personal: false,
@@ -206,6 +212,7 @@ function installFetchRecorder(features: Record<string, unknown>) {
     return {
       token: `cloud-jwt-${mintCount}`,
       expires_at: new Date(Date.now() + ONE_HOUR_MS).toISOString(),
+      user_id: 'uid-1',
       workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
       role: 'owner',
       permissions: ['owner:*']

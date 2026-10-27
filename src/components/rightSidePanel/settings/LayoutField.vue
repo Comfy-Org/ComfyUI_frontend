@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -33,7 +33,7 @@ defineProps<{
 
           <i
             v-if="tooltip"
-            class="relative top-px ml-0.5 icon-[lucide--info] size-3 group-hover:text-primary-background"
+            class="relative top-px ml-0.5 icon-[lucide--info] size-3 group-hover:text-primary"
           />
         </span>
       </TooltipTrigger>

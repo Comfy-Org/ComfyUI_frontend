@@ -3,9 +3,9 @@
  * `activate()`, so a host can construct the session client at module load
  * while the identity's module (and the SDK behind it) stays a lazy chunk.
  */
-import type { AccountIdentity } from './identity.js'
-import { brandIdentity } from './identity.js'
-import type { AccountUser } from './sessionContracts.js'
+import type { AccountIdentity } from './identity'
+import { brandIdentity } from './identity'
+import type { AccountUser } from './sessionContracts'
 
 /**
  * Single-owner: one driver calls `activate()` and `deactivate()`; a second

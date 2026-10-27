@@ -3,10 +3,10 @@ import type { MaybeRefOrGetter } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -22,24 +22,24 @@ import {
 import { createCancelToken } from '@/utils/createCancelToken'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import { shouldRenderExecutionItemList } from './executionItemList'
 import { someNodeTypeInSelection } from './selectionEmphasis'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import type { MissingModelGroup } from '@/platform/missingModel/types'
-import type { ResolvedCatalogErrorMessage } from '@/platform/errorCatalog/types'
-import type { MissingMediaGroup } from '@/platform/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
+import type { ResolvedCatalogErrorMessage } from '@/platform/workflowErrors/errorCatalog/types'
+import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
 import {
   countMissingModels,
   groupMissingModelCandidates
-} from '@/platform/missingModel/missingModelGrouping'
-import { groupCandidatesByMediaType } from '@/platform/missingMedia/missingMediaScan'
-import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
+} from '@/platform/workflowErrors/missingModel/missingModelGrouping'
+import { groupCandidatesByMediaType } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import { countMissingMediaReferences } from '@/platform/workflowErrors/missingMedia/missingMediaGrouping'
 import {
   resolveMissingErrorMessage,
   resolveRunErrorMessage
-} from '@/platform/errorCatalog/errorMessageResolver'
+} from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
 import {
   compareExecutionId,
   tryNormalizeNodeExecutionId

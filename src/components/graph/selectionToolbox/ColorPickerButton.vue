@@ -2,7 +2,6 @@
   <div class="relative">
     <Button
       :tooltip="localizedCurrentColorName ?? t('color.noColor')"
-      data-testid="color-picker-button"
       variant="muted-textonly"
       :aria-label="t('g.color')"
       @click="() => (showColorPicker = !showColorPicker)"
@@ -33,7 +32,7 @@
           <ToggleGroupItem
             :value="option.name"
             :aria-label="option.localizedName"
-            class="px-1 py-2 aria-pressed:bg-secondary-background aria-pressed:text-base-foreground"
+            class="px-1 py-2 aria-pressed:bg-secondary aria-pressed:text-foreground"
           >
             <i
               class="pi pi-circle-fill"
@@ -50,14 +49,16 @@
 </template>
 
 <script setup lang="ts">
+import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { useEventListener } from '@vueuse/core'
 import type { Raw } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import type {
   ColorOption as CanvasColorOption,
   LiteGraphCanvasEvent,
@@ -71,18 +72,13 @@ import {
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { adjustColor } from '@/utils/colorUtil'
 import { getItemsColorOption } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const colorPaletteStore = useColorPaletteStore()
 const workflowStore = useWorkflowStore()
-const isLightTheme = computed(
-  () => colorPaletteStore.completedActivePalette.light_theme
-)
-const toLightThemeColor = (color: string) =>
-  adjustColor(color, { lightness: 0.5 })
+const isLightTheme = computed(() => colorPaletteStore.colorScheme === 'light')
 
 const showColorPicker = ref(false)
 
@@ -100,7 +96,7 @@ const NO_COLOR_OPTION: ColorOption = {
   localizedName: t('color.noColor'),
   value: {
     dark: LiteGraph.NODE_DEFAULT_BGCOLOR,
-    light: toLightThemeColor(LiteGraph.NODE_DEFAULT_BGCOLOR)
+    light: toLightThemeNodeColor(LiteGraph.NODE_DEFAULT_BGCOLOR)
   }
 }
 const colorOptions: ColorOption[] = [
@@ -110,7 +106,7 @@ const colorOptions: ColorOption[] = [
     localizedName: t(`color.${name}`),
     value: {
       dark: color.bgcolor,
-      light: toLightThemeColor(color.bgcolor)
+      light: toLightThemeNodeColor(color.bgcolor)
     }
   }))
 ]
@@ -147,7 +143,7 @@ const currentColorOption = ref<CanvasColorOption | null>(null)
 const currentColor = computed(() =>
   currentColorOption.value
     ? isLightTheme.value
-      ? toLightThemeColor(currentColorOption.value?.bgcolor)
+      ? toLightThemeNodeColor(currentColorOption.value?.bgcolor)
       : currentColorOption.value?.bgcolor
     : null
 )

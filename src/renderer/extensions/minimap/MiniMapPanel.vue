@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'minimap-panel flex flex-col gap-2 bg-comfy-menu-bg p-3 text-sm shadow-interface',
+        'minimap-panel flex flex-col gap-2 bg-background p-3 text-sm shadow-md',
         isMobile ? 'mb-2' : 'mr-2'
       )
     "
@@ -79,7 +79,7 @@
 import type { CSSProperties, Ref } from 'vue'
 import type { CheckboxRootEmits } from 'reka-ui'
 
-import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
+import Checkbox from '@comfyorg/design-system/checkbox/Checkbox'
 import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
