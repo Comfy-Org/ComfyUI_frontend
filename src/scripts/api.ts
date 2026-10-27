@@ -84,6 +84,9 @@ import type {
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { retryingSend } from '@/utils/fetchWithRetry'
+import { NO_RETRY_POLICY } from '@/utils/retryPolicy'
+import type { RetryPolicy } from '@/utils/retryPolicy'
 import {
   fetchHistory,
   fetchJobAssets,
@@ -154,6 +157,8 @@ interface FetchApiOptions extends RequestInit {
   onAuthScheme?: (scheme: AuthScheme) => void
   /** Reports the kind of credential sent, to tell a missing token from a wrong one. */
   onAuthCredential?: (credential: AuthCredential) => void
+  /** Send once, for callers that already retry on their own backoff. */
+  skipStatusRetry?: boolean
 }
 
 const FETCH_ROUTE_GROUPS = new Set([
@@ -493,6 +498,7 @@ export class ComfyApi extends EventTarget {
    * identity always wins and superseded attempts never open a leaked socket.
    */
   private socketGeneration = 0
+  private socketRetryDelayMs = 1_000
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -613,11 +619,16 @@ export class ComfyApi extends EventTarget {
     this.authProvider = provider
   }
 
-  private async getWebSessionSend(): Promise<WebSessionSend | undefined> {
+  private async getWebSessionSend(
+    retryPolicy?: RetryPolicy
+  ): Promise<WebSessionSend | undefined> {
     const requests = webSessionRequests()
     if (!requests) return undefined
     const scope = await requests.scope()
-    return scope && ((url, init) => requests.send(url, init, scope))
+    return (
+      scope &&
+      retryingSend((url, init) => requests.send(url, init, scope), retryPolicy)
+    )
   }
 
   /** Sends a same-origin request on the web session; undefined when this tab is not on it. */
@@ -669,15 +680,17 @@ export class ComfyApi extends EventTarget {
       onAuthHeader,
       onAuthScheme,
       onAuthCredential,
+      skipStatusRetry,
       ...requestOptions
     } = options ?? {}
+    const retryPolicy = skipStatusRetry ? NO_RETRY_POLICY : undefined
     const headers: HeadersInit = requestOptions.headers ?? {}
     let unifiedRetryOn401 = false
     let sendOnWebSession: WebSessionSend | undefined
 
     if (isCloud) {
       await this.authProvider.waitForInitialization()
-      sendOnWebSession = await this.getWebSessionSend()
+      sendOnWebSession = await this.getWebSessionSend(retryPolicy)
       if (sendOnWebSession) {
         onAuthHeader?.(true)
         onAuthScheme?.('web-session')
@@ -777,7 +790,8 @@ export class ComfyApi extends EventTarget {
           this.apiURL(route),
           init,
           unifiedRetryOn401,
-          retrySignalLifecycle
+          retrySignalLifecycle,
+          retryPolicy
         )
     return response.finally(() => {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
@@ -963,14 +977,11 @@ export class ComfyApi extends EventTarget {
     return (await this.addSocketAuth(params)) ? params : null
   }
 
-  /**
-   * Creates and connects a WebSocket for realtime updates
-   * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
-   */
   private async createSocket(isReconnect?: boolean) {
     if (this.socket) {
       return
     }
+    if (!isReconnect) this.socketRetryDelayMs = 1_000
     const generation = ++this.socketGeneration
 
     let opened = false
@@ -983,6 +994,8 @@ export class ComfyApi extends EventTarget {
     }
 
     if (isCloud && !(await this.addSocketAuth(params))) return
+    const sessionRequests =
+      isCloud && !params.has('token') ? webSessionRequests() : undefined
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
@@ -1003,7 +1016,9 @@ export class ComfyApi extends EventTarget {
     }, SERVER_FEATURE_FLAGS_TIMEOUT_MS)
 
     socket.addEventListener('open', () => {
+      if (this.socket !== socket) return
       opened = true
+      this.socketRetryDelayMs = 1_000
 
       socket.send(
         JSON.stringify({
@@ -1020,7 +1035,7 @@ export class ComfyApi extends EventTarget {
     socket.addEventListener('error', () => {
       if (this.socket !== socket) return
       socket.close()
-      if (!isReconnect && !opened) {
+      if (!sessionRequests && !isReconnect && !opened) {
         this._pollQueue()
       }
     })
@@ -1029,11 +1044,20 @@ export class ComfyApi extends EventTarget {
       if (this.socket !== socket) return
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
+      const recoverSession = sessionRequests && !opened
+      const delayMs = recoverSession ? this.socketRetryDelayMs : 300
+      if (recoverSession) {
+        this.socketRetryDelayMs = Math.min(delayMs * 2, 60_000)
+      }
       setTimeout(async () => {
         if (this.socket !== socket) return
+        if (recoverSession) {
+          await sessionRequests.refreshSession()
+          if (this.socket !== socket) return
+        }
         this.socket = null
         await this.createSocket(true)
-      }, 300)
+      }, delayMs)
       if (opened) {
         this.dispatchCustomEvent('status', null)
         this.dispatchCustomEvent('reconnecting')
@@ -1681,8 +1705,10 @@ export class ComfyApi extends EventTarget {
    * Gets all setting values for the current user
    * @returns { Promise<string, unknown> } A dictionary of id -> value
    */
-  async getSettings(): Promise<Settings> {
-    const resp = await this.fetchApi('/settings')
+  async getSettings(
+    options?: Pick<FetchApiOptions, 'skipStatusRetry'>
+  ): Promise<Settings> {
+    const resp = await this.fetchApi('/settings', options)
 
     if (resp.status == 401) {
       // `statusText` is ALWAYS empty over HTTP/2 — the protocol carries no
