@@ -2463,7 +2463,13 @@ describe('useAgentSession (v1 composition root)', () => {
         })
         expect(reportError).toHaveBeenCalledWith(
           expect.any(Error),
-          expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+          expect.objectContaining({
+            errorType: 'agent_ask_answer_superseded',
+            tags: expect.objectContaining({
+              selection_changed: false,
+              other_text_changed: true
+            })
+          })
         )
         expect(session.notices.value).toEqual([
           {
