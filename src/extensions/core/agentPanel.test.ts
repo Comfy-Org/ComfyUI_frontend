@@ -2279,7 +2279,10 @@ describe('AgentPanel extension flag gate', () => {
 
     beforeEach(() => {
       sessionStorage.clear()
-      sessionStorage.setItem(PENDING_KEY, JSON.stringify({ draft: 'make it blue' }))
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({ draft: 'make it blue' })
+      )
       setAgentReady(true)
     })
 

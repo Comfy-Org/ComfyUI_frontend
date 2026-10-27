@@ -1132,19 +1132,22 @@ describe('accepting while signed out across a page reload', () => {
         expect(composer.prompt.references).toHaveLength(1)
       }
     }
-  ])('does not overwrite $composer already in the composer', async ({ fill }) => {
-    storePending('make it blue')
-    signedIn()
-    fill()
-    const before = useAgentComposerStore().prompt
-    scopeResolves()
-    vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
+  ])(
+    'does not overwrite $composer already in the composer',
+    async ({ fill }) => {
+      storePending('make it blue')
+      signedIn()
+      fill()
+      const before = useAgentComposerStore().prompt
+      scopeResolves()
+      vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
 
-    await useAgentConsent().resumeAcceptAfterReload()
+      await useAgentConsent().resumeAcceptAfterReload()
 
-    expect(useAgentComposerStore().prompt).toEqual(before)
-    expect(useAgentConsentStore().accept).toHaveBeenCalledOnce()
-  })
+      expect(useAgentComposerStore().prompt).toEqual(before)
+      expect(useAgentConsentStore().accept).toHaveBeenCalledOnce()
+    }
+  )
 
   it('does not restore a draft that is only whitespace', async () => {
     storePending(' ')
