@@ -240,25 +240,32 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * Drops the previous account's state when the signed-in identity changes
-   * or signs out, whichever source (Firebase or the Desktop host) changed it.
+   * Drops state owned by the previous storage identity. Account-scoped config
+   * follows user accounts, not credential-only API-key transitions.
    */
   const resetAccountState = (
-    previousUserId: string | null,
-    nextUserId: string | null
+    previousStorageIdentity: string | null,
+    nextStorageIdentity: string | null,
+    previousAccountId = previousStorageIdentity,
+    nextAccountId = nextStorageIdentity
   ): void => {
     const identityChanged =
-      previousUserId !== null && previousUserId !== nextUserId
+      previousStorageIdentity !== null &&
+      previousStorageIdentity !== nextStorageIdentity
+    const accountChanged =
+      previousAccountId !== null && previousAccountId !== nextAccountId
 
-    if (nextUserId === null || identityChanged) {
+    if (nextStorageIdentity === null || identityChanged) {
       useWorkspaceAuthStore().clearWorkspaceContext()
       mintUnifiedToken.clear()
       void partnerNodeTokens.revokeAll()
     }
     if (identityChanged) {
-      clearOnboardingReplay(previousUserId)
+      useTeamWorkspaceStore().resetForIdentityChange()
+    }
+    if (accountChanged) {
+      clearOnboardingReplay(previousAccountId)
       invalidateRemoteConfig()
-      if (!isCloud) useTeamWorkspaceStore().resetForIdentityChange()
     }
 
     // A direct account switch (A -> B, or sign-out) must re-handshake the
@@ -281,10 +288,26 @@ export const useAuthStore = defineStore('auth', () => {
     customerRecoveryIdentity = null
   }
 
-  firebaseIdentity.onUserChanged((user) => {
+  function currentAccountIdentity(): string | null {
+    return sessionUser.value?.id ?? currentUser.value?.uid ?? null
+  }
+
+  function nextAccountIdentity(user: User | null): string | null {
+    return sessionUser.value?.id ?? user?.uid ?? null
+  }
+
+  function nextStorageIdentity(user: User | null): string | null {
+    return (
+      user?.uid ?? sessionUser.value?.id ?? useApiKeyAuthStore().getApiKey()
+    )
+  }
+
+  function handleFirebaseUserChanged(user: User | null): void {
     resetAccountState(
       currentUserIdentity(),
-      user?.uid ?? sessionUser.value?.id ?? useApiKeyAuthStore().getApiKey()
+      nextStorageIdentity(user),
+      currentAccountIdentity(),
+      nextAccountIdentity(user)
     )
 
     currentUser.value = user
@@ -298,7 +321,9 @@ export const useAuthStore = defineStore('auth', () => {
       // mints instead, and only for a tab the session did not sign in.
       void mintUnifiedToken(user.uid)
     }
-  })
+  }
+
+  firebaseIdentity.onUserChanged(handleFirebaseUserChanged)
 
   watch(
     () => desktopHostUser.value?.id ?? null,

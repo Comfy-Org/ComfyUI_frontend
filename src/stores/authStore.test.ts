@@ -2422,6 +2422,23 @@ describe('useAuthStore', () => {
       expect(resetWorkspace).not.toHaveBeenCalled()
     })
 
+    it('fences API-key storage without discarding config on initial Firebase sign-in', () => {
+      authStateCallback(null)
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue('api-key-a')
+      remoteConfig.value = { subscription_required: true }
+      remoteConfigState.value = 'authenticated'
+      const resetWorkspace = vi.spyOn(
+        useTeamWorkspaceStore(),
+        'resetForIdentityChange'
+      )
+
+      authStateCallback(accountB)
+
+      expect(resetWorkspace).toHaveBeenCalled()
+      expect(remoteConfig.value.subscription_required).toBe(true)
+      expect(remoteConfigState.value).toBe('authenticated')
+    })
+
     it('clears an onboarding replay on a direct account switch', () => {
       requestOnboardingReplay(mockUser.uid)
 
