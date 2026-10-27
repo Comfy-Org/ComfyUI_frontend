@@ -32,6 +32,31 @@ function redundant(template: string, output: string, script = '') {
   return { ...vue(template, script), output: vue(output, script).code }
 }
 
+ruleTester.run('icon-element', templateClasses.rules['icon-element'], {
+  valid: [
+    vue('<i class="icon-[lucide--check]" />'),
+    vue('<i :class="cn(loading && \'icon-[lucide--loader]\')" />'),
+    vue('<span class="text-sm" />'),
+    vue('<Button icon="icon-[lucide--check]" />'),
+    vue('<div @click="track(\'icon-[lucide--check]\')" />'),
+    vue('<div class="[&_i]:size-4"><i class="icon-[comfy--logo]" /></div>')
+  ],
+  invalid: [
+    '<span class="size-4 icon-[lucide--check]" />',
+    '<div class="icon-[comfy--logo]" />',
+    '<button class="hover:icon-[lucide--check]" />',
+    '<Button class="icon-[lucide--check]" />',
+    '<span :class="\'icon-[lucide--check]\'" />',
+    '<span :class="cn(loading && \'icon-[lucide--loader]\')" />',
+    "<span :class=\"active ? 'icon-[lucide--check]' : 'text-sm'\" />",
+    '<span :class="{ \'icon-[lucide--check]\': active }" />',
+    '<span :class="`icon-[${family}--${name}]`" />'
+  ].map((template) => ({
+    ...vue(template),
+    errors: [{ messageId: 'wrongElement' }]
+  }))
+})
+
 ruleTester.run(
   'no-default-utilities',
   templateClasses.rules['no-default-utilities'],

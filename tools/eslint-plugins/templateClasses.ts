@@ -24,7 +24,10 @@ type VAttribute = AST.VAttribute
 
 interface TemplateParserServices {
   defineTemplateBodyVisitor(visitor: {
-    VElement: (node: VElement) => void
+    VElement?: (node: VElement) => void
+    VLiteral?: (node: AST.VLiteral) => void
+    Literal?: (node: AST.ESLintLiteral) => void
+    TemplateElement?: (node: AST.ESLintTemplateElement) => void
   }): Rule.RuleListener
 }
 
@@ -610,11 +613,62 @@ const noInheritedUtilities: Rule.RuleModule = {
   }
 }
 
+const iconElement: Rule.RuleModule = {
+  meta: {
+    type: 'problem',
+    docs: {
+      description:
+        'Require Iconify utility classes to be applied to <i> elements'
+    },
+    messages: {
+      wrongElement:
+        'Apply icon-[…] classes to an <i> element, not <{{element}}>.'
+    },
+    schema: []
+  },
+  create(context) {
+    const services = context.sourceCode.parserServices as
+      | Partial<TemplateParserServices>
+      | undefined
+    function isClassAttribute(attribute: AST.VAttribute | AST.VDirective) {
+      return attribute.directive
+        ? attribute.key.name.name === 'bind' &&
+            attribute.key.argument?.type === 'VIdentifier' &&
+            attribute.key.argument.name === 'class'
+        : attribute.key.name === 'class'
+    }
+    function checkClass(
+      node: AST.VLiteral | AST.ESLintLiteral | AST.ESLintTemplateElement
+    ) {
+      const text = node.type === 'TemplateElement' ? node.value.raw : node.value
+      if (typeof text !== 'string' || !/(?:^|[\s:])!?icon-\[/.test(text)) return
+      let parent = node.parent
+      while (parent && parent.type !== 'VAttribute') parent = parent.parent
+      if (!parent) return
+      const element = parent.parent.parent
+      if (!isClassAttribute(parent) || element.rawName === 'i') return
+      context.report({
+        node,
+        messageId: 'wrongElement',
+        data: { element: element.rawName }
+      })
+    }
+    return (
+      services?.defineTemplateBodyVisitor?.({
+        VLiteral: checkClass,
+        Literal: checkClass,
+        TemplateElement: checkClass
+      }) ?? {}
+    )
+  }
+}
+
 export default {
   meta: { name: 'template-classes' },
   rules: {
     'no-default-utilities': noDefaultUtilities,
     'no-redundant-component-classes': noRedundantComponentClasses,
-    'no-inherited-utilities': noInheritedUtilities
+    'no-inherited-utilities': noInheritedUtilities,
+    'icon-element': iconElement
   }
 }
