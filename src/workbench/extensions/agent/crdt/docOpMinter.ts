@@ -147,6 +147,7 @@ type PendingOp =
   | { kind: 'op'; operation: GraphOperation }
 
 type PendingGrows = { base: number; names: readonly string[] }
+type SlotGrow = MissingSlotGrowth['grow']
 interface DeferredDynamicConnect {
   kind: 'connect'
   operation: Omit<
@@ -173,6 +174,7 @@ interface PendingDynamicSlot {
   rootGraphId: string
   nodeId: NodeId
   inputName: string
+  grow: SlotGrow
   growLinkId: WireNodeId
   since: number
   sent: boolean
@@ -380,21 +382,85 @@ function withoutCancelledAdd(
   })
 }
 
-function withPredictedSlotsShifted(
+function predictedSlotOf(
+  entry: PendingOp,
+  toNode: WireNodeId
+): number | undefined {
+  if (entry.kind !== 'op') return undefined
+  const { operation } = entry
+  if (operation.op !== 'connect' && operation.op !== 'disconnect')
+    return undefined
+  if (operation.to_node !== toNode) return undefined
+  return typeof operation.to_slot === 'number' ? operation.to_slot : undefined
+}
+
+function queuedGrowName(
+  entry: PendingOp,
+  toNode: WireNodeId
+): string | undefined {
+  if (entry.kind !== 'op' || entry.operation.op !== 'connect') return undefined
+  const { operation } = entry
+  return operation.to_node === toNode ? operation.grow?.name : undefined
+}
+
+/**
+ * Re-predicts every queued slot on `toNode` once an unechoed grow is
+ * cancelled. The first queued connect that predicted the cancelled slot (a
+ * replacement link) inherits the grow, so the slot is still created; every
+ * other prediction is re-derived by name from the order the surviving grows
+ * land in. A prediction whose slot no grow creates any more is dropped.
+ */
+function withCancelledGrowReconciled(
   pending: PendingOp[],
   toNode: WireNodeId,
-  cancelledSlot: number
-): PendingOp[] {
-  return pending.map((entry) => {
-    if (entry.kind !== 'op') return entry
-    const { operation } = entry
-    if (operation.op !== 'connect' && operation.op !== 'disconnect')
+  grows: PendingGrows,
+  cancelled: SlotGrow
+): { pending: PendingOp[]; names: string[] } {
+  const cancelledSlot = grows.base + grows.names.indexOf(cancelled.name)
+  const heir = pending.findIndex(
+    (entry) =>
+      entry.kind === 'op' &&
+      entry.operation.op === 'connect' &&
+      predictedSlotOf(entry, toNode) === cancelledSlot
+  )
+  const inherited = pending.map((entry, index): PendingOp => {
+    if (
+      index !== heir ||
+      entry.kind !== 'op' ||
+      entry.operation.op !== 'connect'
+    )
       return entry
-    const slot = operation.to_slot
-    if (operation.to_node !== toNode || typeof slot !== 'number') return entry
-    if (slot <= cancelledSlot) return entry
-    return { kind: 'op', operation: { ...operation, to_slot: slot - 1 } }
+    const { to_slot: _slot, grow: _grow, ...connect } = entry.operation
+    return {
+      kind: 'op',
+      operation: { ...connect, to_slot: null, grow: cancelled }
+    }
   })
+  const queued = inherited
+    .map((entry) => queuedGrowName(entry, toNode))
+    .filter((name): name is string => !!name && grows.names.includes(name))
+  const names = [
+    ...grows.names.filter(
+      (name) => name !== cancelled.name && !queued.includes(name)
+    ),
+    ...queued
+  ]
+  const reconciled = inherited.flatMap((entry): PendingOp[] => {
+    const slot = predictedSlotOf(entry, toNode)
+    const predicted = slot === undefined ? -1 : slot - grows.base
+    if (entry.kind !== 'op' || predicted < 0 || predicted >= grows.names.length)
+      return [entry]
+    const index = names.indexOf(grows.names[predicted])
+    if (index < 0) return []
+    const { operation } = entry
+    const to_slot = grows.base + index
+    if (operation.op === 'disconnect')
+      return [{ kind: 'op', operation: { ...operation, to_slot } }]
+    if (operation.op === 'connect' && operation.grow == null)
+      return [{ kind: 'op', operation: { ...operation, to_slot } }]
+    return [entry]
+  })
+  return { pending: reconciled, names }
 }
 
 /**
@@ -1006,8 +1072,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     pendingGrows.delete(key)
     if (pendingAdds.get(key) === event.node) {
       pendingAdds.delete(key)
-      forgetCancelledGrows(event.graph.id, event.node.id)
-      pending = withoutCancelledAdd(pending, event.node.id)
+      cancelAdd(event.graph.id, event.node.id)
       return
     }
     schedule({
@@ -1063,34 +1128,37 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     )
   }
 
-  function forgetCancelledGrows(graphId: string, nodeId: NodeId): void {
-    for (const entry of pending) {
-      if (entry.kind !== 'op' || entry.operation.op !== 'connect') continue
+  function cancelAdd(graphId: string, nodeId: NodeId): void {
+    const cancelledGrows = pending.flatMap((entry) => {
+      if (entry.kind !== 'op' || entry.operation.op !== 'connect') return []
       const { from_node, to_node, grow } = entry.operation
-      if (grow && (from_node === nodeId || to_node === nodeId))
-        forgetCancelledGrow(nodeKey(graphId, to_node), to_node, grow.name)
-    }
+      return grow && (from_node === nodeId || to_node === nodeId)
+        ? [{ toNode: to_node, grow }]
+        : []
+    })
+    pending = withoutCancelledAdd(pending, nodeId)
+    for (const { toNode, grow } of cancelledGrows)
+      forgetCancelledGrow(nodeKey(graphId, toNode), toNode, grow)
   }
 
   function forgetCancelledGrow(
     key: string,
     toNode: WireNodeId,
-    name: string
+    grow: SlotGrow
   ): void {
     const grows = pendingGrows.get(key)
-    const index = grows?.names.indexOf(name) ?? -1
-    if (grows === undefined || index < 0) return
-    const names = grows.names.filter((other) => other !== name)
-    if (names.length === 0) pendingGrows.delete(key)
-    else pendingGrows.set(key, { base: grows.base, names })
-    pending = withPredictedSlotsShifted(pending, toNode, grows.base + index)
+    if (grows === undefined || !grows.names.includes(grow.name)) return
+    const reconciled = withCancelledGrowReconciled(pending, toNode, grows, grow)
+    pending = reconciled.pending
+    if (reconciled.names.length === 0) pendingGrows.delete(key)
+    else pendingGrows.set(key, { base: grows.base, names: reconciled.names })
   }
 
   function forgetDynamicSlotGrow(state: PendingDynamicSlot): void {
     forgetCancelledGrow(
       nodeKey(state.rootGraphId, state.nodeId),
       state.nodeId,
-      state.inputName
+      state.grow
     )
   }
 
@@ -1166,6 +1234,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       rootGraphId,
       nodeId: link.target_id,
       inputName: input.name,
+      grow: growth.grow,
       growLinkId: link.id,
       since: performance.now(),
       sent: false,

@@ -1040,6 +1040,47 @@ describe('attachDocOpMinter', () => {
         doc.destroy()
       })
 
+      it('hands a cancelled grow to the link that replaced it', async () => {
+        const source = new TestSource()
+        const replacement = new TestSource()
+        const sink = new TestAutogrowSink()
+        withGraphIntentSource('load', () => {
+          graph.add(source)
+          graph.add(replacement)
+          graph.add(sink)
+        })
+        const doc = mintDocFrom(graph)
+        docInputNames = (nodeId) =>
+          readDocSlotNames(doc, String(nodeId), 'inputs')
+        source.connect(0, sink, 0)
+        await afterFlush()
+        applyMinted(doc, minted)
+        minted.length = 0
+        const unsent = new TestSource()
+        graph.add(unsent)
+        unsent.connect(0, sink, 1)
+        replacement.connect(0, sink, 1)
+        const grown = sink.inputs[1]
+        graph.remove(unsent)
+        await afterFlush()
+
+        expect(minted).toEqual([
+          expect.objectContaining({
+            op: 'connect',
+            link_id: grown.link,
+            to_slot: null,
+            grow: expect.objectContaining({ name: grown.name })
+          })
+        ])
+        expect(applyMinted(doc, minted)).toEqual(['applied'])
+        expect(docInputs(doc, sink.id)).toEqual([
+          { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
+          { name: grown.name, link: grown.link }
+        ])
+        expect(reportError).not.toHaveBeenCalled()
+        doc.destroy()
+      })
+
       describe('with two grows on one node awaiting their echo', () => {
         async function mintTwoUnechoedGrows() {
           const sources = [new TestSource(), new TestSource(), new TestSource()]
