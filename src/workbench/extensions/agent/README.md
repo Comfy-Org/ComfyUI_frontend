@@ -61,9 +61,28 @@ Cloud and Desktop share one onboarding rule (ADR-AGENT-CONSENT-0045). On the
 first two launches the panel opens by itself, with the consent card over it
 until the user answers. After that, **Agent** asks for consent before it opens
 a closed panel, and Send asks before the first message. Signed-out users see
-the card before sign-in. Acceptance is stored through the hosted Global
-Settings API under `Comfy.AgentPanel.ConsentAccepted` for the authenticated
-user and workspace. Skip, Escape and outside clicks dismiss without accepting.
+the card before sign-in.
+
+```mermaid
+flowchart TD
+  launch([Launch]) --> agreed{Agreed for this account and workspace?}
+  agreed -- yes --> done[No card; Agent and Send just work]
+  agreed -- no --> window{Launch 1 or 2?}
+  window -- no --> noCard[No automatic card]
+  window -- yes --> answered{Skipped on this device?}
+  answered -- yes --> noCard
+  answered -- no --> card[Panel opens with the consent card]
+  card -- Agree --> saved[Consent saved; panel open]
+  card -- Skip --> noCard
+  card -- Escape or outside click --> again[Card again on the next of launches 1 and 2]
+  noCard --> ask[Agent on a closed panel, or Send: the card first]
+```
+
+On launches 1 and 2 the panel also opens by itself for a user who has agreed;
+after that it keeps whatever open state the user left it in.
+
+Acceptance is stored through the hosted Global Settings API under
+`Comfy.AgentPanel.ConsentAccepted` for the authenticated user and workspace. Skip, Escape and outside clicks dismiss without accepting.
 Skip is remembered on the device for the account and workspace (or for
 signed-out use) and ends the automatic card; Escape and outside clicks do not.
 Failed loads or saves allow retry and do not permit sending. A manual request
@@ -74,13 +93,33 @@ new scope. Desktop/Local sign-in continuation authenticates before saving.
 
 ### Consent offer telemetry
 
-`agent_consent_not_offered` names the surface holding an automatic offer; the
-offer retries when that surface clears. `agent_consent_offer_exited` covers
-every other ending. Some exits are correct (`consent_already_accepted`,
-`card_already_seen`, `activation_window_complete`) and the rest are offers that
-were owed and not made, so split queries by `exit`; a total is not a quantity.
-Unreadable storage also reports `activation_window_complete`, since the launch
-count cannot be read.
+`agent_consent_not_offered` names why an automatic offer was not made.
+
+| `reason`              | Why                                         | Retried                |
+| --------------------- | ------------------------------------------- | ---------------------- |
+| `first_run_screen`    | Getting Started or another first-run screen | When it closes         |
+| `tour_active`         | Another onboarding tour                     | When it ends           |
+| `dialog_open`         | Another dialog                              | When it closes         |
+| `boot_undecided`      | The startup decision did not settle         | No, for this page load |
+| `storage_unavailable` | localStorage cannot be written              | No, for this page load |
+
+`agent_consent_offer_exited` covers every other ending. Split queries by
+`exit`; a total is not a quantity.
+
+| `exit`                       | Meaning                                          | Kind                |
+| ---------------------------- | ------------------------------------------------ | ------------------- |
+| `consent_already_accepted`   | Consent is already stored for this scope         | Correct, not needed |
+| `card_already_seen`          | The card was already on screen this page load    | Correct, not needed |
+| `activation_window_complete` | Past launch 2, or the launch count is unreadable | Correct, not needed |
+| `consent_unresolved`         | The stored consent read has not settled          | Owed, not made      |
+| `consent_read_failed`        | The stored consent read failed                   | Owed, not made      |
+| `offer_in_flight`            | Another offer attempt has not finished           | Owed, not made      |
+| `startup_probe_failed`       | The first-run startup probe failed               | Owed, not made      |
+| `scope_changed_before_read`  | The account or workspace changed before the read | Owed, not made      |
+| `scope_probe_failed`         | Resolving the account or workspace failed        | Owed, not made      |
+| `scope_changed_after_read`   | The account or workspace changed during the read | Owed, not made      |
+| `card_closed_before_mount`   | The card closed before it rendered               | Owed, not made      |
+
 There is no exit for "the agent flag is off": it would fire on every page load
 outside the rollout, and every event already carries
 `$feature/agent-in-app-experience`.
