@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { z } from 'zod'
 
 import { RecordRefusal } from './agentConversationAssemble'
 import type { Observation } from './agentConversationFromLangfuse'
@@ -21,7 +22,8 @@ import {
   captureFromObservations,
   fetchObservations,
   main,
-  readEnvFile
+  readEnvFile,
+  zObservation
 } from './agentConversationFromLangfuse'
 import {
   assertOpsApply,
@@ -369,6 +371,20 @@ describe('attributeOf', () => {
       attributeOf({ ...nested, metadata: null }, 'comfy.turn_id')
     ).toBeUndefined()
   })
+
+  it('falls back to flattened keys a nested attributes object lacks', () => {
+    const mixed: Observation = {
+      ...span('m', { 'comfy.thread_id': THREAD }),
+      metadata: {
+        attributes: { 'comfy.thread_id': THREAD },
+        'attributes.comfy.turn_id': 'm-4',
+        'comfy.step': 12
+      }
+    }
+    expect(attributeOf(mixed, 'comfy.thread_id')).toBe(THREAD)
+    expect(attributeOf(mixed, 'comfy.turn_id')).toBe('m-4')
+    expect(attributeOf(mixed, 'comfy.step')).toBe('12')
+  })
 })
 
 describe('readEnvFile', () => {
@@ -508,7 +524,9 @@ describe('fetchObservations', () => {
       JSON.parse(
         readFileSync(`scripts/__fixtures__/langfuse-v2-parity/${name}`, 'utf8')
       )
-    const v1 = (fixture('trace.v1.json') as { data: Observation[] }).data
+    const v1 = z
+      .object({ data: z.array(zObservation) })
+      .parse(fixture('trace.v1.json')).data
     const v2 = await fetchObservations(
       env,
       { traceId: 'trace-1' },
@@ -527,13 +545,12 @@ describe('fetchObservations', () => {
       'comfy.tool.ok',
       'gen_ai.response.model'
     ]
-    v1.forEach((before, index) => {
-      const after = v2[index]
-      expect(after.input).toEqual(before.input)
-      expect(after.output).toEqual(before.output)
-      for (const key of keys)
-        expect(attributeOf(after, key)).toBe(attributeOf(before, key))
+    const project = (observation: Observation) => ({
+      input: observation.input,
+      output: observation.output,
+      attributes: keys.map((key) => attributeOf(observation, key))
     })
+    expect(v2.map(project)).toEqual(v1.map(project))
     const capture = captureFromObservations(v2, options)
     expect(capture.turns).toHaveLength(1)
     expect(capture).toEqual(captureFromObservations(v1, options))

@@ -96,7 +96,7 @@ export function readEnvFile(path: string): LangfuseEnv {
   )
 }
 
-// Langfuse keeps unmapped OTel attributes under metadata.attributes; flattened metadata is the fallback.
+// Langfuse keeps unmapped OTel attributes under metadata.attributes; flattened attributes.<key>, then <key>, are the fallback.
 export function attributeOf(
   observation: Observation,
   key: string
@@ -108,9 +108,10 @@ export function attributeOf(
   const nested = z
     .record(z.string(), z.unknown())
     .safeParse(metadata.data.attributes)
-  const value = nested.success
-    ? nested.data[key]
-    : (metadata.data[`attributes.${key}`] ?? metadata.data[key])
+  const value =
+    (nested.success ? nested.data[key] : undefined) ??
+    metadata.data[`attributes.${key}`] ??
+    metadata.data[key]
   if (typeof value === 'string') return value
   if (typeof value === 'boolean' || typeof value === 'number')
     return String(value)
