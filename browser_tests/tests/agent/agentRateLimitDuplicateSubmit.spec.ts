@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   agentTest as test,
   FUNDS_UNAVAILABLE_MESSAGE
@@ -11,14 +12,23 @@ test.describe(
   () => {
     test.use({ agentRetryAfter: '30' })
 
-    test('keeps repeated Enter presses to one rejected send', async ({
+    const prompt = 'Make a red fox in the snow'
+
+    /**
+     * Drives one send to a 503 refusal and waits for the composer to be back in
+     * the state a user would retry from: the exact prompt restored and the Send
+     * button live again.
+     */
+    async function rejectOneSend({
       agentPanel,
       postedMessages
-    }) => {
+    }: {
+      agentPanel: AgentPanel
+      postedMessages: string[]
+    }): Promise<void> {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
 
-      const prompt = 'Make a red fox in the snow'
       await agentPanel.composer.fill(prompt)
       await agentPanel.composer.press('Enter')
       await expect(
@@ -26,11 +36,15 @@ test.describe(
       ).toBeVisible()
       await expect(agentPanel.composer).toHaveText(prompt)
       await expect(agentPanel.sendButton).toBeEnabled()
+      await expect.poll(() => postedMessages).toHaveLength(1)
+    }
 
-      test.fail(
-        true,
-        'Repeated Enter presses duplicate the rejected prompt and turn request'
-      )
+    test('keeps repeated Enter presses to one rejected send', async ({
+      agentPanel,
+      postedMessages
+    }) => {
+      await rejectOneSend({ agentPanel, postedMessages })
+
       await agentPanel.composer.press('Enter')
       await agentPanel.composer.press('Enter')
       await expect(agentPanel.composer).toHaveText(prompt)
@@ -40,6 +54,37 @@ test.describe(
         agentPanel.root.getByTestId('user-message-bubble')
       ).toHaveText([prompt])
       await expect.poll(() => postedMessages).toHaveLength(1)
+    })
+
+    test('retries the restored prompt from the Send button', async ({
+      agentPanel,
+      postedMessages
+    }) => {
+      await rejectOneSend({ agentPanel, postedMessages })
+
+      await agentPanel.sendButton.click()
+
+      // The retry is refused too — every POST 503s while `agentRetryAfter` is
+      // set — so the observable outcome is a second request and the prompt
+      // still available to retry again.
+      await expect.poll(() => postedMessages).toHaveLength(2)
+      await expect(agentPanel.composer).toHaveText(prompt)
+      await expect(agentPanel.sendButton).toBeEnabled()
+    })
+
+    test('allows Enter again once the restored prompt is edited', async ({
+      agentPanel,
+      postedMessages
+    }) => {
+      await rejectOneSend({ agentPanel, postedMessages })
+
+      const edited = `${prompt} at dusk`
+      await agentPanel.composer.fill(edited)
+      await expect(agentPanel.composer).toHaveText(edited)
+      await agentPanel.composer.press('Enter')
+
+      await expect.poll(() => postedMessages).toHaveLength(2)
+      await expect(agentPanel.composer).toHaveText(edited)
     })
   }
 )

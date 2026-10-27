@@ -143,6 +143,41 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     starterPrompt: AgentStarterPromptSource | null
     snapshot: SubmittedDraft
   } | null>(null)
+  /**
+   * The draft a refused send put back in the composer, kept until the user
+   * changes it. Enter is the only affordance that reads it: a refusal restores
+   * the prompt and re-enables the composer, so a keystroke the user was already
+   * repeating would otherwise send the same prompt again and buy a second turn
+   * (#20386). The explicit Send button is a deliberate retry and never consults
+   * this.
+   *
+   * Compared by CONTENT, not by draft identity. `applyEditorPrompt`'s
+   * `metadataOnly` branch and `resolveSkillMetadata` both assign a fresh prompt
+   * object without the user touching anything, so an identity check would read
+   * a skill chip resolving as an edit and re-arm Enter on an unchanged prompt.
+   */
+  const rejectedDraft = shallowRef<{
+    prompt: ComposerPrompt
+    attachmentIds: string[]
+  } | null>(null)
+  const rejectedDraftUnchanged = computed(() => {
+    const rejected = rejectedDraft.value
+    if (!rejected) return false
+    const ids = attachmentIds.value
+    if (rejected.attachmentIds.length !== ids.length) return false
+    if (!rejected.attachmentIds.every((id, index) => id === ids[index]))
+      return false
+    const current = draftState.value
+    return (
+      rejected.prompt.text === current.text &&
+      rejected.prompt.references.length === current.references.length &&
+      rejected.prompt.references.every(
+        (reference, index) =>
+          composerReferenceKey(reference) ===
+          composerReferenceKey(current.references[index])
+      )
+    )
+  })
   let revision = 0
   let nextSubmissionId = 0
 
@@ -504,6 +539,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function startSubmission(snapshot: SubmittedDraft): number {
     resetPromptHistory()
+    rejectedDraft.value = null
     // Held with the snapshot, not dropped: a send that fails puts this draft
     // back in the composer, and the retry came from the same chip or edited
     // prompt the first attempt did.
@@ -548,7 +584,15 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function invalidateSubmission(): void {
     submission.value = null
+    rejectedDraft.value = null
     releaseUnusedAssets()
+  }
+
+  function markRejectedDraft(): void {
+    rejectedDraft.value = {
+      prompt: draftState.value,
+      attachmentIds: [...attachmentIds.value]
+    }
   }
 
   return {
@@ -565,6 +609,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     starterPrompt,
     insertionPoint,
     submission,
+    rejectedDraftUnchanged,
+    markRejectedDraft,
     setText,
     setInsertionPoint,
     resetPromptHistory,

@@ -15,6 +15,14 @@ export interface UseComposerOptions {
   onStop: () => void
 }
 
+/**
+ * Which affordance asked to send. `keyboard` is Enter in the prompt editor,
+ * the one path that can fire without the user deciding to send again — holding
+ * or repeating the key after a refusal restores the prompt and sends it twice
+ * (#20386). `explicit` is the Send button, always a fresh decision.
+ */
+type ComposerSubmitIntent = 'keyboard' | 'explicit'
+
 export function useComposer(options: UseComposerOptions) {
   const store = useAgentComposerStore()
   const { draft, attachments, prompt, workflowReferences, promptEpoch } =
@@ -29,12 +37,13 @@ export function useComposer(options: UseComposerOptions) {
       !attachments.value.some((item) => item.uploading || item.validationError)
   )
 
-  function submit(): void {
+  function submit(intent: ComposerSubmitIntent = 'explicit'): void {
     if (options.isRunning()) {
       options.onStop()
       return
     }
     if (!canSend.value) return
+    if (intent === 'keyboard' && store.rejectedDraftUnchanged) return
     options.onSend(
       composerPromptForSubmission(prompt.value).text.trim(),
       attachments.value
