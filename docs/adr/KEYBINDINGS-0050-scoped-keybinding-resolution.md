@@ -144,12 +144,3 @@ legacy-hook use, never keys.
   events to get priority, so ordering never becomes predictable.
 - **Choose the mode per install.** Behavior would depend on installed packs,
   which no bug report shows.
-
-## Rollout
-
-A new stack from main replaces the nine first-implementation PRs, reusing
-their code. It starts with the late-unset fix (#21982, merged), this record,
-and the single resolver at today's commit points; then versioned settings,
-scopes and the overlay stack, holds, each surface in turn, the shortcuts
-panel, the extension API, and last the switch to `strict`. Each PR settles
-the details of its part and updates this record where it departs from it.
