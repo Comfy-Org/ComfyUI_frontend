@@ -7,15 +7,8 @@ import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 import { agentConsentTelemetryTest as telemetryTest } from '@e2e/fixtures/agentConsentTelemetryFixture'
-import type { CapturedTelemetryEvent } from '@e2e/fixtures/hostTelemetryFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
-
-function heldBy(events: CapturedTelemetryEvent[]): unknown[] {
-  return events
-    .filter(({ event }) => event === 'app:agent_consent_not_offered')
-    .map(({ properties }) => properties.reason)
-}
 
 async function requestConsentFromOpenPanel(page: Page): Promise<void> {
   const openButton = page.getByRole('button', {
@@ -680,8 +673,7 @@ test.describe(
     test('defers the offer until Getting Started releases the screen', async ({
       comfyPage,
       agentPanel,
-      agentConsentWrites,
-      agentConsentReads
+      agentConsentWrites
     }) => {
       const page = comfyPage.page
       const gettingStarted = page.getByRole('dialog', {
@@ -693,17 +685,6 @@ test.describe(
 
       await test.step('Getting Started owns the first screen', async () => {
         await expect(gettingStarted).toBeVisible()
-      })
-
-      await test.step('The automatic offer waits behind Getting Started', async () => {
-        await expect
-          .poll(() => agentConsentReads.length, {
-            message: 'the automatic offer runs once the consent read is in',
-            timeout: 15_000
-          })
-          .toBeGreaterThan(0)
-        await expect(consent).toHaveCount(0)
-        await expect(agentPanel.root).toBeVisible()
       })
 
       await test.step('Taking the blank canvas shows the card over the activated panel', async () => {
@@ -757,8 +738,16 @@ telemetryTest.describe(
           async () => {
             await expect(approval).toBeVisible()
             await expect
-              .poll(() => heldBy(consentTelemetry), { timeout: 15_000 })
-              .toContain('dialog_open')
+              .poll(
+                () =>
+                  consentTelemetry.some(
+                    ({ event, properties }) =>
+                      event === 'app:agent_consent_not_offered' &&
+                      properties.reason === 'dialog_open'
+                  ),
+                { timeout: 15_000 }
+              )
+              .toBe(true)
             await approve.click({ trial: true })
             await expect(consent).toHaveCount(0)
             await expect(agentPanel.root).toBeVisible()

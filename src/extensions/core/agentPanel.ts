@@ -66,7 +66,7 @@ function automaticActivationVisitsComplete(): boolean {
   }
 }
 
-const STORAGE_PROBE_KEY = 'Comfy.AgentPanel.storageProbe'
+const STORAGE_PROBE_KEY = `${ACTIVATION_VISITS_STORAGE_KEY}.probe`
 
 function storageWritable(): boolean {
   try {
@@ -185,6 +185,17 @@ export function registerAgentPanelExtension(): void {
         }
       )
 
+      let signedInThisPage = false
+      watch(
+        isLoggedIn,
+        (loggedIn) => {
+          if (loggedIn) signedInThisPage = true
+        },
+        { immediate: true, flush: 'sync' }
+      )
+
+      const sessionEnded = (): boolean => signedInThisPage && !isLoggedIn.value
+
       function introductionOwed(): boolean {
         const { scope } = introductionStore
         return scope !== null && !introductionStore.hasResponded(scope)
@@ -192,6 +203,7 @@ export function registerAgentPanelExtension(): void {
       const offerEligible = (): boolean =>
         agentPanelStore.enabled &&
         isAuthInitialized.value &&
+        !sessionEnded() &&
         !introductionStore.isContinuingSignIn &&
         introductionOwed() &&
         !consentStore.isChecking &&
@@ -251,7 +263,8 @@ export function registerAgentPanelExtension(): void {
             canShow: () => {
               const held = screenHolder()
               if (held) holdOffer(held)
-              const showing = held === null && agentPanelStore.enabled
+              const showing =
+                held === null && agentPanelStore.enabled && !sessionEnded()
               if (showing) shownOverClosedPanel = !agentPanelStore.isOpen
               return showing
             }
@@ -323,19 +336,10 @@ export function registerAgentPanelExtension(): void {
           })
       }
 
-      let signedInThisPage = false
-      watch(
-        isLoggedIn,
-        (loggedIn) => {
-          if (loggedIn) signedInThisPage = true
-        },
-        { immediate: true, flush: 'sync' }
-      )
-
       const loadConsentIfEligible = (): void => {
         if (!agentPanelStore.enabled || !isAuthInitialized.value) return
         if (!isLoggedIn.value) {
-          if (!signedInThisPage) offerWhenStartupDecided()
+          if (!sessionEnded()) offerWhenStartupDecided()
           return
         }
         if (!resolvedUserInfo.value) return

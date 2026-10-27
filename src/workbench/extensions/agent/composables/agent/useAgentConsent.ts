@@ -51,28 +51,6 @@ export function useAgentConsent() {
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
   const { t } = i18n.global
 
-  /**
-   * Names an ending of the consent request that produced neither a card on
-   * screen nor a decision.
-   *
-   * These are the last silent endings on the automatic consent chain.
-   * `agent_consent_not_offered` means a named surface is holding the offer and
-   * will retry it, and `agent_consent_offer_exited`'s other stages all stop
-   * before the consent scope is resolved - so an attempt that got as far as
-   * asking and still ended with nothing was indistinguishable in product
-   * analytics from a user who was never offered. The failing ones do reach
-   * Sentry and RUM through `reportError`, which is why they were easy to
-   * believe were covered; `reportError` has no PostHog sink, so none of them
-   * were in the funnel denominator `agent_consent_not_offered` is read against.
-   *
-   * `retry_armed` is reported false rather than read, and that is a code reading
-   * rather than a tested fact: `offerConsentUnprompted` calls `dropHold()`
-   * immediately before `withConsent`, the only caller that can re-arm is the
-   * `canShow` hook, and `canShow` runs after every exit reported here. A
-   * re-entrant offer cannot re-arm either - it exits on `autoShowInFlight`
-   * before reaching a hold. If that ordering changes, this becomes wrong
-   * silently, so the property's doc says which ordering it depends on.
-   */
   function reportRequestExit(
     exit: AgentConsentOfferExit,
     trigger: AgentConsentTrigger
@@ -282,11 +260,6 @@ export function useAgentConsent() {
     hooks: ConsentOfferHooks
   ): Promise<string | null> {
     let decisionIdentity: string | null
-    // Which call is in flight, so the catch can tell a scope probe that failed
-    // from a consent read that failed. The error cannot carry that: both raise
-    // `AgentConsentAuthenticationError` with the same "account authentication is
-    // required" message, `ensureScope` from its own missing user and `load` from
-    // the auth header its read needs.
     let reading = false
     try {
       decisionIdentity = await consentStore.ensureScope()
@@ -315,15 +288,6 @@ export function useAgentConsent() {
       reportRequestExit('scope_changed_after_read', trigger)
       return null
     }
-    // Two endings report nothing here, and both are successes rather than
-    // silences. `showConsentDialog` returning false because `canShow` said no is
-    // already named by the surface that took the screen - the caller's hook
-    // holds the offer and `agent_consent_not_offered` carries the reason, so
-    // naming it again would double-count one deferral. And consent that is
-    // already stored skips the card entirely: this runs on to `onAccept`, which
-    // for the automatic offer is the only producer of
-    // `agent_panel_opened(source=automatic_consent)`. Reading the absence of a
-    // card as a failed offer is the error that mis-ranked gc-17.
     if (
       !accepted.value &&
       !(await showConsentDialog(trigger, true, decisionIdentity, hooks))
