@@ -1535,10 +1535,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadId: string
   ): void {
     if (error instanceof AgentApiError && error.status === 409) {
-      const committed = toAskResolution(
-        zAgentAskConflict.safeParse(error.body).data ?? {}
-      )
-      reportSupersededAnswer(askId, committed)
+      const conflict = zAgentAskConflict.safeParse(error.body).data
+      const committed = toAskResolution(conflict ?? {})
+      // Same guard as the 202: a conflict that names no selection cannot
+      // show that another answer won.
+      if (Array.isArray(conflict?.selected))
+        reportSupersededAnswer(askId, committed)
       conversationStore.retireAsk(askId, committed, threadId)
       return
     }
