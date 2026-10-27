@@ -269,6 +269,25 @@ describe('useAuthActions.logout', () => {
     ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
   })
 
+  it.for([
+    { case: 'the cloud login page by default', signInPath: undefined },
+    {
+      case: 'the requested sign-in page',
+      signInPath: '/cloud/login?switchAccount=true'
+    }
+  ])('lands on $case after cloud logout', async ({ signInPath }) => {
+    const navigationSpy = vi
+      .spyOn(window.location, 'href', 'set')
+      .mockImplementation(() => {})
+    const { logout } = useAuthActions()
+
+    await logout({ signInPath })
+
+    expect(navigationSpy).toHaveBeenCalledExactlyOnceWith(
+      signInPath ?? '/cloud/login'
+    )
+  })
+
   it('does not clear cloud workflows when logout fails', async () => {
     vi.mocked(mockAuthStore.logout).mockRejectedValueOnce(
       new Error('network failed')

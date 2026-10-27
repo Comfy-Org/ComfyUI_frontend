@@ -39,6 +39,13 @@ export type OAuthConsentChallenge = Omit<
      * Not in the spec yet.
      */
     client_application_type?: 'native' | 'web'
+    /**
+     * The session user the grant will be issued to. Absent from backends
+     * that predate it; the consent screen then falls back to the client user.
+     * Not in the spec yet.
+     */
+    user_email?: string
+    user_display_name?: string
   }
 
 export function isFirstPartyClient(

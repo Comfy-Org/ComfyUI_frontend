@@ -34,6 +34,7 @@ export enum ServerFeatureFlag {
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   UNIFIED_BILLING_SETTINGS = 'unified_billing_settings',
   AUTO_TOP_UP_ENABLED = 'auto_top_up_enabled',
+  OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED = 'oauth_consent_switch_account_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience',
