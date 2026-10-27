@@ -253,6 +253,23 @@ describe('LGraphCanvas ghost placement cancellation via document keydown', () =>
     }
   })
 
+  it('cancelGhostPlacement removes an in-flight ghost node', () => {
+    canvas.startGhostPlacement(node)
+
+    canvas.cancelGhostPlacement()
+
+    expect(canvas.state.ghostNodeId).toBeNull()
+    expect(graph.getNodeById(node.id)).toBeFalsy()
+  })
+
+  it('cancelGhostPlacement is a no-op with no ghost in flight', () => {
+    const finalize = vi.spyOn(canvas, 'finalizeGhostPlacement')
+
+    canvas.cancelGhostPlacement()
+
+    expect(finalize).not.toHaveBeenCalled()
+  })
+
   it('does not clobber unrelated drag state when called with no ghost in flight', () => {
     const fakeAutoPan = { stop: vi.fn() }
     canvas.isDragging = true
