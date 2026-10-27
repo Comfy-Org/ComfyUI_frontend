@@ -286,7 +286,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
   const serverRefusesCreation = ref(false)
 
-  /** Only `default_workspace_id` says an SSO organization manages this account. */
   const workspacesManagedByOrganization = ref(false)
 
   const canCreateWorkspace = computed(
@@ -295,7 +294,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       ownedWorkspacesCount.value < MAX_OWNED_WORKSPACES
   )
 
-  /** Why creation is refused; a server refusal without an organization stays `unknown`. */
   const createWorkspaceRefusal = computed<
     'organization' | 'limit' | 'unknown' | null
   >(() => {
