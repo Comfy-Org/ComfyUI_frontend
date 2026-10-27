@@ -78,7 +78,7 @@ class TestAutogrowSink extends LGraphNode {
           {
             template: {
               input: { required: { image: ['IMAGE', {}] } },
-              names: ['image_1', 'image_2', 'image_3'],
+              names: this.slotNames(),
               min: 0
             }
           }
@@ -86,6 +86,16 @@ class TestAutogrowSink extends LGraphNode {
         { name: IMAGES_GROUP, isOptional: false }
       )
     )
+  }
+
+  protected slotNames(): string[] {
+    return ['image_1', 'image_2', 'image_3']
+  }
+}
+
+class TestWideAutogrowSink extends TestAutogrowSink {
+  protected override slotNames(): string[] {
+    return ['image_1', 'image_2', 'image_3', 'image_4']
   }
 }
 
@@ -855,7 +865,9 @@ describe('attachDocOpMinter', () => {
         const sources = [new TestSource(), new TestSource(), new TestSource()]
         const sink = new TestAutogrowSink()
         withGraphIntentSource('load', () => {
-          for (const source of sources) graph.add(source)
+          graph.add(sources[0])
+          graph.add(sources[1])
+          graph.add(sources[2])
           graph.add(sink)
           sources[0].connect(0, sink, 0)
         })
@@ -961,7 +973,9 @@ describe('attachDocOpMinter', () => {
         const sources = [new TestSource(), new TestSource(), new TestSource()]
         const sink = new TestAutogrowSink()
         withGraphIntentSource('load', () => {
-          for (const source of sources) graph.add(source)
+          graph.add(sources[0])
+          graph.add(sources[1])
+          graph.add(sources[2])
           graph.add(sink)
           sources[0].connect(0, sink, 0)
         })
@@ -1079,6 +1093,58 @@ describe('attachDocOpMinter', () => {
         ])
         expect(reportError).not.toHaveBeenCalled()
         doc.destroy()
+      })
+
+      it('predicts no slot until the grows a foreign append displaced echo', async () => {
+        const sources = [
+          new TestSource(),
+          new TestSource(),
+          new TestSource(),
+          new TestSource()
+        ]
+        const sink = new TestWideAutogrowSink()
+        withGraphIntentSource('load', () => {
+          graph.add(sources[0])
+          graph.add(sources[1])
+          graph.add(sources[2])
+          graph.add(sources[3])
+          graph.add(sink)
+          sources[0].connect(0, sink, 0)
+        })
+        const [first, displaced, blind, later] = [1, 2, 3, 4].map(
+          (index) => `${IMAGES_GROUP}.image_${index}`
+        )
+        const foreign = `${IMAGES_GROUP}.other`
+        let docNames = [first]
+        docInputNames = (nodeId) => (nodeId === sink.id ? docNames : null)
+        sources[1].connect(0, sink, 1)
+        await afterFlush()
+        docNames = [first, foreign]
+        sources[2].connect(0, sink, 2)
+        await afterFlush()
+        minted.length = 0
+
+        sink.disconnectInput(2)
+        await afterFlush()
+
+        expect(minted).toEqual([])
+        expect(
+          vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+        ).toEqual(['agent_crdt_link_slot_not_in_doc'])
+
+        docNames = [first, foreign, displaced, blind]
+        sources[3].connect(0, sink, 3)
+        await afterFlush()
+        minted.length = 0
+        const laterLink = sink.inputs[3].link
+
+        sink.disconnectInput(3)
+        await afterFlush()
+
+        expect(sink.inputs[3].name).toBe(later)
+        expect(minted).toEqual([
+          { op: 'disconnect', link_id: laterLink, to_node: sink.id, to_slot: 4 }
+        ])
       })
 
       describe('with two grows on one node awaiting their echo', () => {
