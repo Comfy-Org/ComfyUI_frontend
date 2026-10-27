@@ -6,6 +6,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   getSettingInfo,
@@ -214,10 +215,13 @@ export function useSettingUI(
     const planPanel = flags.unifiedBillingSettingsEnabled
       ? billingPanel
       : planCreditsPanel
-    const workspacePanels =
+    const canViewMembers = pendingServerFact(
+      'BE-24066',
       isCloud || canManageMembers.value
-        ? [planPanel, membersPanel]
-        : [planPanel]
+    )
+    const workspacePanels = canViewMembers
+      ? [planPanel, membersPanel]
+      : [planPanel]
     return shouldShowWorkspaceAllowlist.value
       ? [...workspacePanels, allowlistPanel]
       : workspacePanels
