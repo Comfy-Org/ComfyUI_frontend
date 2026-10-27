@@ -187,7 +187,7 @@ onMounted(() => {
       rel="noopener noreferrer"
     >
       {{ $t('agent.consent.readDocs') }}
-      <span class="icon-[lucide--square-arrow-out-up-right] size-4" />
+      <i class="icon-[lucide--square-arrow-out-up-right]" />
     </Button>
   </DefineDocsLink>
 
