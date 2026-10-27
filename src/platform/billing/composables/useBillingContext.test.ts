@@ -363,6 +363,7 @@ describe('useBillingContext', () => {
   it('exposes subscribe action', async () => {
     const { subscribe } = useBillingContext()
     await expect(subscribe('pro-monthly')).resolves.toEqual({
+      billing_op_id: 'op-1',
       status: 'subscribed'
     })
   })
