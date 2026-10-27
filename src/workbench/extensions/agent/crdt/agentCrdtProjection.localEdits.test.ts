@@ -451,14 +451,15 @@ describe('AgentCrdtProjection with a local widget write in flight', () => {
       serialized: graph.serialize().nodes[0].widgets_values
     })
 
+    const localWrite = setStepsOp(source, 25)
     steps.value = 25
-    projection.noteLocalWrites([setStepsOp(source, 25)])
+    projection.noteLocalWrites([localWrite])
     expect(canvasSteps()).toEqual({ live: 25, serialized: [25] })
 
     hostApplies([setStepsOp(source, 40, AGENT_ACTOR)])
     expect(canvasSteps()).toEqual({ live: 25, serialized: [25] })
 
-    hostRejects([setStepsOp(source, 25)])
+    hostRejects([localWrite])
     expect(canvasSteps()).toEqual({ live: 40, serialized: [40] })
     destroy()
   })
