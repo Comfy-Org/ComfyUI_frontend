@@ -9,6 +9,7 @@ import {
   desktopHostUser,
   desktopHostWorkspaceToken,
   isDesktopHostSessionActive,
+  isDesktopHostSignInPending,
   requestDesktopHostSignIn,
   requestDesktopHostSignOut,
   requestDesktopHostWorkspaceSwitch,
@@ -178,6 +179,32 @@ describe('desktopHostSession', () => {
       await expect(signingIn).resolves.toBe(false)
       expect(desktopHostUser.value).toBeNull()
     })
+
+    it.for([
+      { outcome: 'answers', fails: false },
+      { outcome: 'fails', fails: true }
+    ])(
+      'reports a sign-in as pending until the host $outcome',
+      async ({ fails }) => {
+        const { bridge } = fakeBridge({ status: 'signed_out' })
+        await startDesktopHostSession(bridge)
+        let settle = () => {}
+        bridge.requestSignIn.mockReturnValue(
+          new Promise<DesktopHostAuthState>((resolve, reject) => {
+            settle = () =>
+              fails ? reject(new Error('host unavailable')) : resolve(SIGNED_IN)
+          })
+        )
+        expect(isDesktopHostSignInPending()).toBe(false)
+
+        const signingIn = requestDesktopHostSignIn()
+        expect(isDesktopHostSignInPending()).toBe(true)
+
+        settle()
+        await signingIn
+        expect(isDesktopHostSignInPending()).toBe(false)
+      }
+    )
   })
 
   it.for([

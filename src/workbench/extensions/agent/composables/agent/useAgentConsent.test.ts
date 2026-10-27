@@ -48,6 +48,15 @@ vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
 
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 
+const hostSignIn = vi.hoisted(() => ({ pending: false }))
+vi.mock(
+  import('@/platform/auth/desktopHost/desktopHostSession'),
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    isDesktopHostSignInPending: () => hostSignIn.pending
+  })
+)
+
 const reportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError
@@ -1002,6 +1011,7 @@ describe('useAgentConsent', () => {
     beforeEach(() => {
       sessionStorage.clear()
       localStorage.clear()
+      hostSignIn.pending = false
       vi.mocked(useAuthDialogs().showSignInDialog).mockReset()
       telemetry.trackAgentConsentResolved.mockReset()
       reportError.mockReset()
@@ -1063,21 +1073,48 @@ describe('useAgentConsent', () => {
       }
     )
 
-    it('keeps the held draft when the sign-in dialog is closed, since a browser sign-in may still finish and reload', async () => {
-      signedOut()
-      holdDraft('make it blue')
-      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
-      const accept = vi.spyOn(useAgentConsentStore(), 'accept')
+    it.for([
+      { browserSignIn: 'still pending', pending: true, kept: true },
+      { browserSignIn: 'not started', pending: false, kept: false }
+    ])(
+      'when the sign-in dialog is closed with a browser sign-in $browserSignIn, keeps the held draft only if a reload can still follow',
+      async ({ pending, kept }) => {
+        signedOut()
+        holdDraft('make it blue')
+        hostSignIn.pending = pending
+        vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(
+          false
+        )
+        const accept = vi.spyOn(useAgentConsentStore(), 'accept')
 
-      const request = useAgentConsent().withConsent('first_message', vi.fn())
-      await startConsent()
-      await request
+        const request = useAgentConsent().withConsent('first_message', vi.fn())
+        await startConsent()
+        await request
 
-      expect(accept).not.toHaveBeenCalled()
-      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
-        draft: 'make it blue'
-      })
-    })
+        expect(accept).not.toHaveBeenCalled()
+        expect(sessionStorage.getItem(PENDING_KEY) !== null).toBe(kept)
+      }
+    )
+
+    it.for(['reject', 'dismiss'] as const)(
+      'drops a kept accept when a later card is answered with %s',
+      async (answer) => {
+        signedIn()
+        sessionStorage.setItem(
+          PENDING_KEY,
+          JSON.stringify({ draft: 'make it blue', savedAt: Date.now() })
+        )
+
+        const request = useAgentConsent().withConsent('first_message', vi.fn())
+        const dialog = await waitForConsentDialog()
+        await renderConsentCard(dialog)
+        if (answer === 'reject') (dialog.contentProps.onReject as () => void)()
+        else (dialog.dialogComponentProps.onClose as () => void)()
+        await request
+
+        expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+      }
+    )
 
     it('saves consent once after the reload and then restores the draft', async () => {
       signedIn()

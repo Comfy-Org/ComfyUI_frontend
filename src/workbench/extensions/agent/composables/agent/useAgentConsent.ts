@@ -13,6 +13,7 @@ import type {
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { isDesktopHostSignInPending } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import {
@@ -102,6 +103,7 @@ export function useAgentConsent() {
       const closeWith = (result: boolean): void => {
         if (settled) return
         settled = true
+        clearPendingSignInAccept()
         stopScopeWatch()
         dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY })
         resolve(result)
@@ -200,8 +202,10 @@ export function useAgentConsent() {
             if (settled) return
             settled = true
             stopScopeWatch()
-            if (shown) reportOutcome('dismissed')
-            else reportRequestExit('card_closed_before_mount', trigger)
+            if (shown) {
+              clearPendingSignInAccept()
+              reportOutcome('dismissed')
+            } else reportRequestExit('card_closed_before_mount', trigger)
             resolve(false)
           }
         }
@@ -264,7 +268,10 @@ export function useAgentConsent() {
         })
         return null
       }
-      if (!signedIn) return null
+      if (!signedIn) {
+        if (!isDesktopHostSignInPending()) clearPendingSignInAccept()
+        return null
+      }
       clearPendingSignInAccept()
       return await saveAcceptanceAfterSignIn()
     } finally {
