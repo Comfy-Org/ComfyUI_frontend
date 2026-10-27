@@ -645,8 +645,8 @@ onMounted(async () => {
     })
     bootstrapOutcome = 'completed'
   } finally {
-    workflowStore.markTabsRestored()
     if (!disposed) {
+      workflowStore.markTabsRestored()
       finishStartup(bootstrapOutcome)
     }
   }
