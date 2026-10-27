@@ -48,17 +48,6 @@ vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
 
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 
-const hostSignIn = vi.hoisted(() => ({
-  pending: undefined as Promise<boolean> | undefined
-}))
-vi.mock(
-  import('@/platform/auth/desktopHost/desktopHostSession'),
-  async (importOriginal) => ({
-    ...(await importOriginal()),
-    pendingDesktopHostSignIn: () => hostSignIn.pending
-  })
-)
-
 const reportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError
@@ -1013,7 +1002,6 @@ describe('useAgentConsent', () => {
     beforeEach(() => {
       sessionStorage.clear()
       localStorage.clear()
-      hostSignIn.pending = undefined
       vi.mocked(useAuthDialogs().showSignInDialog).mockReset()
       telemetry.trackAgentConsentResolved.mockReset()
       reportError.mockReset()
@@ -1075,54 +1063,21 @@ describe('useAgentConsent', () => {
       }
     )
 
-    it.for([
-      {
-        browserSignIn: 'not started',
-        pending: () => undefined,
-        kept: false,
-        saved: false
-      },
-      {
-        browserSignIn: 'still waiting on the browser',
-        pending: () => new Promise<boolean>(() => {}),
-        kept: true,
-        saved: false
-      },
-      {
-        browserSignIn: 'later cancelled in the browser',
-        pending: () => Promise.resolve(false),
-        kept: false,
-        saved: false
-      },
-      {
-        browserSignIn: 'later finished without a reload',
-        pending: () => Promise.resolve(true),
-        kept: false,
-        saved: true
-      }
-    ])(
-      'when the sign-in dialog is closed with a browser sign-in $browserSignIn',
-      async ({ pending, kept, saved }) => {
-        signedOut()
-        holdDraft('make it blue')
-        hostSignIn.pending = pending()
-        vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(
-          false
-        )
-        scopeResolves()
-        const accept = vi
-          .spyOn(useAgentConsentStore(), 'accept')
-          .mockResolvedValue(true)
+    it('keeps the held draft when the sign-in dialog is closed, since a browser sign-in may still finish and reload', async () => {
+      signedOut()
+      holdDraft('make it blue')
+      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
+      const accept = vi.spyOn(useAgentConsentStore(), 'accept')
 
-        const request = useAgentConsent().withConsent('first_message', vi.fn())
-        await startConsent()
-        await request
-        await setImmediate()
+      const request = useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await request
 
-        expect(sessionStorage.getItem(PENDING_KEY) !== null).toBe(kept)
-        expect(accept).toHaveBeenCalledTimes(Number(saved))
-      }
-    )
+      expect(accept).not.toHaveBeenCalled()
+      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
+        draft: 'make it blue'
+      })
+    })
 
     it.for(['reject', 'dismiss'] as const)(
       'drops a kept accept when a later card is answered with %s',

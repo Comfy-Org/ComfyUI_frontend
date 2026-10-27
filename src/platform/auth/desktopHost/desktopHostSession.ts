@@ -22,7 +22,6 @@ let bridge: DesktopHostAuthBridge | undefined
 let unsubscribe: (() => void) | undefined
 /** Bumped on every session change, so a reply that raced one is dropped. */
 let revision = 0
-let pendingSignIn: Promise<boolean> | undefined
 
 function toSession(state: DesktopHostAuthState): DesktopHostSession {
   if (state.status === 'disabled') return { status: 'inactive' }
@@ -104,22 +103,8 @@ async function fetchToken(
   return revision === before ? (token ?? undefined) : undefined
 }
 
-/** The browser sign-in still in flight, if one is. */
-export function pendingDesktopHostSignIn(): Promise<boolean> | undefined {
-  return pendingSignIn
-}
-
 /** Runs Desktop's browser sign-in. Resolves true when it ends signed in. */
-export function requestDesktopHostSignIn(): Promise<boolean> {
-  const signIn = runSignIn()
-  pendingSignIn = signIn
-  void signIn.finally(() => {
-    if (pendingSignIn === signIn) pendingSignIn = undefined
-  })
-  return signIn
-}
-
-async function runSignIn(): Promise<boolean> {
+export async function requestDesktopHostSignIn(): Promise<boolean> {
   const current = bridge
   if (!current) return false
   const before = revision
