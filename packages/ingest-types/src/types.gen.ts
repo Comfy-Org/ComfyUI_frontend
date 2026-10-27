@@ -12081,6 +12081,10 @@ export type CreateTopupErrors = {
    */
   403: ForbiddenError
   /**
+   * `TOPUP_RATE_LIMITED`: the workspace made too many top-ups in a short time; no billing operation was created. A later purchase is admitted again.
+   */
+  429: ErrorResponse
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -12119,6 +12123,8 @@ export type CreateTopupCheckoutErrors = {
    * registered on the workspace-owner group, so a workspace member
    * is rejected by middleware before the handler runs. Email
    * verification is enforced on the same group.
+   * `TOPUP_PURCHASES_PAUSED` means credit purchases are paused; no
+   * session was created.
    *
    */
   403: ErrorResponse
@@ -12130,6 +12136,10 @@ export type CreateTopupCheckoutErrors = {
    * Checkout cannot proceed. `TOPUP_CHECKOUT_BUSY` means retry shortly; `TOPUP_CHECKOUT_NOT_PAYABLE` requires a new purchase key.
    */
   409: ErrorResponse
+  /**
+   * `TOPUP_RATE_LIMITED`: the workspace made too many top-ups in a short time; no session was created. A later purchase is admitted again.
+   */
+  429: ErrorResponse
   /**
    * Internal server error
    */
@@ -12287,6 +12297,10 @@ export type CreateInteractiveTopupErrors = {
    * Request body exceeds the 16 KiB resource limit.
    */
   413: unknown
+  /**
+   * `TOPUP_RATE_LIMITED`: the workspace made too many top-ups in a short time; no purchase was started. A later purchase is admitted again.
+   */
+  429: ErrorResponse
   /**
    * Internal server error
    */
