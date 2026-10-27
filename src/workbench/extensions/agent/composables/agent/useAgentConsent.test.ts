@@ -1114,19 +1114,23 @@ describe('accepting while signed out across a page reload', () => {
     },
     {
       composer: 'a reference',
-      fill: () =>
-        useAgentComposerStore().restorePrompt({
+      fill: () => {
+        const composer = useAgentComposerStore()
+        composer.setSkillScope('scope')
+        composer.restorePrompt({
           text: '',
           references: [
             {
               kind: 'skill',
               name: 'portrait',
               description: '',
-              scope: '',
+              scope: 'scope',
               textOffset: 0
             }
           ]
         })
+        expect(composer.prompt.references).toHaveLength(1)
+      }
     }
   ])('does not overwrite $composer already in the composer', async ({ fill }) => {
     storePending('make it blue')
