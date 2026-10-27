@@ -1238,7 +1238,9 @@ describe('useAgentConsent', () => {
         async (_url: string, init: RequestInit) => {
           if (init.method !== 'POST') return settingResponse(false)
           posts += 1
-          return posts === 1 ? new Response(null, { status: 500 }) : savedResponse()
+          return posts === 1
+            ? new Response(null, { status: 500 })
+            : savedResponse()
         }
       )
 
