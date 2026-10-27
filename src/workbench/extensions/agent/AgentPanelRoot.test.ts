@@ -5696,7 +5696,7 @@ describe('AgentPanelRoot node definition refresh', () => {
     vi.useFakeTimers()
   })
 
-  it('refreshes node definitions when the agent restarts ComfyUI while the panel is open', async () => {
+  it('refreshes node definitions when ComfyUI reconnects after the agent restarts it while the panel is open', async () => {
     const refreshNodeDefinitions = vi.fn()
     useCommandStore().registerCommand({
       id: 'Comfy.RefreshNodeDefinitions',
@@ -5705,6 +5705,10 @@ describe('AgentPanelRoot node definition refresh', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     ws.emit('agent_tool_call', restartSucceeded)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(refreshNodeDefinitions).not.toHaveBeenCalled()
+
+    ws.emit('reconnected')
     await vi.advanceTimersByTimeAsync(0)
 
     expect(refreshNodeDefinitions).toHaveBeenCalledOnce()
@@ -5720,6 +5724,7 @@ describe('AgentPanelRoot node definition refresh', () => {
 
     unmount()
     ws.emit('agent_tool_call', restartSucceeded)
+    ws.emit('reconnected')
     await vi.advanceTimersByTimeAsync(0)
 
     expect(refreshNodeDefinitions).not.toHaveBeenCalled()

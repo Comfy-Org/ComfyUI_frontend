@@ -9,11 +9,15 @@ draft-to-canvas seam).
 ## ComfyUI restart
 
 `stores/agent/agentNodeDefinitionRefreshStore.ts`: a successful `restart_comfyui`
-tool call refreshes node definitions and then reloads the open workflow; the
-refresh shows its own "Update requested" and "Node definitions updated" toasts.
-A failed refresh runs again only when ComfyUI's `/ws` reconnects later; until
-then definitions stay stale, and **Refresh Node Definitions** recovers them. A
-restart made while the panel is closed is not observed.
+tool call means ComfyUI restarts once the turn ends. Every `/ws` reconnect within
+10 minutes of that call, before or after it, refreshes node definitions and then
+reloads the open workflow. An unrelated reconnect in that window refreshes too
+and leaves the restart's own reconnect to refresh again. The refresh shows its
+own "Update requested" and "Node definitions updated" toasts. A failed refresh
+runs again on the next reconnect in the window. A reconnect outside the window
+does nothing, so if none comes within it the store does nothing, and **Refresh
+Node Definitions** recovers definitions. A restart made while the panel is
+closed is not observed.
 
 ## Activation and consent
 
