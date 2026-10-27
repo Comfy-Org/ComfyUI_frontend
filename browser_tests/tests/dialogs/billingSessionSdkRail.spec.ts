@@ -227,7 +227,7 @@ async function recordTotalCreditStates(page: Page) {
       }
       const tile = label?.parentElement
       if (!tile) return
-      const state = tile.querySelector('[data-pc-name="skeleton"]')
+      const state = tile.querySelector('[data-slot="skeleton"]')
         ? 'loading'
         : tile.textContent
             .replace('Total credits', '')
@@ -276,7 +276,7 @@ async function signInWithEmail(page: Page) {
   )
   await page.getByRole('button', { name: 'Use email instead' }).click()
   await page.getByLabel('Email').fill(CLOUD_SELF_EMAIL)
-  await page.getByLabel('Password').fill('password')
+  await page.getByLabel('Password', { exact: true }).fill('password')
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page.getByTestId(TestIds.user.currentUserButton)).toBeVisible()
 }

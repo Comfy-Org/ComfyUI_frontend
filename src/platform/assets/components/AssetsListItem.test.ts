@@ -41,16 +41,16 @@ describe('AssetsListItem', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- no ARIA role for <video> in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- no ARIA role for <video> in happy-dom
     const video = container.querySelector('video')
     expect(video).toBeInTheDocument()
     expect(video).toHaveAttribute('src', 'https://example.com/preview.mp4')
     expect(video).toHaveAttribute('preload', 'metadata')
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for play overlay styling
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for play overlay styling
     expect(container.querySelector('.bg-black\\/15')).toBeInTheDocument()
     expect(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for play icon styling
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for play icon styling
       container.querySelector('.icon-\\[lucide--play\\]')
     ).toBeInTheDocument()
   })
@@ -64,9 +64,9 @@ describe('AssetsListItem', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- no ARIA role for <video> in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- no ARIA role for <video> in happy-dom
     const getVideo = () => container.querySelector('video')
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for the failed-state icon
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for the failed-state icon
     const getFailedIcon = () => container.querySelector(FAILED_ICON_SELECTOR)
 
     const video = getVideo()!
@@ -96,16 +96,16 @@ describe('AssetsListItem', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- no ARIA role for <video> in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- no ARIA role for <video> in happy-dom
     const getVideo = () => container.querySelector('video')
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for the failed-state icon
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for the failed-state icon
     const getFailedIcon = () => container.querySelector(FAILED_ICON_SELECTOR)
 
     await exhaustVideoRetries(getVideo)
 
     expect(getVideo()).not.toBeInTheDocument()
     expect(getFailedIcon()).toBeInTheDocument()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for play overlay styling
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for play overlay styling
     expect(container.querySelector('.bg-black\\/15')).not.toBeInTheDocument()
 
     await user.click(getFailedIcon()!)
@@ -126,7 +126,7 @@ describe('AssetsListItem', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- no ARIA role for <video> in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- no ARIA role for <video> in happy-dom
     const getVideo = () => container.querySelector('video')
     const item = screen.getByRole('button', { name: 'clip.mp4 video' })
 
@@ -149,10 +149,10 @@ describe('AssetsListItem', () => {
 
     expect(screen.getByRole('img')).toBeInTheDocument()
     expect(screen.getByRole('img')).toHaveAttribute('draggable', 'false')
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- no ARIA role for <video> in happy-dom
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- no ARIA role for <video> in happy-dom
     expect(container.querySelector('video')).not.toBeInTheDocument()
     expect(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for play icon styling
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for play icon styling
       container.querySelector('.icon-\\[lucide--play\\]')
     ).not.toBeInTheDocument()
   })
@@ -181,7 +181,7 @@ describe('AssetsListItem', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- aria-hidden icon, no semantic query available
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- aria-hidden icon, no semantic query available
     const icon = container.querySelector('i')!
     await user.click(icon)
 

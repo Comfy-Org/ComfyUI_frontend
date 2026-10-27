@@ -19,6 +19,23 @@ describe('readable agent message', () => {
     )
   })
 
+  /**
+   * A rehydrated library asset is named by its storage ref, which can be a
+   * bare content hash with no extension to classify it by. The grid labels it
+   * from the kind the server resolved, so this has to read the same kind or a
+   * refreshed turn copies `File` for a tile rendering a picture.
+   */
+  it('labels an attachment by the resolved kind when its name has no extension', () => {
+    const bareDigest = 'a'.repeat(64)
+
+    expect(
+      agentMessageText({
+        text: 'upscale this',
+        attachments: [{ name: bareDigest, ref: bareDigest, kind: 'image' }]
+      })
+    ).toBe(`upscale this\n@[Image: ${bareDigest}]`)
+  })
+
   it('does not duplicate context already included inline', () => {
     const text = 'Use @[Node: KSampler #12] with @[Image: reference.png].'
     expect(

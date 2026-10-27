@@ -27,17 +27,16 @@ describe('extensionStore', () => {
 
     it('warns when registering a disabled extension but still installs it', () => {
       const store = useExtensionStore()
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       try {
         store.loadDisabledExtensionNames(['disabled.ext'])
         store.registerExtension({ name: 'disabled.ext' })
-        expect(warnSpy).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledWith(
           'Extension disabled.ext is disabled.'
         )
         expect(store.isExtensionInstalled('disabled.ext')).toBe(true)
         expect(store.isExtensionEnabled('disabled.ext')).toBe(false)
       } finally {
-        warnSpy.mockRestore()
+        vi.mocked(console.warn).mockRestore()
       }
     })
   })
@@ -46,6 +45,26 @@ describe('extensionStore', () => {
     it('returns false for uninstalled extension', () => {
       const store = useExtensionStore()
       expect(store.isExtensionInstalled('missing')).toBe(false)
+    })
+  })
+
+  describe('agent provenance', () => {
+    it('attributes explicit provenance or an agent.<pack>. prefix, and nothing else', () => {
+      const store = useExtensionStore()
+      store.registerExtension({
+        name: 'custom.toolbar',
+        provenance: { createdBy: 'comfy-agent' }
+      })
+      store.registerExtension({ name: 'agent.cushions.toolbar' })
+      store.registerExtension({ name: 'agentic.toolbar' })
+      store.registerExtension({ name: 'agent.tools' })
+      store.registerExtension({ name: 'agent..toolbar' })
+      store.registerExtension({ name: 'custom.manual' })
+
+      expect(store.agentExtensions.map((extension) => extension.name)).toEqual([
+        'custom.toolbar',
+        'agent.cushions.toolbar'
+      ])
     })
   })
 

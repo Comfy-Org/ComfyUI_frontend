@@ -325,7 +325,6 @@ function assertLinksRealigned(graph: LGraph, targetNodeId: NodeId) {
 
 describe('normalizeConfiguredTopology', () => {
   it('keeps the competing link referenced by the target input', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const data = savedWorkflow()
     const target = data.nodes?.find((node) => node.id === 2)
     if (!target?.inputs || !data.links) throw new Error('Invalid fixture')
@@ -624,12 +623,10 @@ describe('LGraph.configure realignment with an unmatched input name (#15581)', (
   })
 
   it('reports no error while realigning around an unmatched name', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     const graph = new LGraph()
     graph.configure(unmatchedInputNameWorkflow('test/DroppedInputTarget'))
 
-    expect(error).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 })
 
@@ -718,7 +715,6 @@ describe('realignInputLinkSlots', () => {
   })
 
   it('realigns remaining links when one move is rejected', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
     const source = new LGraphNode('Source')
     source.addOutput('out', 'number')
@@ -751,7 +747,6 @@ describe('realignInputLinkSlots', () => {
   })
 
   it('replays a successful retry after a rejected move', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
     const source = new LGraphNode('Source')
     source.addOutput('out', 'number')

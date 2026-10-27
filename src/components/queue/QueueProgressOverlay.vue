@@ -1,11 +1,8 @@
 <template>
-  <div
-    v-show="isVisible"
-    :class="['flex', 'justify-end', 'w-full', 'pointer-events-none']"
-  >
+  <div v-show="isVisible" class="pointer-events-none flex w-full justify-end">
     <div
       data-testid="queue-progress-overlay"
-      class="pointer-events-auto flex max-h-[60vh] w-[350px] min-w-[310px] flex-col overflow-hidden rounded-lg border font-inter transition-colors duration-200 ease-in-out"
+      class="pointer-events-auto flex max-h-[60vh] w-[350px] min-w-[310px] flex-col overflow-hidden rounded-lg border transition-colors duration-200 ease-in-out"
       :class="containerClass"
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
@@ -136,7 +133,7 @@ const isVisible = computed(() => overlayState.value !== 'hidden')
 
 const containerClass = computed(() =>
   showBackground.value
-    ? 'border-interface-stroke bg-interface-panel-surface shadow-interface'
+    ? 'border-border bg-background shadow-md'
     : 'border-transparent bg-transparent shadow-none'
 )
 

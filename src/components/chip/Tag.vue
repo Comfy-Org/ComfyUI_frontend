@@ -3,9 +3,9 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import TagRemoveButton from './TagRemoveButton.vue'
-import { tagVariants } from './tag.variants'
-import type { TagVariants } from './tag.variants'
+import TagRemoveButton from '@comfyorg/design-system/chip/TagRemoveButton'
+import { tagVariants } from '@comfyorg/design-system/tag.variants'
+import type { TagVariants } from '@comfyorg/design-system/tag.variants'
 
 const {
   label,
@@ -62,7 +62,7 @@ function handleKeyup(event: KeyboardEvent): void {
     <slot />
     <TagRemoveButton
       v-if="removable"
-      :label="removeLabel ?? $t('g.remove')"
+      :aria-label="removeLabel ?? $t('g.remove')"
       :tooltip="removeTooltip"
       @click.stop="emit('remove', $event)"
     />

@@ -91,7 +91,6 @@ describe('useAssetsQuery loadMore transient failure retry', () => {
   it.for(transientFailures)(
     'retains rows and retries the same cursor after $name',
     async ({ fail, reason }) => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       const list = await createList(`retry-${reason}`, ['newest'], {
         hasMore: true,
         nextCursor: 'page-2'
@@ -103,7 +102,7 @@ describe('useAssetsQuery loadMore transient failure retry', () => {
       await list.loadMore()
       await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
 
-      expect(error).toHaveBeenCalledWith(reason, expect.anything())
+      expect(console.error).toHaveBeenCalledWith(reason, expect.anything())
       expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])
       expect(toValue(list.hasMore)).toBe(false)
       await vi.advanceTimersByTimeAsync(2000)
@@ -147,7 +146,6 @@ describe('useAssetsQuery malformed response', () => {
   it.for(malformedResponses)(
     'terminates pagination after $name',
     async ({ response, reason }) => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       const list = await createList(`malformed-${reason}`, ['newest'], {
         hasMore: true,
         nextCursor: 'page-2'
@@ -156,7 +154,7 @@ describe('useAssetsQuery malformed response', () => {
 
       await expect(list.loadMore()).resolves.toBe(false)
 
-      expect(error).toHaveBeenCalledWith(reason, expect.anything())
+      expect(console.error).toHaveBeenCalledWith(reason, expect.anything())
       expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])
       expect(toValue(list.hasMore)).toBe(false)
 

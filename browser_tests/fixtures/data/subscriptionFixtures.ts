@@ -1,6 +1,6 @@
 import type { operations } from '@comfyorg/registry-types'
 
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 export type BalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']

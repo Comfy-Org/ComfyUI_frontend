@@ -4,9 +4,15 @@ import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { AgentConsentNotOfferedReason } from '@/platform/telemetry/types'
+import type {
+  AgentConsentNotOfferedReason,
+  AgentConsentOfferExit,
+  AgentConsentOfferStage
+} from '@/platform/telemetry/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import {
@@ -15,20 +21,82 @@ import {
 } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import {
+  notifyRestoreMintersAfterGraphConfigure,
+  notifyRestoreMintersBeforeGraphLoad,
+  notifyRestoreMintersGraphLoadError
+} from '@/workbench/extensions/agent/crdt/restoreOpMinter'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/services/extensionService'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-import { isLGraphNode } from '@/utils/litegraphUtil'
-import {
-  notifyMintPortsAfterGraphConfigure,
-  notifyMintPortsBeforeGraphLoad
-} from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
+const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
+const AUTOMATIC_ACTIVATION_VISITS = 2
+
+function claimAutomaticActivationVisit(): boolean {
+  try {
+    const storedVisits = Number(
+      localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY) ?? 0
+    )
+    const priorVisits =
+      Number.isSafeInteger(storedVisits) && storedVisits >= 0 ? storedVisits : 0
+    if (priorVisits >= AUTOMATIC_ACTIVATION_VISITS) return false
+
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, String(priorVisits + 1))
+    return true
+  } catch {
+    return false
+  }
+}
+
+function automaticActivationVisitsComplete(): boolean {
+  try {
+    const storedVisits = Number(
+      localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY) ?? 0
+    )
+    return Number.isSafeInteger(storedVisits)
+      ? storedVisits >= AUTOMATIC_ACTIVATION_VISITS
+      : false
+  } catch {
+    // Storage failures must not turn into an unbounded automatic opener.
+    return true
+  }
+}
+
+function automaticConsentOfferScope(
+  {
+    activationOpenedPanel,
+    panelOpen,
+    userId,
+    workspaceId,
+    workspaceSwitching
+  }: {
+    activationOpenedPanel: boolean
+    panelOpen: boolean
+    userId: string | undefined
+    workspaceId: string | null
+    workspaceSwitching: boolean
+  },
+  onMissingScope: () => void,
+  onActivatedPanel: () => void
+): [userId: string, workspaceId: string] | null {
+  if (!userId || !workspaceId || workspaceSwitching) {
+    onMissingScope()
+    return null
+  }
+  if (activationOpenedPanel && panelOpen) {
+    onActivatedPanel()
+    return null
+  }
+  return [userId, workspaceId]
+}
 
 function writeAutoShown(key: string, shown: boolean): boolean {
   try {
@@ -60,115 +128,45 @@ function prepareAutoShow(
 
 let registered = false
 
-/**
- * Owns the local-dirty-tracking suppression window(s) graph loads open in
- * `beforeLoadGraph`. Two loads can genuinely overlap - e.g. two rapid tab
- * switches, each an async `loadGraphData` call - and each one's
- * `beforeLoadGraph` opens the same underlying suppression before either
- * finishes. A single boolean flag cannot tell those apart: whichever load
- * finishes first (success or error) would close the flag while the other is
- * still mid-`configure`, and that other load's own structural writes would
- * then get misread as a human edit and wrongly marked dirty.
- *
- * A depth counter fixes that: every `beforeLoadGraph` increments it and
- * opens the store's suppression only on the 0 -> 1 transition; every
- * matching completion (`afterConfigureGraph` or `onGraphLoadError`, in
- * either order) decrements it and closes the suppression only once the
- * count is back at 0, i.e. once every overlapping load that opened it has
- * also finished. `app.ts`'s `loadGraphData` mirrors this: a single try
- * wraps its entire body from right after `beforeLoadGraph` through
- * `rootGraph.configure` succeeding (asset-scan resets, `clean()`, workflow
- * cloning, `validateWorkflow`, reroute-migration inspection, subgraph
- * loading, a `beforeConfigureGraph` extension hook throwing, or a
- * node-replacement load failure), so every one of those paths also routes
- * through `onGraphLoadError` and this counter's decrement is never skipped.
- * A leaked-open suppression would misread every later context-less user
- * edit as structural and never mark it dirty again.
- */
-let widgetDirtySuppressionDepth = 0
-
-function openWidgetDirtySuppression(): void {
-  widgetDirtySuppressionDepth++
-  if (widgetDirtySuppressionDepth > 1) return
-  useWidgetValueStore().beginLocalDirtyTrackingSuppression()
-}
-
-function closeWidgetDirtySuppression(): void {
-  if (widgetDirtySuppressionDepth === 0) return
-  widgetDirtySuppressionDepth--
-  if (widgetDirtySuppressionDepth > 0) return
-  useWidgetValueStore().endLocalDirtyTrackingSuppression()
-}
-
 export function registerAgentPanelExtension(): void {
   if (registered) return
-  registered = true
 
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
-      notifyMintPortsBeforeGraphLoad()
-      openWidgetDirtySuppression()
-      const agentPanelStore = useAgentPanelStore()
-      if (!agentPanelStore.isVisible) return
-
-      const nodeSelectionStore = useAgentNodeSelectionStore()
-      nodeSelectionStore.beginWorkflowLoad()
+      notifyRestoreMintersBeforeGraphLoad()
+      useCanvasStore().stopNodePicking()
     },
     afterLoadGraph(app) {
-      const agentPanelStore = useAgentPanelStore()
-      const nodeSelectionStore = useAgentNodeSelectionStore()
-      if (!nodeSelectionStore.isLoadingWorkflow) return
-      if (!agentPanelStore.isVisible) {
-        nodeSelectionStore.finishWorkflowLoad()
+      const composer = useAgentComposerStore()
+      if (composer.nodeScope !== useWorkflowStore().activeWorkflow?.instanceId)
         return
-      }
-
-      try {
-        const canvas = app.canvas
-        const workflowStore = useWorkflowStore()
-        const workflowPath = workflowStore.activeWorkflow?.path
-        const nodes = nodeSelectionStore
-          .nodeIds(workflowPath)
-          .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
-          .filter(isLGraphNode)
-        if (nodes.length === 0) {
-          // Nothing was saved for this workflow (e.g. a brand-new, never-saved
-          // tab). Disarm the restore guard directly instead of arming it with
-          // an empty selection - otherwise it stays armed until the *next*
-          // unrelated selection change (such as manually adding a node), which
-          // then gets wrongly adopted as "the restored selection".
-          nodeSelectionStore.finishWorkflowLoad()
-          return
-        }
-        nodeSelectionStore.restoreNodeIds(
-          nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
-        )
-        canvas.selectItems(nodes)
-      } catch (error) {
-        nodeSelectionStore.finishWorkflowLoad()
-        throw error
-      }
+      composer.setNodes(
+        composer.nodes.flatMap((reference) => {
+          const node = getNodeByLocatorId(
+            app.rootGraph,
+            selectedNodeKey(reference)
+          )
+          return node ? [{ ...reference, title: node.title }] : []
+        })
+      )
     },
     onGraphLoadError() {
-      closeWidgetDirtySuppression()
-      const nodeSelectionStore = useAgentNodeSelectionStore()
-      if (nodeSelectionStore.isLoadingWorkflow) {
-        nodeSelectionStore.finishWorkflowLoad()
-      }
+      notifyRestoreMintersGraphLoadError()
     },
     afterConfigureGraph() {
-      notifyMintPortsAfterGraphConfigure()
-      closeWidgetDirtySuppression()
+      notifyRestoreMintersAfterGraphConfigure()
     },
     setup() {
       const agentPanelStore = useAgentPanelStore()
       const consentStore = useAgentConsentStore()
+      const introductionStore = useAgentConsentIntroductionStore()
       const { enabled } = storeToRefs(agentPanelStore)
       const workspaceStore = useTeamWorkspaceStore()
-      const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
+      const { resolvedUserInfo, isLoggedIn, isAuthInitialized } =
+        useCurrentUser()
       const { withConsent } = useAgentConsent()
-      const { firstRunTookScreen, whenStartupDecided } = useFirstRunEntry()
+      const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
       registerWorkflowTabActivityTracker(enabled)
@@ -187,9 +185,9 @@ export function registerAgentPanelExtension(): void {
           : dialogStore.dialogStack.length > 0
             ? 'dialog_open'
             : null
-      const screenIsClear = computed(() => screenBusyReason() === null)
       const screenHolder = (): AgentConsentNotOfferedReason | null =>
-        firstRunTookScreen.value ? 'first_run_screen' : screenBusyReason()
+        firstRunHoldsScreen.value ? 'first_run_screen' : screenBusyReason()
+      const screenIsClear = computed(() => screenHolder() === null)
 
       const reportedWithheld = new Set<string>()
       const withholdOffer = (
@@ -215,164 +213,355 @@ export function registerAgentPanelExtension(): void {
         workspaceId?: string
       ): void => {
         withholdOffer(reason, userId, workspaceId)
-        if (reason !== 'first_run_screen') offerHeld.value = true
+        offerHeld.value = true
       }
 
-      const consentScope = (): string | null => {
-        const userId = resolvedUserInfo.value?.id
-        const workspaceId = workspaceStore.activeWorkspaceId
-        return userId && workspaceId ? `${userId}.${workspaceId}` : null
+      const dropHold = (): void => {
+        offerHeld.value = false
       }
+
+      const reportedExits = new Set<string>()
+      const reportOfferExit = (
+        exit: AgentConsentOfferExit,
+        stage: AgentConsentOfferStage
+      ): void => {
+        const retryArmed = offerHeld.value
+        const key = `${stage}:${exit}:${retryArmed}`
+        if (reportedExits.has(key)) return
+        reportedExits.add(key)
+        useTelemetry()?.trackAgentConsentOfferExited({
+          exit,
+          stage,
+          retry_armed: retryArmed
+        })
+      }
+
       const consentCardSeenIn = new Set<string>()
+      let lockedStartupOpened = false
+      let activationOpenedPanel = false
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
         () => {
-          const scope = consentScope()
+          const { scope } = introductionStore
           if (scope) consentCardSeenIn.add(scope)
         }
       )
 
+      function introductionOwed(): boolean {
+        const { scope } = introductionStore
+        return scope !== null && !introductionStore.hasResponded(scope)
+      }
       const offerEligible = (): boolean =>
         agentPanelStore.enabled &&
-        isLoggedIn.value &&
+        (agentPanelStore.onboarding.introduceBeforeSignIn
+          ? isAuthInitialized.value
+          : isLoggedIn.value) &&
+        !introductionStore.isContinuingSignIn &&
+        (agentPanelStore.onboarding.offerMemory !== 'answered' ||
+          introductionOwed()) &&
         !consentStore.isChecking &&
         !consentStore.accepted
+      const offerIneligibility = (): AgentConsentOfferExit | null =>
+        !agentPanelStore.onboarding.introduceBeforeSignIn && !isLoggedIn.value
+          ? 'signed_out'
+          : consentStore.isChecking
+            ? 'consent_unresolved'
+            : consentStore.accepted
+              ? 'consent_already_accepted'
+              : null
+
+      const missingScopeExit = (
+        userId: string | undefined
+      ): AgentConsentOfferExit =>
+        workspaceStore.isSwitching
+          ? 'workspace_switching'
+          : !userId
+            ? 'account_unresolved'
+            : 'workspace_unresolved'
+
+      function prepareConsentCard(
+        candidateUserId: string | undefined,
+        offeredWorkspaceId: string | null
+      ): boolean {
+        const held = screenHolder()
+        if (held) {
+          holdOffer(held, candidateUserId, offeredWorkspaceId ?? undefined)
+          return false
+        }
+        if (agentPanelStore.onboarding.startup !== 'lockedUntilConsent')
+          return true
+        if (!agentPanelStore.enabled) return false
+        if (!agentPanelStore.isOpen) agentPanelStore.open('automatic_consent')
+        return true
+      }
+
+      function claimOneShotOffer(
+        candidateUserId: string | undefined,
+        offeredWorkspaceId: string | null
+      ): string | null {
+        const offerScope = automaticConsentOfferScope(
+          {
+            activationOpenedPanel,
+            panelOpen: agentPanelStore.isOpen,
+            userId: candidateUserId,
+            workspaceId: offeredWorkspaceId,
+            workspaceSwitching: workspaceStore.isSwitching
+          },
+          () => reportOfferExit(missingScopeExit(candidateUserId), 'offer'),
+          () => {
+            reportOfferExit('activation_opened_panel', 'offer')
+            dropHold()
+          }
+        )
+        if (!offerScope) return null
+        const [userId, workspaceId] = offerScope
+        const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
+        const autoShow = prepareAutoShow(key)
+        if (autoShow === 'ready') return key
+        if (autoShow === 'storage_unavailable') withholdOffer(autoShow)
+        else reportOfferExit('already_offered', 'offer')
+        dropHold()
+        return null
+      }
 
       let autoShowInFlight = false
+
+      function finishAutomaticOffer(offeredIdentity: string | null): void {
+        autoShowInFlight = false
+        if (consentStore.identity !== offeredIdentity) loadConsentIfEligible()
+        else if (offerHeld.value && screenIsClear.value) loadConsentIfEligible()
+      }
+
       const offerConsentUnprompted = (): void => {
-        if (autoShowInFlight) return
-        if (!offerEligible()) return
-        const scope = consentScope()
-        if (scope && consentCardSeenIn.has(scope)) return
-        // Must precede prepareAutoShow, which burns the one-shot key.
+        if (autoShowInFlight) {
+          reportOfferExit('offer_in_flight', 'offer')
+          return
+        }
+        if (!offerEligible()) {
+          const ineligible = offerIneligibility()
+          if (ineligible) reportOfferExit(ineligible, 'offer')
+          if (consentStore.accepted) dropHold()
+          return
+        }
+        const { scope } = introductionStore
+        if (scope && consentCardSeenIn.has(scope)) {
+          reportOfferExit('card_already_seen', 'offer')
+          dropHold()
+          return
+        }
         const held = screenHolder()
         if (held) {
           holdOffer(held)
           return
         }
 
-        const userId = resolvedUserInfo.value?.id
-        const workspaceId = workspaceStore.activeWorkspaceId
-        if (!userId || !workspaceId || workspaceStore.isSwitching) return
-        const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
-        const autoShow = prepareAutoShow(key)
-        if (autoShow === 'storage_unavailable') withholdOffer(autoShow)
-        if (autoShow !== 'ready') return
+        const candidateUserId = resolvedUserInfo.value?.id
+        const offeredWorkspaceId = workspaceStore.activeWorkspaceId
+        const { offerMemory, startup } = agentPanelStore.onboarding
+        const key =
+          offerMemory === 'shown'
+            ? claimOneShotOffer(candidateUserId, offeredWorkspaceId)
+            : null
+        if (offerMemory === 'shown' && key === null) return
 
         const offeredIdentity = consentStore.identity
         autoShowInFlight = true
-        agentPanelStore.suppressRestoredOpen()
+        dropHold()
+        if (startup === 'activationVisits')
+          agentPanelStore.suppressRestoredOpen()
         void withConsent(
           'first_load',
           () => {
-            if (!agentPanelStore.enabled) return
+            if (
+              !agentPanelStore.enabled ||
+              (startup === 'activationVisits' &&
+                automaticActivationVisitsComplete()) ||
+              agentPanelStore.isOpen
+            )
+              return
             agentPanelStore.open('automatic_consent')
           },
           {
             onShown: () => {
-              writeAutoShown(key, true)
+              if (key) writeAutoShown(key, true)
             },
-            canShow: () => {
-              const heldAtMount = screenHolder()
-              if (heldAtMount) holdOffer(heldAtMount, userId, workspaceId)
-              return heldAtMount === null
-            }
+            canShow: () =>
+              prepareConsentCard(candidateUserId, offeredWorkspaceId)
           }
-        ).finally(() => {
-          autoShowInFlight = false
-          if (consentStore.identity !== offeredIdentity) loadConsentIfEligible()
-        })
+        ).finally(() => finishAutomaticOffer(offeredIdentity))
+      }
+
+      function prepareLockedStartup(): boolean {
+        if (
+          !agentPanelStore.enabled ||
+          !isAuthInitialized.value ||
+          consentStore.isChecking ||
+          consentStore.accepted
+        )
+          return false
+        const held = screenHolder()
+        if (held) {
+          holdOffer(held)
+          return false
+        }
+        if (lockedStartupOpened) return true
+        lockedStartupOpened = true
+        if (!agentPanelStore.isOpen) agentPanelStore.open('activation')
+        return true
+      }
+
+      function prepareStartupPanel(): boolean {
+        if (agentPanelStore.onboarding.startup === 'lockedUntilConsent')
+          return prepareLockedStartup()
+        if (!automaticActivationVisitsComplete() || agentPanelStore.isOpen)
+          return true
+        reportOfferExit('activation_window_complete', 'startup')
+        dropHold()
+        return false
       }
 
       const offerWhenStartupDecided = (): void => {
-        // A boot that never reports forfeits this session's automatic offer
-        // rather than landing it on a late first-run screen.
         whenStartupDecided()
           .then((decided) => {
-            if (decided) offerConsentUnprompted()
-            else if (offerEligible()) withholdOffer('boot_undecided')
+            if (
+              agentPanelStore.onboarding.persistSkipAsRefusal &&
+              useSettingStore().get(AGENT_CONSENT_OFFER_DECLINED_SETTING_ID)
+            ) {
+              reportOfferExit('consent_declined', 'startup')
+              dropHold()
+              return
+            }
+            if (!decided) {
+              if (offerEligible()) withholdOffer('boot_undecided')
+              else {
+                const ineligible = offerIneligibility()
+                if (ineligible) reportOfferExit(ineligible, 'startup')
+              }
+              return
+            }
+            if (!prepareStartupPanel()) return
+            offerConsentUnprompted()
           })
           .catch((error: unknown) => {
+            reportOfferExit('startup_probe_failed', 'startup')
             reportError(error, {
+              surface: 'agent',
               errorType: 'agent_consent_auto_offer_failure'
             })
           })
       }
 
-      const loadConsentIfEligible = (): void => {
-        if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
-        void consentStore
-          .load()
-          .then((isAccepted) => {
-            if (!isAccepted) offerWhenStartupDecided()
+      let activationPending = false
+      let activationOffered = false
+      const openWhenStartupDecided = (): void => {
+        if (
+          agentPanelStore.onboarding.startup !== 'activationVisits' ||
+          !agentPanelStore.enabled ||
+          activationPending ||
+          activationOffered
+        )
+          return
+        activationPending = true
+        whenStartupDecided()
+          .then((decided) => {
+            if (decided && agentPanelStore.enabled) {
+              activationOffered = true
+              if (claimAutomaticActivationVisit() && !agentPanelStore.isOpen) {
+                agentPanelStore.open('activation')
+                activationOpenedPanel = true
+              }
+            }
           })
           .catch((error: unknown) => {
             reportError(error, {
+              surface: 'agent',
+              errorType: 'agent_panel_activation_failure'
+            })
+          })
+          .finally(() => {
+            activationPending = false
+          })
+      }
+
+      const loadConsentIfEligible = (): void => {
+        const { introduceBeforeSignIn } = agentPanelStore.onboarding
+        if (
+          !agentPanelStore.enabled ||
+          (introduceBeforeSignIn && !isAuthInitialized.value)
+        )
+          return
+        if (introduceBeforeSignIn && !isLoggedIn.value) {
+          offerWhenStartupDecided()
+          return
+        }
+        if (!resolvedUserInfo.value) return
+        const identity = consentStore.identity
+        void consentStore
+          .load()
+          .then((isAccepted) => {
+            if (identity !== consentStore.identity) return
+            if (isAccepted) {
+              reportOfferExit('consent_already_accepted', 'load')
+              dropHold()
+            } else offerWhenStartupDecided()
+          })
+          .catch((error: unknown) => {
+            reportOfferExit('consent_read_failed', 'load')
+            reportError(error, {
+              surface: 'agent',
               errorType: 'agent_consent_setting_load_failure'
             })
           })
       }
       watch(
-        [() => resolvedUserInfo.value?.id, () => consentStore.identity],
-        loadConsentIfEligible,
-        { immediate: true }
+        [
+          () => resolvedUserInfo.value?.id,
+          () => consentStore.identity,
+          () => isAuthInitialized.value
+        ],
+        loadConsentIfEligible
       )
+
       whenever(
         () => offerHeld.value && screenIsClear.value,
         () => {
-          offerHeld.value = false
           loadConsentIfEligible()
         }
       )
-      return setupFlagGate(loadConsentIfEligible)
+      setupFlagGate(loadConsentIfEligible, openWhenStartupDecided)
     }
   })
+  registered = true
 }
 
-async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
+function setupFlagGate(
+  loadConsentIfEligible: () => void,
+  openWhenStartupDecided: () => void
+): void {
   const agentPanelStore = useAgentPanelStore()
-  const settle = (): void => {
-    agentPanelStore.gateSettled = true
-  }
-  try {
-    const [
-      { createPostHogFlagSource, FLAG_SETTLE_TIMEOUT_MS },
-      { default: posthog }
-    ] = await Promise.all([
-      import('@/workbench/extensions/agent/utils/postHogFlagSource'),
-      import('posthog-js')
-    ])
-    const source = createPostHogFlagSource(posthog)
-    const sync = (): void => {
-      const forceInDev = import.meta.env.MODE === 'development'
-      agentPanelStore.enabled = forceInDev || source.isEnabled()
+  const devForcedOn =
+    import.meta.env.MODE === 'development' &&
+    import.meta.env.VITE_AGENT_STANDALONE === 'true'
+
+  watch(
+    () =>
+      [
+        devForcedOn || agentPanelStore.comfyAgent?.state === 'ready',
+        agentPanelStore.comfyAgent
+      ] as const,
+    ([enabled]) => {
+      agentPanelStore.enabled = enabled
       loadConsentIfEligible()
-      if (!agentPanelStore.enabled) {
-        const nodeSelectionStore = useAgentNodeSelectionStore()
-        if (nodeSelectionStore.isLoadingWorkflow)
-          nodeSelectionStore.finishWorkflowLoad()
-      }
-    }
-    source.onChange?.(() => {
-      sync()
-      settle()
-    })
-    sync()
-    if (import.meta.env.MODE === 'development') settle()
-    else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
-  } catch (error) {
-    settle()
-    reportError(error, {
-      errorType: 'agent_flag_gate_load_failure',
-      tags: {
-        failure_kind: 'caught_unexpected',
-        feature_area: 'agent',
-        operation: 'load',
-        outcome: 'failed',
-        feature_flag: 'agent_panel',
-        feature_flag_state: 'unknown',
-        project_context: 'application_bootstrap'
-      }
-    })
-  }
+      openWhenStartupDecided()
+      if (!enabled) useCanvasStore().stopNodePicking()
+    },
+    { immediate: true }
+  )
+  watch(
+    () => devForcedOn || agentPanelStore.flagsSettled,
+    (settled) => {
+      agentPanelStore.gateSettled = settled
+    },
+    { immediate: true }
+  )
 }

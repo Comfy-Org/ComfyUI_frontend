@@ -150,5 +150,53 @@ second@second prompt`)
           }
         })
     })
+
+    test('VHS Load Video API import survives a non-string filename', async ({
+      comfyPage
+    }) => {
+      // oxlint-disable-next-line playwright/no-skipped-test -- pack availability differs by manifest shard
+      test.skip(
+        !loadManifest().some(({ pack }) =>
+          ['ComfyUI-VideoHelperSuite', 'comfyui-videohelpersuite'].includes(
+            pack
+          )
+        ),
+        'Video Helper Suite is not installed in this manifest shard'
+      )
+      await comfyPage.nodeOps.clearGraph()
+
+      await comfyPage.page.evaluate(async () => {
+        await window.app!.loadApiJson(
+          {
+            '1': {
+              class_type: 'VHS_LoadVideo',
+              inputs: { video: 1 },
+              _meta: { title: 'Load Video' }
+            }
+          },
+          'fe-3144-api-prompt.json'
+        )
+      })
+      await comfyPage.nextFrame()
+
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const node = window.app!.graph.nodes[0]
+            return {
+              type: node.type,
+              videoValue: node.widgets?.find(({ name }) => name === 'video')
+                ?.value,
+              hasErrors: node.has_errors ?? false
+            }
+          })
+        )
+        .toEqual({
+          type: 'VHS_LoadVideo',
+          videoValue: 1,
+          hasErrors: false
+        })
+    })
   }
 )

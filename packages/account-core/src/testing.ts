@@ -2,16 +2,16 @@
  * The test seam for fakes: a hand-written port becomes an identity the
  * session client accepts. Production hosts use `@comfyorg/account-core/firebase`.
  */
-import type { WebSessionUser } from './core/sessionContracts.js'
+import type { WebSessionUser } from './core/sessionContracts'
 
-export type { IdentityPort } from './core/identity.js'
-export { brandIdentity as createTestIdentity } from './core/identity.js'
+export type { IdentityPort } from './core/identity'
+export { brandIdentity as createTestIdentity } from './core/identity'
 
 // Enumerating wording (CWE-204) each host asserts its copy never matches; shared so the two suites can't drift.
 export const ENUMERATION_ORACLE =
   /\bexists?\b|already (?:registered|in use|have|exists)|wrong password|no account|not found|is registered|different (?:sign-in method|credential)/i
 
-export type { WebSessionUser } from './core/sessionContracts.js'
+export type { WebSessionUser } from './core/sessionContracts'
 
 export function fakeWebSessionUser(
   overrides: Partial<WebSessionUser> = {}
@@ -76,11 +76,13 @@ function sessionBody(user: WebSessionUser, now: () => number) {
       email: user.email,
       name: user.name,
       email_verified: user.emailVerified,
-      sign_in_provider: user.signInProvider
+      sign_in_provider: user.signInProvider,
+      has_personal_workspace: user.hasPersonalWorkspace
     },
     csrf_token: FAKE_CSRF_TOKEN,
     expires_at: new Date(now() + DAY_MS).toISOString(),
-    absolute_expires_at: new Date(now() + 7 * DAY_MS).toISOString()
+    absolute_expires_at: new Date(now() + 7 * DAY_MS).toISOString(),
+    has_personal_workspace: true
   }
 }
 
@@ -118,14 +120,31 @@ function routesFor(
               401,
               state.kind === 'dead' ? state.code : 'no_session'
             )
+    ],
+    [
+      'POST /api/auth/sessions/revoke-all',
+      (endpoint, headers) => {
+        if (endpoint.state.kind === 'dead') {
+          return errorResponse(401, endpoint.state.code)
+        }
+        if (headers.get('x-csrf-token') !== FAKE_CSRF_TOKEN) {
+          return errorResponse(403, 'csrf_invalid')
+        }
+        if (!headers.has('x-comfy-client')) {
+          return errorResponse(403, 'origin_not_allowed')
+        }
+        revoke(endpoint)
+        return jsonResponse(200, { revoked: 1 })
+      }
     ]
   ])
 }
 
 /**
  * A `fetch` serving ingest's session routes under `/api/auth`. POST with a
- * bearer proof signs `signInUser` in; DELETE leaves the cookie revoked, as
- * the real endpoint does.
+ * bearer proof signs `signInUser` in; DELETE and revoke-all leave the cookie
+ * revoked, as the real endpoint does. Revoke-all serves only the cookie path,
+ * which needs the CSRF token and `X-Comfy-Client`.
  */
 export function createFakeWebSessionEndpoint({
   state,

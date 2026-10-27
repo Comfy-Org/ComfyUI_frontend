@@ -13,10 +13,12 @@ const config: KnipConfig = {
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts',
         'tools/oxlint-plugins/comfyIngestTypes.ts',
+        'tools/oxlint-plugins/serverFacts.ts',
         'tools/oxlint-plugins/vitestCleanup.ts'
       ],
       project: [
-        '**/*.{js,ts,vue}',
+        '**/*.{js,ts}',
+        'src/**/*.vue!',
         '*.{js,ts,mts}',
         '!.claude/**',
         '!worktrees/**',
@@ -34,10 +36,15 @@ const config: KnipConfig = {
       project: ['src/**/*.ts']
     },
     'packages/design-system': {
-      project: ['src/**/*.{css,js,ts}']
+      entry: ['tests/consumer/vite.config.ts'],
+      project: ['src/**/*.{css,js,ts,vue}'],
+      ignoreDependencies: ['tailwind-merge']
     },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
+    },
+    'packages/test-utils': {
+      project: ['src/**/*.ts']
     },
     'packages/shared-frontend-utils': {
       project: ['src/**/*.{js,ts}']
@@ -48,37 +55,30 @@ const config: KnipConfig = {
     'packages/ingest-types': {
       project: ['src/**/*.{js,ts}']
     },
-    'apps/website': {
-      // Models pages are registered by the release-gate integration.
-      entry: ['src/scripts/**/*.ts', 'src/routes/models/*.{astro,ts}'],
-      // Executed by models-snippets.test.ts inside the generated Node examples.
-      ignoreDependencies: ['mime-types']
+    'tools/architecture': {
+      project: ['src/**/*.ts']
+    },
+    'tools/design-system-audits': {
+      project: ['src/**/*.ts']
+    },
+    'tools/expected-failures': {
+      project: ['src/**/*.ts']
     },
     'tools/test-recorder': {
+      project: ['src/**/*.ts']
+    },
+    'tools/types-consumer-check': {
       project: ['src/**/*.ts']
     }
   },
   ignoreBinaries: [
-    'ffmpeg',
     // Optional host tool the recorder probes for and degrades without
     'xcode-select'
-  ],
-  ignoreDependencies: [
-    // Weird importmap things
-    '@iconify/json'
   ],
   ignore: [
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
-    // Marketing media tooling — adopted by pages in a follow-up PR
-    'apps/website/src/components/common/SiteVideo.vue',
-    // Animated pill button — retained for reuse after the learning directory
-    // switched to ButtonPill; no current consumer
-    'apps/website/src/components/ui/button-mask/**',
-    // Pending integration: consumed by the useWorkspaceInvoices seam once
-    // #13591 (Plan & Credits tabs) lands — FE-1245
-    'src/composables/billing/useNextInvoice.ts',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically

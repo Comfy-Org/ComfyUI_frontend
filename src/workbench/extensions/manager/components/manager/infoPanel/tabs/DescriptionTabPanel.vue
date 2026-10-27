@@ -10,31 +10,31 @@
         {{ t('manager.noDescription') }}
       </span>
     </ModelInfoField>
-    <ModelInfoField v-if="nodePack.repository" :label="t('manager.repository')">
+    <ModelInfoField v-if="safeRepositoryHref" :label="t('manager.repository')">
       <a
-        :href="nodePack.repository"
+        :href="safeRepositoryHref"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
       >
         <i
-          v-if="isGitHubLink(nodePack.repository)"
+          v-if="isGitHubLink(safeRepositoryHref)"
           class="pi pi-github text-base"
         />
-        <span class="break-all">{{ nodePack.repository }}</span>
-        <i class="icon-[lucide--external-link] size-4 shrink-0" />
+        <span class="break-all">{{ safeRepositoryHref }}</span>
+        <i class="icon-[lucide--external-link]" />
       </a>
     </ModelInfoField>
     <ModelInfoField v-if="licenseInfo" :label="t('manager.license')">
       <a
-        v-if="licenseInfo.isUrl"
-        :href="licenseInfo.text"
+        v-if="safeLicenseHref"
+        :href="safeLicenseHref"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
       >
         <span class="break-all">{{ licenseInfo.text }}</span>
-        <i class="icon-[lucide--external-link] size-4 shrink-0" />
+        <i class="icon-[lucide--external-link]" />
       </a>
       <span v-else class="break-all text-muted-foreground">
         {{ licenseInfo.text }}
@@ -59,16 +59,27 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
+import ModelInfoField from '@comfyorg/design-system/field/ModelInfoField'
 import type { components } from '@/types/comfyRegistryTypes'
-import { isValidUrl } from '@/utils/formatUtil'
-import MarkdownText from '@/workbench/extensions/manager/components/manager/infoPanel/MarkdownText.vue'
+import { isSafeExternalUrl } from '@/utils/urlSafety'
+import MarkdownText from '@comfyorg/design-system/common/MarkdownText'
 
 const { t } = useI18n()
 
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
+
+/**
+ * Resolves to `nodePack.repository` only when it is a safe http(s) URL,
+ * otherwise `undefined` so the template never binds an unsafe (e.g.
+ * `javascript:`) value to a clickable `href`.
+ */
+const safeRepositoryHref = computed<string | undefined>(() =>
+  nodePack.repository && isSafeExternalUrl(nodePack.repository)
+    ? nodePack.repository
+    : undefined
+)
 
 const isGitHubLink = (url: string): boolean => url.includes('github.com')
 
@@ -110,7 +121,7 @@ const parseLicenseObject = (
     const url = createLicenseUrl(licenseFile, nodePack.repository)
     return {
       text: url,
-      isUrl: !!url && isValidUrl(url)
+      isUrl: !!url && isSafeExternalUrl(url)
     }
   } else if (licenseObj.text) {
     return {
@@ -148,7 +159,7 @@ const formatLicense = (
       const url = createLicenseUrl(license, nodePack.repository)
       return {
         text: url,
-        isUrl: !!url && isValidUrl(url)
+        isUrl: !!url && isSafeExternalUrl(url)
       }
     }
     return {
@@ -162,4 +173,13 @@ const licenseInfo = computed(() => {
   if (!nodePack.license) return null
   return formatLicense(nodePack.license)
 })
+
+/**
+ * Resolves to the license URL only when `licenseInfo` marked it safe,
+ * otherwise `undefined`, so the template never binds an unsafe value to a
+ * clickable `href`.
+ */
+const safeLicenseHref = computed<string | undefined>(() =>
+  licenseInfo.value?.isUrl ? licenseInfo.value.text : undefined
+)
 </script>

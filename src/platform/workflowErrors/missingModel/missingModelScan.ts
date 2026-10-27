@@ -1,0 +1,582 @@
+import type {
+  DeclaredModelFile,
+  ModelFile
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
+import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
+import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
+import {
+  getSelectedModelsMetadata,
+  isInactiveWorkflowNodeMode,
+  isNodeAndAncestorsActive
+} from '@/platform/workflow/core/utils/modelRequirements'
+import type { MissingModelCandidate } from './types'
+import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import {
+  inputForWidget,
+  promotedInputWidgets
+} from '@/core/graph/subgraph/promotedInputWidget'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import {
+  buildPromotedWidgetExecutionSources,
+  resolveActivePromotedWidgetConsumers
+} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type {
+  IAssetWidget,
+  IBaseWidget,
+  IComboWidget
+} from '@/lib/litegraph/src/types/widgets'
+import { useAssetsStore } from '@/stores/assetsStore'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
+import {
+  collectAllNodes,
+  getExecutionIdByNode,
+  isExecutionPathActive
+} from '@/utils/graphTraversalUtil'
+import { resolveComboValues } from '@/utils/litegraphUtil'
+
+export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
+  models?: ModelFile[]
+}
+
+type DeferredVerification = (
+  signal?: AbortSignal
+) => Promise<boolean | undefined>
+
+/**
+ * On a developer-platform deployment (FE-2434) the editor's node catalog is
+ * the deployment's Release, so a loader's model options there are models the
+ * deployment has. Resolves those options for a loader input, or undefined
+ * when the editor runs on Comfy Cloud, when that is not known yet, or once
+ * `signal` aborts.
+ */
+export type ReleaseModelOptions = (
+  nodeType: string,
+  widgetName: string,
+  signal?: AbortSignal
+) => Promise<readonly (string | number)[] | undefined>
+
+const pendingVerifications = new WeakMap<
+  MissingModelCandidate,
+  DeferredVerification
+>()
+
+export function hasPendingVerification(
+  candidate: MissingModelCandidate
+): boolean {
+  return pendingVerifications.has(candidate)
+}
+
+function copyCandidate(
+  candidate: MissingModelCandidate,
+  overrides: Partial<MissingModelCandidate> = {}
+): MissingModelCandidate {
+  const copy = { ...candidate, ...overrides }
+  const verify = pendingVerifications.get(candidate)
+  if (verify) pendingVerifications.set(copy, verify)
+  return copy
+}
+
+function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
+  return widget.type === 'combo'
+}
+
+/**
+ * Fills url/hash/directory onto a candidate from the node's embedded
+ * `properties.models` metadata when the names match. The full pipeline
+ * does this via enrichWithEmbeddedMetadata + graphData.models, but the
+ * realtime single-node scan (paste, un-bypass) otherwise loses these
+ * fields — making the Missing Model row's download/copy-url buttons
+ * disappear after a bypass/un-bypass cycle.
+ */
+function enrichCandidateFromNodeProperties(
+  candidate: MissingModelCandidate,
+  embeddedModels: readonly ModelFile[] | undefined
+): MissingModelCandidate {
+  if (!embeddedModels?.length) return candidate
+  // Require directory agreement when the candidate already has one —
+  // a single node can reference two models with the same name under
+  // different directories (e.g. a LoRA present in multiple folders);
+  // name-only matching would stamp the wrong url/hash onto the
+  // candidate. Mirrors the directory check in enrichWithEmbeddedMetadata.
+  const match = embeddedModels.find(
+    (m) =>
+      m.name === candidate.name &&
+      (!candidate.directory || candidate.directory === m.directory)
+  )
+  if (!match) return candidate
+  return copyCandidate(candidate, {
+    directory: candidate.directory ?? match.directory,
+    url: candidate.url ?? match.url,
+    hash: candidate.hash ?? match.hash,
+    hashType: candidate.hashType ?? match.hash_type
+  })
+}
+
+function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
+  return widget.type === 'asset'
+}
+
+interface ModelWidgetScanTarget {
+  executionId: NodeExecutionId
+  nodeType: string
+  candidateWidgetName: string
+  definitionWidgetName: string
+  sourceExecutionId?: NodeExecutionId
+  promotedSources?: PromotedWidgetExecutionSource[]
+  valueWidget: IBaseWidget
+  definitionWidget: IBaseWidget
+  embeddedModels?: ModelFile[]
+}
+
+type NodeWithEmbeddedModels = {
+  properties?: {
+    models?: ModelFile[]
+  }
+}
+
+// Full set of model file extensions used for scanning candidate widgets.
+// Intentionally broader than ALLOWED_SUFFIXES in missingModelDownload.ts,
+// which restricts which files are eligible for download.
+export const MODEL_FILE_EXTENSIONS = new Set([
+  '.safetensors',
+  '.ckpt',
+  '.pt',
+  '.pth',
+  '.bin',
+  '.sft',
+  '.onnx',
+  '.gguf'
+])
+
+export function isModelFileName(name: string): boolean {
+  const lower = name.toLowerCase()
+  return Array.from(MODEL_FILE_EXTENSIONS).some((ext) => lower.endsWith(ext))
+}
+
+/**
+ * Scan COMBO and asset widgets on configured graph nodes for model-like values.
+ * Must be called after `graph.configure()` so widget name/value mappings are accurate.
+ *
+ * `isMissing` resolves immediately from static combo options and stays
+ * `undefined` for asset-supported nodes and loading remote combos.
+ */
+export function scanAllModelCandidates(
+  rootGraph: LGraph,
+  isAssetSupported: (nodeType: string, widgetName: string) => boolean,
+  getDirectory?: (nodeType: string) => string | undefined,
+  releaseModelOptions?: ReleaseModelOptions
+): MissingModelCandidate[] {
+  const allNodes = collectAllNodes(rootGraph)
+  const candidates: MissingModelCandidate[] = []
+
+  for (const node of allNodes) {
+    if (isInactiveWorkflowNodeMode(node.mode)) continue
+
+    candidates.push(
+      ...scanNodeModelCandidates(
+        rootGraph,
+        node,
+        isAssetSupported,
+        getDirectory,
+        releaseModelOptions
+      )
+    )
+  }
+
+  return candidates
+}
+
+/** Scan a single node's widgets for missing model candidates (OSS immediate resolution). */
+export function scanNodeModelCandidates(
+  rootGraph: LGraph,
+  node: LGraphNode,
+  isAssetSupported: (nodeType: string, widgetName: string) => boolean,
+  getDirectory?: (nodeType: string) => string | undefined,
+  releaseModelOptions?: ReleaseModelOptions
+): MissingModelCandidate[] {
+  const isSubgraphNode =
+    typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+  const widgets = isSubgraphNode
+    ? promotedInputWidgets(node)
+    : (node.widgets ?? [])
+  if (!widgets.length) return []
+
+  const executionId = getExecutionIdByNode(rootGraph, node)
+  if (!executionId) return []
+
+  const candidates: MissingModelCandidate[] = []
+
+  for (const widget of widgets) {
+    const target = getModelWidgetScanTarget(
+      rootGraph,
+      node,
+      widget,
+      executionId
+    )
+    if (!target) continue
+
+    let candidate: MissingModelCandidate | null = null
+
+    if (isAssetScanTarget(target)) {
+      candidate = scanAssetWidget(target, getDirectory, releaseModelOptions)
+    } else if (isComboScanTarget(target)) {
+      candidate = scanComboWidget(
+        target,
+        isAssetSupported,
+        getDirectory,
+        releaseModelOptions
+      )
+    }
+
+    if (!candidate) continue
+    if (target.promotedSources) {
+      candidate.promotedSources = target.promotedSources
+    }
+    candidates.push(
+      enrichCandidateFromNodeProperties(candidate, target.embeddedModels)
+    )
+  }
+
+  return candidates
+}
+
+function getModelWidgetScanTarget(
+  rootGraph: LGraph,
+  node: LGraphNode,
+  widget: IBaseWidget,
+  executionId: NodeExecutionId
+): ModelWidgetScanTarget | null {
+  const input = getInputForWidget(node, widget)
+  if (input && node.isInputConnected(node.inputs.indexOf(input))) return null
+
+  const isSubgraphNode =
+    typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+  if (!isSubgraphNode) {
+    return {
+      executionId,
+      nodeType: node.type,
+      candidateWidgetName: widget.name,
+      definitionWidgetName: widget.name,
+      valueWidget: widget,
+      definitionWidget: widget,
+      embeddedModels: getEmbeddedModels(node)
+    }
+  }
+
+  if (!input) return null
+
+  const source = resolvePromotedWidgetSource(rootGraph, node, widget)
+  const sourceExecutionId = source?.sourceExecutionId
+  if (!sourceExecutionId) return null
+  const consumers = resolveActivePromotedWidgetConsumers(node, widget.name)
+  const promotedSources = buildPromotedWidgetExecutionSources(
+    executionId,
+    consumers
+  )
+  if (
+    !promotedSources.some((source) =>
+      isExecutionPathActive(rootGraph, source.executionId)
+    )
+  ) {
+    return null
+  }
+
+  return {
+    executionId,
+    nodeType: source.sourceNode.type,
+    candidateWidgetName: widget.name,
+    definitionWidgetName: source.sourceWidgetName,
+    sourceExecutionId,
+    promotedSources,
+    valueWidget: widget,
+    definitionWidget: source.sourceWidget,
+    embeddedModels: getEmbeddedModels(source.sourceNode)
+  }
+}
+
+function getInputForWidget(node: LGraphNode, widget: IBaseWidget) {
+  if (typeof node.getSlotFromWidget !== 'function') return undefined
+  return inputForWidget(node, widget)
+}
+
+function getEmbeddedModels(node: LGraphNode): ModelFile[] | undefined {
+  return (node as NodeWithEmbeddedModels).properties?.models
+}
+
+function isAssetScanTarget(
+  target: ModelWidgetScanTarget
+): target is ModelWidgetScanTarget & { definitionWidget: IAssetWidget } {
+  return isAssetWidget(target.definitionWidget)
+}
+
+function isComboScanTarget(
+  target: ModelWidgetScanTarget
+): target is ModelWidgetScanTarget & { definitionWidget: IComboWidget } {
+  return isComboWidget(target.definitionWidget)
+}
+
+/**
+ * Verification then takes a model the deployment's Release lists for this
+ * loader as present, whatever Cloud's model library holds. A model the
+ * Release does not list, and every model on Comfy Cloud, falls through to
+ * the library check.
+ */
+function deferToReleaseOptions(
+  candidate: MissingModelCandidate,
+  target: ModelWidgetScanTarget,
+  releaseModelOptions: ReleaseModelOptions | undefined
+): void {
+  if (!releaseModelOptions) return
+  pendingVerifications.set(candidate, async (signal) => {
+    const options = await releaseModelOptions(
+      target.nodeType,
+      target.definitionWidgetName,
+      signal
+    )
+    return options?.includes(candidate.name) ? false : undefined
+  })
+}
+
+function scanAssetWidget(
+  target: ModelWidgetScanTarget & { definitionWidget: IAssetWidget },
+  getDirectory: ((nodeType: string) => string | undefined) | undefined,
+  releaseModelOptions: ReleaseModelOptions | undefined
+): MissingModelCandidate | null {
+  const value = target.valueWidget.value
+  if (typeof value !== 'string' || !value.trim()) return null
+  if (!isModelFileName(value)) return null
+
+  const candidate: MissingModelCandidate = {
+    nodeId: target.executionId,
+    ...(target.sourceExecutionId && {
+      sourceExecutionId: target.sourceExecutionId
+    }),
+    nodeType: target.nodeType,
+    widgetName: target.candidateWidgetName,
+    isAssetSupported: true,
+    name: value,
+    directory: getDirectory?.(target.nodeType),
+    isMissing: undefined
+  }
+  deferToReleaseOptions(candidate, target, releaseModelOptions)
+  return candidate
+}
+
+function scanComboWidget(
+  target: ModelWidgetScanTarget & { definitionWidget: IComboWidget },
+  isAssetSupported: (nodeType: string, widgetName: string) => boolean,
+  getDirectory: ((nodeType: string) => string | undefined) | undefined,
+  releaseModelOptions: ReleaseModelOptions | undefined
+): MissingModelCandidate | null {
+  const value = target.valueWidget.value
+  if (typeof value !== 'string' || !value.trim()) return null
+  if (!isModelFileName(value)) return null
+
+  const nodeIsAssetSupported = isAssetSupported(
+    target.nodeType,
+    target.definitionWidgetName
+  )
+  const candidate: MissingModelCandidate = {
+    nodeId: target.executionId,
+    ...(target.sourceExecutionId && {
+      sourceExecutionId: target.sourceExecutionId
+    }),
+    nodeType: target.nodeType,
+    widgetName: target.candidateWidgetName,
+    isAssetSupported: nodeIsAssetSupported,
+    name: value,
+    directory: getDirectory?.(target.nodeType),
+    isMissing: undefined
+  }
+  if (nodeIsAssetSupported) {
+    deferToReleaseOptions(candidate, target, releaseModelOptions)
+    return candidate
+  }
+
+  const isAbsentFromOptions = () =>
+    !resolveComboValues(target.definitionWidget).includes(value)
+  const inventory = getComboWidgetInventory(target.definitionWidget)
+  if (inventory && inventory.getStatus() !== 'ready') {
+    pendingVerifications.set(candidate, async (signal) => {
+      await untilSettledOrAborted(inventory.waitForSettled(signal), signal)
+      if (signal?.aborted || inventory.getStatus() !== 'ready') {
+        return undefined
+      }
+      if (target.valueWidget.value !== value) return undefined
+      return isAbsentFromOptions()
+    })
+    return candidate
+  }
+
+  candidate.isMissing = isAbsentFromOptions()
+  return candidate
+}
+
+async function untilSettledOrAborted(
+  settled: Promise<void>,
+  signal?: AbortSignal
+): Promise<void> {
+  if (!signal) return settled
+  if (signal.aborted) return
+  let onAbort = () => {}
+  const aborted = new Promise<void>((resolve) => {
+    onAbort = resolve
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
+  try {
+    await Promise.race([settled, aborted])
+  } finally {
+    signal.removeEventListener('abort', onAbort)
+  }
+}
+
+export function enrichWithEmbeddedMetadata(
+  candidates: readonly MissingModelCandidate[],
+  graphData: MissingModelWorkflowData
+): MissingModelCandidate[] {
+  const allNodes = flattenWorkflowNodes(graphData)
+  const embeddedModels = collectEmbeddedModels(allNodes, graphData)
+
+  const enriched = candidates.map((c) => copyCandidate(c))
+  const candidatesByKey = new Map<string, MissingModelCandidate[]>()
+  for (const c of enriched) {
+    const dirKey = `${c.name}::${c.directory ?? ''}`
+    const dirList = candidatesByKey.get(dirKey)
+    if (dirList) dirList.push(c)
+    else candidatesByKey.set(dirKey, [c])
+
+    const nameKey = c.name
+    const nameList = candidatesByKey.get(nameKey)
+    if (nameList) nameList.push(c)
+    else candidatesByKey.set(nameKey, [c])
+  }
+
+  const deduped: DeclaredModelFile[] = []
+  const enrichedKeys = new Set<string>()
+  for (const model of embeddedModels) {
+    const dedupeKey = `${model.name}::${model.directory}`
+    if (enrichedKeys.has(dedupeKey)) continue
+    enrichedKeys.add(dedupeKey)
+    deduped.push(model)
+  }
+
+  for (const model of deduped) {
+    const dirKey = `${model.name}::${model.directory}`
+    const exact = candidatesByKey.get(dirKey)
+    const fallback = candidatesByKey.get(model.name)
+    const existing = exact?.length ? exact : fallback
+    if (!existing) continue
+    for (const c of existing) {
+      if (c.directory && c.directory !== model.directory) continue
+      c.directory ??= model.directory
+      c.url ??= model.url
+      c.hash ??= model.hash
+      c.hashType ??= model.hash_type
+    }
+  }
+
+  return enriched
+}
+
+function collectEmbeddedModels(
+  allNodes: ReturnType<typeof flattenWorkflowNodes>,
+  graphData: MissingModelWorkflowData
+): DeclaredModelFile[] {
+  // Node entries only name a model; enrichment fills each field where present.
+  const result: DeclaredModelFile[] = []
+  const nodesById = new Map(allNodes.map((node) => [String(node.id), node]))
+
+  for (const node of allNodes) {
+    if (!isNodeAndAncestorsActive(node, nodesById)) continue
+
+    const selected = getSelectedModelsMetadata(node)
+    if (!selected?.length) continue
+
+    result.push(...selected)
+  }
+
+  if (graphData.models?.length) result.push(...graphData.models)
+
+  return result
+}
+
+export async function verifyAssetSupportedCandidates(
+  candidates: MissingModelCandidate[],
+  signal?: AbortSignal
+): Promise<void> {
+  if (signal?.aborted) return
+
+  await Promise.all(
+    candidates.map(async (candidate) => {
+      const verify = pendingVerifications.get(candidate)
+      if (!verify) return
+      pendingVerifications.delete(candidate)
+      const isMissing = await verify(signal)
+      if (!signal?.aborted) candidate.isMissing = isMissing
+    })
+  )
+
+  if (signal?.aborted) return
+
+  const pendingCandidates = candidates.filter(
+    (c) => c.isAssetSupported && c.isMissing === undefined
+  )
+  if (pendingCandidates.length === 0) return
+
+  const pendingNodeTypes = new Set(
+    pendingCandidates.map((candidate) => candidate.nodeType)
+  )
+
+  const store = useAssetsStore()
+
+  const failedNodeTypes = new Set<string>()
+  await Promise.allSettled(
+    [...pendingNodeTypes].map(async (nodeType) => {
+      if (signal?.aborted) return
+      try {
+        await store.updateModelsForNodeType(nodeType)
+      } catch (err) {
+        failedNodeTypes.add(nodeType)
+        console.warn(
+          `[Missing Model Pipeline] Failed to load assets for ${nodeType}:`,
+          err
+        )
+      }
+    })
+  )
+
+  if (signal?.aborted) return
+
+  for (const c of candidates) {
+    if (!c.isAssetSupported || c.isMissing !== undefined) continue
+    if (failedNodeTypes.has(c.nodeType)) continue
+
+    const assets = store.getAssets(c.nodeType)
+    c.isMissing = !isAssetInstalled(c, assets)
+  }
+}
+
+function normalizePath(path: string): string {
+  return path.replace(/\\/g, '/')
+}
+
+function isAssetInstalled(
+  candidate: MissingModelCandidate,
+  assets: AssetItem[]
+): boolean {
+  if (candidate.hash && candidate.hashType) {
+    const candidateHash = `${candidate.hashType}:${candidate.hash}`
+    if (assets.some((a) => a.hash === candidateHash)) return true
+  }
+
+  const normalizedName = normalizePath(candidate.name)
+  return assets.some((a) => {
+    const f = normalizePath(getAssetFilename(a))
+    return f === normalizedName || f.endsWith('/' + normalizedName)
+  })
+}

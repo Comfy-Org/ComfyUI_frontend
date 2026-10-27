@@ -24,10 +24,6 @@ import {
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
-
 beforeEach(() => {
   resetSubgraphFixtureState()
 })

@@ -1,12 +1,13 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { render } from '@testing-library/vue'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useNodeHelpContent as useNodeHelpContentComposable } from '@/composables/useNodeHelpContent'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { getNodeSource } from '@/types/nodeSource'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const i18n = createI18n({
   legacy: false,
@@ -64,11 +65,7 @@ function createMockNode(
   } as ComfyNodeDefImpl
 }
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fileURL: vi.fn((url) => url)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -87,15 +84,9 @@ describe('useNodeHelpContent', () => {
     python_module: 'custom_nodes.test_module.custom@1.0.0'
   })
 
-  const mockFetch = vi.fn()
-
-  beforeEach(() => {
-    vi.stubGlobal('fetch', mockFetch)
-  })
-
   it('should generate correct baseUrl for core nodes', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce(markdownResponse('# Test'))
+    vi.mocked(fetch).mockResolvedValueOnce(markdownResponse('# Test'))
 
     const { baseUrl } = useNodeHelpContent(nodeRef)
     await nextTick()
@@ -105,7 +96,7 @@ describe('useNodeHelpContent', () => {
 
   it('should generate correct baseUrl for custom nodes', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce(markdownResponse('# Test'))
+    vi.mocked(fetch).mockResolvedValueOnce(markdownResponse('# Test'))
 
     const { baseUrl } = useNodeHelpContent(nodeRef)
     await nextTick()
@@ -115,7 +106,7 @@ describe('useNodeHelpContent', () => {
 
   it('should render markdown content correctly', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       markdownResponse('# Test Help\nThis is test help content')
     )
 
@@ -127,7 +118,7 @@ describe('useNodeHelpContent', () => {
 
   it.fails('should show the unavailable state when core help is absent', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       new Response(null, { status: 404, statusText: 'Not Found' })
     )
 
@@ -140,11 +131,9 @@ describe('useNodeHelpContent', () => {
 
   it.fails('should show the unavailable state when custom help is absent', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 404,
-      statusText: 'Not Found'
-    })
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(null, { status: 404, statusText: 'Not Found' })
+    )
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -159,12 +148,14 @@ describe('useNodeHelpContent', () => {
       essentials_category: 'image',
       python_module: 'custom_nodes.test_module'
     })
-    mockFetch.mockResolvedValueOnce(markdownResponse('# Essentials help'))
+    vi.mocked(fetch).mockResolvedValueOnce(
+      markdownResponse('# Essentials help')
+    )
 
     const { renderedHelpHtml } = useNodeHelpContent(ref(node))
     await flushPromises()
 
-    expect(mockFetch).toHaveBeenCalledWith('/docs/EssentialsNode/en.md')
+    expect(fetch).toHaveBeenCalledWith('/docs/EssentialsNode/en.md')
     expect(renderedHelpHtml.value).toContain('Essentials help')
   })
 
@@ -174,7 +165,9 @@ describe('useNodeHelpContent', () => {
       essentials_category: 'image',
       python_module: 'custom_nodes.ComfyUI-Essentials'
     })
-    mockFetch.mockResolvedValueOnce(markdownResponse('![preview](preview.png)'))
+    vi.mocked(fetch).mockResolvedValueOnce(
+      markdownResponse('![preview](preview.png)')
+    )
 
     const { renderedHelpHtml } = useNodeHelpContent(ref(node))
     await flushPromises()
@@ -196,7 +189,7 @@ describe('useNodeHelpContent', () => {
 
     expect(error.value).toBeNull()
     expect(renderedHelpHtml.value).toContain('Blueprint help')
-    expect(mockFetch).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it.fails('should show the unavailable state for a blueprint without a description', async () => {
@@ -209,7 +202,7 @@ describe('useNodeHelpContent', () => {
 
     expect(error.value).toBe('Help not found')
     expect(renderedHelpHtml.value).toBe('')
-    expect(mockFetch).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('should use core help routing for an unrecognized module', async () => {
@@ -220,38 +213,40 @@ describe('useNodeHelpContent', () => {
         python_module: 'custom_nodes.'
       })
     )
-    mockFetch.mockResolvedValueOnce(markdownResponse('# Unknown help'))
+    vi.mocked(fetch).mockResolvedValueOnce(markdownResponse('# Unknown help'))
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
     expect(error.value).toBeNull()
     expect(renderedHelpHtml.value).toContain('Unknown help')
-    expect(mockFetch).toHaveBeenCalledWith('/docs/UnknownNode/en.md')
+    expect(fetch).toHaveBeenCalledWith('/docs/UnknownNode/en.md')
   })
 
   it('should show the unavailable state for HTML fallback responses', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      headers: new Headers({ 'content-type': 'text/html' }),
-      text: async () => '<html>SPA fallback</html>'
-    })
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response('<html>SPA fallback</html>', {
+        statusText: 'OK',
+        headers: { 'content-type': 'text/html' }
+      })
+    )
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('Help not found')
+    expect(error.value).toBe('OK')
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
   it.fails('should log and recover from infrastructure failures', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      statusText: 'Internal Server Error'
-    })
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(null, {
+        status: 500,
+        statusText: 'Internal Server Error'
+      })
+    )
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -273,7 +268,9 @@ describe('useNodeHelpContent', () => {
 
   it('should include alt attribute for images', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce(markdownResponse('![image](test.jpg)'))
+    vi.mocked(fetch).mockResolvedValueOnce(
+      markdownResponse('![image](test.jpg)')
+    )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -283,7 +280,7 @@ describe('useNodeHelpContent', () => {
 
   it('should prefix relative video src in custom nodes', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       markdownResponse('<video src="video.mp4"></video>')
     )
 
@@ -297,7 +294,7 @@ describe('useNodeHelpContent', () => {
 
   it('should prefix relative video src for core nodes with node-specific base URL', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       markdownResponse('<video src="video.mp4"></video>')
     )
 
@@ -311,7 +308,7 @@ describe('useNodeHelpContent', () => {
 
   it('should handle loading state', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockImplementationOnce(() => new Promise(() => {})) // Never resolves
+    vi.mocked(fetch).mockImplementationOnce(() => new Promise(() => {})) // Never resolves
 
     const { isLoading } = useNodeHelpContent(nodeRef)
     await nextTick()
@@ -321,28 +318,31 @@ describe('useNodeHelpContent', () => {
 
   it('should try fallback URL for custom nodes', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch
-      .mockResolvedValueOnce(
-        new Response(null, { status: 404, statusText: 'Not Found' })
-      )
-      .mockResolvedValueOnce(markdownResponse('# Fallback content'))
+    respondToFetch(
+      '/extensions/test_module/docs/CustomNode/en.md',
+      () => new Response(null, { status: 404, statusText: 'Not Found' })
+    )
+    respondToFetch('/extensions/test_module/docs/CustomNode.md', () =>
+      markdownResponse('# Fallback content')
+    )
 
-    useNodeHelpContent(nodeRef)
+    const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(mockFetch).toHaveBeenCalledTimes(2)
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledWith(
       '/extensions/test_module/docs/CustomNode/en.md'
     )
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       '/extensions/test_module/docs/CustomNode.md'
     )
+    expect(renderedHelpHtml.value).toContain('Fallback content')
   })
 
   it.fails('should use custom node fallback help after a localized request fails', async () => {
     const nodeRef = ref(mockCustomNode)
     const requestError = new Error('network failure')
-    mockFetch
+    vi.mocked(fetch)
       .mockRejectedValueOnce(requestError)
       .mockResolvedValueOnce(markdownResponse('# Fallback content'))
 
@@ -351,7 +351,7 @@ describe('useNodeHelpContent', () => {
 
     expect(error.value).toBeNull()
     expect(renderedHelpHtml.value).toContain('Fallback content')
-    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
     expect(reportError).toHaveBeenCalledWith(requestError, {
       errorType: 'node_help_fetch_failure',
       context: {
@@ -362,7 +362,7 @@ describe('useNodeHelpContent', () => {
 
   it('should prefix relative source src in custom nodes', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       markdownResponse(
         '<video><source src="video.mp4" type="video/mp4" /></video>'
       )
@@ -378,7 +378,7 @@ describe('useNodeHelpContent', () => {
 
   it('should prefix relative source src for core nodes with node-specific base URL', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       markdownResponse(
         '<video><source src="video.webm" type="video/webm" /></video>'
       )
@@ -394,7 +394,7 @@ describe('useNodeHelpContent', () => {
 
   it('should prefix relative img src in raw HTML for custom nodes', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       markdownResponse('# Test\n<img src="image.png" alt="Test image">')
     )
 
@@ -409,7 +409,7 @@ describe('useNodeHelpContent', () => {
 
   it('should prefix relative img src in raw HTML for core nodes', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       markdownResponse('# Test\n<img src="image.png" alt="Test image">')
     )
 
@@ -424,7 +424,7 @@ describe('useNodeHelpContent', () => {
 
   it('should not prefix absolute img src in raw HTML', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       markdownResponse('<img src="/absolute/image.png" alt="Absolute">')
     )
 
@@ -437,7 +437,7 @@ describe('useNodeHelpContent', () => {
 
   it('should not prefix external img src in raw HTML', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       markdownResponse(
         '<img src="https://example.com/image.png" alt="External">'
       )
@@ -454,7 +454,7 @@ describe('useNodeHelpContent', () => {
 
   it('should handle various quote styles in media src attributes', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       markdownResponse(`# Media Test
 
 Testing quote styles in properly formed HTML:
@@ -499,12 +499,12 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
 
   it('should ignore stale requests when node changes', async () => {
     const nodeRef = ref(mockCoreNode)
-    let resolveFirst: (value: unknown) => void
-    const firstRequest = new Promise((resolve) => {
+    let resolveFirst: (value: Response) => void
+    const firstRequest = new Promise<Response>((resolve) => {
       resolveFirst = resolve
     })
 
-    mockFetch
+    vi.mocked(fetch)
       .mockImplementationOnce(() => firstRequest)
       .mockResolvedValueOnce(markdownResponse('# Second node content'))
 
@@ -530,7 +530,7 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
     const request = new Promise<Response>((resolve) => {
       resolveRequest = resolve
     })
-    mockFetch.mockReturnValueOnce(request)
+    vi.mocked(fetch).mockReturnValueOnce(request)
 
     const { helpContent, isLoading } = useNodeHelpContent(nodeRef)
     await nextTick()

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
-import type { ToolPart } from '../../../services/agent/agentMessageParts'
+import type { ToolPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import ActivityTrace from './ActivityTrace.vue'
 import WorkSummary from './WorkSummary.vue'
@@ -139,6 +139,89 @@ describe('ActivityTrace', () => {
     expect(screen.getByText('Resize image node')).toBeInTheDocument()
     expect(screen.getByText('Opening a new tab')).toBeInTheDocument()
   })
+
+  it('names the skill while it loads and after it finishes', async () => {
+    const { rerender } = render(ActivityTrace, {
+      props: {
+        parts: [
+          {
+            ...tool('c1', 'load_skill', 'streaming'),
+            skill: 'comfy-director'
+          }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Loading comfy-director')).toBeInTheDocument()
+
+    await rerender({
+      parts: [
+        {
+          ...tool('c1', 'load_skill', 'done', true),
+          skill: 'comfy-director'
+        }
+      ]
+    })
+
+    expect(screen.getByText('Loaded comfy-director')).toBeInTheDocument()
+  })
+
+  it('names a skill load that finishes with an error', () => {
+    render(ActivityTrace, {
+      props: {
+        parts: [
+          {
+            ...tool('c1', 'load_skill', 'done', false),
+            skill: 'broken-skill'
+          }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Failed to load broken-skill')).toBeInTheDocument()
+    expect(screen.queryByText('Loaded broken-skill')).not.toBeInTheDocument()
+  })
+
+  it('does not report a missing outcome as a failure', () => {
+    render(ActivityTrace, {
+      props: {
+        parts: [
+          {
+            ...tool('c1', 'load_skill', 'done'),
+            skill: 'comfy-director'
+          }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Loaded comfy-director')).toBeInTheDocument()
+    expect(
+      screen.queryByText('Failed to load comfy-director')
+    ).not.toBeInTheDocument()
+  })
+
+  it('updates a generic loading label when the skill name arrives', async () => {
+    const { rerender } = render(ActivityTrace, {
+      props: { parts: [tool('c1', 'load_skill', 'streaming')] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Load skill')).toBeInTheDocument()
+
+    await rerender({
+      parts: [
+        {
+          ...tool('c1', 'load_skill', 'streaming'),
+          skill: 'comfy-director'
+        }
+      ]
+    })
+
+    expect(screen.getByText('Loading comfy-director')).toBeInTheDocument()
+  })
 })
 
 describe('WorkSummary', () => {
@@ -215,6 +298,32 @@ describe('WorkSummary', () => {
 
     expect(
       screen.getByRole('button', { name: /^worked$/i })
+    ).toBeInTheDocument()
+  })
+
+  it('does not claim completed work while a successful canvas write awaits observation', () => {
+    render(WorkSummary, {
+      props: { parts: [tool('c1', 'add_node', 'streaming', true)] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: /not confirmed on your canvas/i })
+    ).toBeInTheDocument()
+  })
+
+  it('warns when a successful canvas write settled without observation', () => {
+    render(WorkSummary, {
+      props: {
+        parts: [
+          { ...tool('c1', 'add_node', 'done', true), canvasConfirmed: false }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: /not confirmed on your canvas/i })
     ).toBeInTheDocument()
   })
 })

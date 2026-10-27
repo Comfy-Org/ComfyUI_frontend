@@ -1,29 +1,43 @@
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
-import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
+import type { ApplyOutcome, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
-import { createI18n } from 'vue-i18n'
-
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type {
   AgentCancelAccepted,
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import {
+  DOC_PROTOCOL_VERSION,
+  parseServerDocFrame
+} from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+import type { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 import {
   agentTest,
   bootAgentApp,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
+import { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import {
+  AGENT_FRAME_HANDLED_EVENT,
+  announceHandledAgentFrames
+} from '@e2e/fixtures/agentSocket'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import type {
   ClientDocFrame,
   HumanOpsHost
@@ -38,36 +52,33 @@ import type {
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
-import { agentHumanAddBlueprint } from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
+import {
+  agentHumanAddBlueprint,
+  agentNestedSubgraphDefinition
+} from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
+import { mockEmptyAgentThreadList } from '@e2e/fixtures/utils/agentThreadList'
 import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
 const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
-const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 const VUE_NODES_TAG = '@vue-nodes'
 const PANEL_MOUNT_TIMEOUT = 30_000
 const CANCEL_TIMEOUT = 10_000
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
-// The composer names itself with the rendered message, escapes resolved; the
-// app's own i18n module is a Vite build, so the fixture renders the message
-// with the same library over the same locale file.
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
 // Matches "Worked", "Worked for 3 seconds" and "Worked for 1m 2s" (agent.worked*).
 const SUMMARY_LABEL = new RegExp(`^${enMessages.agent.worked}( for .+)?$`)
 const FAILED_GLYPH = /lucide--circle-x/
@@ -137,7 +148,14 @@ const zProjectedNode = z
     type: z.string(),
     title: z.string().optional(),
     inputs: z
-      .array(z.object({ widget: z.unknown().optional() }).passthrough())
+      .array(
+        z
+          .object({
+            name: z.string().optional(),
+            widget: z.unknown().optional()
+          })
+          .passthrough()
+      )
       .optional()
   })
   .passthrough()
@@ -170,17 +188,47 @@ async function withTimeout(
   }
 }
 
-// Runs one recorded prompt/response through the real panel over a routed /ws socket.
+type WorkflowBindingActions = Pick<
+  ReturnType<typeof useAgentWorkflowTabBindingStore>,
+  'tabPathFor'
+>
+
+type WorkflowLookup = Pick<
+  ReturnType<typeof useWorkflowStore>,
+  'getWorkflowByPath'
+>
+
+type WorkflowScopeAction =
+  | { kind: 'drop'; workflowId: string }
+  | {
+      kind: 'restore'
+      tabPath: string
+      graphId: string
+    }
+
+interface DroppedWorkflowScope {
+  tabPath: string
+  graphId: string
+}
+
+type WorkflowTarget = 'saved-via-picker' | 'unsaved-draft'
+
+interface ReplayResponseOptions {
+  beforeFirstGraphOps?: () => Promise<void>
+  beforeGraphOps?: (ops: readonly RecordedGraphOperation[]) => Promise<void>
+  waitForGraphOpsDelivery?: (ops: readonly RecordedGraphOperation[]) => boolean
+}
+
 export class AgentConversationHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
   readonly topbar: Topbar
   readonly composer: Locator
+  readonly summaries: Locator
 
   private readonly host: HostDoc
   private readonly hostSocket: AgentFollowerHostSocket
   private readonly streams: Locator
-  private readonly summaries: Locator
   // Every node id the host has held so far, seed included.
   private readonly seenIds: Set<string>
   private readonly expectations: ExpectedTurn[]
@@ -189,14 +237,19 @@ export class AgentConversationHarness {
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
+  private savedWorkflow: Awaited<
+    ReturnType<typeof mockSavedWorkflowPersistence>
+  > | null = null
 
   constructor(
     private readonly page: Page,
+    private readonly comfyPage: ComfyPage,
     readonly conversation: AgentConversation,
     readonly replayTiming: ReplayTiming,
     caseId: string,
     private readonly extraNodeDefs: Record<string, ComfyNodeDef> = {},
-    humanOpsHost: HumanOpsHost = 'hold'
+    humanOpsHost: HumanOpsHost = 'hold',
+    private readonly workflowTarget: WorkflowTarget = 'saved-via-picker'
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
@@ -204,7 +257,6 @@ export class AgentConversationHarness {
       page,
       workflow.id,
       this.host,
-      SOCKET_SID,
       humanOpsHost
     )
     this.seenIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
@@ -217,7 +269,9 @@ export class AgentConversationHarness {
     this.expectations = expectations ?? []
     this.panel = page.locator('#agent-panel-root')
     this.streams = this.panel.getByTestId('markdown-stream')
-    this.composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
+    this.composer = this.panel.getByRole('textbox', {
+      name: AGENT_COMPOSER_LABEL
+    })
     this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
     this.topbar = new Topbar(page)
@@ -257,14 +311,21 @@ export class AgentConversationHarness {
       .sort()
   }
 
-  async boot(agentFlag: boolean, vueNodes: boolean): Promise<void> {
+  async boot(
+    agentFlag: boolean,
+    vueNodes: boolean,
+    bootAssets: ListAssetsResponse,
+    telemetryEnabled: boolean
+  ): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
+    await announceHandledAgentFrames(this.page)
     const objectInfo = this.page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith('/api/object_info')
     )
     await bootAgentApp(this.page, agentFlag, {
       vueNodes,
+      features: { enable_telemetry: telemetryEnabled },
       settings: {
         'Comfy.Graph.CanvasInfo': false,
         'Comfy.NodeSearchBoxImpl': 'default',
@@ -273,7 +334,8 @@ export class AgentConversationHarness {
       // Replayed nodes materialize from registered node types; the recordings use
       // core nodes only, so a case needing another node supplies its definition
       // here rather than routing /object_info a second time behind this one.
-      objectInfo: { ...agentReplayNodeDefs, ...this.extraNodeDefs }
+      objectInfo: { ...agentReplayNodeDefs, ...this.extraNodeDefs },
+      assets: bootAssets
     })
     const definitions = (await (await objectInfo).json()) as ObjectInfoResponse
     for (const [type, definition] of Object.entries(definitions))
@@ -286,33 +348,61 @@ export class AgentConversationHarness {
         `${this.page.url()} serves no node definitions for ${unregistered.join(', ')}; the replay needs a ComfyUI backend behind the dev server (browser_tests/README.md, "Replay coverage for agent bug fixes")`
       )
 
-    await this.page
-      .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-      .click()
-    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
-    await this.selectWorkflowTarget()
+    await loadSeedIntoActiveTab(this.page, this.conversation.workflow.seed)
+    await new AgentPanel(this.page).open(PANEL_MOUNT_TIMEOUT)
+    if (this.workflowTarget === 'saved-via-picker')
+      await this.selectWorkflowTarget()
   }
 
-  private async selectWorkflowTarget(): Promise<void> {
+  private async selectWorkflowTarget(name = 'Unsaved Workflow'): Promise<void> {
     await mockWorkflowPersistence(this.page, this.conversation.workflow.id)
     const picker = this.panel.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
     await picker.click()
-    await this.page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect(picker).toHaveText('Unsaved Workflow')
+    await this.page.getByRole('menuitemradio', { name, exact: true }).click()
+    await expect(picker).toHaveText(name)
   }
 
-  /**
-   * Delegates to the shared persistence mock (`savedWorkflowPersistence.ts`)
-   * instead of independently re-capturing/re-serving saves: this harness and
-   * `MultiAutogrowRealignHarness` had drifted into two mutable
-   * implementations of the same save/reopen round trip.
-   */
   async persistSavedWorkflow(): Promise<void> {
-    await mockSavedWorkflowPersistence(this.page, this.conversation.workflow.id)
+    this.savedWorkflow = await mockSavedWorkflowPersistence(
+      this.page,
+      this.conversation.workflow.id
+    )
+  }
+
+  savedWorkflowPath(): string | null {
+    const name = this.savedWorkflow?.savedName()
+    return name === undefined ? null : `workflows/${name}.json`
+  }
+
+  async savedWorkflowContent(): Promise<ComfyWorkflowJSON> {
+    const content = this.savedWorkflow?.savedContent()
+    if (content === undefined)
+      throw new Error('the app has not saved a workflow yet')
+    const errors: string[] = []
+    const workflow = await validateComfyWorkflow(
+      JSON.parse(content) as unknown,
+      (error) => errors.push(error)
+    )
+    if (!workflow)
+      throw new Error(
+        `the saved workflow is not schema-valid: ${errors.join('; ')}`
+      )
+    return workflow
+  }
+
+  replaceInSavedWorkflow(search: string, replacement: string): void {
+    const content = this.savedWorkflow?.savedContent()
+    if (!content?.includes(search))
+      throw new Error(`the saved workflow does not contain "${search}"`)
+    this.savedWorkflow?.corruptSavedContent(
+      content.replaceAll(search, replacement)
+    )
+  }
+
+  refuseHostSubscribes(reason = 'overloaded'): void {
+    this.hostSocket.refuseSubscribes(reason)
   }
 
   async sendPrompt(turn = 0): Promise<void> {
@@ -341,7 +431,7 @@ export class AgentConversationHarness {
 
   async replayResponse(
     turn = 0,
-    beforeFirstGraphOps?: () => Promise<void>
+    options: ReplayResponseOptions = {}
   ): Promise<void> {
     const startedAt = Date.now()
     const response = this.conversation.turns[turn].response
@@ -354,8 +444,12 @@ export class AgentConversationHarness {
         this.hostSocket.send(this.stampTurn(entry.event, turn))
       else {
         await this.hostSocket.waitForSubscribe()
-        if (index === firstGraphOps) await beforeFirstGraphOps?.()
-        this.hostSocket.send(this.host.apply(entry.ops))
+        if (index === firstGraphOps) await options.beforeFirstGraphOps?.()
+        await options.beforeGraphOps?.(entry.ops)
+        await this.sendHostFrame(
+          this.host.apply(entry.ops),
+          options.waitForGraphOpsDelivery?.(entry.ops) === true
+        )
         for (const id of Object.keys(this.host.graph().nodes))
           this.seenIds.add(id)
       }
@@ -366,11 +460,11 @@ export class AgentConversationHarness {
   }
 
   // Every turn in order, each judged on the panel and the canvas as it lands.
-  async runTurns(beforeFirstGraphOps?: () => Promise<void>): Promise<void> {
+  async runTurns(options: ReplayResponseOptions = {}): Promise<void> {
     for (const turn of this.conversation.turns.keys()) {
       const before = await this.panelCounts()
       await this.sendPrompt(turn)
-      await this.replayResponse(turn, beforeFirstGraphOps)
+      await this.replayResponse(turn, options)
       await this.waitForTurnComplete()
       await this.expectTurnRendered(turn, before)
       await this.expectCanvasReplayed(turn)
@@ -486,8 +580,6 @@ export class AgentConversationHarness {
       )
       .toBe(text)
 
-    // A finished turn folds its tool calls into one closed summary; the
-    // thinking rows it lists between them are not part of the recording.
     const rows = expected.groups.flat()
     await expect(this.summaries).toHaveCount(
       before.summaries + (rows.length > 0 ? 1 : 0)
@@ -504,7 +596,7 @@ export class AgentConversationHarness {
     for (const [at, row] of rows.entries()) {
       const item = items.nth(at)
       await expect(item.getByText(row.label, { exact: true })).toBeVisible()
-      const glyph = item.locator('span').first()
+      const glyph = item.locator('[class*="icon-["]')
       if (row.failed) await expect(glyph).toHaveClass(FAILED_GLYPH)
       else await expect(glyph).not.toHaveClass(FAILED_GLYPH)
       if (row.count > 1) await expect(item).toContainText(`×${row.count}`)
@@ -601,17 +693,36 @@ export class AgentConversationHarness {
       else await expect(field).toHaveValue(value)
     }
 
-    const links = projected.links
-      .map((raw): RecordedLink => {
-        const [, fromNode, fromSlot, toNode, toSlot] = zProjectedLink.parse(raw)
-        return {
-          fromNode: String(fromNode),
-          fromSlot,
-          toNode: String(toNode),
-          toSlot
-        }
-      })
-      .sort(byLinkKey)
+    const projectedLinks = projected.links.map((raw): RecordedLink => {
+      const [, fromNode, fromSlot, toNode, toSlot] = zProjectedLink.parse(raw)
+      return {
+        fromNode: String(fromNode),
+        fromSlot,
+        toNode: String(toNode),
+        toSlot
+      }
+    })
+    const links = await this.page.evaluate(
+      ({ projectedLinks, targetInputNames }) =>
+        projectedLinks.map((link) => {
+          const inputName = targetInputNames[link.toNode]?.[link.toSlot]
+          if (!inputName) return link
+          const node = window.app?.graph.getNodeById(link.toNode as NodeId)
+          const resolvedSlot =
+            node?.inputs.findIndex((input) => input.name === inputName) ?? -1
+          return resolvedSlot >= 0 ? { ...link, toSlot: resolvedSlot } : link
+        }),
+      {
+        projectedLinks,
+        targetInputNames: Object.fromEntries(
+          nodes.map((node) => [
+            String(node.id),
+            node.inputs?.map((input) => input.name) ?? []
+          ])
+        )
+      }
+    )
+    links.sort(byLinkKey)
     await expect.poll(() => this.renderedLinks()).toEqual(links)
     // A widget-backed input renders no slot row on an uncollapsed node
     // (NodeSlots.vue); the wire above already covers that end.
@@ -619,8 +730,13 @@ export class AgentConversationHarness {
       await expect(
         this.vueNodes.getOutputSlotRow(link.fromNode, link.fromSlot)
       ).toHaveClass(/lg-slot--connected/)
-      const target = nodes.find((node) => String(node.id) === link.toNode)
-      if (target?.inputs?.[link.toSlot]?.widget == null)
+      const targetHasWidget = await this.page.evaluate(
+        ({ nodeId, slot }) =>
+          window.app?.graph.getNodeById(nodeId as NodeId)?.inputs[slot]
+            ?.widget != null,
+        { nodeId: link.toNode, slot: link.toSlot }
+      )
+      if (!targetHasWidget)
         await expect(
           this.vueNodes.getInputSlotRow(link.toNode, link.toSlot)
         ).toHaveClass(/lg-slot--connected/)
@@ -629,9 +745,7 @@ export class AgentConversationHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
-    )
+    await mockEmptyAgentThreadList(page)
     await page.route('**/api/agent/threads/*/messages', (route) => {
       const request = route.request()
       if (request.method() === 'POST') {
@@ -657,7 +771,6 @@ export class AgentConversationHarness {
         target === null || target[1] !== THREAD_ID
           ? undefined
           : this.cancelWaiters.get(target[2])
-      // A real server knows nothing about any other message.
       if (release === undefined) return route.fulfill({ status: 404 })
       release()
       const cancelled: AgentCancelAccepted = { status: 'cancelling' }
@@ -691,6 +804,67 @@ export class AgentConversationHarness {
     return this.hostSocket.clientDocFrames()
   }
 
+  async activateEmptyWorkflow(workflowId: string, name: string): Promise<void> {
+    const seed = structuredClone(this.conversation.workflow.seed)
+    seed.nodes = []
+    seed.links = []
+    seed.groups = []
+    this.hostSocket.addWorkflow(
+      workflowId,
+      new HostDoc(workflowId, seed, this.conversation.workflow.catalog)
+    )
+    const subscribes = this.subscribeCount(workflowId)
+    this.hostSocket.send({
+      type: 'agent_active_tab',
+      data: { workflow_id: workflowId, name }
+    })
+    await expect(this.topbar.getActiveTab()).toContainText(name)
+    await expect
+      .poll(() => this.subscribeCount(workflowId))
+      .toBeGreaterThanOrEqual(subscribes + 1)
+  }
+
+  resumeWorkflowSubscribe(workflowId: string): void {
+    this.hostSocket.resumeSubscribe(workflowId)
+  }
+
+  sendDocumentReset(workflowId: string): void {
+    this.hostSocket.send({
+      type: 'doc_reset',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: workflowId,
+        seq: 1,
+        lineage_seq: 1,
+        actor: 'system:test-reset'
+      }
+    })
+  }
+
+  /** Returns to the recorded workflow's tab (the first) and holds its subscribe ack. */
+  async activateRecordedWorkflowBeforeSubscribeAck(): Promise<void> {
+    const { id, name } = this.conversation.workflow
+    this.hostSocket.pauseSubscribes(id)
+    const sent = this.clientDocFrames().filter(
+      (frame) => frame.type === 'doc_subscribe' && frame.workflowId === id
+    ).length
+    this.hostSocket.send({
+      type: 'agent_active_tab',
+      data: { workflow_id: id, name }
+    })
+    await expect
+      .poll(
+        () =>
+          this.clientDocFrames().filter(
+            (frame) => frame.type === 'doc_subscribe' && frame.workflowId === id
+          ).length
+      )
+      .toBeGreaterThanOrEqual(sent + 1)
+    await expect(
+      this.topbar.getTab(0).and(this.topbar.getActiveTab())
+    ).toBeVisible()
+  }
+
   /** The applier's verdict on every human op the host has judged so far. */
   humanOpOutcomes(): ApplyOutcome[] {
     return this.hostSocket.humanOpOutcomes()
@@ -701,18 +875,98 @@ export class AgentConversationHarness {
     return Object.keys(this.host.graph().nodes)
   }
 
+  /** What the host document holds for one widget; undefined when it has none. */
+  hostWidgetValue(nodeId: string, widget: string): unknown {
+    const widgets = z
+      .record(z.string(), z.unknown())
+      .optional()
+      .parse(this.host.graph().nodes[nodeId]?.widgets)
+    return widgets?.[widget]
+  }
+
+  /** How many minted human ops a `hold` host has not judged yet. */
+  heldHumanOpCount(): number {
+    return this.hostSocket.heldClientOps().length
+  }
+
+  /**
+   * Releases the oldest batch a `hold` host is sitting on, which is what a
+   * page's own edit coming back to it IS: same op ids, and the broadcast
+   * carries the client's actor rather than the host's. Holding first and
+   * releasing later is therefore a real echo arriving late, not a host write
+   * standing in for one - the distinction decides which branch
+   * `useAgentCrdtFollower` takes for the frame.
+   *
+   * Returns the number of ops released, so a caller can tell an echo that
+   * landed from one the sender had not flushed yet.
+   */
+  releaseHeldHumanOps(): number {
+    return this.hostSocket.releaseHeldClientOps().length
+  }
+
   // A host-side edit outside the recording, pushed as one `doc_update`. The
   // follower applies frames in order, so a rendered effect of this edit
   // proves every earlier frame (a catch-up included) has been applied too.
-  pushHostOps(operations: RecordedGraphOperation[]): void {
-    this.hostSocket.send(this.host.apply(operations))
+  pushHostOps(operations: RecordedGraphOperation[]): HostFrame {
+    const frame = this.host.apply(operations)
+    this.hostSocket.send(frame)
     for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
+    return frame
+  }
+
+  redeliverHostFrame(frame: HostFrame): void {
+    this.hostSocket.send(frame)
+  }
+
+  // A host-side delete applied to the document WITHOUT sending a frame: what
+  // the host does while this client is not subscribed. The deletion reaches
+  // the follower only in the catch-up that answers its next subscribe, which
+  // is the whole point of the close/reopen cases.
+  deleteNodeOnHost(nodeId: number, removedLinkIds: number[]): void {
+    this.host.apply([
+      {
+        op: 'delete_node',
+        node_id: nodeId,
+        removed_links: removedLinkIds
+      }
+    ])
   }
 
   // Rises once per follower subscribe; a tab return re-subscribes and the
   // host answers with the catch-up frame this counter has just sent.
-  subscribeCount(): number {
-    return this.hostSocket.subscribeCount()
+  subscribeCount(workflowId?: string): number {
+    return this.hostSocket.subscribeCount(workflowId)
+  }
+
+  humanOpFrames(): ClientDocFrame[] {
+    return this.clientDocFrames().filter((frame) => frame.type === 'doc_ops')
+  }
+
+  async humanAddNodeBaseVersion(
+    workflowId: string,
+    nodeId: string
+  ): Promise<number> {
+    const find = () => {
+      for (const frame of this.humanOpFrames()) {
+        if (frame.workflowId !== workflowId) continue
+        const index = frame.ops.indexOf(`add_node:${nodeId}`)
+        if (index !== -1) return frame.baseVersions[index]
+      }
+      return undefined
+    }
+    await expect.poll(find).toEqual(expect.any(Number))
+    const baseVersion = find()
+    if (typeof baseVersion !== 'number')
+      throw new Error(`no numeric base_version for add_node:${nodeId}`)
+    return baseVersion
+  }
+
+  leaveNextHumanBatchUnanswered(): void {
+    this.hostSocket.leaveHumanBatchesUnanswered(1)
+  }
+
+  async disconnectComfySocket(): Promise<void> {
+    await this.hostSocket.disconnectComfySocket()
   }
 
   async disconnectAndApplyRecordedTurn(turn: number): Promise<void> {
@@ -767,6 +1021,12 @@ export class AgentConversationHarness {
     )
   }
 
+  pushNestedDefinition(): void {
+    this.hostSocket.send(
+      this.host.seedDefinition(agentNestedSubgraphDefinition())
+    )
+  }
+
   // A frontend-only node added the way a person actually adds one: the node
   // search box, double-clicked open, typed into, Enter — not a direct
   // LiteGraph.createNode call. The non-Agent baseline
@@ -778,9 +1038,6 @@ export class AgentConversationHarness {
     const before = new Set(await this.graphNodeIds())
     await this.page.mouse.dblclick(position.x, position.y, { delay: 5 })
     const dialog = this.page.getByRole('search')
-    // Scoped by accessible name: the seed workflow already has nodes on the
-    // canvas, and a widget-select trigger (e.g. LoadImage's) is also
-    // role="combobox", so an unnamed query resolves to more than one match.
     const input = dialog.getByRole('combobox', { name: enMessages.g.addNode })
     await input.waitFor({ state: 'visible' })
     await input.fill('Note')
@@ -801,7 +1058,12 @@ export class AgentConversationHarness {
       return Boolean(ghostNode?.flags.ghost)
     })
 
-    await this.page.mouse.click(position.x, position.y)
+    const canvasBounds = await this.comfyPage.canvas.boundingBox()
+    if (!canvasBounds) throw new Error('the graph canvas is not visible')
+    await this.comfyPage.canvasOps.click({
+      x: position.x - canvasBounds.x,
+      y: position.y - canvasBounds.y
+    })
     const after = await this.graphNodeIds()
     const [added] = after.filter((id) => !before.has(id))
     if (!added) throw new Error('the search box add produced no node')
@@ -896,7 +1158,19 @@ export class AgentConversationHarness {
     ).toHaveValue(marker)
   }
 
-  async switchAwayAndBack(nodeId: string, widget: string): Promise<void> {
+  // A recorded tab switch parks the viewport at the origin, hiding node headers above the top edge.
+  async fitCanvasToGraph(): Promise<void> {
+    await this.page.evaluate(() =>
+      window.app!.extensionManager.command.execute('Comfy.Canvas.FitView')
+    )
+    await nextFrame(this.page)
+  }
+
+  async switchAwayAndBack(
+    nodeId: string,
+    widget: string,
+    expectedValue?: string
+  ): Promise<void> {
     const tabs = this.topbar.tabs
     await expect(tabs).toHaveCount(1)
     await this.topbar.newWorkflowButton.click()
@@ -909,6 +1183,10 @@ export class AgentConversationHarness {
       this.topbar.getTab(0).and(this.topbar.getActiveTab())
     ).toBeVisible()
     await expect.poll(() => this.subscribeCount()).toBe(subscribes + 1)
+    if (expectedValue !== undefined)
+      await expect(
+        this.vueNodes.getNodeLocator(nodeId).getByLabel(widget, { exact: true })
+      ).toHaveValue(expectedValue)
     await this.waitForPendingFrames(
       nodeId,
       widget,
@@ -918,6 +1196,18 @@ export class AgentConversationHarness {
 
   hostNodePositions(): (number[] | undefined)[] {
     return this.host.projection().nodes.map((node) => node.pos)
+  }
+
+  /**
+   * The workflow node the host document holds for `nodeId`, as the library
+   * projects it — the same snapshot a catch-up, a resubscribe or an agent op
+   * that copies an existing node would carry. Undefined when the document has
+   * no such node.
+   */
+  hostNode(nodeId: string): WorkflowJSON['nodes'][number] | undefined {
+    return this.host
+      .projection()
+      .nodes.find((node) => String(node.id) === nodeId)
   }
 
   async reloadWithoutLocalWorkflow(): Promise<void> {
@@ -939,6 +1229,25 @@ export class AgentConversationHarness {
     await this.selectWorkflowTarget()
   }
 
+  // A reload that carries the canvas over the way the app's own persistence
+  // does: serialize what is on screen now, reload, then load that graph back
+  // into a fresh blank workflow. `reloadWithoutLocalWorkflow` deliberately
+  // drops the local workflow; this one deliberately keeps it, so a node that
+  // only exists locally is still there for the first reconcile after reload.
+  async reloadWithCurrentGraph(): Promise<void> {
+    const graph = await this.comfyPage.nodeOps.getSerializedGraph()
+    await this.page.reload({ waitUntil: 'domcontentloaded' })
+    await this.comfyPage.waitForAppReady()
+    await this.comfyPage.workflow.newBlankWorkflow()
+    await this.comfyPage.workflow.loadGraphData(graph)
+    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    const name = await this.topbar
+      .getActiveTab()
+      .locator('.workflow-label')
+      .innerText()
+    await this.selectWorkflowTarget(name)
+  }
+
   // Sends one more doc_update that resyncs `widget` on `nodeId` to its
   // current doc value — the same effect on a live widget as a stale echo,
   // a reconnect resync, or an unrelated full-graph reconcile has whenever
@@ -946,11 +1255,7 @@ export class AgentConversationHarness {
   // race this deterministically against a live keystroke instead of
   // waiting on the timing a real run happens to produce.
   async resyncWidget(nodeId: string, widget: string): Promise<void> {
-    const widgets = z
-      .record(z.string(), z.unknown())
-      .optional()
-      .parse(this.host.graph().nodes[nodeId]?.widgets)
-    const value = widgets?.[widget]
+    const value = this.hostWidgetValue(nodeId, widget)
     if (value === undefined)
       throw new Error(`Host widget ${nodeId}.${widget} does not exist`)
     const operation = {
@@ -961,33 +1266,148 @@ export class AgentConversationHarness {
       old: value
     } satisfies GraphOperation
     const frame = this.host.apply([operation])
+    await this.sendHostFrame(frame, true)
+  }
+
+  async dropWorkflowScope(): Promise<() => Promise<void>> {
+    const workflowId = this.conversation.workflow.id
+    const dropped = await this.runWorkflowScopeAction({
+      kind: 'drop',
+      workflowId
+    })
+    if (!dropped)
+      throw new Error(`no bound tab path for workflow ${workflowId}`)
+
+    let restored = false
+    return async () => {
+      if (restored) return
+      await this.runWorkflowScopeAction({ kind: 'restore', ...dropped })
+      restored = true
+    }
+  }
+
+  async rememberRecoveryGraph(): Promise<void> {
+    await this.page.evaluate(() => {
+      if (!window.app?.rootGraph) throw new Error('root graph is unavailable')
+      window.__agentRecoveryGraph = window.app.rootGraph
+    })
+  }
+
+  async isRecoveryGraphUnchanged(): Promise<boolean> {
+    return await this.page.evaluate(
+      () => window.__agentRecoveryGraph === window.app?.rootGraph
+    )
+  }
+
+  private async runWorkflowScopeAction(
+    action: WorkflowScopeAction
+  ): Promise<DroppedWorkflowScope | undefined> {
+    if (action.kind === 'drop')
+      return await this.dropWorkflowScopeInPage(action)
+    await this.restoreWorkflowScopeInPage(action)
+    return undefined
+  }
+
+  private async dropWorkflowScopeInPage(
+    action: Extract<WorkflowScopeAction, { kind: 'drop' }>
+  ): Promise<DroppedWorkflowScope> {
+    return await this.page.evaluate((workflowId) => {
+      const isBinding = (value: unknown): value is WorkflowBindingActions =>
+        typeof value === 'object' &&
+        value !== null &&
+        'tabPathFor' in value &&
+        typeof value.tabPathFor === 'function'
+      const isWorkflowLookup = (value: unknown): value is WorkflowLookup =>
+        typeof value === 'object' &&
+        value !== null &&
+        'getWorkflowByPath' in value &&
+        typeof value.getWorkflowByPath === 'function'
+
+      const mount = document.getElementById('vue-app')
+      const pinia = mount?.__vue_app__?.config.globalProperties.$pinia
+      if (!pinia) throw new Error('Pinia is not mounted')
+      const stores = [...pinia._s.values()]
+      const binding = stores.find(isBinding)
+      const workflows = stores.find(isWorkflowLookup)
+      if (!binding)
+        throw new Error('agentWorkflowTabBinding store is not mounted')
+      if (!workflows) throw new Error('workflow store is not mounted')
+
+      const tabPath = binding.tabPathFor(workflowId)
+      if (!tabPath)
+        throw new Error(`no bound tab path for workflow ${workflowId}`)
+      const tab = workflows.getWorkflowByPath(tabPath)
+      if (!tab) throw new Error(`no open tab at ${tabPath}`)
+      const graphId = tab.activeState?.id
+      if (!graphId) throw new Error(`workflow at ${tabPath} has no graph id`)
+      delete tab.activeState?.id
+      return { tabPath, graphId }
+    }, action.workflowId)
+  }
+
+  private async restoreWorkflowScopeInPage(
+    action: Extract<WorkflowScopeAction, { kind: 'restore' }>
+  ): Promise<void> {
+    await this.page.evaluate((action) => {
+      const isWorkflowLookup = (value: unknown): value is WorkflowLookup =>
+        typeof value === 'object' &&
+        value !== null &&
+        'getWorkflowByPath' in value &&
+        typeof value.getWorkflowByPath === 'function'
+      const mount = document.getElementById('vue-app')
+      const pinia = mount?.__vue_app__?.config.globalProperties.$pinia
+      if (!pinia) throw new Error('Pinia is not mounted')
+      const workflows = [...pinia._s.values()].find(isWorkflowLookup)
+      if (!workflows) throw new Error('workflow store is not mounted')
+      const tab = workflows.getWorkflowByPath(action.tabPath)
+      if (!tab) throw new Error(`no open tab at ${action.tabPath}`)
+      if (!tab.activeState)
+        throw new Error(`workflow at ${action.tabPath} has no active state`)
+      tab.activeState.id = action.graphId
+    }, action)
+  }
+
+  private async sendHostFrame(
+    frame: HostFrame,
+    waitForDelivery = false
+  ): Promise<void> {
+    if (!waitForDelivery) {
+      this.hostSocket.send(frame)
+      return
+    }
     const parsedFrame = parseServerDocFrame(frame)
     if (parsedFrame?.type !== 'doc_update')
-      throw new Error('Host widget resync did not produce a doc_update')
+      throw new Error('Host operation did not produce a doc_update')
 
     const receipt = crypto.randomUUID()
     await this.page.evaluate(
-      ({ receipt, workflowId, seq }) => {
-        const api = window.app!.api
+      ({ receipt, workflowId, seq, handledEvent }) => {
         const attribute = 'data-agent-crdt-update-receipt'
         const cleanupType = `agent-crdt-update-cleanup-${receipt}`
-        const removeReceiptListener = () => {
-          api.removeCustomEventListener('doc_update', recordReceipt)
+        function removeReceiptListener() {
+          document.removeEventListener(handledEvent, recordReceipt)
           document.removeEventListener(cleanupType, removeReceiptListener)
         }
-        const recordReceipt = (event: CustomEvent<unknown>) => {
-          if (typeof event.detail !== 'object' || event.detail === null) return
-          if (
-            !('workflow_id' in event.detail) ||
-            event.detail.workflow_id !== workflowId ||
-            !('seq' in event.detail) ||
-            event.detail.seq !== seq
+        function isRecord(value: unknown): value is Record<string, unknown> {
+          return typeof value === 'object' && value !== null
+        }
+        function isThisUpdate(detail: unknown): boolean {
+          if (typeof detail !== 'string') return false
+          const frame: unknown = JSON.parse(detail)
+          if (!isRecord(frame) || frame.type !== 'doc_update') return false
+          return (
+            isRecord(frame.data) &&
+            frame.data.workflow_id === workflowId &&
+            frame.data.seq === seq
           )
+        }
+        function recordReceipt(event: Event) {
+          if (!(event instanceof CustomEvent) || !isThisUpdate(event.detail))
             return
           document.documentElement.setAttribute(attribute, receipt)
           removeReceiptListener()
         }
-        api.addCustomEventListener('doc_update', recordReceipt)
+        document.addEventListener(handledEvent, recordReceipt)
         document.addEventListener(cleanupType, removeReceiptListener, {
           once: true
         })
@@ -995,7 +1415,8 @@ export class AgentConversationHarness {
       {
         receipt,
         workflowId: parsedFrame.data.workflowId,
-        seq: parsedFrame.data.seq
+        seq: parsedFrame.data.seq,
+        handledEvent: AGENT_FRAME_HANDLED_EVENT
       }
     )
     try {
@@ -1035,6 +1456,14 @@ interface ConversationFixtures {
   // Node definitions this case needs beyond the recorded core subset.
   extraNodeDefs: Record<string, ComfyNodeDef>
   humanOpsHost: HumanOpsHost
+  workflowTarget: WorkflowTarget
+  // Assets the boot mock serves for every /api/assets query, so combo widgets
+  // loaded with the seed already see them.
+  bootAssets: ListAssetsResponse
+  // Opt in only for cases that assert telemetry through hostTelemetryFixture.
+  telemetryEnabled: boolean
+  seedPassthrough: Omit<Partial<WorkflowJSON>, 'nodes' | 'links'>
+  comfyPage: ComfyPage
   agentConversation: AgentConversationHarness
 }
 
@@ -1046,6 +1475,13 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   replayTiming: [defaultReplayTiming(), { option: true }],
   extraNodeDefs: [{}, { option: true }],
   humanOpsHost: ['hold', { option: true }],
+  workflowTarget: ['saved-via-picker', { option: true }],
+  bootAssets: [{ assets: [], total: 0, has_more: false }, { option: true }],
+  telemetryEnabled: [false, { option: true }],
+  seedPassthrough: [{}, { option: true }],
+  comfyPage: async ({ page, request }, use) => {
+    await use(new ComfyPage(page, request))
+  },
   viewport: VIEWPORT,
   video: {
     mode:
@@ -1057,11 +1493,16 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   agentConversation: async (
     {
       page,
+      comfyPage,
       agentFlagEnabled,
       conversationCase,
       replayTiming,
       extraNodeDefs,
-      humanOpsHost
+      humanOpsHost,
+      workflowTarget,
+      bootAssets,
+      telemetryEnabled,
+      seedPassthrough
     },
     use,
     testInfo
@@ -1073,15 +1514,22 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       throw new Error(
         `a conversation replay is judged on Vue nodes; tag the test ${VUE_NODES_TAG}`
       )
+    const conversation = loadAgentConversation(conversationCase)
+    conversation.workflow.seed = {
+      ...conversation.workflow.seed,
+      ...seedPassthrough
+    }
     const harness = new AgentConversationHarness(
       page,
-      loadAgentConversation(conversationCase),
+      comfyPage,
+      conversation,
       replayTiming,
       conversationCase,
       extraNodeDefs,
-      humanOpsHost
+      humanOpsHost,
+      workflowTarget
     )
-    await harness.boot(agentFlagEnabled, vueNodes)
+    await harness.boot(agentFlagEnabled, vueNodes, bootAssets, telemetryEnabled)
     await use(harness)
   }
 })

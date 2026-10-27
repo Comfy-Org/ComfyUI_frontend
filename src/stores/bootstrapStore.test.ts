@@ -1,3 +1,6 @@
+import type { WebSession } from '@comfyorg/account-core/webSession'
+import { bootCloudIdentity } from '@/platform/auth/session/cloudIdentityBoot'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -15,6 +18,7 @@ import { api } from '@/scripts/api'
 import { useBootstrapStore } from './bootstrapStore'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/auth/session/cloudIdentityBoot'))
 
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false
@@ -39,6 +43,7 @@ function requestFailure(status: number) {
 describe('bootstrapStore', () => {
   beforeEach(() => {
     vi.spyOn(api, 'getCustomNodesI18n').mockResolvedValue({})
+    vi.spyOn(api, 'prefetchNodeDefs').mockImplementation(() => {})
     vi.spyOn(i18nModule, 'mergeCustomNodesI18n').mockImplementation(() => {})
     useSettingStore().isReady = false
     useAuthStore().isInitialized = false
@@ -61,7 +66,7 @@ describe('bootstrapStore', () => {
     expect(store.isI18nReady).toBe(false)
   })
 
-  it('starts store bootstrap (settings, i18n)', async () => {
+  it('starts store bootstrap (settings, i18n, node defs prefetch)', async () => {
     const store = useBootstrapStore()
     const settingStore = useSettingStore()
     void store.startStoreBootstrap()
@@ -70,6 +75,7 @@ describe('bootstrapStore', () => {
       expect(settingStore.isReady).toBe(true)
       expect(store.isI18nReady).toBe(true)
     })
+    expect(api.prefetchNodeDefs).toHaveBeenCalledOnce()
   })
 
   it('records both store phases when their loads reject', async () => {
@@ -156,6 +162,29 @@ describe('bootstrapStore', () => {
       expect(settingStore.isReady).toBe(true)
     })
 
+    it('boots the web session before waiting for a sign-in and loads stores for a session-only user without prefetching node defs', async () => {
+      const boot = vi.mocked(bootCloudIdentity)
+      const store = useBootstrapStore()
+      const bootstrapPromise = store.startStoreBootstrap()
+      await vi.waitFor(() => expect(store.isI18nReady).toBe(true))
+      expect(boot).not.toHaveBeenCalled()
+
+      useAuthStore().isInitialized = true
+      await vi.waitFor(() => expect(boot).toHaveBeenCalledOnce())
+      expect(useSettingStore().isReady).toBe(false)
+
+      Object.assign(useCloudWebSessionStore(), {
+        state: {
+          phase: 'signed_in',
+          session: fromPartial<WebSession>({ user: { id: 'user-a' } })
+        }
+      })
+      await bootstrapPromise
+
+      expect(useSettingStore().isReady).toBe(true)
+      expect(api.prefetchNodeDefs).not.toHaveBeenCalled()
+    })
+
     it('retries once and keeps authenticated stores gated if Firebase resolves signed out', async () => {
       vi.useFakeTimers()
       try {
@@ -180,9 +209,6 @@ describe('bootstrapStore', () => {
 
     it('gives up after a second timeout, reports it, and keeps authenticated stores gated', async () => {
       vi.useFakeTimers()
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       try {
         const store = useBootstrapStore()
         const settingStore = useSettingStore()
@@ -193,9 +219,10 @@ describe('bootstrapStore', () => {
 
         expect(mockReportError).toHaveBeenCalledOnce()
         expect(mockReportError).toHaveBeenCalledWith(expect.anything(), {
+          surface: 'platform',
           errorType: 'bootstrap_auth_wait_timeout'
         })
-        expect(consoleError).not.toHaveBeenCalled()
+        expect(console.error).not.toHaveBeenCalled()
         expect(settingStore.isReady).toBe(false)
       } finally {
         vi.useRealTimers()

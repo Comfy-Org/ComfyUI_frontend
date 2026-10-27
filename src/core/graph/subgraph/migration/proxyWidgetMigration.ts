@@ -16,7 +16,7 @@ import type {
   ProxyWidgetQuarantineReason
 } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
@@ -396,7 +396,7 @@ function applyHostValueToInput(
   entry: PendingEntry
 ): boolean {
   if (!input.widgetId || entry.isHole) return Boolean(input.widgetId)
-  return useWidgetValueStore().setValue(input.widgetId, entry.hostValue)
+  return useWidgetValueStore().restoreValue(input.widgetId, entry.hostValue)
 }
 
 function applyHostLabelToInput(
@@ -773,7 +773,7 @@ export function appendQuarantine(
 
     const input = hostNode.inputs.find((input) => input.name === inputName)
     if (input?.widgetId)
-      useWidgetValueStore().setValue(input.widgetId, hostValue)
+      useWidgetValueStore().restoreValue(input.widgetId, hostValue)
   }
 
   const existing = parseProxyWidgetErrorQuarantine(

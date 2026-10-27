@@ -26,11 +26,7 @@ test.describe(
       test.setTimeout(90_000)
       const panel = page.getByTestId('docked-agent-panel')
       const topbar = new Topbar(page)
-      const canvas = new CanvasHelper(
-        page,
-        page.locator('#graph-canvas'),
-        page.getByRole('button', { name: 'Reset View' })
-      )
+      const canvas = new CanvasHelper(page, page.locator('#graph-canvas'))
       const tabs = topbar.tabs
       const lastTurn = agentConversation.conversation.turns.length - 1
 
@@ -142,11 +138,7 @@ test.describe(
       const panel = agentConversation.panel
       const nodes = agentConversation.vueNodes
       const topbar = new Topbar(page)
-      const canvas = new CanvasHelper(
-        page,
-        page.locator('#graph-canvas'),
-        page.getByRole('button', { name: 'Reset View' })
-      )
+      const canvas = new CanvasHelper(page, page.locator('#graph-canvas'))
       const tabs = topbar.tabs
       const lastTurn = agentConversation.conversation.turns.length - 1
 
@@ -245,6 +237,7 @@ test.describe(
       const customTitle = 'My Custom Sampler'
       const topbar = new Topbar(page)
       await agentConversation.runTurns()
+      await agentConversation.fitCanvasToGraph()
       const sampler =
         await agentConversation.vueNodes.getFixtureByTitle('KSampler')
       await sampler.setTitle(customTitle)
@@ -261,7 +254,6 @@ test.describe(
         .poll(() => agentConversation.subscribeCount())
         .toBe(subscribeCount + 1)
 
-      test.fail()
       await expect(sampler.title).toHaveText(customTitle)
     })
 
@@ -275,12 +267,14 @@ test.describe(
       const wrapper = nodes.getNodeInnerWrapper(nodeId)
       const topbar = new Topbar(page)
       await agentConversation.runTurns()
+      await agentConversation.fitCanvasToGraph()
       await nodes.selectNode(nodeId)
       const originalBackground = await wrapper.evaluate(
         (element) => getComputedStyle(element).backgroundColor
       )
       await page
-        .getByTestId(TestIds.selectionToolbox.colorPickerButton)
+        .getByTestId(TestIds.selectionToolbox.root)
+        .getByRole('button', { name: 'Color', exact: true })
         .dispatchEvent('click')
       await page
         .getByTestId(TestIds.selectionToolbox.colorRed)

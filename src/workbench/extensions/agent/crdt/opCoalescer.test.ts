@@ -1,6 +1,7 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { createOpCoalescer } from './opCoalescer'
 import { WIRE_MAX_OPS_PER_BATCH } from './opEnvelope'
@@ -13,14 +14,14 @@ function deleteNode(id: number): GraphOperation {
   return { op: 'delete_node', node_id: id, removed_links: [] }
 }
 
-function nodeIds(ops: Op[]): unknown[] {
+function nodeIds(ops: ReadonlyArray<Op | DocOp>): unknown[] {
   return ops.map((op) => ('node_id' in op ? op.node_id : undefined))
 }
 
 const flushMicrotasks = () => Promise.resolve()
 
 describe('createOpCoalescer over the op sender', () => {
-  let sent: Op[][]
+  let sent: (readonly DocOp[])[]
   let settled: BatchOutcome[]
   let resultListener: ((result: OpsResultView) => void) | null
   let boundWorkflow: string | null
@@ -96,15 +97,24 @@ describe('createOpCoalescer over the op sender', () => {
     expect(nodeIds(settled[0].ops)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
   })
 
-  it('sends nothing and settles nothing when detached before the flush', async () => {
-    for (let id = 1; id <= 8; id++) coalescer.enqueue([deleteNode(id)])
+  it('sends nothing but settles the admitted batch undeliverable when detached before the flush', async () => {
+    coalescer.enqueue([deleteNode(1)])
+    coalescer.enqueue([deleteNode(2)])
+    coalescer.enqueue([deleteNode(3)])
+    coalescer.enqueue([deleteNode(4)])
+    coalescer.enqueue([deleteNode(5)])
+    coalescer.enqueue([deleteNode(6)])
+    coalescer.enqueue([deleteNode(7)])
+    coalescer.enqueue([deleteNode(8)])
     sender.detach()
     coalescer.detach()
 
     await flushMicrotasks()
 
     expect(sent).toHaveLength(0)
-    expect(settled).toHaveLength(0)
+    expect(settled).toHaveLength(1)
+    expect(settled[0].state).toBe('undeliverable')
+    expect(nodeIds(settled[0].ops)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
     expect(sender.pending()).toBe(0)
   })
 

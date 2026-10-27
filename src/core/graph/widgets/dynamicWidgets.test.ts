@@ -100,14 +100,13 @@ describe('Dynamic Combos', () => {
     node.widgets.splice(0, 1)
     const inputsBefore = inputSnapshot(node)
     const widgetsBefore = widgetSnapshot(node)
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     selector.value = '1'
 
     expect(inputSnapshot(node)).toEqual(inputsBefore)
     expect(widgetSnapshot(node)).toEqual(widgetsBefore)
     expect(selector.value).toBe('0')
-    expect(error).toHaveBeenCalledWith(expect.any(Error))
+    expect(console.error).toHaveBeenCalledWith(expect.any(Error))
 
     node.widgets.unshift(selector)
     selector.value = '1'
@@ -128,14 +127,13 @@ describe('Dynamic Combos', () => {
     const [input] = node.inputs.splice(inputIndex, 1)
     const inputsBefore = inputSnapshot(node)
     const widgetsBefore = widgetSnapshot(node)
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     selector.value = '1'
 
     expect(inputSnapshot(node)).toEqual(inputsBefore)
     expect(widgetSnapshot(node)).toEqual(widgetsBefore)
     expect(selector.value).toBe('0')
-    expect(error).toHaveBeenCalledWith(expect.any(Error))
+    expect(console.error).toHaveBeenCalledWith(expect.any(Error))
 
     node.inputs.splice(inputIndex, 0, input)
     selector.value = '1'
@@ -599,7 +597,6 @@ describe('Autogrow', () => {
         ok: false,
         error: { code: 'occupied-target', message: 'Target is occupied' }
       })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     node.disconnectInput(1)
     const inputNames = node.inputs.map(({ name }) => name)
@@ -611,7 +608,6 @@ describe('Autogrow', () => {
     expect(node.inputs.map(({ name }) => name)).toEqual(inputNames)
     expect(node.widgets.map(({ name }) => name)).toEqual(widgetNames)
     expect(onConnectionsChange).not.toHaveBeenCalled()
-    consoleError.mockRestore()
   })
   test('Removing a connection ignores stale autogrow callbacks after group removal', () => {
     const graph = new LGraph()

@@ -8,9 +8,9 @@
  * Pull, not push: the probe reads the app's own live enabled/doc-bound/graph
  * signal at the moment of the mint, so there is no second copy of that state
  * to keep in sync, go stale, or tear down. The only registrant is
- * `attachMintPortWiring`, which already owns that signal for the mint ports
- * themselves — so a graph mints from the shared-safe range exactly when its
- * edits are being sent to the doc.
+ * `attachDocOpMinter`, which already owns that signal for the ops it mints —
+ * so a graph mints from the shared-safe range exactly when its edits are
+ * being sent to the doc.
  */
 
 /** The root graph id sharing its id space, or `null` when none is. */

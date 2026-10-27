@@ -390,6 +390,7 @@ describe('layoutStore CRDT operations', () => {
     }
     for (const scope of ['geometry', 'global', 'node'] as const) {
       expect(mockReportError).toHaveBeenCalledWith(errors[scope], {
+        surface: 'platform',
         errorType: 'canvas_layout_listener_failed',
         tags: {
           failure_kind: 'caught_unexpected',
@@ -1062,4 +1063,63 @@ describe('layoutStore content-size performance contract', () => {
       stop()
     }
   )
+})
+
+describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
+  beforeEach(() => {
+    layoutStore.resetForTests()
+    layoutStore.updateLinkSegmentLayout(toLinkId(1), null, {
+      path: new Path2D(),
+      bounds: { x: 0, y: 0, width: 100, height: 100 },
+      centerPos: { x: 50, y: 50 }
+    })
+  })
+
+  function strokeHitOnlyAt(x: number, y: number) {
+    return fromPartial<CanvasRenderingContext2D>({
+      lineWidth: 17,
+      isPointInStroke: (_path: Path2D, hitX: number, hitY: number) =>
+        hitX === x && hitY === y
+    })
+  }
+
+  it('scales the CSS-space point by the caller-supplied dpr', () => {
+    expect(
+      layoutStore.queryLinkSegmentAtPoint(
+        { x: 50, y: 50 },
+        strokeHitOnlyAt(25, 25),
+        0.5
+      )
+    ).toEqual({ linkId: toLinkId(1), rerouteId: null })
+  })
+
+  it.for([
+    {
+      name: 'the browser DPR',
+      global: 'devicePixelRatio',
+      value: 2,
+      hitAt: 100
+    },
+    {
+      name: 'a sub-1 browser DPR clamped to 1',
+      global: 'devicePixelRatio',
+      value: 0.5,
+      hitAt: 50
+    },
+    {
+      name: 'DPR 1 without a window',
+      global: 'window',
+      value: undefined,
+      hitAt: 50
+    }
+  ])('falls back to $name when dpr is omitted', ({ global, value, hitAt }) => {
+    vi.stubGlobal(global, value)
+
+    expect(
+      layoutStore.queryLinkSegmentAtPoint(
+        { x: 50, y: 50 },
+        strokeHitOnlyAt(hitAt, hitAt)
+      )
+    ).toEqual({ linkId: toLinkId(1), rerouteId: null })
+  })
 })

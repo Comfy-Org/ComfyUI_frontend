@@ -14,6 +14,7 @@ function reportStorageError(
   operation: 'writing' | 'reading' | 'clearing'
 ) {
   reportError(error, {
+    surface: 'platform',
     errorType: `error_${operation}_onboarding_replay_request`
   })
 }

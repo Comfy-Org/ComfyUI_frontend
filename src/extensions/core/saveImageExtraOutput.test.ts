@@ -19,9 +19,9 @@ async function loadExtension(graph: LGraph): Promise<ComfyExtension> {
   vi.resetModules()
   const { app } = await import('@/scripts/app')
   vi.mocked(app).graph = graph
-  const registerExtension = vi.mocked(app.registerExtension)
-  await import('./saveImageExtraOutput')
-  return registerExtension.mock.calls[0][0]
+  const { saveImageExtraOutputExtension } =
+    await import('./saveImageExtraOutput')
+  return saveImageExtraOutputExtension
 }
 
 async function createNodeWithFilenamePrefix(
@@ -91,4 +91,12 @@ describe('Comfy.SaveImageExtraOutput', () => {
       expect(widget.serializeValue!()).toBe('ComfyUI_12345')
     }
   )
+
+  it('serializes the current widget value, not the value at node creation', async () => {
+    const widget = await createNodeWithFilenamePrefix('SaveImage', 'initial')
+
+    widget.value = 'edited_%Sampler.seed%'
+
+    expect(widget.serializeValue!()).toBe('edited_12345')
+  })
 })

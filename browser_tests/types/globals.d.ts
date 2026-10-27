@@ -1,9 +1,11 @@
+import '@/types'
+
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphBadge as LGraphBadgeClass } from '@/lib/litegraph/src/LGraphBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
 import type { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { App } from 'vue'
 
 /**
  * Helper type for accessing nodes by ID in browser tests.
@@ -25,16 +27,30 @@ export interface TabSwitchLens {
 }
 
 interface CapturedMessages {
-  clientFeatureFlags: unknown
-  serverFeatureFlags: unknown
+  clientFeatureFlags: { type: string; data: Record<string, unknown> } | null
+  serverFeatureFlags: Record<string, unknown> | null
+}
+
+interface PerfFrameState {
+  frameRequestId: number
+  lastTimestamp: number | null
+  durationsMs: number[]
+}
+
+interface PerfLongtaskState {
+  observer: PerformanceObserver
+  tbtMs: number
 }
 
 declare global {
+  interface HTMLElement {
+    __vue_app__?: App
+  }
+
   interface Window {
     app?: ComfyApp
     graph?: LGraph
     LiteGraph?: LiteGraphGlobal
-    LGraphBadge?: typeof LGraphBadge
 
     // Test-specific globals used for assertions
     foo?: boolean
@@ -42,6 +58,23 @@ declare global {
     changeCount?: number
     widgetValue?: unknown
     __commandExecutionCounts?: Record<string, number>
+    __autoShownReads?: number
+    __perfFrameState?: PerfFrameState
+    __perfLongtaskState?: PerfLongtaskState
+    __captureHostTelemetry?: (captured: {
+      event: string
+      properties: Record<string, unknown>
+    }) => Promise<void>
+    /**
+     * Pushes a host auth state change through the mocked Desktop bridge.
+     * @see browser_tests/fixtures/hostSessionPartnerNodeFixture.ts
+     */
+    __pushHostAuthState?: (next: { status: 'signed_out' }) => unknown
+    __captureHostErrorReport?: (captured: {
+      message: string
+      stack?: string
+      properties: Record<string, unknown>
+    }) => Promise<void>
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
@@ -60,12 +93,21 @@ declare global {
      * @see browser_tests/tests/agent/agentHumanAddTabSwitch.spec.ts
      */
     __tabSwitchLens?: TabSwitchLens
+    /**
+     * Every `data-node-id` the DOM has mounted since the recorder was
+     * installed, so a test can tell "the node was rendered and then removed"
+     * apart from "the node was never rendered".
+     * @see browser_tests/tests/agent/agentClearedWorkflowStaysCleared.spec.ts
+     */
+    __mountedNodeIds?: Set<string>
+
+    __mountedNodeObserver?: MutationObserver
+    __agentRecoveryGraph?: LGraph
   }
 
   const app: ComfyApp | undefined
   const graph: LGraph | undefined
   const LiteGraph: LiteGraphGlobal | undefined
-  const LGraphBadge: typeof LGraphBadgeClass | undefined
 }
 
 /**

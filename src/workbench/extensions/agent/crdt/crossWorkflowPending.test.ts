@@ -1,12 +1,11 @@
-import type { Op } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { GraphMutations } from './graphMutations'
 import { render } from '@testing-library/vue'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {
@@ -23,6 +22,7 @@ const bridgeState = vi.hoisted(() => {
     })
 
     resubscribe = vi.fn()
+    reconnect = vi.fn()
     reconcile = vi.fn()
     destroy = vi.fn()
     subscribedWorkflowId: string | null = null
@@ -45,9 +45,13 @@ const bridgeState = vi.hoisted(() => {
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
   transportUp: true,
-  attempts: [] as Array<{ workflowId: string; tab: string; ops: Op[] }>,
-  sent: [] as Array<{ workflowId: string; tab: string; ops: Op[] }>,
-  sendOps: vi.fn((workflowId: string, tab: string, ops: Op[]) => {
+  attempts: [] as Array<{
+    workflowId: string
+    tab: string
+    ops: readonly DocOp[]
+  }>,
+  sent: [] as Array<{ workflowId: string; tab: string; ops: readonly DocOp[] }>,
+  sendOps: vi.fn((workflowId: string, tab: string, ops: readonly DocOp[]) => {
     clientState.attempts.push({ workflowId, tab, ops })
     if (!clientState.transportUp) return false
     clientState.sent.push({ workflowId, tab, ops })
@@ -55,35 +59,27 @@ const clientState = vi.hoisted(() => ({
   })
 }))
 
-const adapterState = vi.hoisted(() => ({
+const projectionState = vi.hoisted(() => ({
   bind: vi.fn(),
   unbind: vi.fn(),
-  applyFrame: vi.fn(),
-  clearForReset: vi.fn(),
-  discardPending: vi.fn(),
+  applyFrame: vi.fn(() => ({
+    applied: false as const,
+    nodes: { added: [], removed: [] }
+  })),
+  applyCollected: vi.fn(() => []),
+  retryFailed: vi.fn(() => null),
+  hasPendingFailure: vi.fn(() => false),
+  revertRejected: vi.fn(() => []),
+  replaceOnNextFrame: vi.fn(),
+  discardPending: vi.fn(() => ({ added: [], removed: [] })),
+  noteLocalWrites: vi.fn(),
+  settleLocalWrites: vi.fn(),
   destroy: vi.fn()
 }))
 
 const devLogState = vi.hoisted(() => ({
   recordDevEvent: vi.fn()
 }))
-
-const apiState = vi.hoisted(() => {
-  const target = new EventTarget()
-  return {
-    target,
-    api: {
-      socket: { readyState: 1, send: vi.fn() },
-      addCustomEventListener: vi.fn(),
-      removeCustomEventListener: vi.fn(),
-      addEventListener: (type: string, listener: EventListener) =>
-        target.addEventListener(type, listener),
-      removeEventListener: vi.fn((type: string, listener: EventListener) =>
-        target.removeEventListener(type, listener)
-      )
-    }
-  }
-})
 
 vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
   LayoutFollowerBridge: class {
@@ -102,14 +98,20 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
-  EcsFollowerAdapter: class {
-    bind = adapterState.bind
-    unbind = adapterState.unbind
-    applyFrame = adapterState.applyFrame
-    clearForReset = adapterState.clearForReset
-    discardPending = adapterState.discardPending
-    destroy = adapterState.destroy
+vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
+  AgentCrdtProjection: class {
+    bind = projectionState.bind
+    unbind = projectionState.unbind
+    applyFrame = projectionState.applyFrame
+    applyCollected = projectionState.applyCollected
+    retryFailed = projectionState.retryFailed
+    hasPendingFailure = projectionState.hasPendingFailure
+    revertRejected = projectionState.revertRejected
+    replaceOnNextFrame = projectionState.replaceOnNextFrame
+    discardPending = projectionState.discardPending
+    noteLocalWrites = projectionState.noteLocalWrites
+    settleLocalWrites = projectionState.settleLocalWrites
+    destroy = projectionState.destroy
   }
 }))
 
@@ -117,15 +119,16 @@ vi.mock(import('./devPanelLog'), () => ({
   recordDevEvent: devLogState.recordDevEvent
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
+vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
 
-import { useAgentCrdtFollower } from './useAgentCrdtFollower'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import { api } from '@/scripts/api'
 
-const graphMutations = {} as GraphMutations
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
+import { useAgentCrdtFollower } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 function deleteNode(nodeId: string): GraphOperation {
   return {
@@ -140,7 +143,9 @@ function mountFollower(initial: string): {
   workflowId: Ref<string | null>
   enqueue: (operations: GraphOperation[]) => Promise<void>
   status: () => AgentCrdtStatus
+  reconnect: () => void
 } {
+  const agentSocket = createFakeAgentSocket()
   const workflowId = ref<string | null>(initial)
   let enqueue!: (operations: GraphOperation[]) => Promise<void>
   let exposedStatus!: () => AgentCrdtStatus
@@ -148,7 +153,9 @@ function mountFollower(initial: string): {
     setup() {
       const { enqueueHumanOperations, status } = useAgentCrdtFollower(
         workflowId,
-        graphMutations
+        {
+          transport: agentSocket.transport
+        }
       )
       enqueue = async (operations) => {
         enqueueHumanOperations(operations)
@@ -160,7 +167,13 @@ function mountFollower(initial: string): {
   })
   const { unmount } = render(host)
   onTestFinished(unmount)
-  return { unmount, workflowId, enqueue, status: exposedStatus }
+  return {
+    unmount,
+    workflowId,
+    enqueue,
+    status: exposedStatus,
+    reconnect: () => agentSocket.open()
+  }
 }
 
 async function switchWorkflow(workflowId: Ref<string | null>, next: string) {
@@ -178,19 +191,19 @@ function dispatchOpsResult(detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent('doc_ops_result', { detail }))
 }
 
-describe('R-73 cross-workflow pending operations', () => {
-  beforeEach(() => {
-    useAgentPanelStore().enabled = true
-    bridgeState.current = null
-    bridgeState.transport.up = true
-    clientState.transportUp = true
-    clientState.attempts = []
-    clientState.sent = []
-    clientState.sendOps.mockClear()
-    devLogState.recordDevEvent.mockClear()
-    vi.useFakeTimers()
-  })
+beforeEach(() => {
+  useAgentPanelStore().enabled = true
+  bridgeState.current = null
+  bridgeState.transport.up = true
+  clientState.transportUp = true
+  clientState.attempts = []
+  clientState.sent = []
+  clientState.sendOps.mockClear()
+  devLogState.recordDevEvent.mockClear()
+  vi.useFakeTimers()
+})
 
+describe('R-73 cross-workflow pending operations', () => {
   it('cancels pending sends and rejects new operations while the product gate is off', async () => {
     const store = useAgentPanelStore()
     const { enqueue, status } = mountFollower('wf-a')
@@ -366,18 +379,6 @@ describe('R-73 cross-workflow pending operations', () => {
 // racing a doc unbind/resubscribe, this is the mechanism that leaves an
 // orphaned node in the CRDT doc while the client believes the add failed.
 describe('abortIfUnbound settles delivered ops as undeliverable', () => {
-  beforeEach(() => {
-    useAgentPanelStore().enabled = true
-    bridgeState.current = null
-    bridgeState.transport.up = true
-    clientState.transportUp = true
-    clientState.attempts = []
-    clientState.sent = []
-    clientState.sendOps.mockClear()
-    devLogState.recordDevEvent.mockClear()
-    vi.useFakeTimers()
-  })
-
   it('a batch the transport already accepted is never later reported undeliverable, even across a workflow retarget', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
@@ -409,5 +410,127 @@ describe('abortIfUnbound settles delivered ops as undeliverable', () => {
     // the server confirms applying, must never have been reported
     // 'undeliverable'. It was today.
     expect(settlement?.[1].state).not.toBe('undeliverable')
+  })
+})
+
+/**
+ * The FakeBridge's `resubscribe` is a bare vi.fn, so a test that wants the
+ * post-reconnect subscribe ack must play the host's part itself: mark the
+ * workflow subscribed again and forward the `doc_subscribed` ok frame the
+ * bridge would have re-emitted.
+ */
+function ackResubscribe(workflowId: string): void {
+  bridge().subscribedWorkflowId = workflowId
+  bridge().dispatchEvent(
+    new CustomEvent('doc_subscribed', {
+      detail: { workflowId, ok: true, seq: 0 }
+    })
+  )
+}
+
+/**
+ * These pins exercise retry identity and acknowledgment within the active
+ * retry budget. Post-exhaustion retention and replay belong to the separately
+ * reviewed replay-policy change, not this current-behavior pin carrier.
+ */
+describe('a human edit made while the document connection is down', () => {
+  it('does not flush a pending batch on reconnect before the resubscribe ack', async () => {
+    const { enqueue, reconnect } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersToNextTimer()
+    expect(devLogState.recordDevEvent).not.toHaveBeenCalledWith(
+      'human_ops_settled',
+      expect.objectContaining({ state: 'undeliverable' })
+    )
+    expect(clientState.sent).toHaveLength(0)
+
+    clientState.transportUp = true
+    reconnect()
+    expect(bridge().reconnect).toHaveBeenCalledOnce()
+    expect(clientState.sent).toHaveLength(0)
+  })
+
+  it('keeps the original op_id when a transport retry succeeds', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersToNextTimer()
+    const operationId = clientState.attempts[0].ops[0].op_id
+
+    clientState.transportUp = true
+    vi.advanceTimersToNextTimer()
+
+    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent[0].ops[0]).toMatchObject({
+      op_id: operationId,
+      op: 'delete_node',
+      node_id: 'edited-during-outage'
+    })
+  })
+
+  it('keeps the minted actor paired with the wire tab when the session id changes before a retry', async () => {
+    api.clientId = 'sid-before-reconnect'
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersToNextTimer()
+    const firstTab = clientState.attempts[0].tab
+
+    api.clientId = 'sid-after-reconnect'
+    clientState.transportUp = true
+    vi.advanceTimersToNextTimer()
+
+    expect(clientState.sent).toHaveLength(1)
+    const [retried] = clientState.sent
+    expect(retried.tab).toBe(firstTab)
+    expect(retried.ops[0].actor).toBe(clientState.attempts[0].ops[0].actor)
+    expect(retried.ops[0].actor).toBe(`human:anonymous:${retried.tab}`)
+  })
+
+  it('sends a valid wire identity before the first session id arrives', async () => {
+    api.clientId = undefined
+    const { enqueue } = mountFollower('wf-a')
+
+    await enqueue([deleteNode('edited-before-status')])
+
+    expect(clientState.sent).toHaveLength(1)
+    const [sent] = clientState.sent
+    expect(sent.tab).not.toBe('')
+    expect(sent.ops[0].actor).toBe(`human:anonymous:${sent.tab}`)
+  })
+
+  it('does not resend an acknowledged retry on a later reconnect', async () => {
+    const { enqueue, reconnect } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersToNextTimer()
+
+    clientState.transportUp = true
+    vi.advanceTimersToNextTimer()
+    expect(clientState.sent).toHaveLength(1)
+    const replayedOperationId = clientState.sent[0].ops[0].op_id
+
+    dispatchOpsResult({
+      workflowId: 'wf-a',
+      ok: true,
+      applied: [replayedOperationId],
+      skipped: []
+    })
+    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
+      'human_ops_settled',
+      expect.objectContaining({
+        state: 'acknowledged',
+        ops: [expect.objectContaining({ op_id: replayedOperationId })]
+      })
+    )
+    reconnect()
+    ackResubscribe('wf-a')
+
+    expect(clientState.sent).toHaveLength(1)
   })
 })

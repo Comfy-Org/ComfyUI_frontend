@@ -17,7 +17,7 @@ const meta: Meta<typeof ValueControlButton> = {
     (story) => ({
       components: { story },
       template:
-        '<div class="flex items-center justify-center rounded-lg bg-node-component-surface p-8"><story /></div>'
+        '<div class="flex items-center justify-center rounded-lg bg-node p-8"><story /></div>'
     })
   ]
 }

@@ -92,6 +92,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     const incumbent = bucket?.byId.get(linkId)
     if (incumbent && incumbent.graphId !== scope.owningGraphId) {
       reportError(new Error('Link presentation ownership conflict'), {
+        surface: 'platform',
         errorType: 'link_presentation_ownership_conflict',
         context: {
           linkId,

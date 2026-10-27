@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import { TestIds } from '@e2e/fixtures/selectors'
 import type { Position } from '@e2e/fixtures/types'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import type { Point } from '@/lib/litegraph/src/litegraph'
@@ -15,19 +16,66 @@ type NodeGeometry = {
   size: Point
 }
 
+export async function waitForCanvasViewToSettle(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () =>
+      new Promise<boolean>((resolve) => {
+        const { ds } = window.app!.canvas
+        let previous = [ds.scale, ds.offset[0], ds.offset[1]]
+        let stableFrames = 0
+
+        const check = () => {
+          const current = [ds.scale, ds.offset[0], ds.offset[1]]
+          stableFrames = current.every(
+            (value, index) => value === previous[index]
+          )
+            ? stableFrames + 1
+            : 0
+          previous = current
+          if (stableFrames === 5) resolve(true)
+          else requestAnimationFrame(check)
+        }
+
+        requestAnimationFrame(check)
+      })
+  )
+}
+
 export class CanvasHelper {
   constructor(
     private page: Page,
-    private canvas: Locator,
-    private resetViewButton: Locator
+    private canvas: Locator
   ) {}
 
-  async resetView(): Promise<void> {
-    if (await this.resetViewButton.isVisible()) {
-      await this.resetViewButton.click()
-    }
-    await this.page.mouse.move(10, 10)
-    await nextFrame(this.page)
+  async getMinimapRightInset(): Promise<number> {
+    const canvasRight = await this.canvas.evaluate(
+      (el) => el.getBoundingClientRect().right
+    )
+    const minimapRight = await this.page
+      .getByTestId(TestIds.canvas.minimapContainer)
+      .evaluate((el) => el.getBoundingClientRect().right)
+    return canvasRight - minimapRight
+  }
+
+  async getNodesOutsideViewportCount(): Promise<number> {
+    return this.page.evaluate(() => {
+      const app = window.app!
+      const view = app.canvas.canvas.getBoundingClientRect()
+      return app.graph.nodes.filter((node) => {
+        const bounds = node.getBounding()
+        const [left, top] = app.canvasPosToClientPos([bounds[0], bounds[1]])
+        const [right, bottom] = app.canvasPosToClientPos([
+          bounds[0] + bounds[2],
+          bounds[1] + bounds[3]
+        ])
+        return (
+          left < view.left ||
+          top < view.top ||
+          right > view.right ||
+          bottom > view.bottom
+        )
+      }).length
+    })
   }
 
   async zoom(deltaY: number, steps: number = 1): Promise<void> {
@@ -175,10 +223,36 @@ export class CanvasHelper {
     await nextFrame(this.page)
   }
 
-  async getOffset(): Promise<[number, number]> {
-    return this.page.evaluate(
-      () => [...window.app!.canvas.ds.offset] as [number, number]
-    )
+  async getOffset(): Promise<Point> {
+    return this.page.evaluate(() => [...window.app!.canvas.ds.offset] as Point)
+  }
+
+  async setOffset(offset: Point): Promise<void> {
+    await this.page.evaluate((offset) => {
+      const canvas = window.app!.canvas
+      canvas.ds.offset = offset
+      canvas.setDirty(true, true)
+    }, offset)
+    await nextFrame(this.page)
+  }
+
+  async getElementWidth(): Promise<number> {
+    return this.page.evaluate(() => window.app!.canvasEl.width)
+  }
+
+  async getVisibleNodeCount(): Promise<number> {
+    return this.page.evaluate(() => {
+      const { canvas } = window.app!
+      if (!canvas.graph) return 0
+      canvas.ds.computeVisibleArea(canvas.viewport)
+      return canvas.graph.nodes.filter((node) =>
+        canvas.ds.visible_area.overlaps(node.boundingRect)
+      ).length
+    })
+  }
+
+  async waitForViewToSettle(): Promise<void> {
+    await waitForCanvasViewToSettle(this.page)
   }
 
   async getNodeTitleHeight(): Promise<number> {

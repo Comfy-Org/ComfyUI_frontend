@@ -16,14 +16,17 @@ export type {
   BillingServerCode,
   BillingSession,
   BillingTransport
-} from './billingContracts.js'
-export { matchesServerCode, unwrapServerCode } from './billingContracts.js'
-export type { SessionBillingTransportOptions } from './transport.js'
-export { createSessionBillingTransport } from './transport.js'
-export type { CredentialedBillingTransportOptions } from './credentialedTransport.js'
-export { createCredentialedBillingTransport } from './credentialedTransport.js'
-export type { BillingScope, BillingScopeSource } from './billingScope.js'
-export { sessionBillingScopeSource } from './billingScope.js'
+} from './billingContracts'
+export { matchesServerCode, unwrapServerCode } from './billingContracts'
+export type { SessionBillingTransportOptions } from './transport'
+export { createSessionBillingTransport } from './transport'
+export type {
+  CredentialedBillingTransportOptions,
+  CredentialedWebSession
+} from './credentialedTransport'
+export { createCredentialedBillingTransport } from './credentialedTransport'
+export type { BillingScope, BillingScopeSource } from './billingScope'
+export { sessionBillingScopeSource } from './billingScope'
 export type {
   BillingCapabilities,
   CapabilitiesReadOptions,
@@ -32,18 +35,18 @@ export type {
   CapabilitiesSnapshot,
   CapabilityRolloutDefaults,
   CapabilityScope
-} from './capabilities.js'
+} from './capabilities'
 export {
   CAPABILITIES_ROUTE,
   CAPABILITY_REVISION_HEADER,
   createCapabilitiesReader,
   readCapabilityRevision
-} from './capabilities.js'
+} from './capabilities'
 export type {
   CapabilityDenialReason,
   CapabilityDenials
-} from './capabilityDenials.js'
-export { decodeCapabilityDenials } from './capabilityDenials.js'
+} from './capabilityDenials'
+export { decodeCapabilityDenials } from './capabilityDenials'
 export type {
   BillingBalance,
   CreditsReadOptions,
@@ -51,8 +54,8 @@ export type {
   CreditsReaderOptions,
   CreditsScope,
   CreditsSnapshot
-} from './credits.js'
-export { CREDITS_ROUTE, createCreditsReader } from './credits.js'
+} from './credits'
+export { CREDITS_ROUTE, createCreditsReader } from './credits'
 export type {
   BillingEvent,
   BillingEventsData,
@@ -61,8 +64,8 @@ export type {
   BillingEventsReadOptions,
   BillingEventsScope,
   BillingEventsSnapshot
-} from './events.js'
-export { BILLING_EVENTS_ROUTE, createBillingEventsReader } from './events.js'
+} from './events'
+export { BILLING_EVENTS_ROUTE, createBillingEventsReader } from './events'
 export type {
   BillingPlansData,
   PlansReadOptions,
@@ -70,8 +73,16 @@ export type {
   PlansReaderOptions,
   PlansScope,
   PlansSnapshot
-} from './plans.js'
-export { PLANS_ROUTE, createPlansReader } from './plans.js'
+} from './plans'
+export { PLANS_ROUTE, createPlansReader } from './plans'
+export type {
+  WorkspaceInvite,
+  WorkspaceInviteCommands
+} from './workspaceInvites'
+export {
+  WORKSPACE_INVITES_ROUTE,
+  createWorkspaceInviteCommands
+} from './workspaceInvites'
 export type {
   PaymentMethodsReadOptions,
   PaymentMethodsReader,
@@ -79,11 +90,11 @@ export type {
   PaymentMethodsScope,
   PaymentMethodsSnapshot,
   SavedPaymentMethod
-} from './paymentMethods.js'
+} from './paymentMethods'
 export {
   PAYMENT_METHODS_ROUTE,
   createPaymentMethodsReader
-} from './paymentMethods.js'
+} from './paymentMethods'
 export type {
   BillingStatusData,
   BillingStatusReader,
@@ -91,14 +102,18 @@ export type {
   BillingStatusReadOptions,
   BillingStatusScope,
   BillingStatusSnapshot
-} from './status.js'
-export { BILLING_STATUS_ROUTE, createBillingStatusReader } from './status.js'
+} from './status'
+export { BILLING_STATUS_ROUTE, createBillingStatusReader } from './status'
 export type {
   BillingAuthenticationState,
+  BillingChargeBreakdown,
+  BillingChargeReason,
   BillingDeclineReason,
   BillingOpStatus,
   BillingOperationEvent,
   BillingOperationIdentity,
+  BillingOperationPlan,
+  BillingOperationReceipt,
   BillingOperationKind,
   BillingOperationPhase,
   BillingOperationServerPhase,
@@ -109,59 +124,72 @@ export type {
   EmbeddedChallenge,
   FailedBillingOperation,
   HostedBillingDestination,
-  PendingBillingOperation
-} from './operationState.js'
+  PendingBillingOperation,
+  SucceededBillingOperation
+} from './operationState'
 export {
   isBlockedOnCustomerPhase,
+  isGrantLanding,
   isTerminal,
   reduceBillingOperation,
   validateActionUrl
-} from './operationState.js'
+} from './operationState'
 export {
   OPERATION_POLL_BUDGET,
   OPERATION_POLL_TIMING,
+  customerCanActHere,
   hasExhaustedPollBudget,
   isParkedOnCustomer,
   nextPollDelayMs,
+  pendingOperationActionHold,
   pollBudgetMs
-} from './operationPolicy.js'
+} from './operationPolicy'
+export type { CustomerActionHold } from './operationPolicy'
 export type {
   BillingOperationPointer,
   BillingOperationPointerStorage,
   OperationPointerStore
-} from './operationPointer.js'
+} from './operationPointer'
 export {
   OPERATION_POINTER_MAX_AGE_MS,
   createOperationPointerStore,
   operationPointerKey
-} from './operationPointer.js'
-export type { PresentationRoutingInput } from './presentation.js'
-export { selectBillingPresentation } from './presentation.js'
+} from './operationPointer'
+export type { PresentationRoutingInput } from './presentation'
+export { selectBillingPresentation } from './presentation'
 export type {
   BillingOperationFailureCategory,
   BillingOperationLifecycle,
   BillingOperationLifecycleOptions,
   BillingOperationTelemetryEvent,
+  BillingRecoverOptions,
   IssuedBillingOperation,
   PresentationSwitchOutcome
-} from './operationLifecycle.js'
+} from './operationLifecycle'
 export {
   createBillingOperationLifecycle,
+  failureCategoryFor,
   operationRoute
-} from './operationLifecycle.js'
-export { BILLING_OPERATION_TELEMETRY_EVENT } from '../../telemetry.js'
+} from './operationLifecycle'
+export {
+  BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
+  BILLING_OPERATION_TELEMETRY_EVENT
+} from '#/telemetry'
+export * from './telemetry/index'
 export type {
   EmbeddedChallengeOutcome,
   EmbeddedChallengePort
-} from './challengeDriver.js'
-export { driveEmbeddedChallenge } from './challengeDriver.js'
+} from './challengeDriver'
+export { driveEmbeddedChallenge } from './challengeDriver'
 export {
   readBillingErrorCode,
   readBillingErrorMessage
-} from './billingErrorBody.js'
+} from './billingErrorBody'
 export type {
   BillingCommands,
   BillingCommandsOptions,
+  CancelOperationResult,
+  CancelRefusalCode,
   PaymentPortalResult,
   PreviewSubscribeInput,
   PreviewSubscribeOptions,
@@ -173,7 +201,7 @@ export type {
   SubscriptionCommandResult,
   SubscriptionPreview,
   TerminalBillingOperation
-} from './subscriptionCommands.js'
+} from './subscriptionCommands'
 export {
   CANCEL_SUBSCRIPTION_ROUTE,
   PAYMENT_PORTAL_ROUTE,
@@ -181,26 +209,34 @@ export {
   RESUBSCRIBE_ROUTE,
   SUBSCRIBE_ROUTE,
   createBillingCommands
-} from './subscriptionCommands.js'
+} from './subscriptionCommands'
 export type {
   HostPaymentStep,
   PaymentProjection,
   PaymentReasonKey,
   PaymentStep
-} from './paymentProjection.js'
-export { projectPaymentStep } from './paymentProjection.js'
-export type { PaymentCopyKey, PaymentCopyKeys } from './paymentCopy.js'
+} from './paymentProjection'
+export { awaitsHostedAction, projectPaymentStep } from './paymentProjection'
+export type {
+  DeclineDetailKey,
+  PaymentCopyKey,
+  PaymentCopyKeys
+} from './paymentCopy'
 export {
   DEFAULT_PAYMENT_COPY,
   createPaymentCopy,
+  declineDetailKey,
   paymentCopyKeys
-} from './paymentCopy.js'
+} from './paymentCopy'
 export type {
   CreateHostedTopupCheckoutInput,
+  CreateInteractiveTopupInput,
   CreateTopupCheckoutInput,
   HostedTopupCheckout,
   HostedTopupCheckoutFailure,
   HostedTopupCheckoutResult,
+  InteractiveTopupPayment,
+  QuoteTopupInput,
   TopupCommand,
   TopupCommandOptions,
   TopupDeclined,
@@ -210,23 +246,27 @@ export type {
   TopupInvalidReturnUrl,
   TopupNoPaymentMethod,
   TopupNotAvailable,
+  TopupQuote,
+  TopupQuoteResult,
   TopupResult,
   TopupSucceeded,
   TopupUnsettled
-} from './topup.js'
+} from './topup'
 export {
+  INTERACTIVE_TOPUP_ROUTE,
   TOPUP_CHECKOUT_ROUTE,
+  TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,
   createTopupCommand
-} from './topup.js'
+} from './topup'
 export type {
   BalanceWatch,
   BalanceWatchOptions,
   BalanceWatchOutcome
-} from './balanceWatch.js'
+} from './balanceWatch'
 export {
   BALANCE_WATCH_LIFETIME_MS,
   BALANCE_WATCH_MAX_SCHEDULED_RUNS,
   BALANCE_WATCH_RETRY_GAPS_MS,
   createBalanceWatch
-} from './balanceWatch.js'
+} from './balanceWatch'

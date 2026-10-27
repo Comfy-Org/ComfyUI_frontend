@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useFullscreen, usePointerSwipe } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { APP_MODE_FEEDBACK_FORM_URL } from '@/platform/surveys/appModeFeedback'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -75,22 +76,25 @@ function onClick(index: number) {
   activeIndex.value = index
 }
 
-const workflowsEntries = computed(() => {
-  return workflowStore.openWorkflows.map((w) => ({
-    label: w.filename,
-    icon: w.activeState?.extra?.linearMode
-      ? 'icon-[lucide--panels-top-left] bg-primary-background'
-      : undefined,
-    command: () => workflowService.openWorkflow(w),
-    checked: workflowStore.activeWorkflow === w
+const workflowOptions = computed(() =>
+  workflowStore.openWorkflows.map((workflow) => ({
+    value: workflow.path,
+    label: workflow.filename,
+    icon: workflow.activeState?.extra?.linearMode
+      ? 'icon-[lucide--panels-top-left]'
+      : undefined
   }))
+)
+const activeWorkflowPath = computed({
+  get: () => workflowStore.activeWorkflow?.path ?? '',
+  set: (path: string) => {
+    const workflow = workflowStore.getWorkflowByPath(path)
+    if (workflow)
+      void workflowService.openWorkflow(workflow, { initiator: 'user' })
+  }
 })
 
 const menuEntries = computed<MenuItem[]>(() => [
-  {
-    label: t('linearMode.appModeToolbar.apps'),
-    icon: 'icon-[lucide--panels-top-left]'
-  },
   {
     ...commandIdToMenuItem('Comfy.BrowseTemplates'),
     label: t('sideToolbar.templates'),
@@ -124,7 +128,7 @@ const menuEntries = computed<MenuItem[]>(() => [
   {
     label: t('linearMode.enterNodeGraph'),
     icon: 'icon-[comfy--workflow]',
-    new: true,
+    badge: t('contextMenu.new'),
     command: () => (canvasStore.linearMode = false)
   },
   { separator: true },
@@ -146,7 +150,7 @@ const menuEntries = computed<MenuItem[]>(() => [
   },
   {
     label: t('linearMode.giveFeedback'),
-    icon: 'icon-[lucide--clipboard-pen]',
+    icon: 'icon-[lucide--megaphone] size-4',
     command: () =>
       window.open(APP_MODE_FEEDBACK_FORM_URL, '_blank', 'noopener,noreferrer')
   },
@@ -159,37 +163,41 @@ const menuEntries = computed<MenuItem[]>(() => [
 </script>
 <template>
   <section
-    class="absolute flex size-full flex-col bg-secondary-background"
+    class="absolute flex size-full flex-col bg-secondary"
     data-testid="linear-mobile"
   >
     <header
-      class="flex h-16 w-full items-center gap-3 border-b border-border-subtle bg-base-background px-4 py-3"
+      class="flex h-16 w-full items-center gap-3 border-b border-border/50 bg-background px-4 py-3"
     >
-      <DropdownMenu :entries="menuEntries" />
-      <DropdownMenu
-        :entries="workflowsEntries"
-        class="max-h-[40vh] w-(--reka-dropdown-menu-content-available-width) overflow-y-auto"
-        :collision-padding="20"
-      >
-        <template #button>
-          <!--TODO: Use button here? Probably too much work to destyle-->
-          <div
-            class="flex h-10 grow items-center gap-2 rounded-sm bg-secondary-background p-2"
+      <Menu :items="menuEntries" :label="$t('linearMode.appModeToolbar.apps')">
+        <template #trigger>
+          <Button
+            size="icon"
+            icon="icon-[lucide--menu]"
+            :aria-label="$t('g.more')"
+          />
+        </template>
+      </Menu>
+      <Menu>
+        <template #trigger>
+          <Button
+            variant="secondary"
+            class="min-w-0 flex-1"
             data-testid="linear-mobile-workflows"
+            icon="icon-[lucide--panels-top-left]"
           >
-            <i
-              class="icon-[lucide--panels-top-left] shrink-0 bg-primary-background"
-            />
             <span
-              class="size-full truncate contain-size"
+              class="min-w-0 flex-1 truncate"
               v-text="workflowStore.activeWorkflow?.filename"
             />
-            <i
-              class="icon-[lucide--chevron-down] shrink-0 bg-muted-foreground"
-            />
-          </div>
+            <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
+          </Button>
         </template>
-      </DropdownMenu>
+        <MenuRadioGroup
+          v-model="activeWorkflowPath"
+          :options="workflowOptions"
+        />
+      </Menu>
       <CurrentUserButton v-if="isLoggedIn" :show-arrow="false" />
     </header>
     <div class="size-full rounded-b-4xl contain-content">
@@ -211,7 +219,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         </div>
         <div
           id="mobile-app-preview-panel"
-          class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"
+          class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-background"
           role="tabpanel"
           :aria-hidden="activeIndex !== 1"
           aria-labelledby="mobile-app-preview-tab"
@@ -225,17 +233,18 @@ const menuEntries = computed<MenuItem[]>(() => [
         </div>
         <AssetsSidebarTab
           id="mobile-app-output-panel"
-          class="absolute top-0 left-[200vw] h-full w-screen bg-base-background"
+          class="absolute top-0 left-[200vw] h-full w-screen bg-background"
           role="tabpanel"
           :aria-hidden="activeIndex !== 2"
           aria-labelledby="mobile-app-output-tab"
           :inert="activeIndex !== 2"
+          :closable="false"
         />
       </div>
     </div>
     <div
       ref="sliderPaneRef"
-      class="flex h-22 w-full items-center justify-around gap-4 bg-secondary-background p-4"
+      class="flex h-22 w-full items-center justify-around gap-4 bg-secondary p-4"
       role="tablist"
     >
       <Button
@@ -250,10 +259,10 @@ const menuEntries = computed<MenuItem[]>(() => [
         @click="onClick(index)"
       >
         <div class="relative size-4">
-          <i :class="cn('size-4', icon)" />
+          <i :class="icon" />
           <div
             v-if="index === 1 && isErrorOverlayVisible"
-            class="absolute -top-1 -right-1 size-2 rounded-full bg-error"
+            class="absolute -top-1 -right-1 size-2 rounded-full bg-destructive"
           />
           <div
             v-else-if="
@@ -261,7 +270,7 @@ const menuEntries = computed<MenuItem[]>(() => [
               (queueStore.runningTasks.length > 0 ||
                 queueStore.pendingTasks.length > 0)
             "
-            class="absolute -top-1 -right-1 size-2 animate-pulse rounded-full bg-primary-background"
+            class="absolute -top-1 -right-1 size-2 animate-pulse rounded-full bg-primary"
           />
         </div>
         {{ t(label) }}
