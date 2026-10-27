@@ -70,7 +70,7 @@
       "
       @update:model-value="onOtherChange"
     />
-    <p v-if="errorMessage" class="text-xs text-destructive-background">
+    <p v-if="errorMessage" class="text-xs text-destructive">
       {{ errorMessage }}
     </p>
   </fieldset>
@@ -89,7 +89,7 @@
       :class="inputClass"
       @update:model-value="onTextChange"
     />
-    <p v-if="errorMessage" class="text-xs text-destructive-background">
+    <p v-if="errorMessage" class="text-xs text-destructive">
       {{ errorMessage }}
     </p>
   </div>
@@ -100,8 +100,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Input from '@/components/ui/input/Input.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import Input from '@comfyorg/design-system/input/Input'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import type {
   LocalizedString,
   OnboardingSurveyField,

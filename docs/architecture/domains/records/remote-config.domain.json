@@ -4,30 +4,6 @@
   "description": "Server feature configuration from /features: the reactive remote config state and cached flags, server feature flag names, config types, and the bounded refresh that reloads config on sign-in and session changes.",
   "modules": [
     {
-      "path": "src/platform/remoteConfig/types.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/remoteConfig/serverFeatureFlag.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/remoteConfig/remoteConfig.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/remoteConfig/__mocks__/remoteConfig.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/remoteConfig/refreshRemoteConfig.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/remoteConfig/refreshRemoteConfig.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/composables/__mocks__/useFeatureFlags.ts",
       "role": "application"
     },
@@ -37,6 +13,30 @@
     },
     {
       "path": "src/composables/useFeatureFlags.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/remoteConfig/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/remoteConfig/refreshRemoteConfig.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/remoteConfig/refreshRemoteConfig.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/remoteConfig/serverFeatureFlag.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/remoteConfig/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/storybook/mocks/useFeatureFlags.ts",
       "role": "application"
     },
     {
@@ -54,10 +54,6 @@
     {
       "path": "src/utils/sessionFeatureFlagOverride.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/storybook/mocks/useFeatureFlags.ts",
-      "role": "application"
     }
   ],
   "publicEntryPoints": [],

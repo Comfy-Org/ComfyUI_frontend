@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center gap-2">
-    <span class="h-px flex-1 bg-border-default" />
-    <span class="text-xs text-muted-foreground">{{ widget.label }}</span>
+    <span class="h-px flex-1 bg-border" />
+    <span>{{ widget.label }}</span>
     <Button
       variant="textonly"
       size="icon"
@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const { widget } = defineProps<{ widget: SimplifiedWidget }>()

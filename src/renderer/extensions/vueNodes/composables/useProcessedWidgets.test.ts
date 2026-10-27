@@ -9,8 +9,8 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -553,9 +553,7 @@ describe('computeProcessedWidgets', () => {
 
     const result = processWidgets({ widgetIds: [id], showAdvanced: true })
 
-    expect(result[0].simplified.borderStyle).toBe(
-      'ring ring-component-node-widget-advanced'
-    )
+    expect(result[0].simplified.borderStyle).toBe('ring ring-primary')
   })
 
   it('reads widget identity, value, label, and options from widgetId state', () => {
@@ -700,7 +698,7 @@ describe('computeProcessedWidgets', () => {
       hasLayoutSize: true,
       simplified: {
         name: 'display_slot',
-        borderStyle: 'ring ring-component-node-widget-advanced'
+        borderStyle: 'ring ring-primary'
       }
     })
     expect(result[0].vueComponent).toBe(WidgetDOM)

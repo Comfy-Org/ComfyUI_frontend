@@ -93,8 +93,8 @@ function getWidgetHeight(
 function draw() {
   if (!widgetInstance || !node) return
   const width =
-    canvasEl.value.getBoundingClientRect().width ||
-    canvasEl.value.parentElement.clientWidth
+    canvasEl.value.parentElement.clientWidth ||
+    canvasEl.value.getBoundingClientRect().width
   const height = getWidgetHeight(widgetInstance, node, width)
   containerHeight.value = height
   node.canvasHeight = height

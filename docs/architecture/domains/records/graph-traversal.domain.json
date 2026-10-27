@@ -4,7 +4,7 @@
   "description": "Shared technical module for graph hierarchy traversal, node lookup, execution-path addressing, and input-source resolution. Its many functions and consumers remain a candidate for separating graph queries from execution addressing.",
   "modules": [
     {
-      "path": "src/utils/graphTraversalUtil.ts",
+      "path": "src/utils/__mocks__/graphTraversalUtil.ts",
       "role": "application"
     },
     {
@@ -12,7 +12,7 @@
       "role": "application"
     },
     {
-      "path": "src/utils/__mocks__/graphTraversalUtil.ts",
+      "path": "src/utils/graphTraversalUtil.ts",
       "role": "application"
     }
   ],

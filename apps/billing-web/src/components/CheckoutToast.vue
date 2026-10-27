@@ -20,8 +20,8 @@
         <i
           :class="
             severity === 'warn'
-              ? 'pi pi-exclamation-circle text-warning-background'
-              : 'pi pi-spin pi-spinner text-link'
+              ? 'pi pi-exclamation-circle text-warning'
+              : 'pi pi-spin pi-spinner text-primary'
           "
           aria-hidden="true"
         />
@@ -37,14 +37,11 @@
           "
           aria-hidden="true"
         />
-        <div class="flex min-w-0 flex-1 flex-col gap-2">
-          <p data-toast-summary class="m-0 text-base/6 font-medium">
+        <div class="flex min-w-0 flex-1 flex-col gap-2 font-medium">
+          <p data-toast-summary class="m-0 text-base/6">
             {{ summary }}
           </p>
-          <p
-            data-toast-detail
-            class="m-0 text-sm/5 font-medium text-base-foreground"
-          >
+          <p data-toast-detail class="m-0 text-sm/5 text-foreground">
             {{ detail }}
           </p>
         </div>

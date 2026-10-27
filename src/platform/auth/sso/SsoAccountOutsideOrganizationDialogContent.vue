@@ -1,39 +1,26 @@
 <template>
-  <div
-    class="flex w-full max-w-lg flex-col rounded-2xl border border-border-default bg-base-background"
-  >
-    <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
-    >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
-        {{ t('auth.sso.outsideOrganization.title') }}
-      </h2>
-      <Button
-        size="icon"
-        variant="muted-textonly"
-        :aria-label="t('g.close')"
-        @click="dismiss"
-      >
-        <i class="icon-[lucide--x] size-4" />
-      </Button>
-    </div>
+  <AppDialogPanel unpadded @close="dismiss">
+    <template #title>
+      {{ t('auth.sso.outsideOrganization.title') }}
+    </template>
 
     <p class="m-0 p-4 text-sm text-muted-foreground">
       {{ t('auth.sso.outsideOrganization.body') }}
     </p>
 
-    <div class="flex items-center justify-end p-4">
+    <template #footer>
       <Button variant="secondary" size="lg" autofocus @click="dismiss">
         {{ t('g.close') }}
       </Button>
-    </div>
-  </div>
+    </template>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { ACCOUNT_OUTSIDE_ORGANIZATION_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useDialogStore } from '@/stores/dialogStore'
 

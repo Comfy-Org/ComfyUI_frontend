@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import HoverCard from '@/components/ui/hover-card/HoverCard.vue'
-import HoverCardContent from '@/components/ui/hover-card/HoverCardContent.vue'
-import HoverCardTrigger from '@/components/ui/hover-card/HoverCardTrigger.vue'
+import HoverCard from '@comfyorg/design-system/hover-card/HoverCard'
+import HoverCardContent from '@comfyorg/design-system/hover-card/HoverCardContent'
+import HoverCardTrigger from '@comfyorg/design-system/hover-card/HoverCardTrigger'
 
 const { description, unavailable = false } = defineProps<{
   description: string
@@ -20,7 +20,7 @@ const { t } = useI18n()
       side="top"
       align="start"
       :collision-padding="16"
-      class="w-62.5 max-w-[calc(100vw-2rem)] rounded-[10px] bg-base-background"
+      class="w-62.5 max-w-[calc(100vw-2rem)] rounded-[10px] bg-background"
     >
       <div
         role="tooltip"

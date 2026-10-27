@@ -1,5 +1,6 @@
 import type {
   AcceptInviteResponse,
+  AutoReloadSettings,
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
   BillingEventsResponse,
@@ -10,10 +11,16 @@ import type {
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
   CreateInviteRequest,
+  CreateTopupCheckoutRequest,
+  CreateTopupCheckoutResponse,
   CreateTopupRequest,
   CreateTopupResponse,
   CreateWorkspaceRequest,
   CurrentWorkspaceResponse,
+  DeploymentCompatibility,
+  DeploymentCompatibilityRequest,
+  HostedTopupCheckout,
+  HostedTopupCheckoutList,
   ListInvitesResponse,
   ListMembersResponse,
   ListWorkspacesResponse,
@@ -25,6 +32,7 @@ import type {
   Plan,
   PreviewSubscribeRequest,
   PreviewSubscribeResponse,
+  ReleaseUnsupportedPacks,
   RenewalInvoice,
   ResubscribeRequest,
   ResubscribeResponse,
@@ -32,6 +40,8 @@ import type {
   RetentionAcceptRequest,
   RetentionFlowEventRequest,
   RetentionFlowResponse,
+  RevertScheduledChangeRequest,
+  RevertScheduledChangeResponse,
   SavedPaymentMethod,
   ScheduledPlanChange,
   SubscribeRequest,
@@ -42,12 +52,16 @@ import type {
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
   WorkspaceDeployment,
+  WorkspaceDeploymentCpuServer,
   WorkspaceDeploymentList,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import {
+  zDeploymentCompatibility,
+  zReleaseUnsupportedPacks,
   zRetentionAcceptance,
-  zRetentionFlowResponse
+  zRetentionFlowResponse,
+  zWorkspaceDeploymentCpuServer
 } from '@comfyorg/ingest-types/zod'
 import type { AxiosInstance } from 'axios'
 import axios from 'axios'
@@ -61,7 +75,7 @@ import {
   UNKNOWN_ERROR_CODE,
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
-import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
+import { attachCapabilityRevisionInterceptor } from '@/platform/billing/api/capabilityRevision'
 import { DEPLOYMENT_LISTING_TIMEOUT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type {
   WorkspaceId,
@@ -106,7 +120,6 @@ export type { TeamCreditStops }
 export type { TeamCreditStopSummary }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
-
 export interface SubscribeOptions {
   confirmationToken?: string
   promotionCode?: string
@@ -141,9 +154,14 @@ export type { BillingStatusResponse }
 export type { RenewalInvoice }
 export type { ScheduledPlanChange }
 
+export type { AutoReloadSettings }
 export type { BillingBalanceResponse }
 export type { BillingEventsResponse }
 export type { BillingCapabilitiesResponse }
+export type BillingCapabilitiesRead = Omit<
+  BillingCapabilitiesResponse,
+  'denied_reasons'
+> & { denied_reasons?: Readonly<Partial<Record<string, string>>> }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
 export type { SavedPaymentMethod }
@@ -162,6 +180,12 @@ export type BillingRecoveryAction = NonNullable<
 
 export type { WorkspaceDeployment }
 export type { WorkspaceDeploymentList }
+
+export type { DeploymentCompatibility }
+
+export type { WorkspaceDeploymentCpuServer }
+
+const CPU_SERVER_READ_TIMEOUT_MS = 15_000
 
 interface GetBillingEventsParams {
   page?: number
@@ -422,6 +446,64 @@ export const workspaceApi = {
   },
 
   /**
+   * Which step the CPU server of the deployment this browser runs on is on.
+   * GET /api/workspaces/:id/deployment/cpu-server
+   */
+  async getDeploymentCpuServer(
+    workspaceId: WorkspaceId
+  ): Promise<WorkspaceDeploymentCpuServer> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployment/cpu-server`),
+        { ...auth, timeout: CPU_SERVER_READ_TIMEOUT_MS }
+      )
+      return zWorkspaceDeploymentCpuServer.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'getDeploymentCpuServer')
+    }
+  },
+
+  /**
+   * The packs the build of the Release this browser's deployment runs now
+   * could not load, and why, with that Release's id; empty on Comfy Cloud.
+   * GET /api/release/unsupported-packs
+   */
+  async getReleaseUnsupportedPacks(): Promise<ReleaseUnsupportedPacks> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        workspaceApiUrl('/release/unsupported-packs'),
+        auth
+      )
+      return zReleaseUnsupportedPacks.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'getReleaseUnsupportedPacks')
+    }
+  },
+
+  /**
+   * Ask which of these node types each deployment, and Comfy Cloud, lacks.
+   * POST /api/workspaces/:id/deployments/compatibility
+   */
+  async checkDeploymentCompatibility(
+    workspaceId: WorkspaceId,
+    nodeTypes: string[]
+  ): Promise<DeploymentCompatibility> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployments/compatibility`),
+        { node_types: nodeTypes } satisfies DeploymentCompatibilityRequest,
+        auth
+      )
+      return zDeploymentCompatibility.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'checkDeploymentCompatibility')
+    }
+  },
+
+  /**
    * Delete a workspace (owner only)
    * DELETE /api/workspaces/:id
    */
@@ -646,6 +728,23 @@ export const workspaceApi = {
   },
 
   /**
+   * Get automatic top-up settings and status for the current workspace
+   * GET /api/billing/auto-reload
+   */
+  async getBillingAutoReload(): Promise<AutoReloadSettings> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<AutoReloadSettings>(
+        workspaceApiUrl('/billing/auto-reload'),
+        { ...auth, timeout: 10_000 }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'getBillingAutoReload')
+    }
+  },
+
+  /**
    * Get available subscription plans
    * GET /api/billing/plans
    */
@@ -855,18 +954,45 @@ export const workspaceApi = {
   },
 
   /**
+   * Undo the pending scheduled plan change
+   * POST /api/billing/subscription/revert-scheduled-change
+   */
+  async revertScheduledChange(
+    idempotencyKey?: string
+  ): Promise<RevertScheduledChangeResponse> {
+    const auth = await requestAuth()
+    try {
+      const response =
+        await workspaceApiClient.post<RevertScheduledChangeResponse>(
+          workspaceApiUrl('/billing/subscription/revert-scheduled-change'),
+          {
+            idempotency_key: idempotencyKey
+          } satisfies RevertScheduledChangeRequest,
+          auth
+        )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'revertScheduledChange')
+    }
+  },
+
+  /**
    * Get Stripe payment portal URL for managing payment methods
    * POST /api/billing/payment-portal
    */
   async getPaymentPortalUrl(
-    returnUrl?: string
+    returnUrl?: string,
+    flowType?: PaymentPortalRequest['flow_type']
   ): Promise<PaymentPortalResponse> {
     const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.post<PaymentPortalResponse>(
         workspaceApiUrl('/billing/payment-portal'),
-        { return_url: returnUrl } satisfies PaymentPortalRequest,
-        auth
+        {
+          return_url: returnUrl,
+          flow_type: flowType
+        } satisfies PaymentPortalRequest,
+        { ...auth, timeout: 30_000 }
       )
       return response.data
     } catch (err) {
@@ -907,6 +1033,70 @@ export const workspaceApi = {
       return response.data
     } catch (err) {
       handleAxiosError(err, 'createTopup')
+    }
+  },
+
+  /**
+   * Create a Stripe-hosted credit top-up checkout session
+   * POST /api/billing/topup/checkout
+   */
+  async createTopupCheckout(
+    amountCents: number,
+    returnUrl: string,
+    signal?: AbortSignal
+  ): Promise<CreateTopupCheckoutResponse> {
+    const auth = await requestAuth()
+    signal?.throwIfAborted()
+    try {
+      const response =
+        await workspaceApiClient.post<CreateTopupCheckoutResponse>(
+          workspaceApiUrl('/billing/topup/checkout'),
+          {
+            amount_cents: amountCents,
+            return_url: returnUrl,
+            idempotency_key: crypto.randomUUID()
+          } satisfies CreateTopupCheckoutRequest,
+          { ...auth, signal }
+        )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'createTopupCheckout')
+    }
+  },
+
+  /**
+   * List the workspace's hosted top-up checkouts
+   * GET /api/billing/topup/checkouts
+   */
+  async listTopupCheckouts(): Promise<HostedTopupCheckoutList> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<HostedTopupCheckoutList>(
+        workspaceApiUrl('/billing/topup/checkouts'),
+        { ...auth, timeout: 10_000 }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'listTopupCheckouts')
+    }
+  },
+
+  /**
+   * Get the current payment state of one hosted top-up checkout
+   * GET /api/billing/topup/checkouts/{id}
+   */
+  async getTopupCheckout(sessionId: string): Promise<HostedTopupCheckout> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<HostedTopupCheckout>(
+        workspaceApiUrl(
+          `/billing/topup/checkouts/${encodeURIComponent(sessionId)}`
+        ),
+        { ...auth, timeout: 10_000 }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'getTopupCheckout')
     }
   },
 

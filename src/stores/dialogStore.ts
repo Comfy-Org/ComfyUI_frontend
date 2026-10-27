@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { markRaw, ref } from 'vue'
 import type { Component, Ref } from 'vue'
 
-import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
+import type { DialogContentSize } from '@comfyorg/design-system/lib/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 export interface DialogComponentProps {
@@ -32,7 +32,6 @@ export interface DialogComponentProps {
    */
   showCloseButton?: boolean
   size?: DialogContentSize
-  useAutomaticLabeling?: boolean
 }
 
 export interface DialogInstance {

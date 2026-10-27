@@ -4,23 +4,7 @@
   "description": "The full-screen lightbox that browses result items from jobs, assets, and agent replies, with image, video, audio, and text result viewers. Job, asset, and agent stores remain with their records.",
   "modules": [
     {
-      "path": "src/components/sidebar/tabs/queue/MediaLightbox.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/tabs/queue/MediaLightbox.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/tabs/queue/ResultAudio.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/tabs/queue/ResultText.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/tabs/queue/ResultVideo.vue",
+      "path": "src/components/sidebar/tabs/queue/**",
       "role": "presentation"
     }
   ],

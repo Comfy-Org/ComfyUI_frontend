@@ -46,7 +46,7 @@
     </Button>
 
     <template v-if="showSortOptions">
-      <div class="my-1 w-full border-b border-border-subtle" />
+      <div class="my-1 w-full border-b border-border/50" />
 
       <Button
         variant="textonly"
@@ -118,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 import { MEDIA_ASSET_VIEW_MODE } from './mediaAssetViewOptions'
 import type { MediaAssetViewMode } from './mediaAssetViewOptions'

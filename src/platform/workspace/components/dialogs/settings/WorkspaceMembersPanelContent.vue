@@ -2,7 +2,7 @@
   <div class="flex min-h-0 flex-1 flex-col">
     <div
       v-if="loadFailed"
-      class="flex items-center gap-2 px-6 py-3 text-sm text-warning-background"
+      class="flex items-center gap-2 px-6 py-3 text-sm text-warning"
     >
       <i class="icon-[lucide--circle-alert] size-4 shrink-0" />
       <span>{{ $t('workspacePanel.members.loadFailed') }}</span>
@@ -17,7 +17,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'

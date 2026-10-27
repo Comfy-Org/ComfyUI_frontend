@@ -12,33 +12,38 @@
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
         <TooltipProvider :delay-duration="1000">
-          <div class="flex h-8 flex-row gap-1">
-            <DeleteButton v-if="showDelete" />
-            <VerticalDivider v-if="canOpenNodeInfo && showAnyPrimaryActions" />
-            <InfoButton v-if="canOpenNodeInfo" />
+          <div class="flex h-8 gap-1">
+            <LinkSelectionActions v-if="hasLinkSelection" />
+            <template v-else>
+              <DeleteButton v-if="showDelete" />
+              <VerticalDivider
+                v-if="canOpenNodeInfo && showAnyPrimaryActions"
+              />
+              <InfoButton v-if="canOpenNodeInfo" />
 
-            <ColorPickerButton v-if="showColorPicker" />
-            <ArrangeButton v-if="showArrange" />
-            <FrameNodes v-if="showFrameNodes" />
-            <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
-            <ConfigureSubgraph v-if="showSubgraphButtons" />
-            <PublishSubgraphButton v-if="showSubgraphButtons" />
-            <MaskEditorButton v-if="showMaskEditor" />
-            <VerticalDivider
-              v-if="showAnyPrimaryActions && showAnyControlActions"
-            />
+              <ColorPickerButton v-if="showColorPicker" />
+              <ArrangeButton v-if="showArrange" />
+              <FrameNodes v-if="showFrameNodes" />
+              <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
+              <ConfigureSubgraph v-if="showSubgraphButtons" />
+              <PublishSubgraphButton v-if="showSubgraphButtons" />
+              <MaskEditorButton v-if="showMaskEditor" />
+              <VerticalDivider
+                v-if="showAnyPrimaryActions && showAnyControlActions"
+              />
 
-            <BypassButton v-if="showBypass" />
-            <RefreshSelectionButton v-if="showRefresh" />
-            <Load3DViewerButton v-if="showLoad3DViewer" />
+              <BypassButton v-if="showBypass" />
+              <RefreshSelectionButton v-if="showRefresh" />
+              <Load3DViewerButton v-if="showLoad3DViewer" />
 
-            <ExtensionCommandButton
-              v-for="command in extensionToolboxCommands"
-              :key="command.id"
-              :command
-            />
-            <ExecuteButton v-if="showExecute" />
-            <NodeOptionsButton />
+              <ExtensionCommandButton
+                v-for="command in extensionToolboxCommands"
+                :key="command.id"
+                :command
+              />
+              <ExecuteButton v-if="showExecute" />
+              <NodeOptionsButton />
+            </template>
           </div>
         </TooltipProvider>
       </div>
@@ -62,23 +67,26 @@ import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewer
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
 import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
-import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 
 import FrameNodes from './selectionToolbox/FrameNodes.vue'
+import LinkSelectionActions from './selectionToolbox/LinkSelectionActions.vue'
 import NodeOptionsButton from './selectionToolbox/NodeOptionsButton.vue'
-import VerticalDivider from './selectionToolbox/VerticalDivider.vue'
+import VerticalDivider from '@comfyorg/design-system/common/VerticalDivider'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
+const linkSelectionStore = useLinkSelectionStore()
 
 const toolboxRef = ref<HTMLElement | undefined>()
 const { visible } = useSelectionToolboxPosition(toolboxRef)
@@ -126,6 +134,10 @@ const showBypass = computed(
 )
 const showLoad3DViewer = computed(() => hasAny3DNodeSelected.value)
 const showMaskEditor = computed(() => isSingleImageNode.value)
+
+const hasLinkSelection = computed(
+  () => !hasAnySelection.value && linkSelectionStore.selection !== null
+)
 
 const showDelete = computed(() => hasAnySelection.value)
 const showRefresh = computed(() => hasAnySelection.value)

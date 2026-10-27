@@ -11,7 +11,7 @@
       />
 
       <!-- User Details -->
-      <h3 class="my-0 mb-1 truncate text-base font-bold text-base-foreground">
+      <h3 class="my-0 mb-1 truncate text-base font-bold text-foreground">
         {{ userDisplayName || $t('g.user') }}
       </h3>
       <p v-if="userEmail" class="my-0 truncate text-sm text-muted-foreground">
@@ -30,74 +30,57 @@
         data-testid="workspace-context-row"
       >
         <WorkspaceProfilePic class="size-6 shrink-0 text-xs" :workspace-name />
-        <span class="truncate text-sm text-base-foreground">
+        <span class="truncate text-sm text-foreground">
           {{ workspaceName }}
         </span>
       </div>
-      <template v-else>
-        <Tooltip
-          v-model:open="isWorkspaceNameTooltipOpen"
-          :disabled="!workspaceName"
-        >
-          <TooltipTrigger as-child>
-            <button
-              ref="workspaceSwitcherTrigger"
-              type="button"
-              class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover"
-              :aria-expanded="isWorkspaceSwitcherOpen"
-              aria-haspopup="menu"
-              aria-controls="workspace-switcher-panel"
-              data-testid="workspace-switcher-trigger"
-              @click="toggleWorkspaceSwitcher"
-              @keydown.escape.stop="closeWorkspaceSwitcherFromKeyboard"
-            >
-              <div class="flex w-0 flex-1 items-center gap-2">
-                <WorkspaceProfilePic
-                  class="size-6 shrink-0 text-xs"
-                  :workspace-name
-                  :subscription-tier="activeWorkspace?.subscriptionTier"
-                />
-                <span class="truncate text-sm text-base-foreground">
-                  {{ workspaceName }}
-                </span>
-              </div>
-              <i
-                class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
+      <PopoverRoot v-else v-slot="{ close }">
+        <PopoverTrigger as-child>
+          <Button
+            variant="muted-textonly"
+            class="flex h-auto w-full justify-between px-4 py-2"
+            :tooltip="workspaceName ?? ''"
+            data-testid="workspace-switcher-trigger"
+          >
+            <div class="flex w-0 flex-1 items-center gap-2">
+              <WorkspaceProfilePic
+                class="size-6 shrink-0 text-xs"
+                :workspace-name
+                :subscription-tier="activeWorkspace?.subscriptionTier"
               />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{{ workspaceName }}</TooltipContent>
-        </Tooltip>
-
-        <div
-          v-if="isWorkspaceSwitcherOpen"
-          id="workspace-switcher-panel"
-          ref="workspaceSwitcherPanel"
-          role="menu"
-          class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+              <span class="truncate text-sm text-foreground">
+                {{ workspaceName }}
+              </span>
+            </div>
+            <i
+              class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
+            />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          side="left"
+          align="start"
+          :side-offset="16"
+          prioritize-position
+          dismiss-on-viewport-change
+          class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
           data-testid="workspace-switcher-panel"
         >
           <WorkspaceSwitcherPopover
-            @select="isWorkspaceSwitcherOpen = false"
-            @create="handleCreateWorkspace"
+            @select="close"
+            @create="(close(), handleCreateWorkspace())"
           />
-        </div>
-      </template>
+          <PopoverArrow class="fill-background stroke-border/50" />
+        </PopoverContent>
+      </PopoverRoot>
     </div>
-
-    <!-- Which developer-platform deployment this browser runs on (FE-2434).
-         The switcher renders nothing until its listing answers, and nothing
-         when the account is outside the rollout or its first listing fails. -->
-    <DeploymentSwitcher
-      v-if="!accountActionsOnly && isCloud && !isApiKeyLogin"
-    />
 
     <!-- Credits Section -->
 
     <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
       <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton v-if="isLoadingBalance" class="h-5 w-16" />
-      <span v-else class="text-base font-semibold text-base-foreground">{{
+      <span v-else class="text-base font-semibold text-foreground">{{
         displayedCredits
       }}</span>
       <Button
@@ -114,7 +97,6 @@
         v-if="canTopUp"
         variant="secondary"
         size="sm"
-        class="text-base-foreground"
         data-testid="add-credits-button"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
         @click="handleTopUp"
@@ -122,13 +104,14 @@
         {{ $t('subscription.addCredits') }}
       </Button>
       <Button
-        v-else-if="canSubscribeSelfServe"
-        variant="subscribe"
+        v-else-if="paymentRecoveryAvailable"
+        variant="secondary"
         size="sm"
-        data-testid="upgrade-to-add-credits-button"
-        @click="handleUpgradeToAddCredits"
+        data-testid="add-credits-button"
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
+        @click="handleTopUp"
       >
-        {{ $t('subscription.upgradeToAddCredits') }}
+        {{ $t('subscription.addCredits') }}
       </Button>
       <!-- Subscribe/Resubscribe (only when not subscribed or cancelled) -->
       <SubscribeButton
@@ -156,19 +139,25 @@
       </Button>
     </div>
 
-    <div
-      v-if="!accountActionsOnly"
-      class="mx-0 my-2 border-t border-interface-stroke"
-    />
+    <p
+      v-if="processingPayment"
+      role="status"
+      class="m-0 px-4 pb-2 text-sm text-muted-foreground"
+      data-testid="topup-payment-processing-line"
+    >
+      {{ $t('credits.topUp.paymentProcessingFlyout') }}
+    </p>
+
+    <div v-if="!accountActionsOnly" class="mx-0 my-2 border-t" />
 
     <div
       v-if="!accountActionsOnly && isCloud && showPlansAndPricing"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
     >
-      <i class="icon-[lucide--receipt-text] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <i class="icon-[lucide--receipt-text] text-muted-foreground" />
+      <span class="flex-1 text-foreground">{{
         $t('subscription.plansAndPricing')
       }}</span>
     </div>
@@ -176,13 +165,13 @@
     <button
       v-if="!accountActionsOnly && isCloud && showManagePlan"
       type="button"
-      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
+      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
       data-testid="manage-plan-menu-item"
       :data-dd-action-name="BILLING_ACTION_NAME.managePlanPopover"
       @click="handleOpenManagePlanSettings"
     >
       <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <span class="flex-1 text-sm text-foreground">{{
         $t('subscription.managePlan')
       }}</span>
     </button>
@@ -190,12 +179,12 @@
     <button
       v-if="!accountActionsOnly && showLocalPlansAndCredits"
       type="button"
-      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
+      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
       data-testid="plans-credits-menu-item"
       @click="handleOpenPlanCreditsSettings"
     >
       <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <span class="flex-1 text-sm text-foreground">{{
         $t('subscription.plansAndCredits')
       }}</span>
     </button>
@@ -203,56 +192,53 @@
     <!-- Partner Nodes Pricing (always shown) -->
     <div
       v-if="!accountActionsOnly"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
     >
-      <i class="icon-[lucide--tag] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <i class="icon-[lucide--tag] text-muted-foreground" />
+      <span class="flex-1 text-foreground">{{
         $t('subscription.partnerNodesCredits')
       }}</span>
     </div>
 
-    <div
-      v-if="!accountActionsOnly"
-      class="mx-0 my-2 border-t border-interface-stroke"
-    />
+    <div v-if="!accountActionsOnly" class="mx-0 my-2 border-t" />
 
     <!-- Workspace Settings (always shown) -->
     <div
       v-if="!accountActionsOnly"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
       data-testid="workspace-settings-menu-item"
       @click="handleOpenWorkspaceSettings"
     >
-      <i class="icon-[lucide--users] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <i class="icon-[lucide--users] text-muted-foreground" />
+      <span class="flex-1 text-foreground">{{
         $t('userSettings.workspaceSettings')
       }}</span>
     </div>
 
     <!-- Account Settings (always shown) -->
     <div
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
       data-testid="user-settings-menu-item"
       @click="handleOpenUserSettings"
     >
-      <i class="icon-[lucide--settings-2] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <i class="icon-[lucide--settings-2] text-muted-foreground" />
+      <span class="flex-1 text-foreground">{{
         $t('userSettings.accountSettings')
       }}</span>
     </div>
 
-    <div class="mx-0 my-2 border-t border-interface-stroke" />
+    <div class="mx-0 my-2 border-t" />
 
     <!-- Logout (always shown) -->
     <div
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
       data-testid="logout-menu-item"
       @click="handleLogout"
     >
-      <i class="icon-[lucide--log-out] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <i class="icon-[lucide--log-out] text-muted-foreground" />
+      <span class="flex-1 text-foreground">{{
         $t('auth.signOut.signOut')
       }}</span>
     </div>
@@ -260,22 +246,19 @@
 </template>
 
 <script setup lang="ts">
+import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   canDesktopHostSwitchWorkspace,
@@ -283,17 +266,18 @@ import {
 } from '@/platform/auth/desktopHost/desktopHostSession'
 
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import SubscribeButton from '@/platform/billing/subscription/components/SubscribeButton.vue'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 const workspaceStore = useTeamWorkspaceStore()
@@ -305,19 +289,8 @@ const {
 } = storeToRefs(workspaceStore)
 const { permissions, canReactivatePlan, canOpenPricingSurface } =
   useWorkspaceUI()
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
-const isWorkspaceSwitcherOpen = ref(false)
-const isWorkspaceNameTooltipOpen = ref(false)
-const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
-const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
-
-onClickOutside(
-  workspaceSwitcherPanel,
-  () => {
-    isWorkspaceSwitcherOpen.value = false
-  },
-  { ignore: [workspaceSwitcherTrigger] }
-)
+const { canTopUp, canSubscribeSelfServe, paymentRecoveryAvailable } =
+  useBillingCapabilities()
 
 const emit = defineEmits<{
   close: []
@@ -326,6 +299,10 @@ const emit = defineEmits<{
 const { accountActionsOnly = false } = defineProps<{
   accountActionsOnly?: boolean
 }>()
+
+const { payment: processingPayment } = useProcessingTopupPayment(
+  () => !accountActionsOnly
+)
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
@@ -441,11 +418,6 @@ const handleOpenPlanCreditsSettings = () => {
   emit('close')
 }
 
-const handleUpgradeToAddCredits = () => {
-  subscriptionDialog.showPricingTable({ reason: 'upgrade_to_add_credits' })
-  emit('close')
-}
-
 const handleTopUp = () => {
   useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'avatar_menu' })
   showTopUpCreditsDialog({
@@ -468,23 +440,11 @@ const handleLogout = async () => {
 }
 
 const handleCreateWorkspace = () => {
-  isWorkspaceSwitcherOpen.value = false
   showCreateWorkspaceDialog()
   emit('close')
 }
 
-const toggleWorkspaceSwitcher = () => {
-  isWorkspaceSwitcherOpen.value = !isWorkspaceSwitcherOpen.value
-}
-
-const closeWorkspaceSwitcherFromKeyboard = () => {
-  isWorkspaceSwitcherOpen.value = false
-  isWorkspaceNameTooltipOpen.value = false
-}
-
-const refreshBalance = () => {
+onMounted(() => {
   if (!accountActionsOnly) void fetchBalance()
-}
-
-defineExpose({ refreshBalance })
+})
 </script>

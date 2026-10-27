@@ -4,26 +4,27 @@ import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Tag from '@/components/chip/Tag.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
-import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
+import type { UserAttachment } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type {
   PromptSnapshot,
   WorkflowReference
-} from '../../../types/workflowReference'
-import type { ReplyAsset } from '../../../utils/replyAssets'
-import { isReplyAssetKind } from '../../../utils/replyAssets'
-import { agentMessageText } from '../../../utils/agentMessageText'
-import { promptReferenceParts } from '../../../utils/promptReferenceParts'
-import type { SkillReference as SkillReferenceData } from '../../../types/skillReference'
-import CatalogSkillReference from '../CatalogSkillReference.vue'
+} from '@/workbench/extensions/agent/types/workflowReference'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+import { isReplyAssetKind } from '@/workbench/extensions/agent/utils/replyAssets'
+import { agentMessageText } from '@/workbench/extensions/agent/utils/agentMessageText'
+import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
+import type { SkillReference as SkillReferenceData } from '@/workbench/extensions/agent/types/skillReference'
+import CatalogSkillReference from '@/workbench/extensions/agent/components/agent/CatalogSkillReference.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 import {
   selectedUserMessageClipboard,
@@ -156,7 +157,7 @@ function attachmentUrl(
   const capturedUrl =
     kind === 'video' || kind === 'audio' ? item.mediaUrl : item.previewUrl
   if (capturedUrl) return capturedUrl
-  if (!item.ref) return
+  if (!item.ref || isHdrImageFilename(item.name)) return
   return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
 }
 </script>
@@ -189,7 +190,7 @@ function attachmentUrl(
         class="m-0"
       >
         <div
-          class="flex aspect-square w-full items-center justify-center rounded-lg bg-secondary-background"
+          class="flex aspect-square w-full items-center justify-center rounded-lg bg-secondary"
         >
           <span
             :class="
@@ -206,7 +207,7 @@ function attachmentUrl(
       v-if="text || workflowReferences.length || skillReference"
       ref="bubble"
       data-testid="user-message-bubble"
-      class="w-fit max-w-full rounded-lg bg-secondary-background px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
+      class="w-fit max-w-full rounded-lg bg-secondary px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
     >
       <template v-for="(part, index) in promptParts" :key="index">
         <Tag

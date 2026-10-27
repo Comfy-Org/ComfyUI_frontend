@@ -4,19 +4,27 @@
   "description": "App-mode workflow execution: state, the LinearView host, input and output presentation, run controls, history, and previews. Builder authoring belongs to app-builder.",
   "modules": [
     {
+      "path": "src/components/appMode/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/__mocks__/useAppMode.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useAppMode.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/**",
+      "role": "presentation"
+    },
+    {
       "path": "src/renderer/extensions/linearMode/flattenNodeOutput.test.ts",
       "role": "domain"
     },
     {
       "path": "src/renderer/extensions/linearMode/flattenNodeOutput.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/linearModeTypes.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/linearRunErrorWarningIds.ts",
       "role": "domain"
     },
     {
@@ -28,12 +36,20 @@
       "role": "application"
     },
     {
+      "path": "src/renderer/extensions/linearMode/linearModeTypes.ts",
+      "role": "domain"
+    },
+    {
       "path": "src/renderer/extensions/linearMode/linearOutputStore.test.ts",
       "role": "application"
     },
     {
       "path": "src/renderer/extensions/linearMode/linearOutputStore.ts",
       "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/linearRunErrorWarningIds.ts",
+      "role": "domain"
     },
     {
       "path": "src/renderer/extensions/linearMode/useExecutionStatus.ts",
@@ -48,176 +64,24 @@
       "role": "application"
     },
     {
-      "path": "src/renderer/extensions/linearMode/AppInput.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/AppOutput.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/DropZone.stories.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/DropZone.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/DropZone.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/DropZoneIndicatorContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/DropZoneMediaActions.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/ImagePreview.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/LatentPreview.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/LinearArrange.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/LinearControls.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/LinearControls.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/LinearPreview.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/LinearPreview.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/LinearProgressBar.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/LinearRunErrorWarning.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/LinearRunErrorWarning.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/LinearWelcome.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/LinearWelcome.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/MediaOutputPreview.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/mediaTypes.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/MobileDisplay.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/MobileError.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/OutputHistory.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/OutputHistory.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/OutputHistoryItem.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/OutputPreviewItem.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/PartnerNodeItem.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/PartnerNodesList.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/Preview3d.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/Preview3d.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/linearMode/VideoPreview.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/appMode/AppModeToolbar.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/appMode/AppModeToolbar.vue",
-      "role": "presentation"
+      "path": "src/stores/appModeStore.test.ts",
+      "role": "application"
     },
     {
       "path": "src/stores/appModeStore.ts",
       "role": "application"
     },
     {
-      "path": "src/stores/appModeStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/views/LinearView.vue",
-      "role": "presentation"
+      "path": "src/utils/appMode.ts",
+      "role": "domain"
     },
     {
       "path": "src/views/LinearView.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/composables/useAppMode.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/__mocks__/useAppMode.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/utils/appMode.ts",
-      "role": "domain"
+      "path": "src/views/LinearView.vue",
+      "role": "presentation"
     }
   ],
   "publicEntryPoints": [],

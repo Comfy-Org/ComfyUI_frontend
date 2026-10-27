@@ -1,6 +1,6 @@
 import { isEqual } from 'es-toolkit'
 
-import type { IBaseWidget } from '../types/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export interface NamedValuesShadowDiffResult {
   mismatchWidgetCount: number

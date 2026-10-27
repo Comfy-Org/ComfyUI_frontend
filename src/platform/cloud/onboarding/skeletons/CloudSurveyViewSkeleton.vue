@@ -3,7 +3,7 @@
     <div class="flex min-h-[638px] min-w-[320px] flex-col">
       <Skeleton class="mb-8 h-2 w-full" />
 
-      <div class="flex flex-1 flex-col p-0">
+      <div class="flex flex-1 flex-col">
         <div class="flex min-h-full flex-1 flex-col justify-between">
           <div>
             <Skeleton class="mb-8 h-7 w-7/10" />
@@ -26,5 +26,5 @@
 </template>
 
 <script setup lang="ts">
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 </script>

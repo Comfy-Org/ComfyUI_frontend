@@ -27,7 +27,7 @@ import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSession
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { useDialogService } from '@/services/dialogService'
-import type { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/services/extensionService'
 import type { ComfyExtension } from '@/types/comfy'
 
 type IdentityObserver = (user: User | null) => void
@@ -104,7 +104,9 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
-await import('@/extensions/core/cloudSessionCookie')
+const { cloudSessionCookieExtension } =
+  await import('@/extensions/core/cloudSessionCookie')
+useExtensionService().registerExtension(cloudSessionCookieExtension)
 
 const ONE_HOUR_MS = 60 * 60 * 1000
 const API_KEY = 'comfyui-test-api-key'
@@ -160,6 +162,7 @@ function installFetchRecorder(features: Record<string, unknown>) {
     return {
       token: `cloud-jwt-${mintCount}`,
       expires_at: new Date(Date.now() + ONE_HOUR_MS).toISOString(),
+      user_id: 'uid-1',
       workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
       role: 'owner',
       permissions: ['owner:*']

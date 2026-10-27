@@ -6,7 +6,7 @@
   >
     <PasswordFields />
 
-    <Button type="submit" class="mt-4 h-10 font-medium" :loading="loading">
+    <Button type="submit" class="mt-4 h-10" :loading="loading">
       {{ $t('userSettings.updatePassword') }}
     </Button>
   </form>
@@ -17,10 +17,9 @@ import { useForm } from 'vee-validate'
 import { ref } from 'vue'
 
 import PasswordFields from '@/components/dialog/content/signin/PasswordFields.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useUpdatePassword } from '@/composables/auth/useUpdatePassword'
 import { updatePasswordSchema } from '@/schemas/signInSchema'
-import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 const { requestSignIn, onSuccess } = defineProps<{
   requestSignIn: () => Promise<boolean>
@@ -31,7 +30,7 @@ const updatePassword = useUpdatePassword(requestSignIn)
 const loading = ref(false)
 
 const { handleSubmit } = useForm({
-  validationSchema: toTypedSchema(updatePasswordSchema),
+  validationSchema: updatePasswordSchema,
   initialValues: { password: '', confirmPassword: '' }
 })
 

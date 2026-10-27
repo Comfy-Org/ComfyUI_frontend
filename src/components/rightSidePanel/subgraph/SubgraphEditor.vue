@@ -3,7 +3,7 @@ import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import {
   demoteWidget,
@@ -29,7 +29,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
   getPreviewExposureHostLocator,
@@ -346,8 +346,13 @@ onMounted(() => {
 
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
-    <div class="flex gap-2 border-b border-interface-stroke px-4 pt-1 pb-4">
-      <AsyncSearchInput v-model="searchQuery" />
+    <div class="flex gap-2 border-b px-4 pt-1 pb-4">
+      <AsyncSearchInput
+        v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+        :accessible-label="$t('g.search')"
+      />
     </div>
 
     <div class="flex-1">
@@ -365,7 +370,7 @@ onMounted(() => {
       <div
         v-if="filteredActive.length"
         data-testid="subgraph-editor-shown-section"
-        class="flex flex-col border-b border-interface-stroke"
+        class="flex flex-col border-b"
       >
         <div
           class="sticky top-0 z-10 flex min-h-12 items-center justify-between px-4 backdrop-blur-xl"
@@ -374,7 +379,7 @@ onMounted(() => {
             {{ $t('subgraphStore.shown') }}
           </div>
           <a
-            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-text-secondary hover:text-azure-600"
+            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-muted-foreground hover:text-primary"
             @click.stop="hideAll"
           >
             {{ $t('subgraphStore.hideAll') }}</a
@@ -385,7 +390,7 @@ onMounted(() => {
             v-for="row in filteredActivePromoted"
             :key="rowKey(row)"
             :data-nodeid="row.node.id"
-            :class="cn(!searchQuery && dragClass, 'bg-comfy-menu-bg')"
+            :class="cn(!searchQuery && dragClass, 'bg-background')"
             :node-title="row.node.title"
             :widget-name="rowDisplayName(row)"
             :is-physical="isRowLinked(row)"
@@ -399,7 +404,7 @@ onMounted(() => {
             v-for="row in filteredActivePreviews"
             :key="rowKey(row)"
             :data-nodeid="row.node.id"
-            class="bg-comfy-menu-bg"
+            class="bg-background"
             :node-title="row.node.title"
             :widget-name="rowDisplayName(row)"
             :is-physical="isRowLinked(row)"
@@ -413,7 +418,7 @@ onMounted(() => {
       <div
         v-if="filteredCandidates.length"
         data-testid="subgraph-editor-hidden-section"
-        class="flex flex-col border-b border-interface-stroke"
+        class="flex flex-col border-b"
       >
         <div
           class="sticky top-0 z-10 flex min-h-12 items-center justify-between px-4 backdrop-blur-xl"
@@ -422,7 +427,7 @@ onMounted(() => {
             {{ $t('subgraphStore.hidden') }}
           </div>
           <a
-            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-text-secondary hover:text-azure-600"
+            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-muted-foreground hover:text-primary"
             @click.stop="showAll"
           >
             {{ $t('subgraphStore.showAll') }}</a
@@ -433,7 +438,7 @@ onMounted(() => {
             v-for="[node, widget] in filteredCandidates"
             :key="`${node.id}:${widget.name}`"
             :data-nodeid="node.id"
-            class="bg-comfy-menu-bg"
+            class="bg-background"
             :node-title="node.title"
             :widget-name="widget.name"
             @toggle-visibility="promoteCandidate([node, widget])"
@@ -443,13 +448,9 @@ onMounted(() => {
 
       <div
         v-if="recommendedWidgets.length"
-        class="flex justify-center border-b border-interface-stroke py-4"
+        class="flex justify-center border-b py-4"
       >
-        <Button
-          size="sm"
-          class="rounded-sm border-none px-3 py-0.5"
-          @click.stop="showRecommended"
-        >
+        <Button size="sm" class="px-3 py-0.5" @click.stop="showRecommended">
           {{ $t('subgraphStore.showRecommended') }}
         </Button>
       </div>

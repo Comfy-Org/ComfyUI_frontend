@@ -5,12 +5,13 @@ import { nextTick, ref } from 'vue'
 
 import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
@@ -139,7 +140,7 @@ vi.mock(import('@/utils/nodeTitleUtil'), () => ({
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
 vi.mock<unknown>(
-  import('@/platform/missingModel/composables/useMissingModelInteractions'),
+  import('@/platform/workflowErrors/missingModel/composables/useMissingModelInteractions'),
   () => ({
     clearMissingModelState: vi.fn()
   })

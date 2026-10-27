@@ -2,7 +2,7 @@
   <div
     v-show="tooltipText"
     ref="tooltipRef"
-    class="node-tooltip"
+    class="node-tooltip z-overlay"
     :style="{ left, top }"
   >
     {{ tooltipText }}
@@ -145,10 +145,10 @@ useEventListener(window, 'click', hideTooltip)
 <style lang="css" scoped>
 .node-tooltip {
   pointer-events: none;
-  background: var(--comfy-input-bg);
+  background: var(--input);
   border-radius: 5px;
   box-shadow: 0 0 5px rgb(0 0 0 / 0.4);
-  color: var(--input-text);
+  color: var(--foreground);
   left: 0;
   max-width: 30vw;
   padding: 4px 8px;
@@ -156,6 +156,5 @@ useEventListener(window, 'click', hideTooltip)
   top: 0;
   transform: translate(5px, calc(-100% - 5px));
   white-space: pre-wrap;
-  z-index: 99999;
 }
 </style>

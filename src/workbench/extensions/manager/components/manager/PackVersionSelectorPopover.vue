@@ -1,7 +1,7 @@
 <template>
   <div class="w-80 pt-1">
     <div class="py-2">
-      <span class="pl-3 text-base font-semibold text-neutral-500">
+      <span class="pl-3 text-base font-semibold text-muted-foreground">
         {{ $t('manager.selectVersion') }}
       </span>
     </div>
@@ -9,7 +9,7 @@
       v-if="isBusy"
       class="flex flex-col items-center py-4 text-center text-muted-foreground"
     >
-      <Spinner class="mb-2 size-8" />
+      <AppSpinner class="mb-2 size-8" />
       {{ $t('manager.loadingVersions') }}
     </div>
     <div v-else-if="versionOptions.length === 0" class="py-2">
@@ -33,7 +33,7 @@
           :value="option.value"
           :disabled="option.isDisabled"
           :aria-disabled="option.isDisabled"
-          class="flex cursor-pointer items-center justify-between rounded-md px-3 py-2 outline-none data-disabled:cursor-not-allowed data-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
+          class="flex cursor-pointer items-center justify-between rounded-md px-3 py-2 outline-none data-disabled:cursor-not-allowed data-disabled:opacity-50 data-highlighted:bg-accent"
         >
           <div class="flex items-center gap-2">
             <div v-if="option.value === 'nightly'" class="w-4"></div>
@@ -43,7 +43,7 @@
             >
               <TooltipTrigger as-child>
                 <i
-                  class="icon-[lucide--triangle-alert] text-warning-background"
+                  class="icon-[lucide--triangle-alert] text-warning"
                   role="img"
                   :aria-label="option.conflictMessage"
                 />
@@ -59,7 +59,7 @@
             />
           </div>
           <ListboxItemIndicator as-child>
-            <i class="icon-[lucide--check] text-primary-background" />
+            <i class="icon-[lucide--check] text-primary" />
           </ListboxItemIndicator>
         </ListboxItem>
       </ListboxContent>
@@ -79,7 +79,7 @@
       </Button>
       <Button
         variant="secondary"
-        class="rounded-lg bg-secondary-background px-4 py-2.5 text-sm text-base-foreground"
+        class="px-4 py-2.5 text-sm"
         :disabled="isInstallDisabled"
         @click="handleSubmit"
       >
@@ -101,14 +101,14 @@ import { valid as validSemver } from 'semver'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ContentDivider from '@/components/common/ContentDivider.vue'
+import ContentDivider from '@comfyorg/design-system/common/ContentDivider'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import VerifiedIcon from '@comfyorg/design-system/icon/VerifiedIcon'
+import Button from '@comfyorg/design-system/button/Button'
+import AppSpinner from '@/components/common/AppSpinner.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ClassValue } from '@comfyorg/tailwind-utils'
 
@@ -43,8 +43,8 @@ const toggleLabel = computed(() =>
     :class="
       cn(
         'flex items-center gap-1 rounded-sm px-2 py-1 break-all',
-        'bg-node-component-surface',
-        isDraggable && 'ring-accent-background hover:ring-1',
+        'bg-node',
+        isDraggable && 'ring-accent hover:ring-1',
         className
       )
     "
@@ -52,7 +52,7 @@ const toggleLabel = computed(() =>
   >
     <div class="pointer-events-none flex-1">
       <div
-        class="line-clamp-1 text-xs text-text-secondary"
+        class="line-clamp-1 text-xs text-muted-foreground"
         data-testid="subgraph-widget-node-name"
       >
         {{ nodeTitle }}

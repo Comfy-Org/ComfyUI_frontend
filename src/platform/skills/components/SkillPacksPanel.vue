@@ -7,7 +7,7 @@
       </p>
     </div>
 
-    <div class="my-4 border-t border-border-default" />
+    <div class="my-4 border-t" />
 
     <div class="my-4 flex items-center justify-between">
       <h3 class="my-0 text-lg font-semibold">
@@ -58,11 +58,11 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { useSkillPacks } from '../composables/useSkillPacks'
-import type { SkillPack } from '../types'
+import { useSkillPacks } from '@/platform/skills/composables/useSkillPacks'
+import type { SkillPack } from '@/platform/skills/types'
 import SkillPackFormDialog from './SkillPackFormDialog.vue'
 import SkillPackListItem from './SkillPackListItem.vue'
 
