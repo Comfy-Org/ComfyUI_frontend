@@ -7,7 +7,7 @@
     class="hover:bg-secondary"
     @click="toggleBypass"
   >
-    <i class="icon-[lucide--redo-dot] size-4" />
+    <i class="icon-[lucide--redo-dot]" />
   </Button>
 </template>
 

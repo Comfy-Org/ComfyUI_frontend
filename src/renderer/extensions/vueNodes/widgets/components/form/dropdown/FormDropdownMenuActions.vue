@@ -148,7 +148,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             v-if="sortSelected !== 'default'"
             class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
           />
-          <i class="icon-[lucide--arrow-up-down] size-4" />
+          <i class="icon-[lucide--arrow-up-down]" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" :class="actionPopoverClass">
@@ -170,10 +170,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             @click="handleSortSelected(item)"
           >
             <span>{{ item.name }}</span>
-            <i
-              v-if="sortSelected === item.id"
-              class="icon-[lucide--check] size-4"
-            />
+            <i v-if="sortSelected === item.id" class="icon-[lucide--check]" />
           </Button>
         </div>
       </PopoverContent>
@@ -201,7 +198,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             v-if="ownershipSelected !== 'all'"
             class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
           />
-          <i class="icon-[lucide--user] size-4" />
+          <i class="icon-[lucide--user]" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" :class="actionPopoverClass">
@@ -225,7 +222,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             <span>{{ item.name }}</span>
             <i
               v-if="ownershipSelected === item.value"
-              class="icon-[lucide--check] size-4"
+              class="icon-[lucide--check]"
             />
           </Button>
         </div>
@@ -254,7 +251,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             v-if="baseModelSelected.size > 0"
             class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
           />
-          <i class="icon-[comfy--ai-model] size-4" />
+          <i class="icon-[comfy--ai-model]" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" :class="actionPopoverClass">
@@ -278,7 +275,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             <span>{{ item.name }}</span>
             <i
               v-if="baseModelSelected.has(item.value)"
-              class="icon-[lucide--check] size-4"
+              class="icon-[lucide--check]"
             />
           </Button>
           <span class="h-0 w-full border-b" />
@@ -315,7 +312,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         "
         @click="layoutMode = 'list'"
       >
-        <i class="icon-[lucide--list] size-4" />
+        <i class="icon-[lucide--list]" />
       </Button>
       <Button
         :aria-label="t('assetBrowser.gridView')"
@@ -330,7 +327,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         "
         @click="layoutMode = 'grid'"
       >
-        <i class="icon-[lucide--layout-grid] size-4" />
+        <i class="icon-[lucide--layout-grid]" />
       </Button>
     </div>
   </div>

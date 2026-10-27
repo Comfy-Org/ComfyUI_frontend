@@ -21,7 +21,7 @@
             :aria-label="$t('sideToolbar.backToAssets')"
             @click="exitFolderView"
           >
-            <i class="icon-[lucide--arrow-left] size-4" />
+            <i class="icon-[lucide--arrow-left]" />
           </Button>
           <span class="shrink-0 font-bold">
             {{ $t('assetBrowser.jobId') }}:
@@ -37,7 +37,7 @@
             :aria-label="$t('g.copyJobId')"
             @click="copyFolderJobId"
           >
-            <i class="icon-[lucide--copy] size-4" />
+            <i class="icon-[lucide--copy]" />
           </Button>
         </div>
         <div class="shrink-0">

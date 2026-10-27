@@ -21,7 +21,7 @@ const { tooltip, class: className } = defineProps<{
     :class="cn(tagRemoveButtonVariants(), 'opacity-60', className)"
   >
     <slot>
-      <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+      <i class="icon-[lucide--x]" aria-hidden="true" />
     </slot>
   </Button>
 </template>

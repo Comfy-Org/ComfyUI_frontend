@@ -5,7 +5,7 @@
         data-testid="builder-opens-as"
         class="flex h-8 min-w-64 items-center justify-center gap-2 rounded-t-2xl bg-ocean-900 px-4 text-sm text-white"
       >
-        <i :class="cn(currentModeIcon, 'size-4')" aria-hidden="true" />
+        <i :class="currentModeIcon" aria-hidden="true" />
         <i18n-t
           :keypath="
             isAppMode
@@ -55,8 +55,6 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import ViewTypeRadioGroup from './ViewTypeRadioGroup.vue'
 

@@ -50,7 +50,7 @@
             "
             @click.stop="emit('locateNode', item.nodeId)"
           >
-            <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
+            <i aria-hidden="true" class="icon-[lucide--locate]" />
           </Button>
         </div>
       </li>
