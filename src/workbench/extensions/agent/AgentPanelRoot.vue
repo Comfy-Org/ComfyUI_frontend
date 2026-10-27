@@ -1678,33 +1678,46 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   })
 }
 
+const warnedIncompleteReasons = new Set<string>()
+
+function warnIncompleteHistory(reason: string, announce: boolean): void {
+  if (warnedIncompleteReasons.has(reason)) return
+  reportError(new Error('Agent thread list ended before its last page'), {
+    surface: 'agent',
+    errorType: 'agent_thread_list_load_failed',
+    tags: { reason }
+  })
+  if (announce) {
+    warnedIncompleteReasons.add(reason)
+    toast.warning(t('agent.historyIncomplete'), { duration: 5000 })
+  }
+  trackAgentError(
+    'thread_list_load_failed',
+    'pre_acceptance',
+    announce ? 'toast' : 'none',
+    { retryable: false }
+  )
+}
+
 const { refreshHistory } = useAgentChatHistoryRefresh({
   listThreads: rest.listThreads,
   history,
   untitledChat: () => t('agent.untitledChat'),
   onFailure: (failure, uiTreatment) => {
-    const error =
-      failure.status === 'failed'
-        ? failure.cause
-        : new Error('Agent thread list ended before its last page')
-    const diagnostics =
-      failure.status === 'failed'
-        ? describeAgentRequestFailure(error)
-        : undefined
+    if (failure.status === 'incomplete') {
+      warnIncompleteHistory(failure.reason, uiTreatment === 'error_overlay')
+      return
+    }
+    const error = failure.cause
+    const diagnostics = describeAgentRequestFailure(error)
     reportError(error, {
       surface: 'agent',
       errorType: 'agent_thread_list_load_failed',
-      tags:
-        diagnostics ??
-        (failure.status === 'incomplete'
-          ? { reason: failure.reason }
-          : undefined),
-      fingerprint: diagnostics
-        ? agentRequestFailureFingerprint(
-            'agent_thread_list_load_failed',
-            diagnostics
-          )
-        : undefined
+      tags: diagnostics,
+      fingerprint: agentRequestFailureFingerprint(
+        'agent_thread_list_load_failed',
+        diagnostics
+      )
     })
     if (uiTreatment === 'error_overlay')
       surfaceAgentError(
@@ -1712,8 +1725,7 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
         error instanceof Error ? error.message : String(error)
       )
     trackAgentError('thread_list_load_failed', 'pre_acceptance', uiTreatment, {
-      retryable:
-        failure.status === 'failed' && isRetryableRequestFailure(error, false),
+      retryable: isRetryableRequestFailure(error, false),
       diagnostics
     })
   }

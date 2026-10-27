@@ -4,10 +4,8 @@ import { computed } from 'vue'
 import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { WorkspaceDeploymentCpuServer } from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type { CpuServerReading, CpuServerWatch } from './cpuServerStep'
@@ -16,6 +14,7 @@ import { askCpuServer, isBeingSetUp, watchCpuServer } from './cpuServerStep'
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/billing/api/billingApi'))
 
 function answers(
   ...steps: (WorkspaceDeploymentCpuServer['cpu_server'] | Error)[]

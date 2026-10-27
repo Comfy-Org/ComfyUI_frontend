@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTelemetry } from '@/platform/telemetry'
-import { getWorkspaceTelemetryContext } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
+import { getWorkspaceTelemetryContext } from '@/platform/billing/telemetry/workspaceTelemetryContext'
 
 const state = vi.hoisted(() => ({
   executionContext: {
@@ -19,7 +19,7 @@ const state = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/workspace/telemetry/workspaceTelemetryContext'))
+vi.mock(import('@/platform/billing/telemetry/workspaceTelemetryContext'))
 
 vi.mock<unknown>(
   import('@/platform/telemetry/utils/getExecutionContext'),

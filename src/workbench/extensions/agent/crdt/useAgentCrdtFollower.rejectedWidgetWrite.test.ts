@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
-import Toaster from '@/components/ui/toast/Toaster.vue'
+import AppToaster from '@/components/common/AppToaster.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -473,7 +473,7 @@ describe('a human edit the doc host rejects', () => {
 
   it('replaces the notice with the latest rejection instead of stacking it', async () => {
     const { submit } = mountFollower()
-    render(Toaster, { global: { plugins: [i18n] } })
+    render(AppToaster, { global: { plugins: [i18n] } })
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
     answerWithOpsResult(

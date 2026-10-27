@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useErrorHandling } from '@/composables/useErrorHandling'
