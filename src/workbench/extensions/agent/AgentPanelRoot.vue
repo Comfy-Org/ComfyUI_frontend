@@ -1239,6 +1239,11 @@ watch(
   (tabs) => tabActivity.setAgentTurnTabs(tabs),
   { immediate: true, flush: 'sync' }
 )
+watch(
+  () => conversationStore.awaitingApproval,
+  (awaiting) => tabActivity.setAgentAwaitingApproval(awaiting),
+  { immediate: true, flush: 'sync' }
+)
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {
@@ -1618,6 +1623,7 @@ onBeforeUnmount(() => {
     },
     clearAgentTurnTabs: () => {
       tabActivity.setAgentTurnTabs([])
+      tabActivity.setAgentAwaitingApproval(false)
     },
     resetTurnTabResolver: () => {
       conversationStore.setTurnTabResolver(() => ({ status: 'unknown' }))
