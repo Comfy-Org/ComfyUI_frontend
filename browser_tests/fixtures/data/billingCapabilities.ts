@@ -11,7 +11,11 @@ export function createBillingCapabilities(
 ): BillingCapabilitiesResponse {
   return {
     resolved_for: {
-      user_id: 'e2e-user',
+      // The signed-in uid `CloudAuthHelper` mocks. Capabilities resolve per
+      // (user, workspace) and the SDK reader checks both halves
+      // (`capabilities.ts:180`), discarding an answer resolved for anyone else
+      // — so a placeholder here reads as "no capabilities" on the SDK rail.
+      user_id: 'test-user-e2e',
       workspace_id: workspaceId
     },
     capabilities: {
@@ -19,7 +23,21 @@ export function createBillingCapabilities(
       can_change_seats: false,
       can_downgrade_to_personal: false,
       can_invite_members: false,
+      can_manage_members: false,
+      can_delete_workspace: false,
+      can_leave_workspace: false,
+      can_manage_billing: false,
+      can_manage_partner_node_access: false,
+      can_view_pending_invites: false,
+      can_view_team_usage: false,
+      can_edit_workspace: false,
+      can_manage_auto_top_up: false,
+      can_manage_subscription: true,
+      can_open_plans: true,
+      can_run_workflows: false,
+      can_upgrade: false,
       can_reactivate: false,
+      can_revert_scheduled_change: false,
       can_subscribe_self_serve: true,
       can_top_up: true,
       ...overrides
@@ -52,6 +70,9 @@ export function createWorkspaceBillingCapabilities(
     can_change_seats: isOwner,
     can_downgrade_to_personal: isOwner && ws.type === 'team',
     can_invite_members: isOwner,
+    can_manage_members: isOwner,
+    can_manage_subscription: isOwner,
+    can_open_plans: isOwner,
     can_reactivate: isOwner,
     can_subscribe_self_serve: isOwner,
     can_top_up: isOwner,

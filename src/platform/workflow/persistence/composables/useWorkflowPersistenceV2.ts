@@ -5,12 +5,11 @@
  * - Uses V2 draft store with per-draft keys
  * - Uses tab state composable for session pointers
  * - Adds 512ms debounce on graph change persistence
- * - Runs V1→V2 migration on first load
  */
 
 import { debounce } from 'es-toolkit'
-import { useToast } from 'primevue'
-import { tryOnScopeDispose, whenever } from '@vueuse/core'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { tryOnScopeDispose, until, whenever } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -23,22 +22,23 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useFolderWorkflowsUrlLoader } from '@/platform/workflow/management/composables/useFolderWorkflowsUrlLoader'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
-import type { StartupOutcome } from '../base/draftTypes'
+import { PERSIST_DEBOUNCE_MS } from '@/platform/workflow/persistence/base/draftTypes'
+import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import {
-  clearAllWorkflowStorage,
+  clearAllWorkspaceStorage,
+  clearWorkflowRestoreState,
   completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
-} from '../base/storageIO'
-import { migrateV1toV2 } from '../migration/migrateV1toV2'
-import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
+} from '@/platform/workflow/persistence/base/storageIO'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
@@ -53,22 +53,25 @@ export function useWorkflowPersistenceV2() {
   const router = useRouter()
   const sharedWorkflowUrlLoader = useSharedWorkflowUrlLoader()
   const templateUrlLoader = useTemplateUrlLoader()
+  const folderWorkflowsUrlLoader = useFolderWorkflowsUrlLoader()
+  let openedFolderWorkflows = false
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
   const draftStore = useWorkflowDraftStoreV2()
+  draftStore.setAuthSubject(isCloud ? null : undefined)
   const tabState = useWorkflowTabState()
   const toast = useToast()
-  const { onUserLogout, onUserResolved } = useCurrentUser()
+  const { isAuthInitialized, onUserLogout, onUserResolved } = useCurrentUser()
   const teamWorkspaceStore = useTeamWorkspaceStore()
   let stopWorkspaceReadinessWatcher: (() => void) | undefined
+  let resolvedAuthSubject: string | null = null
+  let authTransitionVersion = 0
+  let authTransition = Promise.resolve()
 
   function stopPendingWorkspaceReadinessWatcher(): void {
     stopWorkspaceReadinessWatcher?.()
     stopWorkspaceReadinessWatcher = undefined
   }
-
-  // Run migration on module load, passing clientId for tab state migration
-  migrateV1toV2(undefined, api.clientId ?? api.initialClientId ?? undefined)
 
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)
@@ -116,10 +119,8 @@ export function useWorkflowPersistenceV2() {
     })
 
     if (!saved) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('toastMessages.failedToSaveDraft')
+      toast.error(t('g.error'), {
+        description: t('toastMessages.failedToSaveDraft')
       })
       return
     }
@@ -147,25 +148,12 @@ export function useWorkflowPersistenceV2() {
   )
   window.addEventListener('pagehide', flushPendingPersistence)
 
-  onUserLogout(() => {
-    if (!isCloud) return
-    stopPendingWorkspaceReadinessWatcher()
-    debouncedPersist.cancel()
-    prepareWorkflowLogoutTransition()
-    clearAllWorkflowStorage()
-  })
-  onUserResolved(() => {
-    if (!isCloud) return
-    stopPendingWorkspaceReadinessWatcher()
+  const isWorkspaceInitConcluded = () =>
+    (teamWorkspaceStore.initState === 'ready' &&
+      teamWorkspaceStore.activeWorkspaceId !== null) ||
+    teamWorkspaceStore.initState === 'error'
 
-    // Release the fence once initialization concludes either way: a resolved
-    // workspace, or a permanent init failure. Waiting on 'ready' alone would
-    // leave writes blocked for the rest of the session if init settles on
-    // 'error' (e.g. no workspaces available, retries exhausted).
-    const isWorkspaceInitConcluded = () =>
-      (teamWorkspaceStore.initState === 'ready' &&
-        teamWorkspaceStore.activeWorkspaceId !== null) ||
-      teamWorkspaceStore.initState === 'error'
+  function resumePersistenceWhenWorkspaceIsReady(): void {
     if (isWorkspaceInitConcluded()) {
       completeWorkflowLogoutTransition()
       return
@@ -179,32 +167,97 @@ export function useWorkflowPersistenceV2() {
       },
       { once: true }
     )
+  }
+
+  async function waitForRestoreIdentity(): Promise<() => boolean> {
+    if (isCloud && !isAuthInitialized.value)
+      await until(isAuthInitialized).toBe(true)
+    const restoreVersion = authTransitionVersion
+    if (isCloud) await authTransition
+    return () => restoreVersion === authTransitionVersion
+  }
+
+  async function waitForWorkspaceInitialization(): Promise<void> {
+    if (isWorkspaceInitConcluded()) return
+    await until(isWorkspaceInitConcluded).toBe(true)
+  }
+
+  onUserLogout(() => {
+    if (!isCloud) return
+    authTransitionVersion++
+    resolvedAuthSubject = null
+    draftStore.setAuthSubject(null)
+    stopPendingWorkspaceReadinessWatcher()
+    debouncedPersist.cancel()
+    prepareWorkflowLogoutTransition()
+    clearAllWorkspaceStorage()
+  })
+  onUserResolved((user) => {
+    if (!isCloud) return
+    stopPendingWorkspaceReadinessWatcher()
+    const previousSubject = resolvedAuthSubject
+    resolvedAuthSubject = user.id
+
+    if (!previousSubject || previousSubject === user.id) {
+      draftStore.setAuthSubject(user.id)
+      resumePersistenceWhenWorkspaceIsReady()
+      return
+    }
+
+    const transitionVersion = ++authTransitionVersion
+
+    debouncedPersist.cancel()
+    prepareWorkflowLogoutTransition()
+    clearWorkflowRestoreState()
+    authTransition = authTransition
+      .then(async () => {
+        if (transitionVersion !== authTransitionVersion) return
+        workflowStore.activeWorkflow = null
+        try {
+          await useWorkflowService().loadBlankWorkflow()
+          if (transitionVersion !== authTransitionVersion) return
+          draftStore.setAuthSubject(user.id)
+          await waitForWorkspaceInitialization()
+          if (transitionVersion !== authTransitionVersion) return
+          await draftStore.loadPersistedWorkflow({
+            fallbackToLatestDraft: true
+          })
+        } finally {
+          if (transitionVersion === authTransitionVersion) {
+            draftStore.setAuthSubject(user.id)
+            completeWorkflowLogoutTransition()
+          }
+        }
+      })
+      .catch((error: unknown) => {
+        console.error('Error switching workflow persistence identity', error)
+      })
   })
 
-  const loadPreviousWorkflowFromStorage = async () => {
+  const loadPreviousWorkflowFromStorage = async (isCurrent: () => boolean) => {
     const sessionPath = tabState.getActivePath()
 
-    // 1. Try draft for session path
     if (
       sessionPath &&
       (await draftStore.loadPersistedWorkflow({
-        preferredPath: sessionPath
+        preferredPath: sessionPath,
+        isCurrent
       }))
     )
       return true
 
-    // 2. Try saved workflow by path (draft may not exist for saved+unmodified workflows)
+    if (!isCurrent()) return false
     if (sessionPath) {
       const saved = workflowStore.getWorkflowByPath(sessionPath)
       if (saved) {
-        await useWorkflowService().openWorkflow(saved)
+        await useWorkflowService().openWorkflow(saved, { isCurrent })
         return true
       }
     }
 
-    // 3. Fall back to most recent draft
     return await draftStore.loadPersistedWorkflow({
-      fallbackToLatestDraft: true
+      fallbackToLatestDraft: true,
+      isCurrent
     })
   }
 
@@ -263,19 +316,25 @@ export function useWorkflowPersistenceV2() {
   }
 
   const initializeWorkflow = async (): Promise<StartupOutcome> => {
+    openedFolderWorkflows =
+      await folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl()
+    if (openedFolderWorkflows) return 'restored'
+
     if (!workflowPersistenceEnabled.value) {
       return await resolveStartupOutcome()
     }
 
+    const isRestoreCurrent = await waitForRestoreIdentity()
+
     try {
       if (getRestorableTabState()) {
-        // GraphCanvas calls restoreWorkflowTabsState next; skip the single-workflow
-        // fallback here so the saved tab order and active index drive startup.
         return 'restored'
       }
 
       await workflowStore.loadWorkflows()
-      const restored = await loadPreviousWorkflowFromStorage()
+      if (!isRestoreCurrent()) return 'restored'
+      const restored = await loadPreviousWorkflowFromStorage(isRestoreCurrent)
+      if (!isRestoreCurrent()) return 'restored'
       return restored ? 'restored' : await resolveStartupOutcome()
     } catch (err) {
       console.error('Error loading previous workflow', err)
@@ -365,6 +424,8 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
+    const isRestoreCurrent = await waitForRestoreIdentity()
+
     try {
       await workflowStore.loadWorkflows()
     } catch (err) {
@@ -374,7 +435,9 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
-    const restorableTabState = getRestorableTabState()
+    const restorableTabState = isRestoreCurrent()
+      ? getRestorableTabState()
+      : null
     if (!restorableTabState) {
       tabStateRestored = true
       return
@@ -405,8 +468,8 @@ export function useWorkflowPersistenceV2() {
     })
 
     tabStateRestored = true
+    if (openedFolderWorkflows) return
 
-    // Activate the correct workflow at storedActiveIndex
     const activePath = storedWorkflows[storedActiveIndex]
     const workflow = activePath
       ? workflowStore.getWorkflowByPath(activePath)

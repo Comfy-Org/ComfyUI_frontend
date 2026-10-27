@@ -164,6 +164,41 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain('rel="noopener noreferrer"')
     })
 
+    it('does not let an image href break out of the src attribute', () => {
+      const markdown =
+        '![x](<y" style="position:fixed;inset:0;z-index:99999;background:red">)'
+      const html = renderMarkdownToHtml(markdown)
+
+      expect(html).not.toContain('style="position:fixed')
+      expect(html).toContain('<img')
+    })
+
+    it('does not let image alt text break out of the alt attribute', () => {
+      const markdown = '![x" style="position:fixed"](safe.png)'
+      const html = renderMarkdownToHtml(markdown)
+
+      expect(html).not.toContain('style="position:fixed')
+      expect(html).toContain('src="safe.png"')
+    })
+
+    it('does not let a link href break out of the href attribute', () => {
+      const markdown =
+        '[click](<y" style="position:fixed;inset:0;background:red">)'
+      const html = renderMarkdownToHtml(markdown)
+
+      expect(html).not.toContain('style="position:fixed')
+      expect(html).toContain('<a')
+    })
+
+    it('still renders a benign image with alt and title correctly', () => {
+      const markdown = '![A nice alt text](pic.png "A title")'
+      const html = renderMarkdownToHtml(markdown)
+
+      expect(html).toContain('src="pic.png"')
+      expect(html).toContain('alt="A nice alt text"')
+      expect(html).toContain('title="A title"')
+    })
+
     it('should render complex markdown with links, images, and text', () => {
       const markdown = `
 # Release Notes

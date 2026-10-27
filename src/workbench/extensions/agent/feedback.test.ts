@@ -1,11 +1,10 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import type * as useCurrentUserModule from '@/composables/auth/useCurrentUser'
-import { openFeedbackDialog as openGeneralFeedbackDialog } from '@/platform/support/feedbackDialog'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { FEEDBACK_TYPEFORM_ID } from '@/platform/support/config'
 import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
-import type * as telemetryModule from '@/platform/telemetry'
+import { useTelemetry } from '@/platform/telemetry'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { openFeedbackDialog } from './feedback'
@@ -16,32 +15,17 @@ vi.mock(import('@/platform/surveys/openTypeformDialog'), () => ({
   openTypeformDialog: vi.fn()
 }))
 
-vi.mock(import('@/platform/support/feedbackDialog'), () => ({
-  openFeedbackDialog: vi.fn()
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: true,
+  isNightly: false
 }))
 
-const trackUiButtonClicked = vi.fn()
-vi.mock(import('@/platform/telemetry'), (): typeof telemetryModule =>
-  fromPartial({
-    useTelemetry: vi.fn(() => fromPartial({ trackUiButtonClicked }))
-  })
-)
+vi.mock(import('@/platform/telemetry'))
 
-const userEmail = vi.hoisted((): { value: string | undefined } => ({
-  value: undefined
-}))
-vi.mock(
-  import('@/composables/auth/useCurrentUser'),
-  (): typeof useCurrentUserModule =>
-    fromPartial({
-      useCurrentUser: (): ReturnType<typeof useCurrentUser> =>
-        fromPartial({ userEmail })
-    })
-)
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 describe('openFeedbackDialog (agent)', () => {
   beforeEach(() => {
-    userEmail.value = undefined
     vi.stubGlobal('__COMFYUI_FRONTEND_VERSION__', '1.55.4')
     vi.spyOn(window.navigator, 'platform', 'get').mockReturnValue('MacIntel')
   })
@@ -51,13 +35,18 @@ describe('openFeedbackDialog (agent)', () => {
 
     openFeedbackDialog('agent-panel')
 
-    expect(openGeneralFeedbackDialog).toHaveBeenCalledWith('agent-panel')
-    expect(openTypeformDialog).not.toHaveBeenCalled()
+    expect(openTypeformDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        typeformId: FEEDBACK_TYPEFORM_ID,
+        hiddenFields: 'distribution=ccloud,source=agent-panel'
+      })
+    )
   })
 
   it('opens the approved agent form with bounded context when Agent is enabled', () => {
     useAgentPanelStore().enabled = true
-    userEmail.value = 'alpha@example.com'
+    useCurrentUser().userEmail = computed(() => 'alpha@example.com')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-264' }))
     const conversation = useAgentConversationStore()
     conversation.setThreadId('thread-264')
     conversation.recordUser(toTurnId('turn-private'), 'private prompt', [
@@ -71,13 +60,29 @@ describe('openFeedbackDialog (agent)', () => {
       typeformId: 'MZ6cjWIB',
       title: 'Share Feedback',
       hiddenFields: [
-        'email=alpha@example.com',
+        'distribution=ccloud',
         'source=agent-panel',
+        'email=alpha@example.com',
+        'userid=user-264',
         'version=1.55.4',
         'os=MacIntel',
         'session=thread-264'
       ].join(',')
     })
+  })
+
+  it('carries the user id when no thread has started, so the response stays traceable without a session', () => {
+    useAgentPanelStore().enabled = true
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-264' }))
+
+    openFeedbackDialog('agent-panel')
+
+    expect(openTypeformDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hiddenFields:
+          'distribution=ccloud,source=agent-panel,userid=user-264,version=1.55.4,os=MacIntel'
+      })
+    )
   })
 
   it('omits missing optional context rather than sending placeholders', () => {
@@ -88,22 +93,25 @@ describe('openFeedbackDialog (agent)', () => {
 
     expect(openTypeformDialog).toHaveBeenCalledWith(
       expect.objectContaining({
-        hiddenFields: 'source=agent-panel,version=1.55.4'
+        hiddenFields: 'distribution=ccloud,source=agent-panel,version=1.55.4'
       })
     )
   })
 
   it('escapes delimiters so an email cannot introduce an extra hidden field', () => {
     useAgentPanelStore().enabled = true
-    userEmail.value = 'alpha,graph=private@example.com'
+    useCurrentUser().userEmail = computed(
+      () => 'alpha,graph=private@example.com'
+    )
 
     openFeedbackDialog('agent-panel')
 
     expect(openTypeformDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         hiddenFields: [
-          'email=alpha\\,graph=private@example.com',
+          'distribution=ccloud',
           'source=agent-panel',
+          'email=alpha\\,graph=private@example.com',
           'version=1.55.4',
           'os=MacIntel'
         ].join(',')
@@ -116,7 +124,9 @@ describe('openFeedbackDialog (agent)', () => {
 
     openFeedbackDialog('agent-panel')
 
-    expect(trackUiButtonClicked).toHaveBeenCalledWith({
+    const telemetry = useTelemetry()
+    assert.exists(telemetry)
+    expect(telemetry.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'feedback_button_clicked',
       element_group: 'agent-panel'
     })

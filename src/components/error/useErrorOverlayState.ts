@@ -10,8 +10,8 @@ import type {
   SwapNodeGroup
 } from '@/components/rightSidePanel/errors/useErrorGroups'
 import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
-import type { MissingMediaGroup } from '@/platform/missingMedia/types'
-import type { MissingModelGroup } from '@/platform/missingModel/types'
+import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 
 type OverlayCopy = { title?: string; message: string }
 
@@ -148,21 +148,29 @@ export function useErrorOverlayState() {
     swapNodeGroups
   } = useErrorGroups('')
 
+  const hasError = computed(() =>
+    allErrorGroups.value.some((group) => group.severity === 'error')
+  )
+
+  const hasMissingNodes = computed(() =>
+    allErrorGroups.value.some((group) => group.type === 'missing_node')
+  )
+
   const totalErrorCount = computed(() =>
     allErrorGroups.value.reduce((sum, group) => sum + group.count, 0)
   )
 
-  const multipleErrorCountLabel = computed(() =>
+  const multipleIssueCountLabel = computed(() =>
     t(
-      'errorOverlay.multipleErrorCount',
+      'errorOverlay.multipleIssueCount',
       { count: totalErrorCount.value },
       totalErrorCount.value
     )
   )
 
   const aggregateOverlayCopy = computed<OverlayCopy>(() => ({
-    title: multipleErrorCountLabel.value,
-    message: t('errorOverlay.multipleErrorsMessage')
+    title: multipleIssueCountLabel.value,
+    message: t('errorOverlay.multipleIssuesMessage')
   }))
 
   const overlayCopy = computed<OverlayCopy | undefined>(() => {
@@ -202,6 +210,8 @@ export function useErrorOverlayState() {
   )
 
   return {
+    hasError,
+    hasMissingNodes,
     isVisible,
     overlayMessage,
     overlayTitle

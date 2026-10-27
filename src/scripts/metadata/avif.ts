@@ -281,7 +281,7 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
 
   if (tiffHeaderOffset !== -1) {
     const exifData = itemData.subarray(tiffHeaderOffset)
-    const data: Record<string, any> = parseExifData(exifData)
+    const data: Record<string, unknown> = parseExifData(exifData)
     for (const key in data) {
       const value = data[key]
       if (typeof value === 'string') {
@@ -323,43 +323,42 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
       }
     }
   } else {
-    console.log('Warning: TIFF header not found in EXIF data.')
+    console.warn('TIFF header not found in EXIF data.')
   }
 
   return metadata
 }
 
-// @ts-expect-error fixme ts strict error
-function parseExifData(exifData) {
+function parseExifData(exifData: Uint8Array) {
   // Check for the correct TIFF header (0x4949 for little-endian or 0x4D4D for big-endian)
   const isLittleEndian = String.fromCharCode(...exifData.slice(0, 2)) === 'II'
 
   // Function to read 16-bit and 32-bit integers from binary data
-  // @ts-expect-error fixme ts strict error
-  function readInt(offset, isLittleEndian, length) {
+  function readInt(
+    offset: number,
+    isLittleEndian: boolean,
+    length: 2 | 4
+  ): number {
     const arr = exifData.slice(offset, offset + length)
     if (length === 2) {
       return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint16(
         0,
         isLittleEndian
       )
-    } else if (length === 4) {
-      return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint32(
-        0,
-        isLittleEndian
-      )
     }
+    return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint32(
+      0,
+      isLittleEndian
+    )
   }
 
   // Read the offset to the first IFD (Image File Directory)
   const ifdOffset = readInt(4, isLittleEndian, 4)
 
-  // @ts-expect-error fixme ts strict error
-  function parseIFD(offset) {
+  function parseIFD(offset: number) {
     const numEntries = readInt(offset, isLittleEndian, 2)
-    const result = {}
+    const result: Record<number, string | undefined> = {}
 
-    // @ts-expect-error fixme ts strict error
     for (let i = 0; i < numEntries; i++) {
       const entryOffset = offset + 2 + i * 12
       const tag = readInt(entryOffset, isLittleEndian, 2)
@@ -372,12 +371,10 @@ function parseExifData(exifData) {
       if (type === 2) {
         // ASCII string
         value = new TextDecoder('utf-8').decode(
-          // @ts-expect-error fixme ts strict error
           exifData.subarray(valueOffset, valueOffset + numValues - 1)
         )
       }
 
-      // @ts-expect-error fixme ts strict error
       result[tag] = value
     }
 

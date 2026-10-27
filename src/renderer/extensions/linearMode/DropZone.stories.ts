@@ -36,11 +36,11 @@ function extractDroppedImageFile(e: DragEvent): File | undefined {
 const renderStory = (args: StoryArgs) => ({
   components: { DropZone },
   setup() {
-    const imageUrl = ref<string | undefined>(undefined)
+    const mediaUrl = ref<string | undefined>(undefined)
     const hovered = ref(false)
 
     function handleFile(file: File) {
-      imageUrl.value = fileToObjectUrl(file)
+      mediaUrl.value = fileToObjectUrl(file)
     }
 
     const onDragOver = (e: DragEvent) => {
@@ -65,7 +65,7 @@ const renderStory = (args: StoryArgs) => ({
       onClick
     })
 
-    return { args, onDragOver, onDragDrop, dropIndicator, imageUrl, hovered }
+    return { args, onDragOver, onDragDrop, dropIndicator, mediaUrl, hovered }
   },
   template: `
     <div
@@ -79,7 +79,7 @@ const renderStory = (args: StoryArgs) => ({
         :force-hovered="hovered"
         :drop-indicator="{
           ...dropIndicator,
-          imageUrl: imageUrl ?? dropIndicator.imageUrl
+          mediaUrl: mediaUrl ?? dropIndicator.mediaUrl
         }"
       />
     </div>
@@ -115,7 +115,7 @@ const meta: Meta<StoryArgs> = {
     (story) => ({
       components: { story },
       template: `
-        <div class="w-[440px] rounded-xl bg-component-node-background p-4">
+        <div class="w-[440px] rounded-xl bg-card p-4">
           <story />
         </div>
       `

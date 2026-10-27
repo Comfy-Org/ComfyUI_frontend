@@ -40,7 +40,7 @@ Our tests use the following frameworks and libraries:
 - [@testing-library/vue](https://testing-library.com/docs/vue-testing-library/intro/) - Preferred for user-centric component testing
 - [@testing-library/user-event](https://testing-library.com/docs/user-event/intro/) - Realistic user interaction simulation
 - [@testing-library/jest-dom](https://github.com/testing-library/jest-dom) - DOM matchers, registered globally in `vitest.setup.ts`
-- [@pinia/testing](https://pinia.vuejs.org/cookbook/testing.html) - For store testing
+- [@pinia/testing](https://pinia.vuejs.org/cookbook/testing.html) - For store testing. Installed globally in `vitest.setup.ts`; test files must not import it themselves (enforced by `comfy/use-global-pinia`)
 
 ## Getting Started
 

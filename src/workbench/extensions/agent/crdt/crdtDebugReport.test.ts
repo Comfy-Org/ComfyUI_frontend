@@ -1,26 +1,29 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { getSystemStats, getLogs, getSettings } = vi.hoisted(() => ({
-  getSystemStats: vi.fn(),
-  getLogs: vi.fn(),
-  getSettings: vi.fn()
-}))
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useExtensionStore } from '@/stores/extensionStore'
+import { api } from '@/scripts/api'
+import { toNodeId } from '@/types/nodeId'
+
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AssistantMessage,
+  MessagePart,
+  ToolPart
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { createAssistantMessage } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 const { reportError } = vi.hoisted(() => ({
   reportError: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getSystemStats: () => getSystemStats(),
-    getLogs: () => getLogs(),
-    getSettings: () => getSettings(),
-    apiURL: (path: string) => `http://backend${path}`
-  }
-}))
-
 beforeEach(() => {
+  vi.spyOn(api, 'getSystemStats')
+  vi.spyOn(api, 'getLogs')
+  vi.spyOn(api, 'getSettings')
+  vi.spyOn(api, 'apiURL').mockImplementation((path) => `http://backend${path}`)
   useExtensionStore().registerExtension({ name: 'Comfy.TestExtension' })
 })
 
@@ -32,6 +35,7 @@ import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
 import { collectCrdtDebugReport } from './crdtDebugReport'
+import { collectMediaUiDiagnostics } from './mediaUiDiagnostics'
 
 const ALL_SOURCES: ReportSources = {
   serverLogs: true,
@@ -43,12 +47,15 @@ const SNAPSHOT: CrdtDebugSnapshot = {
   status: {
     enabled: true,
     connected: true,
+    canvasMayBeStale: false,
+    terminal: null,
     workflowId: 'doc-1',
     updatesApplied: 3,
     lastFrameType: 'doc_update',
     outcomes: {
       received: 3,
       applied: 3,
+      appliedLive: 3,
       skipped: 0,
       errored: 0,
       gap: 0,
@@ -89,21 +96,23 @@ const IDENTIFIERS: ReportIdentifiers = {
 
 describe('collectCrdtDebugReport', () => {
   beforeEach(() => {
-    getSystemStats.mockResolvedValue({
-      system: {
-        os: 'linux',
-        python_version: '3.12',
-        embedded_python: false,
-        comfyui_version: 'v1',
-        pytorch_version: '2.4',
-        argv: ['main.py'],
-        ram_total: 2,
-        ram_free: 1
-      },
-      devices: []
-    })
-    getLogs.mockResolvedValue('backend log line')
-    getSettings.mockResolvedValue({ 'Comfy.Setting': true })
+    vi.mocked(api.getSystemStats).mockResolvedValue(
+      fromPartial({
+        system: {
+          os: 'linux',
+          python_version: '3.12',
+          embedded_python: false,
+          comfyui_version: 'v1',
+          pytorch_version: '2.4',
+          argv: ['main.py'],
+          ram_total: 2,
+          ram_free: 1
+        },
+        devices: []
+      })
+    )
+    vi.mocked(api.getLogs).mockResolvedValue('backend log line')
+    mockSettings({ 'Comfy.Setting': true })
   })
 
   it('gathers backend, frontend and CRDT context into one artifact', async () => {
@@ -128,6 +137,67 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('doc-1')
     expect(report).toContain('doc_update')
     expect(report).toContain('Document stamps')
+    expect(report).toContain('Canvas may be stale:** false')
+  })
+
+  it('includes privacy-safe media UI state without selected values or URLs', async () => {
+    const node = new LGraphNode('LoadImage')
+    node.id = toNodeId(7)
+    node.comfyClass = 'LoadImage'
+    node.widgets = [
+      fromPartial<IBaseWidget>({ name: 'image', value: 'selected-private.png' })
+    ]
+    const privateUrl = 'https://private.example/image.png'
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      mediaUiDiagnostics: collectMediaUiDiagnostics({
+        nodes: [node],
+        getNodeOutputs: () => undefined,
+        getNodeImageUrls: () => [privateUrl],
+        root: document
+      })
+    })
+
+    expect(report).toContain('- Media UI diagnostics: collected (1 nodes)')
+    expect(report).toContain('## Media UI diagnostics')
+    expect(report).toContain('"selectedImagePresent": true')
+    expect(report).not.toContain('selected-private.png')
+    expect(report).not.toContain(privateUrl)
+  })
+
+  it('bounds media diagnostics without dropping the following tool section', async () => {
+    const mediaUiDiagnostics = Array.from({ length: 1_000 }, (_, index) => ({
+      nodeId: String(index),
+      nodeType: 'LoadImage',
+      mediaKinds: ['image'] as const,
+      selectedImagePresent: true,
+      selectedAudioPresent: false,
+      outputImageCount: 1,
+      outputAudioCount: 0,
+      resolvedImageUrlCount: 1,
+      legacyImageCount: 0,
+      loadedLegacyImageCount: 0,
+      vueNodeCount: 1,
+      vueImageCount: 1,
+      vueAudioCount: 0,
+      audioUiRegistered: false,
+      audioElementConnected: false,
+      audioSourcePresent: false,
+      audioHiddenAsEmpty: false,
+      hideOutputImages: false
+    }))
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      mediaUiDiagnostics
+    })
+
+    expect(report).toMatch(
+      /Media UI diagnostics: collected \(\d+ of 1000 nodes; section limit\)/
+    )
+    expect(report).toContain('## Agent tool calls')
   })
 
   it('leads with an Identifiers block carrying every ID a backend engineer searches by', async () => {
@@ -199,14 +269,17 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('still produces a report when the backend is the thing that is broken', async () => {
-    getLogs.mockRejectedValue(new Error('backend unreachable'))
-    getSystemStats.mockRejectedValue(new Error('backend unreachable'))
+    vi.mocked(api.getLogs).mockRejectedValue(new Error('backend unreachable'))
+    vi.mocked(api.getSystemStats).mockRejectedValue(
+      new Error('backend unreachable')
+    )
 
     const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
 
     expect(report).toContain('backend unreachable')
     expect(report).toContain('doc-1')
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_crdt_debug_report_source_failed',
       tags: { source: 'System stats' },
       level: 'warning'
@@ -215,7 +288,7 @@ describe('collectCrdtDebugReport', () => {
 
   it('times out a stalled backend source', async () => {
     vi.useFakeTimers()
-    getSystemStats.mockReturnValue(new Promise(() => {}))
+    vi.mocked(api.getSystemStats).mockReturnValue(new Promise(() => {}))
 
     const reportPromise = collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
     await vi.advanceTimersByTimeAsync(5_000)
@@ -225,7 +298,7 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('redacts credential-shaped setting values and says the section needs review', async () => {
-    getSettings.mockResolvedValue({
+    mockSettings({
       'Comfy.Theme': 'dark',
       'MyNodePack.apiKey': 'sk-live-do-not-leak',
       'Other.auth_token': 'do-not-leak-either'
@@ -244,8 +317,8 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('leaves logs, settings and the workflow out when the tester turns them off', async () => {
-    getSettings.mockResolvedValue({ 'Comfy.Theme': 'do-not-leak-settings' })
-    getLogs.mockResolvedValue('do-not-leak-logs')
+    mockSettings({ 'Comfy.Theme': 'do-not-leak-settings' })
+    vi.mocked(api.getLogs).mockResolvedValue('do-not-leak-logs')
 
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
@@ -281,7 +354,7 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('distinguishes failed, turned off and unavailable sources in collection status', async () => {
-    getLogs.mockRejectedValue(new Error('offline'))
+    vi.mocked(api.getLogs).mockRejectedValue(new Error('offline'))
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
       events: [],
@@ -292,6 +365,290 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('- Settings: turned off')
     expect(report).toContain('- Workflow: unavailable')
     expect(report).toContain('Server logs unavailable: Error: offline')
+  })
+
+  it('reports unavailable tool metadata explicitly', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: []
+    })
+
+    expect(report).toContain('- Agent tool calls: unavailable')
+    expect(report).toContain('Restored history may omit tool calls')
+  })
+
+  it('reports an empty retained tool-call array explicitly', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: []
+    })
+
+    expect(report).toContain('- Agent tool calls: no retained calls')
+    const serialized = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.match(/```json\n([\s\S]*?)\n```/)?.[1]
+    assert.exists(serialized)
+    expect(JSON.parse(serialized)).toEqual([])
+  })
+
+  it('correlates tool outcomes and backend durations without conversation content', async () => {
+    const agentMessages: AssistantMessage[] = [
+      {
+        ...createAssistantMessage(toTurnId('turn-21')),
+        parts: [
+          { type: 'text', text: 'private assistant response', state: 'done' },
+          {
+            type: 'tool',
+            callId: 'call-success',
+            name: 'inspect_workflow',
+            state: 'done',
+            ok: true,
+            durationMs: 137
+          }
+        ]
+      },
+      {
+        ...createAssistantMessage(toTurnId('turn-43')),
+        parts: [
+          { type: 'thinking', text: 'private reasoning', state: 'done' },
+          {
+            type: 'tool',
+            callId: 'call-error',
+            name: 'edit_workflow',
+            state: 'done',
+            ok: false,
+            durationMs: 294
+          },
+          {
+            type: 'tool',
+            callId: 'call-unsettled',
+            name: 'run_workflow',
+            state: 'streaming'
+          }
+        ]
+      }
+    ]
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages
+    })
+
+    expect(report).toContain(
+      '- Agent tool calls: collected (3/3 retained calls)'
+    )
+    const serialized = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.match(/```json\n([\s\S]*?)\n```/)?.[1]
+    assert.exists(serialized)
+    const calls: unknown = JSON.parse(serialized)
+    expect(calls).toEqual([
+      {
+        turnId: 'turn-21',
+        callId: 'call-success',
+        name: 'inspect_workflow',
+        state: 'done',
+        ok: true,
+        durationMs: 137
+      },
+      {
+        turnId: 'turn-43',
+        callId: 'call-error',
+        name: 'edit_workflow',
+        state: 'done',
+        ok: false,
+        durationMs: 294
+      },
+      {
+        turnId: 'turn-43',
+        callId: 'call-unsettled',
+        name: 'run_workflow',
+        state: 'streaming'
+      }
+    ])
+    expect(report).not.toContain('private assistant response')
+    expect(report).not.toContain('private reasoning')
+    expect(agentMessages.map(({ id }) => id)).toEqual(['turn-21', 'turn-43'])
+    expect(
+      agentMessages.map(({ parts }) => parts.map(({ type }) => type))
+    ).toEqual([
+      ['text', 'tool'],
+      ['thinking', 'tool', 'tool']
+    ])
+  })
+
+  it.for([
+    {
+      count: 50,
+      status: 'collected (50/50 retained calls)',
+      includesOldest: true,
+      newest: 'call-49'
+    },
+    {
+      count: 51,
+      status: 'truncated (50/51 retained calls)',
+      includesOldest: false,
+      newest: 'call-50'
+    }
+  ])(
+    'bounds $count tool calls to the most recent 50',
+    async ({ count, status, includesOldest, newest }) => {
+      const report = await collectCrdtDebugReport({
+        crdt: SNAPSHOT,
+        events: [],
+        agentMessages: [
+          {
+            ...createAssistantMessage(toTurnId('turn-many-1')),
+            parts: Array.from({ length: 30 }, (_, index) => ({
+              type: 'tool',
+              callId: `call-${index}`,
+              name: 'inspect_workflow',
+              state: 'done',
+              ok: true
+            }))
+          },
+          {
+            ...createAssistantMessage(toTurnId('turn-many-2')),
+            parts: [
+              ...Array.from(
+                { length: count - 30 },
+                (_, index): ToolPart => ({
+                  type: 'tool',
+                  callId: `call-${index + 30}`,
+                  name: 'inspect_workflow',
+                  state: 'done',
+                  ok: true
+                })
+              ),
+              {
+                type: 'text',
+                text: 'private text after the newest tool call',
+                state: 'done'
+              }
+            ] satisfies MessagePart[]
+          }
+        ]
+      })
+
+      expect(report).toContain(`- Agent tool calls: ${status}`)
+      expect(report.includes('"callId": "call-0"')).toBe(includesOldest)
+      expect(report).toContain(`"callId": "${newest}"`)
+      expect(
+        [...report.matchAll(/"callId": "(call-\d+)"/g)].map(
+          ([, callId]) => callId
+        )
+      ).toEqual(
+        Array.from(
+          { length: 50 },
+          (_, index) => `call-${index + Math.max(0, count - 50)}`
+        )
+      )
+      expect(report).not.toContain('private text after the newest tool call')
+    }
+  )
+
+  it('redacts credential-shaped tool metadata', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('auth: Bearer private-turn')),
+          parts: [
+            {
+              type: 'tool',
+              callId: 'Bearer private-call',
+              name: '/home/private-tool',
+              state: 'done',
+              ok: false
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(report).not.toContain('private-turn')
+    expect(report).not.toContain('private-call')
+    expect(report).not.toContain('private-tool')
+    expect(report).toContain('[redacted by the debug report]')
+    expect(report).toContain('"ok": false')
+  })
+
+  it('bounds oversized metadata and preserves the newest call in the excerpt', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('turn-large')),
+          parts: [
+            {
+              type: 'tool',
+              callId: 'call-oldest',
+              name: 'x'.repeat(70_000),
+              state: 'done'
+            },
+            {
+              type: 'tool',
+              callId: 'call-newest',
+              name: 'inspect_workflow',
+              state: 'done',
+              ok: true,
+              durationMs: 41
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(report).toContain(
+      '- Agent tool calls: truncated (1/2 retained calls)'
+    )
+    const serialized = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.match(/```json\n([\s\S]*?)\n```/)?.[1]
+    assert.exists(serialized)
+    expect(JSON.parse(serialized)).toEqual([
+      {
+        turnId: 'turn-large',
+        callId: 'call-newest',
+        name: 'inspect_workflow',
+        state: 'done',
+        ok: true,
+        durationMs: 41
+      }
+    ])
+    expect(report.length).toBeLessThan(70_000)
+  })
+
+  it('includes the tool section wrapper in its character limit', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('turn-boundary')),
+          parts: [
+            {
+              type: 'tool',
+              callId: 'call-boundary',
+              name: 'x'.repeat(59_800),
+              state: 'done'
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(report).toContain(
+      '- Agent tool calls: truncated (0/1 retained calls)'
+    )
+    const section = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.split('\n\n## ')[0]
+    assert.exists(section)
+    expect(section.length).toBeLessThanOrEqual(60_000)
   })
 
   it.for([
@@ -414,7 +771,7 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('redacts a credential nested under an innocuous key', async () => {
-    getSettings.mockResolvedValue({
+    mockSettings({
       'Comfy.Server.LaunchArgs': { '--api-token': 'nested-do-not-leak' },
       'Some.List': [{ password: 'listed-do-not-leak' }]
     })
@@ -430,19 +787,21 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('blanks a secret passed on the server command line', async () => {
-    getSystemStats.mockResolvedValue({
-      system: {
-        os: 'linux',
-        python_version: '3.12',
-        embedded_python: false,
-        comfyui_version: 'v1',
-        pytorch_version: '2.4',
-        argv: ['main.py', '--api-token', 'argv-do-not-leak', '--cpu'],
-        ram_total: 2,
-        ram_free: 1
-      },
-      devices: []
-    })
+    vi.mocked(api.getSystemStats).mockResolvedValue(
+      fromPartial({
+        system: {
+          os: 'linux',
+          python_version: '3.12',
+          embedded_python: false,
+          comfyui_version: 'v1',
+          pytorch_version: '2.4',
+          argv: ['main.py', '--api-token', 'argv-do-not-leak', '--cpu'],
+          ram_total: 2,
+          ram_free: 1
+        },
+        devices: []
+      })
+    )
 
     const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
 
@@ -451,17 +810,19 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('redacts a credential value that begins with a dash', async () => {
-    getSystemStats.mockResolvedValue({
-      system: {
-        argv: [
-          'main.py',
-          '--api-token',
-          '-argv-leading-dash-do-not-leak',
-          '--cpu'
-        ]
-      },
-      devices: []
-    })
+    vi.mocked(api.getSystemStats).mockResolvedValue(
+      fromPartial({
+        system: {
+          argv: [
+            'main.py',
+            '--api-token',
+            '-argv-leading-dash-do-not-leak',
+            '--cpu'
+          ]
+        },
+        devices: []
+      })
+    )
 
     const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
 
@@ -470,12 +831,14 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('redacts a credential value that looks like another long flag', async () => {
-    getSystemStats.mockResolvedValue({
-      system: {
-        argv: ['main.py', '--api-token', '--argv-token-do-not-leak', '--cpu']
-      },
-      devices: []
-    })
+    vi.mocked(api.getSystemStats).mockResolvedValue(
+      fromPartial({
+        system: {
+          argv: ['main.py', '--api-token', '--argv-token-do-not-leak', '--cpu']
+        },
+        devices: []
+      })
+    )
 
     const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
 
@@ -484,15 +847,17 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('redacts inline argv values containing equals signs', async () => {
-    getSystemStats.mockResolvedValue({
-      system: {
-        argv: [
-          'main.py',
-          '--extra-model-paths-config=a=/home/alice/private.yaml'
-        ]
-      },
-      devices: []
-    })
+    vi.mocked(api.getSystemStats).mockResolvedValue(
+      fromPartial({
+        system: {
+          argv: [
+            'main.py',
+            '--extra-model-paths-config=a=/home/alice/private.yaml'
+          ]
+        },
+        devices: []
+      })
+    )
 
     const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
 
@@ -501,7 +866,9 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('renders the report even when /system_stats answers with an unexpected shape', async () => {
-    getSystemStats.mockResolvedValue({ system: {}, devices: undefined })
+    vi.mocked(api.getSystemStats).mockResolvedValue(
+      fromPartial({ system: {}, devices: undefined })
+    )
 
     const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
 
@@ -512,10 +879,12 @@ describe('collectCrdtDebugReport', () => {
   it('keeps redacting argv when the rest of the payload is malformed', async () => {
     // A fallback that dumped the raw payload on any render error put the
     // secret back on the clipboard, and `## System` has no opt-in to catch it.
-    getSystemStats.mockResolvedValue({
-      system: { argv: ['main.py', '--api-token', 'argv-do-not-leak'] },
-      devices: undefined
-    })
+    vi.mocked(api.getSystemStats).mockResolvedValue(
+      fromPartial({
+        system: { argv: ['main.py', '--api-token', 'argv-do-not-leak'] },
+        devices: undefined
+      })
+    )
 
     const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
 
@@ -524,10 +893,13 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('renders the report when device entries are malformed', async () => {
-    getSystemStats.mockResolvedValue({
-      system: {},
-      devices: [null, { index: 1, name: 'GPU', type: 'cuda' }]
-    })
+    vi.mocked(api.getSystemStats).mockRestore()
+    vi.spyOn(api, 'fetchApi').mockResolvedValue(
+      Response.json({
+        system: {},
+        devices: [null, { index: 1, name: 'GPU', type: 'cuda' }]
+      })
+    )
 
     const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
 
@@ -542,7 +914,7 @@ describe('collectCrdtDebugReport', () => {
     for (let depth = 0; depth < 13; depth++) {
       nested = { innocuous: nested }
     }
-    getSettings.mockResolvedValue(nested)
+    mockSettings(nested)
 
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
@@ -555,7 +927,7 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('redacts private path strings inside shared settings values', async () => {
-    getSettings.mockResolvedValue({
+    mockSettings({
       'Comfy.ModelDirectory': '/home/alice/private-models'
     })
 
@@ -569,19 +941,21 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('redacts private paths without eating the argument after them', async () => {
-    getSystemStats.mockResolvedValue({
-      system: {
-        argv: [
-          'main.py',
-          '--extra-model-paths-config',
-          '/home/jsmith/private-do-not-leak.yaml',
-          '--port',
-          '8188',
-          '--cpu'
-        ]
-      },
-      devices: []
-    })
+    vi.mocked(api.getSystemStats).mockResolvedValue(
+      fromPartial({
+        system: {
+          argv: [
+            'main.py',
+            '--extra-model-paths-config',
+            '/home/jsmith/private-do-not-leak.yaml',
+            '--port',
+            '8188',
+            '--cpu'
+          ]
+        },
+        devices: []
+      })
+    )
 
     const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
 
@@ -591,18 +965,20 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('redacts relative and UNC path argv values', async () => {
-    getSystemStats.mockResolvedValue({
-      system: {
-        argv: [
-          'main.py',
-          '--extra-model-paths-config',
-          '../private/paths.yaml',
-          '--output',
-          '\\\\NAS\\comfy\\out'
-        ]
-      },
-      devices: []
-    })
+    vi.mocked(api.getSystemStats).mockResolvedValue(
+      fromPartial({
+        system: {
+          argv: [
+            'main.py',
+            '--extra-model-paths-config',
+            '../private/paths.yaml',
+            '--output',
+            '\\\\NAS\\comfy\\out'
+          ]
+        },
+        devices: []
+      })
+    )
 
     const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
 
@@ -611,7 +987,9 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('does not let a log line close the code fence around it', async () => {
-    getLogs.mockResolvedValue('traceback ``` still inside the fence')
+    vi.mocked(api.getLogs).mockResolvedValue(
+      'traceback ``` still inside the fence'
+    )
 
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
@@ -625,7 +1003,7 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('does not spread every backtick run into Math.max', async () => {
-    getLogs.mockResolvedValue('`'.repeat(70_000))
+    vi.mocked(api.getLogs).mockResolvedValue('`'.repeat(70_000))
 
     await expect(
       collectCrdtDebugReport({
@@ -676,7 +1054,7 @@ describe('collectCrdtDebugReport', () => {
       expect(second).toBe(first)
       expect(first).toContain('report truncated')
       expect(first).toContain(
-        'Report format version: 1 · Document schema version: 1'
+        'Report format version: 2 · Document schema version: 1'
       )
       expect(first).toContain('Schema version:** 1')
       expect(first).toContain('[redacted by the debug report]')
@@ -688,3 +1066,7 @@ describe('collectCrdtDebugReport', () => {
     }
   })
 })
+
+function mockSettings(settings: Record<string, unknown>): void {
+  vi.mocked(api.getSettings).mockResolvedValue(fromPartial(settings))
+}

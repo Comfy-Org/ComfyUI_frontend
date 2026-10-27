@@ -7,6 +7,9 @@ import {
   applyDrag,
   boxesAt,
   fromBoundingBoxes,
+  isRegionList,
+  regionColor,
+  regionTag,
   tagRects,
   toBoundingBoxes
 } from './boundingBoxesUtil'
@@ -226,6 +229,31 @@ describe('fromBoundingBoxes', () => {
   })
 })
 
+describe('isRegionList', () => {
+  it.for([
+    { case: 'an empty list', value: [], expected: true },
+    { case: 'a list of regions', value: [region()], expected: true },
+    { case: 'a non-array', value: region(), expected: false },
+    {
+      case: 'pixel boxes',
+      value: [{ x: 1, y: 1, width: 2, height: 2 }],
+      expected: false
+    },
+    {
+      case: 'an unknown region type',
+      value: [{ ...region(), type: 'img' }],
+      expected: false
+    },
+    {
+      case: 'a non-string palette color',
+      value: [{ ...region(), palette: [1] }],
+      expected: false
+    }
+  ])('returns $expected for $case', ({ value, expected }) => {
+    expect(isRegionList(value)).toBe(expected)
+  })
+})
+
 describe('toBoundingBoxes', () => {
   it('rounds normalized regions back to pixels and copies the palette', () => {
     const palette = ['#abc']
@@ -254,5 +282,16 @@ describe('toBoundingBoxes', () => {
       1000
     )
     expect(restored).toEqual(boxes)
+  })
+})
+
+describe('region labels', () => {
+  it('numbers regions from 01 like the canvas tags', () => {
+    expect([0, 9, 99].map(regionTag)).toEqual(['01', '10', '100'])
+  })
+
+  it('colors a region by its first palette color or a neutral grey', () => {
+    expect(regionColor({ palette: ['', '#ff0000'] })).toBe('#ff0000')
+    expect(regionColor({ palette: [] })).toBe('#8c8c8c')
   })
 })

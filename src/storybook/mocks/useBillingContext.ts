@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 
-import type { BillingContext } from '@/composables/billing/types'
+import type { BillingContext } from '@/platform/billing/composables/types'
 
 type Subscription = BillingContext['subscription']['value']
 
@@ -11,6 +11,7 @@ export interface BillingContextMockState {
   isTeamPlan: boolean
   billingStatus: BillingContext['billingStatus']['value']
   subscriptionStatus: BillingContext['subscriptionStatus']['value']
+  subscriptionState: BillingContext['subscriptionState']['value']
   renewalDate: string | null
   maxSeats: number | null
   occupiedSeats: number | null
@@ -22,6 +23,7 @@ const defaultState: BillingContextMockState = {
   isTeamPlan: false,
   billingStatus: null,
   subscriptionStatus: null,
+  subscriptionState: null,
   renewalDate: null,
   maxSeats: null,
   occupiedSeats: null
@@ -37,11 +39,12 @@ export function setBillingContextMock(next: Partial<BillingContextMockState>) {
 /**
  * Storybook mock for `useBillingContext`.
  *
- * The real facade lazily instantiates the legacy billing adapter, which pulls
- * in Firebase auth (`setPersistence`) and crashes in the Storybook environment
- * (no Firebase). This stub lets billing components — e.g. UnifiedPricingTable,
- * BillingStatusBanner — render without any network or auth. It defaults to the
- * unsubscribed state; call `setBillingContextMock` to drive a specific one.
+ * The real facade lazily instantiates the legacy billing adapter, which
+ * resolves the identity module's Firebase while remote config is unloaded and
+ * throws in Storybook. This stub lets billing components — e.g.
+ * UnifiedPricingTable, BillingStatusBanner — render without any network or
+ * auth. It defaults to the unsubscribed state; call `setBillingContextMock` to
+ * drive a specific one.
  *
  * Typed against `BillingContext` so the stub stays in lockstep with the real
  * composable's return shape: drifted or removed keys fail to compile.
@@ -72,8 +75,10 @@ export function useBillingContext(): BillingContext {
     isTeamPlan: computed(() => state.value.isTeamPlan),
     billingStatus: computed(() => state.value.billingStatus),
     subscriptionStatus: computed(() => state.value.subscriptionStatus),
+    subscriptionState: computed(() => state.value.subscriptionState),
     tier: computed(() => null),
     renewalDate: computed(() => state.value.renewalDate),
+    renewalInvoice: computed(() => null),
     getMaxSeats: (tierKey: string) => ({ creator: 5, pro: 20 })[tierKey] ?? 1,
     initialize: async () => {},
     fetchStatus: async () => {},
@@ -81,12 +86,11 @@ export function useBillingContext(): BillingContext {
     reconcileSubscriptionSuccess: async () => {},
     subscribe: async () => {},
     previewSubscribe: async () => null,
-    manageSubscription: async () => {},
-    cancelSubscription: async () => {},
+    manageSubscription: async () => ({ ok: true }),
+    cancelSubscription: async () => 'legacy' as const,
     resubscribe: async () => {},
     topup: async () => {},
     fetchPlans: async () => {},
-    requireActiveSubscription: async () => {},
-    showSubscriptionDialog: () => {}
+    whenRoutingKnown: async () => true
   }
 }

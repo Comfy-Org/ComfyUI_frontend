@@ -8,12 +8,15 @@ import type { InjectionKey } from 'vue'
 
 import type {
   BillingCommands,
+  BillingEventsReader,
   BillingOperationLifecycle,
   BillingStatusReader,
   CapabilitiesReader,
   CreditsReader,
+  PaymentMethodsReader,
+  PlansReader,
   TopupCommand
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 
 /**
  * The host owns this client's lifetime. Composables never dispose what they
@@ -21,13 +24,17 @@ import type {
  * component unmounts first, so when the session scope ends — sign-out, an
  * account or workspace switch — the host must call `disposeBillingClient`.
  * A retained reader goes on serving the scope it was built for, which is the
- * previous account's balance, capabilities and subscription status.
+ * previous account's balance, capabilities, subscription status, plan catalog
+ * and saved cards.
  */
 export interface BillingClient {
   readonly lifecycle: BillingOperationLifecycle
   readonly capabilities: CapabilitiesReader
   readonly credits: CreditsReader
   readonly status: BillingStatusReader
+  readonly plans: PlansReader
+  readonly paymentMethods: PaymentMethodsReader
+  readonly events: BillingEventsReader
   readonly topup: TopupCommand
   readonly commands: BillingCommands
 }
@@ -50,6 +57,9 @@ export function disposeBillingClient(client: BillingClient): void {
   client.capabilities.dispose()
   client.credits.dispose()
   client.status.dispose()
+  client.plans.dispose()
+  client.paymentMethods.dispose()
+  client.events.dispose()
 }
 
 export function useBillingClient<K extends keyof BillingClient>(

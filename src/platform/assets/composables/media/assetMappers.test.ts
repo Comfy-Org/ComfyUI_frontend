@@ -1,18 +1,17 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { api } from '@/scripts/api'
 
 import { mapInputFileToAssetItem, unflattenOutputAssets } from './assetMappers'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (path: string) => `/api${path}`,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false)
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
+  vi.mocked(api.getServerFeature).mockReturnValue(false)
+})
 
 vi.mock(import('@/platform/distribution/cloudPreviewUtil'), () => ({
   appendCloudResParam: vi.fn()
@@ -91,6 +90,39 @@ describe('unflattenOutputAssets', () => {
     expect(metadata?.allOutputs?.map((output) => output.type)).toEqual([
       'temp',
       'output'
+    ])
+  })
+
+  it('represents the job with a saved output over a preview typed temp only by its URL', () => {
+    const asset = {
+      job_id: 'job-id',
+      size: 1,
+      tags: ['output'],
+      updated_at: '2026-01-01T00:00:00Z'
+    }
+    const assets = [
+      {
+        ...asset,
+        id: 'saved-id',
+        name: 'saved.png',
+        created_at: '2026-01-01T00:00:00Z'
+      },
+      {
+        ...asset,
+        id: 'preview-id',
+        name: 'preview.png',
+        created_at: '2026-01-01T00:00:01Z',
+        preview_url: '/api/view?filename=preview.png&type=temp'
+      }
+    ] satisfies AssetItem[]
+
+    const [grouped] = unflattenOutputAssets(assets)
+    const metadata = getOutputAssetMetadata(grouped.user_metadata)
+
+    expect(metadata?.assetId).toBe('saved-id')
+    expect(metadata?.allOutputs?.map((output) => output.type)).toEqual([
+      'output',
+      'temp'
     ])
   })
 

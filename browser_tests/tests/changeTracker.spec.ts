@@ -4,7 +4,9 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 type ChangeTrackerDebugState = {
   changeCount: number
@@ -444,6 +446,47 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
         ]
       })
   })
+
+  test(
+    'Undo after a redo and a canvas click removes the redone link',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
+      await fitToViewInstant(comfyPage)
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
+      const vaeInput = await vaeNode.getInput(0)
+
+      await comfyPage.vueNodes
+        .getOutputSlotConnectionDot(String(samplerNode.id), 0)
+        .dragTo(
+          comfyPage.vueNodes.getInputSlotConnectionDot(String(vaeNode.id), 0)
+        )
+      await vaeInput.expectLinkCount(1)
+      await comfyPage.canvasOps.clickEmptySpace()
+      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+
+      await comfyPage.keyboard.undo()
+      await vaeInput.expectLinkCount(0)
+      await comfyPage.keyboard.redo()
+      await vaeInput.expectLinkCount(1)
+      await expect
+        .poll(() => getChangeTrackerDebugState(comfyPage))
+        .toMatchObject({
+          isLoadingGraph: false,
+          redoQueueSize: 0,
+          restoringState: false,
+          undoQueueSize: 1
+        })
+
+      await comfyPage.canvas.click({
+        position: DefaultGraphPositions.emptyCanvasClick
+      })
+      await comfyPage.keyboard.undo()
+
+      await vaeInput.expectLinkCount(0)
+    }
+  )
 
   test(
     'Tracks convert to subgraph as undo step',

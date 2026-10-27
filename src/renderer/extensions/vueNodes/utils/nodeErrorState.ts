@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeState } from '@/types/nodeState'
 import { locatorIdFromState } from '@/utils/graphTraversalUtil'
@@ -17,12 +17,11 @@ export function nodeHasError(
   const missingModelStore = useMissingModelStore()
   const missingMediaStore = useMissingMediaStore()
 
-  if (executionErrorStore.lastExecutionErrorNodeId === state.id) return true
-
   const locatorId = locatorIdFromState(state, rootGraphId)
   const hasNodeScopedError =
     locatorId !== null &&
     !!(
+      executionErrorStore.lastExecutionErrorNodeLocatorId === locatorId ||
       executionErrorStore.getNodeErrors(locatorId) ||
       missingModelStore.hasMissingModelOnNode(locatorId) ||
       missingMediaStore.hasMissingMediaOnNode(locatorId)
@@ -36,4 +35,19 @@ export function nodeHasError(
       missingModelStore.isContainerWithMissingModel(node) ||
       missingMediaStore.isContainerWithMissingMedia(node))
   )
+}
+
+export function getNodeErrorSeverity(
+  state: NodeState,
+  rootGraphId: UUID | undefined,
+  node: LGraphNode | null
+): 'none' | 'missing' | 'error' {
+  const locator = locatorIdFromState(state, rootGraphId)
+  if (
+    locator &&
+    useExecutionErrorStore().blockingErrorNodeLocatorIds.has(locator)
+  ) {
+    return 'error'
+  }
+  return nodeHasError(state, rootGraphId, node) ? 'missing' : 'none'
 }

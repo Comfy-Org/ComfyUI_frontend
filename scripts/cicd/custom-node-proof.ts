@@ -7,7 +7,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { isMainModule } from '../isMainModule'
 
 const SOURCE_TIER_SWITCH = '__COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__'
 
@@ -185,11 +185,7 @@ export function main(): void {
   else throw new Error(`invalid proof command ${command} for S${row}`)
 }
 
-const invokedDirectly =
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-
-if (invokedDirectly) {
+if (isMainModule(import.meta.url)) {
   try {
     main()
   } catch (error) {

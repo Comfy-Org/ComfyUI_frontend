@@ -1,6 +1,9 @@
 <template>
   <div
     ref="scrollContainer"
+    :tabindex="hasJobRows ? 0 : -1"
+    :role="hasJobRows ? 'region' : undefined"
+    :aria-label="hasJobRows ? $t('g.jobs') : undefined"
     v-bind="$attrs"
     data-testid="job-assets-list"
     class="h-full overflow-y-auto pb-4"
@@ -10,14 +13,14 @@
       <template v-for="{ row, virtualItem } in virtualRows" :key="row.key">
         <div
           v-if="row.type === 'header'"
-          class="box-border px-3 pb-2 text-xs leading-none text-text-secondary"
+          class="px-3 pb-2 text-xs leading-none text-muted-foreground"
           :style="getVirtualRowStyle(virtualItem)"
         >
           {{ row.label }}
         </div>
         <div
           v-else-if="row.type === 'job'"
-          class="box-border px-3"
+          class="px-3"
           :style="getVirtualRowStyle(virtualItem)"
         >
           <div
@@ -29,8 +32,8 @@
             <AssetsListItem
               :class="
                 cn(
-                  'size-full shrink-0 cursor-default text-text-primary transition-colors hover:bg-secondary-background-hover',
-                  row.job.state === 'running' && 'bg-secondary-background'
+                  'size-full shrink-0 cursor-default text-foreground transition-colors hover:bg-accent',
+                  row.job.state === 'running' && 'bg-secondary'
                 )
               "
               :preview-url="getJobPreviewUrl(row.job)"
@@ -55,7 +58,7 @@
                   :aria-label="t('g.cancel')"
                   @click.stop="emitCancelItem(row.job)"
                 >
-                  <i class="icon-[lucide--x] size-4" />
+                  <i class="icon-[lucide--x]" />
                 </Button>
                 <Button
                   v-else-if="isFailedDeletable(row.job)"
@@ -64,7 +67,7 @@
                   :aria-label="t('g.delete')"
                   @click.stop="emitDeleteItem(row.job)"
                 >
-                  <i class="icon-[lucide--trash-2] size-4" />
+                  <i class="icon-[lucide--trash-2]" />
                 </Button>
                 <Button
                   v-else-if="row.job.state === 'completed'"
@@ -80,7 +83,7 @@
                   :aria-label="t('g.more')"
                   @click.stop="$emit('menu', row.job, $event)"
                 >
-                  <i class="icon-[lucide--ellipsis] size-4" />
+                  <i class="icon-[lucide--ellipsis]" />
                 </Button>
               </template>
             </AssetsListItem>
@@ -109,7 +112,7 @@ import { useI18n } from 'vue-i18n'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import JobDetailsHoverPopover from '@/components/queue/job/JobDetailsHoverPopover.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 import { isImageResult, isVideoResult } from '@/utils/resultItem'
@@ -150,6 +153,9 @@ const hideTimer = ref<number | null>(null)
 const hideTimerJobId = ref<string | null>(null)
 const showTimer = ref<number | null>(null)
 const flatRows = computed(() => buildVirtualJobRows(displayedJobGroups))
+const hasJobRows = computed(() =>
+  flatRows.value.some((row) => row.type === 'job')
+)
 const virtualizer = useVirtualizer({
   get count(): number {
     return flatRows.value.length

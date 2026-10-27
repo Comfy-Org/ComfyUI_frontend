@@ -92,7 +92,7 @@ test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
     const missingNodeCard = comfyPage.page.getByTestId(
       TestIds.dialogs.missingNodeCard
     )
-    await comfyPage.canvasOps.pan({ x: -800, y: -800 })
+    await comfyPage.canvasOps.pan({ x: -800, y: -800 }, { x: 200, y: 500 })
     const offsetBeforeLocate = await comfyPage.canvasOps.getOffset()
 
     await missingNodeCard

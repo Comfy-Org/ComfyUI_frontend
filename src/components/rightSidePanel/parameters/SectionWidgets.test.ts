@@ -117,7 +117,11 @@ describe('SectionWidgets', () => {
   beforeEach(() => {
     useCanvasStore().canvas = fromPartial({
       setDirty,
-      graph: fromPartial({ getNodeById }),
+      graph: fromPartial({
+        id: 'root',
+        rootGraph: { id: 'root' },
+        getNodeById
+      }),
       animateToBounds
     })
   })
@@ -141,7 +145,6 @@ describe('SectionWidgets', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          Button: true,
           WidgetItem: WidgetItemStub,
           PropertiesAccordionItem: PropertiesAccordionItemStub
         }

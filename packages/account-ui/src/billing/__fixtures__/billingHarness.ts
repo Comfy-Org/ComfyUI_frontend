@@ -7,40 +7,52 @@ import { vi } from 'vitest'
 
 import type {
   BillingHttpResponse,
+  BillingOperationTelemetryEvent,
   BillingOpStatus,
   BillingRequest,
   BillingResult,
   BillingStatusData,
   BillingTransport
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import {
   OPERATION_POLL_TIMING,
+  PAYMENT_METHODS_ROUTE,
+  PLANS_ROUTE,
   TOPUP_ROUTE,
   createBillingCommands,
+  createBillingEventsReader,
   createBillingOperationLifecycle,
   createBillingStatusReader,
   createCapabilitiesReader,
   createCreditsReader,
+  createPaymentMethodsReader,
+  createPlansReader,
   createTopupCommand,
   operationRoute,
   sessionBillingScopeSource
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import type {
   AccountCredential,
   SessionClient,
   SessionSnapshot
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 
-import type { BillingClient } from '../billingClient'
+import type { BillingClient } from '#/billing/billingClient'
 
 export const NOW = 1_000_000
 
-function credential(): AccountCredential {
+function credential(
+  workspace: AccountCredential['workspace'] = {
+    id: 'ws-1',
+    name: 'Personal',
+    type: 'personal'
+  }
+): AccountCredential {
   return {
     token: 'workspace-jwt',
     expiresAt: NOW + 60 * 60 * 1000,
     uid: 'uid-1',
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+    workspace,
     role: 'owner',
     permissions: ['workspace:read']
   }
@@ -53,22 +65,37 @@ function outsideBillingContract(member: string) {
   }
 }
 
-function fakeSession(): SessionClient {
-  const session = credential()
-  const snapshot: SessionSnapshot = {
+function authenticated(session: AccountCredential): SessionSnapshot {
+  return {
     phase: 'authenticated',
     user: { uid: session.uid, getIdToken: async () => 'id-token' },
     session
   }
-  return {
+}
+
+/** A host whose scope can move, so the readers report a real scope change. */
+function fakeSession() {
+  let snapshot = authenticated(credential())
+  const listeners = new Set<(next: SessionSnapshot) => void>()
+  const session: SessionClient = {
     getSnapshot: () => snapshot,
-    subscribe: () => () => {},
-    attachIdentity: outsideBillingContract('attachIdentity'),
+    subscribe: (listener) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    dispose: outsideBillingContract('dispose'),
     getToken: outsideBillingContract('getToken'),
     ensureFresh: outsideBillingContract('ensureFresh'),
     remint: outsideBillingContract('remint'),
     invalidate: outsideBillingContract('invalidate'),
     clearStoredCredential: outsideBillingContract('clearStoredCredential')
+  }
+  return {
+    session,
+    moveTo(workspace: AccountCredential['workspace']) {
+      snapshot = authenticated(credential(workspace))
+      for (const listener of Array.from(listeners)) listener(snapshot)
+    }
   }
 }
 
@@ -87,7 +114,21 @@ export const CAPABILITIES = {
   can_change_seats: false,
   can_downgrade_to_personal: false,
   can_invite_members: false,
+  can_manage_members: false,
+  can_delete_workspace: false,
+  can_leave_workspace: false,
+  can_manage_billing: false,
+  can_manage_partner_node_access: false,
+  can_view_pending_invites: false,
+  can_view_team_usage: false,
   can_reactivate: false,
+  can_revert_scheduled_change: false,
+  can_edit_workspace: false,
+  can_manage_auto_top_up: false,
+  can_manage_subscription: false,
+  can_open_plans: false,
+  can_run_workflows: false,
+  can_upgrade: false,
   can_subscribe_self_serve: true,
   can_top_up: true
 }
@@ -110,6 +151,30 @@ function capabilitiesBody(overrides: Record<string, unknown> = {}) {
 export function balance(amountMicros: number) {
   return { amount_micros: amountMicros, currency: 'USD' }
 }
+
+const PLAN = {
+  action: 'subscribe',
+  availability: { available: true },
+  credits_cents: 2000,
+  duration: 'MONTHLY',
+  max_seats: 1,
+  price_cents: 2000,
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 2000,
+    total_credits_cents: 2000
+  },
+  slug: 'creator_monthly',
+  tier: 'CREATOR'
+}
+
+const CATALOG = { current_plan_slug: 'free', plans: [PLAN] }
+
+/** The default card is second, so picking it cannot be picking the first. */
+export const SAVED_CARDS = [
+  { brand: 'visa', id: 'pm_1', is_default: false, last4: '4242', type: 'card' },
+  { brand: 'amex', id: 'pm_2', is_default: true, last4: '1881', type: 'card' }
+]
 
 export const BASELINE_MICROS = 12_500_000
 const TOPPED_UP_MICROS = 22_500_000
@@ -137,12 +202,21 @@ export const NO_RESPONSE: BillingResult<BillingHttpResponse> = {
   code: 'REQUEST_FAILED'
 }
 
-type Answer = BillingResult<BillingHttpResponse>
+/** What the session transport answers once the scope moved under a request. */
+export const SCOPE_CHANGED: BillingResult<BillingHttpResponse> = {
+  status: 'error',
+  code: 'SUPERSEDED'
+}
+
+export type Answer = BillingResult<BillingHttpResponse>
+
+/** A pending answer lets a test settle two reads out of the order they began. */
+type QueuedAnswer = Answer | Promise<Answer>
 
 /** Answers per route are consumed in order; the last one repeats. */
 function fakeTransport() {
   const calls: BillingRequest[] = []
-  const queues = new Map<string, Answer[]>()
+  const queues = new Map<string, QueuedAnswer[]>()
   const keyOf = (method: string, route: string) => `${method} ${route}`
   const transport: BillingTransport = vi.fn(async (request) => {
     calls.push(request)
@@ -156,7 +230,7 @@ function fakeTransport() {
   return {
     transport,
     calls,
-    answer(method: 'GET' | 'POST', route: string, ...answers: Answer[]) {
+    answer(method: 'GET' | 'POST', route: string, ...answers: QueuedAnswer[]) {
       queues.set(keyOf(method, route), answers)
     },
     routes: () => calls.map((call) => `${call.method} ${call.route}`)
@@ -170,17 +244,23 @@ export interface HarnessOptions {
 }
 
 export function createBillingHarness(options: HarnessOptions = {}) {
-  const scopeSource = sessionBillingScopeSource(fakeSession())
+  const host = fakeSession()
+  const scopeSource = sessionBillingScopeSource(host.session)
   const { transport, calls, answer, routes } = fakeTransport()
   const readerOptions = { transport, scopeSource }
   const capabilities = createCapabilitiesReader(readerOptions)
   const credits = createCreditsReader(readerOptions)
   const statusReader = createBillingStatusReader(readerOptions)
+  const plans = createPlansReader(readerOptions)
+  const paymentMethods = createPaymentMethodsReader(readerOptions)
+  const events = createBillingEventsReader(readerOptions)
+  const telemetry: BillingOperationTelemetryEvent[] = []
   const lifecycle = createBillingOperationLifecycle({
     transport,
     scopeSource,
     statusReader,
-    embeddedCheckoutAvailable: () => options.embedded === true
+    embeddedCheckoutAvailable: () => options.embedded === true,
+    onTelemetry: (event) => telemetry.push(event)
   })
   let attempts = 0
   const idempotencyKey = () => `key-${++attempts}`
@@ -189,6 +269,9 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     capabilities,
     credits,
     status: statusReader,
+    plans,
+    paymentMethods,
+    events,
     topup: createTopupCommand({
       transport,
       lifecycle,
@@ -212,6 +295,8 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     httpOk(capabilitiesBody(options.capabilities))
   )
   answer('GET', '/billing/status', httpOk(STATUS_DATA))
+  answer('GET', PLANS_ROUTE, httpOk(CATALOG))
+  answer('GET', PAYMENT_METHODS_ROUTE, httpOk(SAVED_CARDS))
   answer(
     'GET',
     '/billing/balance',
@@ -235,7 +320,16 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     httpOk(opStatus({ status: 'succeeded' }))
   )
 
-  return { client, calls, answer, routes }
+  return {
+    client,
+    calls,
+    answer,
+    routes,
+    telemetry,
+    /** Moves the host to another workspace, as the switcher does. */
+    moveToWorkspace: (id: string) =>
+      host.moveTo({ id, name: 'Team', type: 'team' })
+  }
 }
 
 /** Lets every read, the POST, and the first poll cadence settle. */

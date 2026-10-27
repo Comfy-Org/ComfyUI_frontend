@@ -4,7 +4,7 @@ import {
   OPERATION_POLL_TIMING,
   TOPUP_ROUTE,
   operationRoute
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 
 import {
   CAPABILITIES,

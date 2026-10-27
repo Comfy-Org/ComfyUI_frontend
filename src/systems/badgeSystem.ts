@@ -1,3 +1,4 @@
+import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 
@@ -20,7 +21,6 @@ import type { BadgeData, CoreBadgePart } from '@/types/badgeData'
 import type { NodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { widgetId } from '@/types/widgetId'
-import { adjustColor } from '@/utils/colorUtil'
 import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 import type { UUID } from '@/utils/uuid'
 
@@ -209,7 +209,8 @@ function gatherPricing(node: LGraphNode): PricingBadgeSources {
 
 function gatherSources(node: LGraphNode): BadgeSources {
   const settingStore = useSettingStore()
-  const palette = useColorPaletteStore().completedActivePalette
+  const colorPaletteStore = useColorPaletteStore()
+  const palette = colorPaletteStore.completedActivePalette
   const def = useNodeDefStore().fromLGraphNode(node)
   const showApiPricing = settingStore.get('Comfy.NodeBadge.ShowApiPricing')
 
@@ -223,20 +224,17 @@ function gatherSources(node: LGraphNode): BadgeSources {
         }
       : null,
     badgeModes: {
-      id: settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode,
-      lifecycle: settingStore.get(
-        'Comfy.NodeBadge.NodeLifeCycleBadgeMode'
-      ) as NodeBadgeMode,
-      source: settingStore.get(
-        'Comfy.NodeBadge.NodeSourceBadgeMode'
-      ) as NodeBadgeMode
+      id: settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode'),
+      lifecycle: settingStore.get('Comfy.NodeBadge.NodeLifeCycleBadgeMode'),
+      source: settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode')
     },
     colors: {
       fgColor: palette.colors.litegraph_base.BADGE_FG_COLOR,
       bgColor: palette.colors.litegraph_base.BADGE_BG_COLOR,
-      creditsBgColor: palette.light_theme
-        ? adjustColor(CREDITS_BASE_BG_COLOR, { lightness: 0.5 })
-        : CREDITS_BASE_BG_COLOR
+      creditsBgColor:
+        colorPaletteStore.colorScheme === 'light'
+          ? toLightThemeNodeColor(CREDITS_BASE_BG_COLOR)
+          : CREDITS_BASE_BG_COLOR
     },
     pricing: showApiPricing ? gatherPricing(node) : { kind: 'none' }
   }

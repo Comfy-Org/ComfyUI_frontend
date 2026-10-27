@@ -5,7 +5,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { isResolutionPreviewInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useResolutionPreviewWidget = (): ComfyWidgetConstructorV2 => {
   return (

@@ -516,11 +516,6 @@ describe('i18n', () => {
   })
 
   describe('loadLocale', () => {
-    it('should not reload already loaded locale', async () => {
-      await loadLocale('zh')
-      await loadLocale('zh')
-    })
-
     it('should load shipped BCP-47 variants', async () => {
       await loadLocale('zh-TW')
       expect(i18n.global.getLocaleMessage('zh-TW')).toEqual(
@@ -555,6 +550,12 @@ describe('i18n', () => {
       // First preference unsupported, second shipped — should land on French.
       expect(await setActiveLocale(['de-DE', 'fr-CA', 'en'])).toBe('fr')
     })
+  })
+
+  it('reads the browser locale on first use rather than at import', () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['zh-CN'])
+
+    expect(i18n.global.locale.value).toBe('zh')
   })
 
   describe('te', () => {

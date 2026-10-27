@@ -313,16 +313,18 @@ function readSessionPointer<T extends { workspaceId: string }>(
  * then to localStorage when sessionStorage is empty (browser restart).
  */
 export function readActivePath(
-  clientId: string,
+  clientId: string | null,
   targetWorkspaceId?: string
 ): ActivePathPointer | null {
   return (
-    readSessionPointer<ActivePathPointer>(
-      StorageKeys.activePath(clientId),
-      StorageKeys.prefixes.activePath,
-      targetWorkspaceId,
-      isValidActivePathPointer
-    ) ??
+    (clientId
+      ? readSessionPointer<ActivePathPointer>(
+          StorageKeys.activePath(clientId),
+          StorageKeys.prefixes.activePath,
+          targetWorkspaceId,
+          isValidActivePathPointer
+        )
+      : null) ??
     (targetWorkspaceId
       ? readLocalPointer<ActivePathPointer>(
           StorageKeys.lastActivePath(targetWorkspaceId),
@@ -365,16 +367,18 @@ export function clearActivePath(clientId: string, workspaceId: string): void {
  * then to localStorage when sessionStorage is empty (browser restart).
  */
 export function readOpenPaths(
-  clientId: string,
+  clientId: string | null,
   targetWorkspaceId?: string
 ): OpenPathsPointer | null {
   return (
-    readSessionPointer<OpenPathsPointer>(
-      StorageKeys.openPaths(clientId),
-      StorageKeys.prefixes.openPaths,
-      targetWorkspaceId,
-      isValidOpenPathsPointer
-    ) ??
+    (clientId
+      ? readSessionPointer<OpenPathsPointer>(
+          StorageKeys.openPaths(clientId),
+          StorageKeys.prefixes.openPaths,
+          targetWorkspaceId,
+          isValidOpenPathsPointer
+        )
+      : null) ??
     (targetWorkspaceId
       ? readLocalPointer<OpenPathsPointer>(
           StorageKeys.lastOpenPaths(targetWorkspaceId),
@@ -454,6 +458,14 @@ const legacyLocalRestoreKeys = [
   'workflow'
 ]
 
+const legacyAgentKeys = [
+  'Comfy.Agent.ThreadId',
+  'Comfy.Agent.WorkflowTabBindings',
+  'Comfy.Agent.WorkflowTabBindings.v2',
+  'Comfy.Agent.ChatTitles',
+  'Comfy.Agent.DeletedThreads'
+]
+
 const sessionRestorePrefixes = [
   StorageKeys.prefixes.activePath,
   StorageKeys.prefixes.openPaths,
@@ -492,6 +504,10 @@ function removeStorageKeys(
   } catch {
     return
   }
+}
+
+export function clearLegacyAgentStorage(): void {
+  removeStorageKeys(localStorage, legacyAgentKeys)
 }
 
 export function clearWorkflowRestoreState(): void {
@@ -564,4 +580,19 @@ export function clearAllWorkflowStorage(): void {
 
   removeStorageKeys(localStorage, legacyLocalRestoreKeys, localPrefixes)
   removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
+}
+
+export function clearAllWorkspaceStorage(): void {
+  clearAllWorkflowStorage()
+  clearLegacyAgentStorage()
+  removeStorageKeys(
+    localStorage,
+    [],
+    [
+      StorageKeys.prefixes.agentThread,
+      StorageKeys.prefixes.agentWorkflowTabBindings,
+      StorageKeys.prefixes.agentChatTitles,
+      StorageKeys.prefixes.agentDeletedThreads
+    ]
+  )
 }

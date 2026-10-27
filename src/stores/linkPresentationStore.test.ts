@@ -6,9 +6,7 @@ import { toLinkId } from '@/types/linkId'
 
 import { useLinkPresentationStore } from './linkPresentationStore'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const graphA = {
   rootGraphId: toRootGraphId('graph-a'),
@@ -62,6 +60,7 @@ describe('useLinkPresentationStore', () => {
       label: 'Owned'
     })
     expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      surface: 'platform',
       errorType: 'link_presentation_ownership_conflict',
       context: {
         linkId: LINK,

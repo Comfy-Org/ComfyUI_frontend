@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import EditableText from './EditableText.vue'
+import EditableText from '@comfyorg/design-system/common/EditableText'
 
 describe('EditableText', () => {
   function renderComponent(
@@ -77,38 +77,5 @@ describe('EditableText', () => {
     expect(onCancel).toHaveBeenCalled()
     expect(onEdit).not.toHaveBeenCalled()
     expect(input).toHaveValue('Original Text')
-  })
-
-  it('does not save changes when escape is pressed', async () => {
-    const onEdit = vi.fn()
-    const onCancel = vi.fn()
-    const { user } = renderComponent(
-      { modelValue: 'Original Text', isEditing: true },
-      { onEdit, onCancel }
-    )
-
-    const input = screen.getByRole('textbox')
-    await user.clear(input)
-    await user.type(input, 'Modified Text')
-    // Escape triggers cancelEditing → blur internally, so no separate blur needed
-    await user.keyboard('{Escape}')
-
-    expect(onCancel).toHaveBeenCalled()
-    expect(onEdit).not.toHaveBeenCalled()
-  })
-
-  it('saves changes on enter but not on escape', async () => {
-    const onEditEnter = vi.fn()
-    const { user: userEnter } = renderComponent(
-      { modelValue: 'Original Text', isEditing: true },
-      { onEdit: onEditEnter }
-    )
-
-    const enterInput = screen.getByRole('textbox')
-    await userEnter.clear(enterInput)
-    await userEnter.type(enterInput, 'Saved Text')
-    await userEnter.keyboard('{Enter}')
-
-    expect(onEditEnter).toHaveBeenCalledWith('Saved Text')
   })
 })

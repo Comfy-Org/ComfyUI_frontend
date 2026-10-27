@@ -1,7 +1,7 @@
 import type { Request } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
-import type { PromptResponse } from '@/schemas/apiSchema'
+import type { PromptResponse } from '@/platform/remote/comfyui/types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -51,8 +51,7 @@ webSocketTest.describe(
           promptNumber++
           const promptResponse: PromptResponse = {
             prompt_id: String(promptNumber),
-            node_errors: {},
-            error: ''
+            node_errors: {}
           }
           await route.fulfill({
             status: 200,
@@ -160,8 +159,7 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
 
       const promptResponse: PromptResponse = {
         prompt_id: 'run-on-change',
-        node_errors: {},
-        error: ''
+        node_errors: {}
       }
       await comfyPage.page.route('**/api/prompt', async (route) => {
         await route.fulfill({

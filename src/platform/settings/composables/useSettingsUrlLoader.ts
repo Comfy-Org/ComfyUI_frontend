@@ -12,7 +12,8 @@ import type { SettingPanelType } from '@/platform/settings/types'
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.SETTINGS
 
 const DEEP_LINKABLE_PANELS: Record<string, SettingPanelType> = {
-  'plan-credits': 'workspace'
+  'plan-credits': 'workspace',
+  members: 'workspace-members'
 }
 
 /**
@@ -29,8 +30,10 @@ export function useSettingsUrlLoader() {
   const router = useRouter()
   const settingsDialog = useSettingsDialog()
 
-  /** Reads `?settings=`, strips it, and opens the mapped Settings panel. */
-  function loadSettingsFromUrl() {
+  /** Reads `?settings=`, strips it, and opens the mapped Settings panel.
+   * Resolves once the strip has landed, so the loader that runs next reads a
+   * query this one has already cleaned rather than restoring the param. */
+  async function loadSettingsFromUrl() {
     hydratePreservedQuery(NAMESPACE)
     const query =
       mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query
@@ -42,17 +45,20 @@ export function useSettingsUrlLoader() {
     // guaranteed even if the replace rejects or no panel matches.
     const cleanQuery = { ...query }
     delete cleanQuery.settings
-    router.replace({ query: cleanQuery }).catch((error) => {
+    const stripped = router.replace({ query: cleanQuery }).catch((error) => {
       console.warn('[useSettingsUrlLoader] Failed to clean URL params:', error)
     })
     clearPreservedQuery(NAMESPACE)
 
-    if (typeof param !== 'string' || !param) return
+    if (
+      typeof param === 'string' &&
+      param &&
+      Object.hasOwn(DEEP_LINKABLE_PANELS, param)
+    ) {
+      settingsDialog.show(DEEP_LINKABLE_PANELS[param])
+    }
 
-    if (!Object.hasOwn(DEEP_LINKABLE_PANELS, param)) return
-    const panel = DEEP_LINKABLE_PANELS[param]
-
-    settingsDialog.show(panel)
+    await stripped
   }
 
   return {

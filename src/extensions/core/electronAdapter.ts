@@ -3,26 +3,37 @@ import log from 'loglevel'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
 import { isDesktop } from '@/platform/distribution/types'
 import { electronAPI as getElectronAPI } from '@/utils/envUtil'
-;(async () => {
-  if (!isDesktop) return
+import { reportError } from '@/platform/telemetry/reportError'
+
+export async function registerElectronAdapterExtension(): Promise<boolean> {
+  if (!isDesktop) return false
 
   const electronAPI = getElectronAPI()
-  const desktopAppVersion = await electronAPI.getElectronVersion()
+  const desktopAppVersion = await electronAPI
+    .getElectronVersion()
+    .catch((error: unknown) => {
+      reportError(error, {
+        surface: 'platform',
+        errorType: 'failure_reading_desktop_app_version'
+      })
+      return undefined
+    })
+  if (desktopAppVersion === undefined) return false
+
   const workflowStore = useWorkflowStore()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const { staticUrls, buildDocsUrl } = useExternalLink()
 
-  const onChangeRestartApp = (newValue: unknown, oldValue: unknown) => {
-    // Add a delay to allow changes to take effect before restarting.
+  const onChangeRestartApp = async (newValue: unknown, oldValue: unknown) => {
     if (oldValue !== undefined && newValue !== oldValue) {
-      electronAPI.restartApp('Restart ComfyUI to apply changes.', 1500)
+      await electronAPI.restartApp('Restart ComfyUI to apply changes.', 1500)
     }
   }
 
@@ -54,13 +65,13 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
         experimental: true,
         defaultValue: 'default',
         options: ['default', 'custom'],
-        onChange: (
+        onChange: async (
           newValue: 'default' | 'custom',
           oldValue?: 'default' | 'custom'
         ) => {
           if (!oldValue) return
 
-          electronAPI.Config.setWindowStyle(newValue)
+          await electronAPI.Config.setWindowStyle(newValue)
         }
       },
       {
@@ -112,40 +123,40 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
         id: 'Comfy-Desktop.Folders.OpenModelsFolder',
         label: 'Open Models Folder',
         icon: 'pi pi-folder-open',
-        function() {
-          electronAPI.openModelsFolder()
+        async function() {
+          await electronAPI.openModelsFolder()
         }
       },
       {
         id: 'Comfy-Desktop.Folders.OpenOutputsFolder',
         label: 'Open Outputs Folder',
         icon: 'pi pi-folder-open',
-        function() {
-          electronAPI.openOutputsFolder()
+        async function() {
+          await electronAPI.openOutputsFolder()
         }
       },
       {
         id: 'Comfy-Desktop.Folders.OpenInputsFolder',
         label: 'Open Inputs Folder',
         icon: 'pi pi-folder-open',
-        function() {
-          electronAPI.openInputsFolder()
+        async function() {
+          await electronAPI.openInputsFolder()
         }
       },
       {
         id: 'Comfy-Desktop.Folders.OpenCustomNodesFolder',
         label: 'Open Custom Nodes Folder',
         icon: 'pi pi-folder-open',
-        function() {
-          electronAPI.openCustomNodesFolder()
+        async function() {
+          await electronAPI.openCustomNodesFolder()
         }
       },
       {
         id: 'Comfy-Desktop.Folders.OpenModelConfig',
         label: 'Open extra_model_paths.yaml',
         icon: 'pi pi-file',
-        function() {
-          electronAPI.openModelConfig()
+        async function() {
+          await electronAPI.openModelConfig()
         }
       },
       {
@@ -181,10 +192,8 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
             })
 
             if (!updateInfo.isUpdateAvailable) {
-              toastStore.add({
-                severity: 'info',
-                summary: t('desktopUpdate.noUpdateFound'),
-                life: 5_000
+              toast.info(t('desktopUpdate.noUpdateFound'), {
+                duration: 5_000
               })
               return
             }
@@ -198,22 +207,18 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
             })
             if (proceed) {
               try {
-                electronAPI.restartAndInstall()
+                await electronAPI.restartAndInstall()
               } catch (error) {
                 log.error('Error installing update:', error)
-                toastStore.add({
-                  severity: 'error',
-                  summary: t('g.error'),
-                  detail: t('desktopUpdate.errorInstallingUpdate')
+                toast.error(t('g.error'), {
+                  description: t('desktopUpdate.errorInstallingUpdate')
                 })
               }
             }
           } catch (error) {
             log.error('Error checking for updates:', error)
-            toastStore.add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('desktopUpdate.errorCheckingUpdate')
+            toast.error(t('g.error'), {
+              description: t('desktopUpdate.errorCheckingUpdate')
             })
           }
         }
@@ -229,15 +234,15 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
             type: 'reinstall'
           })
 
-          if (proceed) electronAPI.reinstall()
+          if (proceed) await electronAPI.reinstall()
         }
       },
       {
         id: 'Comfy-Desktop.Restart',
         label: 'Restart',
         icon: 'pi pi-refresh',
-        function() {
-          electronAPI.restartApp()
+        async function() {
+          await electronAPI.restartApp()
         }
       },
       {
@@ -245,7 +250,6 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
         label: 'Quit',
         icon: 'pi pi-sign-out',
         async function() {
-          // Confirm if unsaved workflows are open
           if (workflowStore.modifiedWorkflows.length > 0) {
             const confirmed = await useDialogService().confirm({
               message: t('desktopMenu.confirmQuit'),
@@ -256,7 +260,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
             if (!confirmed) return
           }
 
-          electronAPI.quit()
+          await electronAPI.quit()
         }
       }
     ],
@@ -305,4 +309,5 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
       }
     ]
   })
-})()
+  return true
+}

@@ -34,24 +34,20 @@ function getWarningMessage(
   return `[ComfyUI Notice] "${shimFileName}" is an internal module, not part of the public API. Future updates may break this import.`
 }
 
-function defaultSrcRoot(): string {
-  return path.join(process.cwd(), 'src')
-}
+function getLegacyRelativePath(id: string): string | null {
+  if (!id.endsWith('.ts')) return null
 
-export function isLegacyFile(
-  id: string,
-  srcRoot: string = defaultSrcRoot()
-): boolean {
-  if (!id.endsWith('.ts')) return false
+  const relativePath = path
+    .relative(path.join(process.cwd(), 'src'), id)
+    .replace(/\\/g, '/')
 
-  const relativePath = path.relative(srcRoot, id).replace(/\\/g, '/')
+  if (relativePath.startsWith('..')) return null
 
-  if (relativePath.startsWith('..')) return false
-
-  return (
+  const isLegacyFile =
     relativePath.startsWith('extensions/core/') ||
     relativePath.startsWith('scripts/')
-  )
+
+  return isLegacyFile ? relativePath : null
 }
 
 function transformExports(code: string, id: string): ShimResult {
@@ -97,13 +93,11 @@ export function comfyAPIPlugin(isDev: boolean) {
     transform(code: string, id: string) {
       if (isDev) return null
 
-      if (isLegacyFile(id)) {
+      const relativePath = getLegacyRelativePath(id)
+      if (relativePath) {
         const result = transformExports(code, id)
 
         if (result.exports.length > 0) {
-          const relativePath = path
-            .relative(defaultSrcRoot(), id)
-            .replace(/\\/g, '/')
           const shimFileName = relativePath.replace(/\.ts$/, '.js')
 
           let shimContent = `// Shim for ${relativePath}\n`

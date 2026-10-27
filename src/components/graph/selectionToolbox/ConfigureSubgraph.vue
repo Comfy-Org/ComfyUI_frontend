@@ -1,9 +1,6 @@
 <template>
   <Button
-    v-tooltip.top="{
-      value: $t('commands.Comfy_Graph_EditSubgraphWidgets.label'),
-      showDelay: 1000
-    }"
+    :tooltip="$t('commands.Comfy_Graph_EditSubgraphWidgets.label')"
     variant="muted-textonly"
     :aria-label="$t('commands.Comfy_Graph_EditSubgraphWidgets.label')"
     @click="handleClick"
@@ -12,7 +9,7 @@
   </Button>
 </template>
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 const rightSidePanelStore = useRightSidePanelStore()

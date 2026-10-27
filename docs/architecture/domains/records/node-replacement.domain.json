@@ -1,0 +1,61 @@
+{
+  "id": "node-replacement",
+  "capability": "Missing node detection and replacement",
+  "description": "Detects node types missing from the registry, records them per workflow, fetches server-provided node replacements, and swaps missing nodes for their replacements while preserving links and widget values. Detection and replacement are one record because the scan classifies missing nodes by replaceability and replacement clears the missing-node state it resolves.",
+  "modules": [
+    {
+      "path": "src/platform/workflowErrors/nodeReplacement/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflowErrors/nodeReplacement/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/workflowErrors/nodeReplacement/nodeReplacementService.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workflowErrors/nodeReplacement/types.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Missing nodes are scanned, recorded, and matched to available replacements",
+      "checks": [
+        "src/platform/workflowErrors/nodeReplacement/missingNodeScan.test.ts",
+        "src/platform/workflowErrors/nodeReplacement/missingNodesErrorStore.test.ts",
+        "src/platform/workflowErrors/nodeReplacement/nodeReplacementStore.test.ts",
+        "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.test.ts"
+      ]
+    },
+    {
+      "name": "Replacing a node preserves links and widget values and clears its missing state",
+      "checks": [
+        "src/platform/workflowErrors/nodeReplacement/useNodeReplacement.test.ts",
+        "src/platform/workflowErrors/nodeReplacement/components/SwapNodesCard.test.ts",
+        "src/platform/workflowErrors/nodeReplacement/components/SwapNodeGroupRow.test.ts",
+        "browser_tests/tests/nodeReplacement.spec.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "MissingNodeType remains importable by telemetry, error-catalog, and missing-model code during inventory.",
+    "useNodeReplacement mutating LGraph, the link store, and app state directly, and the swap components typing against rightSidePanel error groups, remain visible as coupling debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

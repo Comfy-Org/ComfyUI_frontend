@@ -1,31 +1,35 @@
+import { useDialogService } from '@/services/dialogService'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { i18n } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { LGraph } from '@/lib/litegraph/src/LGraph'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { app } from '@/scripts/app'
 import { useModelStore } from '@/stores/modelStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useCommandStore } from '@/stores/commandStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
-  vi.fn(<T>(clear: () => T): T => clear())
-)
-vi.mock<unknown>(
-  import('@/workbench/extensions/agent/crdt/mintPortWiring'),
-  () => ({
-    runMintPortsIntentionalClear: mockRunMintPortsIntentionalClear
-  })
-)
+vi.mock(import('@/core/graph/subgraph/promotionUtils'), { spy: true })
 
 vi.mock<unknown>(
   import('@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'),
@@ -48,8 +52,14 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
+    select: vi.fn(),
     deleteSelected: vi.fn(),
     selectOnly: false,
+    state: { selectionChanged: false },
+    graph: {
+      add: vi.fn(),
+      convertToSubgraph: vi.fn(() => ({ node: {} }))
+    },
     canvas: {
       dispatchEvent: vi.fn(),
       addEventListener: vi.fn(),
@@ -76,17 +86,12 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    dispatchCustomEvent: vi.fn(),
-    apiURL: vi.fn(() => 'http://localhost:8188'),
-    addEventListener: vi.fn(),
-    addCustomEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    removeCustomEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false)
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockReturnValue('http://localhost:8188')
+  vi.mocked(api.getServerFeature).mockReturnValue(false)
+})
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -97,52 +102,19 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('firebase/auth'))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: vi.fn(() => ({}))
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
-const mockDialogService = vi.hoisted(() => ({
-  prompt: vi.fn()
-}))
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: vi.fn(() => mockDialogService)
-}))
+vi.mock(import('@/services/dialogService'))
 
-const mockResetView = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: vi.fn(() => ({
-    resetView: mockResetView
-  }))
-}))
+vi.mock(import('@/platform/onboarding/onboardingReset'))
+
+vi.mock(import('@/services/litegraphService'))
 
 vi.mock(import('@/platform/telemetry'))
 
-const mockShowAbout = vi.hoisted(() => vi.fn())
-const mockShowSettings = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(
-  import('@/platform/settings/composables/useSettingsDialog'),
-  () => ({
-    useSettingsDialog: vi.fn(() => ({
-      show: mockShowSettings,
-      showAbout: mockShowAbout
-    }))
-  })
-)
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
-const mockFeatureFlagState = vi.hoisted(() => ({ assetsEnabled: false }))
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get assetsEnabled() {
-        return mockFeatureFlagState.assetsEnabled
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockAssetBrowse = vi.hoisted(() =>
   vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
 )
@@ -159,45 +131,47 @@ vi.mock(import('@/composables/node/startModelNodeDragFromAsset'), () => ({
 }))
 
 const mockChangeTracker = vi.hoisted(() => ({
-  captureCanvasState: vi.fn()
+  captureCanvasState: vi.fn(),
+  undo: vi.fn(),
+  redo: vi.fn()
+}))
+
+const mockUnpackSubgraph = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(import('@/composables/graph/useSubgraphOperations'), () => ({
+  useSubgraphOperations: () => ({ unpackSubgraph: mockUnpackSubgraph })
 }))
 
 let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
+vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
+
+const mockBillingState = vi.hoisted(() => ({
+  canAccessSubscriptionFeatures: true,
+  subscriptionTier: null as string | null
+}))
 vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscription'),
+  import('@/platform/billing/composables/useBillingContext'),
   () => ({
-    useSubscription: vi.fn(() => ({
-      canAccessSubscriptionFeatures: vi.fn().mockReturnValue(true),
-      showSubscriptionDialog: vi.fn()
+    useBillingContext: vi.fn(() => ({
+      canAccessSubscriptionFeatures: {
+        get value() {
+          return mockBillingState.canAccessSubscriptionFeatures
+        }
+      },
+      subscription: {
+        get value() {
+          return mockBillingState.subscriptionTier
+            ? { tier: mockBillingState.subscriptionTier }
+            : null
+        }
+      }
     }))
   })
 )
 
-const mockBillingState = vi.hoisted(() => ({
-  canAccessSubscriptionFeatures: true,
-  subscriptionTier: null as string | null,
-  showSubscriptionDialog: vi.fn()
-}))
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: vi.fn(() => ({
-    canAccessSubscriptionFeatures: {
-      get value() {
-        return mockBillingState.canAccessSubscriptionFeatures
-      }
-    },
-    subscription: {
-      get value() {
-        return mockBillingState.subscriptionTier
-          ? { tier: mockBillingState.subscriptionTier }
-          : null
-      }
-    },
-    showSubscriptionDialog: mockBillingState.showSubscriptionDialog
-  }))
-}))
+vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 
 describe('useCoreCommands', () => {
   const createMockNode = (id: number, comfyClass: string): LGraphNode => {
@@ -257,7 +231,6 @@ describe('useCoreCommands', () => {
     >({ changeTracker: mockChangeTracker })
     useCanvasStore().canvas = app.canvas
     mockDistributionState.isCloud = false
-    mockFeatureFlagState.assetsEnabled = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
@@ -271,7 +244,6 @@ describe('useCoreCommands', () => {
     useSettingStore().settingValues['Comfy.ConfirmClear'] = false
 
     global.confirm = vi.fn().mockReturnValue(true)
-    mockRunMintPortsIntentionalClear.mockClear()
   })
 
   describe('ClearWorkflow command', () => {
@@ -285,7 +257,6 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).toHaveBeenCalled()
       expect(app.rootGraph.clear).toHaveBeenCalled()
-      expect(mockRunMintPortsIntentionalClear).toHaveBeenCalledOnce()
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
 
@@ -301,7 +272,6 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
-      expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
       const subgraph = app.canvas.subgraph
       expect(subgraph.remove).toHaveBeenCalledTimes(2)
@@ -328,6 +298,142 @@ describe('useCoreCommands', () => {
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('PasteFromClipboardWithConnect command', () => {
+    // An unresolved key renders as its own path, and this one reads as valid
+    // English, so asserting the shipped string would pass either way. Only a
+    // value the catalog alone can supply separates a lookup from an echo.
+    it('resolves its label against the catalog rather than echoing a key', () => {
+      const menuLabels = 'menuLabels'
+      const key = 'Paste with Connect'
+      const messages = i18n.global.getLocaleMessage('en') as Record<
+        string,
+        Record<string, string>
+      >
+      const original = messages[menuLabels][key]
+      const previousLocale = i18n.global.locale.value
+
+      try {
+        i18n.global.locale.value = 'en'
+        i18n.global.mergeLocaleMessage('en', {
+          [menuLabels]: { [key]: 'Sentinel paste label' }
+        })
+
+        const command = useCoreCommands().find(
+          (cmd) => cmd.id === 'Comfy.Canvas.PasteFromClipboardWithConnect'
+        )!
+
+        const label =
+          typeof command.label === 'function' ? command.label() : command.label
+
+        expect(label).toBe('Sentinel paste label')
+      } finally {
+        i18n.global.mergeLocaleMessage('en', {
+          [menuLabels]: { [key]: original }
+        })
+        i18n.global.locale.value = previousLocale
+      }
+    })
+  })
+
+  describe('Replay Onboarding command', () => {
+    function findCommand() {
+      const command = useCoreCommands().find(
+        (cmd) => cmd.id === 'Comfy.Onboarding.Replay'
+      )
+      if (!command) throw new Error('Missing Comfy.Onboarding.Replay command')
+      return command
+    }
+
+    beforeEach(() => {
+      vi.stubGlobal('location', { assign: vi.fn(), reload: vi.fn() })
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      vi.mocked(resetOnboardingState).mockResolvedValue({ status: 'ready' })
+      useSettingStore().settingValues['Comfy.DevMode'] = true
+    })
+
+    it('does nothing outside developer mode', async () => {
+      useSettingStore().settingValues['Comfy.DevMode'] = false
+
+      await findCommand().function()
+
+      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(resetOnboardingState).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when confirmation is declined', async () => {
+      vi.mocked(useDialogService().confirm).mockResolvedValue(false)
+
+      await findCommand().function()
+
+      expect(resetOnboardingState).not.toHaveBeenCalled()
+      expect(location.reload).not.toHaveBeenCalled()
+    })
+
+    it('reports reset failures without navigating', async () => {
+      vi.mocked(resetOnboardingState).mockResolvedValue({
+        status: 'failed',
+        cause: 'failed'
+      })
+
+      await findCommand().function()
+
+      expect(useToast().error).toHaveBeenCalled()
+      expect(location.assign).not.toHaveBeenCalled()
+      expect(location.reload).not.toHaveBeenCalled()
+    })
+
+    it('navigates to the cloud root after resetting', async () => {
+      mockDistributionState.isCloud = true
+
+      await findCommand().function()
+
+      expect(location.assign).toHaveBeenCalledWith('/')
+      expect(location.reload).not.toHaveBeenCalled()
+    })
+
+    it('reloads the current page off cloud', async () => {
+      await findCommand().function()
+
+      expect(location.reload).toHaveBeenCalledOnce()
+      expect(location.assign).not.toHaveBeenCalled()
+    })
+
+    it('deduplicates concurrent executions', async () => {
+      let finishReset: (() => void) | undefined
+      vi.mocked(resetOnboardingState).mockReturnValue(
+        new Promise((resolve) => {
+          finishReset = () => resolve({ status: 'ready' })
+        })
+      )
+      const command = findCommand()
+
+      const first = command.function()
+      const second = command.function()
+      await vi.waitFor(() =>
+        expect(resetOnboardingState).toHaveBeenCalledOnce()
+      )
+      finishReset?.()
+      await Promise.all([first, second])
+
+      expect(useDialogService().confirm).toHaveBeenCalledOnce()
+      expect(location.reload).toHaveBeenCalledOnce()
+    })
+
+    it('allows another execution after an earlier one is declined', async () => {
+      vi.mocked(useDialogService().confirm)
+        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true)
+      const command = findCommand()
+
+      await command.function()
+      await command.function()
+
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(2)
+      expect(resetOnboardingState).toHaveBeenCalledOnce()
+      expect(location.reload).toHaveBeenCalledOnce()
     })
   })
 
@@ -380,14 +486,44 @@ describe('useCoreCommands', () => {
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
+    it('should delete selected links when no items are selected', async () => {
+      const graph = new LGraph()
+      const source = createTestNode(graph, [], ['number'])
+      const target = createTestNode(graph, ['number'])
+      const link = source.connect(0, target, 0)
+      if (!link) throw new Error('connect failed')
+      const previousGraph = app.canvas.graph
+      Object.assign(app.canvas, {
+        graph,
+        selectedItems: new Set(),
+        emitBeforeChange: vi.fn(),
+        emitAfterChange: vi.fn()
+      })
+      useLinkSelectionStore().select({
+        links: [link],
+        marquee: { x: 0, y: 0, width: 10, height: 10 },
+        anchorX: 0
+      })
+
+      try {
+        await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+        expect(graph.getLink(link.id)).toBeUndefined()
+        expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
+      } finally {
+        app.canvas.graph = previousGraph
+      }
+    })
+
     it('should preserve selected items in selection-only mode', async () => {
       const selectedItem = {}
       app.canvas.selectedItems = new Set([
         selectedItem
       ]) as typeof app.canvas.selectedItems
-      app.canvas.selectOnly = true
+      useCommandStore().setInteractionMode({ isSelectOnly: () => true })
+      useCommandStore().registerCommands(useCoreCommands())
 
-      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+      await useCommandStore().execute('Comfy.Canvas.DeleteSelectedItems')
 
       expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
       expect(app.canvas.setDirty).not.toHaveBeenCalled()
@@ -411,12 +547,14 @@ describe('useCoreCommands', () => {
 
         await setDescCommand.function()
 
-        expect(mockDialogService.prompt).not.toHaveBeenCalled()
+        expect(useDialogService().prompt).not.toHaveBeenCalled()
       })
 
       it('should set description on subgraph.extra', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('Test description')
+        vi.mocked(useDialogService().prompt).mockResolvedValue(
+          'Test description'
+        )
 
         const commands = useCoreCommands()
         const setDescCommand = commands.find(
@@ -425,14 +563,14 @@ describe('useCoreCommands', () => {
 
         await setDescCommand.function()
 
-        expect(mockDialogService.prompt).toHaveBeenCalled()
+        expect(useDialogService().prompt).toHaveBeenCalled()
         expect(mockSubgraph.extra.BlueprintDescription).toBe('Test description')
         expect(mockChangeTracker.captureCanvasState).toHaveBeenCalled()
       })
 
       it('should not set description when user cancels', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue(null)
+        vi.mocked(useDialogService().prompt).mockResolvedValue(null)
 
         const commands = useCoreCommands()
         const setDescCommand = commands.find(
@@ -457,12 +595,14 @@ describe('useCoreCommands', () => {
 
         await setAliasesCommand.function()
 
-        expect(mockDialogService.prompt).not.toHaveBeenCalled()
+        expect(useDialogService().prompt).not.toHaveBeenCalled()
       })
 
       it('should set search aliases on subgraph.extra', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('alias1, alias2, alias3')
+        vi.mocked(useDialogService().prompt).mockResolvedValue(
+          'alias1, alias2, alias3'
+        )
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -471,7 +611,7 @@ describe('useCoreCommands', () => {
 
         await setAliasesCommand.function()
 
-        expect(mockDialogService.prompt).toHaveBeenCalled()
+        expect(useDialogService().prompt).toHaveBeenCalled()
         expect(mockSubgraph.extra.BlueprintSearchAliases).toEqual([
           'alias1',
           'alias2',
@@ -482,7 +622,9 @@ describe('useCoreCommands', () => {
 
       it('should trim whitespace and filter empty strings', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('  alias1  ,  , alias2 ,  ')
+        vi.mocked(useDialogService().prompt).mockResolvedValue(
+          '  alias1  ,  , alias2 ,  '
+        )
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -499,7 +641,7 @@ describe('useCoreCommands', () => {
 
       it('should set undefined when empty input', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('')
+        vi.mocked(useDialogService().prompt).mockResolvedValue('')
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -513,7 +655,7 @@ describe('useCoreCommands', () => {
 
       it('should not set aliases when user cancels', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue(null)
+        vi.mocked(useDialogService().prompt).mockResolvedValue(null)
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -535,7 +677,7 @@ describe('useCoreCommands', () => {
     it('Comfy.Canvas.ResetView delegates to litegraphService.resetView', async () => {
       await findCmd('Comfy.Canvas.ResetView').function()
 
-      expect(mockResetView).toHaveBeenCalled()
+      expect(useLitegraphService().resetView).toHaveBeenCalled()
     })
 
     it('Comfy.Canvas.ZoomIn scales the canvas up by 1.1× and marks it dirty', async () => {
@@ -609,17 +751,13 @@ describe('useCoreCommands', () => {
 
       const commandPromise = findCmd('Comfy.RefreshNodeDefinitions').function()
 
-      expect(
-        vi.mocked(useMissingModelStore().refreshMissingModels)
-      ).not.toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).not.toHaveBeenCalled()
       resolveComboRefresh()
       await commandPromise
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(vi.mocked(useModelStore().refresh)).toHaveBeenCalled()
-      expect(
-        vi.mocked(useMissingModelStore().refreshMissingModels)
-      ).toHaveBeenCalledWith({
+      expect(useModelStore().refresh).toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).toHaveBeenCalledWith({
         reloadDefs: false
       })
       expect(order.indexOf('missing')).toBeGreaterThan(
@@ -633,9 +771,7 @@ describe('useCoreCommands', () => {
       await expect(
         findCmd('Comfy.RefreshNodeDefinitions').function()
       ).rejects.toThrow('boom')
-      expect(
-        vi.mocked(useMissingModelStore().refreshMissingModels)
-      ).not.toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).not.toHaveBeenCalled()
     })
 
     it('Comfy.RefreshNodeDefinitions skips missing model refresh on cloud', async () => {
@@ -644,10 +780,8 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.RefreshNodeDefinitions').function()
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(vi.mocked(useModelStore().refresh)).toHaveBeenCalled()
-      expect(
-        vi.mocked(useMissingModelStore().refreshMissingModels)
-      ).not.toHaveBeenCalled()
+      expect(useModelStore().refresh).toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).not.toHaveBeenCalled()
     })
   })
 
@@ -666,7 +800,9 @@ describe('useCoreCommands', () => {
         await findCmd(id).function()
 
         expect(app.queuePrompt).toHaveBeenCalledWith(num, 1, expect.anything())
-        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+        expect(
+          useSubscriptionPaywall().showSubscriptionDialog
+        ).not.toHaveBeenCalled()
       }
     )
 
@@ -675,10 +811,10 @@ describe('useCoreCommands', () => {
 
       await findCmd('Comfy.QueueSelectedOutputNodes').function()
 
-      expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(
+        useSubscriptionPaywall().showSubscriptionDialog
+      ).not.toHaveBeenCalled()
+      expect(useToast().error).toHaveBeenCalled()
     })
 
     it.for([
@@ -694,7 +830,9 @@ describe('useCoreCommands', () => {
         await findCmd(id).function()
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
-        expect(mockBillingState.showSubscriptionDialog).toHaveBeenCalledWith({
+        expect(
+          useSubscriptionPaywall().showSubscriptionDialog
+        ).toHaveBeenCalledWith({
           reason: 'subscribe_to_run'
         })
       }
@@ -710,10 +848,10 @@ describe('useCoreCommands', () => {
         await findCmd('Comfy.QueuePrompt').function()
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
-        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'warn' })
-        )
+        expect(
+          useSubscriptionPaywall().showSubscriptionDialog
+        ).not.toHaveBeenCalled()
+        expect(useToast().warning).toHaveBeenCalled()
       }
     )
 
@@ -763,7 +901,7 @@ describe('useCoreCommands', () => {
     it('Comfy.Help.AboutComfyUI opens the About dialog', async () => {
       await findCmd('Comfy.Help.AboutComfyUI').function()
 
-      expect(mockShowAbout).toHaveBeenCalled()
+      expect(useSettingsDialog().showAbout).toHaveBeenCalled()
     })
   })
 
@@ -774,7 +912,7 @@ describe('useCoreCommands', () => {
       useCoreCommands().find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')!
 
     async function selectAssetFromBrowser() {
-      mockFeatureFlagState.assetsEnabled = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
 
       await browseModelAssets().function()
 
@@ -783,8 +921,6 @@ describe('useCoreCommands', () => {
     }
 
     it('does not open the browser when the assets capability is missing', async () => {
-      mockFeatureFlagState.assetsEnabled = false
-
       await expect(browseModelAssets().function()).resolves.toBeUndefined()
 
       expect(mockAssetBrowse).not.toHaveBeenCalled()
@@ -799,11 +935,10 @@ describe('useCoreCommands', () => {
         asset,
         'asset_browser'
       )
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('shows an error toast when the asset cannot start a drag', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       mockStartModelNodeDrag.mockReturnValue({
         code: 'NO_PROVIDER',
         message: 'No node provider registered',
@@ -812,9 +947,7 @@ describe('useCoreCommands', () => {
 
       await selectAssetFromBrowser()
 
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().error).toHaveBeenCalled()
     })
   })
 })

@@ -4,11 +4,19 @@
  * Tests for SubgraphNode instances including construction,
  * IO synchronization, and edge cases.
  */
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
-  BaseWidget,
+  LegacyWidget,
   LGraph,
   LGraphNode,
   LiteGraph,
@@ -27,6 +35,12 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
+
+vi.hoisted(() => {
+  globalThis.Image = vi.fn(class extends globalThis.Image {})
+})
+
+const imagesConstructedOnImport = vi.mocked(Image).mock.calls.length
 
 beforeEach(() => {
   resetSubgraphFixtureState()
@@ -287,7 +301,6 @@ describe('SubgraphNode Synchronization', () => {
   })
 
   it('preserves a promoted widget when re-resolution fails', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'text', type: 'STRING' }]
     })
@@ -317,7 +330,6 @@ describe('SubgraphNode Synchronization', () => {
   })
 
   it('declines promotion when an empty widget name cannot be registered', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
       inputs: [
         { name: '', type: 'STRING' },
@@ -357,7 +369,6 @@ describe('SubgraphNode Synchronization', () => {
   })
 
   it('clears an existing promotion when registration is later declined', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'STRING' }]
     })
@@ -432,8 +443,7 @@ describe('SubgraphNode Synchronization', () => {
     expect(widget.widgetId).toBeDefined()
 
     expect(() => {
-      // @ts-expect-error Abstract class instantiation
-      new BaseWidget({ ...widget, node: subgraphNode })
+      new LegacyWidget({ ...widget, node: subgraphNode })
     }).not.toThrow()
   })
 
@@ -1017,6 +1027,39 @@ describe('SubgraphNode Edge Cases', () => {
     for (const dto of flattened) {
       expect(dto.id).toMatch(/^\d+:\d+$/)
     }
+  })
+})
+
+describe('SubgraphNode workflow badge icon', () => {
+  it('allocates the icon image on first title box draw, reuses it afterwards and redraws once it loads', () => {
+    const subgraphNode = createTestSubgraphNode(createTestSubgraph())
+    const setDirtyCanvas = vi.spyOn(subgraphNode, 'setDirtyCanvas')
+    const ctx = fromPartial<CanvasRenderingContext2D>({
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      roundRect: vi.fn(),
+      fill: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      drawImage: vi.fn()
+    })
+
+    expect(imagesConstructedOnImport).toBe(0)
+
+    subgraphNode.drawTitleBox(ctx, { scale: 1 })
+    subgraphNode.drawTitleBox(ctx, { scale: 1 })
+
+    expect(Image).toHaveBeenCalledTimes(1)
+    const [firstIcon, secondIcon] = vi
+      .mocked(ctx.drawImage)
+      .mock.calls.map(([image]) => image)
+    assert.instanceOf(firstIcon, HTMLImageElement)
+    expect(secondIcon).toBe(firstIcon)
+
+    firstIcon.dispatchEvent(new Event('load'))
+
+    expect(setDirtyCanvas).toHaveBeenCalledWith(true, false)
   })
 })
 
