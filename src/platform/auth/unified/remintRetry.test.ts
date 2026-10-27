@@ -19,8 +19,6 @@ import { NO_RETRY_POLICY } from '@/utils/retryPolicy'
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 vi.mock(import('firebase/auth'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
