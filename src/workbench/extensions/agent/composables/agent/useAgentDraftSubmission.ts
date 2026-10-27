@@ -78,9 +78,6 @@ export function useAgentDraftSubmission(
       snapshot.attachments
     )
     if (options.target() === snapshot.target) selection.replace(snapshot.nodes)
-    // The composer is live again with the refused prompt in it, so from here
-    // one more Enter would buy a second turn for a prompt the user only sent
-    // once. Marked, not disabled: Send still retries and an edit re-arms Enter.
     composer.markRejectedDraft()
   }
 

@@ -277,10 +277,6 @@ describe('useComposer', () => {
     expect(composer.attachments.value.map((a) => a.id)).toEqual(['a2'])
   })
 
-  // A refusal restores the prompt and re-enables the composer, so Enter is the
-  // one affordance that can fire again without the user deciding to send
-  // (#20386). These pin which intent each affordance carries; the browser proof
-  // is browser_tests/tests/agent/agentRateLimitDuplicateSubmit.spec.ts.
   describe('a draft restored after a refused send', () => {
     function restoredAfterRefusal() {
       const { composer, onSend } = setup()
@@ -332,6 +328,30 @@ describe('useComposer', () => {
       expect(onSend).toHaveBeenCalledWith('make a red fox', [
         { id: 'a1', name: 'fox.png', ref: 'rfox' }
       ])
+    })
+
+    it('re-arms the keyboard intent when a reference moves within unchanged text', () => {
+      const store = useAgentComposerStore()
+      const text = 'render this and then stop'
+      const reference = {
+        id: 'wf-1',
+        name: 'Fox',
+        textOffset: 12
+      }
+      store.restorePrompt({
+        text,
+        references: [{ ...reference, kind: 'workflow' as const }]
+      })
+      store.markRejectedDraft()
+      const { composer, onSend } = setup()
+
+      store.restorePrompt({
+        text,
+        references: [{ ...reference, kind: 'workflow' as const, textOffset: 4 }]
+      })
+      composer.submit('keyboard')
+
+      expect(onSend).toHaveBeenCalled()
     })
   })
 })

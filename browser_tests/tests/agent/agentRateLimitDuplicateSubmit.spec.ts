@@ -14,11 +14,6 @@ test.describe(
 
     const prompt = 'Make a red fox in the snow'
 
-    /**
-     * Drives one send to a 503 refusal and waits for the composer to be back in
-     * the state a user would retry from: the exact prompt restored and the Send
-     * button live again.
-     */
     async function rejectOneSend({
       agentPanel,
       postedMessages
@@ -64,9 +59,6 @@ test.describe(
 
       await agentPanel.sendButton.click()
 
-      // The retry is refused too — every POST 503s while `agentRetryAfter` is
-      // set — so the observable outcome is a second request and the prompt
-      // still available to retry again.
       await expect.poll(() => postedMessages).toHaveLength(2)
       await expect(agentPanel.composer).toHaveText(prompt)
       await expect(agentPanel.sendButton).toBeEnabled()

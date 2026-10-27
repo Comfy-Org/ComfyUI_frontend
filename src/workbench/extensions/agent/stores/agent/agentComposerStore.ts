@@ -41,6 +41,10 @@ function resetTextWhenReferencesCleared(
   return references.length === 0 && text.trim() === '' ? '' : text
 }
 
+function composerReferencePosition(reference: ComposerReference): string {
+  return `${composerReferenceKey(reference)}@${reference.textOffset}`
+}
+
 interface SubmittedDraft {
   attachments: ComposerAttachment[]
   nodes: SelectedNode[]
@@ -143,19 +147,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     starterPrompt: AgentStarterPromptSource | null
     snapshot: SubmittedDraft
   } | null>(null)
-  /**
-   * The draft a refused send put back in the composer, kept until the user
-   * changes it. Enter is the only affordance that reads it: a refusal restores
-   * the prompt and re-enables the composer, so a keystroke the user was already
-   * repeating would otherwise send the same prompt again and buy a second turn
-   * (#20386). The explicit Send button is a deliberate retry and never consults
-   * this.
-   *
-   * Compared by CONTENT, not by draft identity. `applyEditorPrompt`'s
-   * `metadataOnly` branch and `resolveSkillMetadata` both assign a fresh prompt
-   * object without the user touching anything, so an identity check would read
-   * a skill chip resolving as an edit and re-arm Enter on an unchanged prompt.
-   */
   const rejectedDraft = shallowRef<{
     prompt: ComposerPrompt
     attachmentIds: string[]
@@ -173,8 +164,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       rejected.prompt.references.length === current.references.length &&
       rejected.prompt.references.every(
         (reference, index) =>
-          composerReferenceKey(reference) ===
-          composerReferenceKey(current.references[index])
+          composerReferencePosition(reference) ===
+          composerReferencePosition(current.references[index])
       )
     )
   })
