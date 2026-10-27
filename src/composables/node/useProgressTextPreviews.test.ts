@@ -42,11 +42,12 @@ function showCanvasNode() {
   return node
 }
 
-function createWorkflow(path = 'workflows/test.json') {
+function createWorkflow(path = 'workflows/test.json', instanceId?: string) {
   return fromPartial<LoadedComfyWorkflow>({
     activeState: { id: 'workflow-id' },
     initialState: { id: 'workflow-id' },
-    path
+    path,
+    instanceId
   })
 }
 
@@ -133,6 +134,30 @@ describe('useProgressTextPreviews', () => {
         nodeId: toNodeId('1'),
         text: 'stale',
         prompt_id: 'job-9'
+      })
+
+      expect(showTextPreview).not.toHaveBeenCalled()
+    })
+
+    it('ignores text from a job queued by a background workflow', () => {
+      showCanvasNode()
+      useWorkflowStore().activeWorkflow = createWorkflow(
+        'workflows/visible.json',
+        'visible'
+      )
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-background',
+        promptOutput: {},
+        workflow: createWorkflow('workflows/background.json', 'background'),
+        mode: 'graph'
+      })
+      mountPreviews()
+
+      fireProgressText({
+        nodeId: toNodeId('1'),
+        text: 'elsewhere',
+        prompt_id: 'job-background'
       })
 
       expect(showTextPreview).not.toHaveBeenCalled()

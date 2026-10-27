@@ -9,6 +9,7 @@ export interface AugmentedResultItem extends ResultItem {
   nodeId: SerializedNodeId
   subfolder: string
   assetId?: string
+  hash?: string
   display_name?: string
   content?: string
   format?: string
