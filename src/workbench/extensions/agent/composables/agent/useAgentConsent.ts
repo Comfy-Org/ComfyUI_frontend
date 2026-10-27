@@ -241,7 +241,7 @@ export function useAgentConsent() {
 
   function heldDraftText(): string {
     const held = composerStore.submission
-    return held?.phase === 'pending' ? held.snapshot.prompt.text : ''
+    return held?.phase === 'pending' ? held.snapshot.prompt.text.trim() : ''
   }
 
   async function acceptAfterSignIn(

@@ -1026,6 +1026,24 @@ describe('useAgentConsent', () => {
       })
     })
 
+    it('keeps the held text without the blank space a dropped reference leaves', async () => {
+      signedOut()
+      holdDraft('  raise the steps on this node')
+      vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(
+        new Promise(() => {})
+      )
+
+      void useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await vi.waitFor(() =>
+        expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+      )
+
+      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
+        draft: 'raise the steps on this node'
+      })
+    })
+
     it('keeps nothing when the signed-out card is rejected', async () => {
       signedOut()
       holdDraft('make it blue')
