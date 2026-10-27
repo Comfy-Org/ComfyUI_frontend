@@ -549,6 +549,57 @@ describe('LiveGraphApplier with the real change tracker', () => {
     ])
   })
 
+  it('forgets a failed DynamicGroup regrow once a full frame restores the row', () => {
+    const { graph, node, doc, collector } = twoRowFollower()
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    applyRowCount(doc, 1, 2)
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    node.onWidgetChanged = (name) => {
+      if (name === 'rows.1.strength') throw new Error('callback failed')
+    }
+    applyRowCount(doc, 2, 3)
+    expect(
+      applier.applyChanges(doc, collector.take(), CONTEXT).failureCount
+    ).toBe(1)
+    node.onWidgetChanged = undefined
+
+    const catchUp = new Y.Doc()
+    const catchUpCollector = new DocChangeCollector(catchUp)
+    onTestFinished(() => {
+      catchUpCollector.destroy()
+      catchUp.destroy()
+    })
+    Y.applyUpdate(catchUp, Y.encodeStateAsUpdate(doc))
+    applier.applyChanges(catchUp, catchUpCollector.take(), CONTEXT)
+    const second = node.widgets?.find(
+      (widget) => widget.name === 'rows.1.strength'
+    )
+    assert.exists(second)
+    second.value = 0.3
+    const write: Op = {
+      ...op({
+        op: 'set_widget',
+        node_id: 1,
+        widget: 'before',
+        value: 'remote head'
+      }),
+      op_id: 'op-before-4'.padEnd(32, '0'),
+      base_version: 4,
+      stamp: [4, 'agent:test']
+    }
+    expect(applyOps(doc, [write], CATALOG).outcomes[0].outcome).toBe('applied')
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(node.serialize().widgets_values).toEqual([
+      'remote head',
+      2,
+      0.5,
+      0.3,
+      'tail'
+    ])
+  })
+
   it('leaves visible DynamicGroup rows alone on a remote row count change', () => {
     const { graph, node, doc, collector } = twoRowFollower()
     const applier = new LiveGraphApplier({ getGraph: () => graph })
