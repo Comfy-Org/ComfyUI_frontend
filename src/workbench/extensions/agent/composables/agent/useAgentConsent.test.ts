@@ -1231,6 +1231,31 @@ describe('useAgentConsent', () => {
       expect(useAgentComposerStore().draft).toBe('make it blue')
     })
 
+    it('after a failed post-reload save, asks once on the next Send and saves once on Agree', async () => {
+      signedIn()
+      let posts = 0
+      fetchWithUnifiedRemint.mockImplementation(
+        async (_url: string, init: RequestInit) => {
+          if (init.method !== 'POST') return settingResponse(false)
+          posts += 1
+          return posts === 1 ? new Response(null, { status: 500 }) : savedResponse()
+        }
+      )
+
+      await useAgentConsent().resumeAcceptAfterReload('make it blue')
+      expect(useAgentConsentStore().accepted).toBe(false)
+      expect(useAgentComposerStore().draft).toBe('make it blue')
+
+      const onSend = vi.fn()
+      const request = useAgentConsent().withConsent('first_message', onSend)
+      await startConsent()
+      await request
+
+      expect(onSend).toHaveBeenCalledOnce()
+      expect(posts).toBe(2)
+      expect(useDialogStore().dialogStack).toHaveLength(0)
+    })
+
     it('holds a Send made during the post-reload save until it settles, without a card', async () => {
       signedIn()
       const save = deferred<Response>()
