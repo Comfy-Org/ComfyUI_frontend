@@ -532,6 +532,54 @@ describe('useWidgetSelectItems', () => {
       }
     )
 
+    it.for([
+      [
+        'an input asset tagged temp',
+        ['input', 'temp'],
+        undefined,
+        'blake3:ab12cd34.png [output]'
+      ],
+      [
+        'a model asset tagged temp',
+        ['models', 'temp'],
+        undefined,
+        'blake3:ab12cd34.png [output]'
+      ],
+      [
+        'an output tagged temp whose preview URL says input',
+        ['output', 'temp'],
+        '/api/view?filename=probe.png&type=input',
+        'blake3:ab12cd34.png [output]'
+      ],
+      [
+        'a generated output tagged temp',
+        ['output', 'temp'],
+        undefined,
+        'blake3:ab12cd34.png [temp]'
+      ]
+    ] as const)(
+      'lists %s at its prior output root unless it is a generated output',
+      async ([, tags, preview_url, name]) => {
+        mockMediaAssets.items.value = [
+          fromPartial({
+            id: 'probe-asset',
+            name: 'probe.png',
+            hash: 'blake3:ab12cd34.png',
+            tags: [...tags],
+            preview_url
+          })
+        ]
+
+        const { dropdownItems, filterSelected } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref('') })
+        )
+        filterSelected.value = 'outputs'
+        await nextTick()
+
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([name])
+      }
+    )
+
     it('prefixes the subfolder of a temp output with no job whose metadata names only the subfolder', async () => {
       mockMediaAssets.items.value = [
         fromPartial({

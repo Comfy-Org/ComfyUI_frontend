@@ -13,7 +13,7 @@ import { api } from '@/scripts/api'
 
 import {
   getAssetType,
-  isTempOutput
+  isGeneratedTempOutput
 } from '@/platform/assets/composables/media/assetMappers'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -91,7 +91,9 @@ export function startAssetDrag(
       : {
           filename: asset.name,
           subfolder: getOutputSubfolder(asset.user_metadata),
-          type: isTempOutput(asset) ? 'temp' : getAssetType(asset.tags),
+          type: isGeneratedTempOutput(asset)
+            ? 'temp'
+            : getAssetType(asset.tags),
           display_name: asset.display_name ?? undefined
         }),
     attachment_ref: getAssetUrlFilename(asset),

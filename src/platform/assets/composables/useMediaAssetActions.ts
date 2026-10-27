@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { isTempOutput } from '@/platform/assets/composables/media/assetMappers'
+import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
@@ -52,7 +52,9 @@ import type { AssetDownload } from './useAssetDownload'
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
 function createAssetWidgetPath(asset: AssetItem): string {
-  const assetType = isTempOutput(asset) ? 'temp' : getAssetType(asset, 'input')
+  const assetType = isGeneratedTempOutput(asset)
+    ? 'temp'
+    : getAssetType(asset, 'input')
 
   return createAnnotatedPath({
     filename: getAssetStoredFilename(asset),
@@ -625,7 +627,7 @@ export function useMediaAssetActions() {
         const stored = getStoredOutputIdentity(asset)
         const variants = widgetValueVariants(
           asset.name,
-          isTempOutput(asset)
+          isGeneratedTempOutput(asset)
             ? 'temp'
             : (stored?.type ?? getAssetType(asset, 'input')),
           getOutputSubfolder(asset.user_metadata),

@@ -143,3 +143,48 @@ describe('asset drag identity', () => {
     }
   )
 })
+
+describe('asset drag root for non-output assets tagged temp', () => {
+  it.for([
+    ['an input asset', ['input', 'temp'], undefined, 'flat_temp.png'],
+    [
+      'an input asset whose preview URL says input',
+      ['input', 'temp'],
+      '/api/view?filename=flat_temp.png&type=input',
+      'flat_temp.png'
+    ],
+    ['a model asset', ['models', 'temp'], undefined, 'flat_temp.png'],
+    [
+      'an output whose preview URL says input',
+      ['output', 'temp'],
+      '/api/view?filename=flat_temp.png&type=input',
+      'flat_temp.png [output]'
+    ],
+    [
+      'a generated output',
+      ['output', 'temp'],
+      undefined,
+      'flat_temp.png [temp]'
+    ]
+  ] as const)(
+    'drops %s tagged temp at its prior root',
+    ([, tags, preview_url, written]) => {
+      const dataTransfer = new DataTransfer()
+      const event = new DragEvent('dragstart', { cancelable: true })
+      Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+
+      startAssetDrag(event, {
+        id: 'flat-temp-asset',
+        name: 'flat_temp.png',
+        tags: [...tags],
+        preview_url,
+        created_at: '2026-10-21T00:00:00Z',
+        updated_at: '2026-10-21T00:00:00Z'
+      } satisfies AssetItem)
+      const dropped = parseAssetInfo(dataTransfer)
+
+      assert.exists(dropped)
+      expect(createAnnotatedPath(dropped)).toBe(written)
+    }
+  )
+})

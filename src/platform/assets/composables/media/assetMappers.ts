@@ -70,10 +70,20 @@ const byCreatedAtAsc = (a: AssetItem, b: AssetItem): number =>
 
 const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-export function isTempOutput(asset: AssetItem): boolean {
+function isTempOutput(asset: AssetItem): boolean {
+  return asset.tags.includes('temp') || getAssetSourceType(asset) === 'temp'
+}
+
+const NON_OUTPUT_TAGS = new Set(['input', 'models'])
+
+/** Whether an asset added to a workflow lives in the temp root: its stored output identity, else temp evidence on a generated output. */
+export function isGeneratedTempOutput(asset: AssetItem): boolean {
   const storedType = getStoredOutputIdentity(asset)?.type
   if (storedType) return storedType === 'temp'
-  return asset.tags.includes('temp') || getAssetSourceType(asset) === 'temp'
+  if (getAssetSourceType(asset) === 'input') return false
+  return (
+    !asset.tags.some((tag) => NON_OUTPUT_TAGS.has(tag)) && isTempOutput(asset)
+  )
 }
 
 const byIsTemp = (a: AssetItem, b: AssetItem): number =>

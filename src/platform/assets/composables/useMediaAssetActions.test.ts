@@ -2305,6 +2305,121 @@ describe('useMediaAssetActions', () => {
       ])
     })
 
+    describe('temp tags only mark a generated output as temp', () => {
+      const inputRootSurvivors = [
+        'ab12cd34.png [temp]',
+        'ab12cd34.png [output]'
+      ]
+      const tempRootSurvivors = [
+        'ab12cd34.png [output]',
+        'ab12cd34.png [input]',
+        'ab12cd34.png'
+      ]
+
+      it.for([
+        [
+          'an input asset tagged temp',
+          { tags: ['input', 'temp'] },
+          'ab12cd34.png',
+          ['ab12cd34.png [input]'],
+          inputRootSurvivors
+        ],
+        [
+          'an input asset tagged temp whose preview URL says input',
+          {
+            tags: ['input', 'temp'],
+            preview_url: '/api/view?filename=probe.png&type=input'
+          },
+          'ab12cd34.png',
+          ['ab12cd34.png [input]'],
+          inputRootSurvivors
+        ],
+        [
+          'an output tagged temp whose preview URL says input',
+          {
+            tags: ['output', 'temp'],
+            preview_url: '/api/view?filename=probe.png&type=input'
+          },
+          'ab12cd34.png',
+          ['ab12cd34.png [input]'],
+          inputRootSurvivors
+        ],
+        [
+          'a model asset tagged temp',
+          { tags: ['models', 'temp'] },
+          'ab12cd34.png',
+          ['ab12cd34.png [input]'],
+          inputRootSurvivors
+        ],
+        [
+          'an input asset with a metadata subfolder',
+          { tags: ['input'], user_metadata: { subfolder: 'clipspace' } },
+          'clipspace/ab12cd34.png',
+          ['clipspace/ab12cd34.png [input]'],
+          [
+            'clipspace/ab12cd34.png [temp]',
+            'clipspace/ab12cd34.png [output]',
+            'ab12cd34.png',
+            'ab12cd34.png [input]'
+          ]
+        ],
+        [
+          'a generated output tagged temp with a type-less preview URL',
+          {
+            tags: ['output', 'temp'],
+            preview_url: '/api/assets/probe-asset/content'
+          },
+          'ab12cd34.png [temp]',
+          [],
+          tempRootSurvivors
+        ],
+        [
+          'a generated output whose preview URL says temp',
+          {
+            tags: ['output'],
+            preview_url: '/api/view?filename=probe.png&type=temp'
+          },
+          'ab12cd34.png [temp]',
+          [],
+          tempRootSurvivors
+        ]
+      ] as const)(
+        'writes %s at its own root and deleting it clears only that root',
+        async ([, shape, written, sameRoot, otherRoots]) => {
+          const asset = createMockAsset({
+            id: 'probe-asset',
+            name: 'probe.png',
+            hash: 'ab12cd34.png',
+            ...shape,
+            tags: [...shape.tags]
+          })
+          const { actions } = mountMediaActions()
+          await actions.addWorkflow(asset)
+          const inserted = graph.nodes.at(-1)!
+          await actions.addMultipleToWorkflow([asset])
+          const bulk = graph.nodes.at(-1)!
+          const sameRootNodes = sameRoot.map(addLoadImageNode)
+          const survivors = otherRoots.map(addLoadImageNode)
+
+          expect([inserted, bulk].map(serializedImageValue)).toEqual([
+            written,
+            written
+          ])
+
+          await actions.deleteAssets(asset)
+
+          expect([inserted, bulk].map(referenceState)).toEqual([
+            cleared(written),
+            cleared(written)
+          ])
+          expect(sameRootNodes.map(serializedImageValue)).toEqual(
+            sameRoot.map(() => '')
+          )
+          expect(survivors.map(serializedImageValue)).toEqual([...otherRoots])
+        }
+      )
+    })
+
     describe('a temp asset with no job whose metadata names only its subfolder', () => {
       const folderTempAsset = createMockAsset({
         id: 'folder-temp-asset',
