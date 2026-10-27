@@ -60,15 +60,12 @@ test.describe(
         })
     })
 
-    // The restart report and ComfyUI's reconnect travel on different sockets,
-    // so the page must recover in either order.
     for (const reportFirst of [true, false]) {
       test(`refreshes node definitions and reloads the active workflow when ${
         reportFirst ? 'the restart report' : 'the ComfyUI reconnect'
       } arrives first`, async ({
         agentPanel,
         comfyPage,
-        getAgentSocket,
         getWebSocket,
         nextWebSocket
       }) => {
@@ -80,7 +77,7 @@ test.describe(
 
         const deliverRestartReport = () =>
           test.step('deliver the agent restart report', async () => {
-            const ws = await getAgentSocket()
+            const ws = await getWebSocket()
             const restart: AgentWsEvent = {
               type: 'agent_tool_call',
               data: {
