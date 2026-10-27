@@ -14,6 +14,7 @@
     "adr:check": "tsx scripts/check-adrs.ts",
     "follower-invariants:check": "tsx scripts/check-follower-invariants.ts",
     "audit:inherited-classes": "tsx tools/design-system-audits/src/cli.ts",
+    "follower-document-mutations:check": "tsx scripts/check-follower-document-mutations.ts",
     "benchmark:packages": "pnpm build:packages && tsx tools/architecture/src/benchmark-package-references.ts",
     "build:packages": "node node_modules/vue-tsc/bin/vue-tsc.js -b tsconfig.packages.json",
     "build:dist": "vite build --config vite.config.mts",
