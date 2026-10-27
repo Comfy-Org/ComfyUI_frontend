@@ -89,7 +89,7 @@ describe('attachRetryableStatusRetry', () => {
 
     await client.get('https://api/x')
 
-    expect(sleep).toHaveBeenCalledExactlyOnceWith(2_000, undefined)
+    expect(sleep).toHaveBeenCalledExactlyOnceWith(2_250, undefined)
   })
 
   it('rejects without waiting when Retry-After is past the cap', async () => {
@@ -126,6 +126,19 @@ describe('attachRetryableStatusRetry', () => {
     expect(defaultAdapter).not.toHaveBeenCalled()
   })
 
+  it('does not stack a second retry loop when attached twice', async () => {
+    const adapter = scriptedAdapter([{ status: 503 }])
+    const client = axios.create({ adapter })
+    const sleep = async () => {}
+    attachRetryableStatusRetry(client, { sleep })
+    attachRetryableStatusRetry(client, { sleep })
+
+    await expect(client.get('https://api/x')).rejects.toMatchObject({
+      response: { status: 503 }
+    })
+    expect(adapter).toHaveBeenCalledTimes(DEFAULT_RETRY_POLICY.maxAttempts)
+  })
+
   describe('with a request timeout', () => {
     function makeTimedClient(answers: ScriptedAnswer[]) {
       const adapter = scriptedAdapter(answers)
@@ -149,6 +162,73 @@ describe('attachRetryableStatusRetry', () => {
       expect(vi.getTimerCount()).toBe(0)
     })
 
+    it('surfaces the last failure when the wait overruns the timeout', async () => {
+      vi.useFakeTimers()
+      const adapter = scriptedAdapter([{ status: 503 }, { status: 200 }])
+      const client = axios.create({ adapter })
+      attachRetryableStatusRetry(client, {
+        random: () => 1,
+        sleep: async () => {
+          vi.setSystemTime(Date.now() + 5_000)
+        }
+      })
+
+      await expect(
+        client.get('https://api/x', { timeout: 1_000 })
+      ).rejects.toMatchObject({ response: { status: 503 } })
+      expect(adapter).toHaveBeenCalledTimes(1)
+    })
+
+    it('hands the original timeout back on the error it throws', async () => {
+      vi.useFakeTimers()
+      const adapter = scriptedAdapter([{ status: 503 }])
+      const client = axios.create({ adapter })
+      attachRetryableStatusRetry(client, {
+        random: () => 1,
+        sleep: async () => {
+          vi.setSystemTime(Date.now() + 100)
+        }
+      })
+
+      const error = await client
+        .get('https://api/x', { timeout: 5_000 })
+        .catch((reason: unknown) => reason)
+
+      expect(error).toMatchObject({ config: { timeout: 5_000 } })
+    })
+
+    it('reports an abort during the wait as a cancellation', async () => {
+      vi.useFakeTimers()
+      const { client } = makeTimedClient([
+        { status: 503, headers: { 'retry-after': '5' } }
+      ])
+      const controller = new AbortController()
+
+      const outcome = client
+        .get('https://api/x', { signal: controller.signal })
+        .catch((reason: unknown) => reason)
+      await vi.advanceTimersByTimeAsync(1_000)
+      controller.abort()
+
+      expect(axios.isCancel(await outcome)).toBe(true)
+    })
+
+    it('reports a cancel token fired during the wait as a cancellation', async () => {
+      vi.useFakeTimers()
+      const { client } = makeTimedClient([
+        { status: 503, headers: { 'retry-after': '5' } }
+      ])
+      const source = axios.CancelToken.source()
+
+      const outcome = client
+        .get('https://api/x', { cancelToken: source.token })
+        .catch((reason: unknown) => reason)
+      await vi.advanceTimersByTimeAsync(1_000)
+      source.cancel()
+
+      expect(axios.isCancel(await outcome)).toBe(true)
+    })
+
     it('retries when the wait fits inside the timeout and shrinks the next attempt', async () => {
       vi.useFakeTimers()
       const { client, adapter } = makeTimedClient([
@@ -157,11 +237,11 @@ describe('attachRetryableStatusRetry', () => {
       ])
 
       const pending = client.get('https://api/x', { timeout: 5_000 })
-      await vi.advanceTimersByTimeAsync(1_000)
+      await vi.advanceTimersByTimeAsync(1_250)
 
       expect((await pending).status).toBe(200)
       expect(adapter.mock.calls.map(([config]) => config.timeout)).toEqual([
-        5_000, 4_000
+        5_000, 3_750
       ])
     })
   })

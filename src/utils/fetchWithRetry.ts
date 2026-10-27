@@ -28,6 +28,14 @@ function requestSignal(
   return init.signal ?? (input instanceof Request ? input.signal : undefined)
 }
 
+function timedOut(signal: AbortSignal | undefined): boolean {
+  return (
+    signal?.aborted === true &&
+    signal.reason instanceof DOMException &&
+    signal.reason.name === 'TimeoutError'
+  )
+}
+
 function isReplayable(input: RequestInfo | URL, init: RequestInit): boolean {
   return (
     !(init.body instanceof ReadableStream) &&
@@ -62,8 +70,13 @@ export async function fetchWithRetry(
       random
     })
     if (delay === undefined) return response
+    try {
+      await sleep(delay, signal)
+    } catch (error) {
+      if (timedOut(signal)) return response
+      throw error
+    }
     await response.body?.cancel()
-    await sleep(delay, signal)
   }
 }
 

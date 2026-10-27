@@ -81,7 +81,9 @@ export function retryDelayMs({
     policy.baseDelayMs * 2 ** (attempt - 1)
   )
   const jittered = ceiling / 2 + (random() * ceiling) / 2
-  return Math.max(jittered, retryAfterMs ?? 0)
+  if (retryAfterMs === undefined) return jittered
+  const spread = (random() * ceiling) / 2
+  return Math.min(policy.maxDelayMs, Math.max(jittered, retryAfterMs + spread))
 }
 
 export function sleep(ms: number, signal?: AbortSignal): Promise<void> {

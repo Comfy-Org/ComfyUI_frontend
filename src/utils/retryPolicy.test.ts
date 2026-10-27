@@ -106,13 +106,24 @@ describe('retryDelayMs', () => {
     }
   )
 
-  it('waits at least as long as Retry-After asks', () => {
-    expect(decide({ readRetryAfter: () => '4' })).toBe(4_000)
-  })
+  it.for([
+    [0, 4_000],
+    [1, 4_250]
+  ])(
+    'adds jitter on top of Retry-After, never below it (random=%f)',
+    ([random, expected]) => {
+      expect(decide({ readRetryAfter: () => '4', random: () => random })).toBe(
+        expected
+      )
+    }
+  )
 
   it('reads an HTTP-date Retry-After against the clock', () => {
     expect(
-      decide({ readRetryAfter: () => 'Sun, 18 Oct 2026 12:00:03 GMT' })
+      decide({
+        readRetryAfter: () => 'Sun, 18 Oct 2026 12:00:03 GMT',
+        random: () => 0
+      })
     ).toBe(3_000)
   })
 

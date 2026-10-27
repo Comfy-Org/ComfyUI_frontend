@@ -186,7 +186,7 @@ describe('fetchWithRetry', () => {
 
     await fetchWithRetry('https://api/x', {}, { fetchImpl, sleep, random })
 
-    expect(sleep).toHaveBeenCalledExactlyOnceWith(4_000, undefined)
+    expect(sleep).toHaveBeenCalledExactlyOnceWith(4_250, undefined)
   })
 
   it('returns the 503 without waiting when Retry-After is past the cap', async () => {
@@ -214,13 +214,30 @@ describe('fetchWithRetry', () => {
         respond(200)
       )
 
-      const pending = fetchWithRetry('https://api/x', {}, { fetchImpl })
+      const pending = fetchWithRetry('https://api/x', {}, { fetchImpl, random })
 
-      await vi.advanceTimersByTimeAsync(2_999)
+      await vi.advanceTimersByTimeAsync(3_249)
       expect(fetchImpl).toHaveBeenCalledTimes(1)
       await vi.advanceTimersByTimeAsync(1)
       expect((await pending).status).toBe(200)
       expect(fetchImpl).toHaveBeenCalledTimes(2)
+    })
+
+    it('returns the last response when the timeout signal fires mid-wait', async () => {
+      const controller = new AbortController()
+      const last = respond(503, { 'Retry-After': '5' })
+      const fetchImpl = scriptedFetch(last)
+
+      const pending = fetchWithRetry(
+        'https://api/x',
+        { signal: controller.signal },
+        { fetchImpl }
+      )
+      await vi.advanceTimersByTimeAsync(1_000)
+      controller.abort(new DOMException('Fetch timeout', 'TimeoutError'))
+
+      expect(await pending).toBe(last)
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
     })
 
     it('stops waiting when the caller aborts', async () => {
