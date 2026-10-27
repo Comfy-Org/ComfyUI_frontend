@@ -4,7 +4,7 @@
       v-bind="$attrs"
       :value
       :disabled
-      :aria-describedby="missingNodes ? missingNodesId : undefined"
+      :aria-describedby="compatibilityNote ? noteId : undefined"
       :class="
         cn(
           switcherItemClass,
@@ -22,10 +22,8 @@
         {{ title }}
       </span>
       <span
-        v-if="tone"
         ref="deploymentText"
         class="w-16 shrink-0 truncate text-muted-foreground"
-        data-testid="deployment-row-name"
       >
         {{ deployment }}
       </span>
@@ -39,7 +37,6 @@
               : 'text-muted-foreground'
           )
         "
-        data-testid="deployment-row-detail"
       >
         {{ switching ? $t('deploymentSwitcher.switching') : detail }}
       </span>
@@ -56,8 +53,8 @@
           />
         </DropdownMenuItemIndicator>
       </span>
-      <span v-if="missingNodes" :id="missingNodesId" hidden>
-        {{ missingNodes }}
+      <span v-if="compatibilityNote" :id="noteId" hidden>
+        {{ compatibilityNote }}
       </span>
     </MenuRadioItem>
   </TextTooltip>
@@ -87,7 +84,7 @@ const {
   detail = null,
   tooltip,
   tone,
-  missingNodes = null,
+  compatibilityNote = null,
   switching = false,
   disabled = false
 } = defineProps<{
@@ -98,11 +95,11 @@ const {
   /** The Release version when ready, else the status. */
   detail?: string | null
   /** The row's full label, shown beside it when any of its text is cut off. */
-  tooltip?: string
+  tooltip: string
   /** The deployment's status; leave it out for Comfy Cloud. */
   tone?: DeploymentStatusTone
-  /** Names the nodes this row cannot run, on hover and as its description. */
-  missingNodes?: string | null
+  /** Why the row may not run the workflow, on hover and as its description. */
+  compatibilityNote?: string | null
   switching?: boolean
   disabled?: boolean
 }>()
@@ -111,7 +108,7 @@ const emit = defineEmits<{
   select: [event: Event]
 }>()
 
-const missingNodesId = useId()
+const noteId = useId()
 
 const titleText = useTemplateRef<HTMLElement>('titleText')
 const deploymentText = useTemplateRef<HTMLElement>('deploymentText')
@@ -119,8 +116,8 @@ const detailCell = useTemplateRef<HTMLElement>('detailCell')
 const isTruncated = ref(false)
 
 const tooltipText = computed(() => {
-  if (missingNodes) return missingNodes
-  return isTruncated.value ? (tooltip ?? title) : ''
+  if (compatibilityNote) return compatibilityNote
+  return isTruncated.value ? tooltip : ''
 })
 
 function overflows(element: HTMLElement | null): boolean {

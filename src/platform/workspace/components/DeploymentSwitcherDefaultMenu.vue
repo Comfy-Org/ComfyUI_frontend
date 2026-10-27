@@ -31,29 +31,23 @@
     <MenuSubContent
       :side-offset="2"
       :align-offset="-5"
-      :class="cn('w-84 max-w-[calc(100vw-1rem)]', switcherMenuMotionClass)"
+      :class="cn(switcherMenuWidthClass, switcherMenuMotionClass)"
     >
       <DropdownMenuLabel class="px-2 pt-1.5 pb-1 text-xs text-muted-foreground">
         {{ $t('deploymentSwitcher.membersStartOn') }}
       </DropdownMenuLabel>
       <DropdownMenuRadioGroup :model-value="checkedValue">
         <DeploymentSwitcherRow
-          :value="COMFY_CLOUD_ROW"
-          :title="$t('deploymentSwitcher.comfyCloud')"
-          data-testid="default-row-cloud"
-          @select="choose(null)"
-        />
-        <DeploymentSwitcherRow
-          v-for="deployment in deployments"
-          :key="deployment.deployment_id"
-          :value="deployment.deployment_id"
-          :title="deploymentTitle(deployment)"
-          :deployment="deploymentName(deployment)"
-          :detail="deploymentDetail(deployment)"
-          :tooltip="deploymentTooltip(deployment)"
-          :tone="deploymentStatusTone(deployment.status)"
-          :data-testid="`default-row-${deployment.deployment_id}`"
-          @select="choose(deployment.deployment_id)"
+          v-for="row in rows"
+          :key="row.value"
+          :value="row.value"
+          :title="row.title"
+          :deployment="row.name"
+          :detail="row.detail"
+          :tooltip="row.tooltip"
+          :tone="row.tone"
+          :data-testid="`default-row-${row.deploymentId ?? 'cloud'}`"
+          @select="choose(row.deploymentId)"
         />
       </DropdownMenuRadioGroup>
     </MenuSubContent>
@@ -74,11 +68,11 @@ import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwi
 import {
   switcherItemClass,
   switcherMenuMotionClass,
+  switcherMenuWidthClass,
   switcherTrailingSlotClass
 } from '@/platform/workspace/components/deploymentSwitcherStyles'
 import {
   COMFY_CLOUD_ROW,
-  deploymentStatusTone,
   useDeploymentLabels
 } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -94,13 +88,12 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { deployments, defaultDeploymentId, goneDefaultDeploymentId } =
   storeToRefs(useDeploymentPickStore())
-const {
-  deploymentTitle,
-  deploymentName,
-  deploymentDetail,
-  deploymentTooltip,
-  defaultTitle
-} = useDeploymentLabels()
+const { deploymentRowLabels, defaultTitle } = useDeploymentLabels()
+
+const rows = computed(() => [
+  deploymentRowLabels(null),
+  ...deployments.value.map((deployment) => deploymentRowLabels(deployment))
+])
 
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
 const checkedValue = computed(() => {

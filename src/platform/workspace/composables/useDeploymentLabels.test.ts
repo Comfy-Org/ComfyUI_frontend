@@ -106,8 +106,10 @@ describe('deployment labels', () => {
     ({ fields, title, deploymentName, full }) => {
       const labels = mountLabels()
       const row = { ...deployment, ...fields }
-      expect(labels.deploymentTitle(row)).toBe(title)
-      expect(labels.deploymentName(row)).toBe(deploymentName)
+      expect(labels.deploymentRowLabels(row)).toMatchObject({
+        title,
+        name: deploymentName
+      })
       expect(labels.deploymentFullLabel(row)).toBe(full)
     }
   )
@@ -131,7 +133,7 @@ describe('deployment labels', () => {
     ({ status, fields, detail }) => {
       const labels = mountLabels()
       expect(
-        labels.deploymentDetail({ ...deployment, ...fields, status })
+        labels.deploymentRowLabels({ ...deployment, ...fields, status }).detail
       ).toBe(detail)
     }
   )
@@ -161,15 +163,26 @@ describe('deployment labels', () => {
     ({ status, fields, tooltip }) => {
       const labels = mountLabels()
       expect(
-        labels.deploymentTooltip({
+        labels.deploymentRowLabels({
           ...deployment,
           deployment_name: 'production',
           ...fields,
           status
-        })
+        }).tooltip
       ).toBe(tooltip)
     }
   )
+
+  it('labels the Comfy Cloud row by its name alone', () => {
+    expect(mountLabels().deploymentRowLabels(null)).toEqual({
+      value: 'comfy-cloud',
+      deploymentId: null,
+      title: 'Comfy Cloud',
+      name: null,
+      detail: null,
+      tooltip: 'Comfy Cloud'
+    })
+  })
 
   it.for([
     { status: 'ready', tone: 'ready' },

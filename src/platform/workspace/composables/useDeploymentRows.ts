@@ -4,148 +4,118 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { DeploymentCompatibilityMark } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
-import type { DeploymentStatusTone } from '@/platform/workspace/composables/useDeploymentLabels'
+import type { DeploymentRowLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import {
   COMFY_CLOUD_ROW,
-  deploymentStatusTone,
   useDeploymentLabels
 } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
-interface DeploymentRow {
+type DeploymentSectionKey = 'runOn' | 'current' | 'compatible' | 'incompatible'
+
+interface MarkedRow {
   value: string
-  deploymentId: string | null
-  title: string
-  name: string | null
-  detail: string | null
-  tooltip: string
-  tone?: DeploymentStatusTone
-  missingNodes: string | null
+  mark: DeploymentCompatibilityMark | null
 }
 
-interface DeploymentSection {
-  key: 'runOn' | 'current' | 'compatible' | 'incompatible'
-  label: string
-  rows: DeploymentRow[]
+interface DeploymentRow extends DeploymentRowLabels, MarkedRow {
+  compatibilityNote: string | null
+}
+
+interface DeploymentSection<Row> {
+  key: DeploymentSectionKey
+  rows: Row[]
+}
+
+const SECTION_LABEL_KEYS: Record<DeploymentSectionKey, string> = {
+  runOn: 'deploymentSwitcher.runOn',
+  current: 'deploymentSwitcher.runningOn',
+  compatible: 'deploymentSwitcher.compatibleEnvironments',
+  incompatible: 'deploymentSwitcher.incompatibleEnvironments'
 }
 
 /**
- * The Run on menu's rows: the one this browser runs on, then Comfy Cloud,
- * then the deployments. Once a compatibility check has answered for every row
- * and splits them, the current row sits alone under Running on and the rest
- * are grouped by whether they run the open workflow.
+ * Puts the picked row first in one Run on list or, once every row is marked
+ * and the marks disagree, alone above the compatible and incompatible rows.
  */
+export function sectionRows<Row extends MarkedRow>(
+  rows: readonly Row[],
+  pickedValue: string
+): DeploymentSection<Row>[] {
+  const [current, others] = partition(rows, (row) => row.value === pickedValue)
+  const runs = (row: Row) => row.mark?.kind === 'runs'
+  const marksDisagree =
+    rows.every((row) => row.mark !== null) &&
+    rows.some(runs) &&
+    !rows.every(runs)
+  if (!marksDisagree) return [{ key: 'runOn', rows: [...current, ...others] }]
+  const [compatible, incompatible] = partition(others, runs)
+  const sections: DeploymentSection<Row>[] = [
+    { key: 'current', rows: current },
+    { key: 'compatible', rows: compatible },
+    { key: 'incompatible', rows: incompatible }
+  ]
+  return sections.filter((section) => section.rows.length > 0)
+}
+
+/** The Run on menu's rows under their headings, and the picked row's value. */
 export function useDeploymentRows() {
   const { t, locale } = useI18n()
   const { deployments, pickedDeploymentId } = storeToRefs(
     useDeploymentPickStore()
   )
-  const {
-    deploymentTitle,
-    deploymentName,
-    deploymentDetail,
-    deploymentTooltip,
-    deploymentFullLabel
-  } = useDeploymentLabels()
+  const { deploymentRowLabels, deploymentFullLabel } = useDeploymentLabels()
   const { markFor } = useDeploymentCompatibility()
 
-  function missingNodesText(
-    deploymentId: string | null,
-    label: string
+  function compatibilityNote(
+    mark: DeploymentCompatibilityMark | null,
+    deployment: string
   ): string | null {
-    const mark = markFor(deploymentId)
-    if (mark?.kind !== 'missing') return null
+    if (mark?.kind === 'missing') {
+      return t(
+        'deploymentSwitcher.missingNodesNamed',
+        {
+          deployment,
+          nodes: new Intl.ListFormat(locale.value).format(mark.nodeTypes)
+        },
+        { escapeParameter: false }
+      )
+    }
+    if (mark?.kind !== 'unknown') return null
     return t(
-      'deploymentSwitcher.missingNodesNamed',
-      {
-        deployment: label,
-        nodes: new Intl.ListFormat(locale.value).format(mark.nodeTypes)
-      },
+      'deploymentSwitcher.notCheckedNamed',
+      { deployment },
       { escapeParameter: false }
     )
   }
 
-  function cloudRow(): DeploymentRow {
-    const title = t('deploymentSwitcher.comfyCloud')
+  function row(deployment: WorkspaceDeployment | null): DeploymentRow {
+    const mark = markFor(deployment?.deployment_id ?? null)
     return {
-      value: COMFY_CLOUD_ROW,
-      deploymentId: null,
-      title,
-      name: null,
-      detail: null,
-      tooltip: title,
-      missingNodes: missingNodesText(null, title)
-    }
-  }
-
-  function deploymentRow(deployment: WorkspaceDeployment): DeploymentRow {
-    return {
-      value: deployment.deployment_id,
-      deploymentId: deployment.deployment_id,
-      title: deploymentTitle(deployment),
-      name: deploymentName(deployment),
-      detail: deploymentDetail(deployment),
-      tooltip: deploymentTooltip(deployment),
-      tone: deploymentStatusTone(deployment.status),
-      missingNodes: missingNodesText(
-        deployment.deployment_id,
+      ...deploymentRowLabels(deployment),
+      mark,
+      compatibilityNote: compatibilityNote(
+        mark,
         deploymentFullLabel(deployment)
       )
     }
-  }
-
-  function isChecked(row: DeploymentRow): boolean {
-    return markFor(row.deploymentId) !== null
-  }
-
-  function runsWorkflow(row: DeploymentRow): boolean {
-    return markFor(row.deploymentId)?.kind === 'runs'
   }
 
   const pickedValue = computed(
     () => pickedDeploymentId.value ?? COMFY_CLOUD_ROW
   )
 
-  const sections = computed<DeploymentSection[]>(() => {
-    const rows = [cloudRow(), ...deployments.value.map(deploymentRow)]
-    const [current, others] = partition(
-      rows,
-      (row) => row.value === pickedValue.value
-    )
-    if (
-      !rows.every(isChecked) ||
-      rows.every(runsWorkflow) ||
-      !rows.some(runsWorkflow)
-    ) {
-      return [
-        {
-          key: 'runOn',
-          label: t('deploymentSwitcher.runOn'),
-          rows: [...current, ...others]
-        }
-      ]
-    }
-    const [compatible, incompatible] = partition(others, runsWorkflow)
-    const groups: DeploymentSection[] = [
-      {
-        key: 'current',
-        label: t('deploymentSwitcher.runningOn'),
-        rows: current
-      },
-      {
-        key: 'compatible',
-        label: t('deploymentSwitcher.compatibleEnvironments'),
-        rows: compatible
-      },
-      {
-        key: 'incompatible',
-        label: t('deploymentSwitcher.incompatibleEnvironments'),
-        rows: incompatible
-      }
-    ]
-    return groups.filter((group) => group.rows.length > 0)
-  })
+  const sections = computed(() =>
+    sectionRows(
+      [row(null), ...deployments.value.map((d) => row(d))],
+      pickedValue.value
+    ).map((section) => ({
+      ...section,
+      label: t(SECTION_LABEL_KEYS[section.key])
+    }))
+  )
 
   return { sections, pickedValue }
 }

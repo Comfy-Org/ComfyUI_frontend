@@ -55,9 +55,10 @@
         :detail="row.detail"
         :tooltip="row.tooltip"
         :tone="row.tone"
-        :missing-nodes="row.missingNodes"
+        :compatibility-note="row.compatibilityNote"
         :switching="row.switching"
         :disabled="isSwitching"
+        :data-focus-row="row.value"
         :data-testid="row.testId"
         @select="choose($event, row.deploymentId)"
       />
@@ -120,6 +121,7 @@ import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwi
 import { switcherItemClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
+import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocus'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const { switchingTo } = defineProps<{
@@ -150,6 +152,7 @@ const {
 const { currentLabel } = useDeploymentLabels()
 const { sections, pickedValue } = useDeploymentRows()
 const sectionLabelId = useId()
+useKeepRowFocus(sections)
 
 const buildsUrl = `${getComfyPlatformBaseUrl()}/profile/builds`
 

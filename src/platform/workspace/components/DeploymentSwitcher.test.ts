@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { escapeRegExp } from 'es-toolkit'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -6,7 +7,10 @@ import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
+import type {
+  DeploymentCompatibility,
+  WorkspaceDeploymentList
+} from '@/platform/workspace/api/workspaceApi'
 
 import enMessages from '@/locales/en/main.json'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -196,7 +200,7 @@ describe('DeploymentSwitcher', () => {
     )
   })
 
-  it.for([
+  const rowColumns = [
     { row: D2, title: 'Studio Build', name: 'production', detail: 'v2' },
     { row: D1, title: 'Studio Build', name: 'staging', detail: 'Stopped' },
     {
@@ -205,27 +209,42 @@ describe('DeploymentSwitcher', () => {
       name: '',
       detail: 'Stopped'
     }
-  ])(
+  ]
+
+  function columnsOf({ title, name, detail }: (typeof rowColumns)[number]) {
+    return new RegExp(`^${escapeRegExp(`${title}${name}${detail}`)}$`)
+  }
+
+  it.for(rowColumns)(
     'gives each row the same columns, the Build, the deployment, then the version when ready or else the status: $title $name $detail',
-    async ({ row, title, name, detail }) => {
+    async (columns) => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
       const user = renderSwitcher()
       await openList(user)
-      const cells = within(screen.getByTestId(`deployment-row-${row}`))
-      expect(cells.getByText(title)).toBeVisible()
-      expect(cells.getByTestId('deployment-row-name')).toHaveTextContent(
-        new RegExp(`^${name}$`)
-      )
-      expect(cells.getByTestId('deployment-row-detail')).toHaveTextContent(
-        new RegExp(`^${detail}$`)
-      )
+      expect(
+        screen.getByTestId(`deployment-row-${columns.row}`)
+      ).toHaveTextContent(columnsOf(columns))
     }
   )
 
-  async function focusProductionRow(cutOffTestId?: string) {
+  it.for(rowColumns)(
+    'gives each Workspace default row the same columns: $title $name $detail',
+    async (columns) => {
+      asOwner()
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      const user = renderSwitcher()
+      await openList(user)
+      await openDefaultMenu(user)
+      expect(
+        screen.getByTestId(`default-row-${columns.row}`)
+      ).toHaveTextContent(columnsOf(columns))
+    }
+  )
+
+  async function focusProductionRow(cutOffText?: string) {
     vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(
       function (this: Element) {
-        return this.getAttribute('data-testid') === cutOffTestId ? 400 : 0
+        return this.textContent.trim() === cutOffText ? 400 : 0
       }
     )
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
@@ -238,12 +257,12 @@ describe('DeploymentSwitcher', () => {
   }
 
   it.for([
-    { cell: 'name', testId: 'deployment-row-name' },
-    { cell: 'status', testId: 'deployment-row-detail' }
+    { cell: 'name', text: 'production' },
+    { cell: 'version', text: 'v2' }
   ])(
     'spells out a row beside the menu when its $cell is cut off',
-    async ({ testId }) => {
-      await focusProductionRow(testId)
+    async ({ text }) => {
+      await focusProductionRow(text)
 
       expect(await screen.findByRole('tooltip')).toHaveTextContent(
         'Studio Build · production · v2'
@@ -1329,7 +1348,9 @@ describe('DeploymentSwitcher', () => {
       )
       expect(
         screen.getByTestId(`deployment-row-${D9}`)
-      ).not.toHaveAccessibleDescription()
+      ).toHaveAccessibleDescription(
+        'Could not check whether Deployment dep-b9b9b9b9 can run this workflow.'
+      )
 
       const staging = screen.getByTestId(`deployment-row-${D1}`)
       expect(staging).toHaveAccessibleDescription(
@@ -1341,12 +1362,20 @@ describe('DeploymentSwitcher', () => {
       )
     })
 
-    it('leaves out a group whose only row is the current one', async () => {
-      mockWorkspaceApi.listDeployments.mockResolvedValue({
-        ...listing,
-        picked_deployment_id: D2
-      })
-      mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
+    it('keeps keyboard focus on the same row when the answer regroups the menu', async () => {
+      let answer: (compatibility: DeploymentCompatibility) => void = () => {}
+      mockWorkspaceApi.checkDeploymentCompatibility.mockReturnValue(
+        new Promise<DeploymentCompatibility>((resolve) => {
+          answer = resolve
+        })
+      )
+      const user = renderSwitcher()
+      await openList(user)
+      const staging = screen.getByTestId(`deployment-row-${D1}`)
+      staging.focus()
+      await waitFor(() => expect(staging).toHaveFocus())
+
+      answer({
         deployments: [
           { deployment_id: D2, missing_node_types: [], unknown: false },
           {
@@ -1354,93 +1383,22 @@ describe('DeploymentSwitcher', () => {
             missing_node_types: ['Power Lora Loader (rgthree)'],
             unknown: false
           },
-          {
-            deployment_id: D9,
-            missing_node_types: ['Power Lora Loader (rgthree)'],
-            unknown: false
-          }
-        ],
-        cloud: { missing_node_types: ['Power Lora Loader (rgthree)'] }
-      })
-      const user = renderSwitcher()
-      await openList(user)
-
-      await waitFor(() =>
-        expect(rowsIn('Running on')).toEqual([`deployment-row-${D2}`])
-      )
-      expect(
-        screen.queryByRole('group', { name: 'Compatible environments' })
-      ).toBeNull()
-      expect(rowOrder()).toEqual([
-        `deployment-row-${D2}`,
-        'deployment-row-cloud',
-        `deployment-row-${D1}`,
-        `deployment-row-${D9}`
-      ])
-    })
-
-    it.for([
-      {
-        answer: 'every row runs it',
-        missing: [],
-        cloudMissing: []
-      },
-      {
-        answer: 'no row runs it',
-        missing: ['Power Lora Loader (rgthree)'],
-        cloudMissing: ['Power Lora Loader (rgthree)']
-      }
-    ])(
-      'keeps one Run on list when $answer',
-      async ({ missing, cloudMissing }) => {
-        mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
-          deployments: [D2, D1, D9].map((deployment_id) => ({
-            deployment_id,
-            missing_node_types: missing,
-            unknown: false
-          })),
-          cloud: { missing_node_types: cloudMissing }
-        })
-        const user = renderSwitcher()
-        await openList(user)
-        await waitFor(() =>
-          expect(
-            mockWorkspaceApi.checkDeploymentCompatibility
-          ).toHaveBeenCalled()
-        )
-        await nextTick()
-
-        expect(rowsIn('Run on')).toHaveLength(4)
-        expect(
-          screen.queryByRole('group', { name: 'Incompatible environments' })
-        ).toBeNull()
-      }
-    )
-
-    it('keeps one Run on list while the check leaves out a listed row', async () => {
-      mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
-        deployments: [
-          { deployment_id: D2, missing_node_types: [], unknown: false },
-          {
-            deployment_id: D1,
-            missing_node_types: ['Power Lora Loader (rgthree)'],
-            unknown: false
-          }
+          { deployment_id: D9, missing_node_types: [], unknown: true }
         ],
         cloud: { missing_node_types: [] }
       })
-      const user = renderSwitcher()
-      await openList(user)
+      await waitFor(() =>
+        expect(rowsIn('Incompatible environments')).toEqual([
+          `deployment-row-${D1}`,
+          `deployment-row-${D9}`
+        ])
+      )
 
       await waitFor(() =>
-        expect(
-          screen.getByTestId(`deployment-row-${D1}`)
-        ).toHaveAccessibleDescription(/cannot run this workflow/)
+        expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveFocus()
       )
-      expect(rowsIn('Run on')).toHaveLength(4)
-      expect(
-        screen.queryByRole('group', { name: 'Incompatible environments' })
-      ).toBeNull()
+      await user.keyboard('{ArrowDown}')
+      expect(screen.getByTestId(`deployment-row-${D9}`)).toHaveFocus()
     })
 
     it('shows one Run on list when the check fails', async () => {
