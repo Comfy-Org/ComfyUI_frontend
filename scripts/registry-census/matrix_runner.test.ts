@@ -382,6 +382,18 @@ describe('form/values agreement channel', () => {
           data.widgets_values_named = { ...named, orphan: 'ignored' }
       },
       expected: 'emitAgree'
+    },
+    {
+      name: 'a hook that drops a named widget value declines',
+      pack: 'form-dropped',
+      onSerialize(data: Record<string, unknown>) {
+        const named = data.widgets_values_named
+        if (isRecord(named)) {
+          const [, ...kept] = Object.entries(named)
+          data.widgets_values_named = Object.fromEntries(kept)
+        }
+      },
+      expected: 'decline:hook_changed_serialized_widgets'
     }
   ])('$name', async ({ pack, onSerialize, expected }) => {
     const ksamplers = await run(pack, onSerialize)

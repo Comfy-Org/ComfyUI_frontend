@@ -6,9 +6,9 @@
 # blocks a pull request. A workflow nobody agreed to gate on must not be able
 # to become one by being wired to `push`.
 #
-# What it measures is `docOpMinter.nodeLocalWidgetForm`, which derives
-# `widgets_values_form.order` from the live `node.widgets` and emits it only
-# when the derivation is closed over the serialised named projection. A node
+# What it measures is `classifyWidgetValuesForm` in widgetValuesForm.ts, the
+# producer the Agent wire ships, which declares `widgets_values_form.order`
+# only when it can prove it against the post-hook serialisation. A node
 # carrying a form consults no catalogue on any leg, so a wrong form is
 # authoritative and strictly worse than no form. That makes a decline a correct
 # outcome, and makes the useful answer a class-by-class breakdown rather than a

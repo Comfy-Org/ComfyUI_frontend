@@ -7,20 +7,22 @@ deliberately **not** a verdict: there is no floor, no baseline, no exit-1, and
 `summarize_matrix.py` does not read these fields. Exit 1 here means the rows
 could not be read at all, which is a harness condition, not an ecosystem one.
 
-The thing being measured is `docOpMinter.nodeLocalWidgetForm`, which derives
-`widgets_values_form.order` from the live `node.widgets` and emits it only when
-that derivation is closed over the serialised named projection. A node carrying
+The thing being measured is the producer itself: the runner calls
+`classifyWidgetValuesForm` from `widgetValuesForm.ts`, which declares
+`widgets_values_form.order` only when it can prove it against the post-hook
+serialisation, and records its suppression reason otherwise. A node carrying
 a form consults no catalogue on any leg, so a wrong form is authoritative and
 strictly worse than no form. That asymmetry is the whole reason this is a
 breakdown rather than a pass rate:
 
   emitAgree*          a form is emitted and agrees              -> wanted
-  decline*            no form is emitted                        -> safe, and
+  decline:<reason>    no form is emitted                        -> safe, and
                                                                    the size of
                                                                    the gap
   emitDisagree*       a form is emitted and does NOT agree      -> the defect
   absent / noNamed /  the node declares no widget values, or an
-  noSerialisedNode    older shape the producer cannot consume   -> unmeasured
+  noSerialisedNode /  older shape the producer cannot consume   -> unmeasured
+  decline:no_value_widgets
 
 A run whose rows carry no form telemetry at all reports `unmeasured`, never
 0 violations: a channel that stopped firing must not read as agreement.
@@ -35,9 +37,11 @@ import os
 import sys
 from collections import Counter, defaultdict
 
-# Every verdict string measure_form_agreement can emit, grouped by what it
-# means for the producer. A verdict outside this table is reported under
-# `unknown` rather than silently folded into a bucket.
+# Every verdict string the runner can emit, grouped by what it means for the
+# producer. The `decline:` members are the producer's own suppression reasons,
+# so this table follows `WidgetFormSuppression` in widgetValuesForm.ts. A
+# verdict outside this table is reported under `unknown` rather than silently
+# folded into a bucket.
 EMIT_AGREE = ('emitAgree',)
 # The form agrees with the named projection an agent op sends, but the node's
 # positional widgets_values is not the array it describes - a hook substituted
@@ -50,15 +54,23 @@ EMIT_SUBSTITUTED = (
 )
 EMIT_DISAGREE = ('emitDisagree:keyOrder',)
 DECLINE = (
-    'declineLayoutDependent',
-    'declineVirtualNode',
-    'declineUnclosed:noOrder',
-    'declineUnclosed:dupeNames',
-    'declineUnclosed:emptyName',
-    'declineUnclosed:residueKeys',
-    'declineUnclosed:orderOverrun',
+    'decline:virtual_node',
+    'decline:order_names_unserialized_widget',
+    'decline:declared_keys_disagree',
+    'decline:hook_changed_serialized_widgets',
+    'decline:value_dependent_layout',
+    'decline:shell_last_serialization',
+    'decline:serialization_failed',
+    'decline:value_has_no_live_widget',
+    'decline:unnamed_value_widget',
+    'decline:duplicate_widget_name',
 )
-UNMEASURED = ('absent', 'noNamed', 'noSerialisedNode')
+UNMEASURED = (
+    'absent',
+    'noNamed',
+    'noSerialisedNode',
+    'decline:no_value_widgets',
+)
 KNOWN = EMIT_AGREE + EMIT_SUBSTITUTED + EMIT_DISAGREE + DECLINE + UNMEASURED
 
 GROUPS = (

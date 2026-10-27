@@ -25,6 +25,10 @@ import summarize_form_agreement as sfa
 RUNNER = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'matrix_runner.ts'
 )
+PRODUCER = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    '../../src/workbench/extensions/agent/crdt/widgetValuesForm.ts',
+)
 
 
 def node(verdict: str, node_class: str = 'KSampler', **over: object) -> dict:
@@ -40,35 +44,51 @@ class TestVocabulary(unittest.TestCase):
     def test_every_runner_verdict_is_grouped(self) -> None:
         """A verdict the runner can emit but this cannot group would land in
         `unknown verdict` and be invisible in the headline table."""
-        source = self.measure_body()
-        # Every verdict the runner emits is a whole single-quoted literal, so
-        # the full set can be read out of the file. Keep it that way: an
-        # interpolated verdict would be invisible to this test.
-        literals = set(re.findall(r"'([A-Za-z:]+)'", source))
-        self.assertNotRegex(
-            source,
-            r'`(?:emit|decline)[^`]*`',
-            'verdicts must be whole literals, not interpolated',
+        shaped = self.runner_verdicts() | self.producer_declines()
+        self.assertEqual(
+            sorted(shaped - set(sfa.KNOWN)),
+            [],
+            'the runner or producer emits a verdict this reporter does not group',
+        )
+        # Reverse direction: a member this reporter groups but nothing can
+        # emit any more is a stale row in every table it prints.
+        self.assertEqual(
+            sorted(set(sfa.KNOWN) - shaped),
+            [],
+            'this reporter groups a verdict nothing can emit',
         )
 
-        shaped = {
+    def runner_verdicts(self) -> set[str]:
+        """The runner's own verdicts, each a whole single-quoted literal.
+
+        The one interpolation allowed is the producer's suppression reason,
+        which `producer_declines` reads from its source instead.
+        """
+        source = self.measure_body()
+        templates = re.findall(r'`(?:emit|decline)[^`]*`', source)
+        self.assertEqual(
+            templates,
+            ['`decline:${reason}`'],
+            'verdicts must be whole literals, not interpolated',
+        )
+        literals = set(re.findall(r"'([A-Za-z_:]+)'", source))
+        verdicts = {
             token
             for token in literals
             if token.startswith(('emit', 'decline')) or token in sfa.UNMEASURED
         }
-        self.assertTrue(shaped, 'found no verdict literals in matrix_runner.ts')
-        self.assertEqual(
-            sorted(shaped - set(sfa.KNOWN)),
-            [],
-            'matrix_runner.ts emits a verdict this reporter does not group',
-        )
-        # Reverse direction: a member this reporter groups but the runner can
-        # no longer emit is a stale row in every table it prints.
-        self.assertEqual(
-            sorted(set(sfa.KNOWN) - shaped),
-            [],
-            'this reporter groups a verdict matrix_runner.ts cannot emit',
-        )
+        self.assertTrue(verdicts, 'found no verdict literals in matrix_runner.ts')
+        return verdicts
+
+    def producer_declines(self) -> set[str]:
+        """Every `WidgetFormSuppression` member, as the runner reports it."""
+        with open(PRODUCER, encoding='utf-8') as fh:
+            whole = fh.read()
+        start = whole.index('type WidgetFormSuppression =')
+        union = whole[start : whole.index('\n\n', start)]
+        reasons = set(re.findall(r"\| '([a-z_]+)'", union))
+        self.assertTrue(reasons, 'found no WidgetFormSuppression members')
+        return {f'decline:{reason}' for reason in reasons}
 
     @staticmethod
     def measure_body() -> str:
@@ -118,7 +138,7 @@ class TestReport(unittest.TestCase):
 
     def test_agreeing_population_says_so_explicitly(self) -> None:
         text = '\n'.join(
-            sfa.report([row('p', node('emitAgree'), node('declineLayoutDependent'))])
+            sfa.report([row('p', node('emitAgree'), node('decline:value_dependent_layout'))])
         )
         self.assertIn('No disagreeing form in this population', text)
         self.assertIn('form emitted and agrees | 1', text)

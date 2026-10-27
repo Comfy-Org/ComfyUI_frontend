@@ -230,23 +230,28 @@ outcome the widget-form producer reaches. It rides on the serialisation
 dispatch — a second dispatch would change what every other channel in the row
 observes.
 
-The producer is `nodeLocalWidgetForm` in
-`src/workbench/extensions/agent/crdt/docOpMinter.ts`. It derives
-`widgets_values_form.order` from the live `node.widgets` and emits it only when
-that derivation is **closed** over the serialised named projection: no
-duplicate names, no empty names, and exactly the keys the projection carries.
-A node that carries a form consults no catalogue on any leg, so a wrong form is
-authoritative and strictly worse than no form. **That asymmetry is why this is
-a breakdown and not a pass rate**: declining is a correct outcome, and the only
-defect is a form that is emitted and disagrees.
+The producer is `classifyWidgetValuesForm` in
+`src/workbench/extensions/agent/crdt/widgetValuesForm.ts`, and the runner calls
+it directly rather than keeping its own copy, so the census always measures the
+code that ships. It declares `widgets_values_form.order` only when it can prove
+the order against the post-hook serialisation (see
+`docs/adr/WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md`),
+and otherwise returns a suppression reason. A node that carries a form consults
+no catalogue on any leg, so a wrong form is authoritative and strictly worse
+than no form. **That asymmetry is why this is a breakdown and not a pass rate**:
+declining is a correct outcome, and the only defect is a form that is emitted
+and disagrees.
 
-| verdict family                            | meaning                                                                                                                           |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `emitAgree*`                              | a form is emitted and agrees — the wanted outcome                                                                                 |
-| `declineLayoutDependent`                  | the node def carries a value-dependent layout input type, so the producer suppresses by design                                    |
-| `declineUnclosed:*`                       | the derivation is not closed (`dupeNames`, `emptyName`, `residueKeys`, `noOrder`, `orderOverrun`) — safe, and the size of the gap |
-| `emitDisagree:*`                          | a form would be emitted and would be **wrong**                                                                                    |
-| `absent` / `noNamed` / `noSerialisedNode` | the node declares no widget values, or an older shape the producer cannot consume — unmeasured, not clean                         |
+| verdict family                            | meaning                                                                                                   |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `emitAgree*`                              | a form is emitted and agrees — the wanted outcome                                                         |
+| `decline:<reason>`                        | the producer declined, with its own `WidgetFormSuppression` reason (or `virtual_node`) — safe, the gap    |
+| `emitDisagree:*`                          | a form would be emitted and would be **wrong**                                                            |
+| `absent` / `noNamed` / `noSerialisedNode` | the node declares no widget values, or an older shape the producer cannot consume — unmeasured, not clean |
+| `decline:no_value_widgets`                | the node has no value widget for a form to order — counted with the unmeasured rows, not as a gap         |
+
+The reporter test reads the `WidgetFormSuppression` union out of the producer,
+so a reason added there without a row in `summarize_form_agreement.py` fails.
 
 `emitAgree:positionalSkew` is telemetry rather than a defect: the positional
 array disagreeing with the live value-widget count is exactly the post-hook
