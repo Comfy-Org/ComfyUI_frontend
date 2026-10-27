@@ -3405,8 +3405,6 @@
       {
         "name": "workflow-management/application",
         "patterns": [
-          "src/composables/useNewMenuItemIndicator.test.ts",
-          "src/composables/useNewMenuItemIndicator.ts",
           "src/composables/useWorkflowActionsMenu.test.ts",
           "src/composables/useWorkflowActionsMenu.ts",
           "src/platform/workflow/core/services/**",
