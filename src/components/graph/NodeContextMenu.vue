@@ -33,16 +33,16 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import Menu from '@/components/ui/menu/Menu.vue'
-import { getMenuAnchorPosition } from '@/components/ui/menu/menuAnchor'
-import { usePointMenu } from '@/components/ui/menu/usePointMenu'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import { getMenuAnchorPosition } from '@comfyorg/design-system/lib/menu/menuAnchor'
+import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
 import type {
   MenuItem,
   MenuItemAction,
   MenuItemRadioGroup,
   MenuItemSeparator,
   MenuItemSubmenu
-} from '@/components/ui/menu/types'
+} from '@comfyorg/design-system/lib/menu/types'
 import {
   registerNodeOptionsInstance,
   useMoreOptionsMenu
