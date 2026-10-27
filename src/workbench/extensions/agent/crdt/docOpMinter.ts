@@ -1379,8 +1379,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       graph.nodes.map((node) => [String(node.id), node])
     )
     mintRestoredRemovals(graph, liveNodes, before, after)
-    mintRestoredAdditions(graph, liveNodes, before, after)
     mintRestoredChanges(graph, liveNodes, before, after)
+    mintRestoredAdditions(graph, liveNodes, before, after)
   }
 
   function mintRestoredRemovals(

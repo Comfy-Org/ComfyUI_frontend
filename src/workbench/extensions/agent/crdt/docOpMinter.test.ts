@@ -977,28 +977,51 @@ describe('attachDocOpMinter', () => {
       return { source, sink }
     }
 
+    async function restoreThrough(change: () => void) {
+      const previous = await workflowJson(graph)
+      withGraphIntentSource('load', change)
+      emitGraphRestored({ previous, next: await workflowJson(graph) })
+    }
+
     it.for([
       {
         action: 'connect',
-        act: (source: LGraphNode, sink: LGraphNode) => {
+        edit: 'a live edit',
+        act: async (source: LGraphNode, sink: LGraphNode) => {
           sink.disconnectInput(1)
           source.connect(0, sink, 1)
         }
       },
       {
         action: 'disconnect',
-        act: (_source: LGraphNode, sink: LGraphNode) => {
+        edit: 'a live edit',
+        act: async (_source: LGraphNode, sink: LGraphNode) => {
           sink.disconnectInput(1)
+        }
+      },
+      {
+        action: 'connect',
+        edit: 'an undo/redo restore',
+        act: async (source: LGraphNode, sink: LGraphNode) => {
+          withGraphIntentSource('load', () => sink.disconnectInput(1))
+          await restoreThrough(() => source.connect(0, sink, 1))
+        }
+      },
+      {
+        action: 'disconnect',
+        edit: 'an undo/redo restore',
+        act: async (_source: LGraphNode, sink: LGraphNode) => {
+          await restoreThrough(() => sink.disconnectInput(1))
         }
       }
     ])(
-      "$action mints the doc index of the live slot's name, not its live index",
+      "$action from $edit mints the doc index of the live slot's name, not its live index",
       async ({ action, act }) => {
         const { source, sink } = seedReorderedSink()
         docInputNames = (nodeId) =>
           nodeId === sink.id ? ['image', 'mask'] : null
 
-        act(source, sink)
+        await act(source, sink)
         await afterFlush()
 
         expect(minted.at(-1)).toMatchObject({
@@ -1109,45 +1132,59 @@ describe('attachDocOpMinter', () => {
       )
     })
 
-    it('grows a dynamic-combo child while its local selection is still in flight', async () => {
-      const { source, resize, doc } = registeredDynamicComboScenario()
-      docInputNames = (nodeId) =>
-        readDocSlotNames(doc, String(nodeId), 'inputs')
-      docWidgetValue = (nodeId, widgetName) =>
-        readDocWidgetValue(doc, String(nodeId), widgetName)
-      const selector = resize.widgets?.[0]
-      assert(selector)
-      withGraphIntentSource('load', () => {
-        selector.value = 'scale by multiplier'
-      })
-
-      selector.value = 'match size'
-      await afterFlush()
-      expect(minted).toEqual([
-        expect.objectContaining({
-          op: 'set_widget',
-          node_id: resize.id,
-          widget: 'resize_type',
-          value: 'match size'
+    it.for([
+      {
+        edit: 'a live edit',
+        apply: async (selectAndConnect: () => void) => {
+          selectAndConnect()
+        }
+      },
+      {
+        edit: 'an undo/redo restore',
+        apply: async (selectAndConnect: () => void) => {
+          const previous = await workflowJson(graph)
+          withGraphIntentSource('load', selectAndConnect)
+          emitGraphRestored({ previous, next: await workflowJson(graph) })
+        }
+      }
+    ])(
+      'grows a dynamic-combo child selected in the same $edit',
+      async ({ apply }) => {
+        const { source, resize, doc } = registeredDynamicComboScenario()
+        resize.serialize_widgets = true
+        docInputNames = (nodeId) =>
+          readDocSlotNames(doc, String(nodeId), 'inputs')
+        docWidgetValue = (nodeId, widgetName) =>
+          readDocWidgetValue(doc, String(nodeId), widgetName)
+        const selector = resize.widgets?.[0]
+        assert(selector)
+        withGraphIntentSource('load', () => {
+          selector.value = 'scale by multiplier'
         })
-      ])
-      minted.length = 0
 
-      const match = resize.findInputSlot('resize_type.match')
-      expect(match).toBeGreaterThanOrEqual(0)
-      source.connect(0, resize, match)
-      await afterFlush()
-
-      expect(minted).toEqual([
-        expect.objectContaining({
-          op: 'connect',
-          to_node: resize.id,
-          to_slot: null,
-          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        await apply(() => {
+          selector.value = 'match size'
+          source.connect(0, resize, resize.findInputSlot('resize_type.match'))
         })
-      ])
-      expect(reportError).not.toHaveBeenCalled()
-    })
+        await afterFlush()
+
+        expect(minted).toEqual([
+          expect.objectContaining({
+            op: 'set_widget',
+            node_id: resize.id,
+            widget: 'resize_type',
+            value: 'match size'
+          }),
+          expect.objectContaining({
+            op: 'connect',
+            to_node: resize.id,
+            to_slot: null,
+            grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+          })
+        ])
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
 
     it('refuses a dynamic-combo child after the document supersedes its pending selection', async () => {
       const { source, resize, doc, catalog } = registeredDynamicComboScenario()
