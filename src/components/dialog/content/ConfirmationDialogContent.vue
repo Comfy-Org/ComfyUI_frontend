@@ -85,7 +85,7 @@
         </Button>
         <Button autofocus @click="onConfirm">
           <i class="pi pi-save" />
-          {{ $t('g.save') }}
+          {{ confirmLabel ?? $t('g.save') }}
         </Button>
       </template>
       <Button
@@ -113,7 +113,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { ConfirmationDialogType } from '@/components/dialog/content/confirmationDialogTypes'
@@ -126,6 +126,7 @@ const props = defineProps<{
   itemList?: string[]
   hint?: string
   denyLabel?: string
+  confirmLabel?: string
 }>()
 
 const { t } = useI18n()

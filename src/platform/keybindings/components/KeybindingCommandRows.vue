@@ -7,9 +7,9 @@
       @click="emit('activate')"
       @dblclick="emit('rowDblclick')"
       @contextmenu="emit('rowContextmenu', $event)"
-      @keydown.context-menu.self.prevent="emit('rowContextmenu', $event)"
+      @keydown.context-menu.self.prevent="dispatchKeyboardContextMenu"
       @keydown.enter.self.prevent="emit('activate')"
-      @keydown.shift.f10.self.prevent="emit('rowContextmenu', $event)"
+      @keydown.shift.f10.self.prevent="dispatchKeyboardContextMenu"
       @keydown.space.self.prevent="emit('activate')"
     >
       <TableCell class="p-1">
@@ -151,12 +151,12 @@ import { RovingFocusItem } from 'reka-ui'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
-import TableCell from '@/components/ui/table/TableCell.vue'
-import TableRow from '@/components/ui/table/TableRow.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import TableCell from '@comfyorg/design-system/table/TableCell'
+import TableRow from '@comfyorg/design-system/table/TableRow'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 
@@ -185,4 +185,17 @@ const emit = defineEmits<{
   rowContextmenu: [event: Event]
   rowDblclick: []
 }>()
+
+function dispatchKeyboardContextMenu(event: KeyboardEvent) {
+  if (!(event.currentTarget instanceof HTMLElement)) return
+  const { left, bottom } = event.currentTarget.getBoundingClientRect()
+  event.currentTarget.dispatchEvent(
+    new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      clientX: left,
+      clientY: bottom
+    })
+  )
+}
 </script>

@@ -33,43 +33,49 @@
       </div>
     </Teleport>
 
-    <Table data-testid="keybinding-table-container">
-      <TableHeader>
-        <TableRow>
-          <TableSortHead v-model:direction="commandSortDirection">
-            {{ $t('g.command') }}
-          </TableSortHead>
-          <TableHead class="w-3/10">{{ $t('g.keybinding') }}</TableHead>
-          <TableHead class="w-4/25">{{ $t('g.source') }}</TableHead>
-          <TableHead class="w-36">
-            <span class="sr-only">{{ $t('g.actions') }}</span>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <RovingFocusGroup
-        v-model:current-tab-stop-id="currentRowTabStopId"
-        as-child
-        orientation="vertical"
+    <ContextMenu :model="rowMenuItems" @close-auto-focus="restoreRowFocus">
+      <Table
+        data-testid="keybinding-table-container"
+        @pointerdown.capture="contextMenuTarget = null"
+        @contextmenu.capture="contextMenuTarget = null"
       >
-        <TableBody>
-          <KeybindingCommandRows
-            v-for="command in visibleCommands"
-            :key="command.id"
-            :command
-            :expanded="expandedCommandIds.has(command.id)"
-            :selected="selectedCommandId === command.id"
-            @activate="activateRow(command)"
-            @row-dblclick="handleRowDblClick(command)"
-            @row-contextmenu="handleRowContextMenu($event, command)"
-            @edit="editKeybinding(command, $event)"
-            @add="addKeybinding(command)"
-            @reset="resetKeybinding(command)"
-            @remove="handleRemoveKeybindingFromMenu(command)"
-            @remove-single="removeSingleKeybinding(command, $event)"
-          />
-        </TableBody>
-      </RovingFocusGroup>
-    </Table>
+        <TableHeader>
+          <TableRow>
+            <TableSortHead v-model:direction="commandSortDirection">
+              {{ $t('g.command') }}
+            </TableSortHead>
+            <TableHead class="w-3/10">{{ $t('g.keybinding') }}</TableHead>
+            <TableHead class="w-4/25">{{ $t('g.source') }}</TableHead>
+            <TableHead class="w-36">
+              <span class="sr-only">{{ $t('g.actions') }}</span>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <RovingFocusGroup
+          v-model:current-tab-stop-id="currentRowTabStopId"
+          as-child
+          orientation="vertical"
+        >
+          <TableBody>
+            <KeybindingCommandRows
+              v-for="command in visibleCommands"
+              :key="command.id"
+              :command
+              :expanded="expandedCommandIds.has(command.id)"
+              :selected="selectedCommandId === command.id"
+              @activate="activateRow(command)"
+              @row-dblclick="handleRowDblClick(command)"
+              @row-contextmenu="handleRowContextMenu($event, command)"
+              @edit="editKeybinding(command, $event)"
+              @add="addKeybinding(command)"
+              @reset="resetKeybinding(command)"
+              @remove="handleRemoveKeybindingFromMenu(command)"
+              @remove-single="removeSingleKeybinding(command, $event)"
+            />
+          </TableBody>
+        </RovingFocusGroup>
+      </Table>
+    </ContextMenu>
     <AppPagination
       v-if="filteredCommands.length > commandsPerPageOptions[0]"
       v-model:page="currentPage"
@@ -77,7 +83,6 @@
       :total="filteredCommands.length"
       :items-per-page-options="commandsPerPageOptions"
     />
-    <ContextMenu ref="rowMenu" :model="rowMenuItems" @hide="restoreRowFocus" />
 
     <Button
       :tooltip="$t('g.resetAllKeybindingsTooltip')"
@@ -93,26 +98,29 @@
 
 <script setup lang="ts">
 import type { ComponentProps } from 'vue-component-type-helpers'
-import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RovingFocusGroup } from 'reka-ui'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import AppPagination from '@/components/common/AppPagination.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Table from '@/components/ui/table/Table.vue'
-import TableBody from '@/components/ui/table/TableBody.vue'
-import TableHead from '@/components/ui/table/TableHead.vue'
-import TableHeader from '@/components/ui/table/TableHeader.vue'
-import TableRow from '@/components/ui/table/TableRow.vue'
-import TableSortHead from '@/components/ui/table/TableSortHead.vue'
-import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
-import type { TableSortDirection } from '@/components/ui/table/tableUtils'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Table from '@comfyorg/design-system/table/Table'
+import TableBody from '@comfyorg/design-system/table/TableBody'
+import TableHead from '@comfyorg/design-system/table/TableHead'
+import TableHeader from '@comfyorg/design-system/table/TableHeader'
+import TableRow from '@comfyorg/design-system/table/TableRow'
+import TableSortHead from '@comfyorg/design-system/table/TableSortHead'
+import {
+  filterByQuery,
+  sortByText
+} from '@comfyorg/design-system/lib/table/tableUtils'
+import type { TableSortDirection } from '@comfyorg/design-system/lib/table/tableUtils'
 import { useEditKeybindingDialog } from '@/platform/keybindings/composables/useEditKeybindingDialog'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
@@ -291,7 +299,6 @@ watch(searchQuery, () => {
 const selectedCommandId = ref<string | null>(null)
 const editKeybindingDialog = useEditKeybindingDialog()
 
-const rowMenu = useTemplateRef('rowMenu')
 const contextMenuTarget = ref<KeybindingCommand | null>(null)
 let rowMenuOrigin: HTMLElement | null = null
 const rowMenuItems = computed<MenuItem[]>(() => {
@@ -365,10 +372,10 @@ function handleRowContextMenu(event: Event, command: KeybindingCommand) {
   contextMenuTarget.value = command
   rowMenuOrigin =
     event.currentTarget instanceof HTMLElement ? event.currentTarget : null
-  rowMenu.value?.show(event)
 }
 
-function restoreRowFocus() {
+function restoreRowFocus(event: Event) {
+  event.preventDefault()
   const focused = document.activeElement
   if (focused === document.body || focused?.closest('[role="menu"]')) {
     rowMenuOrigin?.focus()

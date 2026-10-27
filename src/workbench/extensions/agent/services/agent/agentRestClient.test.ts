@@ -75,6 +75,23 @@ function reportedError(): Error {
   return cause
 }
 
+function agentApiDiagnostics(requestPath: string, requestStatus: number) {
+  return {
+    request_path: requestPath,
+    request_status: requestStatus,
+    request_error: 'AgentApiError'
+  }
+}
+
+function agentApiFingerprint(requestPath: string) {
+  return [
+    'agent-request-failure',
+    'agent_api_auth_rejected',
+    requestPath,
+    'AgentApiError'
+  ]
+}
+
 function contentType(init: RequestInit): string | undefined {
   return (init.headers as Record<string, string> | undefined)?.['Content-Type']
 }
@@ -410,29 +427,69 @@ describe('listThreads pagination', () => {
     })
   })
 
+  it('filters every page by workflow id', async () => {
+    respond(
+      threadPage(['th-new'], { has_more: true, next_cursor: 'older page' })
+    )
+    respond(threadPage(['th-old'], { has_more: false }))
+
+    const result = await makeClient().listThreads({ workflowId: 'wf/one' })
+
+    expect(vi.mocked(api.fetchApi).mock.calls.map(([route]) => route)).toEqual([
+      '/agent/threads?workflow_id=wf%2Fone&limit=100',
+      '/agent/threads?workflow_id=wf%2Fone&limit=100&after=older%20page'
+    ])
+    expect(result).toMatchObject({
+      status: 'complete',
+      threads: [{ id: 'th-new' }, { id: 'th-old' }]
+    })
+  })
+
   it.for([
     {
       reason: 'missing_cursor',
+      ids: ['th-1'],
       pages: () => [threadPage(['th-1'], { has_more: true })]
     },
     {
       reason: 'repeated_cursor',
+      ids: ['th-1', 'th-2'],
       pages: () => [
         threadPage(['th-1'], { has_more: true, next_cursor: 'a' }),
         threadPage(['th-2'], { has_more: true, next_cursor: 'a' })
       ]
     }
   ])(
-    'returns $reason without partial threads when paging stops before the last page',
-    async ({ reason, pages }) => {
+    'returns $reason with the threads it did fetch when paging stops before the last page',
+    async ({ reason, ids, pages }) => {
       pages().forEach(respond)
 
-      await expect(makeClient().listThreads()).resolves.toEqual({
+      await expect(makeClient().listThreads()).resolves.toMatchObject({
         status: 'incomplete',
-        reason
+        reason,
+        threads: ids.map((id) => ({ id }))
       })
     }
   )
+
+  it('lists a repeated page once when every cursor answers with page 1', async () => {
+    const page1 = () =>
+      threadPage(['th-1', 'th-2'], {
+        has_more: true,
+        next_cursor: 'a'
+      })
+    respond(page1())
+    respond(page1())
+
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'incomplete',
+      reason: 'repeated_cursor',
+      threads: [
+        expect.objectContaining({ id: 'th-1' }),
+        expect.objectContaining({ id: 'th-2' })
+      ]
+    })
+  })
 
   it('passes the caller abort signal to every page request', async () => {
     respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
@@ -446,13 +503,14 @@ describe('listThreads pagination', () => {
     ).toEqual([signal, signal])
   })
 
-  it('returns a failure without partial threads when a later page fails', async () => {
+  it('returns the threads already fetched when a later page fails', async () => {
     respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
     respond(jsonResponse(503, { error: 'unavailable' }))
 
     await expect(makeClient().listThreads()).resolves.toEqual({
-      status: 'failed',
-      cause: expect.objectContaining({ name: 'AgentApiError', status: 503 })
+      status: 'incomplete',
+      reason: 'request_failed',
+      threads: [expect.objectContaining({ id: 'th-1' })]
     })
   })
   it.for([
@@ -892,9 +950,12 @@ describe('error mapping', () => {
     expect(Reflect.get(apiError, 'retryAfterSeconds')).toBe(5)
   })
 
-  it('falls back to statusText and undefined body for a non-JSON error response', async () => {
+  it('uses bounded request context instead of an unhelpful status text', async () => {
     respond(
-      new Response('gateway boom', { status: 502, statusText: 'Bad Gateway' })
+      new Response('gateway boom', {
+        status: 502,
+        statusText: 'No error message'
+      })
     )
 
     const error = await makeClient()
@@ -902,12 +963,46 @@ describe('error mapping', () => {
       .catch((e: unknown) => e)
 
     if (!(error instanceof AgentApiError)) throw error
-    expect(error.message).toBe('Bad Gateway')
+    expect(error.message).toBe(
+      'Agent request failed (HTTP 502, get_thread_messages)'
+    )
     expect(error.status).toBe(502)
     expect(error.body).toBeUndefined()
   })
 
-  it('falls back to the HTTP status when the response has no error body or status text', async () => {
+  it('keeps a useful status text inside the bounded fallback', async () => {
+    respond(
+      new Response('gateway boom', {
+        status: 502,
+        statusText: 'Bad Gateway'
+      })
+    )
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      'Agent request failed (HTTP 502 Bad Gateway, get_thread_messages)'
+    )
+  })
+
+  it('bounds status text included in the fallback', async () => {
+    const statusText = 'x'.repeat(200)
+    respond(new Response('gateway boom', { status: 502, statusText }))
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      `Agent request failed (HTTP 502 ${'x'.repeat(80)}, get_thread_messages)`
+    )
+  })
+
+  it('falls back to the HTTP status and operation when the response has no error body', async () => {
     respond(new Response('', { status: 503 }))
 
     const error = await makeClient()
@@ -916,7 +1011,20 @@ describe('error mapping', () => {
 
     expect(error).toBeInstanceOf(AgentApiError)
     expect((error as AgentApiError).message).toBe(
-      'Agent request failed (HTTP 503)'
+      'Agent request failed (HTTP 503, get_thread_messages)'
+    )
+  })
+
+  it('uses the bounded fallback when a structured error message is blank', async () => {
+    respond(jsonResponse(503, { error: '   ' }))
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      'Agent request failed (HTTP 503, get_thread_messages)'
     )
   })
 
@@ -966,8 +1074,10 @@ describe('error mapping', () => {
         status: 401,
         authScheme: 'web-session',
         credential: 'unreported',
-        backendReason: 'auth_method_not_allowed'
+        backendReason: 'auth_method_not_allowed',
+        ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 401)
       },
+      fingerprint: agentApiFingerprint('/agent/threads/{threadId}/messages'),
       level: 'warning'
     })
   })
@@ -987,7 +1097,8 @@ describe('error mapping', () => {
       status: 403,
       authScheme: 'cloud-auth-header',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 403)
     })
   })
 
@@ -1003,7 +1114,8 @@ describe('error mapping', () => {
       status: 401,
       authScheme: 'none',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 401)
     })
   })
 
@@ -1019,7 +1131,24 @@ describe('error mapping', () => {
       status: 401,
       authScheme: 'unreported',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 401)
+    })
+  })
+
+  it('does not classify the client fallback as backend refusal text', async () => {
+    respondWithAuthScheme(new Response('', { status: 401 }), 'web-session')
+
+    await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toEqual({
+      operation: 'get_thread_messages',
+      status: 401,
+      authScheme: 'web-session',
+      credential: 'unreported',
+      ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 401)
     })
   })
 
@@ -1051,8 +1180,10 @@ describe('error mapping', () => {
         credential: 'session-cookie',
         backendReason: 'auth_method_not_allowed',
         backendErrorType: 'auth_type_not_allowed',
-        acceptedMethods: 'bearer_jwt,x_api_key'
+        acceptedMethods: 'bearer_jwt,x_api_key',
+        ...agentApiDiagnostics('/agent/run-mode', 403)
       },
+      fingerprint: agentApiFingerprint('/agent/run-mode'),
       level: 'warning'
     })
     expect(reportedError().message).toBe(
@@ -1108,7 +1239,8 @@ describe('error mapping', () => {
       authScheme: 'web-session',
       credential: 'session-cookie',
       backendReason: 'auth_method_not_allowed',
-      backendErrorCode: 'UNAUTHORIZED'
+      backendErrorCode: 'UNAUTHORIZED',
+      ...agentApiDiagnostics('/agent/run-mode', 401)
     })
   })
 
@@ -1134,7 +1266,8 @@ describe('error mapping', () => {
       status: 403,
       authScheme: 'cloud-auth-header',
       credential: 'bearer',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/agent/run-mode', 403)
     })
     expect(vi.mocked(reportError).mock.calls.at(-1)?.[1].context).toBe(
       undefined
@@ -1185,7 +1318,8 @@ describe('error mapping', () => {
       operation: 'get_run_mode',
       status: 403,
       authScheme: 'cloud-auth-header',
-      credential: 'bearer'
+      credential: 'bearer',
+      ...agentApiDiagnostics('/agent/run-mode', 403)
     })
   })
 
@@ -1204,7 +1338,11 @@ describe('error mapping', () => {
       status: 403,
       authScheme: 'cloud-auth-header',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics(
+        '/agent/threads/{threadId}/asks/{askId}/answer',
+        403
+      )
     })
     const serialized = JSON.stringify([
       reportedError().message,
@@ -1230,7 +1368,11 @@ describe('error mapping', () => {
       status: 403,
       authScheme: 'cloud-auth-header',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics(
+        '/agent/threads/{threadId}/messages/{messageId}/cancel',
+        403
+      )
     })
     const serialized = JSON.stringify([
       reportedError().message,
@@ -1265,15 +1407,14 @@ describe('error mapping', () => {
       .listCloudWorkflows()
       .catch((e: unknown) => e)
 
-    // The second page's route is `/workflows?limit=100&after=cursor-secret`;
-    // only the operation name may reach telemetry.
     expect(lastCall().route).toContain('cursor-secret')
     expect(reportedTags()).toEqual({
       operation: 'list_cloud_workflows',
       status: 401,
       authScheme: 'cloud-auth-header',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/workflows', 401)
     })
   })
 

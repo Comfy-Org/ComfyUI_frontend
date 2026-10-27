@@ -8,7 +8,7 @@ import {
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import { cn } from '@comfyorg/tailwind-utils'

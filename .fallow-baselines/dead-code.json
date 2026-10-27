@@ -1,9 +1,6 @@
 {
   "unused_files": [],
-  "unused_exports": [
-    "apps/website/src/components/ui/button-mask/index.ts:ButtonMask",
-    "src/extensions/core/groupNode.ts:GroupNodeHandler"
-  ],
+  "unused_exports": ["src/extensions/core/groupNode.ts:GroupNodeHandler"],
   "unused_types": [
     "src/composables/video/useVideoFilmstrip.ts:FilmstripError",
     "src/platform/workspace/api/workspaceApi.ts:ListWorkspacesResponse",
@@ -16,21 +13,20 @@
   "unused_dependencies": [],
   "unused_dev_dependencies": [],
   "circular_dependencies": [
-    "apps/website/src/components/ui/button-mask/ButtonMask.vue->apps/website/src/components/ui/button-mask/index.ts",
     "browser_tests/fixtures/ComfyPage.ts->browser_tests/fixtures/components/QueuePanel.ts",
     "browser_tests/fixtures/ComfyPage.ts->browser_tests/fixtures/components/SubgraphEditor.ts->browser_tests/fixtures/helpers/SubgraphHelper.ts",
     "src/platform/keybindings/components/EditKeybindingFooter.vue->src/platform/keybindings/composables/useEditKeybindingDialog.ts",
     "src/composables/graph/useMoreOptionsMenu.ts->src/composables/graph/useSelectionMenuOptions.ts",
-    "src/composables/maskeditor/useCanvasHistory.ts->src/stores/maskEditorStore.ts",
+    "packages/mask-editor/src/useCanvasHistory.ts->packages/mask-editor/src/maskEditorStore.ts",
     "src/composables/node/usePriceBadge.ts->src/renderer/extensions/vueNodes/composables/usePartitionedBadges.ts",
     "src/composables/sidebarTabs/useJobHistorySidebarTab.ts->src/stores/workspace/sidebarTabStore.ts",
     "src/composables/usePaste.ts->src/scripts/app.ts",
     "src/extensions/core/load3d/Load3dUtils.ts->src/scripts/app.ts",
     "src/platform/billing/subscription/composables/useSubscriptionDialog.ts->src/services/dialogService.ts",
-    "src/platform/missingMedia/missingMediaStore.ts->src/scripts/app.ts",
-    "src/platform/missingModel/missingModelStore.ts->src/scripts/app.ts",
+    "src/platform/workflowErrors/missingMedia/missingMediaStore.ts->src/scripts/app.ts",
+    "src/platform/workflowErrors/missingModel/missingModelStore.ts->src/scripts/app.ts",
     "src/platform/billing/subscription/composables/useFreeTierQuota.ts->src/scripts/app.ts",
-    "src/platform/nodeReplacement/missingNodesErrorStore.ts->src/scripts/app.ts",
+    "src/platform/workflowErrors/nodeReplacement/missingNodesErrorStore.ts->src/scripts/app.ts",
     "src/scripts/app.ts->src/scripts/changeTracker.ts",
     "src/scripts/app.ts->src/scripts/ui.ts",
     "src/scripts/app.ts->src/services/extensionService.ts",
@@ -502,7 +498,7 @@
     "src/stores/queueStore.ts:TaskItemImpl.isRunning"
   ],
   "unused_store_members": [
-    "src/platform/missingMedia/missingMediaStore.ts:useMissingMediaStore.isContainerWithMissingMedia",
+    "src/platform/workflowErrors/missingMedia/missingMediaStore.ts:useMissingMediaStore.isContainerWithMissingMedia",
     "src/platform/settings/settingStore.ts:useSettingStore.isLoading",
     "src/platform/settings/settingStore.ts:useSettingStore.exists",
     "src/platform/updates/common/toastStore.ts:useToastStore.removeAll",
@@ -608,7 +604,7 @@
     "WidgetValue|src/types/simplifiedWidget.ts|src/utils/widgetUtil.ts",
     "WorkspaceWithRole|src/platform/workspace/api/workspaceApi.ts|src/platform/workspace/workspaceTypes.ts",
     "_for_testing|src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.ts|src/renderer/extensions/vueNodes/widgets/composables/useIntWidget.ts",
-    "groupCandidatesByName|src/platform/missingMedia/missingMediaScan.ts|src/platform/missingModel/missingModelScan.ts"
+    "groupCandidatesByName|src/platform/workflowErrors/missingMedia/missingMediaScan.ts|src/platform/workflowErrors/missingModel/missingModelScan.ts"
   ],
   "type_only_dependencies": [],
   "test_only_dependencies": [],

@@ -382,10 +382,10 @@
 </template>
 
 <script setup lang="ts">
-import Badge from '@/components/ui/badge/Badge.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -400,19 +400,19 @@ import { useManagerState } from '@/workbench/extensions/manager/composables/useM
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
-import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
+import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import ErrorCardSection from './ErrorCardSection.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import LocateNodeButton from './LocateNodeButton.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
-import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
-import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
-import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
+import SwapNodesCard from '@/platform/workflowErrors/nodeReplacement/components/SwapNodesCard.vue'
+import MissingModelCard from '@/platform/workflowErrors/missingModel/components/MissingModelCard.vue'
+import MissingMediaCard from '@/platform/workflowErrors/missingMedia/components/MissingMediaCard.vue'
 import { isCloud } from '@/platform/distribution/types'
-import Button from '@/components/ui/button/Button.vue'
-import DotSpinner from '@/components/common/DotSpinner.vue'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import Button from '@comfyorg/design-system/button/Button'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useErrorGroups } from './useErrorGroups'
@@ -420,7 +420,7 @@ import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup, ErrorGroupSeverity } from './types'
 import { isExecutionItemListGroup } from './executionItemList'
 import { selectionEmphasisClass } from './selectionEmphasis'
-import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
+import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
 
 interface ExecutionItemListEntry {
   key: string

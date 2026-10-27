@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Popover
+    <PopoverRoot
       :open="isVersionSelectorOpen"
       @update:open="isVersionSelectorOpen = $event && !isDisabled"
     >
@@ -30,7 +30,6 @@
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        :collision-padding="8"
         class="w-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
       >
         <PackVersionSelectorPopover
@@ -40,7 +39,7 @@
           @submit="closeVersionSelector"
         />
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
   </div>
 </template>
 
@@ -51,11 +50,10 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { PopoverTrigger } from 'reka-ui'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import Button from '@/components/ui/button/Button.vue'
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Button from '@comfyorg/design-system/button/Button'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackVersionSelectorPopover from '@/workbench/extensions/manager/components/manager/PackVersionSelectorPopover.vue'
 import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
