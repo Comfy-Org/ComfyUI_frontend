@@ -73,9 +73,13 @@ const LAYOUTS = {
     width: 'w-[min(600px,calc(100vw-2rem))]',
     card: cn(CARD_SHELL, 'h-[85dvh] grid-rows-[minmax(0,1fr)_auto] gap-0 p-0'),
     videoWrap:
-      'min-h-0 w-full overflow-hidden p-2 [&>div]:h-full [&>div]:w-full',
-    media: cn(MEDIA_SHELL, 'h-full'),
-    fallback: cn(FALLBACK_SHELL, 'h-full'),
+      '[container-type:size] grid h-full min-h-0 w-full place-items-center overflow-hidden p-2 [&>div.relative]:grid [&>div.relative]:size-full [&>div.relative]:place-items-center',
+    media:
+      'aspect-video w-[min(100cqw,calc(100cqh*16/9))] max-h-full rounded-lg object-contain',
+    fallback: cn(
+      FALLBACK_SHELL,
+      'aspect-video max-h-full w-[min(100cqw,calc(100cqh*16/9))]'
+    ),
     heading: 'my-0 text-2xl/7.5 text-[22px]/7',
     copy: cn(COPY_SHELL, 'text-[13px]/4.5'),
     contentWrap: 'flex min-w-0 flex-col',

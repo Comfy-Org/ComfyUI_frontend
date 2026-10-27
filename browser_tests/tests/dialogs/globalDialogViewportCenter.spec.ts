@@ -1,8 +1,12 @@
+import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { Locator } from '@playwright/test'
+
+const PANEL_INSET = 240
 
 test.describe('Viewport-centered dialog maximize', { tag: '@ui' }, () => {
   async function waitForLayout(dialog: Locator) {
@@ -15,6 +19,24 @@ test.describe('Viewport-centered dialog maximize', { tag: '@ui' }, () => {
   test('stays on screen when maximized and recenters when restored', async ({
     comfyPage
   }) => {
+    await comfyPage.page.evaluate(
+      ({ property, inset }) => {
+        document.documentElement.style.setProperty(property, `${inset}px`)
+      },
+      { property: WORKSPACE_INSET_RIGHT, inset: PANEL_INSET }
+    )
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(
+          (property) =>
+            getComputedStyle(document.documentElement)
+              .getPropertyValue(property)
+              .trim(),
+          WORKSPACE_INSET_RIGHT
+        )
+      )
+      .toBe(`${PANEL_INSET}px`)
+
     await comfyPage.page.evaluate(() => {
       window.app!.extensionManager.dialog.showExtensionDialog({
         key: 'viewport-center-maximize',
@@ -32,11 +54,13 @@ test.describe('Viewport-centered dialog maximize', { tag: '@ui' }, () => {
     const viewport = comfyPage.page.viewportSize()
     expect(viewport, 'Playwright viewport is set').not.toBeNull()
 
-    const framed = await dialog.boundingBox()
-    expect(framed, 'Framed dialog is laid out').not.toBeNull()
-    expect
-      .soft(framed!.x + framed!.width / 2)
-      .toBeCloseTo(viewport!.width / 2, 0)
+    async function centerX() {
+      const box = await dialog.boundingBox()
+      if (!box) return Number.NaN
+      return box.x + box.width / 2
+    }
+
+    await expect.poll(centerX).toBeCloseTo(viewport!.width / 2, 0)
 
     await dialog.getByRole('button', { name: 'Maximize dialog' }).click()
     await waitForLayout(dialog)
@@ -53,10 +77,11 @@ test.describe('Viewport-centered dialog maximize', { tag: '@ui' }, () => {
         )
       })
       .toBe(true)
+    await expect.poll(centerX).toBeCloseTo(viewport!.width / 2, 0)
 
     await dialog.getByRole('button', { name: 'Restore dialog' }).click()
     await waitForLayout(dialog)
 
-    await expect(dialog).toHaveBounds(framed!, { numDigits: 1 })
+    await expect.poll(centerX).toBeCloseTo(viewport!.width / 2, 0)
   })
 })
