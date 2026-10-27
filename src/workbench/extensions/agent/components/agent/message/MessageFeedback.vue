@@ -4,16 +4,16 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
-import type { ReplyAsset } from '../../../utils/replyAssets'
+import { resolveReplyAssetDownload } from '@/workbench/extensions/agent/utils/resolveReplyAssetDownload'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 
 const { markdown, assets = [] } = defineProps<{
   markdown: string
@@ -62,9 +62,7 @@ async function downloadAssets(): Promise<void> {
 </script>
 
 <template>
-  <div
-    class="flex w-full items-center justify-start gap-1 text-muted-foreground"
-  >
+  <div class="flex w-full items-center gap-1 text-muted-foreground">
     <Button
       :tooltip="t('agent.helpful')"
       type="button"
@@ -103,7 +101,7 @@ async function downloadAssets(): Promise<void> {
       <span class="icon-[lucide--download] size-3" />
     </Button>
     <div
-      class="flex h-6 w-14 rounded-lg transition-colors hover:bg-secondary-background-hover hover:text-base-foreground has-data-[state=open]:bg-secondary-background-hover has-data-[state=open]:text-base-foreground"
+      class="flex h-6 w-14 rounded-lg transition-colors hover:bg-accent hover:text-foreground has-data-[state=open]:bg-accent has-data-[state=open]:text-foreground"
     >
       <Tooltip disable-closing-trigger>
         <TooltipTrigger as-child>
@@ -115,7 +113,7 @@ async function downloadAssets(): Promise<void> {
             :class="
               cn(
                 'h-6 w-8 rounded-l-lg rounded-r-none focus-visible:z-10',
-                copied ? 'text-base-foreground' : 'text-inherit'
+                copied ? 'text-foreground' : 'text-inherit'
               )
             "
             @click="copyPlainText()"

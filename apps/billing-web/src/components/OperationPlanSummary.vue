@@ -13,15 +13,15 @@ const { recovered } = defineProps<{
 <template>
   <div
     v-if="recovered"
-    class="flex flex-col gap-2"
+    class="flex flex-col gap-2 text-foreground"
     data-testid="checkout-operation-plan"
   >
-    <span v-if="recovered.label?.name" class="text-sm text-base-foreground">
+    <span v-if="recovered.label?.name" class="text-sm">
       {{ recovered.label.name }}
     </span>
     <p
       v-if="recovered.label?.price"
-      class="m-0 flex items-baseline gap-2 text-base-foreground tabular-nums"
+      class="m-0 flex items-baseline gap-2 tabular-nums"
     >
       <span class="text-2xl font-semibold">{{ recovered.label.price }}</span>
       <span class="text-base">{{ recovered.label.period }}</span>

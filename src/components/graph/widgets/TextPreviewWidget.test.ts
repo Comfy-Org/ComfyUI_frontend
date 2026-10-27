@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
@@ -28,16 +27,7 @@ function renderPreview(
     setup: () => ({ value, nodeId }),
     template: '<TextPreviewWidget v-model="value" :node-id="nodeId" />'
   })
-  return render(Harness, {
-    global: {
-      plugins: [
-        [
-          PrimeVue,
-          { pt: { skeleton: { root: { 'data-testid': 'skeleton' } } } }
-        ]
-      ]
-    }
-  })
+  return render(Harness)
 }
 
 describe('TextPreviewWidget', () => {

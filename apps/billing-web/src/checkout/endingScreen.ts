@@ -40,6 +40,40 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   subscription_status_unrecognized: 'unknown',
   subscription_change_in_progress: 'change_unnamed',
   not_a_member: 'unknown',
+  not_original_owner: 'unknown',
+  creator_only_provisioning: 'unknown',
+  payment_past_due: 'unknown',
+  free_plan: 'unknown',
+  no_subscription: 'unknown',
+  subscription_ended: 'unknown',
+  billing_operation_in_progress: 'unknown',
+  billing_operation_parked: 'unknown',
+  cancellation_scheduled: 'unknown',
+  cancellation_not_scheduled: 'unknown',
+  workspace_sso_attached: 'unknown',
+  personal_workspace: 'unknown',
+  plan_not_ended: 'unknown',
+  membership_managed_by_directory: 'unknown',
+  personal_workspace_creator: 'unknown',
+  workspace_creator: 'unknown',
+  only_owner: 'unknown',
+  billing_state_unknown: 'unknown',
+  free_tier_exhausted: 'unknown',
+  invite_capacity_reached: 'unknown',
+  manual_block: 'unknown',
+  no_funds: 'unknown',
+  no_revertible_scheduled_change: 'unknown',
+  no_upgrade_available: 'unknown',
+  partner_governance_not_entitled: 'unknown',
+  plan_ending: 'unknown',
+  project_cap_exceeded: 'unknown',
+  rollout_disabled: 'unknown',
+  sales_managed: 'sales_managed',
+  sales_managed_plan: 'sales_managed',
+  subscription_inactive: 'unknown',
+  usage_attribution_unavailable: 'unknown',
+  user_cap_exceeded: 'unknown',
+  workspace_cap_exceeded: 'unknown',
   unspecified: 'unknown'
 }
 
@@ -82,7 +116,7 @@ export type EndingScreen =
       readonly code: string
       readonly receipt?: BillingOperationReceipt
     }
-  | { readonly kind: 'unconfirmed'; readonly code: string }
+  | { readonly kind: 'unconfirmed'; readonly code?: string }
   | {
       readonly kind: 'refused'
       readonly code: string
@@ -123,7 +157,9 @@ export function endingOf(page: CheckoutPage): EndingScreen | undefined {
         code: PLAN_UNAVAILABLE_CODE[page.reason]
       }
     case 'unconfirmed':
-      return { kind: 'unconfirmed', code: page.operationId }
+      return page.operationId === undefined
+        ? { kind: 'unconfirmed' }
+        : { kind: 'unconfirmed', code: page.operationId }
     case 'waiting':
       return waitingEnding(page)
     case 'terminal':

@@ -8,8 +8,8 @@ import type {
   LGraphNode,
   Vector2
 } from '@/lib/litegraph/src/litegraph'
-import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { SettingParams } from '@/platform/settings/types'
 import type {
   ComfyApiWorkflow,
@@ -29,23 +29,40 @@ import type {
 import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
-} from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+} from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyApi } from '@/scripts/api'
 import type { ComfyUI } from '@/scripts/ui'
 import type { ComfyAppMenu } from '@/scripts/ui/menu/index'
-import type {
-  ComfyWidgets,
-  CustomComfyWidgetConstructor
-} from '@/scripts/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { AuthUserInfo } from '@/types/authTypes'
 import type {
   BottomPanelExtension,
-  ExtensionManager
+  ExtensionManager,
+  ExtensionProvenance
 } from '@/types/extensionTypes'
+
+export type ComfyWidgetConstructor = (
+  node: LGraphNode,
+  inputName: string,
+  inputData: InputSpec,
+  app: ComfyApp,
+  widgetName?: string
+) => { widget: IBaseWidget; minWidth?: number; minHeight?: number }
+
+export type CustomComfyWidgetConstructor = (
+  ...args: Parameters<ComfyWidgetConstructor>
+) =>
+  | {
+      widget?: IBaseWidget
+      minWidth?: number
+      minHeight?: number
+    }
+  | IBaseWidget
+  | undefined
 
 type Widgets = Record<string, CustomComfyWidgetConstructor>
 
@@ -74,6 +91,11 @@ export interface LoadGraphDataOptions {
  * instance through `useApp()` from `@/scripts/appInstance`; only the
  * composition root imports the class.
  */
+/** The node definitions, or the HTTP status of the server's refusal. */
+export type NodeDefsFetch =
+  | { ok: true; defs: Record<string, ComfyNodeDef> }
+  | { ok: false; status: number }
+
 export interface ComfyApp {
   vueAppReady: boolean
   readonly api: ComfyApi
@@ -117,8 +139,10 @@ export interface ComfyApp {
   /** @deprecated Use useWorkspaceStore().shiftDown instead */
   readonly shiftDown: boolean
   /** @deprecated Use useWidgetStore().widgets instead */
-  readonly widgets: Record<string, CustomComfyWidgetConstructor> &
-    typeof ComfyWidgets
+  readonly widgets: Record<
+    string,
+    ComfyWidgetConstructor | CustomComfyWidgetConstructor
+  >
   /** @deprecated storageLocation is always 'server' */
   readonly storageLocation: string
   /** @deprecated storage migration is no longer needed. */
@@ -135,6 +159,7 @@ export interface ComfyApp {
 
   setup(canvasEl: HTMLCanvasElement): Promise<void>
   getNodeDefs(): Promise<Record<string, ComfyNodeDef>>
+  fetchNodeDefs(): Promise<NodeDefsFetch>
   registerNodes(): Promise<void>
   registerNodeDef(nodeId: string, nodeDef: ComfyNodeDef): Promise<void>
   registerNodesFromDefs(defs: Record<string, ComfyNodeDef>): Promise<void>
@@ -188,7 +213,7 @@ export interface ComfyApp {
   registerExtension(extension: ComfyExtension): void
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]
   collectNodeMenuItems(node: LGraphNode): IContextMenuValue[]
-  reloadNodeDefs(): Promise<void>
+  reloadNodeDefs(defs?: Record<string, ComfyNodeDef>): Promise<boolean>
   refreshComboInNodes(): Promise<void>
   clean(): void
   clientPosToCanvasPos(pos: Vector2): Vector2
@@ -269,6 +294,7 @@ export interface ComfyExtension {
    * The name of the extension
    */
   name: string
+  provenance?: ExtensionProvenance
   /**
    * The commands defined by the extension
    */

@@ -77,8 +77,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
-      const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
-      const backButton = breadcrumb.locator('.back-button')
+      const backButton = comfyPage.page.getByTestId(TestIds.breadcrumb.back)
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
       await comfyPage.nextFrame()

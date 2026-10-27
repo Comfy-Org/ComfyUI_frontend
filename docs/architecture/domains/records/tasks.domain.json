@@ -1,0 +1,26 @@
+{
+  "id": "tasks",
+  "capability": "Backend tasks",
+  "description": "Client for backend asynchronous tasks: fetch, validate, poll, and cancel task records, and parse download-file results.",
+  "modules": [
+    {
+      "path": "src/platform/tasks/**",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Task service validates task responses, polls status, and reports cancel outcomes",
+      "checks": ["src/platform/tasks/services/taskService.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "taskService remains importable by asset download and export stores during inventory."
+  ],
+  "deepImports": "inventory"
+}

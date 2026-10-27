@@ -1,0 +1,134 @@
+{
+  "id": "link-connection",
+  "capability": "Link connection",
+  "description": "Dragging, moving, and dropping links between node slots, reroutes, and subgraph IO nodes through LinkConnector and its render-link strategies. Both the LiteGraph canvas and Vue-node slot interactions drive this controller.",
+  "modules": [
+    {
+      "path": "src/extensions/core/slotDefaultTypes.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/slotDefaultTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/slotDefaults.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/FloatingRenderLink.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/FloatingRenderLink.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/LinkConnector.core.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/LinkConnector.dropOnNode.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/LinkConnector.integration.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/LinkConnector.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/LinkConnector.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/LinkConnectorSubgraphInputValidation.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/MovingInputLink.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/MovingLinkBase.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/MovingOutputLink.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/RenderLink.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/ToInputFromIoNodeLink.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/ToInputRenderLink.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/ToOutputFromIoNodeLink.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/ToOutputFromRerouteLink.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/ToOutputRenderLink.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/ToOutputRenderLink.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/infrastructure/LinkConnectorEventMap.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/searchBoxTypes.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Dragging and dropping links connects compatible slots and rejects invalid targets",
+      "checks": [
+        "src/lib/litegraph/src/canvas/LinkConnector.core.test.ts",
+        "src/lib/litegraph/src/canvas/LinkConnector.dropOnNode.test.ts",
+        "src/lib/litegraph/src/canvas/LinkConnector.integration.test.ts",
+        "src/lib/litegraph/src/canvas/LinkConnectorSubgraphInputValidation.test.ts"
+      ]
+    },
+    {
+      "name": "Moving and floating links keep reroutes and link state intact",
+      "checks": [
+        "src/lib/litegraph/src/canvas/FloatingRenderLink.test.ts",
+        "src/lib/litegraph/src/canvas/ToOutputRenderLink.test.ts",
+        "browser_tests/tests/rerouteNode.spec.ts"
+      ]
+    },
+    {
+      "name": "Slot default node suggestions register every searchable input and output type from node definitions",
+      "checks": ["src/extensions/core/slotDefaultTypes.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/ECS-LINK-PRESENTATION-0028-link-presentation-store-ownership.md",
+    "docs/adr/CRDT-INPUTS-0030-preserve-named-input-targets.md"
+  ],
+  "compatibilityPromises": [
+    "LinkConnector events and render-link classes exported from the LiteGraph barrel keep their behaviour for extensions.",
+    "Reconnecting a link carries its presentation (hidden state and label) to the new link."
+  ],
+  "deepImports": "inventory"
+}

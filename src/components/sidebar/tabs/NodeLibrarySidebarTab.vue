@@ -16,26 +16,80 @@
         >
           <i class="icon-[lucide--folder-plus] size-4" />
         </Button>
-        <Button
-          :tooltip="$t('sideToolbar.nodeLibraryTab.groupBy')"
-          tooltip-side="bottom"
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('sideToolbar.nodeLibraryTab.groupBy')"
-          @click="groupingPopover?.toggle($event)"
-        >
-          <i :class="cn(selectedGroupingIcon, 'size-4')" />
-        </Button>
-        <Button
-          :tooltip="$t('sideToolbar.nodeLibraryTab.sortMode')"
-          tooltip-side="bottom"
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('sideToolbar.nodeLibraryTab.sortMode')"
-          @click="sortingPopover?.toggle($event)"
-        >
-          <i :class="cn(selectedSortingIcon, 'size-4')" />
-        </Button>
+        <PopoverRoot v-slot="{ close }">
+          <PopoverTrigger as-child>
+            <Button
+              :tooltip="$t('sideToolbar.nodeLibraryTab.groupBy')"
+              tooltip-side="bottom"
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="$t('sideToolbar.nodeLibraryTab.groupBy')"
+            >
+              <i :class="cn(selectedGroupingIcon, 'size-4')" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            class="max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+            dismiss-on-viewport-change
+          >
+            <div class="flex flex-col gap-1 p-2">
+              <Button
+                v-for="option in groupingOptions"
+                :key="option.id"
+                :variant="
+                  selectedGroupingId === option.id ? 'primary' : 'textonly'
+                "
+                class="justify-start"
+                @click="
+                  () => {
+                    selectGrouping(option.id)
+                    close()
+                  }
+                "
+              >
+                <i :class="cn(option.icon, 'size-4')" />
+                {{ $t(option.label) }}
+              </Button>
+            </div>
+          </PopoverContent>
+        </PopoverRoot>
+        <PopoverRoot v-slot="{ close }">
+          <PopoverTrigger as-child>
+            <Button
+              :tooltip="$t('sideToolbar.nodeLibraryTab.sortMode')"
+              tooltip-side="bottom"
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="$t('sideToolbar.nodeLibraryTab.sortMode')"
+            >
+              <i :class="cn(selectedSortingIcon, 'size-4')" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            class="max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+            dismiss-on-viewport-change
+          >
+            <div class="flex flex-col gap-1 p-2">
+              <Button
+                v-for="option in sortingOptions"
+                :key="option.id"
+                :variant="
+                  selectedSortingId === option.id ? 'primary' : 'textonly'
+                "
+                class="justify-start"
+                @click="
+                  () => {
+                    selectSorting(option.id)
+                    close()
+                  }
+                "
+              >
+                <i :class="cn(option.icon, 'size-4')" />
+                {{ $t(option.label) }}
+              </Button>
+            </div>
+          </PopoverContent>
+        </PopoverRoot>
         <Button
           :tooltip="$t('sideToolbar.nodeLibraryTab.resetView')"
           tooltip-side="bottom"
@@ -56,59 +110,38 @@
         >
           <i class="icon-[lucide--refresh-cw] size-4" />
         </Button>
-        <Popover ref="groupingPopover">
-          <div class="flex flex-col gap-1 p-2">
-            <Button
-              v-for="option in groupingOptions"
-              :key="option.id"
-              :variant="
-                selectedGroupingId === option.id ? 'primary' : 'textonly'
-              "
-              class="justify-start"
-              @click="selectGrouping(option.id)"
-            >
-              <i :class="cn(option.icon, 'size-4')" />
-              {{ $t(option.label) }}
-            </Button>
-          </div>
-        </Popover>
-        <Popover ref="sortingPopover">
-          <div class="flex flex-col gap-1 p-2">
-            <Button
-              v-for="option in sortingOptions"
-              :key="option.id"
-              :variant="
-                selectedSortingId === option.id ? 'primary' : 'textonly'
-              "
-              class="justify-start"
-              @click="selectSorting(option.id)"
-            >
-              <i :class="cn(option.icon, 'size-4')" />
-              {{ $t(option.label) }}
-            </Button>
-          </div>
-        </Popover>
       </template>
       <template #header>
         <SidebarTopArea>
           <SearchInput
             ref="searchBoxRef"
             v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="$t('g.search')"
             data-testid="node-library-search"
             class="node-lib-search-box"
             :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
             @search="handleSearch"
           />
           <template #actions>
-            <Button
-              variant="secondary"
-              size="icon"
-              class="filter-button"
-              :aria-label="$t('g.filter')"
-              @click="(e: Event) => searchFilter?.toggle(e)"
-            >
-              <i class="icon-[lucide--list-filter] size-4" />
-            </Button>
+            <PopoverRoot>
+              <PopoverTrigger as-child>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  class="filter-button"
+                  :aria-label="$t('g.filter')"
+                >
+                  <i class="icon-[lucide--list-filter] size-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                class="ml-[-13px] max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+                dismiss-on-viewport-change
+              >
+                <NodeSearchFilter @add-filter="onAddFilter" />
+              </PopoverContent>
+            </PopoverRoot>
           </template>
         </SidebarTopArea>
         <div class="px-4">
@@ -125,10 +158,6 @@
               @remove="onRemoveFilter(filter)"
             />
           </div>
-
-          <Popover ref="searchFilter" class="ml-[-13px]">
-            <NodeSearchFilter @add-filter="onAddFilter" />
-          </Popover>
         </div>
       </template>
       <template #body>
@@ -141,7 +170,7 @@
           <div
             v-show="nodeBookmarkStore.bookmarks.length > 0"
             role="separator"
-            class="m-2 border-0 border-t border-dashed border-interface-stroke"
+            class="m-2 border-0 border-t border-dashed"
           />
           <TreeExplorer
             v-model:expanded-keys="expandedKeys"
@@ -233,7 +262,8 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Popover from '@/components/common/ImperativePopover.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import type { Ref } from 'vue'
 import {
   computed,
@@ -246,17 +276,17 @@ import {
 
 import SearchFilterChip from '@/components/common/SearchFilterChip.vue'
 import type { SearchFilter } from '@/components/common/SearchFilterChip.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { renderNodePreview } from '@/components/node/renderNodePreview'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
-import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useTelemetry } from '@/platform/telemetry'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
@@ -269,7 +299,7 @@ import {
 } from '@/services/nodeOrganizationService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
@@ -302,9 +332,6 @@ onMounted(() => {
   searchBoxRef.value?.focus()
 })
 
-const searchFilter = ref<InstanceType<typeof Popover> | null>(null)
-const groupingPopover = ref<InstanceType<typeof Popover> | null>(null)
-const sortingPopover = ref<InstanceType<typeof Popover> | null>(null)
 const selectedGroupingId = useLocalStorage<GroupingStrategyId>(
   'Comfy.NodeLibrary.GroupBy',
   DEFAULT_GROUPING_ID
@@ -353,11 +380,9 @@ const selectedSortingIcon = computed(() =>
 
 const selectGrouping = (groupingId: string) => {
   selectedGroupingId.value = groupingId as GroupingStrategyId
-  groupingPopover.value?.hide()
 }
 const selectSorting = (sortingId: string) => {
   selectedSortingId.value = sortingId as SortingStrategyId
-  sortingPopover.value?.hide()
 }
 
 const resetOrganization = () => {

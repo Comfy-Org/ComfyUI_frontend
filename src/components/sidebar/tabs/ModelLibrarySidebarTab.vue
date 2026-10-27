@@ -28,6 +28,8 @@
         <SearchInput
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="$t('g.search')"
           :placeholder="
             $t('g.searchPlaceholder', {
               subject: $t('sideToolbar.labels.models')
@@ -38,7 +40,7 @@
         <p
           v-if="searchResults.capped"
           role="status"
-          class="mx-2 my-1 text-xs text-muted"
+          class="mx-2 my-1 text-xs text-muted-foreground"
         >
           {{
             $t('sideToolbar.searchResultsCapped', {
@@ -72,13 +74,13 @@
 import { computed, onMounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelPreview from '@/components/sidebar/tabs/modelLibrary/ModelPreview.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
@@ -333,10 +335,3 @@ watch(
   }
 )
 </script>
-
-<style scoped>
-:deep(.pi-fake-spacer) {
-  height: 1px;
-  width: 16px;
-}
-</style>

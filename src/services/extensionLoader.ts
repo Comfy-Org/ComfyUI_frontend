@@ -1,9 +1,22 @@
+import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
+import { askCpuServer } from '@/platform/lateCustomNodes/cpuServerStep'
+import {
+  importNoticingFetchFailure,
+  lateLoadingApplies,
+  loadCustomExtensionsWithDeadline
+} from '@/platform/lateCustomNodes/lateLoading'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  EXTENSION_FAILURES_TRUNCATED_FIELD,
+  EXTENSION_LOAD_ERROR_TYPE
+} from '@/platform/telemetry/extensionLoadTelemetry'
+import type { ExtensionFailureDiagnostic } from '@/platform/telemetry/extensionLoadTelemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage, toError } from '@/utils/errorUtil'
 
 const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/rum.js',
@@ -18,99 +31,130 @@ export function shouldLoadExtension(
   return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
 }
 
-const MAX_NAMED_FAILED_EXTENSIONS = 10
+const MAX_EXTENSION_PATH_LENGTH = 512
+const MAX_EXTENSION_DIAGNOSTIC_LENGTH = 2048
+const MAX_REPORTED_FAILURES = 10
 
 export interface ExtensionLoadFailure {
   ext: string
   error: unknown
 }
 
-/**
- * Import one backend-provided extension, returning the failure rather than
- * throwing, so one broken pack cannot abort the rest of the parallel load.
- *
- * Reporting deliberately does not happen here. A systemic failure — a backend
- * restart, or a proxy serving HTML for every `.js` — fails every import in the
- * list, and one report per extension is then unbounded. Off cloud that is
- * actively harmful: with no sink live, each report is held in `reportError`'s
- * 25-entry pending buffer, so a handful of broken packs during bootstrap would
- * silently crowd out every later error in the session. The batch is reported
- * once, by `reportExtensionLoadFailures`.
- */
-async function importCustomExtension(
-  ext: string
-): Promise<ExtensionLoadFailure | undefined> {
+function toFailureDiagnostic({
+  ext,
+  error
+}: ExtensionLoadFailure): ExtensionFailureDiagnostic {
+  const path = ext.slice(0, MAX_EXTENSION_PATH_LENGTH)
   try {
-    await import(/* @vite-ignore */ api.fileURL(ext))
+    return {
+      ext: path,
+      message: (getErrorMessage(error) ?? toError(error).message).slice(
+        0,
+        MAX_EXTENSION_DIAGNOSTIC_LENGTH
+      ),
+      stack:
+        error instanceof Error
+          ? error.stack?.slice(0, MAX_EXTENSION_DIAGNOSTIC_LENGTH)
+          : undefined
+    }
+  } catch {
+    return { ext: path, message: 'Unknown extension load failure' }
+  }
+}
+
+function importModule(url: string): Promise<unknown> {
+  return import(/* @vite-ignore */ url)
+}
+
+async function importCustomExtension(
+  ext: string,
+  { late = false, retry = false } = {}
+): Promise<ExtensionLoadFailure | undefined> {
+  const base = api.fileURL(ext)
+  const url = retry ? `${base}${base.includes('?') ? '&' : '?'}retry=1` : base
+  try {
+    await (late
+      ? importNoticingFetchFailure(url, importModule)
+      : importModule(url))
   } catch (error) {
     return { ext, error }
   }
 }
 
-/**
- * The paths go in the message because `reportError` writes its console line
- * from the error, not from `options.tags`. The count is tagged; backend paths
- * are unbounded and belong in context instead of an indexed facet.
- */
 export function reportExtensionLoadFailures(
   failures: ExtensionLoadFailure[]
 ): void {
   if (failures.length === 0) return
 
-  const named = failures.slice(0, MAX_NAMED_FAILED_EXTENSIONS)
-  const elided = failures.length - named.length
-  const paths = named.map(({ ext }) => ext).join(', ')
-  const noun = failures.length === 1 ? 'extension' : 'extensions'
-
-  reportError(
-    new Error(
-      `Error loading ${failures.length} ${noun}: ${paths}` +
-        (elided > 0 ? ` (+${elided} more)` : ''),
-      { cause: failures[0].error }
-    ),
-    {
-      errorType: 'error_loading_extension',
-      surface: 'platform',
-      level: 'warning',
-      tags: { failed_extension_count: failures.length },
-      context: {
-        failures: named.map(({ ext, error }) => ({
-          ext,
-          message: getErrorMessage(error)
-        }))
-      }
-    }
+  const reportedFailures = failures
+    .slice(0, MAX_REPORTED_FAILURES)
+    .map(toFailureDiagnostic)
+  const errors = reportedFailures.map(({ message, stack }) =>
+    Object.assign(new Error(message), stack ? { stack } : {})
   )
+  const aggregate = new AggregateError(errors, 'Error loading extensions')
+  aggregate.stack = `${aggregate.stack ?? aggregate.message}\nFailed extensions: ${reportedFailures.map(({ ext }) => ext).join(', ')}`
+
+  reportError(aggregate, {
+    errorType: EXTENSION_LOAD_ERROR_TYPE,
+    surface: 'platform',
+    level: 'warning',
+    tags: { failed_extension_count: failures.length },
+    context: {
+      failures: reportedFailures,
+      ...(failures.length > MAX_REPORTED_FAILURES && {
+        [EXTENSION_FAILURES_TRUNCATED_FIELD]: true
+      })
+    }
+  })
 }
 
 /**
  * Loads the core extensions, then every extension served by the backend, in
  * parallel. Core extensions load first because custom extensions may depend
- * on them.
+ * on them. Late custom extensions stop turning on when `signal` aborts.
  */
-export async function loadExtensions() {
+export async function loadExtensions(
+  signal: AbortSignal = new AbortController().signal
+) {
   const extensionStore = useExtensionStore()
   extensionStore.loadDisabledExtensionNames(
     useSettingStore().get('Comfy.Extension.Disabled')
   )
 
+  const firstCpuServerReading = lateLoadingApplies()
+    ? askCpuServer()
+    : undefined
   const extensions = await api.getExtensions()
 
-  await bootstrapTracer.settle(
-    'bootstrap/extensions-load-core',
-    () => import('@/extensions/core/index')
-  )
+  installErrorNodeWidgets()
+  installTouchPointerGuards()
+  await bootstrapTracer.settle('bootstrap/extensions-load-core', async () => {
+    const { registerCoreExtensions } = await import('@/extensions/core/index')
+    await registerCoreExtensions()
+  })
   extensionStore.captureCoreExtensions()
+  const customExtensions = extensions.filter((extension) =>
+    shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
+  )
+  if (firstCpuServerReading) {
+    await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>
+      loadCustomExtensionsWithDeadline(
+        customExtensions,
+        {
+          importScript: (ext, { retry } = {}) =>
+            importCustomExtension(ext, { late: true, retry }),
+          reportFailures: reportExtensionLoadFailures
+        },
+        signal,
+        firstCpuServerReading
+      )
+    )
+    return
+  }
   const outcomes = await bootstrapTracer.settle(
     'bootstrap/extensions-load-custom',
-    () =>
-      Promise.all(
-        extensions
-          .filter((extension) =>
-            shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
-          )
-          .map((ext) => importCustomExtension(ext))
-      )
+    () => Promise.all(customExtensions.map((ext) => importCustomExtension(ext)))
   )
   reportExtensionLoadFailures(outcomes.filter((outcome) => !!outcome))
 }

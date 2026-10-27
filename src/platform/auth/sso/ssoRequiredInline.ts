@@ -5,7 +5,7 @@ import type {
   SsoSurface
 } from '@comfyorg/account-core/telemetry'
 
-import type { SsoRequiredContext } from '@/platform/auth/sso/ssoRequired'
+import type { SsoRequiredContext } from '@/platform/auth/sso/ssoRequiredContext'
 import {
   abandonSsoFlow,
   trackSsoRequiredShown

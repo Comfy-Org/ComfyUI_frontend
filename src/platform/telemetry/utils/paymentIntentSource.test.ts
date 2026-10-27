@@ -2,7 +2,10 @@ import type { CheckoutEntrySource } from '@comfyorg/account-core/billing'
 import { isBillingSource } from '@comfyorg/billing-contract'
 import { describe, expect, it } from 'vitest'
 
-import type { AddCreditsClickMetadata, PaymentIntentSource } from '../types'
+import type {
+  AddCreditsClickMetadata,
+  PaymentIntentSource
+} from '@/platform/telemetry/types'
 import {
   paymentIntentSourceForAddCreditsClick,
   paymentIntentSourceForJourneyEntry

@@ -10,16 +10,16 @@ vi.mock(import('@/config/comfyApi'), () => ({
 }))
 vi.mock(import('@/scripts/api'))
 
-import { workspaceApiUrl } from './workspaceApiUrl'
+import { ingestApiUrl as ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 
-describe('workspaceApiUrl', () => {
+describe('ingestApiUrl', () => {
   beforeEach(() => {
     distributionMocks.isCloud = false
     vi.mocked(api.apiURL).mockImplementation((route) => `/api${route}`)
   })
 
   it('uses the paired Cloud gateway outside Cloud', () => {
-    expect(workspaceApiUrl('/workspaces')).toBe(
+    expect(ingestApiUrl('/workspaces')).toBe(
       'https://testcloud.comfy.org/api/workspaces'
     )
   })
@@ -27,6 +27,6 @@ describe('workspaceApiUrl', () => {
   it('keeps same-origin routing on Cloud', () => {
     distributionMocks.isCloud = true
 
-    expect(workspaceApiUrl('/workspaces')).toBe('/api/workspaces')
+    expect(ingestApiUrl('/workspaces')).toBe('/api/workspaces')
   })
 })

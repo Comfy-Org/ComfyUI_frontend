@@ -1,3 +1,5 @@
+import type { DatadogRum } from '@datadog/browser-rum'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
@@ -7,6 +9,9 @@ const isEnabled = vi.fn()
 const addError = vi.fn()
 const getInitConfiguration = vi.fn()
 const mockIsCloud = { value: false }
+const mockFrontendBucket = {
+  value: undefined as 'canary' | 'stable' | undefined
+}
 const captureDesktopException = vi.fn()
 const hostTelemetryEnabled = vi.fn(() => true)
 
@@ -16,6 +21,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
+vi.mock(import('@/platform/telemetry/rumContext'), () => ({
+  getFrontendBucket: () => mockFrontendBucket.value,
+  getDatadogRum: () =>
+    fromPartial<DatadogRum>({
+      addError: (...args: unknown[]) => addError(...args),
+      getInitConfiguration: () => getInitConfiguration()
+    })
+}))
+
 vi.mock(import('@/platform/telemetry/hostTelemetryEnabled'), () => ({
   isHostTelemetryEnabled: () => hostTelemetryEnabled()
 }))
@@ -23,13 +37,6 @@ vi.mock(import('@/platform/telemetry/hostTelemetryEnabled'), () => ({
 vi.mock(import('@sentry/vue'), () => ({
   captureException: (...args: unknown[]) => captureException(...args),
   isEnabled: () => isEnabled()
-}))
-
-vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
-  datadogRum: {
-    addError: (...args: unknown[]) => addError(...args),
-    getInitConfiguration: () => getInitConfiguration()
-  }
 }))
 
 async function loadReportError() {
@@ -50,10 +57,80 @@ function installDesktopBridge(capture: unknown = captureDesktopException) {
 describe('reportError', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+    mockFrontendBucket.value = undefined
     delete window.__comfyDesktop2
     hostTelemetryEnabled.mockReturnValue(true)
     sentryLive(true)
     datadogLive(true)
+  })
+
+  it('tags Sentry and Datadog with the resolved canary bucket', async () => {
+    mockFrontendBucket.value = 'canary'
+    installDesktopBridge()
+    const { reportError } = await loadReportError()
+    const error = new Error('boom')
+
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'workspace_auth_gate_initialization_failure',
+      fingerprint: ['workspace_auth_gate_initialization_failure']
+    })
+
+    expect(captureException).toHaveBeenCalledWith(
+      error,
+      expect.objectContaining({
+        fingerprint: ['workspace_auth_gate_initialization_failure'],
+        tags: expect.objectContaining({ bucket: 'canary' })
+      })
+    )
+    expect(addError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ bucket: 'canary' })
+    )
+    expect(captureDesktopException).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ bucket: 'canary' })
+    )
+  })
+
+  it('never lets a caller tag override the resolved bucket', async () => {
+    mockFrontendBucket.value = 'canary'
+    installDesktopBridge()
+    const { reportError } = await loadReportError()
+    const error = new Error('boom')
+
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'workspace_auth_gate_initialization_failure',
+      tags: { bucket: 'stable' }
+    })
+
+    expect(captureException).toHaveBeenCalledWith(
+      error,
+      expect.objectContaining({
+        tags: expect.objectContaining({ bucket: 'canary' })
+      })
+    )
+    expect(captureDesktopException).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ bucket: 'canary' })
+    )
+  })
+
+  it('omits the bucket tag before it resolves', async () => {
+    const { reportError } = await loadReportError()
+    const error = new Error('boom')
+
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'workspace_auth_gate_initialization_failure'
+    })
+
+    const [, sentryOptions] = captureException.mock.calls[0] as [
+      unknown,
+      { tags: Record<string, unknown> }
+    ]
+    expect(sentryOptions.tags).not.toHaveProperty('bucket')
   })
 
   it('reaches both Sentry and Datadog from a single call', async () => {
@@ -100,9 +177,42 @@ describe('reportError', () => {
     expect(addError).not.toHaveBeenCalled()
   })
 
+  it('overrides Sentry grouping only when a fingerprint is given', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed',
+      fingerprint: ['agent-request-failure', '/agent/threads']
+    })
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed'
+    })
+
+    expect(captureException.mock.calls[0][1]).toMatchObject({
+      fingerprint: ['agent-request-failure', '/agent/threads']
+    })
+    expect(captureException.mock.calls[1][1]).not.toHaveProperty('fingerprint')
+  })
+
+  it('does not send a fingerprint to Datadog, which groups on errorType', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_history_load_failed',
+      fingerprint: ['agent-request-failure']
+    })
+
+    expect(addError.mock.calls[0][1]).not.toHaveProperty('fingerprint')
+  })
+
   it('names a Datadog copy without changing the original error', async () => {
     const { reportError } = await loadReportError()
-    const cause = new Error('Connection closed')
+    const cause = new Error(
+      'Connection closed https://example.com/model.glb?token=private'
+    )
     const error = Object.freeze(
       Object.assign(
         new TypeError('Failed to fetch /assets/app-123.js', { cause }),
@@ -125,10 +235,13 @@ describe('reportError', () => {
       name: 'resource_load_error',
       message: error.message,
       stack: error.stack,
-      cause,
       dd_fingerprint: error.dd_fingerprint,
       dd_context: error.dd_context
     })
+    expect(datadogError.cause).toMatchObject({
+      message: 'Connection closed https://example.com/model.glb'
+    })
+    expect(datadogError.cause).not.toBe(cause)
     expect(captureException.mock.calls[0][0]).toBe(error)
     expect(error.name).toBe('TypeError')
   })

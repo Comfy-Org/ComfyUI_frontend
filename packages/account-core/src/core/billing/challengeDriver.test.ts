@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { driveEmbeddedChallenge } from './challengeDriver.js'
+import { driveEmbeddedChallenge } from './challengeDriver'
 import type {
   BillingOperationState,
   BillingPresentationState,
   PendingBillingOperation
-} from './operationState.js'
+} from './operationState'
 
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
 

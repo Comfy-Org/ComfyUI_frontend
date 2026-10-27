@@ -8,6 +8,8 @@ import {
   getPromotedWidgetNames,
   getPromotedWidgetCountByName
 } from '@e2e/fixtures/utils/promotedWidgets'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 const wstest = mergeTests(test, webSocketFixture)
@@ -34,13 +36,32 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
     return node
   }
 
+  test('restores an image preview with Undo and removes it again with Redo', async ({
+    comfyPage
+  }) => {
+    const node = await loadImageOnNode(comfyPage)
+    await node.title.click()
+    await comfyPage.keyboard.delete()
+    await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+
+    await comfyPage.keyboard.undo()
+    await node.waitForImageLoaded('image64x64.webp')
+    await expect(node.imagePreview).toContainText('64 x 64')
+    await node.title.click()
+
+    await comfyPage.keyboard.redo()
+    await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+  })
+
   test('opens mask editor from image preview button', async ({ comfyPage }) => {
     const { imagePreview } = await loadImageOnNode(comfyPage)
 
     await imagePreview.getByRole('region').hover()
     await comfyPage.page.getByLabel('Edit or mask image').click()
 
-    await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('heading', { name: 'Mask Editor' })
+    ).toBeVisible()
   })
 
   test('hides mask and download buttons when image is missing', async ({
@@ -125,7 +146,11 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
       await expect(firstPreviewImages.nth(1)).toBeVisible({ timeout: 30_000 })
       await expect(secondPreviewImages.first()).toBeVisible({ timeout: 30_000 })
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
+      await fitToViewInstant(comfyPage, { zoom: 0.6 })
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [firstSubgraphNode, secondSubgraphNode],
         'vue-node-multiple-promoted-previews.png'
       )
     }

@@ -30,10 +30,10 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import InputGroup from '@/components/ui/input-group/InputGroup.vue'
-import InputGroupAddon from '@/components/ui/input-group/InputGroupAddon.vue'
-import InputGroupButton from '@/components/ui/input-group/InputGroupButton.vue'
-import InputGroupInput from '@/components/ui/input-group/InputGroupInput.vue'
+import InputGroup from '@comfyorg/design-system/input-group/InputGroup'
+import InputGroupAddon from '@comfyorg/design-system/input-group/InputGroupAddon'
+import InputGroupButton from '@comfyorg/design-system/input-group/InputGroupButton'
+import InputGroupInput from '@comfyorg/design-system/input-group/InputGroupInput'
 import { isValidUrl } from '@/utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'
 import { ValidationState } from '@/utils/validationUtil'
@@ -59,9 +59,9 @@ const validationIcon = computed(() => {
     case ValidationState.LOADING:
       return 'icon-[lucide--loader-circle] animate-spin text-muted-foreground'
     case ValidationState.VALID:
-      return 'icon-[lucide--check] text-success-background'
+      return 'icon-[lucide--check] text-success'
     case ValidationState.INVALID:
-      return 'icon-[lucide--x] text-destructive-background'
+      return 'icon-[lucide--x] text-destructive'
     default:
       return undefined
   }

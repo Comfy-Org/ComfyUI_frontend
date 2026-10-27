@@ -3,12 +3,11 @@ import type { Pinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
@@ -66,15 +65,18 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   }))
 }))
 
-vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
-  downloadModel: vi.fn(),
-  fetchModelMetadata: vi.fn().mockResolvedValue({
-    fileSize: null,
-    gatedRepoUrl: null
-  }),
-  isModelDownloadable: vi.fn(() => true),
-  toBrowsableUrl: vi.fn((url: string) => url)
-}))
+vi.mock(
+  import('@/platform/workflowErrors/missingModel/missingModelDownload'),
+  () => ({
+    downloadModel: vi.fn(),
+    fetchModelMetadata: vi.fn().mockResolvedValue({
+      fileSize: null,
+      gatedRepoUrl: null
+    }),
+    isModelDownloadable: vi.fn(() => true),
+    toBrowsableUrl: vi.fn((url: string) => url)
+  })
+)
 
 const ROOT_GRAPH = fromPartial<LGraph>(app.rootGraph)
 const SUBGRAPH = fromPartial<Subgraph>({
@@ -143,7 +145,12 @@ function renderList(pinia: Pinia) {
   })
   render(ErrorGroupList, {
     global: {
-      plugins: [PrimeVue, testI18n, pinia, router]
+      plugins: [testI18n, pinia, router],
+      stubs: {
+        AsyncSearchInput: {
+          template: '<input />'
+        }
+      }
     }
   })
   return { user }
