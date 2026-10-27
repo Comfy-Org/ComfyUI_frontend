@@ -123,6 +123,34 @@ function serializingWidgets(widgets: readonly IBaseWidget[]): IBaseWidget[] {
  *   check that keeps this a proof rather than an assumption.
  */
 /**
+ * Preconditions on the PAYLOAD, before any question about the values themselves.
+ *
+ * Both are things no inspection of `widgets_values` could reveal, which is why they have to be
+ * told to us rather than derived.
+ */
+function preconditionRefusal(
+  serialised: { has_errors?: boolean },
+  options: WidgetFormOptions
+): WidgetFormRefusal | null {
+  // FIRST, because every later check reasons about a payload it assumes is final. If the node's
+  // class can still rewrite `widgets_values`, the identity check compares against an array that
+  // is about to be discarded, and it PASSES -- an acceptance, the one outcome this module exists
+  // to prevent. Measured on `SubgraphNode`: at the end of `LGraphNode.serializeFromStoreState`
+  // its values are still core's own array, and only the subclass's override replaces them
+  // afterwards. The proof accepted, returning an order of two names for a payload that ended up
+  // holding one value.
+  if (!options.coreIsLastWriter) return 'class_may_rewrite_payload'
+
+  // A replayed payload carries whatever shape some other frontend wrote, and the widget list
+  // beside it may be synthesised placeholders: an unregistered node type gets widgets named
+  // `UNKNOWN`, `UNKNOWN_1`, ... from its stored values. A form built there would be syntactically
+  // valid, authoritative to every consumer, and meaningless.
+  if (options.replayed || serialised.has_errors) return 'replayed_serialization'
+
+  return null
+}
+
+/**
  * Phase 1: did core produce these exact values?
  *
  * Returns the array when yes, or the refusal when no. Split out because it is the only part
@@ -134,23 +162,6 @@ function provenValues(
   producedValues: unknown,
   options: WidgetFormOptions
 ): { values: unknown[] } | { refusal: WidgetFormRefusal } {
-  // FIRST, because every check below reasons about a payload it assumes is final. If the
-  // node's class can still rewrite `widgets_values` after this point, the identity check
-  // further down compares against an array that is about to be discarded, and it PASSES --
-  // which is an acceptance, the one outcome this module exists to prevent. Measured on
-  // `SubgraphNode`: at the end of `LGraphNode.serializeFromStoreState` its values are still
-  // core's own array, and only the subclass's own override replaces them afterwards. The
-  // proof accepted, returning an order of two names for a payload that ended up holding one
-  // value.
-  if (!options.coreIsLastWriter) return { refusal: 'class_may_rewrite_payload' }
-
-  // A replayed payload carries whatever shape some other frontend wrote, and the widget list
-  // beside it may be synthesised placeholders: an unregistered node type gets widgets named
-  // `UNKNOWN`, `UNKNOWN_1`, ... from its stored values. A form built there would be
-  // syntactically valid, authoritative to every consumer, and meaningless.
-  if (options.replayed || serialised.has_errors) {
-    return { refusal: 'replayed_serialization' }
-  }
   // No values were written. A form with no array to describe is not a weaker claim than
   // usual — it is a claim about nothing, and `order` would be read as authoritative.
   if (!widgets?.length || !options.serializeWidgets) {
@@ -223,6 +234,9 @@ export function proveWidgetForm(
   producedValues: unknown,
   options: WidgetFormOptions
 ): WidgetFormProof {
+  const precondition = preconditionRefusal(serialised, options)
+  if (precondition !== null) return refuse(precondition)
+
   const proven = provenValues(widgets, serialised, producedValues, options)
   if ('refusal' in proven) return refuse(proven.refusal)
 
