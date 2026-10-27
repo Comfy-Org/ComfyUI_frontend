@@ -70,7 +70,10 @@
       class="flex shrink-0 items-center gap-2 px-4 py-2 text-xs text-muted-foreground"
     >
       <Tooltip>
-        <TooltipTrigger as-child>
+        <TooltipTrigger
+          :aria-label="$t('workspaceSwitcher.scopeCaption')"
+          class="flex"
+        >
           <i class="icon-[lucide--info] size-3" />
         </TooltipTrigger>
         <TooltipContent side="left">{{

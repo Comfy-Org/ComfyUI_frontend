@@ -7,7 +7,12 @@
       class="size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
       :draggable="false"
     />
-    <div v-else class="flex size-full items-center justify-center bg-muted">
+    <div
+      v-else
+      role="img"
+      :aria-label="$t('g.imageFailedToLoad')"
+      class="flex size-full items-center justify-center bg-muted"
+    >
       <i class="icon-[lucide--image] size-7.5 text-muted-foreground" />
     </div>
   </div>
