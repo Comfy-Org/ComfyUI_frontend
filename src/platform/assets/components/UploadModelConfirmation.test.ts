@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ref, shallowRef } from 'vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
 
 import UploadModelConfirmation from './UploadModelConfirmation.vue'
@@ -80,6 +81,35 @@ describe('UploadModelConfirmation', () => {
         return (
           element?.textContent ===
           'Locked to Bounding Box for this missing model'
+        )
+      })
+    ).toBeInTheDocument()
+  })
+
+  it('shows the required model type when its display name is unavailable', () => {
+    vi.mocked(useModelTypes).mockReturnValueOnce({
+      ...useModelTypes(),
+      modelTypes: ref([])
+    })
+
+    render(UploadModelConfirmation, {
+      props: {
+        modelValue: 'Ultralytics/bbox',
+        uploadContext: {
+          kind: 'missing-model-resolution',
+          missingModelName: 'segm/person_yolov8m-seg.pt',
+          requiredModelType: 'Ultralytics/bbox',
+          replacementTargets: []
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText((_content, element) => {
+        return (
+          element?.textContent ===
+          'Locked to Ultralytics/bbox for this missing model'
         )
       })
     ).toBeInTheDocument()
