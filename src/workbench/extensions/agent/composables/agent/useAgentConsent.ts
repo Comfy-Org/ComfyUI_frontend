@@ -3,7 +3,6 @@ import { storeToRefs } from 'pinia'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentConsentDecision,
@@ -17,12 +16,9 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import {
   clearPendingSignInAccept,
-  readPendingSignInAccept,
-  ownsPendingSignInAccept,
-  bindPendingSignInAccept,
+  takePendingSignInAccept,
   writePendingSignInAccept
 } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
-import type { PendingSignInAccept } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
@@ -58,33 +54,10 @@ export function useAgentConsent() {
   const introductionStore = useAgentConsentIntroductionStore()
   const composerStore = useAgentComposerStore()
   const toast = useToast()
-  const { isLoggedIn, resolvedUserInfo, isAuthInitialized } = useCurrentUser()
-  const workspaceStore = useTeamWorkspaceStore()
+  const { isLoggedIn } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
   const { t } = i18n.global
 
-  /**
-   * Names an ending of the consent request that produced neither a card on
-   * screen nor a decision.
-   *
-   * These are the last silent endings on the automatic consent chain.
-   * `agent_consent_not_offered` means a named surface is holding the offer and
-   * will retry it, and `agent_consent_offer_exited`'s other stages all stop
-   * before the consent scope is resolved - so an attempt that got as far as
-   * asking and still ended with nothing was indistinguishable in product
-   * analytics from a user who was never offered. The failing ones do reach
-   * Sentry and RUM through `reportError`, which is why they were easy to
-   * believe were covered; `reportError` has no PostHog sink, so none of them
-   * were in the funnel denominator `agent_consent_not_offered` is read against.
-   *
-   * `retry_armed` is reported false rather than read, and that is a code reading
-   * rather than a tested fact: `offerConsentUnprompted` calls `dropHold()`
-   * immediately before `withConsent`, the only caller that can re-arm is the
-   * `canShow` hook, and `canShow` runs after every exit reported here. A
-   * re-entrant offer cannot re-arm either - it exits on `autoShowInFlight`
-   * before reaching a hold. If that ordering changes, this becomes wrong
-   * silently, so the property's doc says which ordering it depends on.
-   */
   function reportRequestExit(
     exit: AgentConsentOfferExit,
     trigger: AgentConsentTrigger
@@ -103,7 +76,6 @@ export function useAgentConsent() {
     expectedIdentity?: string,
     { canShow }: ConsentOfferHooks = {}
   ): Promise<boolean> {
-    const pendingAccept = readPendingSignInAccept()
     return new Promise<boolean>((resolve) => {
       if (canShow && !canShow()) {
         resolve(false)
@@ -162,7 +134,6 @@ export function useAgentConsent() {
 
       function finishAcceptance(saved: boolean): void {
         if (settled) return
-        if (saved && pendingAccept) clearPendingSignInAccept(pendingAccept)
         if (!persistOnAccept) reportOutcome('accepted_pending_sign_in')
         else reportOutcome(saved ? 'accepted' : 'accept_not_persisted')
         closeWith(saved)
@@ -218,7 +189,6 @@ export function useAgentConsent() {
           onReject: () => {
             if (settled) return
             markIntroductionResponded()
-            if (pendingAccept) clearPendingSignInAccept(pendingAccept)
             reportOutcome('rejected')
             closeWith(false)
           }
@@ -230,7 +200,6 @@ export function useAgentConsent() {
             if (settled) return
             settled = true
             stopScopeWatch()
-            if (pendingAccept) clearPendingSignInAccept(pendingAccept)
             if (shown) reportOutcome('dismissed')
             else reportRequestExit('card_closed_before_mount', trigger)
             resolve(false)
@@ -240,47 +209,9 @@ export function useAgentConsent() {
     })
   }
 
-  function reportLoadFailure(error: unknown): void {
-    reportError(error, {
-      surface: 'agent',
-      errorType: 'agent_consent_setting_load_failure'
-    })
-    toast.error(t('g.error'), {
-      description: t('agent.consent.loadError')
-    })
-  }
-
-  function reportSaveFailure(error: unknown): void {
-    reportError(error, {
-      surface: 'agent',
-      errorType: 'agent_consent_setting_write_failure'
-    })
-    toast.error(t('g.error'), {
-      description: t('agent.consent.saveError')
-    })
-  }
-
-  function bindSamePagePendingAccept(pending: PendingSignInAccept): boolean {
-    if (!ownsPendingSignInAccept(pending)) return true
-    const userId = resolvedUserInfo.value?.id
-    if (!userId) return false
-    const bound = bindPendingSignInAccept(pending, {
-      userId,
-      workspaceId: workspaceStore.activeWorkspaceId ?? undefined
-    })
-    if (!bound.ok) clearPendingSignInAccept(pending)
-    return true
-  }
-
-  async function saveAcceptanceAfterSignIn(
-    expectedIdentity?: string,
-    pending?: PendingSignInAccept
-  ): Promise<string | null> {
+  async function saveAcceptanceAfterSignIn(): Promise<string | null> {
     try {
-      const decisionIdentity =
-        expectedIdentity ?? (await consentStore.ensureScope())
-      if (decisionIdentity && pending && !bindSamePagePendingAccept(pending))
-        return null
+      const decisionIdentity = await consentStore.ensureScope()
       if (!decisionIdentity || !(await consentStore.accept(decisionIdentity))) {
         useTelemetry()?.trackAgentConsentResolved({
           decision: 'accept_not_persisted',
@@ -294,7 +225,13 @@ export function useAgentConsent() {
       })
       return decisionIdentity
     } catch (error) {
-      reportSaveFailure(error)
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_consent_setting_write_failure'
+      })
+      toast.error(t('g.error'), {
+        description: t('agent.consent.saveError')
+      })
       return null
     }
   }
@@ -311,11 +248,10 @@ export function useAgentConsent() {
     if (!(await showConsentDialog(trigger, false, undefined, hooks)))
       return null
     introductionStore.isContinuingSignIn = true
-    const result = writePendingSignInAccept(heldDraftText())
     try {
-      let signedIn: boolean
+      writePendingSignInAccept(heldDraftText())
       try {
-        signedIn = await showSignInDialog()
+        if (!(await showSignInDialog())) return null
       } catch (error) {
         reportError(error, {
           surface: 'agent',
@@ -325,127 +261,27 @@ export function useAgentConsent() {
           description: t('agent.consent.signInError')
         })
         return null
+      } finally {
+        clearPendingSignInAccept()
       }
-      if (!signedIn) return null
-      return await saveAcceptanceAfterSignIn(
-        undefined,
-        result.ok ? result.pending : undefined
-      )
+      return await saveAcceptanceAfterSignIn()
     } finally {
-      if (result.ok) clearPendingSignInAccept(result.pending)
       introductionStore.isContinuingSignIn = false
     }
   }
 
-  function restorePendingDraft(draft: string): void {
+  async function resumeAcceptAfterReload(): Promise<void> {
+    const pending = takePendingSignInAccept()
+    if (!pending) return
     if (
-      draft &&
+      pending.draft &&
       !composerStore.draft &&
       composerStore.prompt.references.length === 0 &&
       composerStore.attachments.length === 0 &&
       !composerStore.submission
     )
-      composerStore.restorePrompt({ text: draft, references: [] }, [])
-  }
-
-  function pendingAcceptForCurrentUser(): {
-    pending: PendingSignInAccept
-    accountId: string
-  } | null {
-    const pending = readPendingSignInAccept()
-    if (!pending) return null
-    if (!isLoggedIn.value) {
-      if (isAuthInitialized.value) clearPendingSignInAccept(pending)
-      return null
-    }
-    const accountId = resolvedUserInfo.value?.id
-    if (!accountId) return null
-    if (pending.scope && pending.scope.userId !== accountId) {
-      clearPendingSignInAccept(pending)
-      return null
-    }
-    return { pending, accountId }
-  }
-
-  function preparePendingAccept() {
-    const prepared = pendingAcceptForCurrentUser()
-    if (!prepared) return null
-    const { pending, accountId } = prepared
-    if (
-      !pending.scope?.workspaceId ||
-      pending.scope.workspaceId === workspaceStore.activeWorkspaceId
-    )
-      restorePendingDraft(pending.draft)
-    if (pending.scope) return { pending, accountId }
-    const bound = bindPendingSignInAccept(pending, { userId: accountId })
-    if (bound.ok) return { pending: bound.pending, accountId }
-    clearPendingSignInAccept(pending)
-    reportSaveFailure(bound.error)
-    return null
-  }
-
-  function bindPendingWorkspace(
-    pending: PendingSignInAccept,
-    accountId: string
-  ): boolean {
-    if (
-      pending.scope?.workspaceId &&
-      pending.scope.workspaceId !== workspaceStore.activeWorkspaceId
-    ) {
-      clearPendingSignInAccept(pending)
-      return false
-    }
-    const bound = bindPendingSignInAccept(pending, {
-      userId: accountId,
-      workspaceId: workspaceStore.activeWorkspaceId ?? undefined
-    })
-    if (bound.ok) return true
-    clearPendingSignInAccept(pending)
-    reportSaveFailure(bound.error)
-    return false
-  }
-
-  async function persistPendingAccept(
-    pending: PendingSignInAccept,
-    accountId: string,
-    decisionIdentity: string
-  ): Promise<void> {
-    if (!ownsPendingSignInAccept(pending)) return
-    if (!bindPendingWorkspace(pending, accountId)) return
-    restorePendingDraft(pending.draft)
-    const alreadyAccepted = await consentStore.load()
-    if (
-      identity.value !== decisionIdentity ||
-      !ownsPendingSignInAccept(pending)
-    )
-      return
-    if (alreadyAccepted || (await saveAcceptanceAfterSignIn(decisionIdentity)))
-      clearPendingSignInAccept(pending)
-  }
-
-  async function resumeAcceptAfterReload(): Promise<void> {
-    if (introductionStore.isContinuingSignIn) return
-    const prepared = preparePendingAccept()
-    if (!prepared) return
-    const { pending, accountId } = prepared
-    if (workspaceStore.isSwitching) return
-    const generation = workspaceStore.workspaceTransitionGeneration
-    introductionStore.isContinuingSignIn = true
-    let decisionIdentity: string | null = null
-    const scopeUnchanged = () =>
-      resolvedUserInfo.value?.id === accountId &&
-      workspaceStore.workspaceTransitionGeneration === generation &&
-      (!decisionIdentity || identity.value === decisionIdentity)
-    try {
-      decisionIdentity = await consentStore.ensureScope()
-      if (!scopeUnchanged() || !decisionIdentity) return
-      await persistPendingAccept(pending, accountId, decisionIdentity)
-    } catch (error) {
-      if (scopeUnchanged()) reportLoadFailure(error)
-    } finally {
-      if (!scopeUnchanged()) clearPendingSignInAccept(pending)
-      introductionStore.isContinuingSignIn = false
-    }
+      composerStore.restorePrompt({ text: pending.draft, references: [] }, [])
+    await saveAcceptanceAfterSignIn()
   }
 
   async function requestConsentForCurrentUser(
@@ -453,11 +289,6 @@ export function useAgentConsent() {
     hooks: ConsentOfferHooks
   ): Promise<string | null> {
     let decisionIdentity: string | null
-    // Which call is in flight, so the catch can tell a scope probe that failed
-    // from a consent read that failed. The error cannot carry that: both raise
-    // `AgentConsentAuthenticationError` with the same "account authentication is
-    // required" message, `ensureScope` from its own missing user and `load` from
-    // the auth header its read needs.
     let reading = false
     try {
       decisionIdentity = await consentStore.ensureScope()
@@ -472,7 +303,13 @@ export function useAgentConsent() {
         reading ? 'consent_read_failed' : 'scope_probe_failed',
         trigger
       )
-      reportLoadFailure(error)
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_consent_setting_load_failure'
+      })
+      toast.error(t('g.error'), {
+        description: t('agent.consent.loadError')
+      })
       return null
     }
 
@@ -480,15 +317,6 @@ export function useAgentConsent() {
       reportRequestExit('scope_changed_after_read', trigger)
       return null
     }
-    // Two endings report nothing here, and both are successes rather than
-    // silences. `showConsentDialog` returning false because `canShow` said no is
-    // already named by the surface that took the screen - the caller's hook
-    // holds the offer and `agent_consent_not_offered` carries the reason, so
-    // naming it again would double-count one deferral. And consent that is
-    // already stored skips the card entirely: this runs on to `onAccept`, which
-    // for the automatic offer is the only producer of
-    // `agent_panel_opened(source=automatic_consent)`. Reading the absence of a
-    // card as a failed offer is the error that mis-ranked gc-17.
     if (
       !accepted.value &&
       !(await showConsentDialog(trigger, true, decisionIdentity, hooks))
@@ -502,7 +330,6 @@ export function useAgentConsent() {
     onAccept: () => void,
     hooks: ConsentOfferHooks = {}
   ): Promise<void> {
-    if (introductionStore.isContinuingSignIn) return
     const decisionIdentity = isLoggedIn.value
       ? await requestConsentForCurrentUser(trigger, hooks)
       : await acceptAfterSignIn(trigger, hooks)

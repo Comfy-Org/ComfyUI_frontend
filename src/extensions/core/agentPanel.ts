@@ -334,14 +334,14 @@ export function registerAgentPanelExtension(): void {
         if (introductionStore.isContinuingSignIn || !hasPendingSignInAccept())
           return false
         if (!isLoggedIn.value) {
-          if (isAuthInitialized.value) clearPendingSignInAccept()
+          clearPendingSignInAccept()
           return false
         }
-        if (!resolvedUserInfo.value) return true
+        if (!resolvedUserInfo.value || workspaceStore.isSwitching) return true
         resumingAccept = true
         void resumeAcceptAfterReload().finally(() => {
           resumingAccept = false
-          if (!workspaceStore.isSwitching) loadConsentIfEligible(false)
+          loadConsentIfEligible()
         })
         return true
       }
@@ -355,9 +355,9 @@ export function registerAgentPanelExtension(): void {
         { immediate: true, flush: 'sync' }
       )
 
-      const loadConsentIfEligible = (resume = true): void => {
+      const loadConsentIfEligible = (): void => {
         if (!isAuthInitialized.value) return
-        if (resumingAccept || (resume && resumePendingAccept())) return
+        if (resumingAccept || resumePendingAccept()) return
         if (!agentPanelStore.enabled) return
         if (!isLoggedIn.value) {
           if (!signedInThisPage) offerWhenStartupDecided()
@@ -389,7 +389,7 @@ export function registerAgentPanelExtension(): void {
           () => isAuthInitialized.value,
           () => workspaceStore.isSwitching
         ],
-        () => loadConsentIfEligible()
+        loadConsentIfEligible
       )
 
       whenever(

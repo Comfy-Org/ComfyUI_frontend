@@ -1,88 +1,54 @@
 import { z } from 'zod'
 
-import { createUuidv4 } from '@/utils/uuid'
-
 const STORAGE_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
 const PENDING_SIGN_IN_ACCEPT_TTL_MS = 10 * 60 * 1000
 
 const zPendingSignInAccept = z.object({
-  id: z.string().optional(),
   draft: z.string(),
-  savedAt: z.number(),
-  scope: z
-    .object({ userId: z.string(), workspaceId: z.string().optional() })
-    .optional()
+  savedAt: z.number()
 })
-export type PendingSignInAccept = z.infer<typeof zPendingSignInAccept>
-type WriteResult =
-  | { ok: true; pending: PendingSignInAccept }
-  | { ok: false; error: unknown }
+type PendingSignInAccept = z.infer<typeof zPendingSignInAccept>
 
-function save(record: PendingSignInAccept): WriteResult {
+export function writePendingSignInAccept(draft: string): void {
   try {
-    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(record))
-    return { ok: true, pending: record }
-  } catch (error) {
-    return { ok: false, error }
+    window.sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ draft, savedAt: Date.now() })
+    )
+  } catch {
+    return
   }
 }
 
-export function writePendingSignInAccept(draft: string): WriteResult {
+export function clearPendingSignInAccept(): void {
   try {
-    return save({ id: createUuidv4(), draft, savedAt: Date.now() })
-  } catch (error) {
-    return { ok: false, error }
-  }
-}
-
-export function clearPendingSignInAccept(pending?: PendingSignInAccept): void {
-  try {
-    if (pending && !ownsPendingSignInAccept(pending)) return
     window.sessionStorage.removeItem(STORAGE_KEY)
   } catch {
     return
   }
 }
 
-export function ownsPendingSignInAccept(pending: PendingSignInAccept): boolean {
-  const current = readPendingSignInAccept()
-  return (
-    current !== null &&
-    current.id === pending.id &&
-    current.savedAt === pending.savedAt &&
-    current.draft === pending.draft
-  )
-}
-
-export function bindPendingSignInAccept(
-  pending: PendingSignInAccept,
-  scope: NonNullable<PendingSignInAccept['scope']>
-): WriteResult {
-  return save({ ...pending, scope })
+function readPendingSignInAccept(): PendingSignInAccept | null {
+  try {
+    const raw = window.sessionStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const parsed = zPendingSignInAccept.safeParse(JSON.parse(raw))
+    if (!parsed.success) return null
+    const age = Date.now() - parsed.data.savedAt
+    return age >= 0 && age <= PENDING_SIGN_IN_ACCEPT_TTL_MS
+      ? parsed.data
+      : null
+  } catch {
+    return null
+  }
 }
 
 export function hasPendingSignInAccept(): boolean {
   return readPendingSignInAccept() !== null
 }
 
-export function readPendingSignInAccept(): PendingSignInAccept | null {
-  let raw: string | null
-  try {
-    raw = window.sessionStorage.getItem(STORAGE_KEY)
-  } catch {
-    return null
-  }
-  if (!raw) return null
-  try {
-    const parsed = zPendingSignInAccept.safeParse(JSON.parse(raw))
-    if (parsed.success) {
-      const age = Date.now() - parsed.data.savedAt
-      if (age >= 0 && age <= PENDING_SIGN_IN_ACCEPT_TTL_MS) return parsed.data
-    }
-  } catch {
-    clearPendingSignInAccept()
-    return null
-  }
+export function takePendingSignInAccept(): PendingSignInAccept | null {
+  const pending = readPendingSignInAccept()
   clearPendingSignInAccept()
-  return null
+  return pending
 }
