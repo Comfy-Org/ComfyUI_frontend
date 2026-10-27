@@ -2129,6 +2129,28 @@ describe('useMediaAssetActions', () => {
       }
     )
 
+    it('writes and clears the temp root for an asset tagged output and temp without a preview URL', async () => {
+      const outputTaggedTempAsset = createMockAsset({
+        ...job,
+        id: 'output-tagged-temp-asset',
+        name: 'ComfyUI_temp_00003_.png',
+        hash: 'ee12ab34.png',
+        tags: ['output', 'temp'],
+        user_metadata: { jobId: 'job-1', subfolder: '' }
+      })
+      const { actions, nodes } = await addReferencesTo([outputTaggedTempAsset])
+      const sameHashOutput = addLoadImageNode('ee12ab34.png [output]')
+
+      await actions.deleteAssets(unflattenOutputAssets([outputTaggedTempAsset]))
+
+      expect(nodes.map(referenceState)).toEqual([
+        cleared('ee12ab34.png [temp]')
+      ])
+      expect(referenceState(sameHashOutput)).toEqual(
+        kept('ee12ab34.png [output]')
+      )
+    })
+
     it.for([
       'aa7ecf08.png[temp]',
       'aa7ecf08.png [TEMP]',

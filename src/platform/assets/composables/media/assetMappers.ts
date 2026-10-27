@@ -68,7 +68,7 @@ const byCreatedAtAsc = (a: AssetItem, b: AssetItem): number =>
 
 const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-function isTempOutput(asset: AssetItem): boolean {
+export function isTempOutput(asset: AssetItem): boolean {
   return asset.tags.includes('temp') || getAssetSourceType(asset) === 'temp'
 }
 
