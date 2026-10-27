@@ -142,7 +142,6 @@ function heldWriteKey(event: IntentOf<'set_widget'>): string {
 }
 
 interface LinkTarget {
-  graphId: string
   nodeId: NodeId
   node: LGraphNode | undefined
   input: INodeInputSlot | undefined
@@ -467,10 +466,6 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     return grownSlotKey(state.rootGraphId, state.nodeId, state.inputName)
   }
 
-  /**
-   * Drops a pending slot whose document is no longer bound, so its deferred
-   * operations are never re-addressed to the document that replaced it.
-   */
   function dropRetargetedGrownSlot(state: PendingGrownSlot): boolean {
     const boundRootGraphId =
       deps.boundRootGraphId() ?? deps.getGraph()?.rootGraph.id ?? null
@@ -972,7 +967,6 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   function linkTarget(graph: LGraph, link: LLink): LinkTarget {
     const node = graph.getNodeById(link.target_id) ?? undefined
     return {
-      graphId: graph.id,
       nodeId: link.target_id,
       node,
       input: node?.inputs[link.target_slot],
