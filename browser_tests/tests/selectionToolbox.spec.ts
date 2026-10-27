@@ -184,7 +184,6 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     test('color picker shows current color of selected nodes', async ({
       comfyPage
     }) => {
-      // Select multiple nodes
       await comfyPage.nodeOps.selectNodes([
         'KSampler',
         'CLIP Text Encode (Prompt)'
@@ -193,17 +192,16 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       const colorPickerButton = getColorPickerButton(comfyPage)
       const colorPickerCurrentColor = getColorPickerCurrentColor(comfyPage)
 
-      // Initially should show default color
       await expect(colorPickerButton).not.toHaveAttribute('color')
+      await expect(colorPickerCurrentColor).toHaveCSS('width', '16px')
+      await expect(colorPickerCurrentColor).toHaveCSS('height', '16px')
 
-      // Click color picker and select a color
       await colorPickerButton.click()
       const redColorOption = getColorPickerGroup(comfyPage).getByTestId(
         TestIds.selectionToolbox.colorRed
       )
       await redColorOption.click()
 
-      // Button should now show the selected color
       await expect(colorPickerCurrentColor).toHaveCSS('color', RED_COLOR)
     })
 
