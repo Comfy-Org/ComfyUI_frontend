@@ -3,17 +3,17 @@ import { computed, nextTick, ref } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 
 import ChatHistorySelectButton from './ChatHistorySelectButton.vue'
 
 import type {
   ChatSession,
   HistoryGroups
-} from '../../stores/agent/agentChatHistoryStore'
+} from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 
 const {
   groups,

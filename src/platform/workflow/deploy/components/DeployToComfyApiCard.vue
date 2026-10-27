@@ -95,7 +95,12 @@
               {{ $t('deployToComfyApi.deployWithAgent') }}
             </template>
           </Button>
+          <DeployInstallationButton
+            v-if="deploysInstallation"
+            @opened="emit('done')"
+          />
           <Button
+            v-else
             variant="inverted"
             size="lg"
             class="w-full @xl:w-auto"
@@ -121,15 +126,21 @@ import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import Video from '@/components/common/Video.vue'
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import DeployInstallationButton from '@/platform/workflow/deploy/components/DeployInstallationButton.vue'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 
-const { videoSources = [], posterSrc = '' } = defineProps<{
+const {
+  videoSources = [],
+  posterSrc = '',
+  deploysInstallation = false
+} = defineProps<{
   videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
+  deploysInstallation?: boolean
 }>()
 
 const emit = defineEmits<{

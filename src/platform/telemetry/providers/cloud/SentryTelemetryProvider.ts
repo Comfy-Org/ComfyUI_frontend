@@ -10,8 +10,8 @@ import type {
   NodeAddedMetadata,
   ShellLayoutMetadata,
   TelemetryProvider
-} from '../../types'
-import { getExecutionContext } from '../../utils/getExecutionContext'
+} from '@/platform/telemetry/types'
+import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
 export class SentryTelemetryProvider implements TelemetryProvider {
   private shellLayout: ShellLayoutMetadata | null = null

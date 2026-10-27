@@ -32,37 +32,29 @@
             </PopoverTrigger>
           </template>
         </i18n-t>
-        <PopoverPortal>
-          <PopoverContent
-            side="top"
-            :side-offset="5"
-            :collision-padding="10"
-            class="z-1700 rounded-lg border border-border/50 bg-background p-2 shadow-sm will-change-[transform,opacity]"
-          >
-            <ViewTypeRadioGroup
-              :model-value="isAppMode"
-              :aria-label="t('builderToolbar.defaultViewLabel')"
-              size="sm"
-              @update:model-value="$emit('select', $event)"
-            />
-          </PopoverContent>
-        </PopoverPortal>
+        <PopoverContent
+          side="top"
+          :side-offset="5"
+          class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
+        >
+          <ViewTypeRadioGroup
+            :model-value="isAppMode"
+            :aria-label="t('builderToolbar.defaultViewLabel')"
+            size="sm"
+            @update:model-value="$emit('select', $event)"
+          />
+        </PopoverContent>
       </div>
     </PopoverAnchor>
   </PopoverRoot>
 </template>
 
 <script setup lang="ts">
+import { PopoverAnchor, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
-import {
-  PopoverAnchor,
-  PopoverContent,
-  PopoverPortal,
-  PopoverRoot,
-  PopoverTrigger
-} from 'reka-ui'
 import { useI18n } from 'vue-i18n'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 
 import { cn } from '@comfyorg/tailwind-utils'
 

@@ -1,0 +1,98 @@
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+
+import { testI18n } from '@/utils/__tests__/testI18n'
+import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+
+import MissingMediaCard from './MissingMediaCard.vue'
+
+vi.mock(import('@/scripts/app'))
+
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+  getNodeByExecutionId: vi.fn()
+}))
+
+describe('MissingMediaCard', () => {
+  it('preserves special characters in the locate button accessible name', () => {
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      createMockLGraphNode({ title: 'A & B <C>' })
+    )
+    const missingMediaGroups: MissingMediaGroup[] = [
+      {
+        mediaType: 'image',
+        items: [
+          {
+            name: 'image.png',
+            mediaType: 'image',
+            representative: {
+              nodeId: '1',
+              nodeType: 'LoadImage',
+              widgetName: 'image',
+              mediaType: 'image',
+              name: 'image.png',
+              isMissing: true
+            },
+            referencingNodes: [
+              {
+                nodeId: '1',
+                nodeType: 'LoadImage',
+                widgetName: 'image'
+              }
+            ]
+          }
+        ]
+      }
+    ]
+
+    render(MissingMediaCard, {
+      props: { missingMediaGroups },
+      global: { plugins: [testI18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Locate A & B <C> - image' })
+    ).toBeInTheDocument()
+    expect(screen.queryAllByLabelText(/&(?:amp|lt|gt);/)).toHaveLength(0)
+  })
+
+  it('emits locateNode with the node id when the locate button is clicked', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      createMockLGraphNode({ title: 'Load Image' })
+    )
+    const missingMediaGroups: MissingMediaGroup[] = [
+      {
+        mediaType: 'image',
+        items: [
+          {
+            name: 'image.png',
+            mediaType: 'image',
+            representative: {
+              nodeId: '5',
+              nodeType: 'LoadImage',
+              widgetName: 'image',
+              mediaType: 'image',
+              name: 'image.png',
+              isMissing: true
+            },
+            referencingNodes: [
+              { nodeId: '5', nodeType: 'LoadImage', widgetName: 'image' }
+            ]
+          }
+        ]
+      }
+    ]
+
+    const { emitted } = render(MissingMediaCard, {
+      props: { missingMediaGroups },
+      global: { plugins: [testI18n] }
+    })
+
+    await user.click(screen.getByTestId('missing-media-locate-button'))
+
+    expect(emitted().locateNode).toEqual([['5']])
+  })
+})

@@ -183,7 +183,7 @@
       <div v-if="backgroundLayer" :class="sectionClass">
         <span :class="sectionLabelClass">{{ t('layerEditor.fill') }}</span>
         <div data-testid="background-color-swatch">
-          <ColorPicker v-model="backgroundColorModel" class="h-7" />
+          <AppColorPicker v-model="backgroundColorModel" class="h-7" />
         </div>
       </div>
     </template>
@@ -191,18 +191,18 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { AcceptableValue } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PropertyNumberField from '@/renderer/extensions/layerEditor/components/PropertyNumberField.vue'
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
+import PropertyNumberField from '@comfyorg/design-system/number-field/PropertyNumberField'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import type {
   LayerEditorAlignOp,
   LayerEditorSession
@@ -212,8 +212,8 @@ import {
   CANVAS_SIZE_MIN,
   DEFAULT_BACKGROUND_COLOR
 } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
-import { LAYER_MODES } from '@/renderer/extensions/layerEditor/engine/mode'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
+import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()

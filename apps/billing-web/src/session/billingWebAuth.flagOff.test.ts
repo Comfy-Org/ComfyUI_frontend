@@ -69,6 +69,7 @@ const MINTED = {
   token: 'jwt-1',
   permissions: ['workspace:read'],
   expires_at: new Date(Date.now() + 90 * 60_000).toISOString(),
+  user_id: 'uid-1',
   workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
   role: 'owner'
 }

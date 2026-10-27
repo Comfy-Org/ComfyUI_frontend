@@ -11,8 +11,7 @@ import {
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   SPOTLIGHT_PAD,
   clampSpotlight,
@@ -21,21 +20,22 @@ import {
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentOnboardingAction } from '@/platform/telemetry/types'
-import type { CoachStep } from '../../composables/agent/useOnboarding'
+import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 import {
   reportMissingCoachTarget,
   useOnboarding
-} from '../../composables/agent/useOnboarding'
+} from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 
 /** Long enough for any panel layout to settle; a target still absent is a regression. */
 const TARGET_MISSING_AFTER_MS = 8000
 const COACH_HOVER_ATTRIBUTE = 'data-coach-hover'
 
-const { steps, storageKey } = defineProps<{
+const { steps, storageKey, holdNotice } = defineProps<{
   steps: CoachStep[]
   storageKey?: string
+  holdNotice?: string
 }>()
-const emit = defineEmits<{ finished: [] }>()
+const emit = defineEmits<{ finished: []; stalled: [] }>()
 
 const { active, index, step, isLast, next, previous, finish, restart } =
   useOnboarding(() => steps, storageKey)
@@ -55,6 +55,7 @@ defineExpose({
 
 const titleId = useId()
 const bodyId = useId()
+const holdNoticeId = useId()
 const target = ref<HTMLElement | null>(null)
 const visible = computed(() => active.value && target.value !== null)
 // Let surfaces like the What's New popup defer while a coach card is on
@@ -124,13 +125,18 @@ targetObserver.observe(document.body, {
   childList: true,
   subtree: true
 })
+let reportedStalled = false
 const missingTarget = computed(() =>
   active.value && !target.value ? step.value.target : null
 )
 const { start: startMissingTargetTimer, stop: stopMissingTargetTimer } =
   useTimeoutFn(
-    (selector: string, step: number) =>
-      reportMissingCoachTarget(selector, step),
+    (selector: string, step: number) => {
+      reportMissingCoachTarget(selector, step)
+      if (reportedStalled) return
+      reportedStalled = true
+      emit('stalled')
+    },
     TARGET_MISSING_AFTER_MS,
     { immediate: false }
   )
@@ -245,7 +251,7 @@ useEventListener(
 
 <template>
   <Teleport to="body">
-    <div v-if="visible" v-reka-z-index class="agent-scope fixed inset-0">
+    <div v-if="visible" class="agent-scope fixed inset-0 z-tour">
       <div class="absolute inset-0" />
       <div
         aria-hidden="true"
@@ -276,7 +282,7 @@ useEventListener(
           role="dialog"
           aria-modal="true"
           :aria-labelledby="titleId"
-          :aria-describedby="bodyId"
+          :aria-describedby="holdNotice ? `${bodyId} ${holdNoticeId}` : bodyId"
           tabindex="-1"
           :style="{
             ...floatingStyles,
@@ -310,6 +316,14 @@ useEventListener(
                 class="m-0 text-sm/normal text-pretty text-muted-foreground"
               >
                 {{ step.body }}
+              </p>
+              <p
+                v-if="holdNotice"
+                :id="holdNoticeId"
+                class="m-0 text-xs/normal text-muted-foreground"
+                data-testid="agent-coach-hold-notice"
+              >
+                {{ holdNotice }}
               </p>
             </div>
             <div class="flex justify-end gap-3">

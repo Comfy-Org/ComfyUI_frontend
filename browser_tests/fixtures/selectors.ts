@@ -183,6 +183,7 @@ export const TestIds = {
     convertSubgraph: 'convert-to-subgraph-button',
     bypass: 'bypass-button',
     hideLinks: 'hide-links-button',
+    showLinks: 'show-links-button',
     deleteLinks: 'delete-links-button'
   },
   helpCenter: {
@@ -346,6 +347,7 @@ export const TestIds = {
   searchBoxV2: {
     resultItem: 'result-item',
     filterOption: 'filter-option',
+    typeFilterPopover: 'type-filter-popover',
     filterChip: 'filter-chip',
     chipDelete: 'chip-delete',
     noResults: 'no-results',

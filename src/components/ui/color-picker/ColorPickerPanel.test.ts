@@ -2,29 +2,9 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
 
 import ColorPickerPanel from '@/components/ui/color-picker/ColorPickerPanel.vue'
 import type { HSVA } from '@/utils/colorUtil'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      color: {
-        hex: 'Hex',
-        rgba: 'RGBA',
-        hue: 'Hue',
-        alpha: 'Alpha',
-        red: 'Red',
-        green: 'Green',
-        blue: 'Blue',
-        saturationBrightness: 'Saturation and brightness'
-      }
-    }
-  }
-})
 
 function renderPanel(initial: HSVA, mode: 'hex' | 'rgba' = 'hex') {
   const hsva = ref<HSVA>(initial)
@@ -33,6 +13,15 @@ function renderPanel(initial: HSVA, mode: 'hex' | 'rgba' = 'hex') {
   const Host = defineComponent(
     () => () =>
       h(ColorPickerPanel, {
+        hexLabel: 'Hex',
+        rgbaLabel: 'RGBA',
+        hueLabel: 'Hue',
+        alphaLabel: 'Alpha',
+        redLabel: 'Red',
+        greenLabel: 'Green',
+        blueLabel: 'Blue',
+        saturationBrightnessLabel: 'Saturation and brightness',
+        formatLabel: 'Color format',
         hsva: hsva.value,
         'onUpdate:hsva': (value: HSVA) => {
           hsva.value = value
@@ -45,7 +34,7 @@ function renderPanel(initial: HSVA, mode: 'hex' | 'rgba' = 'hex') {
       })
   )
 
-  render(Host, { global: { plugins: [i18n] } })
+  render(Host)
 
   return { hsva, user: userEvent.setup() }
 }

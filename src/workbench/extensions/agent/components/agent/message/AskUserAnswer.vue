@@ -4,7 +4,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { AskUserResolution } from '../../../services/agent/agentMessageParts'
+import type { AskUserResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 const { resolution, options } = defineProps<{
   resolution: AskUserResolution
@@ -20,7 +20,11 @@ const answers = computed(() => {
   return resolution.otherText
     ? [
         ...chosen,
-        t('agent.askUser.otherAnswer', { text: resolution.otherText })
+        t(
+          'agent.askUser.otherAnswer',
+          { text: resolution.otherText },
+          { escapeParameter: false }
+        )
       ]
     : chosen
 })

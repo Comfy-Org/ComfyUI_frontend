@@ -1,21 +1,21 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { computed, provide, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
+import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
+import CardTop from '@comfyorg/design-system/content-card/CardTop'
 import Tag from '@/components/chip/Tag.vue'
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import MultiSelect from '@comfyorg/design-system/multi-select/MultiSelect'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import SingleSelect from '@comfyorg/design-system/single-select/SingleSelect'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 
-import LeftSidePanel from '../panel/LeftSidePanel.vue'
+import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import BaseModalLayout from './BaseModalLayout.vue'
 
 interface StoryArgs {
@@ -201,6 +201,9 @@ const createStoryTemplate = (args: StoryArgs) => ({
           <SearchInput
             class="max-w-[384px]"
             size="lg"
+            clear-label="Clear search"
+            accessible-label="Search"
+            placeholder="Search..."
             :modelValue="searchQuery"
             @update:modelValue="searchQuery = $event"
           />
@@ -214,7 +217,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
               <span> Upload Model </span>
             </Button>
 
-            <Menu :items="moreMenuItems" align="end">
+            <Menu :items="moreMenuItems" align="end" remove-label="Remove">
               <template #trigger>
                 <Button size="icon" variant="secondary">
                   <i class="icon-[lucide--ellipsis] size-4" />
@@ -230,6 +233,12 @@ const createStoryTemplate = (args: StoryArgs) => ({
             <MultiSelect
               v-model="selectedFrameworks"
               label="Select Frameworks"
+              accessible-label="Select Frameworks"
+              search-label="Search frameworks"
+              search-placeholder="Search..."
+              empty-text="No results found"
+              clear-all-label="Clear all"
+              :format-selected-count="(count) => count + ' selected'"
               :options="frameworkOptions"
               :has-search-box="true"
               :show-selected-count="true"
@@ -238,11 +247,21 @@ const createStoryTemplate = (args: StoryArgs) => ({
             <MultiSelect
               v-model="selectedProjects"
               label="Select Projects"
+              accessible-label="Select Projects"
+              search-label="Search projects"
+              search-placeholder="Search..."
+              empty-text="No results found"
+              clear-all-label="Clear all"
+              :format-selected-count="(count) => count + ' selected'"
               :options="projectOptions"
             />
             <SingleSelect
               v-model="selectedSort"
               label="Sorting Type"
+              accessible-label="Sorting Type"
+              search-label="Search sorting options"
+              search-placeholder="Search..."
+              empty-text="No results found"
               :options="sortOptions"
               class="w-[135px]"
             >
@@ -308,6 +327,9 @@ const createStoryTemplate = (args: StoryArgs) => ({
           <SearchInput
             class="max-w-[384px]"
             size="lg"
+            clear-label="Clear search"
+            accessible-label="Search"
+            placeholder="Search..."
             :modelValue="searchQuery"
             @update:modelValue="searchQuery = $event"
           />
@@ -321,7 +343,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                 <span>Upload Model</span>
             </Button>
 
-            <Menu :items="moreMenuItems" align="end">
+            <Menu :items="moreMenuItems" align="end" remove-label="Remove">
               <template #trigger>
                 <Button size="icon" variant="secondary">
                   <i class="icon-[lucide--ellipsis] size-4" />
@@ -337,16 +359,32 @@ const createStoryTemplate = (args: StoryArgs) => ({
             <MultiSelect
               v-model="selectedFrameworks"
               label="Select Frameworks"
+              accessible-label="Select Frameworks"
+              search-label="Search frameworks"
+              search-placeholder="Search..."
+              empty-text="No results found"
+              clear-all-label="Clear all"
+              :format-selected-count="(count) => count + ' selected'"
               :options="frameworkOptions"
             />
             <MultiSelect
               v-model="selectedProjects"
               label="Select Projects"
+              accessible-label="Select Projects"
+              search-label="Search projects"
+              search-placeholder="Search..."
+              empty-text="No results found"
+              clear-all-label="Clear all"
+              :format-selected-count="(count) => count + ' selected'"
               :options="projectOptions"
             />
             <SingleSelect
               v-model="selectedSort"
               label="Sorting Type"
+              accessible-label="Sorting Type"
+              search-label="Search sorting options"
+              search-placeholder="Search..."
+              empty-text="No results found"
               :options="sortOptions"
               class="w-[135px]"
             >

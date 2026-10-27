@@ -2,15 +2,15 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CanvasBanner from '@/components/graph/CanvasBanner.vue'
-import Button from '@/components/ui/button/Button.vue'
+import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
+import Button from '@comfyorg/design-system/button/Button'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
 
-import { useAgentGraphActivityStore } from '../stores/agent/agentGraphActivityStore'
+import { useAgentGraphActivityStore } from '@/workbench/extensions/agent/stores/agent/agentGraphActivityStore'
 
 const { t } = useI18n()
 const { canvas } = defineProps<{ canvas: LGraphCanvas | null }>()

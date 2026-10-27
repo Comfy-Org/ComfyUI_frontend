@@ -8,7 +8,7 @@ import {
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -18,10 +18,10 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
-import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
-import type { TurnId } from '../../schemas/agentApiSchema'
-import type { PromptSnapshot } from '../../types/workflowReference'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { PromptSnapshot } from '@/workbench/extensions/agent/types/workflowReference'
 
 import AgentMessage from './message/AgentMessage.vue'
 import UserMessage from './message/UserMessage.vue'

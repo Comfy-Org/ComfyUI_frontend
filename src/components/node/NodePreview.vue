@@ -30,7 +30,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         class="_sb_row slot_row"
       >
         <div class="_sb_col">
-          <div v-if="slotInput" :class="['_sb_dot', slotInput.type]" />
+          <div v-if="slotInput" :class="cn('_sb_dot', slotInput.type)" />
         </div>
         <div class="_sb_col">
           {{ slotInput ? slotInput.name : '' }}
@@ -45,7 +45,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
           {{ slotOutput ? slotOutput.name : '' }}
         </div>
         <div class="_sb_col">
-          <div v-if="slotOutput" :class="['_sb_dot', slotOutput.type]" />
+          <div v-if="slotOutput" :class="cn('_sb_dot', slotOutput.type)" />
         </div>
       </div>
 
@@ -88,10 +88,11 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { truncate, zip } from 'es-toolkit/compat'
 import { computed } from 'vue'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -217,7 +218,7 @@ const truncateDefaultValue = (
   min-width: 300px;
   width: min-content;
   height: fit-content;
-  z-index: 9999;
+  z-index: var(--z-index-overlay);
   border-radius: 12px;
   overflow: hidden;
   font-size: 12px;

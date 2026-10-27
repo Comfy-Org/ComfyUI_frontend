@@ -5,7 +5,7 @@ import {
   updateGraphSelection
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
-import type { Positionable } from '../interfaces'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
 
 /**
  * Snapshot of the selection store exposed through the legacy

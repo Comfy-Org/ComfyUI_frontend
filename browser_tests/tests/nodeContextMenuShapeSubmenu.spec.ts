@@ -21,9 +21,10 @@ test.describe(
     })
 
     async function expectShapeSubmenuVisible(comfyPage: ComfyPage) {
-      const submenu = comfyPage.page
-        .getByRole('menu')
-        .filter({ hasText: 'Default' })
+      const submenu = comfyPage.page.getByRole('menu', {
+        name: 'Shape',
+        exact: true
+      })
       await expect(submenu).toBeVisible()
       await expect(submenu).toContainText('Box')
       await expect(submenu).toContainText('Card')

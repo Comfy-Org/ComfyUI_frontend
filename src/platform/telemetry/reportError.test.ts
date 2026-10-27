@@ -1,3 +1,5 @@
+import type { DatadogRum } from '@datadog/browser-rum'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
@@ -19,8 +21,13 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/platform/telemetry/initDatadogRum'), () => ({
-  getFrontendBucket: () => mockFrontendBucket.value
+vi.mock(import('@/platform/telemetry/rumContext'), () => ({
+  getFrontendBucket: () => mockFrontendBucket.value,
+  getDatadogRum: () =>
+    fromPartial<DatadogRum>({
+      addError: (...args: unknown[]) => addError(...args),
+      getInitConfiguration: () => getInitConfiguration()
+    })
 }))
 
 vi.mock(import('@/platform/telemetry/hostTelemetryEnabled'), () => ({
@@ -30,13 +37,6 @@ vi.mock(import('@/platform/telemetry/hostTelemetryEnabled'), () => ({
 vi.mock(import('@sentry/vue'), () => ({
   captureException: (...args: unknown[]) => captureException(...args),
   isEnabled: () => isEnabled()
-}))
-
-vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
-  datadogRum: {
-    addError: (...args: unknown[]) => addError(...args),
-    getInitConfiguration: () => getInitConfiguration()
-  }
 }))
 
 async function loadReportError() {
@@ -72,12 +72,14 @@ describe('reportError', () => {
 
     reportError(error, {
       surface: 'platform',
-      errorType: 'workspace_auth_gate_initialization_failure'
+      errorType: 'workspace_auth_gate_initialization_failure',
+      fingerprint: ['workspace_auth_gate_initialization_failure']
     })
 
     expect(captureException).toHaveBeenCalledWith(
       error,
       expect.objectContaining({
+        fingerprint: ['workspace_auth_gate_initialization_failure'],
         tags: expect.objectContaining({ bucket: 'canary' })
       })
     )
@@ -173,6 +175,37 @@ describe('reportError', () => {
 
     expect(captureException).not.toHaveBeenCalled()
     expect(addError).not.toHaveBeenCalled()
+  })
+
+  it('overrides Sentry grouping only when a fingerprint is given', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed',
+      fingerprint: ['agent-request-failure', '/agent/threads']
+    })
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed'
+    })
+
+    expect(captureException.mock.calls[0][1]).toMatchObject({
+      fingerprint: ['agent-request-failure', '/agent/threads']
+    })
+    expect(captureException.mock.calls[1][1]).not.toHaveProperty('fingerprint')
+  })
+
+  it('does not send a fingerprint to Datadog, which groups on errorType', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_history_load_failed',
+      fingerprint: ['agent-request-failure']
+    })
+
+    expect(addError.mock.calls[0][1]).not.toHaveProperty('fingerprint')
   })
 
   it('names a Datadog copy without changing the original error', async () => {

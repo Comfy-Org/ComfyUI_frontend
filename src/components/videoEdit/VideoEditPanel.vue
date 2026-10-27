@@ -37,6 +37,7 @@
           :source-width="width"
           :source-height="height"
           :locked-ratio="lockedRatio"
+          @edit-end="emit('editEnd')"
         />
         <div
           v-if="loading"
@@ -146,6 +147,7 @@
           "
         />
       </button>
+      <slot name="history" />
     </div>
 
     <div
@@ -165,6 +167,7 @@
         "
         :loading="loading"
         @scrub="handleScrub"
+        @edit-end="emit('editEnd')"
       />
 
       <WidgetInputNumberInput
@@ -172,6 +175,7 @@
         v-model="startFrame"
         root-class="col-span-full grid grid-cols-subgrid items-center"
         :widget="startFrameWidget"
+        @update:model-value="emit('editEnd', 'trim:start')"
       />
 
       <WidgetInputNumberInput
@@ -179,6 +183,7 @@
         v-model="endFrame"
         root-class="col-span-full grid grid-cols-subgrid items-center"
         :widget="endFrameWidget"
+        @update:model-value="emit('editEnd', 'trim:end')"
       />
 
       <div v-if="hasCrop" class="col-span-full flex items-center gap-2">
@@ -222,6 +227,7 @@
         v-model="cropBounds"
         class="col-span-full"
         :disabled="loading || width <= 0"
+        @edit-end="(field) => emit('editEnd', `crop:${field}`)"
       />
 
       <div
@@ -253,13 +259,13 @@ import { clamp } from 'es-toolkit'
 
 import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
 import Loader from '@/components/loader/Loader.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import VideoCropOverlay from '@/components/videoEdit/VideoCropOverlay.vue'
 import VideoFilmstripTrim from '@/components/videoEdit/VideoFilmstripTrim.vue'
 import { useCropRatioLock } from '@/composables/video/useCropRatioLock'
@@ -305,6 +311,7 @@ const {
 const emit = defineEmits<{
   retry: []
   loadError: []
+  editEnd: [mergeKey?: string]
 }>()
 
 const startFrame = defineModel<number>('startFrame', { default: 0 })
@@ -369,7 +376,8 @@ function handleVideoTimeUpdate() {
 const { lockedRatio, ratioKeys, selectedRatio, isLockEnabled, canLockRatio } =
   useCropRatioLock(cropBounds, {
     sourceWidth: toRef(() => width),
-    sourceHeight: toRef(() => height)
+    sourceHeight: toRef(() => height),
+    onEditEnd: () => emit('editEnd')
   })
 
 const startFrameWidget = computed(

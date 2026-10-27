@@ -1,22 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
-import { sessionBillingScopeSource } from './billingScope.js'
-import type { BillingSession, BillingTransport } from './billingContracts.js'
+import type { SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
+import { sessionBillingScopeSource } from './billingScope'
+import type { BillingSession, BillingTransport } from './billingContracts'
 import {
   CAPABILITY_REVISION_HEADER,
   createCapabilitiesReader,
   readCapabilityRevision
-} from './capabilities.js'
-import { createSessionBillingTransport } from './transport.js'
+} from './capabilities'
+import { createSessionBillingTransport } from './transport'
 import {
   authenticated,
   credential,
   fakeTransport,
   httpOk
-} from './__fixtures__/billingTestFixtures.js'
-import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
+} from './__fixtures__/billingTestFixtures'
+import type { SessionFake } from './__fixtures__/billingTestFixtures'
 
 function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
   let snapshot = initial
@@ -55,6 +55,7 @@ const CAPABILITIES = {
   can_edit_workspace: false,
   can_manage_auto_top_up: false,
   can_manage_subscription: false,
+  can_open_plans: false,
   can_run_workflows: false,
   can_upgrade: false,
   can_subscribe_self_serve: false,
@@ -97,6 +98,79 @@ describe('createCapabilitiesReader', () => {
     })
     expect(result.value.rolloutDefaultsApplied.can_top_up).toBe(true)
   })
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: undefined, expected: undefined }
+  ])(
+    'keeps payment_recovery_available $served instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined ? {} : { payment_recovery_available: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.paymentRecoveryAvailable).toBe(expected)
+    }
+  )
+
+  it.for([
+    { served: 'sales_managed', expected: 'sales_managed' },
+    { served: 'self_serve', expected: 'self_serve' },
+    { served: undefined, expected: undefined }
+  ] as const)(
+    'keeps plan_kind $served instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(served === undefined ? {} : { plan_kind: served })
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.planKind).toBe(expected)
+    }
+  )
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: undefined, expected: undefined }
+  ])(
+    'keeps has_parked_billing_operation $served instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined ? {} : { has_parked_billing_operation: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.hasParkedBillingOperation).toBe(expected)
+    }
+  )
 
   it.for([true, false])(
     'preserves can_manage_members=%s from the server',

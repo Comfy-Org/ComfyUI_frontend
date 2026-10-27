@@ -2,6 +2,7 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
@@ -78,6 +79,10 @@ vi.mock<unknown>(import('@/services/extensionService'), () => ({
 }))
 
 vi.mock(import('@/utils/litegraphUtil'))
+
+vi.mock(import('@comfyorg/design-system/common/VerticalDivider'), () => ({
+  default: defineComponent({ template: '<div class="vertical-divider" />' })
+}))
 
 vi.mock(import('@/utils/nodeFilterUtil'), () => ({
   isOutputNode: vi.fn(() => false),
@@ -180,8 +185,7 @@ describe('SelectionToolbox', () => {
           MoreOptions: {
             template:
               '<button data-testid="more-options-button" class="more-options" />'
-          },
-          VerticalDivider: { template: '<div class="vertical-divider" />' }
+          }
         }
       }
     })
@@ -410,8 +414,10 @@ describe('SelectionToolbox', () => {
           ])
         },
         registerExtension: vi.fn(),
+        registerExtensionNow: vi.fn(),
         invokeExtensions: vi.fn(() => ['test-command']),
-        invokeExtensionsAsync: vi.fn()
+        invokeExtensionsAsync: vi.fn(),
+        invokeStartupHook: vi.fn(async () => [])
       } as ReturnType<typeof useExtensionService>)
 
       setCanvasSelection([new LGraphNode('Test Node')])
@@ -495,7 +501,9 @@ describe('SelectionToolbox', () => {
       expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
 
       await vi.advanceTimersByTimeAsync(500)
-      expect(screen.getByRole('tooltip')).toHaveTextContent('More Options')
+      expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
+        'More Options'
+      )
     })
   })
 })

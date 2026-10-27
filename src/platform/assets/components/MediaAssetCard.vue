@@ -155,9 +155,9 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
-import IconGroup from '@/components/button/IconGroup.vue'
-import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
-import Button from '@/components/ui/button/Button.vue'
+import IconGroup from '@comfyorg/design-system/button-group/IconGroup'
+import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
+import Button from '@comfyorg/design-system/button/Button'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -168,18 +168,22 @@ import {
 } from '@/utils/formatUtil'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
-import { getAssetType } from '../composables/media/assetMappers'
-import { startAssetDrag } from '../utils/assetDragUtil'
-import { getAssetFileUrl, getAssetUrl } from '../utils/assetUrlUtil'
-import { useMediaAssetActions } from '../composables/useMediaAssetActions'
-import type { AssetItem } from '../schemas/assetSchema'
+import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
+import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
+import {
+  getAssetInlineMediaUrl,
+  getAssetUrl,
+  resolveMediaSrc
+} from '@/platform/assets/utils/assetUrlUtil'
+import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetDisplayName,
   resolveDisplayImageDimensions
-} from '../utils/assetMetadataUtils'
-import type { MediaKind } from '../schemas/mediaAssetSchema'
-import { MediaAssetKey } from '../schemas/mediaAssetSchema'
-import MediaTitle from './MediaTitle.vue'
+} from '@/platform/assets/utils/assetMetadataUtils'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
+import MediaTitle from '@comfyorg/design-system/media/MediaTitle'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
 
@@ -273,10 +277,9 @@ const adaptedAsset = computed(() => {
     src:
       fileKind.value === '3D'
         ? getAssetUrl(asset)
-        : asset.thumbnail_url ||
-          asset.preview_url ||
+        : resolveMediaSrc(asset.thumbnail_url || asset.preview_url) ||
           (fileKind.value === 'video' || fileKind.value === 'audio'
-            ? getAssetFileUrl(asset, { disposition: 'inline' })
+            ? getAssetInlineMediaUrl(asset)
             : ''),
     preview_url: asset.preview_url,
     preview_id: asset.preview_id,

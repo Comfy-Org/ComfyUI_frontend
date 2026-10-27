@@ -101,6 +101,9 @@ export interface FakeBillingClient {
   readonly createTopupCheckout: Mock<
     BillingClient['topup']['createTopupCheckout']
   >
+  readonly createInteractiveTopup: Mock<
+    BillingClient['topup']['createInteractiveTopup']
+  >
   readonly readCapabilities: Mock<BillingClient['capabilities']['read']>
   readonly invalidateCapabilities: BillingClient['capabilities']['invalidate']
   readonly readStatus: Mock<BillingClient['status']['read']>
@@ -214,6 +217,12 @@ export function createFakeBillingClient(
     if ('operation' in topupOutcome) publishOperation(topupOutcome.operation)
     return topupOutcome
   })
+  const createInteractiveTopup: Mock<
+    BillingClient['topup']['createInteractiveTopup']
+  > = vi.fn(async () => {
+    if ('operation' in topupOutcome) publishOperation(topupOutcome.operation)
+    return topupOutcome
+  })
   const cancelSubscription = commandOf(cancelOutcome)
   const cancelOperation: Mock<BillingClient['commands']['cancelOperation']> =
     vi.fn(async () => cancelOperationOutcome)
@@ -228,6 +237,7 @@ export function createFakeBillingClient(
       can_manage_auto_top_up: false,
       can_manage_members: false,
       can_manage_subscription: false,
+      can_open_plans: false,
       can_delete_workspace: false,
       can_leave_workspace: false,
       can_manage_billing: false,
@@ -334,6 +344,7 @@ export function createFakeBillingClient(
     topup: {
       quoteTopup,
       createTopupCheckout,
+      createInteractiveTopup,
       createHostedTopupCheckout: unusedByHostedSurfaces(
         'topup.createHostedTopupCheckout'
       )
@@ -383,6 +394,7 @@ export function createFakeBillingClient(
     recover,
     quoteTopup,
     createTopupCheckout,
+    createInteractiveTopup,
     readCapabilities,
     invalidateCapabilities,
     readStatus,
