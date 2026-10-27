@@ -42,9 +42,9 @@ const emit = defineEmits<{
 const WIDE_MIN_WIDTH = 576
 const CARD_SHELL =
   'grid max-h-[85dvh] overflow-y-auto overscroll-contain rounded-2xl border bg-background shadow-2xl'
-const MEDIA_SHELL = 'w-full object-cover'
+const MEDIA_SHELL = 'w-full rounded-lg object-cover'
 const FALLBACK_SHELL =
-  'grid w-full place-items-center bg-secondary text-xs text-muted-foreground'
+  'grid w-full place-items-center rounded-lg bg-secondary text-xs text-muted-foreground'
 const COPY_SHELL = 'my-0 text-sm/5 text-muted-foreground'
 const SECTION_SHELL = 'flex min-w-0 flex-col gap-3'
 const FOOTER_WIDE =
@@ -56,9 +56,9 @@ const LAYOUTS = {
   stacked: {
     width: 'w-[min(600px,calc(100vw-2rem))]',
     card: cn(CARD_SHELL, 'gap-0 p-0'),
-    videoWrap: 'w-full min-w-0',
-    media: cn(MEDIA_SHELL, 'aspect-video rounded-none'),
-    fallback: cn(FALLBACK_SHELL, 'aspect-video rounded-none'),
+    videoWrap: 'w-full min-w-0 p-2',
+    media: cn(MEDIA_SHELL, 'aspect-video'),
+    fallback: cn(FALLBACK_SHELL, 'aspect-video'),
     heading: 'my-0 text-2xl/7.5',
     copy: COPY_SHELL,
     contentWrap: 'flex min-w-0 flex-col',
@@ -70,9 +70,10 @@ const LAYOUTS = {
   compact: {
     width: 'w-[min(600px,calc(100vw-2rem))]',
     card: cn(CARD_SHELL, 'h-[85dvh] grid-rows-[minmax(0,1fr)_auto] gap-0 p-0'),
-    videoWrap: 'min-h-0 w-full overflow-hidden [&>div]:h-full [&>div]:w-full',
-    media: cn(MEDIA_SHELL, 'h-full rounded-none'),
-    fallback: cn(FALLBACK_SHELL, 'h-full rounded-none'),
+    videoWrap:
+      'min-h-0 w-full overflow-hidden p-2 [&>div]:h-full [&>div]:w-full',
+    media: cn(MEDIA_SHELL, 'h-full'),
+    fallback: cn(FALLBACK_SHELL, 'h-full'),
     heading: 'my-0 text-2xl/7.5 text-[22px]/7',
     copy: cn(COPY_SHELL, 'text-[13px]/4.5'),
     contentWrap: 'flex min-w-0 flex-col',
@@ -83,14 +84,14 @@ const LAYOUTS = {
   },
   columns: {
     width: 'w-[min(960px,calc(100vw-2rem))]',
-    card: cn(CARD_SHELL, 'grid-cols-2 items-stretch gap-x-7 p-5'),
+    card: cn(CARD_SHELL, 'grid-cols-2 items-stretch gap-x-7 p-2'),
     videoWrap:
       'flex h-0 min-h-full w-full min-w-0 items-center justify-center self-stretch overflow-hidden rounded-lg [&>div]:h-full [&>div]:w-auto',
     media: 'aspect-video h-full w-auto rounded-lg object-cover',
-    fallback: cn(FALLBACK_SHELL, 'aspect-video h-full w-auto rounded-lg'),
+    fallback: cn(FALLBACK_SHELL, 'aspect-video h-full w-auto'),
     heading: 'my-0 text-2xl/7.5',
     copy: COPY_SHELL,
-    contentWrap: 'flex min-w-0 flex-col justify-between gap-3.5',
+    contentWrap: 'flex min-w-0 flex-col justify-between gap-3.5 pt-3 pr-3 pb-3',
     section: cn(SECTION_SHELL, 'gap-2.5'),
     sectionNarrow: cn(SECTION_SHELL, 'gap-2.5'),
     footer: FOOTER_WIDE,
