@@ -22,15 +22,7 @@ const test = mergeTests(agentTest, webSocketFixture)
 const FIRST_PROMPT = 'What is on my canvas?'
 const SECOND_PROMPT = 'Describe the focused canvas.'
 
-const PERMANENTLY_REFUSED_SUBSCRIBE = {
-  type: 'doc_subscribed',
-  data: {
-    v: DOC_PROTOCOL_VERSION,
-    workflow_id: BOUND_WORKFLOW_ID,
-    ok: false,
-    code: 'schema_version_mismatch'
-  }
-}
+type PermanentRefusalCode = 'schema_version_mismatch' | 'catalog_mismatch'
 
 function parsePosted(raw: string | undefined): AgentPostMessageRequest {
   expect(raw, 'a message body must have been POSTed').toBeTruthy()
@@ -53,8 +45,23 @@ function draftNodeCount(body: AgentPostMessageRequest): number {
   return nodes.length
 }
 
-function refuseDocSubscribePermanently(ws: WebSocketRoute): void {
-  ws.send(JSON.stringify(PERMANENTLY_REFUSED_SUBSCRIBE))
+function refuseDocSubscribePermanently(
+  ws: WebSocketRoute,
+  code: PermanentRefusalCode = 'schema_version_mismatch',
+  message?: string
+): void {
+  ws.send(
+    JSON.stringify({
+      type: 'doc_subscribed',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: BOUND_WORKFLOW_ID,
+        ok: false,
+        code,
+        message
+      }
+    })
+  )
 }
 
 async function pushTurnDoneOnceTurnIsActive(
@@ -187,43 +194,62 @@ test.describe(
       ).toBe(nodeCount)
     })
 
-    test('second turn still carries the populated graph when the follower is refused the bound document', async ({
-      agentPanel,
-      comfyPage,
-      postedMessages,
-      getAgentSocket
-    }) => {
-      test.setTimeout(45_000)
+    for (const { code, message, detail, requiredText } of [
+      {
+        code: 'schema_version_mismatch',
+        message: 'Expected schema 2, found 1',
+        detail: `${enMessages.agent.workflowSyncFailedDetail} (Expected schema 2, found 1)`,
+        requiredText: 'Your canvas has been left unchanged.'
+      },
+      {
+        code: 'catalog_mismatch',
+        message:
+          'the document was minted under a different widget catalog; retrying will not help',
+        detail: enMessages.agent.workflowSyncFailedDetailCatalogMismatch,
+        requiredText: 'Your next message sends your canvas'
+      }
+    ] as const) {
+      test(`second turn still carries the populated graph when the follower is refused the bound document (${code})`, async ({
+        agentPanel,
+        comfyPage,
+        postedMessages,
+        getAgentSocket
+      }) => {
+        test.setTimeout(45_000)
 
-      const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
-      expect(nodeCount).toBeGreaterThanOrEqual(3)
+        const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+        expect(nodeCount).toBeGreaterThanOrEqual(3)
 
-      await agentPanel.open()
-      const userBubbles = agentPanel.root.getByTestId('user-message-bubble')
-      const ws = await getAgentSocket()
+        await agentPanel.open()
+        const userBubbles = agentPanel.root.getByTestId('user-message-bubble')
+        const ws = await getAgentSocket()
 
-      await agentPanel.sendMessage(FIRST_PROMPT)
-      await expect.poll(() => postedMessages.length).toBe(1)
-      await pushTurnDoneOnceTurnIsActive(userBubbles, [FIRST_PROMPT], ws)
-      await expectTurnSettled(agentPanel)
+        await agentPanel.sendMessage(FIRST_PROMPT)
+        await expect.poll(() => postedMessages.length).toBe(1)
+        await pushTurnDoneOnceTurnIsActive(userBubbles, [FIRST_PROMPT], ws)
+        await expectTurnSettled(agentPanel)
 
-      await test.step('the host permanently refuses the bound document and the user is told', async () => {
-        refuseDocSubscribePermanently(ws)
-        await expect(
-          comfyPage.toast.withText(enMessages.agent.workflowSyncFailedTitle)
-        ).toHaveCount(1)
-        await comfyPage.toast.closeToasts()
+        await test.step('the host permanently refuses the bound document and the user is told', async () => {
+          refuseDocSubscribePermanently(ws, code, message)
+          const toast = comfyPage.toast.toastErrors.filter({
+            hasText: enMessages.agent.workflowSyncFailedTitle
+          })
+          await expect(toast).toHaveCount(1)
+          await expect(toast.getByText(detail, { exact: true })).toHaveCount(1)
+          await expect(toast).toContainText(requiredText)
+          await comfyPage.toast.closeToasts()
+        })
+
+        await agentPanel.sendMessage(SECOND_PROMPT)
+        await expect.poll(() => postedMessages.length).toBe(2)
+        const second = parsePosted(postedMessages[1])
+
+        expect(second.workflow_id).toBe(BOUND_WORKFLOW_ID)
+        expect(
+          draftNodeCount(second),
+          'a refused follower owns nothing, so the turn must carry the populated graph or the agent reads an empty canvas'
+        ).toBe(nodeCount)
       })
-
-      await agentPanel.sendMessage(SECOND_PROMPT)
-      await expect.poll(() => postedMessages.length).toBe(2)
-      const second = parsePosted(postedMessages[1])
-
-      expect(second.workflow_id).toBe(BOUND_WORKFLOW_ID)
-      expect(
-        draftNodeCount(second),
-        'a refused follower owns nothing, so the turn must carry the populated graph or the agent reads an empty canvas'
-      ).toBe(nodeCount)
-    })
+    }
   }
 )
