@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   getSettingInfo,
@@ -53,6 +54,7 @@ export function useSettingUI(
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
+  const { canManageMembers } = useBillingCapabilities()
   const settingStore = useSettingStore()
   const activeCategory = ref<SettingTreeNode | null>(null)
 
@@ -212,7 +214,10 @@ export function useSettingUI(
     const planPanel = flags.unifiedBillingSettingsEnabled
       ? billingPanel
       : planCreditsPanel
-    const workspacePanels = isCloud ? [planPanel, membersPanel] : [planPanel]
+    const workspacePanels =
+      isCloud || canManageMembers.value
+        ? [planPanel, membersPanel]
+        : [planPanel]
     return shouldShowWorkspaceAllowlist.value
       ? [...workspacePanels, allowlistPanel]
       : workspacePanels
