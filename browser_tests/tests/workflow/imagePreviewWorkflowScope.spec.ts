@@ -2,6 +2,8 @@ import type { Route } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { UserDataHelper } from '@e2e/fixtures/helpers/UserDataHelper'
+import type { WorkspaceStore } from '@e2e/types/globals'
 import {
   hasHandledImageLoad,
   restoreImageSrc,
@@ -13,11 +15,17 @@ for (const mode of ['canvas', 'vue'] as const) {
     `Image preview workflow scope (${mode} mode)`,
     { tag: mode === 'vue' ? ['@vue-nodes'] : [] },
     () => {
-      test('a late preview load does not land on a reopened workflow node with the same id', async ({
+      test('a late preview load does not land on another workflow node with the same id', async ({
         comfyPage
       }) => {
         const { page } = comfyPage
         const workflowB = `preview-scope-b-${Date.now().toString(36)}`
+        const workflowBFile = `workflows/${workflowB}.json`
+        const userData = new UserDataHelper(
+          comfyPage.request,
+          comfyPage.id,
+          comfyPage.url
+        )
         function firstNodeState() {
           return page.evaluate(() => {
             const node = window.app!.graph.nodes.at(0)
@@ -31,20 +39,6 @@ for (const mode of ['canvas', 'vue'] as const) {
           })
         }
 
-        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-        await comfyPage.searchBoxV2.addNode('Load Image')
-        await expect
-          .poll(async () => (await firstNodeState())?.imgs)
-          .toBeGreaterThan(0)
-        const { id: sharedId } = (await firstNodeState())!
-
-        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-        await comfyPage.searchBoxV2.addNode('Load LoRA')
-        await expect
-          .poll(firstNodeState)
-          .toEqual({ id: sharedId, type: 'LoraLoaderModelOnly' })
-        await comfyPage.menu.topbar.saveWorkflow(workflowB)
-
         const held: Route[] = []
         await page.route('**/api/view?**', async (route) => {
           if (route.request().url().includes('example.png')) held.push(route)
@@ -53,14 +47,41 @@ for (const mode of ['canvas', 'vue'] as const) {
 
         try {
           await trackHandledImageLoads(page)
-          await comfyPage.menu.topbar.closeWorkflowTab(workflowB)
-          await comfyPage.workflow.waitForWorkflowIdle()
+          await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+          const { id } = await comfyPage.nodeOps.addNode('LoadImage')
+          const sharedId = String(id)
           await expect.poll(() => held.length).toBeGreaterThan(0)
 
+          await userData.write(workflowBFile, {
+            last_node_id: Number(id),
+            last_link_id: 0,
+            nodes: [
+              {
+                id: Number(id),
+                type: 'LoraLoaderModelOnly',
+                pos: [100, 100],
+                size: [315, 82],
+                flags: {},
+                order: 0,
+                mode: 0,
+                properties: {},
+                widgets_values: []
+              }
+            ],
+            links: [],
+            groups: [],
+            config: {},
+            extra: {},
+            version: 0.4
+          })
+          await page.evaluate(() =>
+            (
+              window.app!.extensionManager as WorkspaceStore
+            ).workflow.syncWorkflows()
+          )
           const workflowsTab = comfyPage.menu.workflowsTab
           await workflowsTab.open()
           await workflowsTab.getPersistedItem(workflowB).dblclick()
-          await comfyPage.workflow.waitForWorkflowIdle()
           await expect
             .poll(firstNodeState)
             .toEqual({ id: sharedId, type: 'LoraLoaderModelOnly' })
@@ -77,7 +98,7 @@ for (const mode of ['canvas', 'vue'] as const) {
         } finally {
           await restoreImageSrc(page)
           await page.unroute('**/api/view?**')
-          await comfyPage.workflow.deleteWorkflow(workflowB)
+          await userData.delete(workflowBFile)
         }
       })
     }
