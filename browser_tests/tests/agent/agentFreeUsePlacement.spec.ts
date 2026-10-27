@@ -123,3 +123,45 @@ test.describe(
     })
   }
 )
+
+test.describe(
+  'Local Agent free-use notice',
+  { tag: ['@oss', '@agent', '@ui'] },
+  () => {
+    test('shows the local default only while an Agent grant is available', async ({
+      page
+    }) => {
+      await bootAgentApp(page, true, {
+        features: { enable_telemetry: true },
+        billingStatus: billingStatus({ grantHeld: true })
+      })
+      const agentPanel = new AgentPanel(page)
+
+      await agentPanel.open()
+
+      const notice = agentPanel.root.getByRole('note', {
+        name: 'Free use notice'
+      })
+      await expect(notice).toBeVisible()
+      await expect(notice).toHaveAttribute('data-placement', 'near-composer')
+    })
+
+    test('makes no free-use claim when the local account has no Agent grant', async ({
+      page
+    }) => {
+      const billingRead = page.waitForResponse('**/api/billing/status')
+      await bootAgentApp(page, true, {
+        features: { enable_telemetry: true },
+        billingStatus: billingStatus({ grantHeld: false })
+      })
+      const agentPanel = new AgentPanel(page)
+
+      await agentPanel.open()
+      await billingRead
+
+      await expect(
+        agentPanel.root.getByRole('note', { name: 'Free use notice' })
+      ).toBeHidden()
+    })
+  }
+)
