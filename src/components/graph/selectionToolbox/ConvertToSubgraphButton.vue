@@ -7,7 +7,7 @@
     data-testid="convert-to-subgraph-button"
     @click="() => commandStore.execute('Comfy.Graph.UnpackSubgraph')"
   >
-    <i class="icon-[lucide--expand] size-4" />
+    <i class="icon-[lucide--expand]" />
   </Button>
   <Button
     v-else-if="isConvertVisible"
@@ -18,14 +18,14 @@
     data-testid="convert-to-subgraph-button"
     @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
   >
-    <i class="icon-[lucide--shrink] size-4" />
+    <i class="icon-[lucide--shrink]" />
   </Button>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCommandStore } from '@/stores/commandStore'
 

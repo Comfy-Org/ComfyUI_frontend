@@ -88,13 +88,13 @@
 </template>
 
 <script setup lang="ts">
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Menu from '@/components/ui/menu/Menu.vue'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
