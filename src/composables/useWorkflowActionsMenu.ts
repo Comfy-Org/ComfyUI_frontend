@@ -89,10 +89,7 @@ export function useWorkflowActionsMenu(
       if (prependSeparator && visible) items.push({ separator: true })
       const item: WorkflowMenuAction = { id, label, icon, command, disabled }
       if (!visible) item.visible = false
-      if (newItemBadge) {
-        item.isNew = true
-        item.badge = newItemBadge
-      }
+      if (newItemBadge) item.badge = newItemBadge
       items.push(item)
     }
 

@@ -296,7 +296,7 @@ describe('useWorkflowActionsMenu', () => {
     const item = findItem(menuItems.value, 'breadcrumbsMenu.editBuilderMode')
 
     expect(item).toBeDefined()
-    expect(item.isNew).toBeTruthy()
+    expect(item.badge).toBe('g.experimental')
   })
 
   it('app mode toggle executes Comfy.ToggleLinear', async () => {
@@ -342,7 +342,6 @@ describe('useWorkflowActionsMenu', () => {
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const deploy = findItem(menuItems.value, 'deployToComfyApi.buttonLabel')
 
-    expect(deploy.isNew).toBe(true)
     expect(deploy.badge).toBe('g.new')
 
     const nested = useWorkflowActionsMenu(vi.fn(), { isRoot: false })
