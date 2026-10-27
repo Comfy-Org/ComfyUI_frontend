@@ -61,4 +61,42 @@ describe('Comfy.SlotDefaults', () => {
       expect.objectContaining({ errorType: 'error_registering_slot_defaults' })
     )
   })
+
+  it('keeps a table an extension replaces after node defs were queued', async () => {
+    respondToFetch(/\/object_info$/, () =>
+      Response.json({
+        PreviewImage: objectInfoEntry('PreviewImage', ['IMAGE', {}])
+      })
+    )
+    const defs = await app.getNodeDefs()
+    await slotDefaultsExtension.beforeRegisterNodeDef?.(
+      LGraphNode,
+      defs.PreviewImage,
+      app
+    )
+
+    LiteGraph.slot_types_default_out = { IMAGE: ['MyNode'] }
+
+    expect(LiteGraph.slot_types_default_out).toEqual({ IMAGE: ['MyNode'] })
+  })
+
+  it('reports a def whose output is not an array without failing the hook', async () => {
+    respondToFetch(/\/object_info$/, () =>
+      Response.json({
+        BadOutput: {
+          ...(objectInfoEntry('BadOutput', null) as object),
+          output: 7
+        }
+      })
+    )
+    const defs = await app.getNodeDefs()
+
+    expect(() =>
+      slotDefaultsExtension.beforeRegisterNodeDef?.(
+        LGraphNode,
+        defs.BadOutput,
+        app
+      )
+    ).not.toThrow()
+  })
 })

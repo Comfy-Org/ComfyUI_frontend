@@ -30,7 +30,7 @@ function snapshotSlotSpecs(nodeData: ComfyNodeDef): ComfyNodeDef {
       required: input.required && { ...input.required },
       optional: input.optional && { ...input.optional }
     },
-    output: output && [...output]
+    output: Array.isArray(output) ? [...output] : output
   }
 }
 
@@ -69,7 +69,8 @@ function registerSlotTypes(
     if (!(lowerType in LiteGraph.registered_slot_in_types)) {
       LiteGraph.registered_slot_in_types[lowerType] = { nodes: [] }
     }
-    LiteGraph.registered_slot_in_types[lowerType].nodes.push(nodeId)
+    const inNodes = LiteGraph.registered_slot_in_types[lowerType].nodes
+    if (!inNodes.includes(nodeId)) inNodes.push(nodeId)
   }
 
   for (const type of outputTypes) {
@@ -82,7 +83,8 @@ function registerSlotTypes(
     if (!(type in LiteGraph.registered_slot_out_types)) {
       LiteGraph.registered_slot_out_types[type] = { nodes: [] }
     }
-    LiteGraph.registered_slot_out_types[type].nodes.push(nodeId)
+    const outNodes = LiteGraph.registered_slot_out_types[type].nodes
+    if (!outNodes.includes(nodeId)) outNodes.push(nodeId)
 
     if (!LiteGraph.slot_types_out.includes(type)) {
       LiteGraph.slot_types_out.push(type)
