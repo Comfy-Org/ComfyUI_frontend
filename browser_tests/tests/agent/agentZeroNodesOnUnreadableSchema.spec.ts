@@ -308,7 +308,12 @@ test.describe(
       await expect(panel.getByRole('button', { name: STOP_LABEL })).toHaveCount(
         0
       )
-      await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
+      await expect(
+        panel.getByRole('button', {
+          name: enMessages.agent.workedNotConfirmedOnCanvas,
+          exact: true
+        })
+      ).toBeVisible()
 
       // The fix under test: the agent said it added the note, and the op is
       // on the host's own record (asserted above) -- both it and the earlier

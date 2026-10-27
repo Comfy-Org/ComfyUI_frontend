@@ -44,6 +44,7 @@ describe('api.getLogs', () => {
           enabled: true,
           connected: false,
           workflowId: 'doc-1',
+          terminal: null,
           updatesApplied: 0,
           lastFrameType: null,
           outcomes: {

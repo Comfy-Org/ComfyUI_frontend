@@ -27,6 +27,7 @@ import {
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
+import type { SubscribeGiveUpReason } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
@@ -100,6 +101,7 @@ interface AgentCrdtOutcomeCounters {
 interface ProjectionFrameId {
   opIds?: readonly string[]
   seq: number
+  isLive?: boolean
 }
 
 const NOTHING_APPLIED: FrameOutcome = {
@@ -109,6 +111,10 @@ const NOTHING_APPLIED: FrameOutcome = {
 
 function isAgentFrame(actor: string | undefined): boolean {
   return actor === undefined || actor.startsWith('agent:')
+}
+
+function projectionAppliedCleanly(outcome: FrameOutcome): boolean {
+  return outcome.applied && outcome.failureCount === 0
 }
 
 function reportAgentProjection(
@@ -221,10 +227,20 @@ function hasNodes(
   return Array.isArray(canvas?.nodes) && canvas.nodes.length > 0
 }
 
+/**
+ * The follower has stopped trying, so no later frame will arrive to confirm
+ * or deny a write: either the host refused a subscribe and the retry ladder
+ * is exhausted, or the merged document failed the schema read gate. Distinct
+ * from `connected: false`, which is also the state before the first subscribe
+ * is confirmed and says nothing about whether a write will land.
+ */
+type AgentCrdtTerminalState = SubscribeGiveUpReason | 'schema_error' | null
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
   workflowId: string | null
+  terminal: AgentCrdtTerminalState
   /**
    * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
    * `doc_reset` / `follower_replaced`). Not interchangeable with
@@ -248,6 +264,11 @@ function opsResultDropReason(
 }
 
 export interface AgentCrdtFollowerEvents {
+  onAppliedUpdate?: (event: {
+    workflowId: string
+    opIds: readonly string[]
+    isLive: boolean
+  }) => void
   onMaterialized?: (event: {
     workflowId: string
     actor: string | undefined
@@ -268,6 +289,19 @@ export interface AgentCrdtFollowerEvents {
    * single message for every permanent reason.
    */
   onSyncError?: (message?: string, code?: string) => void
+}
+
+function notifyAppliedUpdate(
+  update: ClassifiedDocUpdate,
+  outcome: FrameOutcome,
+  events: AgentCrdtFollowerEvents
+): void {
+  if (!outcome.applied || outcome.failureCount > 0) return
+  events.onAppliedUpdate?.({
+    workflowId: update.workflowId,
+    opIds: update.opIds ?? [],
+    isLive: !update.catchUp
+  })
 }
 
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
@@ -337,6 +371,7 @@ export function useAgentCrdtFollower(
     enabled: false,
     connected: false,
     workflowId: null,
+    terminal: null,
     updatesApplied: 0,
     lastFrameType: null,
     outcomes: {
@@ -412,6 +447,7 @@ function startAgentCrdtFollower(
   canvasFor: (workflowId: string) => Record<string, unknown> | null
 ) {
   const connected = ref(false)
+  const terminal = ref<AgentCrdtTerminalState>(null)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
@@ -431,8 +467,9 @@ function startAgentCrdtFollower(
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
     () => bridge.resubscribe(),
-    () => {
+    (reason) => {
       connected.value = false
+      terminal.value = reason
     }
   )
   const tabId = createUuidv4()
@@ -560,7 +597,11 @@ function startAgentCrdtFollower(
   }
   const retainPendingFrame = (update: ClassifiedDocUpdate): void => {
     const frames = pendingProjectionFrames.get(update.workflowId)
-    const frame = { opIds: update.opIds, seq: update.seq }
+    const frame = {
+      opIds: update.opIds,
+      seq: update.seq,
+      isLive: !update.catchUp
+    }
     if (frames) frames.push(frame)
     else pendingProjectionFrames.set(update.workflowId, [frame])
   }
@@ -573,6 +614,29 @@ function startAgentCrdtFollower(
     pendingProjectionFrames.delete(workflowId)
     for (const frame of frames ?? [])
       reportAgentProjection(frame, stage, outcome)
+  }
+  const notifyPendingFramesApplied = (
+    workflowId: string,
+    frames: readonly ProjectionFrameId[]
+  ): void => {
+    for (const frame of frames) {
+      events.onAppliedUpdate?.({
+        workflowId,
+        opIds: frame.opIds ?? [],
+        isLive: frame.isLive ?? true
+      })
+    }
+  }
+  const flushPendingFrames = (
+    workflowId: string,
+    outcome: FrameOutcome
+  ): void => {
+    if (projectionAppliedCleanly(outcome))
+      notifyPendingFramesApplied(
+        workflowId,
+        pendingProjectionFrames.get(workflowId) ?? []
+      )
+    reportPendingFrames(workflowId, 'applied_deferred', outcome)
   }
   const reportFrameProjection = (
     update: ClassifiedDocUpdate,
@@ -591,13 +655,20 @@ function startAgentCrdtFollower(
       if (isAgentFrame(update.actor)) retainPendingFrame(update)
       return
     }
-    if (stage === 'applied')
-      reportPendingFrames(update.workflowId, 'applied_deferred', outcome)
+    if (stage === 'applied') flushPendingFrames(update.workflowId, outcome)
     else reportPendingFrames(update.workflowId, 'discarded', NOTHING_APPLIED)
   }
   const applyCollected = (workflowId: string): void => {
+    const pendingFrames = pendingProjectionFrames.get(workflowId) ?? []
     const outcome = projection.applyCollected(workflowId)
     if (!outcome.applied) return
+    // Release note: upstream routes this through `settleCollectedProjection`,
+    // whose other half drives the projection-staleness latch (`main`'s
+    // `markProjectionStale` / `clearProjectionStaleness`). That latch does not
+    // exist on this release branch, so only the applied-frame notification is
+    // carried and the clean-apply test is inlined.
+    if (outcome.failureCount === 0)
+      notifyPendingFramesApplied(workflowId, pendingFrames)
     reportMaterialized(workflowId, outcome.createdNodeIds)
     reportPendingFrames(workflowId, 'applied_deferred', outcome)
   }
@@ -652,6 +723,7 @@ function startAgentCrdtFollower(
     if (detail.ok === true || code === RESEED_CONFLICT) return
     if (isRetryableReseedCode(code)) lifecycle.onSubscribeRefused(code)
     else lifecycle.stopProbing()
+    if (lifecycle.refusalIsFinal()) terminal.value = 'refused'
   }
 
   function handleRejectedSubscription(
@@ -662,9 +734,11 @@ function startAgentCrdtFollower(
       message?: unknown
     } | null
   ) {
-    const refusal = tryReseed()
+    const reseeding = tryReseed()
+    const refusal = reseeding
       ? { shouldNotify: false }
       : handleSubscribeRefusal(detail, lifecycle)
+    if (!reseeding && lifecycle.refusalIsFinal()) terminal.value = 'refused'
     releaseHeldOps()
     sender.abortIfUnbound()
     if (refusal.shouldNotify)
@@ -684,6 +758,7 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      terminal.value = null
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
@@ -702,6 +777,7 @@ function startAgentCrdtFollower(
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     const outcome = applyFrame(update)
+    notifyAppliedUpdate(update, outcome, events)
     const nodes = outcome.nodes
     const created = outcome.applied ? outcome.createdNodeIds : []
     reportFrameProjection(update, outcome)
@@ -791,6 +867,7 @@ function startAgentCrdtFollower(
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
+    terminal.value = 'schema_error'
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     const detail =
@@ -843,6 +920,7 @@ function startAgentCrdtFollower(
   }
   const onReconnected: EventListener = () => {
     connected.value = false
+    terminal.value = null
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
     bridge.reconnect()
@@ -1013,6 +1091,7 @@ function startAgentCrdtFollower(
       const justActivated = isActivationEdge(active, previous)
       if (acknowledgesFollowedDoc(next, active, justActivated)) return
       lifecycle.clearForRetarget()
+      terminal.value = null
       connected.value = false
       pendingLiveNodeIds.clear()
       if (!active) {
@@ -1063,6 +1142,7 @@ function startAgentCrdtFollower(
     enabled: true,
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
+    terminal: terminal.value,
     updatesApplied: updatesApplied.value,
     lastFrameType: lastFrameType.value,
     outcomes: outcomes.value

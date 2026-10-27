@@ -861,7 +861,7 @@ describe('useAgentCrdtFollower', () => {
   it('PM-1604 / BE-11437: does not retry schema_version_mismatch and surfaces it', () => {
     vi.useFakeTimers()
     const onSyncError = vi.fn()
-    const { unmount } = mountFollower('wf-1', true, () => null, {
+    const { unmount, status } = mountFollower('wf-1', true, () => null, {
       onSyncError
     })
 
@@ -880,6 +880,27 @@ describe('useAgentCrdtFollower', () => {
       'Expected schema 2, found 1',
       'schema_version_mismatch'
     )
+    expect(status().terminal).toBe('refused')
+
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    expect(status().terminal).toBeNull()
+    unmount()
+  })
+
+  it('clears a terminal refusal when the bound workflow changes', async () => {
+    const { unmount, status, workflowId } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'schema_version_mismatch'
+    })
+    expect(status().terminal).toBe('refused')
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    expect(status().terminal).toBeNull()
+    expect(status().workflowId).toBe('wf-2')
     unmount()
   })
 
@@ -986,6 +1007,37 @@ describe('useAgentCrdtFollower', () => {
     expect(status().updatesApplied).toBe(3)
     expect(status().lastFrameType).toBe('doc_update')
     expect(projectionState.applyFrame).toHaveBeenCalledWith(update)
+    unmount()
+  })
+
+  it('reports exact workflow/op evidence after live and catch-up frames apply', () => {
+    const onAppliedUpdate = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onAppliedUpdate
+    })
+
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 7,
+      opIds: ['op-1', 'op-2']
+    })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 8,
+      opIds: ['op-catch-up'],
+      catchUp: true
+    })
+
+    expect(onAppliedUpdate).toHaveBeenNthCalledWith(1, {
+      workflowId: 'wf-1',
+      opIds: ['op-1', 'op-2'],
+      isLive: true
+    })
+    expect(onAppliedUpdate).toHaveBeenNthCalledWith(2, {
+      workflowId: 'wf-1',
+      opIds: ['op-catch-up'],
+      isLive: false
+    })
     unmount()
   })
 
@@ -1422,6 +1474,51 @@ describe('useAgentCrdtFollower', () => {
           apply_failure_count: 2
         }
       ])
+      unmount()
+    })
+
+    it.for([
+      {
+        name: 'reports deferred op evidence once a later live frame applies it cleanly',
+        failureCount: 0,
+        expected: [
+          { workflowId: 'wf-1', opIds: ['op-b'], isLive: true },
+          { workflowId: 'wf-1', opIds: ['op-a'], isLive: true }
+        ]
+      },
+      {
+        name: 'withholds deferred op evidence when the later live frame fails to apply',
+        failureCount: 1,
+        expected: []
+      }
+    ])('$name', ({ failureCount, expected }) => {
+      const graph = shallowRef<LGraph | null>(null)
+      const onAppliedUpdate = vi.fn()
+      const { unmount } = mountFollower('wf-1', true, () => graph.value, {
+        onAppliedUpdate
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: ['3'], removed: [] })
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn-a',
+        opIds: ['op-a']
+      })
+
+      graph.value = fakeGraph
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: ['3'], removed: [] }, failureCount)
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'agent:thread:turn-b',
+        opIds: ['op-b']
+      })
+
+      expect(onAppliedUpdate.mock.calls.flat()).toEqual(expected)
       unmount()
     })
 
@@ -2769,6 +2866,7 @@ describe('useAgentCrdtFollower', () => {
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
 
     expect(status().connected).toBe(false)
+    expect(status().terminal).toBe('timeout')
     expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
     expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
@@ -2788,6 +2886,7 @@ describe('useAgentCrdtFollower', () => {
 
     apiState.target.dispatchEvent(new Event('reconnected'))
     expect(bridge().reconnect).toHaveBeenCalledOnce()
+    expect(status().terminal).toBeNull()
     dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(3)

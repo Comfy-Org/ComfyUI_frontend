@@ -232,6 +232,15 @@ const zAgentThinkingData = z
   })
   .passthrough()
 
+/**
+ * Release note: upstream derives this from the generated
+ * `zAgentToolCallData`, which this branch's `@comfyorg/ingest-types` does not
+ * export yet. The four PM-1637 correlation fields are therefore written out
+ * here with the same shapes the generated schema gives them, and each is
+ * `.catch(undefined)` for the same reason upstream relaxes them: a terminal
+ * frame whose correlation metadata is malformed must still parse as a tool
+ * call, and then reads as uncorrelated rather than dropping the frame.
+ */
 const zAgentToolCallData = z
   .object({
     tool_call_id: z.string(),
@@ -241,7 +250,22 @@ const zAgentToolCallData = z
     args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
-    thread_id: z.string()
+    thread_id: z.string(),
+    workflow_id: z.string().min(1).optional().catch(undefined),
+    op_ids: z
+      .array(
+        z
+          .string()
+          .min(1)
+          .max(128)
+          .regex(/^[^\x00\n\r\t]+$/)
+      )
+      .min(1)
+      .max(256)
+      .optional()
+      .catch(undefined),
+    doc_seq: z.int().gte(1).optional().catch(undefined),
+    doc_lineage_seq: z.int().gte(1).optional().catch(undefined)
   })
   .passthrough()
 
