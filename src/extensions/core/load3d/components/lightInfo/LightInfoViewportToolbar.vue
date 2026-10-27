@@ -89,7 +89,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
 import {
   lightPositionApplies,

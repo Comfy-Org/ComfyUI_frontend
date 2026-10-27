@@ -79,15 +79,17 @@ offer retries when that surface clears. `agent_consent_offer_exited` covers
 every other ending. Some exits are correct (`consent_already_accepted`,
 `card_already_seen`, `activation_window_complete`) and the rest are offers that
 were owed and not made, so split queries by `exit`; a total is not a quantity.
+Unreadable storage also reports `activation_window_complete`, since the launch
+count cannot be read.
 There is no exit for "the agent flag is off": it would fire on every page load
 outside the rollout, and every event already carries
 `$feature/agent-in-app-experience`.
 
-Each exit is reported once per page load per (`stage`, `exit`), except at the
-`request` stage, which is not deduplicated: the automatic path reaches it at
-most once per consent scope per page load and the button once per click, so a
-repeat there is a repeated attempt. Compare counts within one (`stage`, `exit`)
-pair, never across stages.
+Outside the request stage, exits are deduplicated per page load by
+(`stage`, `exit`, `retry_armed`). The request stage records each attempt
+without deduplication, including automatic retries after a pre-display hold.
+Compare counts within the same stage, exit and retry state; do not sum across
+stages.
 
 ## First-use tour
 

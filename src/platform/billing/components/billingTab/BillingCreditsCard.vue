@@ -152,7 +152,7 @@ import {
   formatCredits,
   formatCreditsFromCents
 } from '@/base/credits/comfyCredits'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { CreditsCardState } from '@/platform/billing/components/billingTab/creditsCard'
 
 const {

@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { unrefElement, whenever } from '@vueuse/core'
-import { PopoverTrigger } from 'reka-ui'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
+import ToastPanel from '@comfyorg/design-system/toast/ToastPanel'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
-import Button from '@/components/ui/button/Button.vue'
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import Button from '@comfyorg/design-system/button/Button'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TaskId } from '@/platform/tasks/services/taskService'
@@ -135,7 +134,7 @@ async function cancelDownload(taskId: TaskId) {
           {{ t('progressToast.importingModels') }}
         </h3>
         <div class="flex items-center gap-2">
-          <Popover v-model:open="isFilterOpen">
+          <PopoverRoot v-model:open="isFilterOpen">
             <PopoverTrigger as-child>
               <Button
                 ref="filterAnchor"
@@ -150,7 +149,6 @@ async function cancelDownload(taskId: TaskId) {
             </PopoverTrigger>
             <PopoverContent
               align="end"
-              :collision-padding="8"
               class="w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
             >
               <div
@@ -173,7 +171,7 @@ async function cancelDownload(taskId: TaskId) {
                 </Button>
               </div>
             </PopoverContent>
-          </Popover>
+          </PopoverRoot>
         </div>
       </div>
 

@@ -29,11 +29,12 @@
         {{ copy.changePaymentMethod }}
       </CheckoutButton>
     </div>
-    <CheckoutSavedMethodSelect
+    <SingleSelect
       v-else
       v-model="selectedMethod"
-      :label="copy.selectLabel"
-      :options="options"
+      :accessible-label="copy.selectLabel"
+      :options
+      size="lg"
     />
   </div>
 </template>
@@ -48,10 +49,10 @@
 import { computed } from 'vue'
 
 import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
+import SingleSelect from '@comfyorg/design-system/single-select/SingleSelect'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CheckoutButton from './CheckoutButton.vue'
-import CheckoutSavedMethodSelect from './CheckoutSavedMethodSelect.vue'
 import type { CheckoutSavedMethodCopy } from './checkoutCopy'
 
 const ADD_NEW = 'add-new'

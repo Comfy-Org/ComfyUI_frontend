@@ -59,7 +59,7 @@ import { ref } from 'vue'
 import type { AssetInfo } from '@comfyorg/ingest-types'
 import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { items } = defineProps<{
   items: AssetInfo[]

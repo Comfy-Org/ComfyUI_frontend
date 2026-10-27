@@ -162,11 +162,11 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'
 import LocateNodeButton from './LocateNodeButton.vue'
-import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
+import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 
 import type { ErrorCardData, ErrorItem } from './types'
 import { useErrorActions } from './useErrorActions'

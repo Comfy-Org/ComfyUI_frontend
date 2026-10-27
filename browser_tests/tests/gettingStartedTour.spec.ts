@@ -46,7 +46,6 @@ const QUEUED_PROMPT: PromptResponse = {
 }
 
 const TOUR_FEATURE_FLAGS: RemoteConfig = {
-  onboarding_tour_enabled: true,
   subscription_required: true
 }
 
@@ -209,8 +208,7 @@ test.describe(
       initialSettings: {
         'Comfy.TutorialCompleted': false,
         'Comfy.OnboardingCoachmarks.Seen': ['appMode']
-      },
-      initialFeatureFlags: { onboarding_tour_enabled: true }
+      }
     })
 
     test.beforeEach(async ({ page }) => {

@@ -72,15 +72,6 @@ function automaticActivationVisitsComplete(): boolean {
   }
 }
 
-function activationVisitsReadable(): boolean {
-  try {
-    localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)
-    return true
-  } catch {
-    return false
-  }
-}
-
 let registered = false
 
 export function registerAgentPanelExtension(): void {
@@ -181,7 +172,6 @@ export function registerAgentPanelExtension(): void {
 
       const consentCardSeenIn = new Set<string>()
       const launchInActivationWindow = !automaticActivationVisitsComplete()
-      const launchStorageReadable = activationVisitsReadable()
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
         () => {
@@ -279,11 +269,6 @@ export function registerAgentPanelExtension(): void {
 
       function prepareStartupPanel(): boolean {
         if (!introductionOwed()) {
-          dropHold()
-          return false
-        }
-        if (!launchStorageReadable) {
-          withholdOffer('storage_unavailable')
           dropHold()
           return false
         }
