@@ -450,12 +450,6 @@ export class PromptExecutionError extends Error {
   }
 }
 
-/**
- * Reads the deploy-time WebSocket host override. Requires an own string
- * property so a DOM-clobbering element (`id="__COMFY_API_WS_HOST__"`) or a
- * prototype-pollution gadget cannot redirect the authenticated socket, and
- * treats blank values as unset so the socket falls back to `api_host`.
- */
 function getApiWebSocketHostOverride(): string {
   if (!Object.hasOwn(window, '__COMFY_API_WS_HOST__')) {
     return ''
@@ -467,7 +461,9 @@ function getApiWebSocketHostOverride(): string {
   return override.trim()
 }
 
-const isBareHost = (host: string) => !/[\s/\\?#@]/.test(host)
+function isBareHost(host: string): boolean {
+  return !/[\s/\\?#@]/.test(host)
+}
 
 interface LaunchContext {
   host: string
@@ -519,10 +515,6 @@ export class ComfyApi extends EventTarget {
   private socketGeneration = 0
   private socketRetryDelayMs = 1_000
 
-  /**
-   * Handle for the polling fallback, retained so repeated connection failures
-   * reuse one loop instead of stacking a permanent timer per attempt.
-   */
   private pollQueueInterval: ReturnType<typeof setInterval> | null = null
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
@@ -1006,10 +998,6 @@ export class ComfyApi extends EventTarget {
     return (await this.addSocketAuth(params)) ? params : null
   }
 
-  /**
-   * Stops the polling fallback, so a socket that recovers does not leave a
-   * second stream of `status` events running alongside it.
-   */
   private _stopPollQueue() {
     if (this.pollQueueInterval === null) return
     clearInterval(this.pollQueueInterval)
@@ -1053,10 +1041,10 @@ export class ComfyApi extends EventTarget {
       socket = new WebSocket(wsUrl)
     } catch (error) {
       const reason = error instanceof Error ? error.name : 'UnknownError'
-      reportError(
-        new Error(`Failed to open WebSocket to ${wsHost} (${reason})`),
-        { errorType: 'websocket_construction_failure', surface: 'platform' }
-      )
+      reportError(new Error(`Failed to open WebSocket (${reason})`), {
+        errorType: 'websocket_construction_failure',
+        surface: 'platform'
+      })
       this._pollQueue()
       return
     }

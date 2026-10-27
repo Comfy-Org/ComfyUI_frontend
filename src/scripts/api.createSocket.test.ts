@@ -18,20 +18,25 @@ describe('createSocket WebSocket host', () => {
   let rejectedUrls: string[]
   let fetchApi: MockInstance<typeof api.fetchApi>
 
-  const socketUrls = () => sockets.map((socket) => socket.url)
+  function socketUrls() {
+    return sockets.map((socket) => socket.url)
+  }
 
-  const promptRequests = () =>
-    fetchApi.mock.calls.filter(([route]) => route === '/prompt').length
+  function promptRequests() {
+    return fetchApi.mock.calls.filter(([route]) => route === '/prompt').length
+  }
 
-  const dispatchToSocket = (index: number, type: string) => {
+  function dispatchToSocket(index: number, type: string) {
     const socket = sockets.at(index)
     if (!socket) throw new Error(`no socket to dispatch "${type}" to`)
     for (const listener of socket.listeners.get(type) ?? []) listener()
   }
 
-  const dispatchToLatestSocket = (type: string) => dispatchToSocket(-1, type)
+  function dispatchToLatestSocket(type: string) {
+    dispatchToSocket(-1, type)
+  }
 
-  const stubConnectingWebSocket = () => {
+  function stubConnectingWebSocket() {
     vi.stubGlobal('WebSocket', function (this: WebSocket, url: string) {
       if (!URL.canParse(url)) {
         rejectedUrls.push(url)
@@ -168,7 +173,7 @@ describe('createSocket WebSocket host', () => {
     }
   )
 
-  it('reports a construction failure without the socket URL query', async () => {
+  it('reports a construction failure without the socket host or query', async () => {
     window.__COMFY_API_WS_HOST__ = 'ws.example.com:notaport'
     window.name = 'session-123'
 
@@ -177,7 +182,8 @@ describe('createSocket WebSocket host', () => {
     expect(rejectedUrls[0]).toContain('clientId=session-123')
     expect(reportError).toHaveBeenCalledOnce()
     const [reported] = vi.mocked(reportError).mock.calls[0]
-    expect(String(reported)).toContain('ws.example.com:notaport')
+    expect(String(reported)).toContain('SyntaxError')
+    expect(String(reported)).not.toContain('ws.example.com')
     expect(String(reported)).not.toContain('session-123')
   })
 
