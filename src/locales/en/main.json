@@ -2906,7 +2906,8 @@
       "signupBlocked": "We couldn't create your account right now. Please try again later. If this keeps happening, email support{'@'}comfy.org."
     },
     "deleteAccount": {
-      "contactSupport": "To delete your account, please contact {email}"
+      "request": "Delete account",
+      "description": "Opens a request form for our support team"
     },
     "reauthRequired": {
       "title": "Re-authentication Required",

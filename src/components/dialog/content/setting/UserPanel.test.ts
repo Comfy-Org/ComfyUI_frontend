@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -26,6 +27,7 @@ import UserPanel from './UserPanel.vue'
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: 'cloud' as const,
   isCloud: true,
@@ -124,6 +126,64 @@ describe('UserPanel update password', () => {
 
     expect(useAuthDialogs().showUpdatePasswordDialog).not.toHaveBeenCalled()
     expect(location.assign).not.toHaveBeenCalled()
+  })
+})
+
+describe('UserPanel account deletion', () => {
+  const deleteAccount = { name: 'Delete account' }
+
+  function signInAs({ isApiKeyLogin }: { isApiKeyLogin: boolean }) {
+    Object.assign(useCurrentUser(), {
+      isLoggedIn: computed(() => true),
+      isApiKeyLogin: computed(() => isApiKeyLogin),
+      userDisplayName: computed(() => 'Ada Lovelace'),
+      userEmail: computed(() => 'ada@example.com'),
+      resolvedUserInfo: computed(() => ({ id: 'uid-123' }))
+    })
+  }
+
+  function withoutNavigation() {
+    const cancel = (event: Event) => event.preventDefault()
+    document.addEventListener('click', cancel, { capture: true })
+    onTestFinished(() =>
+      document.removeEventListener('click', cancel, { capture: true })
+    )
+  }
+
+  it.for([
+    { login: 'an account login', isApiKeyLogin: false },
+    { login: 'an API key login', isApiKeyLogin: true }
+  ])(
+    'links to the Pylon deletion form prefilled with the user details in a new tab for $login',
+    async ({ isApiKeyLogin }) => {
+      signInAs({ isApiKeyLogin })
+      await renderPanel()
+
+      const link = screen.getByRole('link', deleteAccount)
+
+      expect(link).toHaveAttribute(
+        'href',
+        'https://comfysupport.portal.usepylon.com/forms/request-account-deletion?name=Ada+Lovelace&email=ada%40example.com&user_id=uid-123'
+      )
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    }
+  )
+
+  it('tracks each click on the delete account link', async () => {
+    withoutNavigation()
+    signInAs({ isApiKeyLogin: false })
+    await renderPanel()
+
+    await userEvent.click(screen.getByRole('link', deleteAccount))
+
+    expect(
+      useTelemetry()?.trackHelpResourceClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      resource_type: 'account_deletion',
+      is_external: true,
+      source: 'user_panel'
+    })
   })
 })
 

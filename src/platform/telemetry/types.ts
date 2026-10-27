@@ -1279,6 +1279,7 @@ export interface HelpCenterOpenedMetadata {
  */
 export interface HelpResourceClickedMetadata {
   resource_type:
+    | 'account_deletion'
     | 'docs'
     | 'discord'
     | 'github'
@@ -1293,6 +1294,7 @@ export interface HelpResourceClickedMetadata {
     | 'error_dialog'
     | 'credits_panel'
     | 'subscription'
+    | 'user_panel'
 }
 
 /**

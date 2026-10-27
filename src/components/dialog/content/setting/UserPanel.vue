@@ -4,7 +4,6 @@
       <h2 class="mb-2 text-2xl font-bold">{{ $t('userSettings.title') }}</h2>
       <div class="mt-4 mb-3 border-t" />
 
-      <!-- Normal User Panel -->
       <div v-if="isLoggedIn" class="flex flex-col gap-2">
         <UserAvatar
           v-if="userPhotoUrl"
@@ -59,22 +58,26 @@
             </Button>
             <SignOutEverywhereButton />
           </div>
-          <i18n-t
-            v-if="!isApiKeyLogin"
-            keypath="auth.deleteAccount.contactSupport"
-            tag="p"
-            class="text-sm text-muted-foreground"
-          >
-            <template #email>
-              <a href="mailto:support@comfy.org" class="underline"
-                >support@comfy.org</a
-              >
-            </template>
-          </i18n-t>
+          <div class="flex flex-col items-start gap-1">
+            <Button
+              as="a"
+              :href="accountDeletionUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="destructive-textonly"
+              icon="icon-[lucide--trash-2]"
+              class="no-underline"
+              @click="trackAccountDeletionClick"
+            >
+              {{ $t('auth.deleteAccount.request') }}
+            </Button>
+            <p class="px-2 text-xs text-muted-foreground">
+              {{ $t('auth.deleteAccount.description') }}
+            </p>
+          </div>
         </div>
       </div>
 
-      <!-- Login Section -->
       <div v-else class="flex flex-col gap-4">
         <p class="text-muted-foreground">
           {{ $t('auth.login.title') }}
@@ -90,6 +93,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -98,6 +102,8 @@ import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import SignOutEverywhereButton from '@/platform/auth/session/components/SignOutEverywhereButton.vue'
+import { buildAccountDeletionUrl } from '@/platform/support/config'
+import { useTelemetry } from '@/platform/telemetry'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 
@@ -108,7 +114,6 @@ const { showUpdatePasswordDialog } = useAuthDialogs()
 const {
   loading,
   isLoggedIn,
-  isApiKeyLogin,
   isEmailProvider,
   needsFirebaseSignIn,
   userDisplayName,
@@ -116,9 +121,27 @@ const {
   userPhotoUrl,
   providerName,
   providerIcon,
+  resolvedUserInfo,
   handleSignOut,
   handleSignIn
 } = useCurrentUser()
+
+const accountDeletionUrl = computed(() =>
+  buildAccountDeletionUrl({
+    name: userDisplayName.value,
+    email: userEmail.value,
+    id: resolvedUserInfo.value?.id
+  })
+)
+
+function trackAccountDeletionClick() {
+  useTelemetry()?.trackHelpResourceClicked({
+    resource_type: 'account_deletion',
+    is_external: true,
+    source: 'user_panel'
+  })
+}
+
 async function onUpdatePassword() {
   if (!needsFirebaseSignIn.value) {
     await showUpdatePasswordDialog()

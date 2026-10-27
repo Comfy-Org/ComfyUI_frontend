@@ -88,3 +88,26 @@ export function buildSupportUrl(params?: {
 
   return `${SUPPORT_BASE_URL}?${searchParams.toString()}`
 }
+
+const ACCOUNT_DELETION_FORM_URL =
+  'https://comfysupport.portal.usepylon.com/forms/request-account-deletion'
+
+/**
+ * Builds the Pylon account deletion form URL, prefilling every user detail that is known.
+ */
+export function buildAccountDeletionUrl(user: {
+  name?: string | null
+  email?: string | null
+  id?: string | null
+}): string {
+  const prefill = new URLSearchParams(
+    Object.entries({
+      name: user.name,
+      email: user.email,
+      user_id: user.id
+    }).filter((field): field is [string, string] => Boolean(field[1]))
+  ).toString()
+  return prefill
+    ? `${ACCOUNT_DELETION_FORM_URL}?${prefill}`
+    : ACCOUNT_DELETION_FORM_URL
+}
