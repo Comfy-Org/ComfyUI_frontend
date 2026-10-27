@@ -101,6 +101,14 @@ describe('AgentConsentCard', () => {
     expect(docs).toHaveAttribute('rel', 'noopener noreferrer')
   })
 
+  it('puts Skip before Start when the card is wide', () => {
+    renderCard({ docsUrl: 'https://docs.comfy.org/agent-tools/in-app-agent' })
+
+    expect(
+      screen.getAllByRole('button').map((button) => button.textContent)
+    ).toEqual(['Skip for now', 'Start using Comfy Agent'])
+  })
+
   it('shows a placeholder when no video is supplied', () => {
     renderCard()
 
