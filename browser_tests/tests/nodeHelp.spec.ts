@@ -33,11 +33,14 @@ async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
   await nodeRef.click('title')
 }
 
-async function openSelectionToolboxHelp(comfyPage: ComfyPage) {
+async function openSelectionToolboxHelp(
+  comfyPage: ComfyPage,
+  name = 'Node Info'
+) {
   await expect(comfyPage.selectionToolbox).toBeVisible()
 
   const helpButton = comfyPage.selectionToolbox.getByRole('button', {
-    name: 'Node Info',
+    name,
     exact: true
   })
   await expect(helpButton).toBeVisible()
@@ -369,7 +372,6 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       test('Should handle locale-specific documentation', async ({
         comfyPage
       }) => {
-        // Mock different responses for different locales
         await comfyPage.page.route('**/docs/KSampler/ja.md', async (route) => {
           await route.fulfill({
             status: 200,
@@ -395,7 +397,7 @@ This is English documentation.
           await comfyPage.nodeOps.getNodeRefsByType('KSampler')
         await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
-        const helpPage = await openSelectionToolboxHelp(comfyPage)
+        const helpPage = await openSelectionToolboxHelp(comfyPage, 'ノード情報')
         await expect(helpPage).toContainText('KSamplerノード')
         await expect(helpPage).toContainText('これは日本語のドキュメントです')
       })
