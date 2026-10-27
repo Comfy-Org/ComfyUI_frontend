@@ -43,6 +43,15 @@ export interface WorkflowStore {
   loadWorkflows: () => Promise<void>
   reorderWorkflows: (from: number, to: number) => void
 
+  /**
+   * `true` once startup has finished restoring the previous session's open
+   * tabs, including unsaved drafts recreated from local storage. Until then,
+   * a workflow with no open tab may simply not have been restored yet.
+   */
+  tabsRestored: boolean
+  /** Called by startup tab restoration when it settles, on every outcome. */
+  markTabsRestored: () => void
+
   /** `true` if any subgraph is currently being viewed. */
   isSubgraphActive: boolean
   activeSubgraph: Subgraph | undefined

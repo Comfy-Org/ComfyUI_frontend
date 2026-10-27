@@ -1,5 +1,6 @@
+import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onScopeDispose, ref } from 'vue'
+import { computed, nextTick, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -257,10 +258,19 @@ export function useAgentWorkflowSelection({
   ): Promise<RestorationOutcome> {
     const listed = await refreshCloudWorkflowIds()
     if (!isCurrent()) return { outcome: 'superseded' }
-    const target =
+    let target =
       boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
     if (!listed || !cloudListingOmits(workflowId))
       return { outcome: 'open', target }
+    if (target === null && !workflowStore.tabsRestored) {
+      // A reload can hydrate the chat before startup recreates its unsaved
+      // draft tab from local storage, the only local owner such a draft has.
+      await until(() => workflowStore.tabsRestored).toBe(true)
+      await nextTick()
+      if (!isCurrent()) return { outcome: 'superseded' }
+      target =
+        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+    }
     if (target === null) return { outcome: 'deleted' }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
