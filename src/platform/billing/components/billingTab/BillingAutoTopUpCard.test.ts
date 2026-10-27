@@ -51,6 +51,7 @@ const configured: AutoReloadSettings = {
   reload_credits: 5275,
   spent_this_cycle_cents: 5000,
   status: 'on',
+  target_credits: 6275,
   threshold_credits: 1000
 }
 
@@ -63,10 +64,11 @@ const notConfigured: AutoReloadSettings = {
   reload_credits: null,
   spent_this_cycle_cents: 0,
   status: 'off',
+  target_credits: null,
   threshold_credits: null
 }
 
-const RULE = 'Adds $25 (5,275 credits) when below 1,000 credits.'
+const RULE = 'Tops up to 6,275 credits when below 1,000 credits.'
 const FAILED =
   "Your charge didn't go through. Update your payment method or add credits manually."
 

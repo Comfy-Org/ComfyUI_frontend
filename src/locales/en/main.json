@@ -3617,7 +3617,7 @@
         "onHold": "No default payment method. Set one to resume auto top-up.",
         "paused": "Monthly limit reached. Resumes {date}.",
         "pausedNoDate": "Monthly limit reached.",
-        "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",
+        "rule": "Tops up to {target} credits when below {threshold} credits.",
         "status": {
           "failed": "Failed",
           "turnedOff": "Turned off",
