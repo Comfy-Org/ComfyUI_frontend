@@ -96,7 +96,7 @@ export function readEnvFile(path: string): LangfuseEnv {
   )
 }
 
-// Langfuse keeps unmapped OTel attributes under metadata.attributes; flattened attributes.<key>, then <key>, are the fallback.
+/** An OTel attribute from metadata.attributes, else flattened attributes.<key>, else <key>. */
 export function attributeOf(
   observation: Observation,
   key: string

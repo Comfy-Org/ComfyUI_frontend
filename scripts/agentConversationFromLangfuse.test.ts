@@ -376,7 +376,8 @@ describe('attributeOf', () => {
     const mixed: Observation = {
       ...span('m', { 'comfy.thread_id': THREAD }),
       metadata: {
-        attributes: { 'comfy.thread_id': THREAD },
+        attributes: { 'comfy.thread_id': THREAD, 'comfy.tool.ok': null },
+        'attributes.comfy.tool.ok': true,
         'attributes.comfy.turn_id': 'm-4',
         'comfy.step': 12
       }
@@ -384,6 +385,7 @@ describe('attributeOf', () => {
     expect(attributeOf(mixed, 'comfy.thread_id')).toBe(THREAD)
     expect(attributeOf(mixed, 'comfy.turn_id')).toBe('m-4')
     expect(attributeOf(mixed, 'comfy.step')).toBe('12')
+    expect(attributeOf(mixed, 'comfy.tool.ok')).toBe('true')
   })
 })
 
