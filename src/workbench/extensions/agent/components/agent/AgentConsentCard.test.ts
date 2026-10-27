@@ -1,22 +1,16 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
-import { openFeedbackDialog } from '@/workbench/extensions/agent/feedback'
 
 import AgentConsentCard from './AgentConsentCard.vue'
-
-vi.mock(import('@/workbench/extensions/agent/feedback'), () => ({
-  openFeedbackDialog: vi.fn()
-}))
 
 const props = {
   title: 'Meet Comfy Agent',
   paragraphs: ['First paragraph.', 'Second paragraph.']
 }
-const saveError = i18n.global.t('agent.consent.saveError')
 
 function renderCard(
   overrides: Partial<ComponentProps<typeof AgentConsentCard>> = {}
@@ -86,89 +80,16 @@ describe('AgentConsentCard', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('announces a persistence error as an inline toast', () => {
-    renderCard({ error: saveError })
-
-    const alert = screen.getByRole('alert')
-    expect(alert).toHaveTextContent("Couldn't start Comfy Agent")
-    expect(alert).toHaveTextContent(
-      'Please check your connection and try again. If you continue having issues, please use the contact form.'
-    )
-    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeEnabled()
-    expect(
-      screen.queryByRole('button', { name: 'Start using Comfy Agent' })
-    ).not.toBeInTheDocument()
-  })
-
-  it('opens the agent feedback form from the contact form link', async () => {
-    const user = userEvent.setup()
-    renderCard({ error: saveError })
-
-    await user.click(screen.getByRole('button', { name: 'contact form' }))
-
-    expect(openFeedbackDialog).toHaveBeenCalledWith('agent-consent')
-  })
-
-  it('dismisses the toast and keeps the retry action', async () => {
-    const user = userEvent.setup()
-    renderCard({ error: saveError })
-
-    await user.click(screen.getByRole('button', { name: 'Close' }))
-
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeEnabled()
-  })
-
-  it('retries accept from Try again after a failed save', async () => {
-    const user = userEvent.setup()
-    const { emitted } = renderCard({
-      error: saveError
-    })
-
-    await user.click(screen.getByRole('button', { name: 'Try again' }))
-
-    expect(emitted().accept).toHaveLength(1)
-  })
-
-  it('uses Try again for a signed-out save failure', async () => {
-    const user = userEvent.setup()
-    const { emitted } = renderCard({
-      requiresSignIn: true,
-      error: saveError
-    })
-
-    expect(
-      screen.queryByRole('button', {
-        name: 'Agree and continue with sign in'
-      })
-    ).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Try again' }))
-
-    expect(emitted().accept).toHaveLength(1)
-  })
-
-  it('shows the toast again when a new error arrives', async () => {
-    const user = userEvent.setup()
-    const { rerender } = renderCard({
-      error: saveError
-    })
-
-    await user.click(screen.getByRole('button', { name: 'Close' }))
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-
-    await rerender({ ...props, error: '' })
-    await rerender({
-      ...props,
-      error: saveError
-    })
+  it('announces a persistence error and lets the user retry', () => {
+    renderCard({ error: 'Could not save your preference. Try again.' })
 
     expect(screen.getByRole('alert')).toHaveTextContent(
-      "Couldn't start Comfy Agent"
+      'Could not save your preference. Try again.'
     )
-    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled()
+    expect(
+      screen.getByRole('button', { name: 'Start using Comfy Agent' })
+    ).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeEnabled()
   })
 
   it('provides a native documentation link that opens safely in a new tab', () => {

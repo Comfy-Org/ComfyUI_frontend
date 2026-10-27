@@ -6159,11 +6159,7 @@
       "videoPlaceholder": "Video unavailable",
       "loadError": "Could not load your Agent preference. Try again.",
       "signInError": "Could not open sign-in. Please try again.",
-      "saveError": "Could not save your preference. Try again.",
-      "errorTitle": "Couldn't start Comfy Agent",
-      "errorContact": "Please check your connection and try again. If you continue having issues, please use the {contactForm}.",
-      "contactForm": "contact form",
-      "tryAgain": "Try again"
+      "saveError": "Could not save your preference. Try again."
     },
     "paywall": {
       "title": "Out of credits",

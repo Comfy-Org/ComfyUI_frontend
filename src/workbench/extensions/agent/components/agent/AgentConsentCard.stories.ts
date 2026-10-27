@@ -96,8 +96,3 @@ export const SignedOutInNarrowPanel: Story = {
   ...SignedOut,
   decorators: [narrowPanel]
 }
-
-export const ErrorInNarrowPanel: Story = {
-  ...Error,
-  decorators: [narrowPanel]
-}
