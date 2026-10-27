@@ -233,7 +233,7 @@ onMounted(() => {
             :close-label="$t('g.close')"
           >
             <template #icon>
-              <i class="icon-[lucide--circle-x] size-4 text-destructive" />
+              <i class="icon-[lucide--circle-x] size-5 text-destructive" />
             </template>
             <div class="flex min-w-0 flex-col gap-0.5">
               <p class="my-0 font-medium">
