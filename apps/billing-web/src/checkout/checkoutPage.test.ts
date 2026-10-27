@@ -806,6 +806,22 @@ describe('reduceCheckoutPage reconciliation', () => {
       expected: { kind: 'resolving', outcome: declinedElsewhere }
     },
     {
+      name: "this tab's own Pay whose watch lapsed keeps its card when the re-read finds the challenge refused",
+      events: [
+        ...live,
+        submitted,
+        { type: 'payRejectedAsPending', because: 'unanswered' },
+        reconciled(
+          { ...refusedChallenge(), awaitedHere: true },
+          { kind: 'not_completed', operationId: 'op_3ds' }
+        )
+      ],
+      expected: {
+        kind: 'resolving',
+        outcome: { kind: 'not_completed', operationId: 'op_3ds' }
+      }
+    },
+    {
       name: 'a form that watched another tab start paying is waiting on a sibling',
       events: [...live, reconciled(pendingOperation())],
       expected: { kind: 'waiting', sibling: true }
