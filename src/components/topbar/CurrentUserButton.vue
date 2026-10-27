@@ -25,7 +25,7 @@
             <WorkspaceProfilePic
               v-else-if="showWorkspaceIcon"
               :workspace-name="workspaceName"
-              :subscription-tier="activeWorkspace?.subscriptionTier"
+              :subscription-tier="activeSummary?.subscriptionTier"
               :class="compact && 'size-full'"
             />
             <UserAvatar
@@ -76,14 +76,14 @@ import Button from '@comfyorg/design-system/button/Button'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const CurrentUserPopoverWorkspace = defineAsyncComponent(
-  () =>
-    import('@/platform/workspace/components/CurrentUserPopoverWorkspace.vue')
+  () => import('@/platform/account/components/CurrentUserPopoverWorkspace.vue')
 )
 
 const { showArrow = true, compact = false } = defineProps<{
@@ -100,9 +100,9 @@ const photoURL = computed<string | undefined>(
 const {
   workspaceName: teamWorkspaceName,
   initState,
-  isInPersonalWorkspace,
-  activeWorkspace
+  isInPersonalWorkspace
 } = storeToRefs(useTeamWorkspaceStore())
+const { activeSummary } = storeToRefs(useWorkspaceBillingStateStore())
 
 const showWorkspaceSkeleton = computed(
   () => isCloud && initState.value === 'loading'

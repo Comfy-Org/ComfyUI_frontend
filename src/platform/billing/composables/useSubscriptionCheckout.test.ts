@@ -26,13 +26,13 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/billing/utils/checkoutJourney'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import type {
   BillingStatus,
   BillingStatusResponse,
   Plan,
   PreviewSubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import {
@@ -339,23 +339,20 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: {
-        get value() {
-          return mockPermissions.value
-        }
-      },
-      canReactivatePlan: {
-        get value() {
-          return mockCanReactivatePlan.value
-        }
+vi.mock<unknown>(import('@/platform/billing/composables/useBillingUI'), () => ({
+  useBillingUI: () => ({
+    permissions: {
+      get value() {
+        return mockPermissions.value
       }
-    })
+    },
+    canReactivatePlan: {
+      get value() {
+        return mockCanReactivatePlan.value
+      }
+    }
   })
-)
+}))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true,
@@ -378,8 +375,8 @@ provideBillingDialogs(() => ({
   showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog
 }))
 
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: {
+vi.mock<unknown>(import('@/platform/billing/api/billingApi'), () => ({
+  billingApi: {
     resubscribe: mockResubscribe,
     getBillingStatus: mockGetBillingStatus,
     getPaymentPortalUrl: mockGetPaymentPortalUrl
@@ -3749,12 +3746,6 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.authenticationState.value).toBe('failed_retryable')
     })
 
-    // The subscribe that reaches `advanceToSuccessOnOperation` came off the
-    // legacy transport whichever way the flag is set: the rail's own subscribe
-    // settles before it returns, so `needs_payment_method` is a shape only
-    // `workspaceApi.subscribe` produces — including on the 404 fallback, where
-    // the flag is on and the legacy call ran anyway. Skipping the registration
-    // on the flag would leave that operation with no poller at all.
     it.for([
       { rail: 'off', railValue: null },
       { rail: 'on, route 404', railValue: railStub() }

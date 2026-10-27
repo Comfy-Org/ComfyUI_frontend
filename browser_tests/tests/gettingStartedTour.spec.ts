@@ -11,7 +11,7 @@ import type { PromptResponse } from '@comfyorg/ingest-types'
 
 import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'

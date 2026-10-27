@@ -153,7 +153,7 @@ export function useSettingUI(
 
   const workspaceSettingsPanelComponent = defineAsyncComponent(
     () =>
-      import('@/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.vue')
+      import('@/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue')
   )
 
   const planCreditsPanel: SettingPanelItem = {
@@ -173,7 +173,8 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/platform/billing/components/billingTab/BillingTab.vue')
+      () =>
+        import('@/platform/account/components/dialogs/settings/BillingTab.vue')
     )
   }
 
