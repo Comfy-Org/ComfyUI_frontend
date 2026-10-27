@@ -832,25 +832,22 @@ export async function runPack(
           parts.push(`conn=THREW ${errMsg(e).slice(0, 40)}`)
         }
       }
+      const sn = n.serialize()
       try {
-        const sn = n.serialize()
-        try {
-          formDriven.push(
-            ...measureFormAgreement(
-              [n],
-              new Map([[String(n.id), sn]]),
-              defInputs,
-              'driven'
-            )
+        formDriven.push(
+          ...measureFormAgreement(
+            [n],
+            new Map([[String(n.id), sn]]),
+            defInputs,
+            'driven'
           )
-        } catch (e) {
-          const message = errMsg(e)
-          parts.push(`form=THREW ${message.slice(0, 40)}`)
-          formMeasurementErrors.push(`${t}: ${message}`)
-        }
-      } finally {
-        graph.remove(n)
+        )
+      } catch (e) {
+        const message = errMsg(e)
+        parts.push(`form=THREW ${message.slice(0, 40)}`)
+        formMeasurementErrors.push(`${t}: ${message}`)
       }
+      graph.remove(n)
       if (DEPR.length)
         parts.push(`depr=${[...new Set(DEPR)].join(';').slice(0, 60)}`)
       driven[t] = parts.join(' ')

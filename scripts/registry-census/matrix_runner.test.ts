@@ -195,6 +195,49 @@ describe('matrix runner', () => {
   })
 
   it(
+    'keeps a driven node that cannot save in the graph for the serialize op',
+    { timeout: 30_000 },
+    async () => {
+      outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
+      vi.stubEnv('MATRIX_OUT', outputDir)
+      vi.stubEnv('MATRIX_VUE', '')
+
+      await runPack(
+        'driven-serialize-throw',
+        {
+          entry: async () => {
+            LiteGraph.registerNodeType(
+              'matrix-driven-serialize-throw',
+              class DrivenSerializeThrowNode extends LGraphNode {
+                constructor() {
+                  super('DrivenSerializeThrow')
+                  this.onSerialize = () => {
+                    throw new Error('driven-serialize-throw')
+                  }
+                }
+              }
+            )
+          }
+        },
+        ['entry'],
+        'driven-serialize-throw'
+      )
+
+      const row: unknown = JSON.parse(
+        fs.readFileSync(
+          path.join(outputDir, 'driven-serialize-throw.json'),
+          'utf8'
+        )
+      )
+      expect(row).toMatchObject({
+        ops: {
+          serialize: { err: expect.stringContaining('driven-serialize-throw') }
+        }
+      })
+    }
+  )
+
+  it(
     'measures a disagreeing frontend-only node without a definition',
     { timeout: 30_000 },
     async () => {
