@@ -13,8 +13,8 @@ import {
 
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
-import type { BillingEventsResponse } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { BillingEventsResponse } from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -38,7 +38,7 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/billing/api/billingApi'))
 
 // The table only ever calls `readEvents`; the other five are here so the
 // factory satisfies `BillingReadRail` and the module type stays checked.
@@ -110,9 +110,7 @@ describe('UsageLogsTable', () => {
     vi.when(useCustomerEventsService().getMyEvents)
       .calledWith({ page: 1, limit: 7 })
       .thenResolve(mockEventsResponse)
-    vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
-      mockEventsResponse
-    )
+    vi.mocked(billingApi.getBillingEvents).mockResolvedValue(mockEventsResponse)
     mockBillingReadRail.readEvents.mockResolvedValue({
       status: 'ok',
       value: mockEventsResponse
@@ -148,7 +146,7 @@ describe('UsageLogsTable', () => {
 
       await renderLoaded()
 
-      expect(workspaceApi.getBillingEvents).toHaveBeenCalledTimes(1)
+      expect(billingApi.getBillingEvents).toHaveBeenCalledTimes(1)
     })
 
     it('shows a loading spinner while the initial load is in flight', () => {
@@ -347,10 +345,10 @@ describe('UsageLogsTable', () => {
       {
         workspaceBilling: true,
         rail: false,
-        source: 'workspaceApi.getBillingEvents',
+        source: 'billingApi.getBillingEvents',
         mockReader: () =>
           vi
-            .mocked(workspaceApi.getBillingEvents)
+            .mocked(billingApi.getBillingEvents)
             .mockImplementation(async (params) => pagedResponse(params?.page))
       },
       {
@@ -387,12 +385,12 @@ describe('UsageLogsTable', () => {
   })
 
   describe('billing events source', () => {
-    it('uses workspaceApi.getBillingEvents on the workspace billing flow', async () => {
+    it('uses billingApi.getBillingEvents on the workspace billing flow', async () => {
       setWorkspaceBilling(true)
 
       await renderLoaded()
 
-      expect(workspaceApi.getBillingEvents).toHaveBeenCalledWith({
+      expect(billingApi.getBillingEvents).toHaveBeenCalledWith({
         page: 1,
         limit: 7
       })
@@ -410,7 +408,7 @@ describe('UsageLogsTable', () => {
           resolveLegacy = resolve
         })
       )
-      vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
+      vi.mocked(billingApi.getBillingEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'workspace-1',
@@ -459,7 +457,7 @@ describe('UsageLogsTable', () => {
           resolveLegacy = resolve
         })
       )
-      vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
+      vi.mocked(billingApi.getBillingEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'workspace-1',
@@ -560,7 +558,7 @@ describe('UsageLogsTable', () => {
 
     const readers = {
       legacy: () => useCustomerEventsService().getMyEvents,
-      workspaceApi: () => workspaceApi.getBillingEvents,
+      workspaceApi: () => billingApi.getBillingEvents,
       rail: () => mockBillingReadRail.readEvents
     }
 

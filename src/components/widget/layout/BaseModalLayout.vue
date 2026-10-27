@@ -67,7 +67,7 @@
               :aria-label="t('g.closeDialog')"
               @click="closeDialog"
             >
-              <i class="pi pi-times" />
+              <i :class="closeIcon" />
             </Button>
           </template>
         </header>
@@ -130,7 +130,7 @@
               :aria-label="t('g.closeDialog')"
               @click="closeDialog"
             >
-              <i class="pi pi-times" />
+              <i :class="closeIcon" />
             </Button>
           </header>
           <div class="min-h-0 flex-1 overflow-y-auto">
@@ -147,8 +147,8 @@ import { useBreakpoints } from '@vueuse/core'
 import { computed, inject, ref, useSlots, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -171,7 +171,8 @@ const {
   leftPanelWidth = '14rem',
   contentPadding = 'default',
   headerPadding = 'default',
-  closeButtonVariant
+  closeButtonVariant,
+  closeIcon = 'pi pi-times'
 } = defineProps<{
   contentTitle: string
   rightPanelTitle?: string
@@ -180,6 +181,7 @@ const {
   contentPadding?: ContentPadding
   headerPadding?: HeaderPadding
   closeButtonVariant?: ButtonVariants['variant']
+  closeIcon?: string
 }>()
 
 const sizeClasses = computed(() => SIZE_CLASSES[size])

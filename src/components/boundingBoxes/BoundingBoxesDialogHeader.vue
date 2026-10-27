@@ -24,6 +24,6 @@
 
 <script setup lang="ts">
 import { BOUNDING_BOXES_HEADER_ACTIONS_ID } from '@/components/boundingBoxes/boundingBoxesHeaderActionsId'
-import Button from '@/components/ui/button/Button.vue'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
 </script>

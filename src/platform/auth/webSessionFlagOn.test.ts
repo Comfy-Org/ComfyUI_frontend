@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { User, UserCredential } from 'firebase/auth'
 import {
   afterEach,
@@ -64,9 +65,9 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
-import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
+import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
 import {
   getGlobalSetting,
   setGlobalSetting
@@ -1151,7 +1152,7 @@ describe('workspace API and global settings on the shared web session', () => {
       await useTeamWorkspaceStore().initialize()
       ingest.requests.length = 0
 
-      await workspaceApi.getBillingStatus()
+      await billingApi.getBillingStatus()
 
       expect(ingest.requests).toEqual([
         sessionRequest('GET', '/api/billing/status', {
@@ -1168,8 +1169,8 @@ describe('workspace API and global settings on the shared web session', () => {
     localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, 'ws-team')
 
     await useTeamWorkspaceStore().initialize()
-    await workspaceApi.getBillingStatus()
-    await workspaceApi.getBillingStatus()
+    await billingApi.getBillingStatus()
+    await billingApi.getBillingStatus()
 
     expect(ingest.requests.map(({ path }) => path)).toEqual([
       '/api/workspaces',
@@ -1184,7 +1185,7 @@ describe('workspace API and global settings on the shared web session', () => {
     ingest.refusals.push('csrf_invalid')
     ingest.csrfToken = 'csrf-2'
 
-    await workspaceApi.createTopup(500)
+    await billingApi.createTopup(500)
 
     expect(
       ingest.requests.map(({ path, headers }) =>
@@ -1202,7 +1203,7 @@ describe('workspace API and global settings on the shared web session', () => {
     const ingest = await bootOnSession()
     ingest.refusals.push('plan_required')
 
-    await expect(workspaceApi.getBillingStatus()).rejects.toMatchObject({
+    await expect(billingApi.getBillingStatus()).rejects.toMatchObject({
       name: 'WorkspaceApiError',
       status: 403,
       code: 'plan_required',
@@ -1214,7 +1215,7 @@ describe('workspace API and global settings on the shared web session', () => {
     const ingest = await bootOnSession()
     ingest.refusals.push('no_workspace_access')
 
-    await expect(workspaceApi.getBillingStatus()).rejects.toBeInstanceOf(
+    await expect(billingApi.getBillingStatus()).rejects.toBeInstanceOf(
       NoWorkspaceAccessError
     )
   })
@@ -2927,18 +2928,32 @@ describe.for([{ unified: false }, { unified: true }])(
         await expect(enterApp()).resolves.toBe('/user-select')
       })
 
-      it('sends a session-only tab holding a desktop login code to sign in, not into the app', async () => {
-        await install({ userId: 'user-a' })
-        identity.resolve(null)
-        await router.push('/cloud/login')
+      it.for(['/user-select', '/cloud/login', '/cloud/user-check'])(
+        'sends a session-only tab holding a desktop login code at %s to sign in without looping',
+        async (path) => {
+          await install({ userId: 'user-a' })
+          identity.resolve(null)
+          await router.push('/cloud/forgot-password')
+          const visited = new Set<string>()
+          onTestFinished(
+            router.beforeEach((to) => {
+              expect(visited.has(to.fullPath)).toBe(false)
+              visited.add(to.fullPath)
+            })
+          )
 
-        await router.push(
-          `/user-select?desktop_login_code=dlc_${'A'.repeat(43)}`
-        )
+          await router.push(`${path}?desktop_login_code=dlc_${'A'.repeat(43)}`)
 
-        expect(router.currentRoute.value.path).toBe('/cloud/login')
-        expect(router.currentRoute.value.query.switchAccount).toBeDefined()
-      })
+          expect(router.currentRoute.value.path).toBe('/cloud/login')
+          expect(router.currentRoute.value.query.switchAccount).toBe('true')
+          expect(
+            getPreservedQueryParam(
+              PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
+              'desktop_login_code'
+            )
+          ).toBe(`dlc_${'A'.repeat(43)}`)
+        }
+      )
 
       it('sends a revoked session to the login page', async () => {
         await install('revoked')
