@@ -532,6 +532,32 @@ describe('useWidgetSelectItems', () => {
       }
     )
 
+    it('prefixes the subfolder onto a temp image output listed by hash', async () => {
+      mockMediaAssets.items.value = [
+        fromPartial({
+          id: 'temp-asset',
+          name: 't.png',
+          hash: 'blake3:aa7ecf08.png',
+          tags: ['output', 'temp'],
+          user_metadata: {
+            jobId: 'job-temp',
+            nodeId: '4',
+            subfolder: 'previews'
+          }
+        })
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({ values: () => [], modelValue: ref('') })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'previews/blake3:aa7ecf08.png [temp]'
+      ])
+    })
+
     it('resolves two multi-output jobs independently', async () => {
       mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-A', 'previewA.png', '1', 2),
@@ -906,7 +932,7 @@ describe('useWidgetSelectItems', () => {
       expect(dropdownItems.value[0].name).toBe('plain.glb [output]')
     })
 
-    it('does not prefix the subfolder for non-mesh kinds even when present', async () => {
+    it('prefixes the subfolder for image outputs too', async () => {
       mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-image-1',
@@ -932,7 +958,7 @@ describe('useWidgetSelectItems', () => {
       await nextTick()
 
       expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].name).toBe('photo.png [output]')
+      expect(dropdownItems.value[0].name).toBe('sub/photo.png [output]')
     })
   })
 

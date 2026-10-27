@@ -625,7 +625,9 @@ export function useMediaAssetActions() {
         const stored = getStoredOutputIdentity(asset)
         const variants = widgetValueVariants(
           asset.name,
-          stored?.type ?? getAssetType(asset, 'input'),
+          isTempOutput(asset)
+            ? 'temp'
+            : (stored?.type ?? getAssetType(asset, 'input')),
           metadata?.subfolder,
           asset.hash ?? stored?.hash
         )

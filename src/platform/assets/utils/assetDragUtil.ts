@@ -90,6 +90,7 @@ export function startAssetDrag(
         }
       : {
           filename: asset.name,
+          subfolder: getOutputAssetMetadata(asset.user_metadata)?.subfolder,
           type: isTempOutput(asset) ? 'temp' : getAssetType(asset.tags),
           display_name: asset.display_name ?? undefined
         }),

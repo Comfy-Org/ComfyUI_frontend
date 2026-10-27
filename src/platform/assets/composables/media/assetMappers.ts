@@ -78,6 +78,11 @@ export function isTempOutput(asset: AssetItem): boolean {
 const byIsTemp = (a: AssetItem, b: AssetItem): number =>
   Number(isTempOutput(b)) - Number(isTempOutput(a))
 
+function getOutputSubfolder(asset: AssetItem): string {
+  const subfolder = asset.user_metadata?.subfolder
+  return typeof subfolder === 'string' ? subfolder : ''
+}
+
 function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   const url = asset.preview_url ?? ''
@@ -89,7 +94,7 @@ function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
     format: metadata?.format,
     mediaType: getMediaTypeFromFilename(asset.name),
     nodeId: metadata?.nodeId ?? '',
-    subfolder: metadata?.subfolder ?? '',
+    subfolder: getOutputSubfolder(asset),
     type: isTempOutput(asset) ? 'temp' : 'output',
     url,
     previewUrl: asset.thumbnail_url ?? url

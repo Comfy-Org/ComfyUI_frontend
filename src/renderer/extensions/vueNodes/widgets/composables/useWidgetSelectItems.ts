@@ -223,10 +223,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const filenameForUrl = getAssetUrlFilename(asset)
-      const subfolder =
-        kind === 'mesh'
-          ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
-          : undefined
+      const subfolder = getOutputAssetMetadata(asset.user_metadata)?.subfolder
       const pathWithSubfolder = subfolder
         ? `${subfolder}/${filenameForUrl}`
         : filenameForUrl

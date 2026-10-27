@@ -2097,7 +2097,10 @@ describe('useMediaAssetActions', () => {
           addLoadImageNode('ComfyUI_temp_00001_.png [temp]'),
           addLoadImageNode('bb12cd34.png [output]'),
           addLoadImageNode('aa7ecf08.png'),
-          addLoadImageNode('bb12cd34.png [input]')
+          addLoadImageNode('bb12cd34.png [input]'),
+          addLoadImageNode('previews/aa7ecf08.png [output]'),
+          addLoadImageNode('previews/aa7ecf08.png [input]'),
+          addLoadImageNode('previews/ComfyUI_temp_00001_.png [output]')
         ]
 
         await expect(actions.deleteAssets(deletionTargets())).resolves.toBe(
@@ -2129,7 +2132,10 @@ describe('useMediaAssetActions', () => {
           kept('ComfyUI_temp_00001_.png [temp]'),
           kept('bb12cd34.png [output]'),
           kept('aa7ecf08.png'),
-          kept('bb12cd34.png [input]')
+          kept('bb12cd34.png [input]'),
+          kept('previews/aa7ecf08.png [output]'),
+          kept('previews/aa7ecf08.png [input]'),
+          kept('previews/ComfyUI_temp_00001_.png [output]')
         ])
       }
     )
@@ -2277,6 +2283,32 @@ describe('useMediaAssetActions', () => {
       }
     )
 
+    it('clears a temp reference to an asset with no job and keeps same-hash references in other roots', async () => {
+      const flatTempAsset = createMockAsset({
+        id: 'flat-temp-asset',
+        name: 'flat_temp.png',
+        hash: 'ff34ab12.png',
+        tags: ['output', 'temp']
+      })
+      const { actions, nodes } = await addReferencesTo([flatTempAsset])
+      const survivors = [
+        addLoadImageNode('ff34ab12.png [output]'),
+        addLoadImageNode('ff34ab12.png'),
+        addLoadImageNode('flat_temp.png [input]')
+      ]
+
+      await actions.deleteAssets(flatTempAsset)
+
+      expect(nodes.map(referenceState)).toEqual([
+        cleared('ff34ab12.png [temp]')
+      ])
+      expect(survivors.map(referenceState)).toEqual([
+        kept('ff34ab12.png [output]'),
+        kept('ff34ab12.png'),
+        kept('flat_temp.png [input]')
+      ])
+    })
+
     describe('references written from an expanded-stack child', () => {
       const outputTaggedTempAsset = createMockAsset({
         ...job,
@@ -2360,6 +2392,20 @@ describe('useMediaAssetActions', () => {
           dropOnLoadImage,
           () => atRoot(outputTaggedTempAsset),
           'ComfyUI_temp_00003_.png [temp]'
+        ],
+        [
+          'dropped on Load Image',
+          'tag temp in a subfolder',
+          dropOnLoadImage,
+          () => tempAsset,
+          'previews/ComfyUI_temp_00001_.png [temp]'
+        ],
+        [
+          'dropped on Load Image',
+          'tags output and temp in a subfolder',
+          dropOnLoadImage,
+          () => outputTaggedTempAsset,
+          'previews/ComfyUI_temp_00003_.png [temp]'
         ]
       ] as const)(
         'writes the temp root for a child %s from an asset with %s, so deleting the child clears it',
