@@ -3,15 +3,15 @@ import type {
   LGraphExtra,
   SubgraphId,
   IGraphGroupFlags,
-  SerialisedLLinkArray
-} from '@/lib/litegraph/src/types/entityRegistry'
-import type { UUID } from '@/utils/uuid'
-import type { LinkPresentation } from '@/types/linkPresentation'
+  LiteGraphGlobal
+} from './entityRegistry'
+import type { UUID } from './uuid'
+import type { LinkPresentation } from './linkPresentation'
 
-import type { NodeProperty } from '@/types/nodeProperty'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeProperty } from './nodeProperty'
+import type { SerializedNodeId } from './nodeId'
 
-import type { FloatingRerouteSlot } from '@/types/rerouteChain'
+import type { FloatingRerouteSlot } from './rerouteChain'
 import type {
   Dictionary,
   INodeFlags,
@@ -19,13 +19,21 @@ import type {
   ISlotType,
   Point,
   Size
-} from '@/lib/litegraph/src/interfaces'
+} from './interfaces'
 import type { INodeInputSlot, INodeOutputSlot } from './slots'
-import type { LiteGraphGlobal } from './entityRegistry'
 import type { RenderShape } from './globalEnums'
 import type { TWidgetValue } from './widgets'
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
+
+export type SerialisedLLinkArray = [
+  id: number,
+  origin_id: SerializedNodeId,
+  origin_slot: number,
+  target_id: SerializedNodeId,
+  target_slot: number,
+  type: ISlotType
+]
 
 /**
  * An object that implements custom pre-serialization logic via {@link Serialisable.asSerialisable}.

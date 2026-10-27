@@ -1,4 +1,4 @@
-import type { LGraphCanvas } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
@@ -35,17 +35,17 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { changeCanvasSelection } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import type { LinkPresentation } from '@/types/linkPresentation'
+import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { parseLinkId, toLinkId } from '@/types/linkId'
+import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
-import { toRerouteId } from '@/types/rerouteId'
-import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import { graphScopeOf, toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import {
   collectReservedGroupIds,
   collectReservedLinkIds,
@@ -84,15 +84,15 @@ import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { rekeyGraphId } from '@/stores/rekeyGraphId'
-import { toGroupId } from '@/types/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import {
   UNASSIGNED_NODE_ID,
   compareNodeIds,
   parseNodeId,
   serializeNodeId,
   toNodeId
-} from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
 
 import {
@@ -123,7 +123,7 @@ import {
   unregisterLinkTopology
 } from './LLink'
 import { LinkMap } from './LinkMap'
-import type { LinkId } from '@/types/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { MapProxyHandler } from './MapProxyHandler'
 import {
   registerRerouteChain,
@@ -131,7 +131,7 @@ import {
   unregisterAllRerouteChains,
   unregisterRerouteChain
 } from './Reroute'
-import type { RerouteId } from '@/types/rerouteId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
 import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
@@ -145,8 +145,11 @@ import type {
   Point,
   Positionable,
   Size
-} from './interfaces'
-import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
 import type { LinkNetwork } from './types/linkNetwork'
 import { LiteGraph } from './litegraphInstance'
 import { SubgraphNode } from './subgraph/SubgraphNode'
@@ -181,7 +184,7 @@ import {
   multiClone,
   splitPositionables
 } from './subgraph/subgraphUtils'
-import { Alignment, LGraphEventMode } from './types/globalEnums'
+import { Alignment, LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type {
   LGraphTriggerAction,
   LGraphTriggerEvent,
@@ -198,7 +201,7 @@ import type {
   Serialisable,
   SerialisableGraph,
   SerialisableReroute
-} from './types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import { getAllNestedItems } from './utils/collections'
 import type { GraphCanonicalField } from './extensionPersistence'
 import {
@@ -3820,7 +3823,7 @@ type RegisteredSubgraphId = SubgraphId
 type RegisteredGraphOrSubgraph = GraphOrSubgraph
 type RegisteredBaseLGraph = BaseLGraph
 
-declare module './types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface LitegraphEntityRegistry {
     SubgraphId: RegisteredSubgraphId
     GraphOrSubgraph: RegisteredGraphOrSubgraph

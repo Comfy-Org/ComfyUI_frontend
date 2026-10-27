@@ -1,4 +1,4 @@
-import type { LinkSegment } from '@/lib/litegraph/src/interfaces'
+import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
 import type { Point } from '@/renderer/core/layout/types'
 
 interface LazyPolyline {

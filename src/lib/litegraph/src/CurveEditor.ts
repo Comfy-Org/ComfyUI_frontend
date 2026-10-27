@@ -1,7 +1,7 @@
-import type { LGraphCanvas } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import { clamp } from 'es-toolkit/compat'
 
-import type { Point, Rect } from './interfaces'
+import type { Point, Rect } from '@comfyorg/graph-model/interfaces'
 
 import { distance } from './measure'
 

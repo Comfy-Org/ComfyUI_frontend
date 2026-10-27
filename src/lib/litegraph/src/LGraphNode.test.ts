@@ -6,9 +6,9 @@ import type {
   Point,
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
-import type { Rect } from '@/lib/litegraph/src/interfaces'
+import type { Rect } from '@comfyorg/graph-model/interfaces'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphCanvas,
@@ -24,8 +24,8 @@ import {
 import { test } from './__fixtures__/testExtensions'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number

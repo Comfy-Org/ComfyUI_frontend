@@ -28,8 +28,8 @@ import {
 } from '@/composables/widgetHistoryScope'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
-import type { BoundingBox } from '@/types/boundingBoxes'
-import type { NodeId } from '@/types/nodeId'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { readableTextColor, textOnColor } from '@/utils/colorUtil'
 

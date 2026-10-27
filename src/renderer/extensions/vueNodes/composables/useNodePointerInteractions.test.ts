@@ -13,7 +13,7 @@ import type {
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'

@@ -16,8 +16,8 @@ import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/slots'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 import {
   clearCanvasPointerHistory,
   toCanvasPointerEvent
@@ -45,9 +45,9 @@ import { app } from '@/scripts/app'
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { createRafBatch } from '@/utils/rafBatch'
 
 interface SlotInteractionOptions {

@@ -37,7 +37,7 @@ import { computed } from 'vue'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
@@ -48,7 +48,7 @@ import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/wi
 import { dynamicComboOptionKeys } from '@/schemas/nodeDef/inputSpecTree'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { zeroUuid } from '@/utils/uuid'

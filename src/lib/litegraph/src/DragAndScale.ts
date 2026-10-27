@@ -1,7 +1,11 @@
 import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
 
-import type { Point, ReadOnlyRect, Rect } from './interfaces'
-import { EaseFunction } from './types/globalEnums'
+import type {
+  Point,
+  ReadOnlyRect,
+  Rect
+} from '@comfyorg/graph-model/interfaces'
+import { EaseFunction } from '@comfyorg/graph-model/globalEnums'
 import { Rectangle } from './infrastructure/Rectangle'
 
 export interface DragAndScaleState {

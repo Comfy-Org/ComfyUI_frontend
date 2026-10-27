@@ -12,7 +12,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 

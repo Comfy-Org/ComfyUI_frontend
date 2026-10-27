@@ -1,10 +1,10 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import type { Point, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { Point, ReadOnlyRect } from '@comfyorg/graph-model/interfaces'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import { toLinkId } from '@/types/linkId'
-import type { LinkPresentation } from '@/types/linkPresentation'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 import type { HiddenLinkBadge } from './linkBadges'

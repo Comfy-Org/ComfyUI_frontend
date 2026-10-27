@@ -9,9 +9,12 @@ import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEven
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { useLinkStore } from '@/stores/linkStore'
-import { toLinkId } from '@/types/linkId'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createMockCanvasRenderingContext2D,
   createMockMinimapCanvas

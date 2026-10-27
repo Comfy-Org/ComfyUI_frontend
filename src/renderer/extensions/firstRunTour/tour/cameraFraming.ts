@@ -1,6 +1,6 @@
 import { delay } from 'es-toolkit'
 
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { ReadOnlyRect } from '@comfyorg/graph-model/interfaces'
 import {
   CARD_GLIDE_MS,
   CARD_WIDTH,
@@ -8,7 +8,7 @@ import {
   topSafeInset
 } from '@/platform/onboarding/coachmarkLayout'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const FOCUS_DURATION_MS = 450
 /** Never magnify past this: the aim is a node that reads, not one that dominates. */

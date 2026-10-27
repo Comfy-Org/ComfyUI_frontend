@@ -5,7 +5,7 @@ import { computed, ref, watch } from 'vue'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { Bounds } from '@/renderer/core/layout/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { resolveInputSourceNode } from '@/utils/graphTraversalUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 

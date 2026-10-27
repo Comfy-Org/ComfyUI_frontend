@@ -164,10 +164,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/types/widgets.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/lib/litegraph/src/utils/mathParser.test.ts",
       "role": "domain"
     },
@@ -241,10 +237,6 @@
     },
     {
       "path": "src/types/widgetId.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/widgetId.ts",
       "role": "domain"
     },
     {

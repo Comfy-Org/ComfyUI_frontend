@@ -1,8 +1,8 @@
 import { reactive, readonly } from 'vue'
 
-import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import type { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 import type { Point, SlotLayout } from '@/renderer/core/layout/types'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 /**
  * Slot link drag UI state

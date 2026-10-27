@@ -1,11 +1,11 @@
-import { toGroupId } from '@/types/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 

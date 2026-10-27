@@ -5,12 +5,12 @@ import type {
   INodeSlot,
   ISlotType,
   Point
-} from '@/lib/litegraph/src/interfaces'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type {
   LinkDirection,
   RenderShape
-} from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 
 /** Base class for all input & output slots. */
 

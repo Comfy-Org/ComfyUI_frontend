@@ -89,7 +89,10 @@ import { computed, toRef, useTemplateRef } from 'vue'
 import { useCurveEditor } from '@/composables/useCurveEditor'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { CurveInterpolation, CurvePoint } from './types'
+import type {
+  CurveInterpolation,
+  CurvePoint
+} from '@comfyorg/graph-model/curve'
 
 import { histogramToPath } from '@/utils/histogramUtil'
 

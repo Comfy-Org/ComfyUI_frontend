@@ -2,8 +2,8 @@
  * Minimap-specific type definitions
  */
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/types/nodeId'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import type { ResolvedMinimapNodeDecoration } from '@/platform/canvas/minimapDecorationRegistry'
 

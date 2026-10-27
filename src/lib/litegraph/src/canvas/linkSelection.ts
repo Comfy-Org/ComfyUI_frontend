@@ -8,16 +8,19 @@ import {
 import type { Bounds, Point } from '@/renderer/core/layout/types'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { LinkId } from '@/types/linkId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { LinkSegment, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type {
+  LinkSegment,
+  ReadOnlyRect
+} from '@comfyorg/graph-model/interfaces'
 import { inputLinkId, outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
-import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { deleteLinks, hideLinks, showLinks } from './linkVisibility'
 import type { LinkMutationHost } from './linkVisibility'
 

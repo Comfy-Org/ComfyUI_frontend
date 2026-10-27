@@ -5,19 +5,19 @@ import type {
   SubgraphIONode,
   SubgraphInput,
   SubgraphOutput
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
-import type { Point, SlotIndex } from '@/lib/litegraph/src/interfaces'
+import type { Point, SlotIndex } from '@comfyorg/graph-model/interfaces'
 import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import type { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 
 export interface RenderLink {
   /** The type of link being connected. */
@@ -100,6 +100,6 @@ export interface RenderLink {
 
 type RegisteredRenderLink = RenderLink
 
-declare module '../types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface RenderLink extends RegisteredRenderLink {}
 }

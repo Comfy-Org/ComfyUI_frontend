@@ -1,4 +1,4 @@
-import type { Point, Size } from '@/lib/litegraph/src/interfaces'
+import type { Point, Size } from '@comfyorg/graph-model/interfaces'
 
 export interface PositionConfig {
   /* The position of the element on litegraph canvas */

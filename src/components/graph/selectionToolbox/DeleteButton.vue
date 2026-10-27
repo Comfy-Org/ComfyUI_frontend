@@ -16,7 +16,7 @@ import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { useCommandStore } from '@/stores/commandStore'
 
 const commandStore = useCommandStore()

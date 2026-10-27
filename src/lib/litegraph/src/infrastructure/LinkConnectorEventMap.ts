@@ -10,10 +10,10 @@ import type {
   SubgraphInputNode,
   SubgraphOutputNode,
   RenderLink
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IWidget } from '@/lib/litegraph/src/types/widgets'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { IWidget } from '@comfyorg/graph-model/widgets'
 
 export interface LinkConnectorEventMap {
   reset: boolean

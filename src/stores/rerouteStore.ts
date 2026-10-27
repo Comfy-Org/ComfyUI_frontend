@@ -7,11 +7,11 @@ import type {
   GraphScope,
   OwningGraphId,
   RootGraphId
-} from '@/types/graphScopeId'
-import type { LinkId } from '@/types/linkId'
+} from '@comfyorg/graph-model/graphScopeId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
-import type { RerouteChain } from '@/types/rerouteChain'
-import type { RerouteId } from '@/types/rerouteId'
+import type { RerouteChain } from '@comfyorg/graph-model/rerouteChain'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
 /** The links whose chains pass through a reroute, split by link liveness. */
 export interface RerouteMembership {

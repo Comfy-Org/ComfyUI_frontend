@@ -73,7 +73,7 @@ import { useCompositorPsdDownload } from '@/renderer/extensions/compositor/compo
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const { nodeId } = defineProps<{
   nodeId: NodeId

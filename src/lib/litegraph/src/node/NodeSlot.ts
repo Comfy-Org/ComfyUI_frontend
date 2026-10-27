@@ -2,7 +2,7 @@ import type {
   LGraphNode,
   SubgraphInput,
   SubgraphOutput
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { shallowReactive } from 'vue'
 
 import { MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
@@ -14,20 +14,17 @@ import type {
   INodeSlot,
   OptionalProps,
   Point
-} from '@/lib/litegraph/src/interfaces'
+} from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   ISubgraphInput
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { getCentre } from '@/lib/litegraph/src/measure'
 
-import {
-  LinkDirection,
-  RenderShape
-} from '@/lib/litegraph/src/types/globalEnums'
+import { LinkDirection, RenderShape } from '@comfyorg/graph-model/globalEnums'
 
 import { SlotBase } from './SlotBase'
 

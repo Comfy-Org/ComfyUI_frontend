@@ -2,7 +2,7 @@ import { useSharedCanvasPositionConversion } from '@/composables/element/useCanv
 import type {
   CanvasPointerEvent,
   CanvasPointerExtensions
-} from '@/lib/litegraph/src/types/events'
+} from '@comfyorg/graph-model/events'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 type PointerOffsets = {

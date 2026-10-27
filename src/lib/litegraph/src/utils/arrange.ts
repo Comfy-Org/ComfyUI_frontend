@@ -1,6 +1,6 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
-import type { Direction } from '@/lib/litegraph/src/interfaces'
+import type { Direction } from '@comfyorg/graph-model/interfaces'
 
 export interface NewNodePosition {
   node: LGraphNode

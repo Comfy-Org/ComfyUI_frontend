@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { ReadOnlyRect } from '@comfyorg/graph-model/interfaces'
 import {
   clipRectToBounds,
   computeUnionBounds,

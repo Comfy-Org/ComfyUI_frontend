@@ -8,8 +8,8 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
-import { toNodeId } from '@/types/nodeId'
-import type { SlotId } from '@/types/slotId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SlotId } from '@comfyorg/graph-model/slotId'
 
 import {
   resolveNodeSurfaceSlotCandidate,

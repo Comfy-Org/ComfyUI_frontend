@@ -3,13 +3,15 @@ import { computed, ref, shallowReactive } from 'vue'
 import type { ComputedRef } from 'vue'
 import * as Y from 'yjs'
 
-import { toGroupId } from '@/types/groupId'
-import { toNodeId } from '@/types/nodeId'
-import type { GroupId } from '@/types/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { reportError } from '@/platform/telemetry/reportError'
 import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
-import { toRerouteId } from '@/types/rerouteId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { UUID } from '@/utils/uuid'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
@@ -23,7 +25,6 @@ import type {
   GroupLayout,
   LayoutChange,
   LayoutOperation,
-  LinkId,
   LinkLayout,
   LinkSegmentLayout,
   MoveNodeOperation,
@@ -32,7 +33,6 @@ import type {
   NodeId,
   NodeLayout,
   Point,
-  RerouteId,
   RerouteLayout,
   ResizeNodeOperation,
   SetGroupBoundsOperation,
@@ -41,7 +41,7 @@ import type {
   SlotOffset,
   SlotOffsetMode
 } from '@/renderer/core/layout/types'
-import type { SlotDirection, SlotIndex } from '@/types/slotId'
+import type { SlotDirection, SlotIndex } from '@comfyorg/graph-model/slotId'
 import {
   isBoundsEqual,
   isPointEqual

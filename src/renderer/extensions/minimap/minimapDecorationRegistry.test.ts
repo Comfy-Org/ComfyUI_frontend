@@ -5,8 +5,11 @@ import {
   registerMinimapDecorationLayer
 } from '@/platform/canvas/minimapDecorationRegistry'
 import { reportError } from '@/platform/telemetry/reportError'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 

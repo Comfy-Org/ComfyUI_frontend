@@ -4,7 +4,7 @@ import type {
   ReadOnlyRect,
   ReadOnlyTypedArray,
   Size
-} from '@/lib/litegraph/src/interfaces'
+} from '@comfyorg/graph-model/interfaces'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 
 /**
@@ -478,3 +478,11 @@ export type ReadOnlyRectangle = Omit<
   | 'resizeBottomRight'
   | 'updateTo'
 >
+
+type RegisteredRectangle = Rectangle
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface LitegraphEntityRegistry {
+    Rectangle: RegisteredRectangle
+  }
+}

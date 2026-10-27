@@ -10,7 +10,7 @@ import { useTransformState } from '@/renderer/core/layout/transform/useTransform
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 

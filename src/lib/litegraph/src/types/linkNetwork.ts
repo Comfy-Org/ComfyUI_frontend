@@ -4,10 +4,10 @@ import type {
   Reroute,
   SubgraphInputNode,
   SubgraphOutputNode
-} from '@/lib/litegraph/src/types/entityRegistry'
-import type { LinkId } from '@/types/linkId'
-import type { NodeId } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
+} from '@comfyorg/graph-model/entityRegistry'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { UUID } from '@/utils/uuid'
 
 export interface ReadonlyLinkNetwork {

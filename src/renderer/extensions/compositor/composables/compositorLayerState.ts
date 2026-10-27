@@ -1,3 +1,9 @@
+import type {
+  CompositorLayerEntry,
+  CompositorBackgroundEntry,
+  CompositorLayerState
+} from '@comfyorg/graph-model/compositor'
+export type { CompositorLayerState } from '@comfyorg/graph-model/compositor'
 import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
 import type { BlendFn } from '@comfyorg/layer-editor/mode'
 import type {
@@ -8,22 +14,6 @@ import type {
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
 
-interface CompositorLayerEntry {
-  name: string
-  visible: boolean
-  opacity: number
-  blend: BlendFn
-  transform: Transform
-  flipH: boolean
-  flipV: boolean
-}
-
-interface CompositorBackgroundEntry {
-  color: string
-  opacity: number
-  visible: boolean
-}
-
 const DEFAULT_BACKGROUND_ENTRY: CompositorBackgroundEntry = {
   color: '#ffffff',
   opacity: 1,
@@ -31,15 +21,6 @@ const DEFAULT_BACKGROUND_ENTRY: CompositorBackgroundEntry = {
 }
 
 const LAYER_STATE_VERSION = 1
-
-export interface CompositorLayerState {
-  version?: typeof LAYER_STATE_VERSION
-  canvas?: { w: number; h: number }
-  inputs?: string[]
-  background?: CompositorBackgroundEntry
-  order?: number[]
-  layers: Array<CompositorLayerEntry | null>
-}
 
 export interface CompositorBBox {
   x: number

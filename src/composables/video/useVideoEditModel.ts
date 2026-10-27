@@ -6,7 +6,7 @@ import { clamp } from 'es-toolkit'
 import type {
   VideoEditTrim,
   VideoEditValue
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import type { Bounds } from '@/renderer/core/layout/types'
 import { frameToTime, roundSeconds, timeToFrame } from '@/utils/videoFrameUtil'
 

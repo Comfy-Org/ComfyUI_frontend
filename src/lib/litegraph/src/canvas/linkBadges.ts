@@ -1,4 +1,4 @@
-import type { LLink } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LLink } from '@comfyorg/graph-model/entityRegistry'
 import { textOnColor } from '@/utils/colorUtil'
 
 import type {
@@ -6,13 +6,13 @@ import type {
   Point,
   ReadOnlyRect,
   Rect
-} from '@/lib/litegraph/src/interfaces'
+} from '@comfyorg/graph-model/interfaces'
 import { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
 
-import type { LinkId } from '@/types/linkId'
-import type { LinkPresentation } from '@/types/linkPresentation'
-import { compareNodeIds } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
+import { compareNodeIds } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { overlapBounding } from '@/lib/litegraph/src/measure'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 

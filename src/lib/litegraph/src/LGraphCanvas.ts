@@ -4,7 +4,7 @@ import type {
   SubgraphId,
   SlotTypeDefaultNodeOpts,
   Subgraph
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { default as DOMPurify } from 'dompurify'
 import { cloneDeep, toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
@@ -53,9 +53,9 @@ import {
   readBrowserDpr
 } from '@/renderer/core/canvas/canvasViewport'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toRerouteId } from '@/types/rerouteId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -90,15 +90,15 @@ import type { AnimationOptions } from './DragAndScale'
 import { LGraphGroup } from './LGraphGroup'
 
 import { LGraphNode } from './LGraphNode'
-import type { NodeProperty } from '@/types/nodeProperty'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { detachSerialisedLinks } from './linkDeduplication'
-import { parseNodeId, serializeNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { parseNodeId, serializeNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
 import { inputHasLink, nodeLinkIds, outputLinks } from './node/slotLinks'
-import type { LinkId } from '@/types/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { Reroute } from './Reroute'
-import type { RerouteId } from '@/types/rerouteId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
 import { LinkConnector } from './canvas/LinkConnector'
 import { findRerouteAtPoint } from './canvas/hitTesting'
@@ -162,13 +162,13 @@ import type {
   ReadOnlyRect,
   Rect,
   Size
-} from './interfaces'
+} from '@comfyorg/graph-model/interfaces'
 import type {
   ConnectingLink,
   INodeInputSlot,
   INodeOutputSlot,
   INodeSlotContextItem
-} from './types/slots'
+} from '@comfyorg/graph-model/slots'
 import type {
   ContextMenuDivElement,
   IContextMenuOptions,
@@ -203,7 +203,7 @@ import { isSubgraphInput, isSubgraphOutput } from './subgraph/subgraphUtils'
 import type {
   CanvasPointerEvent,
   CanvasPointerExtensions
-} from './types/events'
+} from '@comfyorg/graph-model/events'
 import {
   CanvasItem,
   LGraphEventMode,
@@ -212,14 +212,14 @@ import {
   LinkRenderType,
   RenderShape,
   TitleMode
-} from './types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import type {
   ClipboardItems,
   ISerialisedNode,
   SubgraphIO
-} from './types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import type { NeverNever, PickNevers } from './types/utility'
-import type { IBaseWidget, TWidgetValue } from './types/widgets'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getDraggedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
@@ -9323,6 +9323,6 @@ provideCanvasClass(LGraphCanvas)
 
 type RegisteredLGraphCanvas = LGraphCanvas
 
-declare module './types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface LGraphCanvas extends RegisteredLGraphCanvas {}
 }

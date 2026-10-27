@@ -1,19 +1,19 @@
-import type { INodeFlags } from '@/lib/litegraph/src/interfaces'
+import type { INodeFlags } from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import type {
   LGraphEventMode,
   RenderShape,
   TitleMode
-} from '@/lib/litegraph/src/types/globalEnums'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type { NodeId } from '@/types/nodeId'
-import type { NodeProperty } from '@/types/nodeProperty'
+} from '@comfyorg/graph-model/globalEnums'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import type { UUID } from '@/utils/uuid'
 
-export type { NodeProperty } from '@/types/nodeProperty'
+export type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 
 /**
  * The fields the renderer draws. Selection, execution, errors, geometry, widget

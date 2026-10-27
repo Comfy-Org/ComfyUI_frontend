@@ -1,10 +1,10 @@
-import type { GroupId } from '@/types/groupId'
-import type { LinkId } from '@/types/linkId'
-import type { NodeId } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
-import type { SlotIndex } from '@/types/slotId'
+import type { GroupId } from './groupId'
+import type { LinkId } from './linkId'
+import type { NodeId } from './nodeId'
+import type { RerouteId } from './rerouteId'
+import type { SlotIndex } from './slotId'
 
-import type { LinkDirection, RenderShape } from './types/globalEnums'
+import type { LinkDirection, RenderShape } from './globalEnums'
 
 export type Dictionary<T> = { [key: string]: T }
 
@@ -272,4 +272,4 @@ export interface DefaultConnectionColors {
   getDisconnectedColor(type: ISlotType): CanvasColour
 }
 
-export type { SlotIndex } from '@/types/slotId'
+export type { SlotIndex } from './slotId'

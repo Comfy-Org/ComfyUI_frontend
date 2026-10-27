@@ -4,7 +4,7 @@ import type {
   IBoundingBoxWidget,
   IImageCropWidget,
   INumericWidget
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import type { Bounds } from '@/renderer/core/layout/types'
 import type {
   BoundingBoxInputSpec,

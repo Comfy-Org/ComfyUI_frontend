@@ -4,9 +4,9 @@ import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 
 import type { UUID } from '@/utils/uuid'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 

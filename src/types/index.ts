@@ -44,14 +44,18 @@ import type {
 } from './extensionTypes'
 import type { ToastId } from './toastId'
 
-export type { NodeId, SerializedNodeId } from './nodeId'
-export { toNodeId, parseNodeId } from './nodeId'
-export type { LinkId } from './linkId'
-export { toLinkId } from './linkId'
-export type { RerouteId } from './rerouteId'
-export { toRerouteId } from './rerouteId'
-export type { SlotDirection, SlotId, SlotIndex } from './slotId'
-export { slotId } from './slotId'
+export type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+export { toNodeId, parseNodeId } from '@comfyorg/graph-model/nodeId'
+export type { LinkId } from '@comfyorg/graph-model/linkId'
+export { toLinkId } from '@comfyorg/graph-model/linkId'
+export type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+export { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+export type {
+  SlotDirection,
+  SlotId,
+  SlotIndex
+} from '@comfyorg/graph-model/slotId'
+export { slotId } from '@comfyorg/graph-model/slotId'
 export type { ComfyExtension } from './comfy'
 export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 export type { ComfyApi } from '@/scripts/api'
@@ -67,7 +71,7 @@ export type {
   createNodeLocatorId,
   parseNodeExecutionId,
   createNodeExecutionId
-} from './nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 export type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 export type {
   EmbeddingsResponse,
@@ -132,7 +136,7 @@ export type {
   ReadOnlyRect,
   Rect,
   Size
-} from '@/lib/litegraph/src/interfaces'
+} from '@comfyorg/graph-model/interfaces'
 export type { CreateNodeOptions } from '@/lib/litegraph/src/LiteGraphGlobal'
 export type {
   IContextMenuOptions,
@@ -146,7 +150,7 @@ export type {
   ConnectingLink,
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 export type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 
 export type {
@@ -198,7 +202,7 @@ export type {
   VideoEditTrim,
   VideoEditValue,
   WidgetCallbackOptions
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 export type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 
 export type {
@@ -212,7 +216,7 @@ export type {
   SerialisableGraph,
   SerialisableLLink,
   SerialisableReroute
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 export type {
   EaseFunction,
@@ -223,10 +227,10 @@ export type {
   NodeSlotType,
   RenderShape,
   TitleMode
-} from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 export type { SlotShape, SlotType } from '@/lib/litegraph/src/draw'
 
-export type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+export type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 export type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 export type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 

@@ -1,4 +1,7 @@
-import type { BoundingBox, BoundingBoxMetadata } from '@/types/boundingBoxes'
+import type {
+  BoundingBox,
+  BoundingBoxMetadata
+} from '@comfyorg/graph-model/boundingBoxes'
 
 export type HitMode =
   | 'move'

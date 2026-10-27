@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 
-import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/types/nodeId'
+import type { Point } from '@comfyorg/graph-model/interfaces'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   comfyExpect as expect,

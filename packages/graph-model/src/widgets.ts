@@ -1,20 +1,21 @@
 import type {
   ExecutableLGraphNode,
   LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/types/entityRegistry'
-import type { Bounds } from '@/renderer/core/layout/types'
-import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
-import type { CurveData } from '@/components/curve/types'
-import type { BoundingBox } from '@/types/boundingBoxes'
+  LGraphNode,
+  CanvasPointer
+} from './entityRegistry'
+import type { Bounds } from './bounds'
+import type { CompositorWidgetValue } from './compositor'
+import type { CurveData } from './curve'
+import type { BoundingBox } from './boundingBoxes'
 import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
-import type { WidgetValue } from '@/types/widgetValue'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetValue } from './widgetValue'
+import type { WidgetId } from './widgetId'
 import type {
   WidgetSurfaces,
   WidgetVisibilityComponent
-} from '@/types/widgetVisibility'
-import type { ColorFormat } from '@/utils/colorUtil'
+} from './widgetVisibility'
+import type { ColorFormat } from './color'
 import type { InputSpec } from '@comfyorg/object-info-parser'
 
 import type {
@@ -23,11 +24,10 @@ import type {
   Point,
   RequiredProps,
   Size
-} from '@/lib/litegraph/src/interfaces'
-import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+} from './interfaces'
 import type { CanvasPointerEvent } from './events'
 
-export type { NodeBindable } from '@/lib/litegraph/src/utils/type'
+export type { NodeBindable } from './nodeBindable'
 
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()

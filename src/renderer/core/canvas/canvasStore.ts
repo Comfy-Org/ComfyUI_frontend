@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 
-import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Point, Positionable } from '@comfyorg/graph-model/interfaces'
 import type {
   LGraph,
   LGraphCanvas,
@@ -18,8 +18,8 @@ import { resolveSelectable } from '@/renderer/core/canvas/litegraph/selectionAda
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { NodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
 

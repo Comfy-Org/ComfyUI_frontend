@@ -20,7 +20,7 @@ import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplace
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
 
@@ -33,7 +33,7 @@ const defaultWorkflowExecutionIntent = {
 vi.mock(import('@/composables/useAppMode'))
 
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true

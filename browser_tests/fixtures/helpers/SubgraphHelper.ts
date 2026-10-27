@@ -6,8 +6,8 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { parseNodeId, toNodeId } from '@/types/nodeId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'

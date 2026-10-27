@@ -1,6 +1,6 @@
 import { clamp } from 'es-toolkit/compat'
 
-import type { ReadOnlyRect, Size } from '@/lib/litegraph/src/interfaces'
+import type { ReadOnlyRect, Size } from '@comfyorg/graph-model/interfaces'
 
 /**
  * Basic width and height, with min/max constraints.

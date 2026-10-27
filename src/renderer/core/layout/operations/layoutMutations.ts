@@ -1,5 +1,5 @@
-import type { LGraph } from '@/lib/litegraph/src/types/entityRegistry'
-import type { NodeId } from '@/types/nodeId'
+import type { LGraph } from '@comfyorg/graph-model/entityRegistry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'

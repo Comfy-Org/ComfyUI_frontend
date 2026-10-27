@@ -12,8 +12,8 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useMinimapGraph } from '@/renderer/extensions/minimap/composables/useMinimapGraph'
 import { api } from '@/scripts/api'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createMockLGraph,
   createMockLGraphNode,

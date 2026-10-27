@@ -1,9 +1,6 @@
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/types/nodeId'
-import type { WidgetValue } from '@/types/widgetValue'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
 export interface WidgetState<
   TValue = WidgetValue,

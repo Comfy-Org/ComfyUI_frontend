@@ -2,15 +2,15 @@ import type {
   LGraphNode,
   Reroute,
   LinkConnector
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
 
 import { ToInputRenderLink } from './ToInputRenderLink'

@@ -1,14 +1,14 @@
 import type {
   LGraphGroup,
   LGraphNode,
-  LinkReleaseContextExtended
-} from '@/lib/litegraph/src/types/entityRegistry'
+  LinkReleaseContextExtended,
+  Rectangle
+} from './entityRegistry'
 /**
  * Event interfaces for event extension
  */
 
-import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import type { HasBoundingRect, Point } from '@/lib/litegraph/src/interfaces'
+import type { HasBoundingRect, Point } from './interfaces'
 
 /** For Canvas*Event - adds graph space co-ordinates (property names are shipped) */
 interface ICanvasPosition {

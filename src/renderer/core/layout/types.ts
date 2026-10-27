@@ -1,14 +1,16 @@
+import type { Bounds } from '@comfyorg/graph-model/bounds'
+export type { Bounds } from '@comfyorg/graph-model/bounds'
 /**
  * Layout System - Type Definitions
  *
  * This file contains all type definitions for the layout system
  * that manages node positions, bounds, spatial data, and operations.
  */
-import type { GroupId } from '@/types/groupId'
-import type { LinkId } from '@/types/linkId'
-import type { NodeId } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
-import type { SlotDirection, SlotIndex } from '@/types/slotId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { SlotDirection, SlotIndex } from '@comfyorg/graph-model/slotId'
 import type { UUID } from '@/utils/uuid'
 
 // Enum for layout source types
@@ -28,21 +30,12 @@ export interface Size {
   height: number
 }
 
-export interface Bounds {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
 export interface NodeBoundsUpdate {
   nodeId: NodeId
   bounds: Bounds
 }
 
-export type { LinkId }
-export type { NodeId }
-export type { RerouteId }
+export type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 // Layout data structures
 export interface NodeLayout {

@@ -16,8 +16,8 @@ import type {
   LGraphNode,
   Point
 } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
 

@@ -449,6 +449,9 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:packages/design-system
+      '@comfyorg/graph-model':
+        specifier: workspace:*
+        version: link:packages/graph-model
       '@comfyorg/layer-editor':
         specifier: workspace:*
         version: link:packages/layer-editor
@@ -1208,6 +1211,28 @@ importers:
       vue-component-type-helpers:
         specifier: 'catalog:'
         version: 3.3.11
+
+  packages/graph-model:
+    dependencies:
+      '@comfyorg/layer-editor':
+        specifier: workspace:*
+        version: link:../layer-editor
+      '@comfyorg/object-info-parser':
+        specifier: workspace:*
+        version: link:../object-info-parser
+      '@comfyorg/viewport3d':
+        specifier: workspace:*
+        version: link:../viewport3d
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+      zod-validation-error:
+        specifier: 'catalog:'
+        version: 5.0.0(zod@4.6.5)
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
 
   packages/ingest-types:
     devDependencies:

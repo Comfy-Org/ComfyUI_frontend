@@ -3,7 +3,7 @@ import { basename, resolve } from 'node:path'
 
 import type { Page } from '@playwright/test'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { CuratedOutputHashes } from '@e2e/fixtures/customNode/outputHashes'
 import {
   comfyExpect as expect,

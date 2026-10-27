@@ -3,9 +3,9 @@ import type {
   SubgraphInput,
   SubgraphNode,
   SubgraphOutput
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 import type { LGraphEventMap } from './LGraphEventMap'
 

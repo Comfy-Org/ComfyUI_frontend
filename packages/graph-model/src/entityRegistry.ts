@@ -1,4 +1,14 @@
+import type { ReadOnlyRect } from './interfaces'
+import type { SerialisedLLinkArray as LinkTuple } from './serialisation'
+
 export interface LitegraphEntityRegistry {}
+
+type RegisteredEntity<
+  K extends PropertyKey,
+  Fallback = never
+> = K extends keyof LitegraphEntityRegistry
+  ? LitegraphEntityRegistry[K]
+  : Fallback
 export interface ContextMenu<_TValue = unknown> {}
 export interface LGraphNode {}
 export interface LGraph {}
@@ -12,26 +22,32 @@ export interface SubgraphOutputNode {}
 export interface LLink {}
 export interface Reroute {}
 export interface LGraphGroup {}
-export interface LiteGraphGlobal {}
+export interface LiteGraphGlobal {
+  VERSION: 0.4
+}
 export interface LinkConnector {}
 export interface FloatingRenderLink {}
 export interface MovingInputLink {}
 export interface MovingOutputLink {}
 export interface ToInputFromIoNodeLink {}
 export interface ToInputRenderLink {}
-export type GraphOrSubgraph = LitegraphEntityRegistry['GraphOrSubgraph']
+export type GraphOrSubgraph = RegisteredEntity<'GraphOrSubgraph'>
 export interface LGraphConfig {}
 export interface LGraphExtra {}
-export type SubgraphId = LitegraphEntityRegistry['SubgraphId']
+export type SubgraphId = RegisteredEntity<'SubgraphId', string>
 export interface BaseLGraph {}
 export interface IGraphGroupFlags {}
-export type SerialisedLLinkArray =
-  LitegraphEntityRegistry['SerialisedLLinkArray']
-export type ResolvedConnection = LitegraphEntityRegistry['ResolvedConnection']
+export type SerialisedLLinkArray = RegisteredEntity<
+  'SerialisedLLinkArray',
+  LinkTuple
+>
+export type ResolvedConnection = RegisteredEntity<'ResolvedConnection'>
 export interface SlotTypeDefaultNodeOpts {}
 export interface LinkReleaseContextExtended {}
 export interface RenderLink {}
 export interface SubgraphIONode {}
-export type ExecutableLGraphNode =
-  LitegraphEntityRegistry['ExecutableLGraphNode']
-export type ExecutionId = LitegraphEntityRegistry['ExecutionId']
+export type ExecutableLGraphNode = RegisteredEntity<'ExecutableLGraphNode'>
+export type ExecutionId = RegisteredEntity<'ExecutionId', string>
+
+export interface CanvasPointer {}
+export type Rectangle = RegisteredEntity<'Rectangle', ReadOnlyRect>

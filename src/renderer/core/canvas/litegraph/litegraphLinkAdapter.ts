@@ -1,4 +1,4 @@
-import type { LLink, Reroute } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LLink, Reroute } from '@comfyorg/graph-model/entityRegistry'
 /**
  * Litegraph Link Adapter
  *
@@ -8,13 +8,13 @@ import type { LLink, Reroute } from '@/lib/litegraph/src/types/entityRegistry'
  * Maintains backward compatibility with existing litegraph integration.
  */
 
-import type { CanvasColour, Point } from '@/lib/litegraph/src/interfaces'
+import type { CanvasColour, Point } from '@comfyorg/graph-model/interfaces'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import {
   LinkDirection,
   LinkMarkerShape,
   LinkRenderType
-} from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
 import type {
   ArrowShape,

@@ -1,15 +1,15 @@
 import type {
   ContextMenu,
   LGraphNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
 import { LiteGraphGlobal } from './LiteGraphGlobal'
-import type { Point } from './interfaces'
-import type { ConnectingLink } from './types/slots'
+import type { Point } from '@comfyorg/graph-model/interfaces'
+import type { ConnectingLink } from '@comfyorg/graph-model/slots'
 import type { IContextMenuOptions } from './types/contextMenu'
 import { registerLiteGraphInstance } from './litegraphInstance'
 import { loadPolyfills } from './polyfills'
-import type { CanvasEventDetail } from './types/events'
+import type { CanvasEventDetail } from '@comfyorg/graph-model/events'
 
 // Must remain above LiteGraphGlobal (circular dependency due to abstract factory behaviour in `configure`)
 export { Subgraph } from './subgraph/Subgraph'
@@ -78,13 +78,16 @@ export type {
   Positionable,
   Size,
   SlotIndex
-} from './interfaces'
+} from '@comfyorg/graph-model/interfaces'
 export type {
   IContextMenuOptions,
   IContextMenuValue
 } from './types/contextMenu'
 export type { LinkNetwork } from './types/linkNetwork'
-export type { INodeInputSlot, INodeOutputSlot } from './types/slots'
+export type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
 export {
   LGraph,
   type LGraphTriggerAction,
@@ -96,7 +99,7 @@ export type { LGraphTriggerEvent } from './types/graphTriggers'
 export { LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
 export { LGraphGroup } from './LGraphGroup'
-export type { GroupId } from '@/types/groupId'
+export type { GroupId } from '@comfyorg/graph-model/groupId'
 export { LGraphNode } from './LGraphNode'
 export { LLink } from './LLink'
 export { createBounds } from './measure'
@@ -107,22 +110,22 @@ export {
   type ExecutionId
 } from './subgraph/ExecutableNodeDTO'
 export { SubgraphNode } from './subgraph/SubgraphNode'
-export type { CanvasPointerEvent } from './types/events'
+export type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 export {
   EaseFunction,
   LGraphEventMode,
   LinkDirection,
   LinkMarkerShape,
   RenderShape
-} from './types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 export type {
   ExportedSubgraph,
   ExportedSubgraphInstance,
   ISerialisedGraph,
   ISerialisedNode,
   SerialisableGraph
-} from './types/serialisation'
-export type { IWidget } from './types/widgets'
+} from '@comfyorg/graph-model/serialisation'
+export type { IWidget } from '@comfyorg/graph-model/widgets'
 export { isColorable } from './utils/type'
 export { createUuidv4 } from '@/utils/uuid'
 export type { UUID } from '@/utils/uuid'
@@ -145,7 +148,11 @@ export { LGraphButton } from './LGraphButton'
 export { MovingOutputLink } from './canvas/MovingOutputLink'
 export { ToOutputRenderLink } from './canvas/ToOutputRenderLink'
 export { ToInputFromIoNodeLink } from './canvas/ToInputFromIoNodeLink'
-export type { TWidgetType, TWidgetValue, IWidgetOptions } from './types/widgets'
+export type {
+  TWidgetType,
+  TWidgetValue,
+  IWidgetOptions
+} from '@comfyorg/graph-model/widgets'
 export {
   findUsedSubgraphIds,
   getDirectSubgraphIds,
@@ -162,7 +169,7 @@ export type { CreateNodeOptions } from './LiteGraphGlobal'
 
 type RegisteredLinkReleaseContextExtended = LinkReleaseContextExtended
 
-declare module './types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface LinkReleaseContextExtended extends RegisteredLinkReleaseContextExtended {}
 }
 export type { LGraphNodeConstructor } from './types/nodeConstructor'

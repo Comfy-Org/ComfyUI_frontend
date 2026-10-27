@@ -301,11 +301,6 @@
       "count": 1
     }
   },
-  "src/lib/litegraph/src/LLink.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
   "src/lib/litegraph/src/LiteGraphGlobal.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 3
@@ -314,9 +309,6 @@
   "src/lib/litegraph/src/Reroute.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
-    },
-    "comfy/no-reexports": {
-      "count": 2
     }
   },
   "src/lib/litegraph/src/canvas/FloatingRenderLink.ts": {
@@ -359,14 +351,9 @@
       "count": 4
     }
   },
-  "src/lib/litegraph/src/interfaces.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
   "src/lib/litegraph/src/litegraph.ts": {
     "comfy/no-reexports": {
-      "count": 55
+      "count": 47
     }
   },
   "src/lib/litegraph/src/litegraphInstance.ts": {
@@ -408,11 +395,6 @@
     }
   },
   "src/lib/litegraph/src/subgraph/subgraphUtils.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/types/widgets.ts": {
     "comfy/no-reexports": {
       "count": 1
     }
@@ -847,11 +829,6 @@
       "count": 1
     }
   },
-  "src/renderer/core/layout/types.ts": {
-    "comfy/no-reexports": {
-      "count": 3
-    }
-  },
   "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -1165,26 +1142,11 @@
   },
   "src/types/index.ts": {
     "comfy/no-reexports": {
-      "count": 67
-    }
-  },
-  "src/types/nodeState.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/types/simplifiedWidget.ts": {
-    "comfy/no-reexports": {
-      "count": 1
+      "count": 52
     }
   },
   "src/types/slotId.test.ts": {
     "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/types/widgetId.ts": {
-    "comfy/no-new-error-throw": {
       "count": 1
     }
   },

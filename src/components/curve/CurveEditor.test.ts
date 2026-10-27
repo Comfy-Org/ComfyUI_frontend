@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { CurvePoint } from './types'
+import type { CurvePoint } from '@comfyorg/graph-model/curve'
 
 import CurveEditor from './CurveEditor.vue'
 

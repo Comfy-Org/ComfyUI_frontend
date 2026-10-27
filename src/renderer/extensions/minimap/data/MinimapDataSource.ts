@@ -1,8 +1,8 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { calculateNodeBounds } from '@/renderer/core/spatial/boundsCalculator'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import type {
   MinimapBounds,

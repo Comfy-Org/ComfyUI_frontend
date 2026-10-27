@@ -40,8 +40,8 @@ import {
   findSubgraphNodePathById,
   executionIdToNodeLocatorId
 } from '@/utils/graphTraversalUtil'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { toNodeId } from '@/types/nodeId'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 

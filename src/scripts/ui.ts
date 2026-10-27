@@ -12,7 +12,7 @@ import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
 } from '@/platform/telemetry/types'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useCommandStore } from '@/stores/commandStore'
 
 import { api } from './api'

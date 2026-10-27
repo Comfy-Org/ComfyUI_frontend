@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
   constructor(private readonly page: Page) {}

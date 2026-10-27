@@ -1,4 +1,4 @@
-import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+import type { CompassCorners } from '@comfyorg/graph-model/interfaces'
 
 interface ResizeHandle {
   readonly corner: CompassCorners

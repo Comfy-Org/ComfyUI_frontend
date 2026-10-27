@@ -4,7 +4,10 @@ import { defineComponent, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useCurveEditor } from '@/composables/useCurveEditor'
-import type { CurveInterpolation, CurvePoint } from '@/components/curve/types'
+import type {
+  CurveInterpolation,
+  CurvePoint
+} from '@comfyorg/graph-model/curve'
 
 const mockCreateInterpolator = vi.hoisted(() =>
   vi.fn((points: CurvePoint[]) => {

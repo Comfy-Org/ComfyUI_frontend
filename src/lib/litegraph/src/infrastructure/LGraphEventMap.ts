@@ -4,18 +4,18 @@ import type {
   LLink,
   ResolvedConnection,
   Subgraph
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { ReadOnlyRect } from '@comfyorg/graph-model/interfaces'
 
-import type { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import type { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 export interface LGraphEventMap {
   configuring: {

@@ -1,6 +1,6 @@
 import { clamp } from 'es-toolkit/math'
 
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { ReadOnlyRect } from '@comfyorg/graph-model/interfaces'
 import type { Bounds } from '@/renderer/core/layout/types'
 
 /** A rectangle's viewport edges: the DOMRect subset, so a DOMRect is directly assignable. */

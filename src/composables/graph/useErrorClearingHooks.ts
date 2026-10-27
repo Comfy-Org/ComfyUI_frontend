@@ -17,7 +17,7 @@ import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
   NodeSlotType
-} from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import type { LGraphTriggerEvent } from '@/lib/litegraph/src/types/graphTriggers'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -41,8 +41,8 @@ import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplaceme
 import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import {
   collectAllNodes,
@@ -52,7 +52,7 @@ import {
   isExecutionPathActive,
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
-import { getParentExecutionIds } from '@/types/nodeIdentification'
+import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 
 const hookedNodes = new WeakSet<LGraphNode>()
 

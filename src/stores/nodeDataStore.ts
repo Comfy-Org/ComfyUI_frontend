@@ -1,14 +1,17 @@
 import { defineStore } from 'pinia'
 import { reactive, toRaw } from 'vue'
 
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
 import type {
   GraphScope,
   OwningGraphId,
   RootGraphId
-} from '@/types/graphScopeId'
+} from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@/types/nodeState'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 /**

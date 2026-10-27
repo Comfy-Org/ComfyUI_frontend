@@ -9,8 +9,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
 const NODE_ID = toNodeId(5)

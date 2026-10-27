@@ -1,7 +1,7 @@
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
-import type { Point as LGPoint } from '@/lib/litegraph/src/interfaces'
+import type { Point as LGPoint } from '@comfyorg/graph-model/interfaces'
 import {
   RENDER_SCALE_FACTOR,
   getGraphRenderAnchor,

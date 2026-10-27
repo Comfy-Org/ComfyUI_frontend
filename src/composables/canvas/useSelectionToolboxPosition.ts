@@ -4,7 +4,7 @@ import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
+import type { ReadOnlyRect, Rect } from '@comfyorg/graph-model/interfaces'
 import { getSelectedLinksAnchor } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

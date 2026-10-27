@@ -1,10 +1,10 @@
 import * as Y from 'yjs'
 
-import { toGroupId } from '@/types/groupId'
-import type { GroupId } from '@/types/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
 import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
-import { parseNodeId, toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 /**
  * Stored geometry: one `[x, y, width, height]` tuple. Position, size and bounds

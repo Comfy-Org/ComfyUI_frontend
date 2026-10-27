@@ -2,11 +2,11 @@ import type {
   LGraphNode,
   LLink,
   SubgraphInputNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
-import type { RerouteId } from '@/types/rerouteId'
-import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { Point } from '@comfyorg/graph-model/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { zeroUuid } from '@/utils/uuid'
 

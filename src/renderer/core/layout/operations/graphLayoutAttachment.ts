@@ -3,18 +3,18 @@ import type {
   LGraphGroup,
   LGraphNode,
   Reroute
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   Point as LegacyPoint,
   Size as LegacySize
-} from '@/lib/litegraph/src/interfaces'
+} from '@comfyorg/graph-model/interfaces'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { LayoutOperation, Point, Size } from '@/renderer/core/layout/types'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 type GraphLayoutOwner = Pick<

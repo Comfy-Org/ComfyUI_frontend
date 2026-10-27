@@ -2,7 +2,10 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { createInterpolator } from '@/components/curve/curveUtils'
-import type { CurveInterpolation, CurvePoint } from '@/components/curve/types'
+import type {
+  CurveInterpolation,
+  CurvePoint
+} from '@comfyorg/graph-model/curve'
 
 interface UseCurveEditorOptions {
   svgRef: Ref<SVGSVGElement | null>

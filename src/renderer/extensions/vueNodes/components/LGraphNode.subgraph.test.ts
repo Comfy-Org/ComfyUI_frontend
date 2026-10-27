@@ -7,7 +7,7 @@ import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nextTick } from 'vue'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'

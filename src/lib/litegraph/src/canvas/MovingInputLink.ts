@@ -3,23 +3,23 @@ import type {
   LLink,
   Reroute,
   SubgraphOutput
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
-import type { Point, SlotIndex } from '@/lib/litegraph/src/interfaces'
+import type { Point, SlotIndex } from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
 
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+import type { SubgraphIO } from '@comfyorg/graph-model/serialisation'
 
 import { MovingLinkBase } from './MovingLinkBase'
 
@@ -160,6 +160,6 @@ export class MovingInputLink extends MovingLinkBase {
 
 type RegisteredMovingInputLink = MovingInputLink
 
-declare module '../types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface MovingInputLink extends RegisteredMovingInputLink {}
 }

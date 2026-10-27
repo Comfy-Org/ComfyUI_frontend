@@ -1,9 +1,9 @@
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import type { LinkId } from '@/types/linkId'
-import type { NodeId } from '@/types/nodeId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
-import type { OwningGraphId } from '@/types/graphScopeId'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { OwningGraphId } from '@comfyorg/graph-model/graphScopeId'
 
 export interface LinkTopology {
   readonly id: LinkId

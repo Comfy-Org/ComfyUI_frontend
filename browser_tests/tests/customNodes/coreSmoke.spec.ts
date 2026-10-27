@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import {
   comfyExpect as expect,
   comfyPageFixture as test

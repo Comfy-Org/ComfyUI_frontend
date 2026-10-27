@@ -6,7 +6,7 @@ import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
 import Button from '@comfyorg/design-system/button/Button'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
 
