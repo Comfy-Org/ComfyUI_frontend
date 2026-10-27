@@ -1991,7 +1991,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it('keeps the standing card visible until the server admits the turn', async () => {
     let releaseAdmission = () => {}
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
-      if (threadListRoute.test(String(input)))
+      if (String(input).endsWith('/api/agent/threads'))
         return json(200, agentThreadList())
       return new Promise<Response>((resolve) => {
         releaseAdmission = () =>
@@ -2027,7 +2027,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
         })
     )
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
-      if (threadListRoute.test(String(input)))
+      if (String(input).endsWith('/api/agent/threads'))
         return json(200, agentThreadList())
       return json(202, { thread_id: 'th-1', message_id: 'm-1' })
     })
@@ -2055,7 +2055,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
   it('waits for an adopted billing read when its own refresh is superseded', async () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
-      if (threadListRoute.test(String(input)))
+      if (String(input).endsWith('/api/agent/threads'))
         return json(200, agentThreadList())
       return json(202, { thread_id: 'th-1', message_id: 'm-1' })
     })
