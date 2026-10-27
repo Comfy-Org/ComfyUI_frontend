@@ -90,15 +90,11 @@ const {
 } = defineProps<{
   value: string
   title: string
-  /** The deployment's own name, in the column after the Build. */
   deployment?: string | null
-  /** The Release version when ready, else the status. */
   detail?: string | null
-  /** The row's full label, shown beside it when any of its text is cut off. */
   tooltip: string
   /** The deployment's status; leave it out for Comfy Cloud. */
   tone?: DeploymentStatusTone
-  /** Why the row may not run the workflow, on hover and as its description. */
   compatibilityNote?: string | null
   switching?: boolean
   disabled?: boolean

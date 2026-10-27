@@ -5,10 +5,6 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 
 import DeploymentSwitcherRow from './DeploymentSwitcherRow.vue'
 
-/**
- * One row of the deployment switcher. A row is a radio item, so each story
- * renders it inside an open menu.
- */
 const meta: Meta<typeof DeploymentSwitcherRow> = {
   title: 'Components/DeploymentSwitcher/Row',
   component: DeploymentSwitcherRow,
