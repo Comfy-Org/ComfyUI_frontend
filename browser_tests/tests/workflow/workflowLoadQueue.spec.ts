@@ -91,4 +91,43 @@ test.describe('Workflow load queue', { tag: '@vue-nodes' }, () => {
       await expect(vueNodes.getNodeByTitle('older workflow')).toHaveCount(0)
     })
   })
+
+  test('a nested load from a lifecycle hook is refused instead of hanging the queue', async ({
+    comfyPage
+  }) => {
+    const { page, vueNodes } = comfyPage
+
+    const result = await page.evaluate(
+      async ([nested, next]) => {
+        let nestedOutcome = 'not attempted'
+        let attempted = false
+        window.app!.registerExtension({
+          name: 'e2e.nestedLoadAfterAwait',
+          beforeLoadGraph: async (app) => {
+            if (attempted) return
+            attempted = true
+            await Promise.resolve()
+            try {
+              await app.loadGraphData(nested)
+              nestedOutcome = 'resolved'
+            } catch (error) {
+              nestedOutcome = (error as Error).message
+            }
+          }
+        })
+
+        await window.app!.loadGraphData(nested)
+        await window.app!.loadGraphData(next)
+        return { nestedOutcome }
+      },
+      [noteWorkflow('nested workflow'), noteWorkflow('next workflow')] as const
+    )
+
+    expect(result.nestedOutcome).toBe(
+      'A graph-load lifecycle hook cannot start a nested graph load'
+    )
+
+    await expect(vueNodes.nodes).toHaveCount(1)
+    await expect(vueNodes.getNodeByTitle('next workflow').first()).toBeVisible()
+  })
 })
