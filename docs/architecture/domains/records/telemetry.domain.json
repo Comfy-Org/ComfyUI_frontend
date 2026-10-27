@@ -129,8 +129,8 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedDependencies": ["ingest-api"],
+  "allowedConsumers": ["selection-toolbox"],
   "characterizationScenarios": [
     {
       "name": "TelemetryRegistry fans each event out to every registered provider and useTelemetry exposes the active registry",

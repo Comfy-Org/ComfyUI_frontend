@@ -427,6 +427,22 @@ describe('holding new extensions', () => {
     expect(init).not.toHaveBeenCalled()
   })
 
+  it('hands over what was held so far and goes on holding', () => {
+    useExtensionStore().holdNewExtensions()
+    useExtensionService().registerExtension({ name: 'first' })
+
+    const taken = useExtensionStore().takeHeldExtensions()
+    useExtensionService().registerExtension({ name: 'second' })
+
+    expect(taken.map(({ name }) => name)).toEqual(['first'])
+    expect(useExtensionStore().isExtensionInstalled('second')).toBe(false)
+    expect(
+      useExtensionStore()
+        .stopHoldingExtensions()
+        .map(({ name }) => name)
+    ).toEqual(['second'])
+  })
+
   it('drops a held extension whose disposer runs before holding stops', () => {
     useExtensionStore().holdNewExtensions()
     const dispose = useExtensionService().registerExtension({ name: 'gone' })

@@ -41,7 +41,8 @@ import type { SerializedNodeId } from '@/types/nodeId'
 import type { AuthUserInfo } from '@/types/authTypes'
 import type {
   BottomPanelExtension,
-  ExtensionManager
+  ExtensionManager,
+  ExtensionProvenance
 } from '@/types/extensionTypes'
 
 export type ComfyWidgetConstructor = (
@@ -294,6 +295,7 @@ export interface ComfyExtension {
    * The name of the extension
    */
   name: string
+  provenance?: ExtensionProvenance
   /**
    * The commands defined by the extension
    */

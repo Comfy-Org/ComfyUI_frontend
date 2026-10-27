@@ -62,7 +62,6 @@ Object.defineProperty(globalThis, 'localStorage', {
 })
 
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {

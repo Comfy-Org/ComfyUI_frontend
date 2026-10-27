@@ -2049,11 +2049,16 @@ export class ComfyApp implements IComfyApp {
             applyPromotedWidgetControl(node, 'afterQueued')
           }
           useFreeTierQuota().trackRun()
-          this.canvas.draw(true, true)
-          await this.ui.queue.update()
         }
 
         if (queuedCount > 0) {
+          this.canvas.draw(true, true)
+          void this.ui.queue.update().catch((error) => {
+            reportError(error, {
+              surface: 'graph',
+              errorType: 'queue_ui_update_failure'
+            })
+          })
           api.dispatchCustomEvent('promptQueued', {
             number,
             batchCount: queuedCount,

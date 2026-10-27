@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Slider from '@/components/ui/slider/Slider.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 const lightIntensity = defineModel<number>('lightIntensity')

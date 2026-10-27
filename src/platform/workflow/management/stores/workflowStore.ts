@@ -40,7 +40,11 @@ import type { NodeId } from '@/types/nodeId'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
-import { ComfyWorkflow, registerWorkflowRuntime } from './comfyWorkflow'
+import {
+  ComfyWorkflow,
+  registerWorkflowRuntime,
+  reportWorkflowStateAnomaly
+} from './comfyWorkflow'
 import type { LoadedComfyWorkflow } from './comfyWorkflow'
 import type { WorkflowStore } from './workflowStoreTypes'
 export { ComfyWorkflow, type LoadedComfyWorkflow }
@@ -185,7 +189,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
     options: { isCurrent?: () => boolean } = {}
   ): Promise<LoadedComfyWorkflow> => {
     assertCurrentContext(options.isCurrent)
-    if (isActive(workflow)) return workflow as LoadedComfyWorkflow
+    if (isActive(workflow)) {
+      if (workflow.isLoaded) return workflow as LoadedComfyWorkflow
+      reportWorkflowStateAnomaly(
+        'openWorkflow called on an active workflow that is not loaded',
+        'workflowStore.openWorkflow',
+        workflow,
+        { isActive: true }
+      )
+    }
 
     if (
       !options.isCurrent &&
@@ -343,6 +355,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
       delete workflowLookup.value[workflow.path]
     } else {
       workflow.unload()
+      // Closing discards the in-memory edits and their draft. A modified mark
+      // left behind keeps the workflow in `modifiedWorkflows`, where a later
+      // bulk save (sign-out) would write the unloaded state, `null`, over
+      // the stored file.
+      workflow.isModified = false
     }
   }
 

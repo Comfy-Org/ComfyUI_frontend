@@ -5,7 +5,7 @@
         v-bind="$attrs"
         :class="
           cn(
-            'flex cursor-pointer items-center-safe gap-2 rounded-md px-4 py-3 text-sm text-foreground transition-colors select-none',
+            'flex cursor-pointer items-center-safe gap-2 rounded-md p-3 text-sm text-foreground transition-colors select-none',
             active ? 'bg-muted' : 'hover:bg-accent'
           )
         "
@@ -14,10 +14,7 @@
         @click="onClick"
       >
         <NavIcon v-if="icon" :icon="icon" />
-        <i
-          v-else
-          class="icon-[lucide--folder] size-3.5 shrink-0 text-foreground"
-        />
+        <i v-else class="icon-[lucide--folder] text-foreground" />
         <span ref="textRef" class="min-w-0 truncate">
           <slot />
         </span>
@@ -31,7 +28,7 @@
         </Badge>
         <i
           v-else-if="suffixIcon"
-          :class="cn('ml-auto size-4 shrink-0', suffixIcon)"
+          :class="cn('ml-auto shrink-0', suffixIcon)"
           aria-hidden="true"
         />
       </div>
@@ -45,10 +42,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import Badge from '@/components/ui/badge/Badge.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { NavItemData } from '@/types/navTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 

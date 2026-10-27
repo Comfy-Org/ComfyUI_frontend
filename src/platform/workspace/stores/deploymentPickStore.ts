@@ -1,3 +1,4 @@
+import type { ReleaseUnsupportedPack } from '@comfyorg/ingest-types'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { defineStore } from 'pinia'
 import { computed, shallowRef, watch } from 'vue'
@@ -8,10 +9,8 @@ import {
   DEPLOYMENT_LISTING_BACKSTOP_MS,
   DEPLOYMENT_LISTING_RETRY_DELAYS_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import {
   hasDeploymentLink,
   readDeploymentHint,
@@ -156,6 +155,37 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     if (boot === undefined || !isVisible.value) return null
     return changeBetween(boot, pickedDeployment.value)
   })
+  const unsupportedPacks = shallowRef<ReleaseUnsupportedPack[]>([])
+
+  watch(bootDeployment, async (boot) => {
+    if (!boot || !workspaceStore.workspaceId) return
+    try {
+      const answer = await workspaceApi.getReleaseUnsupportedPacks()
+      if (answer.release_id === boot.release_id) {
+        unsupportedPacks.value = answer.packs
+      }
+    } catch (err) {
+      reportError(err, {
+        surface: 'workspace',
+        errorType: 'error_loading_release_unsupported_packs',
+        level: 'warning'
+      })
+    }
+  })
+
+  /**
+   * The pack the boot deployment's build could not load for this Comfy
+   * Registry id, matched on its registry id, then its folder.
+   */
+  function unsupportedPackFor(
+    cnrId: string
+  ): ReleaseUnsupportedPack | undefined {
+    const packs = unsupportedPacks.value
+    return (
+      packs.find((pack) => pack.registry_id === cnrId) ??
+      packs.find((pack) => pack.folder === cnrId)
+    )
+  }
   const switcherOpenAsks = shallowRef(0)
 
   function requestSwitcherOpen() {
@@ -509,6 +539,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     listingRefused,
     bootDeployment,
     changeSinceBoot,
+    unsupportedPackFor,
     switcherOpenAsks,
     load,
     loadOnce,

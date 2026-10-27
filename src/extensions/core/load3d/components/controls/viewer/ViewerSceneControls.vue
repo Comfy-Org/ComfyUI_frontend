@@ -66,7 +66,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const backgroundColor = defineModel<string>('backgroundColor')
 const showGrid = defineModel<boolean>('showGrid')

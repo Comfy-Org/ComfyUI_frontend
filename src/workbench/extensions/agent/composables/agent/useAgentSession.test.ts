@@ -56,7 +56,6 @@ import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
@@ -7755,6 +7754,28 @@ describe('app:agent_error telemetry (TEL-8)', () => {
       turn_accepted: false,
       ui_treatment: 'error_overlay'
     })
+  })
+
+  it('preserves default grouping when a failure bypasses the REST boundary', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new AgentApiError('bad gateway', 502, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_history_load_failed',
+      tags: {},
+      fingerprint: undefined
+    })
+    const reportedError = vi.mocked(reportError).mock.calls[0][0] as Error
+    expect(reportedError.message).not.toContain('th-9')
+    expect(reportedError.stack ?? '').not.toContain('th-9')
   })
 
   it('does not track a 404 thread-not-found history load as an error', async () => {
