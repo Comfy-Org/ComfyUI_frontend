@@ -70,7 +70,7 @@ const LAYOUTS = {
   compact: {
     width: 'w-[min(600px,calc(100vw-2rem))]',
     card: cn(CARD_SHELL, 'h-[85dvh] grid-rows-[minmax(0,1fr)_auto] gap-0 p-0'),
-    videoWrap: 'min-h-0 w-full [&>div]:h-full [&>div]:w-full',
+    videoWrap: 'min-h-0 w-full overflow-hidden [&>div]:h-full [&>div]:w-full',
     media: cn(MEDIA_SHELL, 'h-full rounded-none'),
     fallback: cn(FALLBACK_SHELL, 'h-full rounded-none'),
     heading: 'my-0 text-2xl/7.5 text-[22px]/7',
@@ -83,18 +83,14 @@ const LAYOUTS = {
   },
   columns: {
     width: 'w-[min(960px,calc(100vw-2rem))]',
-    card: cn(
-      CARD_SHELL,
-      'grid-cols-2 grid-rows-[auto_auto] gap-x-7 gap-y-3.5 p-5'
-    ),
+    card: cn(CARD_SHELL, 'grid-cols-2 items-stretch gap-x-7 p-5'),
     videoWrap:
-      'row-span-2 flex h-full min-h-0 w-full items-center justify-center self-stretch overflow-hidden rounded-lg [&>div]:h-full [&>div]:w-auto',
-    media: 'h-full w-auto aspect-video object-cover rounded-lg',
+      'flex h-0 min-h-full w-full min-w-0 items-center justify-center self-stretch overflow-hidden rounded-lg [&>div]:h-full [&>div]:w-auto',
+    media: 'aspect-video h-full w-auto rounded-lg object-cover',
     fallback: cn(FALLBACK_SHELL, 'aspect-video h-full w-auto rounded-lg'),
     heading: 'my-0 text-2xl/7.5',
     copy: COPY_SHELL,
-    contentWrap:
-      'col-start-2 row-span-2 flex min-w-0 flex-col justify-between gap-3.5',
+    contentWrap: 'flex min-w-0 flex-col justify-between gap-3.5',
     section: cn(SECTION_SHELL, 'gap-2.5'),
     sectionNarrow: cn(SECTION_SHELL, 'gap-2.5'),
     footer: FOOTER_WIDE,
