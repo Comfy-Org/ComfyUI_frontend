@@ -18,6 +18,7 @@
           :maximized="!!item.dialogComponentProps.maximized"
           :class="
             item.dialogComponentProps.centerOnViewport &&
+            !item.dialogComponentProps.maximized &&
             '-translate-x-1/2 [--workspace-inset-right:0px]'
           "
           :data-dialog-key="item.key"
