@@ -240,9 +240,6 @@ onMounted(() => {
                 {{ $t('agent.consent.errorTitle') }}
               </p>
               <p class="my-0 text-muted-foreground">
-                {{ $t('agent.consent.errorCheckConnection') }}
-              </p>
-              <p class="my-0 text-muted-foreground">
                 <i18n-t keypath="agent.consent.errorContact" tag="span">
                   <template #contactForm>
                     <Button

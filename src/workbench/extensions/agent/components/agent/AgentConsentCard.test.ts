@@ -92,10 +92,7 @@ describe('AgentConsentCard', () => {
     const alert = screen.getByRole('alert')
     expect(alert).toHaveTextContent("Couldn't start Comfy Agent")
     expect(alert).toHaveTextContent(
-      'Please check your connection and try again.'
-    )
-    expect(alert).toHaveTextContent(
-      'If you continue having issues, please use the contact form.'
+      'Please check your connection and try again. If you continue having issues, please use the contact form.'
     )
     expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Skip for now' })).toBeEnabled()
