@@ -11,6 +11,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+import { setImmediate } from 'node:timers/promises'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -807,6 +808,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       await waitFor(() =>
         expect(billingApi.getTopupCheckout).toHaveBeenCalledWith('cs_bank')
       )
+      await setImmediate()
       expect(screen.queryByText(PROCESSING_LINE)).not.toBeInTheDocument()
     })
   })
