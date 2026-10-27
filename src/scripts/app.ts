@@ -343,10 +343,6 @@ function toNodeDefs(response: unknown): Record<string, ComfyNodeDefV1> {
   return _.mapValues(defs, (def) => translateNodeDef(def))
 }
 
-/**
- * Graph-load failures already surfaced by `reportGraphLoadFailure`. An outer
- * handler reports telemetry for them but must not surface them a second time.
- */
 const presentedGraphLoadFailures = new WeakSet<object>()
 
 function wasGraphLoadFailurePresented(error: unknown): boolean {
@@ -729,6 +725,7 @@ export class ComfyApp implements IComfyApp {
         }
         useWorkflowService().showPendingWarnings()
       } catch (error: unknown) {
+        if (wasGraphLoadFailurePresented(error)) return
         useToast().warning(
           t('toastMessages.dropFileError', {
             error: getErrorMessage(error) ?? t('g.unknownError')

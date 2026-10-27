@@ -4897,6 +4897,68 @@ describe('ComfyApp', () => {
         ).toEqual(errorTypes)
       }
     )
+
+    it.for([
+      {
+        when: 'the failed import already reported itself',
+        reachLifecycle: true,
+        warns: false
+      },
+      {
+        when: 'the import failed before it reported anything',
+        reachLifecycle: false,
+        warns: true
+      }
+    ])(
+      'warns about a dropped file only when $when',
+      async ({ reachLifecycle, warns }) => {
+        app.canvas = fromPartial<LGraphCanvas>({
+          ...createMockCanvas(),
+          graph_mouse: [0, 0],
+          adjustMouseEvent: vi.fn()
+        })
+        const graph = new LGraph()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        vi.mocked(extractFilesFromDragEvent).mockResolvedValue([
+          createTestFile('a1111.png', 'image/png')
+        ])
+        vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+          parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+        })
+        mockImportA1111.mockImplementation(
+          async (_graph, _parameters, beforeGraphClear) => {
+            if (reachLifecycle) await beforeGraphClear?.()
+            throw new Error('A1111 import failed')
+          }
+        )
+        ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+
+        document.dispatchEvent(new DragEvent('drop'))
+
+        await vi.waitFor(() => {
+          expect(mockImportA1111).toHaveBeenCalled()
+        })
+        const droppedFileWarnings = () =>
+          vi
+            .mocked(useToast().warning)
+            .mock.calls.filter(([title]) =>
+              title.includes('A1111 import failed')
+            )
+        if (warns) {
+          await vi.waitFor(() => {
+            expect(droppedFileWarnings().length).toBeGreaterThan(0)
+          })
+        } else {
+          await vi.waitFor(() => {
+            expect(
+              mockExtensionService.invokeExtensionsAsync
+            ).toHaveBeenCalledWith('onGraphLoadError', expect.anything())
+          })
+          expect(droppedFileWarnings()).toEqual([])
+        }
+      }
+    )
   })
 
   describe('canvas keybindings', () => {
