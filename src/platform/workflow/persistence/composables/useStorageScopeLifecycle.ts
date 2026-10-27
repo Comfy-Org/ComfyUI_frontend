@@ -14,7 +14,7 @@ import {
 } from '@/platform/workflow/persistence/base/storageIO'
 
 export function useStorageScopeLifecycle(): void {
-  const { resolvedUserInfo } = useCurrentUser()
+  const { resolvedUserInfo, isApiKeyLogin } = useCurrentUser()
   const teamWorkspaceStore = useTeamWorkspaceStore()
   let stopWorkspaceReadinessWatcher: (() => void) | undefined
   let workspaceInitializationPending = false
@@ -68,6 +68,20 @@ export function useStorageScopeLifecycle(): void {
     })
   }
 
+  function prepareWorkspaceForIdentity(isIdentityReplacement: boolean): void {
+    if (isIdentityReplacement) {
+      teamWorkspaceStore.resetForIdentityChange()
+      workspaceInitializationPending = true
+      return
+    }
+    if (
+      isApiKeyLogin.value &&
+      teamWorkspaceStore.initState === 'uninitialized'
+    ) {
+      workspaceInitializationPending = true
+    }
+  }
+
   watch(
     resolvedUserInfo,
     (user) => {
@@ -77,10 +91,7 @@ export function useStorageScopeLifecycle(): void {
       stopPendingWorkspaceReadinessWatcher()
       if (isCloud) prepareWorkflowLogoutTransition()
       const isIdentityReplacement = isCloud && getStorageIdentity() !== null
-      if (isIdentityReplacement) {
-        teamWorkspaceStore.resetForIdentityChange()
-        workspaceInitializationPending = true
-      }
+      prepareWorkspaceForIdentity(isIdentityReplacement)
       setStorageIdentity(nextIdentity)
       setStorageWorkspaceId(null)
 

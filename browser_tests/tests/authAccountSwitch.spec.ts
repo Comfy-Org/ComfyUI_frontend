@@ -342,6 +342,9 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
 
     await identityPersistence.mockAgentApi(identityStates)
     await identityPersistence.seedAtStartup(identityStates)
+    await comfyPage.featureFlags.seedServerFlags({
+      agent: { state: 'ready', reason: null }
+    })
 
     await test.step('Establish account A credentials', async () => {
       await page.goto(APP_URL, { waitUntil: 'domcontentloaded' })

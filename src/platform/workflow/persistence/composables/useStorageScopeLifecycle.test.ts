@@ -118,6 +118,23 @@ describe('useStorageScopeLifecycle', () => {
     scope.stop()
   })
 
+  it('starts workspace initialization for the first API-key identity', async () => {
+    useCurrentUser().isApiKeyLogin = computed(() => true)
+    const initializeSpy = vi
+      .spyOn(useTeamWorkspaceStore(), 'initialize')
+      .mockResolvedValue()
+    const scope = effectScope()
+    scope.run(useStorageScopeLifecycle)
+
+    resolvedUser.value = { id: 'api-key-user' }
+    await nextTick()
+
+    expect(initializeSpy).toHaveBeenCalledOnce()
+    expect(getStorageIdentity()).toBe('api-key-user')
+    expect(getStorageWriteGate()).toBe('deferred')
+    scope.stop()
+  })
+
   it('resets a ready API-key workspace before opening storage for a replacement key', async () => {
     const teamWorkspaceStore = useTeamWorkspaceStore()
     const resetSpy = vi.spyOn(teamWorkspaceStore, 'resetForIdentityChange')
