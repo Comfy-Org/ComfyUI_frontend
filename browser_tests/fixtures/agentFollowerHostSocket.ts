@@ -111,6 +111,10 @@ export class AgentFollowerHostSocket {
 
   private socket: WebSocketRoute | null = null
   private subscribes = 0
+  private subscribeAnswer = (stateVector: string): HostFrame[] => [
+    this.host.subscribed(),
+    this.host.catchUp(stateVector)
+  ]
   private readonly createdAt = Date.now()
   private readonly clientFrames: ClientDocFrame[] = []
   private readonly heldBatches: WireOpEnvelope[][] = []
@@ -259,6 +263,10 @@ export class AgentFollowerHostSocket {
     this.refusalsLeft = times
   }
 
+  answerSubscribesWith(answer: (stateVector: string) => HostFrame[]): void {
+    this.subscribeAnswer = answer
+  }
+
   private answerSubscribe(stateVector: string): void {
     if (this.refuseReason !== null && this.refusalsLeft > 0) {
       this.refusalsLeft -= 1
@@ -272,8 +280,7 @@ export class AgentFollowerHostSocket {
       this.resolveSubscribed?.()
       return
     }
-    this.send(this.host.subscribed())
-    this.send(this.host.catchUp(stateVector))
+    for (const frame of this.subscribeAnswer(stateVector)) this.send(frame)
     this.subscribes += 1
     this.resolveSubscribed?.()
   }
