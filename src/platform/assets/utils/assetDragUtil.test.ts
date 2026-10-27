@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -138,7 +138,8 @@ describe('asset drag identity', () => {
       } satisfies AssetItem)
       const dropped = parseAssetInfo(dataTransfer)
 
-      expect(dropped && createAnnotatedPath(dropped)).toBe(written)
+      assert.exists(dropped)
+      expect(createAnnotatedPath(dropped)).toBe(written)
     }
   )
 })
