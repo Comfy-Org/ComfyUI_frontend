@@ -233,6 +233,39 @@ valid, authoritative, and meaningless, so it is refused before any other check c
 collapses them via `defineProperty`, and the document rejects the second address outright, so
 listing both would promise an address that does not resolve.
 
+### The call site is part of the rule, not an implementation detail
+
+The first version of this amendment said the form is emitted "after the extension serialize hook"
+and left it there. That is wrong, and driving the predicate through the real serialize path proved
+it: at the end of `LGraphNode.serializeFromStoreState` a `SubgraphNode`'s `widgets_values` is
+**still core's own array** — the subclass replaces it only after `super` returns. So the identity
+check, which exists precisely to catch that subclass, passed. The proof **accepted**, returning an
+order of two names for a payload that ended up holding one value.
+
+An acceptance is the one outcome this design cannot tolerate, so the fix is not a better call site —
+it is to stop trusting the caller to know it stands at the last writer. `coreIsLastWriter` is a
+**required** option with no default:
+
+```ts
+coreIsLastWriter: node.serializeFromStoreState ===
+  LGraphNode.prototype.serializeFromStoreState &&
+  node.serialize === LGraphNode.prototype.serialize
+```
+
+Required rather than derived for two reasons. `tsc` then refuses any new call site until the
+question has been answered, so the assumption cannot creep back in silently. And the comparison
+needs both the instance and the base prototype in scope, which is true at the call site and not
+inside the widgets layer — deriving it here would mean importing `LGraphNode` across the
+`node-widgets` → `graph-model` boundary that this repo's own architecture gate enforces.
+
+It is checked **before** every other refusal, because a payload that is not final makes the rest
+moot: reporting `duplicate_widget_name` on a payload about to be replaced sends a reader to the
+wrong problem. The refusal is `class_may_rewrite_payload`, and it covers packs that override
+`serialize` exactly as it covers `SubgraphNode`.
+
+Passing a hardcoded `true` to silence the type error reintroduces the defect. That is worth saying
+out loud, because it is the cheapest wrong fix available.
+
 ### Scope
 
 This amendment adds the predicate and a diagnostic (`needsFormButHasNone`, which identifies

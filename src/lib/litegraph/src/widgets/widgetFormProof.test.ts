@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   needsFormButHasNone,
   proveWidgetForm
-} from '@/lib/litegraph/src/node/widgetFormProof'
+} from '@/lib/litegraph/src/widgets/widgetFormProof'
+import type { WidgetFormRefusal } from '@/lib/litegraph/src/widgets/widgetFormProof'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 /**
@@ -38,7 +39,8 @@ describe('proveWidgetForm', () => {
     const { values, serialised } = produce(widgets)
 
     const proof = proveWidgetForm(widgets, serialised, values, {
-      serializeWidgets: true
+      serializeWidgets: true,
+      coreIsLastWriter: true
     })
 
     expect(proof.provable).toBe(true)
@@ -63,7 +65,8 @@ describe('proveWidgetForm', () => {
 
     expect(values).toHaveLength(2)
     const proof = proveWidgetForm(widgets, serialised, values, {
-      serializeWidgets: true
+      serializeWidgets: true,
+      coreIsLastWriter: true
     })
 
     expect(proof.provable).toBe(true)
@@ -78,7 +81,8 @@ describe('proveWidgetForm', () => {
     const { values, serialised } = produce(widgets)
 
     const proof = proveWidgetForm(widgets, serialised, values, {
-      serializeWidgets: true
+      serializeWidgets: true,
+      coreIsLastWriter: true
     })
 
     expect(proof.provable).toBe(true)
@@ -96,7 +100,8 @@ describe('proveWidgetForm', () => {
       const replaced = { widgets_values: [1, 2] } // equal-looking, different array
 
       const proof = proveWidgetForm(widgets, replaced, values, {
-        serializeWidgets: true
+        serializeWidgets: true,
+        coreIsLastWriter: true
       })
 
       expect(proof.provable).toBe(false)
@@ -111,7 +116,8 @@ describe('proveWidgetForm', () => {
       const { values } = produce(widgets)
 
       const proof = proveWidgetForm(widgets, {}, values, {
-        serializeWidgets: true
+        serializeWidgets: true,
+        coreIsLastWriter: true
       })
 
       expect(proof.provable).toBe(false)
@@ -131,7 +137,8 @@ describe('proveWidgetForm', () => {
       }
 
       const proof = proveWidgetForm(widgets, dict, values, {
-        serializeWidgets: true
+        serializeWidgets: true,
+        coreIsLastWriter: true
       })
 
       expect(proof.provable).toBe(false)
@@ -150,7 +157,8 @@ describe('proveWidgetForm', () => {
 
       const proof = proveWidgetForm(widgets, serialised, values, {
         serializeWidgets: true,
-        replayed: true
+        replayed: true,
+        coreIsLastWriter: true
       })
 
       expect(proof.provable).toBe(false)
@@ -166,7 +174,7 @@ describe('proveWidgetForm', () => {
         widgets,
         { ...serialised, has_errors: true },
         values,
-        { serializeWidgets: true }
+        { serializeWidgets: true, coreIsLastWriter: true }
       )
 
       expect(proof.refusal).toBe('replayed_serialization')
@@ -179,7 +187,8 @@ describe('proveWidgetForm', () => {
       const widgets = [widget('mode'), widget('filter')]
 
       const proof = proveWidgetForm(widgets, {}, undefined, {
-        serializeWidgets: false
+        serializeWidgets: false,
+        coreIsLastWriter: true
       })
 
       expect(proof.provable).toBe(false)
@@ -192,7 +201,8 @@ describe('proveWidgetForm', () => {
       widgets.pop() // a pack truncating node.widgets mid-serialize
 
       const proof = proveWidgetForm(widgets, serialised, values, {
-        serializeWidgets: true
+        serializeWidgets: true,
+        coreIsLastWriter: true
       })
 
       expect(proof.provable).toBe(false)
@@ -211,7 +221,8 @@ describe('proveWidgetForm', () => {
       const { values, serialised } = produce(widgets)
 
       const proof = proveWidgetForm(widgets, serialised, values, {
-        serializeWidgets: true
+        serializeWidgets: true,
+        coreIsLastWriter: true
       })
 
       expect(proof.provable).toBe(false)
@@ -223,12 +234,59 @@ describe('proveWidgetForm', () => {
       const { values, serialised } = produce(widgets)
 
       const proof = proveWidgetForm(widgets, serialised, values, {
-        serializeWidgets: true
+        serializeWidgets: true,
+        coreIsLastWriter: true
       })
 
       expect(proof.provable).toBe(false)
       expect(proof.refusal).toBe('unnameable_widget')
     })
+  })
+
+  it('refuses a node whose class can still rewrite the payload', () => {
+    // The defect found by driving the proof through the real serialize path: at the end of
+    // LGraphNode.serializeFromStoreState a SubgraphNode's widgets_values is STILL core's own
+    // array -- the subclass replaces it afterwards -- so the identity check passed and the
+    // proof accepted, returning an order of two names for a payload that ended up holding
+    // one value. Everything about the values looks right here; only the knowledge that
+    // something downstream will rewrite them makes it wrong, which is why this cannot be
+    // inferred from the payload and has to be told to us.
+    const widgets = [
+      widget('promoted_a', { value: 1 }),
+      widget('promoted_b', { value: 2 })
+    ]
+    const { values, serialised } = produce(widgets)
+
+    const accepted = proveWidgetForm(widgets, serialised, values, {
+      serializeWidgets: true,
+      coreIsLastWriter: true
+    })
+    expect(accepted.provable).toBe(true) // identical input, and this is the trap
+
+    const proof = proveWidgetForm(widgets, serialised, values, {
+      serializeWidgets: true,
+      coreIsLastWriter: false
+    })
+
+    expect(proof.provable).toBe(false)
+    expect(proof.refusal).toBe('class_may_rewrite_payload')
+    expect(proof.order).toBeNull()
+  })
+
+  it('checks the last writer before anything else', () => {
+    // Ordering matters: a non-final payload makes every later check moot, so this refusal must
+    // win even when another one would also apply. Otherwise the reported reason sends a reader
+    // to the wrong problem.
+    const widgets = [widget('dup', { value: 1 }), widget('dup', { value: 2 })]
+    const { values, serialised } = produce(widgets)
+
+    const proof = proveWidgetForm(widgets, serialised, values, {
+      serializeWidgets: true,
+      replayed: true,
+      coreIsLastWriter: false
+    })
+
+    expect(proof.refusal).toBe('class_may_rewrite_payload')
   })
 
   it('never returns an order alongside a refusal', () => {
@@ -239,16 +297,27 @@ describe('proveWidgetForm', () => {
     const { values, serialised } = produce(widgets)
 
     for (const proof of [
-      proveWidgetForm(widgets, serialised, values, { serializeWidgets: true }),
       proveWidgetForm(widgets, serialised, values, {
         serializeWidgets: true,
-        replayed: true
+        coreIsLastWriter: true
+      }),
+      proveWidgetForm(widgets, serialised, values, {
+        serializeWidgets: true,
+        replayed: true,
+        coreIsLastWriter: true
       }),
       proveWidgetForm(widgets, { widgets_values: { a: 1 } }, values, {
-        serializeWidgets: true
+        serializeWidgets: true,
+        coreIsLastWriter: true
       }),
-      proveWidgetForm(widgets, {}, undefined, { serializeWidgets: false }),
-      proveWidgetForm(undefined, {}, undefined, { serializeWidgets: true })
+      proveWidgetForm(widgets, {}, undefined, {
+        serializeWidgets: false,
+        coreIsLastWriter: true
+      }),
+      proveWidgetForm(undefined, {}, undefined, {
+        serializeWidgets: true,
+        coreIsLastWriter: true
+      })
     ]) {
       expect(proof.provable).toBe(false)
       expect(proof.order).toBeNull()
@@ -280,5 +349,39 @@ describe('needsFormButHasNone', () => {
     expect(needsFormButHasNone({ widgets_values: [1, 2] })).toBe(false)
     expect(needsFormButHasNone({})).toBe(false)
     expect(needsFormButHasNone({ widgets_values: null })).toBe(false)
+  })
+})
+
+describe('the refusal set', () => {
+  it('is covered case-for-case by the tests above', () => {
+    // Pins the union so a new refusal cannot be added without a test that reaches it, and a
+    // retired one cannot linger. Each entry below is asserted by a named case above; this
+    // list is the index, not a second source of truth.
+    const exercised: Record<WidgetFormRefusal, true> = {
+      class_may_rewrite_payload: true,
+      replayed_serialization: true,
+      widgets_not_serialized: true,
+      values_replaced: true,
+      values_not_positional: true,
+      length_mismatch: true,
+      duplicate_widget_name: true,
+      unnameable_widget: true
+    }
+
+    // arrayContaining plus toHaveLength, per the repo's prefer-array-containing rule: the
+    // length is what makes this a closed set, so a new refusal added without a case here fails.
+    expect(Object.keys(exercised)).toEqual(
+      expect.arrayContaining([
+        'class_may_rewrite_payload',
+        'replayed_serialization',
+        'widgets_not_serialized',
+        'values_replaced',
+        'values_not_positional',
+        'length_mismatch',
+        'duplicate_widget_name',
+        'unnameable_widget'
+      ])
+    )
+    expect(Object.keys(exercised)).toHaveLength(8)
   })
 })
