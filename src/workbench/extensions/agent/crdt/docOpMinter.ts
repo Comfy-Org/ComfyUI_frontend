@@ -146,7 +146,11 @@ type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
 
-type PendingGrows = { base: number; names: readonly string[] }
+type PendingGrows = {
+  base: number
+  names: readonly string[]
+  displaced?: boolean
+}
 type SlotGrow = MissingSlotGrowth['grow']
 interface DeferredDynamicConnect {
   kind: 'connect'
@@ -403,13 +407,6 @@ function queuedGrowName(
   return operation.to_node === toNode ? operation.grow?.name : undefined
 }
 
-/**
- * Re-predicts every queued slot on `toNode` once an unechoed grow is
- * cancelled. The first queued connect that predicted the cancelled slot (a
- * replacement link) inherits the grow, so the slot is still created; every
- * other prediction is re-derived by name from the order the surviving grows
- * land in. A prediction whose slot no grow creates any more is dropped.
- */
 function withCancelledGrowReconciled(
   pending: PendingOp[],
   toNode: WireNodeId,
@@ -1105,12 +1102,17 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const grows = pendingGrows.get(key)
     if (grows === undefined) return undefined
     const echoed = docNames.slice(grows.base)
+    if (grows.displaced) {
+      if (grows.names.every((name) => echoed.includes(name)))
+        pendingGrows.delete(key)
+      return undefined
+    }
     const onlyOurEchoes =
       docNames.length >= grows.base &&
       echoed.length < grows.names.length &&
       echoed.every((name, index) => name === grows.names[index])
     if (onlyOurEchoes) return grows
-    pendingGrows.delete(key)
+    pendingGrows.set(key, { ...grows, displaced: true })
     return undefined
   }
 
@@ -1119,11 +1121,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     name: string,
     docNames: readonly (string | undefined)[]
   ): void {
-    const grows = unechoedGrows(key, docNames)
+    const grows = unechoedGrows(key, docNames) ?? pendingGrows.get(key)
     pendingGrows.set(
       key,
       grows
-        ? { base: grows.base, names: [...grows.names, name] }
+        ? { ...grows, names: [...grows.names, name] }
         : { base: docNames.length, names: [name] }
     )
   }
@@ -1151,7 +1153,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const reconciled = withCancelledGrowReconciled(pending, toNode, grows, grow)
     pending = reconciled.pending
     if (reconciled.names.length === 0) pendingGrows.delete(key)
-    else pendingGrows.set(key, { base: grows.base, names: reconciled.names })
+    else pendingGrows.set(key, { ...grows, names: reconciled.names })
   }
 
   function forgetDynamicSlotGrow(state: PendingDynamicSlot): void {
