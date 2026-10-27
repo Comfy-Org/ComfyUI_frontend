@@ -250,9 +250,11 @@ export function useAgentConsent() {
     introductionStore.isContinuingSignIn = true
     try {
       writePendingSignInAccept(heldDraftText())
+      let signedIn: boolean
       try {
-        if (!(await showSignInDialog())) return null
+        signedIn = await showSignInDialog()
       } catch (error) {
+        clearPendingSignInAccept()
         reportError(error, {
           surface: 'agent',
           errorType: 'agent_consent_sign_in_failure'
@@ -261,9 +263,9 @@ export function useAgentConsent() {
           description: t('agent.consent.signInError')
         })
         return null
-      } finally {
-        clearPendingSignInAccept()
       }
+      if (!signedIn) return null
+      clearPendingSignInAccept()
       return await saveAcceptanceAfterSignIn()
     } finally {
       introductionStore.isContinuingSignIn = false

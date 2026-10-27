@@ -1020,7 +1020,10 @@ describe('useAgentConsent', () => {
         expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
       )
 
-      expect(sessionStorage.getItem(PENDING_KEY)).toBe('make it blue')
+      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toEqual({
+        draft: 'make it blue',
+        savedAt: expect.any(Number)
+      })
     })
 
     it('keeps nothing when the signed-out card is rejected', async () => {
@@ -1037,7 +1040,6 @@ describe('useAgentConsent', () => {
     })
 
     it.for([
-      { outcome: 'cancelled', result: () => Promise.resolve(false) },
       {
         outcome: 'failed',
         result: () => Promise.reject(new Error('Sign-in chunk could not load'))
@@ -1060,6 +1062,22 @@ describe('useAgentConsent', () => {
         expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
       }
     )
+
+    it('keeps the held draft when the sign-in dialog is closed, since a browser sign-in may still finish and reload', async () => {
+      signedOut()
+      holdDraft('make it blue')
+      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
+      const accept = vi.spyOn(useAgentConsentStore(), 'accept')
+
+      const request = useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await request
+
+      expect(accept).not.toHaveBeenCalled()
+      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
+        draft: 'make it blue'
+      })
+    })
 
     it('saves consent once after the reload and then restores the draft', async () => {
       signedIn()

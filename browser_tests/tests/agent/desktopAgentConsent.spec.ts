@@ -93,7 +93,14 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
     })
   })
 
-  test('keeps a signed-out accept and its draft across the sign-in reload without sending', async ({
+  for (const { name, closeSignInDialog } of [
+    { name: 'with the sign-in dialog open', closeSignInDialog: false },
+    {
+      name: 'after the sign-in dialog was closed by an outside click',
+      closeSignInDialog: true
+    }
+  ]) {
+  test(`keeps a signed-out accept and its draft across the sign-in reload ${name}`, async ({
     comfyPage,
     agentPanel,
     desktopConsentSignIn,
@@ -118,6 +125,13 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
       expect(agentConsentWrites).toEqual([])
     })
 
+    if (closeSignInDialog) {
+      await test.step('A click outside closes the sign-in dialog while the browser sign-in is pending', async () => {
+        await comfyPage.page.mouse.click(5, 5)
+        await expect(signIn).toHaveCount(0)
+      })
+    }
+
     await test.step('Desktop finishes sign-in in the browser and reloads the page', async () => {
       desktopConsentSignIn.finishInBrowser()
       await comfyPage.workflow.reloadAndWaitForApp()
@@ -138,6 +152,7 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
       expect(postedMessages).toHaveLength(1)
     })
   })
+  }
 
   test('sends the original signed-out submission once after sign-in and confirmed consent persistence', async ({
     comfyPage,

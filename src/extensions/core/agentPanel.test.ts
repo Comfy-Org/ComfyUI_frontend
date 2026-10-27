@@ -2305,10 +2305,15 @@ describe('AgentPanel extension flag gate', () => {
   describe('an accept the sign-in reload interrupted', () => {
     const PENDING_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
     const resume = () => vi.mocked(useAgentConsent().resumeAcceptAfterReload)
+    const storePending = (savedAt = Date.now()) =>
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({ draft: 'make it blue', savedAt })
+      )
 
     beforeEach(() => {
       sessionStorage.clear()
-      sessionStorage.setItem(PENDING_KEY, 'make it blue')
+      storePending()
       setAgentReady(true)
     })
 
@@ -2395,13 +2400,28 @@ describe('AgentPanel extension flag gate', () => {
       expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
     })
 
-    it('is left to the sign-in still waiting in this page', async () => {
-      useAgentConsentIntroductionStore().isContinuingSignIn = true
+    it('is only looked at when the page starts, so one written in this page waits for the reload', async () => {
+      currentUser.value = null
+      await loadEntryAndSetup()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+
+      storePending()
+      currentUser.value = { id: 'account-a' }
+      await nextTick()
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await nextTick()
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+    })
+
+    it('ignores and drops one older than ten minutes', async () => {
+      storePending(Date.now() - 11 * 60 * 1000)
 
       await loadEntryAndSetup()
 
       expect(resume()).not.toHaveBeenCalled()
-      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
     })
   })
 

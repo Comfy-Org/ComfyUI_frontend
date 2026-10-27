@@ -347,21 +347,24 @@ export function registerAgentPanelExtension(): void {
       }
 
       let resumingAccept = false
+      let pendingAcceptChecked = false
       function resumePendingAccept(): boolean {
-        if (introductionStore.isContinuingSignIn || !hasPendingSignInAccept())
-          return false
+        if (pendingAcceptChecked) return false
         if (!isLoggedIn.value) {
+          pendingAcceptChecked = true
           clearPendingSignInAccept()
           return false
         }
-        if (!resolvedUserInfo.value || workspaceStore.isSwitching) return true
+        if (!resolvedUserInfo.value || workspaceStore.isSwitching)
+          return hasPendingSignInAccept()
+        pendingAcceptChecked = true
+        const draft = takePendingSignInAccept()
+        if (draft === null) return false
         resumingAccept = true
-        void resumeAcceptAfterReload(takePendingSignInAccept() ?? '').finally(
-          () => {
-            resumingAccept = false
-            loadConsentIfEligible()
-          }
-        )
+        void resumeAcceptAfterReload(draft).finally(() => {
+          resumingAccept = false
+          loadConsentIfEligible()
+        })
         return true
       }
 
