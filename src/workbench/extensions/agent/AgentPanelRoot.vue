@@ -2,7 +2,7 @@
 import './agentPanel.css'
 
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import { useClipboard } from '@vueuse/core'
+import { useClipboard, useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -140,6 +140,9 @@ import {
   toAgentPaywallCta,
   toAgentPaywallReason
 } from './services/agent/agentPaywallPresentation'
+import type { CanvasConfirmation } from './services/agent/agentEventTransport'
+import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
+import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
@@ -964,6 +967,9 @@ const {
   getGraph: () =>
     canvasStore.canvas && app.isGraphReady ? app.rootGraph : null,
   events: {
+    onAppliedUpdate({ workflowId, opIds, isLive }) {
+      conversationStore.notifyCanvasCaughtUp({ workflowId, opIds, isLive })
+    },
     onMaterialized({ workflowId, nodeIds }) {
       if (app.isGraphReady) {
         graphActivity.recordMaterialized(
@@ -1035,50 +1041,23 @@ const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
 )
 const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 
-// PM-1575: a chat tool-call's own `status` says nothing about whether its
-// effect has actually reached the canvas -- the CRDT doc_update travels a
-// separate, unrelated listener (see agentEventTransport.ts's file header).
-// Gate the transport's tool-call "done" affordance on canvas catch-up only
-// while the CRDT follower is actually active, and re-check any parts it held
-// back every time the bound workflow applies a fresh update.
-//
-// `agentPanelStore.enabled` alone is NOT that signal: it is the product
-// feature flag ("is the agent panel available at all"), which is on in any
-// environment or test that exercises the panel, whether or not a CRDT doc
-// subscription for the bound workflow actually exists yet. Gating on it
-// alone deferred every mutating tool call (add_node, set_widget, ...) to
-// 'streaming' even when no doc_subscribed frame had ever been received --
-// e.g. in agentPanel.spec.ts and every other spec that drives chat events
-// without also standing up a doc host -- so nothing was ever going to call
-// notifyCanvasCaughtUp() to rescue it, and the row (and the composing
-// "Working..." status derived from every part being settled) stayed stuck
-// until the 30s STALE_AFTER_MS fallback. `crdtStatus.value.connected` is the
-// actual "the follower is subscribed and could receive a doc_update" signal
-// (flipped true only by a real `doc_subscribed { ok: true }` frame); a
-// disabled panel never starts the follower, so this implies `enabled` too.
-// Read `outcomes.appliedLive`, never `outcomes.applied`: `applied` also
-// counts a subscribe's own one-time catch-up frame, which lands whenever the
-// follower (re)subscribes to the bound workflow and has nothing to do with
-// any tool call in flight. Gating on raw `applied` made the FIRST
-// canvas-mutating tool call after any (re)subscribe -- effectively every
-// tool call, since a `running` frame is never sent in practice, see
-// agentEventTransport.ts's file header -- read that unrelated catch-up as
-// its own matching update and settle to 'done' immediately, defeating the
-// wait this gate exists for.
+function canvasConfirmationState(workflowId?: string): CanvasConfirmation {
+  const bound = boundWorkflowId.value ?? undefined
+  if (bound === undefined) return 'none'
+  if (
+    workflowId !== undefined &&
+    !areAgentWorkflowIdsEquivalent(bound, workflowId)
+  )
+    return 'unavailable'
+  if (!isBoundWorkflowActive.value) return 'unavailable'
+  const status = crdtStatus.value
+  if (!status.enabled) return 'none'
+  if (status.connected) return 'awaiting'
+  return status.terminal === null ? 'none' : 'unavailable'
+}
 conversationStore.setCanvasSyncGate(
-  () => crdtStatus.value.connected,
+  canvasConfirmationState,
   () => crdtStatus.value.outcomes.appliedLive
-)
-watch(
-  () => crdtStatus.value.outcomes.appliedLive,
-  (applied, previouslyApplied) => {
-    // `useAgentCrdtFollower`'s status falls back to a disabled status with
-    // `applied: 0` when the follower is torn down, and a restarted follower
-    // counts from 0 again -- so toggling the panel mid-turn can drive this
-    // DOWN, not just up. A decrease is not a catch-up: nothing was applied,
-    // so it must not release parts that are still genuinely waiting.
-    if (applied > previouslyApplied) conversationStore.notifyCanvasCaughtUp()
-  }
 )
 
 // The resumed turn's own workflow outlives a panel remount (the session
@@ -1101,6 +1080,56 @@ function resumedTurnTabPath(): string | null {
   return context?.id === bound ? context.tabPath : null
 }
 
+const boundCanvasNodeCount = ref(0)
+function readBoundCanvasNodeCount(): void {
+  boundCanvasNodeCount.value = isBoundWorkflowActive.value
+    ? (workflowStore.activeWorkflow?.activeState?.nodes?.length ?? 0)
+    : 0
+}
+watch([boundWorkflowId, isBoundWorkflowActive], readBoundCanvasNodeCount, {
+  immediate: true
+})
+useEventListener(
+  api,
+  'graphChanged',
+  (event: CustomEvent<ComfyWorkflowJSON>) => {
+    if (isBoundWorkflowActive.value)
+      boundCanvasNodeCount.value = event.detail.nodes?.length ?? 0
+  }
+)
+
+const completedTurnClaimedCanvasContent = ref(false)
+function completedTurnCanClaimCanvasContent(): boolean {
+  const lastCanvasTool = conversationMessages.value
+    .at(-1)
+    ?.parts.findLast(
+      (part) =>
+        part.type === 'tool' &&
+        (part.name === 'clear_canvas'
+          ? part.ok === true
+          : part.ok !== false && toolCanClaimCanvasContent(part.name))
+    )
+  return (
+    lastCanvasTool?.type === 'tool' && lastCanvasTool.name !== 'clear_canvas'
+  )
+}
+const canvasEmptyAfterTurn = computed(
+  () =>
+    completedTurnClaimedCanvasContent.value &&
+    isBoundWorkflowActive.value &&
+    boundCanvasNodeCount.value === 0
+)
+
+function refreshBillingAfterTurn(): void {
+  if (billingType.value !== 'workspace') return
+  void refreshBillingStatus().catch((error: unknown) => {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'error_refreshing_agent_billing_status'
+    })
+  })
+}
+
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
@@ -1108,33 +1137,32 @@ let wasTurnActive = false
 watch(
   [status, conversationTurnId],
   ([value, turnId]) => {
-    const completedTurn = wasTurnActive && value === 'idle'
-    if (value === 'idle') {
-      // The immediate idle value on remount is a hydration snapshot, not a
-      // completed turn. A real idle transition is observed after this pass.
-      if (completedTurn) graphActivity.finishTurn()
-    } else graphActivity.startTurn(turnId)
-    wasTurnActive = value !== 'idle'
-    if (value === 'idle') {
-      // A server-side LLM-hop refusal does not reach the browser as a 402.
-      // Refresh the authoritative effective-funds verdict after every observed
-      // turn completion so both exhaustion and external top-ups converge.
-      if (completedTurn && billingType.value === 'workspace') {
-        void refreshBillingStatus().catch((error: unknown) => {
-          reportError(error, {
-            surface: 'agent',
-            errorType: 'error_refreshing_agent_billing_status'
-          })
-        })
-      }
-      const completedPath = tabActivity.editingTabPath
-      tabActivity.setEditing(null)
-      if (completedPath !== null) tabActivity.markModified(completedPath)
-    } else if (tabActivity.editingTabPath === null)
-      tabActivity.setEditing(resumedTurnTabPath())
+    const active = value !== 'idle'
+    const completedTurn = wasTurnActive && !active
+    if (completedTurn)
+      completedTurnClaimedCanvasContent.value =
+        completedTurnCanClaimCanvasContent()
+    else if (active) completedTurnClaimedCanvasContent.value = false
+    wasTurnActive = active
+    if (active) {
+      graphActivity.startTurn(turnId)
+      if (tabActivity.editingTabPath === null)
+        tabActivity.setEditing(resumedTurnTabPath())
+      return
+    }
+    if (completedTurn) {
+      graphActivity.finishTurn()
+      refreshBillingAfterTurn()
+    }
+    const completedPath = tabActivity.editingTabPath
+    tabActivity.setEditing(null)
+    if (completedPath !== null) tabActivity.markModified(completedPath)
   },
   { immediate: true, flush: 'sync' }
 )
+watch([threadId, boundWorkflowId], () => {
+  completedTurnClaimedCanvasContent.value = false
+})
 
 const executionErrorStore = useExecutionErrorStore()
 
@@ -1418,10 +1446,7 @@ onBeforeUnmount(() => {
     // turn resumed in the meantime reading it -- reset to the always-safe
     // default instead of leaving whatever this instance last set.
     resetCanvasSyncGate: () => {
-      conversationStore.setCanvasSyncGate(
-        () => false,
-        () => 0
-      )
+      conversationStore.setCanvasSyncGate(() => 'none')
     }
   })
 })
@@ -2061,6 +2086,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :select-tab="onSelectWorkflowTarget"
       :workflow-detached="workflowDetached"
       :target-unavailable="agentPanelStore.targetUnavailable"
+      :canvas-empty-after-turn="canvasEmptyAfterTurn"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"

@@ -253,7 +253,12 @@ test.describe(
       await expect(panel.getByRole('button', { name: STOP_LABEL })).toHaveCount(
         0
       )
-      await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
+      await expect(
+        panel.getByRole('button', {
+          name: enMessages.agent.workedNotConfirmedOnCanvas,
+          exact: true
+        })
+      ).toBeVisible()
 
       // The agent said it added the note, and the op is in the document's own
       // record (asserted above). The follower must notice that its subscribe
