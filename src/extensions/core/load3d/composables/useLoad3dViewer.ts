@@ -516,9 +516,19 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       const outcome = await load3d.loadModel(modelUrl)
       reportLoadModelOutcome(outcome)
+      // This is the first load on a fresh instance, so nothing has
+      // initialised the config refs yet — backgroundColor is still ''. Restore
+      // before the outcome guard so a failed load shows the default scene
+      // rather than a colour input bound to '' (which renders as #000000).
+      // Safe to run unconditionally here only because currentModelUrl stays
+      // null below on a non-'loaded' outcome: saveStandaloneConfig() bails on a
+      // null key, so this model's config can never be written to another
+      // model's slot. loadStandaloneModel() must keep both gated together for
+      // the same reason — there, the refs already hold the previous model's
+      // config and its key still names it.
+      restoreStandaloneConfig(modelUrl)
       if (outcome !== 'loaded') return
       currentModelUrl = modelUrl
-      restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
       persistStandaloneThumbnail(modelUrl)
     } catch (error) {
