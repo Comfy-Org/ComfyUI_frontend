@@ -70,6 +70,25 @@ describe('WorkspaceMenuButton', () => {
     setDelete(true)
   })
 
+  it('keeps a muted icon unless the header asks for a foreground ghost', () => {
+    render(WorkspaceMenuButton, { global: { plugins: [i18n] } })
+
+    expect(screen.getByRole('button', { name: 'More Options' })).toHaveClass(
+      'text-muted-foreground'
+    )
+  })
+
+  it('uses a foreground ghost icon when the header asks for it', () => {
+    render(WorkspaceMenuButton, {
+      props: { variant: 'textonly' },
+      global: { plugins: [i18n] }
+    })
+
+    const button = screen.getByRole('button', { name: 'More Options' })
+    expect(button).toHaveClass('text-foreground', 'bg-transparent')
+    expect(button).not.toHaveClass('text-muted-foreground')
+  })
+
   it('renders no menu when the server grants nothing it can show', () => {
     hideEdit()
     setLeave(false, 'personal_workspace_creator')

@@ -141,6 +141,18 @@ jobs:
             fi
           fi
 
+      - name: Build components
+        if: steps.check_npm.outputs.exists == 'false'
+        run: pnpm -C packages/design-system build
+
+      - name: Verify compiled imports are declared dependencies
+        if: steps.check_npm.outputs.exists == 'false'
+        run: pnpm exec tsx scripts/cicd/check-design-system-imports.ts
+
+      - name: Check an isolated packed consumer
+        if: steps.check_npm.outputs.exists == 'false'
+        run: scripts/cicd/check-design-system-consumer.sh
+
       - name: Publish package
         if: steps.check_npm.outputs.exists == 'false'
         env:

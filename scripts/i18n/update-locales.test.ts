@@ -210,17 +210,17 @@ describe('parseOptions', () => {
     { argv: [], config: translationTargets.app, check: false },
     { argv: ['--check'], config: translationTargets.app, check: true },
     {
-      argv: ['--target', 'website'],
-      config: translationTargets.website,
+      argv: ['--target', 'app'],
+      config: translationTargets.app,
       check: false
     },
     {
-      argv: ['--target=website', '--check'],
-      config: translationTargets.website,
+      argv: ['--target=app', '--check'],
+      config: translationTargets.app,
       check: true
     },
     {
-      argv: ['--target=website', '--target=app'],
+      argv: ['--target=app', '--target=app'],
       config: translationTargets.app,
       check: false
     }
@@ -232,6 +232,7 @@ describe('parseOptions', () => {
 
   it.for([
     { argv: ['--target', 'docs'], message: 'Unknown translation target' },
+    { argv: ['--target', 'website'], message: 'Unknown translation target' },
     { argv: ['--target'], message: 'argument missing' },
     { argv: ['--chek'], message: 'Unknown option' }
   ])('rejects $argv', ({ argv, message }) => {

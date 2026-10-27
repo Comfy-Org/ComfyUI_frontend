@@ -206,6 +206,27 @@ describe('useBillingCapabilities', () => {
 
   afterEach(() => scope.stop())
 
+  it('renders plan_kind as received', async () => {
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce({
+      ...capabilitiesResponse(true),
+      plan_kind: 'sales_managed'
+    })
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.planKind.value).toBe('sales_managed')
+  })
+
+  it('leaves plan_kind unset when the snapshot omits it', async () => {
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      capabilitiesResponse(true)
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.planKind.value).toBeNull()
+  })
+
   it.for([
     [
       'allowed',
@@ -463,6 +484,29 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canInviteMembers.value).toBe(true)
     expect(billingCapabilities.canChangeSeats.value).toBe(true)
     expect(billingCapabilities.canManageMembers.value).toBe(false)
+  })
+
+  it('treats an omitted parked-payment fact as not parked', async () => {
+    const response = capabilitiesResponse(true)
+    Reflect.deleteProperty(response, 'has_parked_billing_operation')
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      response
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.hasParkedBillingOperation.value).toBe(false)
+  })
+
+  it('maps an explicit parked-payment fact to parked', async () => {
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce({
+      ...capabilitiesResponse(true),
+      has_parked_billing_operation: true
+    })
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.hasParkedBillingOperation.value).toBe(true)
   })
 
   it('applies changed capabilities when the current scope is refreshed', async () => {

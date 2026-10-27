@@ -1,8 +1,6 @@
 import path from 'node:path'
 
-// oxlint owns plain TypeScript; ESLint keeps the file types it cannot parse
-// (Vue SFCs, Astro components and the script blocks Astro's processor emits).
-export const templateFiles = ['**/*.vue', '**/*.astro', '**/*.astro/*.{js,ts}']
+export const templateFiles = ['**/*.vue']
 
 // better-tailwindcss also reads class strings from cn()/cva() calls in .ts.
 export const tailwindScriptFiles = ['{src,apps,packages}/**/*.ts']

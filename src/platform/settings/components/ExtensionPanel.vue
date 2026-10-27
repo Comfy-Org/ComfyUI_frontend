@@ -87,10 +87,15 @@
           </TableCell>
           <TableCell>
             {{ extension.name }}
-            <Badge v-if="extensionStore.isCoreExtension(extension.name)">
-              {{ $t('g.core') }}
+            <Badge :severity="extensionBadge(extension).severity">
+              {{ extensionBadge(extension).label }}
             </Badge>
-            <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
+            <div
+              v-if="extension.provenance?.summary"
+              class="text-xs text-muted-foreground"
+            >
+              {{ extension.provenance.summary }}
+            </div>
           </TableCell>
           <TableCell class="text-right">
             <Switch
@@ -114,30 +119,34 @@ import type { CheckboxCheckedState } from 'reka-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
-import Message from '@/components/ui/message/Message.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Switch from '@/components/ui/switch/Switch.vue'
-import Table from '@/components/ui/table/Table.vue'
-import TableBody from '@/components/ui/table/TableBody.vue'
-import TableCell from '@/components/ui/table/TableCell.vue'
-import TableHead from '@/components/ui/table/TableHead.vue'
-import TableHeader from '@/components/ui/table/TableHeader.vue'
-import TableRow from '@/components/ui/table/TableRow.vue'
-import TableSortHead from '@/components/ui/table/TableSortHead.vue'
-import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
-import type { TableSortDirection } from '@/components/ui/table/tableUtils'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import Checkbox from '@comfyorg/design-system/checkbox/Checkbox'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Message from '@comfyorg/design-system/message/Message'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Switch from '@comfyorg/design-system/switch/Switch'
+import Table from '@comfyorg/design-system/table/Table'
+import TableBody from '@comfyorg/design-system/table/TableBody'
+import TableCell from '@comfyorg/design-system/table/TableCell'
+import TableHead from '@comfyorg/design-system/table/TableHead'
+import TableHeader from '@comfyorg/design-system/table/TableHeader'
+import TableRow from '@comfyorg/design-system/table/TableRow'
+import TableSortHead from '@comfyorg/design-system/table/TableSortHead'
+import {
+  filterByQuery,
+  sortByText
+} from '@comfyorg/design-system/lib/table/tableUtils'
+import type { TableSortDirection } from '@comfyorg/design-system/lib/table/tableUtils'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 const { t } = useI18n()
 
-const filterTypeKeys = ['all', 'core', 'custom'] as const
+const filterTypeKeys = ['all', 'core', 'custom', 'agentCreated'] as const
 type FilterTypeKey = (typeof filterTypeKeys)[number]
 const filterTypes = computed(() =>
   filterTypeKeys.map((key) => ({
@@ -155,6 +164,19 @@ const settingStore = useSettingStore()
 
 const editingEnabledExtensions = ref<Record<string, boolean>>({})
 
+function extensionBadge(extension: (typeof extensionStore.extensions)[number]) {
+  if (extensionStore.isAgentCreatedExtension(extension)) {
+    return { label: t('g.createdByAgent'), severity: 'info' as const }
+  }
+  if (extensionStore.isCoreExtension(extension.name)) {
+    return { label: t('g.core'), severity: undefined }
+  }
+  return {
+    label: t('g.custom'),
+    severity: 'info' as const
+  }
+}
+
 const filteredExtensions = computed(() => {
   const extensions = extensionStore.extensions
   switch (filterType.value) {
@@ -166,6 +188,8 @@ const filteredExtensions = computed(() => {
       return extensions.filter(
         (ext) => !extensionStore.isCoreExtension(ext.name)
       )
+    case 'agentCreated':
+      return extensionStore.agentExtensions
     default:
       return extensions
   }
@@ -273,6 +297,15 @@ const disableThirdPartyExtensions = async () => {
   await updateExtensionStatus()
 }
 
+async function disableAgentExtensions() {
+  extensionStore.agentExtensions.forEach((ext) => {
+    if (extensionStore.isExtensionReadOnly(ext.name)) return
+
+    editingEnabledExtensions.value[ext.name] = false
+  })
+  await updateExtensionStatus()
+}
+
 const applyChanges = () => {
   // Refresh the page to apply changes
   window.location.reload()
@@ -321,6 +354,14 @@ const extensionActions = computed<MenuItem[]>(() => [
     icon: 'pi pi-times',
     command: disableThirdPartyExtensions,
     disabled: !extensionStore.hasThirdPartyExtensions
+  },
+  {
+    label: t('g.disableAgentCreated'),
+    icon: 'pi pi-times',
+    command: disableAgentExtensions,
+    disabled: !extensionStore.agentExtensions.some(
+      (extension) => !extensionStore.isExtensionReadOnly(extension.name)
+    )
   }
 ])
 </script>

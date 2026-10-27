@@ -1,4 +1,7 @@
-import type { SubscriptionState } from '@comfyorg/ingest-types'
+import type {
+  BillingCapabilitiesResponse,
+  SubscriptionState
+} from '@comfyorg/ingest-types'
 
 import type {
   BillingStatus,
@@ -47,7 +50,15 @@ export type PlanRowState =
     }
   | { kind: 'unknown' }
 
-export type PlanRowAction = 'manage' | 'subscribe' | 'choosePlan'
+export type PlanRowAction =
+  | 'manage'
+  | 'subscribe'
+  | 'choosePlan'
+  | 'contactSales'
+
+export type PlanKind = NonNullable<BillingCapabilitiesResponse['plan_kind']>
+
+export const CONTACT_SALES_URL = 'https://comfy.org/contact/'
 
 type BillingTabLoad = 'loading' | 'error' | 'ready'
 
@@ -100,11 +111,15 @@ export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
   }
 }
 
-/** The plan action for a state, shown only when the server grants `can_open_plans`. */
+/** Self-serve actions follow `can_open_plans`. `sales_managed` is Contact sales. */
 export function planRowAction(
   state: PlanRowState,
-  { canOpenPlans }: { canOpenPlans: boolean }
+  {
+    canOpenPlans,
+    planKind
+  }: { canOpenPlans: boolean; planKind: PlanKind | null }
 ): PlanRowAction | null {
+  if (planKind === 'sales_managed') return 'contactSales'
   if (!canOpenPlans) return null
   switch (state.kind) {
     case 'activating':

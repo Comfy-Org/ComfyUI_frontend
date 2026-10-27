@@ -36,3 +36,11 @@ export function getFirebaseConfig(): FirebaseOptions {
   if (remoteConfig.value.firebase_env === 'dev') return DEV_CONFIG
   return BUILD_TIME_CONFIG
 }
+
+/** Whether {@link getFirebaseConfig} names the project from the server rather than the build. */
+export function hasServerFirebaseConfig(): boolean {
+  return (
+    Boolean(remoteConfig.value.firebase_config) ||
+    remoteConfig.value.firebase_env === 'dev'
+  )
+}

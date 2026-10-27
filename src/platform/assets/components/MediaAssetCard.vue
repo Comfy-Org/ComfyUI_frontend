@@ -155,9 +155,9 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
-import IconGroup from '@/components/button/IconGroup.vue'
-import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
-import Button from '@/components/ui/button/Button.vue'
+import IconGroup from '@comfyorg/design-system/button-group/IconGroup'
+import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
+import Button from '@comfyorg/design-system/button/Button'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -183,7 +183,7 @@ import {
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
-import MediaTitle from './MediaTitle.vue'
+import MediaTitle from '@comfyorg/design-system/media/MediaTitle'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
 

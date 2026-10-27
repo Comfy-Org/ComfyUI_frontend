@@ -5,7 +5,7 @@
       class="flex h-10 shrink-0 items-center gap-1 bg-popover px-2"
       @wheel.stop
     >
-      <Popover v-model:open="categoryMenuOpen">
+      <PopoverRoot v-model:open="categoryMenuOpen">
         <PopoverTrigger as-child>
           <Button
             variant="textonly"
@@ -22,12 +22,7 @@
             <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent
-          side="bottom"
-          align="start"
-          :side-offset="8"
-          :class="menuPanelClass"
-        >
+        <PopoverContent align="start" :side-offset="8" :class="menuPanelClass">
           <button
             v-for="c in categoryDefs"
             :key="c.key"
@@ -45,7 +40,7 @@
             {{ c.label }}
           </button>
         </PopoverContent>
-      </Popover>
+      </PopoverRoot>
 
       <div class="mx-1 h-5 w-px shrink-0 bg-border" />
 
@@ -157,7 +152,7 @@
         >
           <i class="icon-[lucide--crosshair] size-4" />
         </Button>
-        <Popover v-if="canExport" v-model:open="exportOpen">
+        <PopoverRoot v-if="canExport" v-model:open="exportOpen">
           <PopoverTrigger as-child>
             <Button
               variant="textonly"
@@ -185,7 +180,7 @@
               {{ format.label }}
             </button>
           </PopoverContent>
-        </Popover>
+        </PopoverRoot>
       </div>
     </div>
   </div>
@@ -193,7 +188,7 @@
 
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -213,13 +208,12 @@ import RecordMenuControl from '@/extensions/core/load3d/components/menubar/Recor
 import SceneMenuGroup from '@/extensions/core/load3d/components/menubar/SceneMenuGroup.vue'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
 import ViewerControls from '@/extensions/core/load3d/components/controls/ViewerControls.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuButtonClass,
   selectedMenuButtonClass
-} from '@/components/ui/menu/menuStyles'
+} from '@comfyorg/design-system/lib/menu/menuStyles'
 import { getExportFormatOptions } from '@comfyorg/viewport3d/load3d/constants'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {

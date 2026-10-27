@@ -16,12 +16,7 @@
   },
 
   // Runtime entry points fallow cannot infer.
-  "entry": [
-    // Astro injects these routes when WORKSHOP_IN_BUILD is enabled.
-    "apps/website/src/routes/models/*.{astro,ts}",
-    "index.html",
-    "src/main.ts"
-  ],
+  "entry": ["index.html", "src/main.ts"],
 
   // Keep tooling and test roots reachable without treating their imports as
   // production runtime dependencies.
@@ -31,7 +26,6 @@
       "enablers": ["fallow"],
       "entryPoints": [
         "**/.storybook/{main,preview}.ts",
-        "apps/website/src/scripts/**/*.ts",
         "packages/ingest-types/openapi-ts.config.ts",
         "scripts/**/*.{js,ts}"
       ],
@@ -41,8 +35,8 @@
       "name": "comfyui-test-entry-points",
       "enablers": ["@playwright/test"],
       "entryPoints": [
-        "apps/website/src/**/__mocks__/**/*.ts",
         "browser_tests/global{Setup,Teardown}.ts",
+        "packages/design-system/tests/consumer/{main,runtime,verifyStyles}.ts",
         "playwright.session.config.ts",
         "src/**/__mocks__/**/*.ts"
       ],
@@ -72,8 +66,12 @@
     "eslint-plugin-storybook",
     "eslint-plugin-testing-library",
     "postcss-html",
-    // Executed by models-snippets.test.ts inside the generated Node examples.
-    "mime-types"
+    // Optional peer of @vueuse/integrations/useFuse, imported by the design
+    // system's select search. Packed consumers fail to resolve it without it.
+    "fuse.js",
+    // Imported by the bundled tailwind-utils cn(), kept external so published
+    // consumers install it with its license.
+    "tailwind-merge"
   ],
 
   "ignoreUnresolvedImports": [
@@ -148,21 +146,6 @@
     {
       "file": "src/platform/workflow/sharing/composables/useShareDialog.ts",
       "exports": ["useShareDialog"]
-    },
-    // apps/website data consumed by astro pages; getGalleryItemById is a
-    // pre-annotated stacked-PR keep.
-    {
-      "file": "apps/website/src/data/events.ts",
-      "exports": ["learningEvents"]
-    },
-    {
-      "file": "apps/website/src/data/gallery.ts",
-      "exports": ["getGalleryItemById"]
-    },
-    // Vitest automock: mirrors the real module's exports by design.
-    {
-      "file": "apps/website/src/config/__mocks__/workshop-session-state.ts",
-      "exports": ["*"]
     },
     // oxlint plugin loaded by serverFacts.oxlintrc.json jsPlugins, not imported.
     {

@@ -21,7 +21,8 @@ const appState = vi.hoisted(() => ({
   node: null as MockNode | null,
   graphId: 'graph-0',
   canvasGraphId: 'graph-0',
-  canvasNode: null as MockNode | null
+  canvasNode: null as MockNode | null,
+  rootGraphEvents: new EventTarget()
 }))
 const incomingBoxes = shallowRef<BoundingBox[] | undefined>()
 const backgroundUrl = shallowRef<string | undefined>()
@@ -29,6 +30,9 @@ const backgroundConnected = shallowRef(false)
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
+    get rootGraphOrUndefined() {
+      return { events: appState.rootGraphEvents }
+    },
     get rootGraph() {
       return {
         id: appState.graphId,
@@ -190,6 +194,7 @@ const box = (over: Partial<BoundingBox> = {}): BoundingBox => ({
 let graphCounter = 0
 
 beforeEach(() => {
+  appState.rootGraphEvents = new EventTarget()
   appState.node = makeNode()
   appState.graphId = `graph-${++graphCounter}`
   appState.canvasGraphId = appState.graphId
@@ -231,6 +236,51 @@ describe('useBoundingBoxes initialization', () => {
     const c = setup()
     expect(c.hasRegions.value).toBe(false)
     expect(c.activeRegion.value).toBeNull()
+  })
+})
+
+describe('useBoundingBoxes after the graph is reloaded', () => {
+  function reloadGraphWithWidth(width: number) {
+    const reloadedNode = makeNode()
+    reloadedNode.widgets[0].value = width
+    appState.node = reloadedNode
+    appState.rootGraphEvents.dispatchEvent(new Event('configured'))
+  }
+
+  it('follows the reloaded node size after a canvas undo', async () => {
+    appState.node!.widgets[0].value = 1024
+    const c = setup()
+    expect(c.canvasStyle.value).toEqual({ aspectRatio: '1024 / 512' })
+
+    reloadGraphWithWidth(512)
+    await flush()
+
+    expect(c.canvasStyle.value).toEqual({ aspectRatio: '512 / 512' })
+  })
+
+  it('writes edits in pixels of the reloaded node size', async () => {
+    const c = setup()
+    reloadGraphWithWidth(1024)
+    await flush()
+
+    c.onPointerDown(pe(0, 0))
+    c.onCanvasPointerMove(pe(50, 50))
+    c.onDocPointerUp(pe(50, 50))
+    await flush()
+
+    expect(modelBoxes(c)[0]).toMatchObject({ width: 512, height: 256 })
+  })
+
+  it('keeps the boxes the reload restored along with a new size', async () => {
+    const c = setup([box({ x: 0, y: 0, width: 256, height: 256 })])
+    const restored = [box({ x: 512, y: 0, width: 512, height: 256 })]
+
+    reloadGraphWithWidth(1024)
+    c.modelValue.value = restored
+    await flush()
+
+    expect(modelBoxes(c)).toEqual(restored)
+    expect(c.regions.value[0]).toMatchObject({ x: 0.5, w: 0.5 })
   })
 })
 

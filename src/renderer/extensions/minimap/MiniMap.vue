@@ -87,7 +87,7 @@
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'

@@ -1,4 +1,3 @@
-import { websiteTranslationConfig } from '@comfyorg/website/translation-config'
 import type { Reasoning } from 'openai/resources/shared'
 
 export interface OutputLocale {
@@ -93,6 +92,5 @@ const appTranslationConfig: TranslationPipelineConfig = {
 }
 
 export const translationTargets = {
-  app: appTranslationConfig,
-  website: { ...generationDefaults, ...websiteTranslationConfig }
+  app: appTranslationConfig
 } as const satisfies Record<string, TranslationPipelineConfig>

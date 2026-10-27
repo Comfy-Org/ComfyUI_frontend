@@ -6,10 +6,8 @@ describe('isEslintFile', () => {
   it.for([
     ['src/components/Button.vue', true],
     ['browser_tests/fixtures/Harness.vue', true],
-    ['apps/website/src/pages/index.astro', true],
-    ['apps/website/src/pages/index.astro/0.ts', true],
     ['src/components/ui/button/button.variants.ts', true],
-    ['apps/website/src/components/ui/button/index.ts', true],
+    ['apps/billing-web/src/main.ts', true],
     ['packages/tailwind-utils/src/index.ts', true],
     ['src/stores/appStore.test.ts', false],
     ['src/types/globals.d.ts', false],

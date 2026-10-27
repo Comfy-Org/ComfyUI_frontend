@@ -44,6 +44,7 @@ import {
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AgentRestClient,
+  DraftSnapshot,
   PostMessageInput
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { AskUserResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
@@ -5883,6 +5884,66 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
   })
 
+  function unboundSecondTurnSession(draft: () => DraftSnapshot) {
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockResolvedValue({
+        thread_id: 'th-9',
+        message_id: 'msg-1',
+        workflow_id: 'wf-fresh'
+      })
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        adopted: vi.fn(),
+        draft
+      }
+    })
+    session.start()
+    return { session, postMessage }
+  }
+
+  const LINKED_DRAFT: DraftSnapshot = {
+    content: {
+      nodes: [
+        { id: 1, type: 'CheckpointLoaderSimple' },
+        { id: 2, type: 'CLIPTextEncode' }
+      ],
+      links: [[1, 1, 1, 2, 1, 'CLIP']]
+    }
+  }
+  const SEVERED_DRAFT: DraftSnapshot = {
+    content: { nodes: LINKED_DRAFT.content.nodes, links: [] }
+  }
+
+  it('(h11) a second turn on a still-unbound tab sends no canvas at all (PM-1410)', async () => {
+    let draft = LINKED_DRAFT
+    const { session, postMessage } = unboundSecondTurnSession(() => draft)
+
+    await session.sendMessage('what is connected here?')
+    expect(postMessage.mock.calls[0][1].draft).toEqual(LINKED_DRAFT)
+
+    draft = SEVERED_DRAFT
+    await session.sendMessage('is it still connected?')
+
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('draft')
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('workflowId')
+  })
+
+  it.fails('(h12) a second turn on a still-unbound tab carries the connection the user severed (PM-1410)', async () => {
+    let draft = LINKED_DRAFT
+    const { session, postMessage } = unboundSecondTurnSession(() => draft)
+
+    await session.sendMessage('what is connected here?')
+    draft = SEVERED_DRAFT
+    await session.sendMessage('is it still connected?')
+
+    expect(postMessage.mock.calls[1][1].draft).toEqual(SEVERED_DRAFT)
+  })
+
   it.for(['new-chat', 'history'])(
     'cancels preparation after switching conversation: %s',
     async (context) => {
@@ -8142,6 +8203,28 @@ describe('app:agent_error telemetry (TEL-8)', () => {
       turn_accepted: false,
       ui_treatment: 'error_overlay'
     })
+  })
+
+  it('preserves default grouping when a failure bypasses the REST boundary', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new AgentApiError('bad gateway', 502, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_history_load_failed',
+      tags: {},
+      fingerprint: undefined
+    })
+    const reportedError = vi.mocked(reportError).mock.calls[0][0] as Error
+    expect(reportedError.message).not.toContain('th-9')
+    expect(reportedError.stack ?? '').not.toContain('th-9')
   })
 
   it('does not track a 404 thread-not-found history load as an error', async () => {

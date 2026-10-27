@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useTimeout } from '@vueuse/core'
+import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, ref, toValue, useTemplateRef } from 'vue'
@@ -12,8 +13,8 @@ import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
-import Popover from '@/components/ui/Popover.vue'
-import Button from '@/components/ui/button/Button.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
@@ -265,8 +266,8 @@ function replayAppModeTour() {
           />
           <div v-else class="mt-4 flex">
             <PartnerNodesList mobile />
-            <Popover side="top" @open-auto-focus.prevent>
-              <template #button>
+            <PopoverRoot>
+              <PopoverTrigger as-child>
                 <Button size="lg" class="-mr-3 pr-7">
                   <i
                     v-if="batchCount == 1"
@@ -274,19 +275,28 @@ function replayAppModeTour() {
                   />
                   <div v-else class="tabular-nums" v-text="`${batchCount}x`" />
                 </Button>
-              </template>
-              <div
-                class="m-1 mb-2 text-muted-foreground"
-                v-text="t('linearMode.runCount')"
-              />
-              <ScrubableNumberInput
-                v-model="batchCount"
-                :aria-label="t('linearMode.runCount')"
-                :min="1"
-                :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
-                class="h-10 min-w-40"
-              />
-            </Popover>
+              </PopoverTrigger>
+              <PopoverContent
+                side="top"
+                :side-offset="5"
+                dismiss-on-viewport-change
+                class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
+                @open-auto-focus.prevent
+              >
+                <div
+                  class="m-1 mb-2 text-muted-foreground"
+                  v-text="t('linearMode.runCount')"
+                />
+                <ScrubableNumberInput
+                  v-model="batchCount"
+                  :aria-label="t('linearMode.runCount')"
+                  :min="1"
+                  :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
+                  class="h-10 min-w-40"
+                />
+                <PopoverArrow class="fill-background stroke-border/50" />
+              </PopoverContent>
+            </PopoverRoot>
             <Button
               variant="inverted"
               class="grow"

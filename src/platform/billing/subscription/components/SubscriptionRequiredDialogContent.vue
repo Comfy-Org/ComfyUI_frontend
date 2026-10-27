@@ -153,8 +153,8 @@
 import { computed, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/platform/billing/subscription/constants/subscriptionPricesConfig'
 import PricingTable from '@/platform/billing/subscription/components/PricingTable.vue'
 import SubscribeButton from '@/platform/billing/subscription/components/SubscribeButton.vue'

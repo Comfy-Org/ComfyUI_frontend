@@ -74,6 +74,13 @@ export function askCancelled(askId: string): AgentAskResolvedFrame {
   }
 }
 
+export function askExpired(askId = RUN_ASK_ID): AgentAskResolvedFrame {
+  return {
+    type: 'agent_ask_resolved',
+    data: { ...askTurnIds, ask_id: askId, status: 'expired', selected: null }
+  }
+}
+
 export function toolCall(
   name: string,
   status: 'running' | 'success'

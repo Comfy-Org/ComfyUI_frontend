@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useSubscriptionActions } from '@/platform/billing/subscription/composables/useSubscriptionActions'

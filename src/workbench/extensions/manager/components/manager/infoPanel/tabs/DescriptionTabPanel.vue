@@ -59,10 +59,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
+import ModelInfoField from '@comfyorg/design-system/field/ModelInfoField'
 import type { components } from '@/types/comfyRegistryTypes'
 import { isSafeExternalUrl } from '@/utils/urlSafety'
-import MarkdownText from '@/workbench/extensions/manager/components/manager/infoPanel/MarkdownText.vue'
+import MarkdownText from '@comfyorg/design-system/common/MarkdownText'
 
 const { t } = useI18n()
 

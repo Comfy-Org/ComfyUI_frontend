@@ -2,9 +2,9 @@
   <div class="@container" data-testid="billing-auto-top-up-banner">
     <div
       role="status"
-      class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
+      class="flex flex-col gap-3 rounded-xl border border-border/60 bg-background p-3 @2xl:flex-row @2xl:items-center @2xl:gap-2"
     >
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
+      <div class="flex min-w-0 flex-1 flex-col gap-2">
         <div class="flex items-center gap-2">
           <i
             class="icon-[lucide--triangle-alert] size-4 shrink-0 text-warning"

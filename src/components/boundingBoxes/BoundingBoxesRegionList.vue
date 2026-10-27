@@ -56,7 +56,7 @@ import { useTemplateRef, watch } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import BoundingBoxesRegionForm from '@/components/boundingBoxes/BoundingBoxesRegionForm.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   regionColor,
   regionTag

@@ -36,6 +36,25 @@ describe('useToast', () => {
     ])
   })
 
+  it('changes the text of the notification it names in place, keeping the same instance, and no other', () => {
+    const toast = useToast()
+    toast.error('Save failed', { description: 'Disk is full' })
+    const id = toast.loading('Starting... 2 s', { description: 'Waiting' })
+    const [other, before] = toast.toasts
+
+    toast.update(id, { title: 'Starting... 3 s' })
+
+    expect(toast.toasts).toEqual([
+      other,
+      expect.objectContaining({
+        id,
+        instance: before.instance,
+        title: 'Starting... 3 s',
+        description: 'Waiting'
+      })
+    ])
+  })
+
   it('reports whether dismissing removed a notification', () => {
     const toast = useToast()
     const id = toast.info('Saved')

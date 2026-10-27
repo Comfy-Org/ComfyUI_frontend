@@ -84,6 +84,7 @@ function renderForm(
     publishableKey?: string
     themeKey?: string
     pageLayout?: boolean
+    payOnce?: boolean
     onConfirm?: (token: string) => void
     onSubmittingChange?: (submitting: boolean) => void
     container?: HTMLElement
@@ -418,6 +419,25 @@ describe('StripePaymentForm', () => {
 
       expect(phaseEvents).toStrictEqual([])
     })
+  })
+
+  it('collects a one-time payment the card is never saved for when paying once', async () => {
+    renderForm(2500, 'pmc_topup', { payOnce: true })
+
+    await waitFor(() =>
+      expect(stripeMocks.stripe.elements).toHaveBeenCalledOnce()
+    )
+    expect(stripeMocks.stripe.elements).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'payment',
+        amount: 2500,
+        currency: 'usd',
+        paymentMethodConfiguration: 'pmc_topup'
+      })
+    )
+    expect(stripeMocks.stripe.elements).not.toHaveBeenCalledWith(
+      expect.objectContaining({ setupFutureUsage: expect.anything() })
+    )
   })
 
   it('collects deferred subscription details and emits a confirmation token', async () => {

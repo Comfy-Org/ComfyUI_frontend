@@ -23,7 +23,7 @@ import { useAsyncState } from '@vueuse/core'
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'

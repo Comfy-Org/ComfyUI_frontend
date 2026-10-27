@@ -27,9 +27,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'

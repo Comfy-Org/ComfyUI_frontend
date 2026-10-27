@@ -735,6 +735,37 @@ describe('reduceCheckoutPage reconciliation', () => {
       expected: { kind: 'terminal', attribution: 'settled' }
     },
     {
+      name: 'a collided Pay that waits on a payment it watches settle is Already completed, unattributed',
+      events: [
+        ...live,
+        submitted,
+        collided,
+        reconciled(pendingOperation()),
+        changed(succeededOperation())
+      ],
+      expected: { kind: 'terminal', attribution: 'settled' }
+    },
+    {
+      name: 'a form that watched another tab pay settle is Already completed, unattributed',
+      events: [
+        ...live,
+        reconciled(pendingOperation()),
+        changed(succeededOperation())
+      ],
+      expected: { kind: 'terminal', attribution: 'settled' }
+    },
+    {
+      name: 'an unanswered Pay that waits on a payment it watches settle never claims it was already through',
+      events: [
+        ...live,
+        submitted,
+        { type: 'payRejectedAsPending', because: 'unanswered' },
+        reconciled(pendingOperation()),
+        changed(succeededOperation())
+      ],
+      expected: { kind: 'terminal', attribution: 'followed' }
+    },
+    {
       name: 'a collided Pay re-read as nothing frees Pay again',
       events: [...live, submitted, collided, reconciled(undefined)],
       expected: collect('ready')

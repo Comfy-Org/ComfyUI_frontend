@@ -1,4 +1,8 @@
-import { applyOps, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  nodesMap,
+  OPAQUE_WIDGETS_KEY
+} from '@comfyorg/comfy-multi-player'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
 import {
@@ -19,6 +23,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { MAX_DYNAMIC_GROUP_ROWS } from '@/core/graph/widgets/dynamicGroupDiagnostics'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -577,7 +582,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
     }
   )
 
-  it('still fails to create a restored above-max DynamicGroup on a node with a DynamicCombo (#21297)', () => {
+  it('creates a restored above-max DynamicGroup on a node with a DynamicCombo (#21297)', () => {
     const { doc, collector } = followedDoc(
       {
         nodes: [
@@ -611,10 +616,10 @@ describe('LiveGraphApplier with the real change tracker', () => {
 
     const result = applier.applyChanges(doc, collector.take(), CONTEXT)
 
-    expect(result.failureCount).toBe(1)
+    expect(result.failureCount).toBe(0)
     expect(
       follower.getNodeById(toNodeId(1))?.serialize().widgets_values
-    ).toEqual(['head', 0])
+    ).toEqual(['head', 4, 0.1, 0.2, 0.3, 0.4])
   })
 
   it('refuses a crafted DynamicGroup row count without row values on create', () => {
@@ -642,6 +647,85 @@ describe('LiveGraphApplier with the real change tracker', () => {
     expect(
       follower.getNodeById(toNodeId(1))?.serialize().widgets_values
     ).toEqual(['head', 0, 'tail'])
+  })
+
+  describe('a positional widget update that resizes a DynamicGroup', () => {
+    function updatedFrom(next: unknown[]) {
+      const { doc, collector } = followedDoc(
+        {
+          nodes: [
+            {
+              id: 1,
+              type: 'DynamicGroupTest',
+              pos: [0, 0],
+              size: [210, 100],
+              widgets_values: ['head', 2, 0.1, 0.2, 'tail']
+            }
+          ],
+          links: []
+        },
+        { types: {} }
+      )
+      const follower = new LGraph()
+      const applier = new LiveGraphApplier({ getGraph: () => follower })
+      applier.applyChanges(doc, collector.take(), CONTEXT)
+      doc.transact(() => {
+        const entry = nodesMap(doc).get('1')
+        assert(entry instanceof Y.Map)
+        entry.set(OPAQUE_WIDGETS_KEY, next)
+      })
+      const result = applier.applyChanges(doc, collector.take(), CONTEXT)
+      return {
+        failureCount: result.failureCount,
+        values: follower.getNodeById(toNodeId(1))?.serialize().widgets_values
+      }
+    }
+
+    it.for<[string, unknown[]]>([
+      ['grows', ['head', 3, 0.1, 0.2, 0.3, 'new tail']],
+      ['grows above max', ['head', 4, 0.1, 0.2, 0.3, 0.4, 'new tail']],
+      ['shrinks', ['head', 1, 0.1, 'new tail']]
+    ])('lands later values on the rows it %s', ([, next]) => {
+      expect(updatedFrom(next)).toEqual({ failureCount: 0, values: next })
+    })
+
+    it('leaves later values unapplied when the count is refused', () => {
+      expect(updatedFrom(['head', 1e9, 'new tail'])).toEqual({
+        failureCount: 1,
+        values: ['head', 2, 0.1, 0.2, 'tail']
+      })
+    })
+  })
+
+  it('aborts an over-bound positional restore before trailing values shift', () => {
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'DynamicGroupTest',
+            pos: [0, 0],
+            size: [210, 100],
+            widgets_values: [
+              'remote head',
+              MAX_DYNAMIC_GROUP_ROWS + 1,
+              'attacker tail'
+            ]
+          }
+        ],
+        links: []
+      },
+      { types: {} }
+    )
+    const follower = new LGraph()
+    const applier = new LiveGraphApplier({ getGraph: () => follower })
+
+    const result = applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(result.failureCount).toBe(1)
+    expect(
+      follower.getNodeById(toNodeId(1))?.serialize().widgets_values
+    ).toEqual(['remote head', 0, 'tail'])
   })
 
   it('builds a DynamicGroup node from the catch-up frame without outbound echo and reloads to the same graph', async () => {

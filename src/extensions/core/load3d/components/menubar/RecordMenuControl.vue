@@ -17,7 +17,7 @@
     v-else-if="hasRecording"
     class="flex shrink-0 items-center gap-0.5 rounded-lg bg-muted py-0.5 pr-0.5 pl-1 text-sm text-foreground"
   >
-    <Popover v-model:open="menuOpen">
+    <PopoverRoot v-model:open="menuOpen">
       <PopoverTrigger as-child>
         <Button
           variant="textonly"
@@ -32,12 +32,7 @@
           {{ formatDuration(recordingDuration ?? 0) }}
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        side="bottom"
-        align="start"
-        :side-offset="8"
-        :class="menuPanelClass"
-      >
+      <PopoverContent align="start" :side-offset="8" :class="menuPanelClass">
         <button
           type="button"
           :class="menuButtonClass"
@@ -59,7 +54,7 @@
           {{ t('load3d.menuBar.deleteRecording') }}
         </button>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
     <Button
       variant="textonly"
       size="unset"
@@ -89,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -97,10 +92,9 @@ import {
   menuPanelClass
 } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { menuButtonClass } from '@/components/ui/menu/menuStyles'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { menuButtonClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 
 const { compact = false } = defineProps<{
   compact?: boolean

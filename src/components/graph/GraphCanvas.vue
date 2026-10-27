@@ -542,6 +542,7 @@ useEventListener(
 )
 
 let disposed = false
+const lateExtensionWork = new AbortController()
 const startupOwner = Symbol()
 
 function finishStartup(outcome: 'completed' | 'failed') {
@@ -602,7 +603,9 @@ onMounted(async () => {
       )
     }
 
-    await bootstrapTracer.settle('bootstrap/extensions-load', loadExtensions)
+    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
+      loadExtensions(lateExtensionWork.signal)
+    )
 
     const canvas = canvasRef.value
     if (!canvas) throw new TypeError('GraphCanvas mounted without a canvas')
@@ -675,6 +678,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   disposed = true
+  lateExtensionWork.abort()
   void nextTick(() => {
     if (activeStartup !== startupOwner) return
     activeStartup = undefined

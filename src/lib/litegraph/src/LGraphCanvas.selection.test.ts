@@ -135,6 +135,7 @@ describe('LGraphCanvas selection', () => {
 
       expect(selectedTitles(canvas)).toEqual(['B'])
       expect(a.selected).toBe(false)
+      expect(onSelectionChange).toHaveBeenCalledTimes(3)
     })
 
     it('plain click on empty canvas clears', () => {
@@ -427,14 +428,30 @@ describe('LGraphCanvas selection', () => {
       expect(canvas.selected_nodes).toEqual({})
     })
 
-    it('node removal clears the selection without reporting it', () => {
-      canvas.select(a)
-      vi.mocked(onSelectionChange).mockClear()
+    it.for(['node', 'group', 'reroute'] as const)(
+      '%s removal clears the selection without reporting it',
+      (kind) => {
+        const group = addGroup(graph, 'G', [400, 200, 100, 100])
+        const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })
+        assert(reroute)
+        const targets = {
+          node: { item: a, remove: () => graph.remove(a) },
+          group: { item: group, remove: () => graph.remove(group) },
+          reroute: {
+            item: reroute,
+            remove: () => graph.removeReroute(reroute.id)
+          }
+        }
+        const target = targets[kind]
+        canvas.selectItems([target.item, b])
+        vi.mocked(onSelectionChange).mockClear()
 
-      graph.remove(a)
+        target.remove()
 
-      expect(onSelectionChange).not.toHaveBeenCalled()
-    })
+        expect([...canvas.selectedItems]).toEqual([b])
+        expect(onSelectionChange).not.toHaveBeenCalled()
+      }
+    )
 
     it('node removal clears legacy selection before a deselection hook throws', () => {
       canvas.select(a)
@@ -462,9 +479,7 @@ describe('LGraphCanvas selection', () => {
 
     it('a replacing click with a selecting hook reports one final selection', () => {
       canvas.select(a)
-      canvas.onNodeSelected = (node) => {
-        if (node === b) canvas.select(a)
-      }
+      canvas.onNodeSelected = () => canvas.select(a)
       vi.mocked(onSelectionChange).mockClear()
 
       canvas.processSelect(b, undefined)
@@ -480,13 +495,10 @@ describe('LGraphCanvas selection', () => {
       canvas.startGhostPlacement(b)
 
       try {
-        expect(
-          vi
-            .mocked(onSelectionChange)
-            .mock.calls.map(([selected]) => Object.keys(selected))
-        ).toEqual([[String(b.id)]])
+        expect(vi.mocked(onSelectionChange).mock.calls).toEqual([
+          [{ [b.id]: b }]
+        ])
       } finally {
-        // Leaves document listeners behind otherwise, failing later tests.
         canvas.finalizeGhostPlacement(true)
       }
     })
@@ -511,17 +523,66 @@ describe('LGraphCanvas selection', () => {
 
       canvas.deselectAll()
 
-      expect(
-        vi
-          .mocked(onSelectionChange)
-          .mock.calls.map(([selected]) => Object.keys(selected))
-      ).toEqual([[String(b.id)]])
+      expect(vi.mocked(onSelectionChange).mock.calls).toEqual([[{ [b.id]: b }]])
+    })
+
+    it.for<{
+      name: string
+      arrange: () => void
+      act: () => void
+      expected: () => Record<string, LGraphNode>
+    }>([
+      {
+        name: 'select()',
+        arrange: () => (a.onSelected = () => canvas.select(b)),
+        act: () => canvas.select(a),
+        expected: () => ({ [a.id]: a, [b.id]: b })
+      },
+      {
+        name: 'deselect()',
+        arrange: () => {
+          canvas.select(a)
+          a.onDeselected = () => canvas.select(b)
+        },
+        act: () => canvas.deselect(a),
+        expected: () => ({ [b.id]: b })
+      },
+      {
+        name: 'selectItems()',
+        arrange: () => (a.onSelected = () => canvas.select(b)),
+        act: () => canvas.selectItems([a]),
+        expected: () => ({ [a.id]: a, [b.id]: b })
+      }
+    ])(
+      '$name reports once when a hook selects another item',
+      ({ arrange, act, expected }) => {
+        arrange()
+        vi.mocked(onSelectionChange).mockClear()
+
+        act()
+
+        expect(vi.mocked(onSelectionChange).mock.calls).toEqual([[expected()]])
+      }
+    )
+
+    it('reports again after a selection hook throws', () => {
+      canvas.select(a)
+      a.onDeselected = () => {
+        throw new Error('hook failed')
+      }
+      expect(() => canvas.deselectAll()).toThrow('hook failed')
+      a.onDeselected = undefined
+      vi.mocked(onSelectionChange).mockClear()
+
+      canvas.select(b)
+
+      expect(onSelectionChange).toHaveBeenCalledOnce()
     })
 
     it('alt aux-clicking a selected reroute reports one change', () => {
-      const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })!
+      const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })
+      assert(reroute)
       canvas._visibleReroutes.add(reroute)
-      canvas.visible_nodes = [...graph.nodes]
       canvas.select(reroute)
       vi.mocked(onSelectionChange).mockClear()
 
@@ -555,6 +616,15 @@ describe('LGraphCanvas selection', () => {
 
       expect(sizesSeenByHooks).toEqual([1, 2])
       expect(onSelectionChange).toHaveBeenCalledTimes(1)
+    })
+
+    it('selectItems() reports replacing the selection once', () => {
+      canvas.select(a)
+      vi.mocked(onSelectionChange).mockClear()
+
+      canvas.selectItems([b])
+
+      expect(vi.mocked(onSelectionChange).mock.calls).toEqual([[{ [b.id]: b }]])
     })
 
     it('selectItems() does not report reselecting the current selection', () => {
@@ -838,12 +908,21 @@ describe('LGraphCanvas selection', () => {
       expect(selectedTitles(canvas)).toEqual(['B'])
     })
 
-    it('deselectAll(keepSelected) keeps only that item', () => {
+    it.for<{ name: string; act: (keep: LGraphNode) => void }>([
+      {
+        name: 'deselectAll(keepSelected)',
+        act: (keep) => canvas.deselectAll(keep)
+      },
+      {
+        name: 'deselectAll({ keepSelected })',
+        act: (keep) => canvas.deselectAll({ keepSelected: keep })
+      }
+    ])('$name keeps only that item', ({ act }) => {
       canvas.select(a)
       canvas.select(b)
       vi.mocked(onSelectionChange).mockClear()
 
-      canvas.deselectAll(b)
+      act(b)
 
       expect(selectedTitles(canvas)).toEqual(['B'])
       expect(a.selected).toBe(false)

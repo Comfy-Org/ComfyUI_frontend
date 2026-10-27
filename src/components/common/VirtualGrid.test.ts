@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { nextTick, ref, toValue, watchEffect } from 'vue'
 
-import VirtualGrid from './VirtualGrid.vue'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 
 type TestItem = { key: string; name: string }
 

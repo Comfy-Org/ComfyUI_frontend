@@ -49,7 +49,7 @@ const {
   }
 }))
 
-vi.mock<unknown>(import('@/components/ui/dialog/DialogClose.vue'), () => ({
+vi.mock<unknown>(import('@comfyorg/design-system/dialog/DialogClose'), () => ({
   default: (
     _props: unknown,
     { slots }: { slots: { default?: () => unknown } }

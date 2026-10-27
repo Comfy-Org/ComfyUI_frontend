@@ -37,8 +37,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import Menu from '@/components/ui/menu/Menu.vue'
-import { usePointMenu } from '@/components/ui/menu/usePointMenu'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
 import type {
   JobGroup,
   JobListItem,

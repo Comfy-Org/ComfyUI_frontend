@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'

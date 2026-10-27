@@ -44,6 +44,8 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
     clearDeployment: async () => {},
     setDefaultDeployment: async () => {},
     clearDefaultDeployment: async () => {},
+    getDeploymentCpuServer: async () => ({ cpu_server: 'none' }),
+    getReleaseUnsupportedPacks: async () => ({ release_id: null, packs: [] }),
     checkDeploymentCompatibility: async () => ({
       deployments: [],
       cloud: { missing_node_types: [] }
@@ -205,6 +207,13 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
     }),
     createTopupCheckout: async () => ({
       checkout_url: 'https://checkout.stripe.com/c/pay/cs_mock'
+    }),
+    listTopupCheckouts: async () => ({ checkouts: [], next_cursor: null }),
+    getTopupCheckout: async (sessionId) => ({
+      session_id: sessionId,
+      amount_cents: 0,
+      payment_amount_cents: null,
+      state: 'fulfilled'
     }),
     getBillingEvents: async () => ({
       events: [],

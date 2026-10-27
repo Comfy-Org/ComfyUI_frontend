@@ -57,7 +57,7 @@ import { useI18n } from 'vue-i18n'
 
 import CreditsPanel from '@/platform/billing/components/settings/CreditsPanel.vue'
 import UsageLogsTable from '@/platform/billing/components/settings/UsageLogsTable.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import SubscriptionFooterLinks from '@/platform/billing/subscription/components/SubscriptionFooterLinks.vue'
 import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/billing/components/SubscriptionPanelContentWorkspace.vue'

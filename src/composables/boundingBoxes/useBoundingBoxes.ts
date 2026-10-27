@@ -20,6 +20,7 @@ import type {
   HitMode,
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import {
   locateWidgetNode,
@@ -85,9 +86,9 @@ export function useBoundingBoxes(
 
   const { width: canvasWidth, height: canvasHeight } = useElementSize(canvasEl)
 
-  const litegraphNode = computed(() => {
+  const litegraphNode = useLiveGraphNode(() => {
     const location = locateWidgetNode(widget, nodeId)
-    return location?.graph.getNodeById(location.nodeId) ?? null
+    return location?.graph.getNodeById(location.nodeId)
   })
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
   const isNodeSelected = computed(() => selectedNodeIds.value.has(nodeId))
@@ -702,7 +703,7 @@ export function useBoundingBoxes(
     () => requestDraw()
   )
   watch([isNodeSelected, activeIndex], () => requestDraw())
-  watch([widthValue, heightValue], () => syncState())
+  watch([widthValue, heightValue], () => syncState(), { flush: 'post' })
 
   watch(
     litegraphNode,

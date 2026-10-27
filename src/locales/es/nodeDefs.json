@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "Selecciona entre las entradas conectadas por nombre. Las entradas se pueden renombrar haciendo doble clic en ellas.",
+    "display_name": "Rama",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Inserta en una imagen un objeto descrito en texto simple con Bria. Bria vuelve a renderizar todo el fotograma a aproximadamente 1 megapíxel, por lo que el resultado no queda alineado a píxeles con la entrada.",
     "display_name": "Bria Añadir objeto",
@@ -9289,12 +9310,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Convierte entre sRGB, Rec.709 lineal, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 y HDR ACEScct. LogC3 usa la curva EI 800 con primarias Rec.709 y códigos limitados a [0, 1]. ACEScct usa primarias AP1 y punto blanco D60, con adaptación Bradford a D65. Convierte LogC3 o ACEScct a lineal para guardar en EXR. El valor lineal 1.0 usa el mismo blanco de referencia de 203 nits que sRGB; HLG usa una pantalla de referencia de 1000 nits. Las salidas lineales y ACEScct conservan los valores extendidos. Las conversiones de lineal a HDR conservan las altas luces sin mapeo de tonos; las salidas HLG y PQ recortan los canales negativos. La salida SDR y la conversión de PQ a HLG aplican mapeo de tonos al exceso de luminancia en todo el lote y comprimen los colores fuera de gama. Las conversiones se calculan en float32 y devuelven el dispositivo y el dtype intermedios. El alfa recto no se transforma en el espacio de color.",
+    "description": "Convierte sRGB, Rec.709 lineal, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3, ACEScg lineal y HDR ACEScct. LogC3 usa la curva EI 800 con primarios Rec.709 y códigos limitados a [0, 1]. ACEScg es AP1 lineal de escena con punto blanco D60. ACEScct es la codificación logarítmica de ACEScg. Ambos usan adaptación Bradford a D65. Convierte LogC3 o ACEScct a ACEScg lineal (AP1 lineal de escena) o lineal (Rec.709) antes de guardar EXR. El 1.0 lineal y el 1.0 de ACEScg usan el mismo blanco de referencia de 203 nits que sRGB; HLG usa una pantalla de referencia de 1000 nits. Las salidas lineal, ACEScg y ACEScct conservan los valores extendidos. Las conversiones de lineal a HDR conservan las iluminaciones sin mapeo de tonos; las salidas HLG y PQ recortan los canales negativos. La salida SDR y la conversión de PQ a HLG aplican mapeo de tonos al exceso de luminancia en todo el lote y comprimen los colores fuera de gama. Las conversiones se calculan en float32 y devuelven el dispositivo y el dtype intermedios. El alfa recto no se transforma de color.",
     "display_name": "Convertir espacio de color de imagen",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Espacio de color de los píxeles de salida. Configure el nodo de guardado en este mismo espacio de color. Convierta LogC3 o ACEScct a lineal antes de guardar EXR, o a sRGB/HDR/HDR PQ antes de guardar vídeo."
+        "tooltip": "Espacio de color de los píxeles de salida. Configura el nodo de guardado con este mismo espacio de color. Convierte LogC3 o ACEScct a ACEScg lineal para EXR ACEScg, o a lineal para EXR Rec.709. Convierte a sRGB/HDR/HDR PQ antes de guardar vídeo."
       },
       "image": {
         "name": "image"
@@ -16743,6 +16764,170 @@
       },
       "transformer_blocks_9_": {
         "name": "transformer_blocks.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "lineal_final_video."
+      },
+      "final_norm_video_": {
+        "name": "norma_final_video."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "capas.23."
+      },
+      "layers_24_": {
+        "name": "capas.24."
+      },
+      "layers_25_": {
+        "name": "capas.25."
+      },
+      "layers_26_": {
+        "name": "capas.26."
+      },
+      "layers_27_": {
+        "name": "capas.27."
+      },
+      "layers_28_": {
+        "name": "capas.28."
+      },
+      "layers_29_": {
+        "name": "capas.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "capas.30."
+      },
+      "layers_31_": {
+        "name": "capas.31."
+      },
+      "layers_32_": {
+        "name": "capas.32."
+      },
+      "layers_33_": {
+        "name": "capas.33."
+      },
+      "layers_34_": {
+        "name": "capas.34."
+      },
+      "layers_35_": {
+        "name": "capas.35."
+      },
+      "layers_36_": {
+        "name": "capas.36."
+      },
+      "layers_37_": {
+        "name": "capas.37."
+      },
+      "layers_38_": {
+        "name": "capas.38."
+      },
+      "layers_39_": {
+        "name": "capas.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "capas.40."
+      },
+      "layers_41_": {
+        "name": "capas.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "modulación_de_cabecera_de_video."
       }
     }
   },
@@ -25262,7 +25447,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "Codifica una instrucción de edición con imágenes de referencia para un LoRA de edición MOSS-Image; úsala también para el prompt negativo. Las referencias se usan con el tamaño con el que llegan; escálalas primero.",
+    "description": "Codifica una instrucción de edición con imágenes de referencia para un LoRA de edición MOSS-Image; úsalo también para el prompt negativo. Las referencias se usan con el tamaño con el que llegan; escálalas primero. Sin un VAE, las imágenes solo se envían al codificador de texto.",
     "display_name": "Codificar texto para edición de MOSS-Image",
     "inputs": {
       "clip": {
@@ -25272,6 +25457,10 @@
         "name": "edit_format",
         "tooltip": "El diseño con el que se entrenó el LoRA de edición: MOSS-Image Edit Training de ai-toolkit (con su opción kv_cache activada o desactivada) o Moss-Image-Edit. Con kv_cache desactivado, las referencias también atienden a la imagen que se está generando, por lo que se recalculan en cada paso."
       },
+      "image_strength": {
+        "name": "intensidad_de_imagen",
+        "tooltip": "Ajusta cuánto atiende el modelo a las imágenes que ve el codificador de texto (formatos de ai-toolkit o sin VAE): 0 las ignora, 1 no las modifica y por encima de 1 las enfatiza."
+      },
       "images": {
         "name": "imágenes"
       },
@@ -25279,7 +25468,8 @@
         "name": "prompt"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Codifica las imágenes como latents de referencia para el LoRA de edición."
       }
     },
     "outputs": {

@@ -9,6 +9,7 @@ import type {
   ComfyWorkflow,
   WorkflowChangeTracker
 } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { reportWorkflowStateAnomaly } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
@@ -461,10 +462,21 @@ export class ChangeTracker implements WorkflowChangeTracker {
     // `this.workflow` is not reactive.
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
     if (workflow) {
-      workflow.isModified = !ChangeTracker.graphEqual(
-        this.initialState,
-        this.activeState
-      )
+      // Declared non-null, but a tracker can still lack it at runtime.
+      const initialState = this.initialState as ComfyWorkflowJSON | null
+      if (initialState) {
+        workflow.isModified = !ChangeTracker.graphEqual(
+          initialState,
+          this.activeState
+        )
+      } else {
+        reportWorkflowStateAnomaly(
+          'ChangeTracker has no initial state',
+          'ChangeTracker.updateModified',
+          workflow,
+          { isActive: isActiveTracker(this) }
+        )
+      }
     }
 
     const autoQueueGraphChanged =
@@ -813,7 +825,19 @@ export class ChangeTracker implements WorkflowChangeTracker {
     return false
   }
 
-  static graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
+  static graphEqual(
+    a: ComfyWorkflowJSON | null | undefined,
+    b: ComfyWorkflowJSON | null | undefined
+  ) {
+    if (!a || !b) {
+      reportWorkflowStateAnomaly(
+        'ChangeTracker.graphEqual() called with a missing state',
+        'ChangeTracker.graphEqual',
+        undefined,
+        { hasFirst: !!a, hasSecond: !!b }
+      )
+      return false
+    }
     if (a === b) return true
 
     // Compare nodes ignoring array position and execution order

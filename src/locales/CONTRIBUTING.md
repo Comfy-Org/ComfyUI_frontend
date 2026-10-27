@@ -132,12 +132,8 @@ check immediately. oxfmt ignores `src/locales/**/*.json` — the pipeline is the
 sole writer of those bytes, which keeps the manifest's recorded blob hashes
 valid.
 
-The same pipeline also translates the website catalogs in
-`apps/website/src/locales/`, with its own manifest and `--target website`
-configuration. The website keeps existing translations whose English did not
-change and never generates its excluded namespaces, which cover legal documents
-and the MiniMax license page. See the website's
-[localization instructions](../../apps/website/README.md#generating-translations).
+Website translations are maintained in
+[Comfy-Org/comfy-website](https://github.com/Comfy-Org/comfy-website/blob/main/apps/website/README.md#generating-translations).
 
 ### Manual Translation Updates
 

@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "display_name": "Branch",
+    "description": "Select from connected inputs by name. Inputs can be renamed by double clicking them.",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "display_name": "Bria Add Object",
     "description": "Insert an object described in plain text into an image using Bria. Bria re-renders the whole frame at about 1 megapixel, so the result is not pixel-aligned with the input.",
@@ -9290,7 +9311,7 @@
   },
   "ImageColorSpace": {
     "display_name": "Convert Image Color Space",
-    "description": "Convert sRGB, linear Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3, and HDR ACEScct. LogC3 uses the EI 800 curve with Rec.709 primaries and codes clamped to [0, 1]. ACEScct uses AP1 primaries and D60 white, with Bradford adaptation to D65. Convert LogC3 or ACEScct to linear for EXR saving. Linear 1.0 uses the same 203-nit reference white as sRGB; HLG uses a 1000-nit reference display. Linear and ACEScct outputs preserve extended values. Linear-to-HDR conversions preserve highlights without tone mapping; HLG and PQ outputs clip negative channels. SDR output and PQ-to-HLG conversion tone-map excess luminance across the batch and compress out-of-gamut colors. Conversions compute in float32 and return the intermediate device and dtype. Straight alpha is not color-transformed.",
+    "description": "Convert sRGB, linear Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3, linear ACEScg, and HDR ACEScct. LogC3 uses the EI 800 curve with Rec.709 primaries and codes clamped to [0, 1]. ACEScg is scene-linear AP1 with D60 white. ACEScct is the ACEScg log encoding. Both use Bradford adaptation to D65. Convert LogC3 or ACEScct to linear ACEScg (AP1 scene-linear) or linear (Rec.709) before saving EXR. Linear 1.0 and ACEScg 1.0 use the same 203-nit reference white as sRGB; HLG uses a 1000-nit reference display. Linear, ACEScg, and ACEScct outputs preserve extended values. Linear-to-HDR conversions preserve highlights without tone mapping; HLG and PQ outputs clip negative channels. SDR output and PQ-to-HLG conversion tone-map excess luminance across the batch and compress out-of-gamut colors. Conversions compute in float32 and return the intermediate device and dtype. Straight alpha is not color-transformed.",
     "inputs": {
       "image": {
         "name": "image"
@@ -9301,7 +9322,7 @@
       },
       "destination": {
         "name": "destination",
-        "tooltip": "Color space of the output pixels. Set the save node to this same color space. Convert LogC3 or ACEScct to linear before saving EXR, or to sRGB/HDR/HDR PQ before saving video."
+        "tooltip": "Color space of the output pixels. Set the save node to this same color space. Convert LogC3 or ACEScct to linear ACEScg for ACEScg EXR, or to linear for Rec.709 EXR. Convert to sRGB/HDR/HDR PQ before saving video."
       }
     },
     "outputs": {
@@ -16681,6 +16702,170 @@
       },
       "final_layer_": {
         "name": "final_layer."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "layers.23."
+      },
+      "layers_24_": {
+        "name": "layers.24."
+      },
+      "layers_25_": {
+        "name": "layers.25."
+      },
+      "layers_26_": {
+        "name": "layers.26."
+      },
+      "layers_27_": {
+        "name": "layers.27."
+      },
+      "layers_28_": {
+        "name": "layers.28."
+      },
+      "layers_29_": {
+        "name": "layers.29."
+      },
+      "layers_30_": {
+        "name": "layers.30."
+      },
+      "layers_31_": {
+        "name": "layers.31."
+      },
+      "layers_32_": {
+        "name": "layers.32."
+      },
+      "layers_33_": {
+        "name": "layers.33."
+      },
+      "layers_34_": {
+        "name": "layers.34."
+      },
+      "layers_35_": {
+        "name": "layers.35."
+      },
+      "layers_36_": {
+        "name": "layers.36."
+      },
+      "layers_37_": {
+        "name": "layers.37."
+      },
+      "layers_38_": {
+        "name": "layers.38."
+      },
+      "layers_39_": {
+        "name": "layers.39."
+      },
+      "layers_40_": {
+        "name": "layers.40."
+      },
+      "layers_41_": {
+        "name": "layers.41."
+      },
+      "final_norm_video_": {
+        "name": "final_norm_video."
+      },
+      "final_linear_video_": {
+        "name": "final_linear_video."
+      },
+      "video_head_modulation_": {
+        "name": "video_head_modulation."
       }
     }
   },
@@ -25334,7 +25519,7 @@
   },
   "TextEncodeMOSSImageEdit": {
     "display_name": "Text Encode MOSS-Image Edit",
-    "description": "Encodes an edit instruction with reference images for a MOSS-Image edit LoRA, use it for the negative prompt too. The references are used at the size they come in, scale them first.",
+    "description": "Encodes an edit instruction with reference images for a MOSS-Image edit LoRA, use it for the negative prompt too. The references are used at the size they come in, scale them first. Without a VAE, the images only go to the text encoder.",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -25342,15 +25527,20 @@
       "prompt": {
         "name": "prompt"
       },
-      "vae": {
-        "name": "vae"
-      },
       "edit_format": {
         "name": "edit_format",
         "tooltip": "The layout the edit LoRA was trained with: ai-toolkit's MOSS-Image Edit Training (its kv_cache option on or off) or Moss-Image-Edit. With kv_cache off the references also attend to the image being generated, so they are recomputed every step."
       },
       "images": {
         "name": "images"
+      },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "Scales how much the model attends to the images the text encoder sees (ai-toolkit formats, or no VAE): 0 ignores them, 1 is unchanged, above 1 emphasizes them."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Encodes the images as reference latents for the edit LoRA."
       }
     },
     "outputs": {

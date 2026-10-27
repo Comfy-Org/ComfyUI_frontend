@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
+import PasswordInput from '@comfyorg/design-system/input/PasswordInput'
 
 const modelValue = defineModel<string>()
 const { t } = useI18n()

@@ -33,8 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 
 const { closeDisabled = false } = defineProps<{
   title: string

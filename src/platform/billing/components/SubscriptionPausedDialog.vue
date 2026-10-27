@@ -35,7 +35,7 @@
 import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const {
   canManage,

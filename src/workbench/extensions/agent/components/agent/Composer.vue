@@ -10,7 +10,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import type { AgentStopMethod } from '@/platform/telemetry/types'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
@@ -267,6 +267,7 @@ function onEditorSelectionChange(): void {
 }
 
 const SKILL_DESCRIPTION_ID = 'agent-skill-description'
+const REFERENCE_MENU_ID = 'agent-reference-menu'
 const {
   describedSkill,
   requestDescription,
@@ -556,7 +557,7 @@ defineExpose({
   >
     <div
       v-if="mentionVisible"
-      id="agent-reference-menu"
+      :id="REFERENCE_MENU_ID"
       ref="mentionListRef"
       data-testid="agent-reference-menu"
       role="menu"
@@ -661,6 +662,7 @@ defineExpose({
               :model-value="composer.prompt.value"
               :label="placeholderLabel"
               :expanded="mentionVisible"
+              :reference-menu-id="REFERENCE_MENU_ID"
               :active-descendant="activeMentionDescendant"
               :search-hint="skillSearchHint"
               :history-epoch="composer.promptEpoch.value"

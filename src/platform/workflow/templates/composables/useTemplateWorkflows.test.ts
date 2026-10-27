@@ -849,7 +849,7 @@ describe('useTemplateWorkflows', () => {
     vi.mocked(api.fetchApi).mockResolvedValue(
       Response.json({ name: 'kitten_cop (1).mp4', type: 'input' })
     )
-    const refreshed = deferred<void>()
+    const refreshed = deferred<boolean>()
     vi.mocked(app.reloadNodeDefs).mockImplementation(() => refreshed.promise)
     const { loader } = mountTemplateWorkflows()
     const result = loader.loadWorkflowTemplate('video', 'default')
@@ -859,7 +859,7 @@ describe('useTemplateWorkflows', () => {
     download.resolve(new Response('video'))
     await vi.waitFor(() => expect(app.reloadNodeDefs).toHaveBeenCalled())
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    refreshed.resolve()
+    refreshed.resolve(true)
     expect(await result).toBe('loaded')
     expect(app.loadGraphData).toHaveBeenCalledWith(
       expect.objectContaining({

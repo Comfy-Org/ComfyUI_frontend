@@ -2,7 +2,7 @@ import { render } from '@testing-library/vue'
 import { nextTick, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import TextTickerMultiLine from './TextTickerMultiLine.vue'
+import TextTickerMultiLine from '@comfyorg/design-system/common/TextTickerMultiLine'
 
 const hoisted = vi.hoisted(() => ({
   widths: [] as { value: number }[]

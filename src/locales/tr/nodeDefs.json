@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "Bağlı girişler arasından ada göre seçim yapın. Girişler, üzerlerine çift tıklanarak yeniden adlandırılabilir.",
+    "display_name": "Dal",
+    "inputs": {
+      "autogrow": {
+        "name": "otomatik büyütme"
+      },
+      "branch": {
+        "name": "dal"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "çıktı",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Bria kullanarak bir görüntüye düz metinle açıklanan bir nesne ekleyin. Bria, tüm kareyi yaklaşık 1 megapikselde yeniden oluşturur; bu nedenle sonuç girdiyle piksel hizalı değildir.",
     "display_name": "Bria Nesne Ekle",
@@ -9289,12 +9310,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB, doğrusal Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 ve HDR ACEScct arasında dönüştürür. LogC3, Rec.709 ana renkleriyle EI 800 eğrisini kullanır ve kodlar [0, 1] aralığına sınırlandırılır. ACEScct, AP1 ana renklerini ve D60 beyaz noktasını, D65'e Bradford uyarlamasıyla kullanır. EXR olarak kaydetmek için LogC3 veya ACEScct'yi doğrusala dönüştürün. Doğrusal 1.0, sRGB ile aynı 203 nit referans beyazını kullanır; HLG ise 1000 nit referans ekran kullanır. Doğrusal ve ACEScct çıktıları genişletilmiş değerleri korur. Doğrusal-HDR dönüşümleri, ton eşleme olmadan parlak vurguları korur; HLG ve PQ çıktıları negatif kanalları kırpar. SDR çıktısı ve PQ'dan HLG'ye dönüşüm, grup genelindeki fazla parlaklığı ton eşler ve renk gamı dışındaki renkleri sıkıştırır. Dönüşümler float32 ile hesaplanır ve ara aygıtı ile dtype'ı döndürür. Düz alfa renk dönüşümüne tabi tutulmaz.",
+    "description": "sRGB, doğrusal Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3, doğrusal ACEScg ve HDR ACEScct arasında dönüştürür. LogC3, Rec.709 ana renkleriyle EI 800 eğrisini kullanır ve kod değerleri [0, 1] aralığıyla sınırlandırılır. ACEScg, D60 beyaz noktalı sahne-doğrusal AP1'dir. ACEScct, ACEScg günlük kodlamasıdır. Her ikisi de D65'e Bradford uyarlaması kullanır. EXR kaydetmeden önce LogC3 veya ACEScct'yi doğrusal ACEScg'ye (AP1 sahne-doğrusal) ya da doğrusal Rec.709'a dönüştürün. Doğrusal 1.0 ve ACEScg 1.0, sRGB ile aynı 203 nitlik referans beyazını kullanır; HLG ise 1000 nitlik referans ekran kullanır. Doğrusal, ACEScg ve ACEScct çıktıları genişletilmiş değerleri korur. Doğrusalden HDR'ye dönüşümler, ton eşleme olmadan parlak alanları korur; HLG ve PQ çıktıları negatif kanalları kırpar. SDR çıktısı ve PQ'dan HLG'ye dönüşüm, toplu işlem genelindeki aşırı parlaklığı ton eşler ve gamut dışı renkleri sıkıştırır. Dönüşümler float32 ile hesaplanır ve ara cihazı ile dtype'ı döndürür. Düz alfa renk dönüşümüne tabi tutulmaz.",
     "display_name": "Görüntü Renk Uzayını Dönüştür",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Çıktı piksellerinin renk uzayı. Kaydetme düğümünü aynı renk uzayına ayarlayın. EXR kaydetmeden önce LogC3 veya ACEScct’yi doğrusal alana, video kaydetmeden önce ise sRGB/HDR/HDR PQ’ya dönüştürün."
+        "tooltip": "Çıktı piksellerinin renk uzayı. Kaydetme düğümünü aynı renk uzayına ayarlayın. ACEScg EXR için LogC3 veya ACEScct'yi doğrusal ACEScg'ye, Rec.709 EXR için ise doğrusala dönüştürün. Video kaydetmeden önce sRGB/HDR/HDR PQ'ya dönüştürün."
       },
       "image": {
         "name": "image"
@@ -16743,6 +16764,170 @@
       },
       "transformer_blocks_9_": {
         "name": "dönüştürücü_blokları.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "final_linear_video."
+      },
+      "final_norm_video_": {
+        "name": "final_norm_video."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "layers.23."
+      },
+      "layers_24_": {
+        "name": "layers.24."
+      },
+      "layers_25_": {
+        "name": "layers.25."
+      },
+      "layers_26_": {
+        "name": "layers.26."
+      },
+      "layers_27_": {
+        "name": "layers.27."
+      },
+      "layers_28_": {
+        "name": "layers.28."
+      },
+      "layers_29_": {
+        "name": "layers.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "layers.30."
+      },
+      "layers_31_": {
+        "name": "layers.31."
+      },
+      "layers_32_": {
+        "name": "layers.32."
+      },
+      "layers_33_": {
+        "name": "layers.33."
+      },
+      "layers_34_": {
+        "name": "layers.34."
+      },
+      "layers_35_": {
+        "name": "layers.35."
+      },
+      "layers_36_": {
+        "name": "layers.36."
+      },
+      "layers_37_": {
+        "name": "layers.37."
+      },
+      "layers_38_": {
+        "name": "layers.38."
+      },
+      "layers_39_": {
+        "name": "layers.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "layers.40."
+      },
+      "layers_41_": {
+        "name": "layers.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "video_head_modulation."
       }
     }
   },
@@ -25262,7 +25447,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "Bir MOSS-Image düzenleme LoRA'sı için referans görüntülerle bir düzenleme talimatını kodlar; negatif istem için de kullanın. Referanslar geldikleri boyutta kullanılır, önce onları ölçeklendirin.",
+    "description": "Bir MOSS-Image düzenleme LoRA'sı için referans görüntülerle birlikte bir düzenleme talimatını kodlar; bunu negatif prompt için de kullanın. Referanslar, geldikleri boyutta kullanılır; önce onları ölçeklendirin. VAE olmadan görüntüler yalnızca metin kodlayıcıya gider.",
     "display_name": "MOSS-Image Düzenleme Metin Kodlama",
     "inputs": {
       "clip": {
@@ -25272,6 +25457,10 @@
         "name": "düzenleme_biçimi",
         "tooltip": "Düzenleme LoRA'sının eğitildiği düzen: ai-toolkit'in MOSS-Image Edit Training'i (kv_cache seçeneği açık veya kapalı) ya da Moss-Image-Edit. kv_cache kapalıyken referanslar üretilen görüntüye de dikkat uygular, dolayısıyla her adımda yeniden hesaplanırlar."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "Modelin, metin kodlayıcının gördüğü görüntülere ne ölçüde dikkat ettiğini ölçeklendirir (ai-toolkit biçimleri veya VAE yokken): 0 onları yok sayar, 1 değişmez, 1'in üzerindeki değerler onları vurgular."
+      },
       "images": {
         "name": "görüntüler"
       },
@@ -25279,7 +25468,8 @@
         "name": "istem"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Görüntüleri, düzenleme LoRA'sı için referans latent'leri olarak kodlar."
       }
     },
     "outputs": {

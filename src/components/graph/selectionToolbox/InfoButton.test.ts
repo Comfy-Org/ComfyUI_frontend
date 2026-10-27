@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
 import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { openNodeInfoMock } = vi.hoisted(() => ({
   openNodeInfoMock: vi.fn()

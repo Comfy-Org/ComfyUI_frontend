@@ -41,7 +41,7 @@
 import { ref } from 'vue'
 
 import NotificationPopup from '@/components/common/NotificationPopup.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAppModeStore } from '@/stores/appModeStore'

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import TextTicker from './TextTicker.vue'
+import TextTicker from '@comfyorg/design-system/common/TextTicker'
 
 function mockScrollWidth(el: HTMLElement, scrollWidth: number) {
   Object.defineProperty(el, 'scrollWidth', {

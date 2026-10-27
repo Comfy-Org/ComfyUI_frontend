@@ -5,8 +5,8 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
-import Button from '@/components/ui/button/Button.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { code, lang = 'text' } = defineProps<{
   code: string

@@ -19,6 +19,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   const defaultKeybindings = shallowRef<KeybindingMap>({})
   const userKeybindings = shallowRef<KeybindingMap>({})
   const userUnsetKeybindings = shallowRef<KeybindingMap>({})
+  const pendingUnsetKeybindings = shallowRef<KeybindingImpl[]>([])
 
   const currentPresetName = ref('default')
   const savedPresetData = ref<KeybindingPreset | null>(null)
@@ -41,16 +42,21 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
   const isCurrentPresetModified = computed(() => {
     const newBindings = keybindingValues(userKeybindings.value)
-    const unsetBindings = keybindingValues(userUnsetKeybindings.value)
 
     if (currentPresetName.value === 'default') {
-      return newBindings.length > 0 || unsetBindings.length > 0
+      return (
+        newBindings.length > 0 ||
+        keybindingValues(userUnsetKeybindings.value).length > 0
+      )
     }
 
     if (!savedPresetSerialized.value) return false
 
     const currentNew = newBindings.map(serializeBinding).sort().join('|')
-    const currentUnset = unsetBindings.map(serializeBinding).sort().join('|')
+    const currentUnset = getUserUnsetKeybindingValues()
+      .map(serializeBinding)
+      .sort()
+      .join('|')
 
     return (
       currentNew !== savedPresetSerialized.value.savedNew ||
@@ -71,7 +77,10 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   }
 
   function getUserUnsetKeybindingValues() {
-    return keybindingValues(userUnsetKeybindings.value)
+    return [
+      ...keybindingValues(userUnsetKeybindings.value),
+      ...pendingUnsetKeybindings.value
+    ]
   }
 
   const keybindingByKeyCombo = computed<KeybindingMap>(() => {
@@ -137,6 +146,31 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
   function addDefaultKeybinding(keybinding: KeybindingImpl) {
     addKeybinding(defaultKeybindings, keybinding, { existOk: false })
+    const pending = pendingUnsetKeybindings.value.find((unset) =>
+      unset.equals(keybinding)
+    )
+    if (!pending) return
+    pendingUnsetKeybindings.value = pendingUnsetKeybindings.value.filter(
+      (unset) => unset !== pending
+    )
+    addKeybinding(userUnsetKeybindings, keybinding, { existOk: true })
+  }
+
+  function addUserUnsetKeybinding(keybinding: KeybindingImpl) {
+    const registeredDefault =
+      defaultKeybindings.value[keybinding.combo.serialize()]
+    if (registeredDefault) {
+      if (registeredDefault.equals(keybinding)) {
+        addKeybinding(userUnsetKeybindings, keybinding, { existOk: true })
+      }
+      return
+    }
+    if (pendingUnsetKeybindings.value.some((unset) => unset.equals(keybinding)))
+      return
+    pendingUnsetKeybindings.value = [
+      ...pendingUnsetKeybindings.value,
+      keybinding
+    ]
   }
 
   function addUserKeybinding(keybinding: KeybindingImpl) {
@@ -200,6 +234,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   function resetAllKeybindings() {
     userKeybindings.value = {}
     userUnsetKeybindings.value = {}
+    pendingUnsetKeybindings.value = []
   }
 
   function removeAllKeybindingsForCommand(commandId: string): boolean {
@@ -301,6 +336,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     getKeybindingByCommandId,
     addDefaultKeybinding,
     addUserKeybinding,
+    addUserUnsetKeybinding,
     unsetKeybinding,
     updateKeybindingOnCommand,
     resetAllKeybindings,

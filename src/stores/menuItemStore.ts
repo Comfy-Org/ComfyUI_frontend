@@ -2,7 +2,10 @@ import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { MenuItem, MenuItemAction } from '@/components/ui/menu/types'
+import type {
+  MenuItem,
+  MenuItemAction
+} from '@comfyorg/design-system/lib/menu/types'
 import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyExtension } from '@/types/comfy'

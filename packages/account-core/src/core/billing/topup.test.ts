@@ -23,6 +23,7 @@ import type { BillingStatusData } from './status'
 import { createBillingStatusReader } from './status'
 import type { HostedTopupCheckoutResult, TopupResult } from './topup'
 import {
+  INTERACTIVE_TOPUP_ROUTE,
   TOPUP_CHECKOUT_ROUTE,
   TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,
@@ -242,6 +243,7 @@ function harness(
   )
   answer('POST', TOPUP_ROUTE, httpOk(topupResponse()))
   answer('POST', TOPUP_CHECKOUT_ROUTE, httpOk(checkoutResponse()))
+  answer('POST', INTERACTIVE_TOPUP_ROUTE, httpOk(topupResponse()))
   answer(
     'GET',
     operationRoute('op-1'),
@@ -578,6 +580,130 @@ describe('createTopupCommand', () => {
   })
 })
 
+describe('createInteractiveTopup', () => {
+  const NEW_CARD = {
+    confirmationToken: 'ctoken_1',
+    returnUrl: 'https://billing.comfy.org/v1/top-up?amount_cents=1000'
+  }
+
+  it.for([
+    {
+      name: 'a new card with its return URL',
+      payment: NEW_CARD,
+      sent: {
+        confirmation_token: 'ctoken_1',
+        return_url: NEW_CARD.returnUrl
+      }
+    },
+    {
+      name: 'only the saved card the customer chose',
+      payment: { savedPaymentMethodId: 'pm_chosen' },
+      sent: { saved_payment_method_id: 'pm_chosen' }
+    }
+  ])(
+    'pays once with $name under the caller key, never asking to save or default',
+    async ({ payment, sent }) => {
+      const { command, calls, routes } = harness()
+
+      await expect(
+        settle(
+          command.createInteractiveTopup({
+            amountCents: 1000,
+            payment,
+            idempotencyKey: 'attempt-key'
+          })
+        )
+      ).resolves.toMatchObject({ status: 'ok', creditsReconciled: true })
+
+      expect(postedBodies(calls)).toEqual([
+        {
+          body: {
+            amount_cents: 1000,
+            idempotency_key: 'attempt-key',
+            ...sent
+          },
+          idempotencyKey: 'attempt-key'
+        }
+      ])
+      expect(routes()).not.toContain(`POST ${TOPUP_ROUTE}`)
+    }
+  )
+
+  it('resends the same key it was given after an unknown outcome', async () => {
+    const { command, answer, calls } = harness()
+    answer(
+      'POST',
+      INTERACTIVE_TOPUP_ROUTE,
+      httpStatus(503),
+      httpOk(topupResponse())
+    )
+    const pay = () =>
+      command.createInteractiveTopup({
+        amountCents: 1000,
+        payment: { savedPaymentMethodId: 'pm_chosen' },
+        idempotencyKey: 'attempt-key'
+      })
+
+    await expect(settle(pay())).resolves.toMatchObject({
+      code: 'REQUEST_FAILED',
+      httpStatus: 503
+    })
+    await expect(settle(pay())).resolves.toMatchObject({ status: 'ok' })
+
+    expect(
+      postedBodies(calls).map(({ idempotencyKey }) => idempotencyKey)
+    ).toEqual(['attempt-key', 'attempt-key'])
+  })
+
+  it('maps a 404 to NOT_AVAILABLE and never falls back to the on-file route', async () => {
+    const { command, answer, routes } = harness()
+    answer('POST', INTERACTIVE_TOPUP_ROUTE, httpStatus(404))
+
+    await expect(
+      settle(
+        command.createInteractiveTopup({
+          amountCents: 1000,
+          payment: NEW_CARD,
+          idempotencyKey: 'attempt-key'
+        })
+      )
+    ).resolves.toEqual({ status: 'error', code: 'NOT_AVAILABLE' })
+    expect(routes()).not.toContain(`POST ${TOPUP_ROUTE}`)
+  })
+
+  it('refuses when the server resolved can_top_up false, without a POST', async () => {
+    const { command, routes } = harness({
+      capabilities: {
+        capabilities: { ...CAPABILITIES, can_top_up: false }
+      }
+    })
+
+    await expect(
+      settle(
+        command.createInteractiveTopup({
+          amountCents: 1000,
+          payment: NEW_CARD,
+          idempotencyKey: 'attempt-key'
+        })
+      )
+    ).resolves.toMatchObject({ status: 'error', code: 'ACCESS_DENIED' })
+    expect(routes()).toEqual(['GET /billing/capabilities'])
+  })
+
+  it('rejects a request outside the generated contract without sending anything', async () => {
+    const { command, calls } = harness()
+
+    await expect(
+      command.createInteractiveTopup({
+        amountCents: 499,
+        payment: NEW_CARD,
+        idempotencyKey: 'attempt-key'
+      })
+    ).resolves.toEqual({ status: 'error', code: 'INVALID_AMOUNT' })
+    expect(calls).toEqual([])
+  })
+})
+
 describe('createHostedTopupCheckout', () => {
   it('returns the hosted session with the pre-purchase baseline and observes no operation', async () => {
     const { hosted, lifecycle, routes, calls } = harness()
@@ -781,6 +907,25 @@ describe('quoteTopup', () => {
     await expect(command.quoteTopup({ amountCents: 2500 })).resolves.toEqual({
       status: 'error',
       code
+    })
+  })
+
+  it('carries the payment configuration the server quotes for a pay-once card form', async () => {
+    const { command, answer } = harness()
+    answer(
+      'POST',
+      TOPUP_QUOTE_ROUTE,
+      httpOk({ ...QUOTE, payment_method_configuration_id: 'pmc_topup' })
+    )
+
+    await expect(command.quoteTopup({ amountCents: 2500 })).resolves.toEqual({
+      status: 'ok',
+      value: {
+        amountCents: 2500,
+        credits: 5275,
+        expiresAt: EXPIRES_AT,
+        paymentMethodConfigurationId: 'pmc_topup'
+      }
     })
   })
 

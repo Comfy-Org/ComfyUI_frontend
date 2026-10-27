@@ -3,7 +3,7 @@ import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import {
   demoteWidget,
@@ -29,7 +29,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
   getPreviewExposureHostLocator,

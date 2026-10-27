@@ -1,7 +1,7 @@
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { InjectionKey, ModelRef, Ref } from 'vue'
 
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 
 export interface TreeNode<T = unknown> {
   key: string

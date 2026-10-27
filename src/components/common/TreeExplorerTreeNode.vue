@@ -43,8 +43,8 @@ import { computed, inject, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import EditableText from '@/components/common/EditableText.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
+import EditableText from '@comfyorg/design-system/common/EditableText'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable

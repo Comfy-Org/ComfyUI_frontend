@@ -28,9 +28,14 @@ import type {
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  readWorkflowDraftLineage,
+  useWorkflowService,
+  writeWorkflowDraftLineage
+} from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -135,6 +140,10 @@ import {
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import {
+  agentRequestFailureFingerprint,
+  describeAgentRequestFailure
+} from './services/agent/agentRequestFailure'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
@@ -544,6 +553,7 @@ const agentTabGraph: ComfyWorkflowJSON = {
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 const settingStore = useSettingStore()
+const dialogStore = useDialogStore()
 watch(
   () => canvasStore.canvas?.graph,
   (graph, _previous, onCleanup) => {
@@ -651,7 +661,9 @@ const coachDeferredBy = computed(() =>
     ? 'app_mode'
     : activeTour.value !== null
       ? 'tour_active'
-      : null
+      : dialogStore.dialogStack.length > 0
+        ? 'dialog_open'
+        : null
 )
 const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
 function releaseCoachCompletionWaiters(proceed = true): void {
@@ -1050,6 +1062,7 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
+  retrySubscription,
   docInputNames,
   docWidgetValue,
   docPromotedWidgets,
@@ -1081,6 +1094,10 @@ const {
       }
     },
     onReset: graphActivity.resetWorkflow,
+    onLineageConfirmed({ workflowId, lineageSeq }) {
+      const path = bindingStore.tabPathFor(workflowId)
+      if (path) writeWorkflowDraftLineage(path, { workflowId, lineageSeq })
+    },
     onSyncError: (message, code) =>
       toast.error(t('agent.workflowSyncFailedTitle'), {
         description: formatWorkflowSyncErrorDetail(t, message, code)
@@ -1096,7 +1113,12 @@ const {
       return { x, y, width, height }
     }
   },
-  canvasFor: canvasForWorkflow
+  canvasFor: canvasForWorkflow,
+  knownLineageFor(workflowId) {
+    const path = bindingStore.tabPathFor(workflowId)
+    const lineage = path ? readWorkflowDraftLineage(path) : null
+    return lineage?.workflowId === workflowId ? lineage.lineageSeq : null
+  }
 })
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
@@ -1657,20 +1679,46 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   })
 }
 
+const warnedIncompleteReasons = new Set<string>()
+
+function warnIncompleteHistory(reason: string, announce: boolean): void {
+  if (warnedIncompleteReasons.has(reason)) return
+  reportError(new Error('Agent thread list ended before its last page'), {
+    surface: 'agent',
+    errorType: 'agent_thread_list_load_failed',
+    tags: { reason }
+  })
+  if (announce) {
+    warnedIncompleteReasons.add(reason)
+    toast.warning(t('agent.historyIncomplete'), { duration: 5000 })
+  }
+  trackAgentError(
+    'thread_list_load_failed',
+    'pre_acceptance',
+    announce ? 'toast' : 'none',
+    { retryable: false }
+  )
+}
+
 const { refreshHistory } = useAgentChatHistoryRefresh({
   listThreads: rest.listThreads,
   history,
   untitledChat: () => t('agent.untitledChat'),
   onFailure: (failure, uiTreatment) => {
-    const error =
-      failure.status === 'failed'
-        ? failure.cause
-        : new Error('Agent thread list ended before its last page')
+    if (failure.status === 'incomplete') {
+      warnIncompleteHistory(failure.reason, uiTreatment === 'error_overlay')
+      return
+    }
+    const error = failure.cause
+    const diagnostics = describeAgentRequestFailure(error)
     reportError(error, {
       surface: 'agent',
       errorType: 'agent_thread_list_load_failed',
-      tags:
-        failure.status === 'incomplete' ? { reason: failure.reason } : undefined
+      tags: diagnostics,
+      fingerprint: agentRequestFailureFingerprint(
+        'agent_thread_list_load_failed',
+        diagnostics
+      )
     })
     if (uiTreatment === 'error_overlay')
       surfaceAgentError(
@@ -1678,8 +1726,8 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
         error instanceof Error ? error.message : String(error)
       )
     trackAgentError('thread_list_load_failed', 'pre_acceptance', uiTreatment, {
-      retryable:
-        failure.status === 'failed' && isRetryableRequestFailure(error, false)
+      retryable: isRetryableRequestFailure(error, false),
+      diagnostics
     })
   }
 })
@@ -2350,6 +2398,10 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
+      :sync-retry-available="
+        crdtStatus.terminal === 'retry_exhausted' ||
+        crdtStatus.terminal === 'timeout'
+      "
       :free-use-placement="freeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
@@ -2374,6 +2426,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
       @standing-paywall-shown="onStandingPaywallShown"
+      @retry-sync="retrySubscription"
       @new-chat="onNewChat('new_chat_button')"
       @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"

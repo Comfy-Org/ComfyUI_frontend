@@ -25,9 +25,12 @@ export class ComfyNodeSearchBoxV2 {
     const page = comfyPage.page
     this.dialog = page.getByRole('search')
     this.input = this.dialog.getByRole('combobox')
-    this.filterSearch = this.dialog.getByRole('textbox', { name: 'Search' })
+    const filterPopover = page.getByTestId(searchBoxV2.typeFilterPopover)
+    this.filterSearch = filterPopover.getByRole('textbox', {
+      name: 'Search'
+    })
     this.results = this.dialog.getByTestId(searchBoxV2.resultItem)
-    this.filterOptions = this.dialog.getByTestId(searchBoxV2.filterOption)
+    this.filterOptions = filterPopover.getByTestId(searchBoxV2.filterOption)
     this.filterChips = this.dialog.getByTestId(searchBoxV2.filterChip)
     this.noResults = this.dialog.getByTestId(searchBoxV2.noResults)
     this.nodeIdBadge = this.dialog.getByTestId(searchBoxV2.nodeIdBadge)

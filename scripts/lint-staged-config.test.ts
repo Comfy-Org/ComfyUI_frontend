@@ -35,7 +35,7 @@ describe('lint-staged config', () => {
 
   it.for([
     ['browser_tests/example.spec.ts', 'pnpm typecheck:browser'],
-    ['apps/website/src/pages/index.astro', 'pnpm typecheck:website']
+    ['apps/billing-web/src/main.ts', 'pnpm typecheck:billing-web']
   ] as const)(
     'still hands out a command no earlier chunk asked for: %s',
     async ([fileName, command]) => {
@@ -53,7 +53,7 @@ describe('lint-staged config', () => {
     ['vite.config.mts', ['pnpm typecheck:app']],
     ['browser_tests/example.spec.ts', ['pnpm typecheck:browser']],
     ['scripts/check-frozen-dirs.ts', ['pnpm typecheck:scripts']],
-    ['tools/eslint-plugins/astro.ts', ['pnpm typecheck:tools']],
+    ['tools/eslint-plugins/templateClasses.ts', ['pnpm typecheck:tools']],
     ['apps/billing-web/src/main.ts', ['pnpm typecheck:billing-web']],
     [
       'packages/account-core/src/index.ts',

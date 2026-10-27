@@ -1,3 +1,4 @@
+import type { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -17,6 +18,26 @@ const mockPreviewData = ref<Record<string, unknown> | null>(null)
 const mockSelectedTeamStop = ref<Record<string, unknown> | null>(null)
 
 const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
+const mockPaymentRecoveryLock = ref<'owner' | 'member' | null>(null)
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
+
+vi.mock(
+  import('@/platform/billing/composables/usePaymentRecoveryDialog'),
+  () => ({
+    isTopUpDeniedPastDue: vi.fn(),
+    usePaymentRecoveryDialog: (): ReturnType<
+      typeof usePaymentRecoveryDialog
+    > => ({
+      showPaymentRecoveryDialog: vi.fn(),
+      updatePayment: vi.fn(),
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => mockPaymentRecoveryLock.value),
+      refreshCapabilities: vi.fn()
+    })
+  })
+)
 
 vi.mock<unknown>(
   import('@/platform/billing/composables/useSubscriptionCheckout'),
@@ -113,6 +134,8 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     mockPreviewVariant.value = null
     mockPreviewData.value = null
     mockSelectedTeamStop.value = null
+    mockPaymentRecoveryLock.value = null
+    mockDistributionTypes.isCloud = true
   })
 
   it('hands the team checkout its preview', () => {
@@ -241,5 +264,19 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     })
 
     expect(mockUseSubscriptionCheckout.mock.calls[0][1]).toBe('agent_paywall')
+  })
+
+  it('only lets checkout suppress toasts for an owner on Cloud', () => {
+    renderComponent()
+    const { rendersPastDueNotice } =
+      mockUseSubscriptionCheckout.mock.calls[0][2]
+
+    expect(rendersPastDueNotice()).toBe(false)
+    mockPaymentRecoveryLock.value = 'member'
+    expect(rendersPastDueNotice()).toBe(false)
+    mockPaymentRecoveryLock.value = 'owner'
+    expect(rendersPastDueNotice()).toBe(true)
+    mockDistributionTypes.isCloud = false
+    expect(rendersPastDueNotice()).toBe(false)
   })
 })

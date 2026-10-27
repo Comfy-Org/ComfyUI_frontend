@@ -2,7 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTemplateModelStatus from '@/platform/workflow/templates/components/WorkflowTemplateModelStatus.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 
 const { group, titleId } = defineProps<{

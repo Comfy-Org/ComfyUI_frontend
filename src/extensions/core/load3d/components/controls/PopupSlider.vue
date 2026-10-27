@@ -30,8 +30,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Slider from '@comfyorg/design-system/slider/Slider'
 
 const {
   icon = 'pi-expand',

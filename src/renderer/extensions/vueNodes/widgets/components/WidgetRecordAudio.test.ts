@@ -16,6 +16,7 @@ const { useAudioRecorderMock, useAudioPlaybackMock, useAudioWaveformMock } =
   }))
 const appMock = vi.hoisted(() => ({
   app: {
+    rootGraphOrUndefined: { events: new EventTarget() },
     canvas: {
       graph: {
         getNodeById: vi.fn<(id: string) => unknown>(() => null)
@@ -300,6 +301,26 @@ describe('WidgetRecordAudio', () => {
       await getRecorderOptions().onRecordingComplete?.(blob)
 
       expect(audioWidget.element.src).toContain('blob:fake/')
+    })
+
+    it('attaches the recording to the node a reloaded graph holds', async () => {
+      vi.mocked(URL.createObjectURL)
+        .mockReturnValueOnce('blob:fake/first')
+        .mockReturnValueOnce('blob:fake/second')
+      const staleWidget = createAudioWidget()
+      primeAudioWidgetInNode([staleWidget])
+      renderWidget()
+      await getRecorderOptions().onRecordingComplete?.(new Blob(['x']))
+      const reloadedWidget = createAudioWidget()
+      primeAudioWidgetInNode([reloadedWidget])
+
+      appMock.app.rootGraphOrUndefined.events.dispatchEvent(
+        new Event('configured')
+      )
+      await getRecorderOptions().onRecordingComplete?.(new Blob(['y']))
+
+      expect(reloadedWidget.element.src).toBe('blob:fake/second')
+      expect(staleWidget.element.src).toBe('blob:fake/first')
     })
 
     it('revokes the previous blob URL before replacing it', async () => {

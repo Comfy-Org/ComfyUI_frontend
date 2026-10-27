@@ -28,6 +28,7 @@ import type {
 import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -55,6 +56,13 @@ const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
 
 export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
+}
+
+export function pushHostFrames(
+  ws: WebSocketRoute,
+  frames: readonly HostFrame[]
+): void {
+  for (const frame of frames) ws.send(JSON.stringify(frame))
 }
 
 export function refuseDocSubscribePermanently(

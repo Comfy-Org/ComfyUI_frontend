@@ -8,7 +8,6 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { runInNewContext } from 'node:vm'
 
 import { describe, expect, it } from 'vitest'
 import { parseDocument } from 'yaml'
@@ -121,50 +120,4 @@ describe('shared PR report disclosure', () => {
       /<summary>Scenario timings<\/summary>[\s\S]*62.5 avg FPS[\s\S]*23ms TBT[\s\S]*<\/details>/
     )
   })
-
-  it.for([
-    ['success', 'All tests passed.'],
-    ['failure', 'fix the failures before merging'],
-    ['infrastructure', 'fix the shard failure and re-run the suite']
-  ])(
-    'keeps the website report link and %s action visible',
-    ([outcome, headline]) => {
-      const workflow = parseDocument(
-        readFileSync(
-          join(ROOT, '.github/workflows/ci-website-e2e.yaml'),
-          'utf8'
-        )
-      )
-      const script = workflow.getIn([
-        'jobs',
-        'post-result-comment',
-        'steps',
-        1,
-        'with',
-        'script'
-      ])
-      const outputs = new Map<string, string>()
-      runInNewContext(String(script), {
-        process: {
-          env: {
-            TEST_OUTCOME: outcome,
-            REPORT_URL: 'https://example.com/report',
-            SCREENSHOT_FAILURES: '2',
-            OTHER_FAILURES: '1'
-          }
-        },
-        core: {
-          setOutput: (key: string, value: string) => outputs.set(key, value)
-        }
-      })
-      const output = outputs.get('section-content') ?? ''
-      const visible = output.split('<details>')[0]
-      expect(visible).toContain(headline)
-      expect(visible).toContain('[View Report](https://example.com/report)')
-      expect(visible).not.toContain('| **Status** |')
-      expect(output).toMatch(
-        /<summary>Test results<\/summary>\n\n\| \| \|[\s\S]*<\/details>/
-      )
-    }
-  )
 })

@@ -26,16 +26,8 @@
       </Badge>
     </div>
 
-    <Popover
-      v-if="showWorkspaceSwitcher"
-      side="left"
-      align="start"
-      :side-offset="16"
-      :collision-padding="8"
-      prioritize-position
-      data-testid="workspace-switcher-panel"
-    >
-      <template #button>
+    <PopoverRoot v-if="showWorkspaceSwitcher" v-slot="{ close }">
+      <PopoverTrigger as-child>
         <Button
           variant="muted-textonly"
           class="flex h-auto w-full justify-between px-4 py-2"
@@ -56,11 +48,20 @@
             class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
           />
         </Button>
-      </template>
-      <template #default="{ close }">
+      </PopoverTrigger>
+      <PopoverContent
+        side="left"
+        align="start"
+        :side-offset="16"
+        prioritize-position
+        dismiss-on-viewport-change
+        class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
+        data-testid="workspace-switcher-panel"
+      >
         <WorkspaceSwitcherPopover @select="close" />
-      </template>
-    </Popover>
+        <PopoverArrow class="fill-background stroke-border/50" />
+      </PopoverContent>
+    </PopoverRoot>
 
     <!-- Credits Section -->
     <div
@@ -147,7 +148,8 @@
 </template>
 
 <script setup lang="ts">
-import Badge from '@/components/ui/badge/Badge.vue'
+import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
@@ -155,9 +157,9 @@ import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/Popover.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'

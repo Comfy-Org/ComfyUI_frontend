@@ -74,6 +74,32 @@ export const zWorkspaceDeploymentList = z.object({
 })
 
 /**
+ * One declared pack that failed to import on the Release's build, as comfy-builder names it.
+ */
+export const zReleaseUnsupportedPack = z.object({
+  folder: z.string(),
+  registry_id: z.string(),
+  repository: z.string(),
+  cause: z.string()
+})
+
+/**
+ * The declared packs that failed to import on the build of the editor's Release, in the order the build declared them, and which Release that is.
+ */
+export const zReleaseUnsupportedPacks = z.object({
+  release_id: z.string().nullable(),
+  packs: z.array(zReleaseUnsupportedPack)
+})
+
+/**
+ * Which step the CPU server of the deployment this browser's editor runs on is on.
+ */
+export const zWorkspaceDeploymentCpuServer = z.object({
+  cpu_server: z.enum(['none', 'creating', 'building', 'created']),
+  deployment_id: z.string().optional()
+})
+
+/**
  * Present only for can_delete_workspace denied with plan_ending when all live subscription rows carry a known future cancel_at. This is guidance, not a promise that deletion will succeed at that time; writes recheck.
  */
 export const zWorkspaceDeletionDenialParams = z.object({
@@ -5952,6 +5978,11 @@ export const zGetNodeInfoQuery = z.object({
  */
 export const zGetNodeInfoResponse = z.record(z.string(), zNodeInfo)
 
+/**
+ * The packs the Release built without, in the order the build declared them
+ */
+export const zGetReleaseUnsupportedPacksResponse = zReleaseUnsupportedPacks
+
 export const zGetLegacyObjectInfoByNodeClassPath = z.object({
   node_class: z.string()
 })
@@ -7084,6 +7115,16 @@ export const zPickWorkspaceDeploymentPath = z.object({
  * Picked; the cookie on this response carries it
  */
 export const zPickWorkspaceDeploymentResponse = z.void()
+
+export const zGetWorkspaceDeploymentCpuServerPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Which step the deployment's CPU server is on
+ */
+export const zGetWorkspaceDeploymentCpuServerResponse =
+  zWorkspaceDeploymentCpuServer
 
 export const zListWorkspaceDeploymentsPath = z.object({
   id: z.string()

@@ -4,10 +4,10 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import TagRemoveButton from '@/components/chip/TagRemoveButton.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import TagRemoveButton from '@comfyorg/design-system/chip/TagRemoveButton'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 

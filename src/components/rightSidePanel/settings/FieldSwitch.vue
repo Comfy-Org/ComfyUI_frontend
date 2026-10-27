@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Switch from '@/components/ui/switch/Switch.vue'
+import Switch from '@comfyorg/design-system/switch/Switch'
 
 import LayoutField from './LayoutField.vue'
 

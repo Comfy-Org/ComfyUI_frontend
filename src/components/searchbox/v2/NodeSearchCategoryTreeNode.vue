@@ -80,7 +80,7 @@ import { computed, nextTick, ref } from 'vue'
 
 import { RovingFocusItem } from 'reka-ui'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {

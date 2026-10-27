@@ -230,10 +230,12 @@ export {
 } from './paymentCopy'
 export type {
   CreateHostedTopupCheckoutInput,
+  CreateInteractiveTopupInput,
   CreateTopupCheckoutInput,
   HostedTopupCheckout,
   HostedTopupCheckoutFailure,
   HostedTopupCheckoutResult,
+  InteractiveTopupPayment,
   QuoteTopupInput,
   TopupCommand,
   TopupCommandOptions,
@@ -251,6 +253,7 @@ export type {
   TopupUnsettled
 } from './topup'
 export {
+  INTERACTIVE_TOPUP_ROUTE,
   TOPUP_CHECKOUT_ROUTE,
   TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,

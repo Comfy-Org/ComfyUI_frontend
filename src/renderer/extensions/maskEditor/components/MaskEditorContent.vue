@@ -85,7 +85,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
-import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
+import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
 
 import BrushCursor from './BrushCursor.vue'
 import PointerZone from './PointerZone.vue'

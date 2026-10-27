@@ -206,13 +206,32 @@ describe('planRowAction', () => {
     { state: 'ended', expected: 'choosePlan' },
     { state: 'ending', expected: null }
   ])('offers $expected for $state when granted', ({ state, expected }) => {
-    expect(planRowAction(states[state], { canOpenPlans: true })).toBe(expected)
+    expect(
+      planRowAction(states[state], {
+        canOpenPlans: true,
+        planKind: 'self_serve'
+      })
+    ).toBe(expected)
   })
 
   it.for(Object.keys(states))(
     'offers nothing for %s when not granted',
     (key) => {
-      expect(planRowAction(states[key], { canOpenPlans: false })).toBeNull()
+      expect(
+        planRowAction(states[key], { canOpenPlans: false, planKind: null })
+      ).toBeNull()
+    }
+  )
+
+  it.for(Object.keys(states))(
+    'replaces the action with Contact sales for %s when plan_kind is sales_managed',
+    (key) => {
+      expect(
+        planRowAction(states[key], {
+          canOpenPlans: false,
+          planKind: 'sales_managed'
+        })
+      ).toBe('contactSales')
     }
   )
 })

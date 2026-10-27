@@ -124,6 +124,54 @@ describe('createCapabilitiesReader', () => {
     }
   )
 
+  it.for([
+    { served: 'sales_managed', expected: 'sales_managed' },
+    { served: 'self_serve', expected: 'self_serve' },
+    { served: undefined, expected: undefined }
+  ] as const)(
+    'keeps plan_kind $served instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(served === undefined ? {} : { plan_kind: served })
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.planKind).toBe(expected)
+    }
+  )
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: undefined, expected: undefined }
+  ])(
+    'keeps has_parked_billing_operation $served instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined ? {} : { has_parked_billing_operation: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.hasParkedBillingOperation).toBe(expected)
+    }
+  )
+
   it.for([true, false])(
     'preserves can_manage_members=%s from the server',
     async (allowed) => {

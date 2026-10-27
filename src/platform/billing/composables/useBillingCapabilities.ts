@@ -205,10 +205,19 @@ function useBillingCapabilitiesInternal() {
   const canRunWorkflows = computed(
     () => capabilities.value?.can_run_workflows ?? false
   )
+  const planKind = computed(() =>
+    receiveServerFact('plan_kind', resolvedResponse.value?.plan_kind ?? null)
+  )
   const paymentRecoveryAvailable = computed(() =>
     receiveServerFact(
       'payment_recovery_available',
       resolvedResponse.value?.payment_recovery_available ?? false
+    )
+  )
+  const hasParkedBillingOperation = computed(() =>
+    receiveServerFact(
+      'has_parked_billing_operation',
+      resolvedResponse.value?.has_parked_billing_operation === true
     )
   )
   const runWorkflowsDenial = computed(() =>
@@ -565,8 +574,10 @@ function useBillingCapabilitiesInternal() {
     canManageAutoTopUp,
     autoTopUpSetup,
     canRunWorkflows,
+    planKind,
     paymentRecoveryAvailable,
     runWorkflowsDenial,
+    hasParkedBillingOperation,
     runDeniedPaymentPastDue,
     isReady,
     hasResolvedCapabilities,

@@ -100,10 +100,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/graph/selectionToolbox/VerticalDivider.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/composables/canvas/**",
       "role": "integration"
     },

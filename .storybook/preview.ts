@@ -3,7 +3,7 @@ import type { Preview, StoryContext, StoryFn } from '@storybook/vue3-vite'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 
-import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
@@ -12,7 +12,6 @@ import { i18n } from '@/i18n'
 import { applyPaletteTheme } from '@/utils/colorPaletteTheme'
 import '@/lib/litegraph/public/css/litegraph.css'
 import '@/assets/css/style.css'
-import '@comfyorg/website/src/styles/global.css'
 
 // Setup Vue app for Storybook
 setup((app) => {

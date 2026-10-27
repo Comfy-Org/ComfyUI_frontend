@@ -57,6 +57,7 @@ defineOptions({ inheritAttrs: false })
 const {
   label,
   expanded = false,
+  referenceMenuId,
   activeDescendant,
   historyEpoch = 0,
   editableWorkflowId,
@@ -65,6 +66,7 @@ const {
 } = defineProps<{
   label: string
   expanded?: boolean
+  referenceMenuId?: string
   activeDescendant?: string
   historyEpoch?: number
   editableWorkflowId?: string
@@ -375,8 +377,10 @@ onMounted(() => {
       role: 'textbox',
       'aria-label': label,
       'aria-multiline': 'true',
-      'aria-expanded': String(expanded),
-      'aria-controls': 'agent-reference-menu',
+      ...(referenceMenuId ? { 'aria-haspopup': 'menu' } : {}),
+      ...(expanded && referenceMenuId
+        ? { 'aria-controls': referenceMenuId }
+        : {}),
       ...(activeDescendant
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
@@ -638,7 +642,7 @@ watch(
 )
 
 watch(
-  () => [label, expanded, activeDescendant, searchHint],
+  () => [label, expanded, referenceMenuId, activeDescendant, searchHint],
   () => view?.setProps({})
 )
 watch(

@@ -74,6 +74,7 @@ interface SelectedTeamCheckout {
 
 interface SubscriptionCheckoutOptions {
   tierPlanType?: 'personal' | 'team'
+  rendersPastDueNotice?: () => boolean
 }
 
 /**
@@ -109,7 +110,9 @@ let stopPaymentRecoveryReturnRefresh: (() => void) | null = null
 function armPaymentRecoveryReturnRefresh(): void {
   stopPaymentRecoveryReturnRefresh?.()
   const { fetchStatus } = useBillingContext()
-  stopPaymentRecoveryReturnRefresh = registerRefreshOnReturn(fetchStatus)
+  stopPaymentRecoveryReturnRefresh = registerRefreshOnReturn(() =>
+    Promise.allSettled([fetchStatus(), useBillingCapabilities().refresh()])
+  )
 }
 
 /** Thrown by `assertReactivationAmountUnchanged` when a fresh preview no
@@ -136,7 +139,10 @@ export function useSubscriptionCheckout(
     (e: 'close', subscribed: boolean): void
   },
   paymentIntentSource?: PaymentIntentSource,
-  { tierPlanType = 'personal' }: SubscriptionCheckoutOptions = {}
+  {
+    tierPlanType = 'personal',
+    rendersPastDueNotice = () => false
+  }: SubscriptionCheckoutOptions = {}
 ) {
   const { t } = useI18n()
   const toast = useToast()
@@ -163,6 +169,7 @@ export function useSubscriptionCheckout(
   const isLoadingPreview = ref(false)
   const loadingTier = ref<CheckoutTierKey | null>(null)
   const isSubscribing = ref(false)
+  const outstandingPaymentRefusals = ref(0)
   const isResubscribing = ref(false)
   const previewData = ref<PreviewSubscribeResponse | null>(null)
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
@@ -545,6 +552,14 @@ export function useSubscriptionCheckout(
     }
     if (!requiresRecovery || !isCurrent()) return null
 
+    // The table is hidden on the confirm step, so only the pricing step can
+    // show the notice; elsewhere the toasts stay.
+    const isPricingStepRefusal =
+      checkoutStep.value === 'pricing' &&
+      hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
+    const showsNotice = rendersPastDueNotice() && isPricingStepRefusal
+    if (isPricingStepRefusal) outstandingPaymentRefusals.value++
+
     const portal = createBillingPortalReporter(telemetry, 'payment_recovery')
     let billingClient: BillingClient | undefined
     try {
@@ -562,6 +577,7 @@ export function useSubscriptionCheckout(
       }
       if (!openBillingUrl(portalUrl.href)) {
         portal.blocked(billingClient)
+        if (showsNotice) return 'blocked'
         // The open above ran after an await, so it had no user gesture behind
         // it and got blocked. The toast's own button click is a gesture, so
         // retrying from there isn't blocked.
@@ -596,7 +612,9 @@ export function useSubscriptionCheckout(
         surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
-      showSubscribeError(hasPaymentRecoveryCode ? error : portalError)
+      if (!showsNotice) {
+        showSubscribeError(hasPaymentRecoveryCode ? error : portalError)
+      }
       return 'failed'
     }
   }
@@ -1658,6 +1676,7 @@ export function useSubscriptionCheckout(
     isLoadingPreview,
     loadingTier,
     isSubscribing,
+    outstandingPaymentRefusals,
     isResubscribing,
     previewData,
     reactivationRequired,

@@ -57,7 +57,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelRenderStore } from '@/workbench/extensions/agent/stores/agent/agentPanelRenderStore'

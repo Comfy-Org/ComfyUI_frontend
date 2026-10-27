@@ -1,9 +1,6 @@
 {
   "unused_files": [],
-  "unused_exports": [
-    "apps/website/src/components/ui/button-mask/index.ts:ButtonMask",
-    "src/extensions/core/groupNode.ts:GroupNodeHandler"
-  ],
+  "unused_exports": ["src/extensions/core/groupNode.ts:GroupNodeHandler"],
   "unused_types": [
     "src/composables/video/useVideoFilmstrip.ts:FilmstripError",
     "src/platform/workspace/api/workspaceApi.ts:ListWorkspacesResponse",
@@ -16,7 +13,6 @@
   "unused_dependencies": [],
   "unused_dev_dependencies": [],
   "circular_dependencies": [
-    "apps/website/src/components/ui/button-mask/ButtonMask.vue->apps/website/src/components/ui/button-mask/index.ts",
     "browser_tests/fixtures/ComfyPage.ts->browser_tests/fixtures/components/QueuePanel.ts",
     "browser_tests/fixtures/ComfyPage.ts->browser_tests/fixtures/components/SubgraphEditor.ts->browser_tests/fixtures/helpers/SubgraphHelper.ts",
     "src/platform/keybindings/components/EditKeybindingFooter.vue->src/platform/keybindings/composables/useEditKeybindingDialog.ts",

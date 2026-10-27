@@ -8,6 +8,11 @@
 @import 'tailwindcss/utilities' layer(utilities);
 @import 'tw-animate-css';
 
+@source '../components';
+@source not '../components/**/*.test.ts';
+@source not '../components/**/*.md';
+@source '../../dist';
+
 @plugin "./iconifyDynamicPlugin.ts";
 
 @plugin "./lucideStrokePlugin.js";

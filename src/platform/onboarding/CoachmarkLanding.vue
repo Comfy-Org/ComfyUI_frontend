@@ -67,14 +67,14 @@ import { useEventListener } from '@vueuse/core'
 import { useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogDescription from '@comfyorg/design-system/dialog/DialogDescription'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { title, message, image, primaryLabel, skipLabel, waitingForTarget } =
   defineProps<{

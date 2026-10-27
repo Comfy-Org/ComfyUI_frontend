@@ -1,3 +1,8 @@
+import type {
+  ReleaseUnsupportedPack,
+  ReleaseUnsupportedPacks
+} from '@comfyorg/ingest-types'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -23,7 +28,8 @@ const mockWorkspaceApi = vi.hoisted(() => ({
   pickDeployment: vi.fn(),
   clearDeployment: vi.fn(),
   setDefaultDeployment: vi.fn(),
-  clearDefaultDeployment: vi.fn()
+  clearDefaultDeployment: vi.fn(),
+  getReleaseUnsupportedPacks: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), async () => {
@@ -73,6 +79,10 @@ describe('useDeploymentPickStore', () => {
 
   beforeEach(() => {
     vi.mocked(reportError).mockImplementation(() => undefined)
+    mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+      release_id: null,
+      packs: []
+    })
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     Object.defineProperty(window, 'location', {
       value: { reload, origin: 'http://localhost' },
@@ -1858,6 +1868,239 @@ describe('useDeploymentPickStore', () => {
       await store.loadOnce()
 
       expect(store.bootDeployment?.deployment_id).toBe('dep-2')
+    })
+  })
+
+  describe('packs the boot deployment could not load', () => {
+    const vfx: ReleaseUnsupportedPack = {
+      folder: 'ComfyUI-NVIDIA-VFX',
+      registry_id: 'comfyui-nvidia-vfx',
+      repository: 'https://github.com/NVIDIA/ComfyUI-NVIDIA-VFX',
+      cause: 'needs a GPU'
+    }
+    const seedvr: ReleaseUnsupportedPack = {
+      folder: 'seedvr2_videoupscaler',
+      registry_id: '',
+      repository: 'https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler',
+      cause: "No module named 'cv2'"
+    }
+
+    it('asks once the page boots on a deployment and matches a pack of its Release by registry id, then folder', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+        release_id: 'r-2',
+        packs: [vfx, seedvr]
+      })
+      const store = useDeploymentPickStore()
+
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockWorkspaceApi.getReleaseUnsupportedPacks).toHaveBeenCalledOnce()
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toEqual(vfx)
+      expect(store.unsupportedPackFor('seedvr2_videoupscaler')).toEqual(seedvr)
+      expect(store.unsupportedPackFor('comfyui-impact-pack')).toBeUndefined()
+    })
+
+    it('matches nothing when the build lists no packs', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      const store = useDeploymentPickStore()
+
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockWorkspaceApi.getReleaseUnsupportedPacks).toHaveBeenCalledOnce()
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('prefers the pack whose registry id matches over one whose folder does', async () => {
+      const folderOnly = { ...seedvr, folder: 'comfyui-nvidia-vfx' }
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+        release_id: 'r-2',
+        packs: [folderOnly, vfx]
+      })
+      const store = useDeploymentPickStore()
+
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toEqual(vfx)
+    })
+
+    it.for([
+      {
+        name: 'no deployment picked',
+        answer: () =>
+          mockWorkspaceApi.listDeployments.mockResolvedValue({
+            ...listing,
+            picked_deployment_id: undefined,
+            pick_source: undefined
+          })
+      },
+      {
+        name: 'the account outside the rollout',
+        answer: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Outside rollout', 403)
+          )
+      },
+      {
+        name: 'an ingest without deployment routes',
+        answer: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Not found', 404)
+          )
+      }
+    ])('does not ask on Comfy Cloud: $name', async ({ answer }) => {
+      answer()
+      const store = useDeploymentPickStore()
+
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.bootDeployment).toBeNull()
+      expect(mockWorkspaceApi.getReleaseUnsupportedPacks).not.toHaveBeenCalled()
+    })
+
+    it('does not ask when the boot listing never answered', async () => {
+      const store = useDeploymentPickStore()
+
+      store.bootOnComfyCloud()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockWorkspaceApi.getReleaseUnsupportedPacks).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      new WorkspaceApiError('Bad gateway', 502),
+      new WorkspaceApiError('Network Error'),
+      new TypeError('packs is not an array')
+    ])(
+      'matches nothing and reports once when the ask fails: %s',
+      async (error) => {
+        mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+        mockWorkspaceApi.getReleaseUnsupportedPacks.mockRejectedValue(error)
+        const store = useDeploymentPickStore()
+
+        await store.loadOnce()
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+          surface: 'workspace',
+          errorType: 'error_loading_release_unsupported_packs',
+          level: 'warning'
+        })
+      }
+    )
+
+    it("keeps the boot build's packs when a later listing names another deployment", async () => {
+      mockWorkspaceApi.listDeployments
+        .mockResolvedValueOnce(listing)
+        .mockResolvedValue({ ...listing, picked_deployment_id: 'dep-1' })
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+        release_id: 'r-2',
+        packs: [vfx]
+      })
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      await store.load()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.changeSinceBoot).toBe('deployment')
+      expect(mockWorkspaceApi.getReleaseUnsupportedPacks).toHaveBeenCalledOnce()
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toEqual(vfx)
+    })
+
+    it.for([
+      { name: 'the listing still says the boot Release', laterRelease: 'r-2' },
+      { name: 'the listing says the new Release', laterRelease: 'r-3' }
+    ])(
+      'matches nothing when the answer is for another Release than the page booted on: $name',
+      async ({ laterRelease }) => {
+        const answer = deferred<ReleaseUnsupportedPacks>()
+        mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
+        mockWorkspaceApi.getReleaseUnsupportedPacks.mockReturnValue(
+          answer.promise
+        )
+        const store = useDeploymentPickStore()
+        await store.loadOnce()
+        await vi.advanceTimersByTimeAsync(0)
+
+        mockWorkspaceApi.listDeployments.mockResolvedValue({
+          ...listing,
+          items: [
+            { ...listing.items[0], release_id: laterRelease },
+            listing.items[1]
+          ]
+        })
+        await store.load()
+        answer.resolve({ release_id: 'r-3', packs: [vfx] })
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(store.pickedDeployment?.release_id).toBe(laterRelease)
+        expect(store.bootDeployment?.release_id).toBe('r-2')
+        expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
+
+    it('matches nothing when the answer names no Release', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+        release_id: null,
+        packs: [vfx]
+      })
+      const store = useDeploymentPickStore()
+
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('asks again for the build of the deployment a switch reloads onto', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+        release_id: 'r-2',
+        packs: [vfx]
+      })
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toEqual(vfx)
+
+      await expect(store.pick('dep-1')).resolves.toBeNull()
+      expect(reload).toHaveBeenCalledOnce()
+
+      store.$dispose()
+      delete getActivePinia()?.state.value[store.$id]
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        picked_deployment_id: 'dep-1'
+      })
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+        release_id: 'r-1',
+        packs: [seedvr]
+      })
+      const reloaded = useDeploymentPickStore()
+      await reloaded.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockWorkspaceApi.getReleaseUnsupportedPacks).toHaveBeenCalledTimes(
+        2
+      )
+      expect(reloaded.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
+      expect(reloaded.unsupportedPackFor('seedvr2_videoupscaler')).toEqual(
+        seedvr
+      )
     })
   })
 })

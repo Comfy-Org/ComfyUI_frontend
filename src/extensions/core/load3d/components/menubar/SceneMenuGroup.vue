@@ -75,7 +75,7 @@
       <i class="icon-[lucide--globe] size-4" />
       <span v-if="!compact">{{ t('load3d.menuBar.panorama') }}</span>
     </Button>
-    <Popover v-if="isPanorama" v-model:open="fovOpen">
+    <PopoverRoot v-if="isPanorama" v-model:open="fovOpen">
       <PopoverTrigger as-child>
         <Button
           variant="textonly"
@@ -91,7 +91,6 @@
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        side="bottom"
         align="start"
         :side-offset="8"
         :class="cn(formPanelClass, 'w-56')"
@@ -107,7 +106,7 @@
           />
         </div>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
     <Button
       variant="textonly"
       size="unset"
@@ -125,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -136,10 +135,9 @@ import {
   formPanelClass
 } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import type { SceneConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const {

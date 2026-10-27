@@ -5,7 +5,6 @@
     "**/vitest.config.*.timestamp*",
     ".agents/checks/eslint.strict.config.js",
     "ComfyUI/**",
-    "apps/*/.astro/**",
     "apps/*/coverage/**",
     "apps/*/dist/**",
     "apps/*/playwright-report/**",
@@ -13,8 +12,6 @@
     "components.d.ts",
     "coverage/*",
     "dist/*",
-    "apps/website/src/types/rate-card/types.gen.ts",
-    "apps/website/src/types/rate-card/zod.gen.ts",
     "packages/design-system/src/css/lucideStrokePlugin.js",
     "packages/ingest-types/src/*.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
@@ -403,17 +400,6 @@
       }
     },
     {
-      "files": ["**/*.astro"],
-      "rules": {
-        "no-empty": [
-          "error",
-          {
-            "allowEmptyCatch": true
-          }
-        ]
-      }
-    },
-    {
       "files": ["**/*.test.ts"],
       "jsPlugins": ["eslint-plugin-testing-library"],
       "rules": {
@@ -606,57 +592,10 @@
       }
     },
     {
-      "files": ["apps/website/**"],
+      "files": ["packages/design-system/src/components/**"],
       "rules": {
         "comfy/no-relative-parent-paths": "error",
         "import/no-relative-parent-imports": "error"
-      }
-    },
-    {
-      "files": ["apps/website/e2e/**/*.spec.ts"],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "paths": [
-              {
-                "name": "@playwright/test",
-                "importNames": [
-                  "test",
-                  "chromium",
-                  "firefox",
-                  "webkit",
-                  "request"
-                ],
-                "message": "Use the blockExternalMedia fixture so website tests cannot access external services."
-              },
-              {
-                "name": "playwright",
-                "message": "Use the blockExternalMedia fixture instead."
-              },
-              {
-                "name": "vue-i18n",
-                "importNames": ["useI18n"],
-                "message": "useI18n() requires Vue setup context."
-              },
-              {
-                "name": "@vueuse/core",
-                "importNames": ["useVirtualList"],
-                "message": "useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead."
-              },
-              {
-                "name": "@sentry/vue",
-                "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
-              },
-              {
-                "name": "@datadog/browser-rum",
-                "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
-              }
-            ]
-          }
-        ]
       }
     },
     {

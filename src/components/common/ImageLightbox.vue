@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import {
-  DialogClose,
-  DialogContent,
   DialogDescription,
-  DialogOverlay,
   DialogRoot,
   DialogTitle,
   VisuallyHidden
 } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const open = defineModel<boolean>({ default: false })
 
@@ -25,18 +25,13 @@ const { t } = useI18n()
 <template>
   <DialogRoot v-model:open="open">
     <DialogPortal>
-      <DialogOverlay
-        class="fixed inset-0 z-overlay bg-black/60 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
-      />
-      <DialogContent
-        class="fixed top-1/2 left-1/2 z-overlay -translate-1/2 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-50 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-50"
-        @escape-key-down="open = false"
-      >
+      <DialogOverlay />
+      <DialogContent surface="none" size="fit">
         <VisuallyHidden>
           <DialogTitle>{{ alt || t('g.imageLightbox') }}</DialogTitle>
           <DialogDescription v-if="alt">{{ alt }}</DialogDescription>
         </VisuallyHidden>
-        <DialogClose as-child>
+        <DialogClose>
           <Button
             :aria-label="t('g.close')"
             size="icon"

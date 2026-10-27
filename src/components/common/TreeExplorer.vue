@@ -75,10 +75,13 @@ import { computed, provide, shallowRef, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
-import type { MenuItem, MenuItemCommandEvent } from '@/components/ui/menu/types'
-import UiTree from '@/components/ui/tree/Tree.vue'
-import UiTreeItem from '@/components/ui/tree/TreeItem.vue'
+import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
+import type {
+  MenuItem,
+  MenuItemCommandEvent
+} from '@comfyorg/design-system/lib/menu/types'
+import UiTree from '@comfyorg/design-system/tree/Tree'
+import UiTreeItem from '@comfyorg/design-system/tree/TreeItem'
 import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperations'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSettingStore } from '@/platform/settings/settingStore'

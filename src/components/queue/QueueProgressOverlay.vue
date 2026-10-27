@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-show="isVisible"
-    :class="['flex', 'justify-end', 'w-full', 'pointer-events-none']"
-  >
+  <div v-show="isVisible" class="pointer-events-none flex w-full justify-end">
     <div
       data-testid="queue-progress-overlay"
       class="pointer-events-auto flex max-h-[60vh] w-[350px] min-w-[310px] flex-col overflow-hidden rounded-lg border transition-colors duration-200 ease-in-out"

@@ -70,6 +70,11 @@ declare global {
      * @see browser_tests/fixtures/hostSessionPartnerNodeFixture.ts
      */
     __pushHostAuthState?: (next: { status: 'signed_out' }) => unknown
+    __captureHostErrorReport?: (captured: {
+      message: string
+      stack?: string
+      properties: Record<string, unknown>
+    }) => Promise<void>
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages

@@ -441,6 +441,25 @@ describe('useKeybindingPresetService', () => {
         store.getUserUnsetKeybindingValues().map(({ commandId }) => commandId)
       ).toEqual(['test.selectAll'])
     })
+
+    it('keeps an unset for a binding that registers after the preset is applied', async () => {
+      const combo = { key: 'd', ctrl: true }
+      const preset: KeybindingPreset = {
+        name: 'vim',
+        newBindings: [],
+        unsetBindings: [{ commandId: 'late.insert', combo }]
+      }
+
+      const service = await getPresetService()
+      service.applyPreset(preset)
+      expect(store.isCurrentPresetModified).toBe(false)
+      store.addDefaultKeybinding(
+        new KeybindingImpl({ commandId: 'late.insert', combo })
+      )
+
+      expect(store.getKeybindingByCommandId('late.insert')).toBeUndefined()
+      expect(store.isCurrentPresetModified).toBe(false)
+    })
   })
 
   describe('switchPreset', () => {

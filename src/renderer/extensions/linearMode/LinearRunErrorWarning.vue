@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'

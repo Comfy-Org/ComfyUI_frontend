@@ -34,7 +34,7 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/controls/DropdownControl.vue'),
+  import('@comfyorg/design-system/select/DropdownControl'),
   () => ({
     default: {
       name: 'DropdownControlStub',

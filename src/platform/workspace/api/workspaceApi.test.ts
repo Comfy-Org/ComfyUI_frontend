@@ -54,6 +54,17 @@ installWorkspaceApiAuth()
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 
+function axiosRejection(status: number, data: unknown) {
+  return {
+    isAxiosError: true,
+    name: 'AxiosError',
+    code: 'ERR_BAD_RESPONSE',
+    message: `Request failed with status code ${status}`,
+    status,
+    response: { status, statusText: '', headers: {}, data }
+  }
+}
+
 describe('workspaceApi', () => {
   beforeEach(() => {
     vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockResolvedValue(
@@ -364,6 +375,124 @@ describe('workspaceApi', () => {
         { headers: AUTH_HEADER, timeout: 30_000 }
       )
       expect(result).toEqual(data)
+    })
+
+    it('getDeploymentCpuServer() sends GET /workspaces/:id/deployment/cpu-server and reads the step', async () => {
+      const data = { deployment_id: 'dep-1', cpu_server: 'building' }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getDeploymentCpuServer('ws-1')
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment/cpu-server',
+        { headers: AUTH_HEADER, timeout: 15_000 }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getDeploymentCpuServer() rejects a step it does not know instead of reading it as one', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: { cpu_server: 'exists' }
+      })
+
+      await expect(
+        workspaceApi.getDeploymentCpuServer('ws-1')
+      ).rejects.toThrow()
+    })
+
+    it.for([
+      { status: 404, code: 'NOT_FOUND' },
+      { status: 502, code: 'cpu_server_unknown' }
+    ])(
+      'getDeploymentCpuServer() turns a $status into a WorkspaceApiError with code $code',
+      async ({ status, code }) => {
+        mockAxiosInstance.get.mockRejectedValue(
+          axiosRejection(status, { code, message: 'Refused' })
+        )
+
+        await expect(
+          workspaceApi.getDeploymentCpuServer('ws-1')
+        ).rejects.toMatchObject({
+          name: 'WorkspaceApiError',
+          status,
+          code,
+          message: 'Refused',
+          operation: 'getDeploymentCpuServer'
+        })
+      }
+    )
+
+    it('getReleaseUnsupportedPacks() sends GET /release/unsupported-packs and reads the packs and their release', async () => {
+      const data = {
+        release_id: 'release-2',
+        packs: [
+          {
+            folder: 'ComfyUI-NVIDIA-VFX',
+            registry_id: 'comfyui-nvidia-vfx',
+            repository: 'https://github.com/NVIDIA/ComfyUI-NVIDIA-VFX',
+            cause: 'needs a GPU'
+          }
+        ]
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getReleaseUnsupportedPacks()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/release/unsupported-packs',
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getReleaseUnsupportedPacks() reads a pack not installed from the registry, with its cause', async () => {
+      const data = {
+        release_id: 'rel-picked',
+        packs: [
+          {
+            folder: 'ComfyUI_Nvidia_RTX_Nodes',
+            registry_id: '',
+            repository: '',
+            cause: 'needs a GPU'
+          }
+        ]
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getReleaseUnsupportedPacks()
+
+      expect(result.packs).toEqual([
+        {
+          folder: 'ComfyUI_Nvidia_RTX_Nodes',
+          registry_id: '',
+          repository: '',
+          cause: 'needs a GPU'
+        }
+      ])
+    })
+
+    it('getReleaseUnsupportedPacks() rejects a pack whose registry id is in camelCase', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: {
+          release_id: 'rel-picked',
+          packs: [
+            {
+              folder: 'ComfyUI_Nvidia_RTX_Nodes',
+              registryId: '',
+              repository: '',
+              cause: 'needs a GPU'
+            }
+          ]
+        }
+      })
+
+      await expect(workspaceApi.getReleaseUnsupportedPacks()).rejects.toThrow()
+    })
+
+    it('getReleaseUnsupportedPacks() rejects a body without packs', async () => {
+      mockAxiosInstance.get.mockResolvedValue({ data: { items: [] } })
+
+      await expect(workspaceApi.getReleaseUnsupportedPacks()).rejects.toThrow()
     })
 
     it('pickDeployment() sends PUT /workspaces/:id/deployment with the deployment', async () => {

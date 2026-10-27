@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { onClose } = defineProps<{
   onClose: () => void

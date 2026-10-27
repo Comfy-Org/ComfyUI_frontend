@@ -6,7 +6,7 @@ import type { MockInstance } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
+import VerifiedIcon from '@comfyorg/design-system/icon/VerifiedIcon'
 import { api } from '@/scripts/api'
 import type { components } from '@/types/comfyRegistryTypes'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }

@@ -1,5 +1,5 @@
 <template>
-  <DropdownMenuSub v-slot="{ open }">
+  <MenuSub>
     <MenuSubTrigger
       :disabled
       :class="cn(switcherItemClass, 'data-[state=open]:bg-accent')"
@@ -28,60 +28,51 @@
         />
       </span>
     </MenuSubTrigger>
-    <DropdownMenuPortal>
-      <MenuSubContent
-        :open
-        :side-offset="2"
-        :align-offset="-5"
-        :class="
-          cn(
-            'max-w-[min(25rem,calc(100vw-1rem))] min-w-56',
-            switcherMenuMotionClass
-          )
-        "
-      >
-        <DropdownMenuLabel
-          class="px-2 pt-1.5 pb-1 text-xs text-muted-foreground"
-        >
-          {{ $t('deploymentSwitcher.membersStartOn') }}
-        </DropdownMenuLabel>
-        <DropdownMenuRadioGroup :model-value="checkedValue">
-          <DeploymentSwitcherRow
-            :value="COMFY_CLOUD_ROW"
-            :title="$t('deploymentSwitcher.comfyCloud')"
-            data-testid="default-row-cloud"
-            @select="choose(null)"
-          />
-          <DeploymentSwitcherRow
-            v-for="deployment in deployments"
-            :key="deployment.deployment_id"
-            :value="deployment.deployment_id"
-            :title="deploymentTitle(deployment)"
-            :subtitle="deploymentRowSubtitle(deployment)"
-            :tone="deploymentStatusTone(deployment.status)"
-            :data-testid="`default-row-${deployment.deployment_id}`"
-            @select="choose(deployment.deployment_id)"
-          />
-        </DropdownMenuRadioGroup>
-      </MenuSubContent>
-    </DropdownMenuPortal>
-  </DropdownMenuSub>
+    <MenuSubContent
+      :side-offset="2"
+      :align-offset="-5"
+      :class="
+        cn(
+          'max-w-[min(25rem,calc(100vw-1rem))] min-w-56',
+          switcherMenuMotionClass
+        )
+      "
+    >
+      <DropdownMenuLabel class="px-2 pt-1.5 pb-1 text-xs text-muted-foreground">
+        {{ $t('deploymentSwitcher.membersStartOn') }}
+      </DropdownMenuLabel>
+      <DropdownMenuRadioGroup :model-value="checkedValue">
+        <DeploymentSwitcherRow
+          :value="COMFY_CLOUD_ROW"
+          :title="$t('deploymentSwitcher.comfyCloud')"
+          data-testid="default-row-cloud"
+          @select="choose(null)"
+        />
+        <DeploymentSwitcherRow
+          v-for="deployment in deployments"
+          :key="deployment.deployment_id"
+          :value="deployment.deployment_id"
+          :title="deploymentTitle(deployment)"
+          :subtitle="deploymentRowSubtitle(deployment)"
+          :tone="deploymentStatusTone(deployment.status)"
+          :data-testid="`default-row-${deployment.deployment_id}`"
+          @select="choose(deployment.deployment_id)"
+        />
+      </DropdownMenuRadioGroup>
+    </MenuSubContent>
+  </MenuSub>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
-import {
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuRadioGroup,
-  DropdownMenuSub
-} from 'reka-ui'
+import { DropdownMenuLabel, DropdownMenuRadioGroup } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MenuSubContent from '@/components/ui/menu/MenuSubContent.vue'
-import MenuSubTrigger from '@/components/ui/menu/MenuSubTrigger.vue'
+import MenuSub from '@comfyorg/design-system/menu/MenuSub'
+import MenuSubContent from '@comfyorg/design-system/menu/MenuSubContent'
+import MenuSubTrigger from '@comfyorg/design-system/menu/MenuSubTrigger'
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
 import {
   switcherItemClass,

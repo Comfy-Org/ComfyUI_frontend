@@ -46,7 +46,7 @@ regenerated.
 | E2E merge   | `ci-tests-e2e-coverage-package.yaml`, `scripts/cicd/package-e2e-coverage.sh`                     | `lcov -a` merge, `genhtml` report, `e2e-coverage` + `e2e-coverage-html` artifacts                                       |
 | E2E publish | `ci-tests-e2e-coverage.yaml` (workflow_run)                                                      | Codecov flag `e2e`, GitHub Pages deploy on `main`                                                                       |
 | Reporting   | `coverage-slack-notify.yaml`, `scripts/coverage-slack-notify.ts`                                 | Slack post per merged PR with unit and E2E deltas against an 80% target                                                 |
-| Gating      | `codecov.yml`                                                                                    | Default project status disabled; website project and all patch statuses informational; unit and E2E flags carry forward |
+| Gating      | `codecov.yml`                                                                                    | Default project status disabled; billing-web project and patch statuses informational; unit and E2E flags carry forward |
 
 ### Current numbers (main, 2026-09-01)
 

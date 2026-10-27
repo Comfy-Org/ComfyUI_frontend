@@ -188,6 +188,30 @@ describe('getFromPngBuffer', () => {
     const result = await getFromPngBuffer(buffer)
     expect(result['workflow']).toBe(workflow)
   })
+
+  it('skips corrupt compressed iTXt metadata', async () => {
+    const corruptCompressedBytes = Uint8Array.from([
+      0x78, 0x9c, 0x43, 0x4c, 0x4a, 0x4e, 0x49, 0x4d, 0x1c, 0x25, 0x46, 0x12,
+      0x01, 0x00, 0x3d, 0xa5, 0xc1, 0x5d
+    ])
+    const buffer = createPngWithChunk(
+      'iTXt',
+      'workflow',
+      corruptCompressedBytes,
+      {
+        compressionFlag: 1,
+        compressionMethod: 0
+      }
+    )
+
+    const result = await getFromPngBuffer(buffer)
+
+    expect(result).toEqual({})
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to decompress iTXt chunk "workflow":',
+      expect.any(Error)
+    )
+  })
 })
 
 describe('getFromPngFile', () => {

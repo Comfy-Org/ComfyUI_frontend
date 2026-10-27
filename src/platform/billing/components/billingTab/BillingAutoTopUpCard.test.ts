@@ -163,12 +163,14 @@ describe('BillingAutoTopUpCard', () => {
     label: string
     lines: string[]
     action: string
+    expectedIcon: string
   }>([
     {
       status: 'failed',
       label: 'Failed',
       lines: [FAILED],
-      action: 'Update payment'
+      action: 'Update payment',
+      expectedIcon: 'icon-[lucide--external-link]'
     },
     {
       status: 'failed',
@@ -177,14 +179,16 @@ describe('BillingAutoTopUpCard', () => {
       lines: [
         'Turned off after 3 declined charges. Update your payment method, then turn it back on.'
       ],
-      action: 'Update payment'
+      action: 'Update payment',
+      expectedIcon: 'icon-[lucide--external-link]'
     },
     {
       status: 'off',
       settings: notConfigured,
       label: 'Off',
       lines: ['Refills credits when your balance runs low'],
-      action: 'Turn on'
+      action: 'Turn on',
+      expectedIcon: 'icon-[lucide--external-link]'
     },
     {
       status: 'on_hold',
@@ -193,19 +197,22 @@ describe('BillingAutoTopUpCard', () => {
         RULE,
         'No default payment method. Set one to resume auto top-up.'
       ],
-      action: 'Update payment'
+      action: 'Update payment',
+      expectedIcon: 'icon-[lucide--external-link]'
     },
     {
       status: 'paused_by_budget',
       label: 'Paused',
       lines: [RULE, 'Monthly limit reached. Resumes November 28.'],
-      action: 'Manage'
+      action: 'Manage',
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
       status: 'on',
       label: 'On',
       lines: [RULE, 'Monthly limit: $50 of $200 used'],
-      action: 'Manage'
+      action: 'Manage',
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
     }
   ])(
     'renders the served $status status as $label',
@@ -215,7 +222,8 @@ describe('BillingAutoTopUpCard', () => {
       disabledReason = null,
       label,
       lines,
-      action
+      action,
+      expectedIcon
     }) => {
       renderCard({ ...settings, status, disabled_reason: disabledReason })
 
@@ -227,11 +235,22 @@ describe('BillingAutoTopUpCard', () => {
           .getAllByTestId('billing-auto-top-up-line')
           .map((line) => line.textContent.trim())
       ).toEqual(lines)
-      expect(screen.getByRole('link', { name: action })).toHaveAttribute(
+      const link = screen.getByRole('link', { name: action })
+      expect(link).toHaveAttribute(
         'href',
         expect.stringMatching(
           /^https:\/\/platform\.test\/profile\/billing\?correlation_id=.+$/
         )
+      )
+      expect(link).toContainHTML(expectedIcon)
+      expect(screen.getByTestId('billing-auto-top-up-card')).toContainHTML(
+        'rounded-xl'
+      )
+      expect(screen.getByRole('heading', { name: /Auto top-up/ })).toHaveClass(
+        'font-medium'
+      )
+      expect(screen.getByTestId('billing-auto-top-up-status')).toContainHTML(
+        'size-1.75'
       )
       expect(trackedEvents()).toHaveBeenCalledExactlyOnceWith({
         operation: 'auto_top_up_card',

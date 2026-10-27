@@ -237,12 +237,6 @@
       ]
     },
     {
-      "class": "website",
-      "tier": "R2",
-      "why": "the marketing site is production and had no rule at all \u2014 but it is copy and layout, so it cannot corrupt a saved workflow or move money",
-      "paths": ["apps/website/**"]
-    },
-    {
       "class": "docs",
       "tier": "R0",
       "why": "prose only",

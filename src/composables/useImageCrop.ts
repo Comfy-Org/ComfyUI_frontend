@@ -1,8 +1,8 @@
 import { useResizeObserver } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { Bounds } from '@/renderer/core/layout/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
@@ -73,7 +73,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
   const { imageEl, containerEl, modelValue, onEditEnd } = options
   const nodeOutputStore = useNodeOutputStore()
 
-  const node = shallowRef<LGraphNode | null>(null)
+  const node = useLiveGraphNode(() => resolveNode(nodeId))
 
   const imageUrl = ref<string | null>(null)
   const isLoading = ref(false)
@@ -185,11 +185,6 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     }
   })
 
-  /**
-   * Reads the link store (via `getInputNode`) and the node output store, so the
-   * preview follows the image input being connected, swapped, or disconnected —
-   * not just the upstream node producing new outputs.
-   */
   const inputImageUrl = computed<string | null>(() => {
     const cropNode = node.value
     if (!cropNode) return null
@@ -208,12 +203,16 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     { immediate: true }
   )
 
-  watch(imageUrl, (url, previous) => {
-    const next = imageCropLoadingAfterUrlChange(url, previous)
-    if (next !== null) {
-      isLoading.value = next
-    }
-  })
+  watch(
+    imageUrl,
+    (url, previous) => {
+      const next = imageCropLoadingAfterUrlChange(url, previous)
+      if (next !== null) {
+        isLoading.value = next
+      }
+    },
+    { immediate: true }
+  )
 
   const updateDisplayedDimensions = () => {
     if (!imageEl.value || !containerEl.value) return
@@ -586,10 +585,6 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     releasePointer(e)
     onEditEnd?.()
   }
-
-  onMounted(() => {
-    node.value = resolveNode(nodeId) ?? null
-  })
 
   return {
     imageUrl,

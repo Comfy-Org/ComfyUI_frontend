@@ -1,30 +1,11 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
 
 import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
 
 import CheckoutSavedMethods from './CheckoutSavedMethods.vue'
 import { checkoutCopy } from './__fixtures__/copy'
-
-const SelectStub = defineComponent({
-  name: 'CheckoutSavedMethodSelect',
-  props: {
-    options: { type: Array<{ name: string; value: string }>, required: true }
-  },
-  emits: ['update:modelValue'],
-  setup(props, { emit }) {
-    return () =>
-      props.options.map((option) =>
-        h(
-          'button',
-          { onClick: () => emit('update:modelValue', option.value) },
-          option.name
-        )
-      )
-  }
-})
 
 const card: SavedPaymentMethod = {
   id: 'pm_card',
@@ -49,8 +30,7 @@ function renderMethods(methods: SavedPaymentMethod[]) {
       selectedMethodId: 'pm_card',
       onChangePaymentMethod,
       'onUpdate:selectedMethodId': onUpdate
-    },
-    global: { stubs: { CheckoutSavedMethodSelect: SelectStub } }
+    }
   })
   return { onChangePaymentMethod, onUpdate }
 }
@@ -63,15 +43,17 @@ describe('CheckoutSavedMethods', () => {
 
   it('selects another saved method from the picker', async () => {
     const { onUpdate, onChangePaymentMethod } = renderMethods([card, alipay])
-    await userEvent.click(screen.getByRole('button', { name: 'Alipay' }))
+    await userEvent.click(screen.getByRole('combobox'))
+    await userEvent.click(screen.getByRole('option', { name: 'Alipay' }))
     expect(onUpdate).toHaveBeenCalledWith('pm_alipay')
     expect(onChangePaymentMethod).not.toHaveBeenCalled()
   })
 
   it('clears the selection and asks for a new method from its last option', async () => {
     const { onUpdate, onChangePaymentMethod } = renderMethods([card, alipay])
+    await userEvent.click(screen.getByRole('combobox'))
     await userEvent.click(
-      screen.getByRole('button', { name: 'Add new payment method' })
+      screen.getByRole('option', { name: 'Add new payment method' })
     )
     expect(onUpdate).toHaveBeenCalledWith(null)
     expect(onChangePaymentMethod).toHaveBeenCalledOnce()

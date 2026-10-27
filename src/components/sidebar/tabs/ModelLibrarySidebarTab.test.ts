@@ -95,9 +95,12 @@ vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), async () => {
   }
 })
 
-vi.mock<unknown>(import('./SidebarTopArea.vue'), () => ({
-  default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
-}))
+vi.mock<unknown>(
+  import('@comfyorg/design-system/navigation/SidebarTopArea'),
+  () => ({
+    default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
+  })
+)
 
 vi.mock<unknown>(import('./SidebarTabTemplate.vue'), () => ({
   default: {

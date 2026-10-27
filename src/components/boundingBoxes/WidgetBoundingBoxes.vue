@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
 import BoundingBoxesEditor from '@/components/boundingBoxes/BoundingBoxesEditor.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'

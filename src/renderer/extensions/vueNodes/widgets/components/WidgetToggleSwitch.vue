@@ -46,8 +46,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Switch from '@/components/ui/switch/Switch.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import Switch from '@comfyorg/design-system/switch/Switch'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'

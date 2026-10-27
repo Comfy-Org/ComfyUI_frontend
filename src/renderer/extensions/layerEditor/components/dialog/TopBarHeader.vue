@@ -23,8 +23,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
 
 const { t } = useI18n()
 </script>

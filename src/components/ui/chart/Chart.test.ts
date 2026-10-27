@@ -8,7 +8,7 @@ import { nextTick, reactive, toRaw } from 'vue'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import { getChartByName } from './__tests__/chartTestUtils'
-import ChartComponent from './Chart.vue'
+import ChartComponent from '@comfyorg/design-system/chart/Chart'
 
 describe('Chart', () => {
   beforeEach(stubCanvasGetContext)

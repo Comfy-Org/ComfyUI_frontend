@@ -163,8 +163,7 @@ function recordEnv(options: Options, catalogPath: string, secret: string) {
     AGENT_ENGINE: options.engine,
     AGENT_M2M_SECRET: secret,
     AGENT_PORT: String(options.agentPort),
-    // Without this the non-standalone default is cloud, and comfy-cli edits 401 against cloud.comfy.org.
-    AGENT_TARGET: 'local',
+    AGENT_TARGET: options.target,
     AGENT_WIDGET_CATALOG_PATH: catalogPath,
     DB_CONNECTION_STRING: `postgresql://postgres:postgres@127.0.0.1:${PG_PORT}/postgres?sslmode=disable`,
     DOC_HOST_ENDPOINT: `http://127.0.0.1:${options.docHostPort}`,
@@ -199,7 +198,7 @@ export async function runRecord(options: Options): Promise<number> {
   try {
     catalogPath = await writeCatalog(options.catalog, dataDir)
     pgExec = await pgExecCommand(options.pgExec)
-    redisExec = await redisExecCommand()
+    redisExec = options.redisExec || (await redisExecCommand())
     await seedIdentity(pgExec)
   } catch (error) {
     await rm(dataDir, { force: true, recursive: true })
@@ -274,7 +273,7 @@ export async function runRecord(options: Options): Promise<number> {
 Recording stack ready: agent ${agentUrl}, doc host http://127.0.0.1:${options.docHostPort}
 Record a case with:
 
-AGENT_CLOUD_SHA=${cloudSha} AGENT_MODEL=<model> \\
+AGENT_CLOUD_SHA=${cloudSha} AGENT_MODEL=<model>${options.target === 'cloud' ? ' AGENT_TURN_TOKEN=<cloud-api-key>' : ''} \\
 AGENT_M2M_SECRET_FILE=${secretPath} AGENT_FULLSTACK_URL=${agentUrl} \\
 AGENT_WORKSPACE_ID=${RECORD_WORKSPACE_ID} AGENT_USER_ID=${RECORD_USER_ID} \\
 AGENT_PG_EXEC="${pgExec}" \\

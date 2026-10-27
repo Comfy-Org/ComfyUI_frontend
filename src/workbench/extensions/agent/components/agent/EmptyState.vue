@@ -3,7 +3,7 @@ import { computed, onMounted, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { FALLBACK_LOCALE } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import type { AgentStarterPromptAssignment } from '@/platform/telemetry/types'

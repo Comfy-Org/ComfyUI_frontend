@@ -12,8 +12,8 @@ value.
 
 ## Scope
 
-Write stories for shared presentational components: `src/components/ui/**`,
-design-system pieces, widgets, cards, banners. Skip containers that own data
+Write stories for shared presentational components:
+`packages/design-system/src/components/**`, widgets, cards, banners. Skip containers that own data
 fetching or orchestration; story their presentational child instead. Skip
 PrimeVue wrappers that add no visual behavior.
 
