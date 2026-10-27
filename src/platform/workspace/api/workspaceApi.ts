@@ -54,7 +54,7 @@ import {
   zRetentionAcceptance,
   zRetentionFlowResponse
 } from '@comfyorg/ingest-types/zod'
-import type { AxiosInstance } from 'axios'
+import type { AxiosInstance, AxiosRequestConfig } from 'axios'
 import axios from 'axios'
 
 import {
@@ -248,34 +248,39 @@ function handleAxiosError(
   throw err
 }
 
+/** For callers that already retry on their own schedule. */
+interface ReadOptions {
+  skipStatusRetry?: boolean
+}
+
+function withReadOptions(
+  auth: AxiosRequestConfig,
+  { skipStatusRetry }: ReadOptions
+): AxiosRequestConfig {
+  return skipStatusRetry ? { ...auth, __skipStatusRetry: true } : auth
+}
+
 export const workspaceApi = {
-  /**
-   * List all workspaces the user has access to
-   * GET /api/workspaces
-   */
-  async list(): Promise<ListWorkspacesResponse> {
+  async list(options: ReadOptions = {}): Promise<ListWorkspacesResponse> {
     const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.get<ListWorkspacesResponse>(
         workspaceApiUrl('/workspaces'),
-        auth
+        withReadOptions(auth, options)
       )
       return response.data
     } catch (err) {
       handleAxiosError(err, 'list')
     }
   },
-
-  /**
-   * Get the workspace bound to the current credential
-   * GET /api/workspaces/current
-   */
-  async getCurrentWorkspace(): Promise<CurrentWorkspaceResponse> {
+  async getCurrentWorkspace(
+    options: ReadOptions = {}
+  ): Promise<CurrentWorkspaceResponse> {
     const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.get<CurrentWorkspaceResponse>(
         workspaceApiUrl('/workspaces/current'),
-        auth
+        withReadOptions(auth, options)
       )
       return response.data
     } catch (err) {
@@ -336,7 +341,11 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<WorkspaceDeploymentList>(
         workspaceApiUrl(`/workspaces/${workspaceId}/deployments`),
-        { ...auth, timeout: DEPLOYMENT_LISTING_TIMEOUT_MS }
+        {
+          ...auth,
+          timeout: DEPLOYMENT_LISTING_TIMEOUT_MS,
+          __skipStatusRetry: true
+        }
       )
       return response.data
     } catch (err) {

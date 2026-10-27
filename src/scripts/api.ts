@@ -84,6 +84,9 @@ import type {
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { retryingSend } from '@/utils/fetchWithRetry'
+import { NO_RETRY_POLICY } from '@/utils/retryPolicy'
+import type { RetryPolicy } from '@/utils/retryPolicy'
 import {
   fetchHistory,
   fetchJobAssets,
@@ -154,6 +157,8 @@ interface FetchApiOptions extends RequestInit {
   onAuthScheme?: (scheme: AuthScheme) => void
   /** Reports the kind of credential sent, to tell a missing token from a wrong one. */
   onAuthCredential?: (credential: AuthCredential) => void
+  /** Send once, for callers that already retry on their own backoff. */
+  skipStatusRetry?: boolean
 }
 
 const FETCH_ROUTE_GROUPS = new Set([
@@ -546,11 +551,16 @@ export class ComfyApi extends EventTarget {
     this.authProvider = provider
   }
 
-  private async getWebSessionSend(): Promise<WebSessionSend | undefined> {
+  private async getWebSessionSend(
+    retryPolicy?: RetryPolicy
+  ): Promise<WebSessionSend | undefined> {
     const requests = webSessionRequests()
     if (!requests) return undefined
     const scope = await requests.scope()
-    return scope && ((url, init) => requests.send(url, init, scope))
+    return (
+      scope &&
+      retryingSend((url, init) => requests.send(url, init, scope), retryPolicy)
+    )
   }
 
   /** Sends a same-origin request on the web session; undefined when this tab is not on it. */
@@ -602,15 +612,17 @@ export class ComfyApi extends EventTarget {
       onAuthHeader,
       onAuthScheme,
       onAuthCredential,
+      skipStatusRetry,
       ...requestOptions
     } = options ?? {}
+    const retryPolicy = skipStatusRetry ? NO_RETRY_POLICY : undefined
     const headers: HeadersInit = requestOptions.headers ?? {}
     let unifiedRetryOn401 = false
     let sendOnWebSession: WebSessionSend | undefined
 
     if (isCloud) {
       await this.authProvider.waitForInitialization()
-      sendOnWebSession = await this.getWebSessionSend()
+      sendOnWebSession = await this.getWebSessionSend(retryPolicy)
       if (sendOnWebSession) {
         onAuthHeader?.(true)
         onAuthScheme?.('web-session')
@@ -710,7 +722,8 @@ export class ComfyApi extends EventTarget {
           this.apiURL(route),
           init,
           unifiedRetryOn401,
-          retrySignalLifecycle
+          retrySignalLifecycle,
+          retryPolicy
         )
     return response.finally(() => {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
@@ -1613,8 +1626,10 @@ export class ComfyApi extends EventTarget {
    * Gets all setting values for the current user
    * @returns { Promise<string, unknown> } A dictionary of id -> value
    */
-  async getSettings(): Promise<Settings> {
-    const resp = await this.fetchApi('/settings')
+  async getSettings(
+    options?: Pick<FetchApiOptions, 'skipStatusRetry'>
+  ): Promise<Settings> {
+    const resp = await this.fetchApi('/settings', options)
 
     if (resp.status == 401) {
       // `statusText` is ALWAYS empty over HTTP/2 — the protocol carries no
