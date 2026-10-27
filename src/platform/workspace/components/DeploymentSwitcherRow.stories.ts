@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { DropdownMenuRadioGroup } from 'reka-ui'
 
-import Menu from '@/components/ui/menu/Menu.vue'
+import Menu from '@comfyorg/design-system/menu/Menu'
 
 import DeploymentSwitcherRow from './DeploymentSwitcherRow.vue'
 

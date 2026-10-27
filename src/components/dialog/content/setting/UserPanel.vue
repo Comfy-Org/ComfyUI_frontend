@@ -94,7 +94,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import SignOutEverywhereButton from '@/platform/auth/session/components/SignOutEverywhereButton.vue'

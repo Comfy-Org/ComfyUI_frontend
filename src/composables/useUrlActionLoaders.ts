@@ -13,9 +13,9 @@ import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
+import { useCreateWorkspaceUrlLoader } from '@/platform/account/composables/useCreateWorkspaceUrlLoader'
 import { useDeploymentUrlLoader } from '@/platform/workspace/composables/useDeploymentUrlLoader'
-import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
+import { useInviteUrlLoader } from '@/platform/account/composables/useInviteUrlLoader'
 import { useWorkspaceUrlLoader } from '@/platform/workspace/composables/useWorkspaceUrlLoader'
 
 interface UrlActionStep {

@@ -10,7 +10,7 @@ description: >
 
   The convention: any required check that can fail for a reason not obvious
   from its name should call this. The checks nobody has to ask about
-  (Playwright, Storybook, website E2E, the Vercel preview) are the ones that
+  (Playwright, Storybook, the Vercel preview) are the ones that
   already put a section in the PR comment; the ones people get stuck on are the
   ones whose docs live in a workflow header, a scripts/ README, or Notion.
 

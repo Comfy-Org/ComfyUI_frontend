@@ -58,6 +58,7 @@
     "coachGraphTitle": "Deixe o agente executar enquanto você edita",
     "coachHistoryBody": "As conversas anteriores são salvas aqui. Abra uma para revisá-la ou continue trabalhando com o agente.",
     "coachHistoryTitle": "Retome de onde parou",
+    "coachHoldNotice": "Sua mensagem será enviada quando você concluir ou pular o tour.",
     "coachProgress": "{current} de {total}",
     "coachTitle": "Conheça seu Agente Comfy",
     "coachWorkflowBody": "Ele alterna junto com suas abas até que você envie uma mensagem, escolha um fluxo de trabalho ou adicione uma referência de nó.",
@@ -131,6 +132,7 @@
     "feedbackCaption": "Enviar feedback",
     "focusNode": "Mostrar na tela",
     "focusNodeLabel": "Mostrar {node} na tela",
+    "followedChatOpenFailed": "Não foi possível abrir o chat para {workflowName}.",
     "freeUseNotice": "Experimente seu primeiro chat gratuitamente!",
     "freeUseNoticeLabel": "Aviso de uso gratuito",
     "friend": "aí",
@@ -168,6 +170,8 @@
     "nodesAdded": "O agente adicionou 1 nó ao grafo | O agente adicionou {count} nós ao grafo",
     "notHelpful": "Não foi útil",
     "openWorkflowTab": "Abrir {name}",
+    "openingChat": "Abrindo o chat…",
+    "openingWorkflowChat": "Abrindo o chat para {workflowName}…",
     "otherOpenWorkflows": "Outros fluxos de trabalho abertos",
     "paywall": {
       "addCredits": "Adicionar créditos",
@@ -193,13 +197,14 @@
     "removeNodeLabel": "Remover referência a {node}",
     "removeWorkflowReference": "Remover referência a {name}",
     "retryAfterSeconds": "Você pode tentar novamente em {seconds}s.",
+    "retryFollowedChat": "Tentar abrir novamente o chat para {workflowName}",
     "runApproval": {
       "answerFailed": "Não foi possível enviar sua resposta. Recarregue a página e tente novamente.",
       "answerSuperseded": "Isso já foi respondido em outro lugar, então essa resposta foi usada em vez da sua.",
       "answerUncertain": "Não foi possível confirmar que sua resposta chegou ao agente. Ela ainda pode ter sido aplicada — recarregue a página para ver a situação.",
       "cancel": "Cancelar",
-      "lead": "Esta ferramenta deseja executar o fluxo de trabalho:",
-      "leadBound": "Esta ferramenta quer executar este fluxo de trabalho.",
+      "lead": "O Comfy Agent quer executar o fluxo de trabalho:",
+      "leadBound": "O Agente Comfy quer executar este fluxo de trabalho.",
       "question": "Você aprova?",
       "run": "Executar",
       "thisWorkflow": "este fluxo de trabalho"
@@ -310,6 +315,7 @@
     "workflowSyncFailedDetail": "Este fluxo de trabalho foi criado com uma versão de documento incompatível. Sua tela foi mantida inalterada.",
     "workflowSyncFailedDetailCatalogMismatch": "Um nó deste fluxo de trabalho foi alterado desde a última vez que o agente o viu. Seu canvas foi mantido inalterado. Sua próxima mensagem enviará seu canvas para que o agente possa recriar sua cópia do fluxo de trabalho.",
     "workflowSyncFailedDetailStaleClient": "Esta página está desatualizada, portanto as alterações do agente não podem ser exibidas. Recarregue a página para vê-las.",
+    "workflowSyncFailedDetailStaleHost": "Esta página está adiantada em relação ao serviço do agente, então as alterações do agente ainda não podem ser mostradas aqui. Recarregue a página quando o serviço terminar de atualizar para vê-las.",
     "workflowSyncFailedTitle": "Não é possível sincronizar este fluxo de trabalho",
     "workflows": "Fluxos de trabalho",
     "working": "Trabalhando..."
@@ -1259,6 +1265,13 @@
       "openCheckout": "Abrir checkout",
       "openPaymentPage": "Abrir página de pagamento",
       "payAmount": "Pagar {amount}",
+      "paymentProcessingBody": "Não é necessário pagar novamente.",
+      "paymentProcessingFlyout": "Pagamento em processamento. Você não precisa pagar novamente.",
+      "paymentProcessingTitle": "Um pagamento de {amount} ainda está em processamento",
+      "paymentProcessingTitleNoAmount": "Um pagamento ainda está em processamento",
+      "planRequiredFreeRuns": "A compra de créditos não inicia um plano Cloud. Assine para continuar executando fluxos de trabalho quando suas execuções gratuitas acabarem.",
+      "planRequiredResubscribe": "A compra de créditos não reinicia seu plano Cloud. Assine novamente para executar fluxos de trabalho no Cloud.",
+      "planRequiredSubscribe": "A compra de créditos não inicia um plano Cloud. Assine para executar fluxos de trabalho no Cloud.",
       "purchaseError": "Falha na compra",
       "purchaseErrorDetail": "Falha ao comprar créditos: {error}",
       "purchaseSuccess": "Créditos adicionados com sucesso!",
@@ -1450,15 +1463,18 @@
     "lookupUnavailable": "Não foi possível verificar em qual implantação este editor é executado.",
     "lookupUnavailableDetail": "Os modelos exibidos são os do Comfy Cloud. Recarregue para tentar novamente.",
     "membersStartOn": "Membros sem uma seleção própria iniciam em",
+    "missingNodes": "Falta {count} nó | Faltam {count} nós",
     "nameWithVersion": "{name} · v{version}",
     "namedDeployment": "{name}",
     "noDeployments": "Este espaço de trabalho ainda não tem implantações.",
+    "notChecked": "Não verificado",
     "notReadyTooltip": "Em execução em {deployment}. Ela não está pronta, portanto as tarefas não serão executadas até que esteja.",
     "pickGone": "A implantação que você selecionou não existe mais.",
     "pickGoneDetail": "Este navegador agora é executado no Comfy Cloud. Selecione uma implantação novamente para usar uma.",
     "releaseChanged": "Esta implantação agora executa uma versão diferente. Recarregue para obter seus nós.",
     "reload": "Recarregar",
     "runOn": "Executar em",
+    "runsThisWorkflow": "Executa este fluxo de trabalho",
     "status": {
       "notReady": "Não está pronto",
       "provisioning": "Iniciando",
@@ -1472,6 +1488,13 @@
     "triggerLabel": "Em execução em {deployment}. Escolha onde este editor é executado",
     "triggerLabelNotReady": "{status} Escolha onde este editor é executado",
     "unnamedDeployment": "Implantação {id}",
+    "unsaved": {
+      "message": "Mudar para {deployment} recarrega a aba. Estes fluxos de trabalho têm alterações que ainda não foram salvas.",
+      "saveAndSwitch": "Salvar e mudar",
+      "switchWithoutSaving": "Mudar sem salvar",
+      "tabsReturn": "Suas abas abertas voltarão após a recarga de qualquer forma.",
+      "title": "Salvar seus fluxos de trabalho antes de mudar?"
+    },
     "workspaceDefault": "Padrão do espaço de trabalho"
   },
   "desktopLogin": {
@@ -1960,8 +1983,11 @@
     "missingMedia": "Alguns nós estão sem as entradas necessárias",
     "missingModels": "{count} modelo necessário está ausente | {count} modelos necessários estão ausentes",
     "missingNodes": "Alguns nós estão ausentes e precisam ser instalados",
+    "moreDeployments": "mais {count}",
     "multipleIssueCount": "{count} problema encontrado | {count} problemas encontrados",
     "multipleIssuesMessage": "Resolva estes problemas antes de executar o fluxo de trabalho.",
+    "runsOn": "É executado em {deployment}",
+    "switchDeployment": "Mudar",
     "viewDetails": "Ver detalhes"
   },
   "errorPanelSurvey": {
@@ -2031,6 +2057,7 @@
     "addNode": "Adicionar um nó...",
     "addNodeFilterCondition": "Adicionar condição de filtro de nó",
     "agentModified": "O agente atualizou este fluxo de trabalho",
+    "agentNeedsApproval": "O agente precisa da sua aprovação",
     "agentWorking": "O agente está trabalhando neste fluxo de trabalho",
     "all": "Todos",
     "allKeybindingsReset": "Todos os atalhos redefinidos para o padrão",
@@ -2695,6 +2722,19 @@
   },
   "issueReport": {
     "helpFix": "Ajude a Corrigir Isto"
+  },
+  "lateCustomNodes": {
+    "failed": "Alguns nós personalizados não foram iniciados",
+    "failedDetail": "Recarregue a página para ativar: {packs}",
+    "ready": "Os nós personalizados estão prontos",
+    "reload": "Recarregar",
+    "starting": "Os nós personalizados estão sendo iniciados... {seconds} s",
+    "startingDetail": "Geralmente leva cerca de 20 s. Os botões e menus deles aparecerão aqui automaticamente.",
+    "stepBuilding": "Compilando o servidor para seus nós personalizados.\nConfiguração inicial para esta versão; leva alguns minutos.",
+    "stepCreating": "Criando o servidor para seus nós personalizados.\nConfiguração inicial.",
+    "stepStarting": "Carregando nós personalizados.\nIsso geralmente leva menos de meio minuto.",
+    "waitingBadge": "Aguardando o pacote dele",
+    "waitingFor": "Aguardando: {packs}"
   },
   "layerEditor": {
     "alignBottom": "Alinhar à base",
@@ -3431,7 +3471,6 @@
     "Node Library": "Biblioteca de nós",
     "Node Links": "Ligações de nós",
     "Open": "Abrir",
-    "Open 3D Viewer (Beta) for Selected Node": "Abrir Visualizador 3D (Beta) para o Nó Selecionado",
     "Open Color Picker in MaskEditor": "Abrir seletor de cores no MaskEditor",
     "Open Custom Nodes Folder": "Abrir pasta de nós personalizados",
     "Open DevTools": "Abrir DevTools",
@@ -4154,13 +4193,16 @@
       "unknownCategory": "Desconhecido"
     },
     "missingNodePacks": {
+      "andMore": "e mais {count}",
       "applyChanges": "Aplicar alterações",
       "collapse": "Recolher",
       "expand": "Expandir",
       "installAll": "Instalar todos",
       "installed": "Instalado",
       "installing": "Instalando...",
+      "noDeploymentRunsIt": "Nenhuma implantação neste espaço de trabalho tem todos estes nós.",
       "ossManagerDisabledHint": "Para instalar nós ausentes, primeiro execute {pipCmd} no seu ambiente Python para instalar o Node Manager e depois reinicie o ComfyUI com a flag {flag}.",
+      "runsOn": "É executado em:",
       "title": "Pacotes de nós ausentes",
       "unknownPack": "Pacote desconhecido",
       "unsupportedTitle": "Pacotes de nós não suportados",
@@ -5730,7 +5772,7 @@
         "title": "A recarga automática falhou"
       },
       "autoTopUpOff": {
-        "body": "Seu cartão foi recusado 3 vezes seguidas. Atualize sua forma de pagamento e reative a recarga automática.",
+        "body": "Sua forma de pagamento foi recusada 3 vezes seguidas. Atualize sua forma de pagamento e ative novamente a recarga automática.",
         "title": "Recarga automática desativada"
       },
       "ending": {
@@ -5761,6 +5803,11 @@
         "personalBody": "Você usou todos os seus créditos. Adicione mais créditos ou aguarde até que os créditos sejam recarregados em {date}.",
         "personalBodyNoDate": "Você usou todos os seus créditos. Adicione mais créditos.",
         "title": "Sem créditos"
+      },
+      "parked": {
+        "body": "Entre em contato com o suporte para que possamos resolver o problema.",
+        "contactSupport": "Contatar o suporte",
+        "title": "Algo deu errado com um pagamento recente"
       },
       "paused": {
         "body": "A assinatura deste workspace está pausada. Atualize o pagamento para retomar."
@@ -5834,8 +5881,6 @@
         "planTooltip": "Créditos incluídos no seu plano. Eles são renovados a cada período de cobrança.",
         "rateInfo": "Sobre os créditos",
         "rateTooltip": "Os créditos pagam pelas execuções. {credits} créditos = US$ 1.",
-        "resubscribe": "Assine novamente para usar créditos na Nuvem.",
-        "subscribe": "Assine para usar créditos na Nuvem.",
         "title": "Créditos",
         "topUp": "Recarga",
         "topUpTooltip": "Créditos que você adicionou. Eles são usados quando os créditos do plano acabam.",
@@ -5855,6 +5900,7 @@
       "plan": {
         "actions": {
           "choosePlan": "Escolher um plano",
+          "contactSales": "Contatar vendas",
           "manage": "Gerenciar",
           "resume": "Retomar plano",
           "stay": "Permanecer no {plan}",
@@ -5886,6 +5932,22 @@
         },
         "unknown": {
           "title": "Seu plano"
+        }
+      },
+      "topupCheckout": {
+        "creditsApplying": {
+          "body": "Seus créditos estão sendo adicionados. Você não receberá outra cobrança.",
+          "title": "Pagamento recebido"
+        },
+        "dismiss": "Fechar",
+        "failed": {
+          "body": "Nenhum crédito foi adicionado. Tente novamente ou use outra forma de pagamento.",
+          "title": "Sua recarga de {amount} não foi concluída",
+          "titleNoAmount": "Sua recarga não foi concluída"
+        },
+        "processing": {
+          "body": "Seu banco está confirmando o pagamento. Os créditos são adicionados assim que ele for aprovado, então você não precisa pagar novamente.",
+          "title": "Pagamento em processamento"
         }
       },
       "tryAgain": "Tentar novamente"

@@ -69,8 +69,8 @@ import { useResizeObserver } from '@vueuse/core'
 import { DropdownMenuItemIndicator } from 'reka-ui'
 import { computed, onMounted, onUpdated, ref, useId, useTemplateRef } from 'vue'
 
-import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
-import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
+import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import {
   switcherItemClass,

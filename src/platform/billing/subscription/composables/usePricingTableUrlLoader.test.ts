@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
 
-import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
+import type { TeamCreditStops } from '@comfyorg/billing-core'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import { usePricingTableUrlLoader } from './usePricingTableUrlLoader'
 
@@ -23,7 +24,7 @@ vi.mock(
 vi.mock(import('vue-router'))
 
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')
@@ -38,7 +39,7 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 const mockCanOpenPricingSurface = vi.hoisted(() => ({ value: true }))
 
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
@@ -70,11 +71,15 @@ function setRouteQuery(value: LocationQueryRaw) {
 
 describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
-    const workspaceUI = useWorkspaceUI()
+    const workspaceUI = useBillingUI()
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
       ...defaultPermissions,
-      ...mockPermissions.value
+      ...mockPermissions.value,
+      canManageSubscription: receiveServerFact(
+        'can_manage_subscription',
+        mockPermissions.value.canManageSubscription
+      )
     }))
     workspaceUI.canOpenPricingSurface = computed(
       () => mockCanOpenPricingSurface.value

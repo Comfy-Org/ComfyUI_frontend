@@ -9,12 +9,9 @@
       <div class="flex items-center gap-2">
         <i
           :class="
-            cn(
-              'size-4 shrink-0',
-              banner.kind === 'verifyPayment'
-                ? 'icon-[lucide--triangle-alert] text-warning'
-                : 'icon-[lucide--circle-alert] text-muted-foreground'
-            )
+            banner.kind === 'verifyPayment'
+              ? 'icon-[lucide--triangle-alert] text-warning'
+              : 'icon-[lucide--circle-alert] text-muted-foreground'
           "
           aria-hidden="true"
         />
@@ -45,11 +42,10 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { PlanCheckoutBanner } from '@/platform/billing/components/billingTab/planCheckoutBanner'
 
 const { banner } = defineProps<{
