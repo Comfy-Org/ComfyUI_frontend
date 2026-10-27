@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
-  hasHandledImageLoad,
+  imageLoadProgress,
   restoreImageSrc,
   trackHandledImageLoads
 } from '@e2e/fixtures/utils/imageLoadSpy'
@@ -56,6 +56,12 @@ for (const mode of ['canvas', 'vue'] as const) {
 
         await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
         await expect.poll(() => held.length).toBeGreaterThan(0)
+        if (mode === 'vue')
+          await expect(
+            comfyPage.vueNodes
+              .getNodeLocator(SHARED_NODE.id)
+              .getByTestId('main-image')
+          ).toBeAttached()
 
         const workflowsTab = comfyPage.menu.workflowsTab
         await workflowsTab.open()
@@ -64,7 +70,13 @@ for (const mode of ['canvas', 'vue'] as const) {
 
         for (const route of held.splice(0)) await route.fallback()
         await expect
-          .poll(() => hasHandledImageLoad(page, 'example.png'))
+          .poll(async () => {
+            const { started, handled } = await imageLoadProgress(
+              page,
+              'example.png'
+            )
+            return started > 0 && handled === started
+          })
           .toBe(true)
 
         expect(await firstNodeState()).toEqual(SHARED_NODE)

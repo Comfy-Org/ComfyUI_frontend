@@ -1,11 +1,13 @@
 import type { Page } from '@playwright/test'
 
+type TrackedImage = { src: string; handled: boolean }
+
 type ImageLoadWindow = Window & {
-  __handledImageLoads?: string[]
+  __trackedImages?: Map<HTMLImageElement, TrackedImage>
   __restoreImageSrc?: () => void
 }
 
-/** Records each image URL once all of its `load` listeners have run. */
+/** Tracks each image's latest `src` and whether all its `load` listeners have run. */
 export async function trackHandledImageLoads(page: Page) {
   await page.evaluate(() => {
     const w = window as ImageLoadWindow
@@ -13,13 +15,19 @@ export async function trackHandledImageLoads(page: Page) {
       HTMLImageElement.prototype,
       'src'
     )!
-    w.__handledImageLoads = []
+    const tracked = new Map<HTMLImageElement, TrackedImage>()
+    w.__trackedImages = tracked
     Object.defineProperty(HTMLImageElement.prototype, 'src', {
       ...src,
       set(this: HTMLImageElement, value: string) {
+        const entry = { src: value, handled: false }
+        tracked.set(this, entry)
         this.addEventListener(
           'load',
-          () => setTimeout(() => w.__handledImageLoads?.push(this.src)),
+          () =>
+            setTimeout(() => {
+              entry.handled = true
+            }),
           { once: true }
         )
         src.set!.call(this, value)
@@ -30,14 +38,17 @@ export async function trackHandledImageLoads(page: Page) {
   })
 }
 
-export function hasHandledImageLoad(page: Page, urlPart: string) {
-  return page.evaluate(
-    (part) =>
-      (window as ImageLoadWindow).__handledImageLoads?.some((url) =>
-        url.includes(part)
-      ) ?? false,
-    urlPart
-  )
+/** Counts images whose `src` contains `urlPart`, and how many of them have had their `load` handled. */
+export function imageLoadProgress(page: Page, urlPart: string) {
+  return page.evaluate((part) => {
+    const images = [
+      ...((window as ImageLoadWindow).__trackedImages?.values() ?? [])
+    ].filter(({ src }) => src.includes(part))
+    return {
+      started: images.length,
+      handled: images.filter(({ handled }) => handled).length
+    }
+  }, urlPart)
 }
 
 export async function restoreImageSrc(page: Page) {
