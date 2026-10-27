@@ -353,10 +353,12 @@ export function registerAgentPanelExtension(): void {
         }
         if (!resolvedUserInfo.value || workspaceStore.isSwitching) return true
         resumingAccept = true
-        void resumeAcceptAfterReload(takePendingSignInAccept() ?? '').finally(() => {
-          resumingAccept = false
-          loadConsentIfEligible()
-        })
+        void resumeAcceptAfterReload(takePendingSignInAccept() ?? '').finally(
+          () => {
+            resumingAccept = false
+            loadConsentIfEligible()
+          }
+        )
         return true
       }
 
