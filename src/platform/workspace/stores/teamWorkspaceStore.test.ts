@@ -239,7 +239,9 @@ describe('useTeamWorkspaceStore', () => {
 
       await store.initialize()
 
-      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
+      expect(mockWorkspaceApi.list).toHaveBeenCalledExactlyOnceWith({
+        skipStatusRetry: true
+      })
       expect(store.initState).toBe('ready')
       expect(store.workspaces).toHaveLength(2)
       expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
