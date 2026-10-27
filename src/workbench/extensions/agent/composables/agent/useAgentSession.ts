@@ -1687,18 +1687,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
     if (submitted === undefined) return
-    const changes = diffAnswers(
-      submitted,
-      committed,
-      Array.isArray(source.selected)
-    )
+    const selectionKnown = Array.isArray(source.selected)
+    const changes = diffAnswers(submitted, committed, selectionKnown)
     if (!changes.selection_changed && !changes.other_text_changed) return
     reportError(new Error('agent ask resolved with a different answer'), {
       surface: 'agent',
       errorType: 'agent_ask_answer_superseded',
       tags: {
         ...changes,
-        committed_selected_count: committed.selected.length,
+        selection_known: selectionKnown,
+        committed_selected_count: selectionKnown
+          ? committed.selected.length
+          : undefined,
         submitted_selected_count: submitted.selected.length
       }
     })

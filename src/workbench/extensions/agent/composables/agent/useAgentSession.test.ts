@@ -2357,6 +2357,7 @@ describe('useAgentSession (v1 composition root)', () => {
           tags: {
             selection_changed: true,
             other_text_changed: false,
+            selection_known: true,
             committed_selected_count: 1,
             submitted_selected_count: 1
           }
@@ -2465,10 +2466,13 @@ describe('useAgentSession (v1 composition root)', () => {
           expect.any(Error),
           expect.objectContaining({
             errorType: 'agent_ask_answer_superseded',
-            tags: expect.objectContaining({
+            tags: {
               selection_changed: false,
-              other_text_changed: true
-            })
+              other_text_changed: true,
+              selection_known: false,
+              committed_selected_count: undefined,
+              submitted_selected_count: 1
+            }
           })
         )
         expect(session.notices.value).toEqual([
@@ -3067,6 +3071,7 @@ describe('useAgentSession (v1 composition root)', () => {
         tags: {
           selection_changed: true,
           other_text_changed: false,
+          selection_known: true,
           committed_selected_count: 1,
           submitted_selected_count: 1
         }
