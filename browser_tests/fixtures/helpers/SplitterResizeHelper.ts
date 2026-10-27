@@ -25,7 +25,7 @@ async function placeNodeAt(
       const canvas = window.app!.canvas
       const node = window.app!.graph.nodes[0]
       const rect = canvas.canvas.getBoundingClientRect()
-      const [graphX, graphY] = canvas.ds.convertOffsetToCanvas([
+      const [graphX, graphY] = canvas.ds.convertCanvasToOffset([
         x - rect.left,
         y - rect.top
       ])
@@ -40,6 +40,27 @@ async function placeNodeAt(
   )
   await comfyPage.nextFrame()
   return nodeId
+}
+
+async function expectNodeUnder(
+  comfyPage: ComfyPage,
+  nodeId: NodeId,
+  point: { x: number; y: number }
+) {
+  const covered = await comfyPage.page.evaluate(
+    ({ id, x, y }) => {
+      const canvas = window.app!.canvas
+      const node = window.app!.graph.getNodeById(id)
+      const rect = canvas.canvas.getBoundingClientRect()
+      const [graphX, graphY] = canvas.ds.convertCanvasToOffset([
+        x - rect.left,
+        y - rect.top
+      ])
+      return node?.isPointInside(graphX, graphY) ?? false
+    },
+    { id: nodeId, ...point }
+  )
+  expect(covered).toBe(true)
 }
 
 async function nodePos(comfyPage: ComfyPage, nodeId: NodeId) {
@@ -75,6 +96,9 @@ export async function expectSidebarResizeLeavesNode(
 
   const { mouse } = comfyPage.page
   const startX = handleBox.x + handleBox.width / 2 + grabOffset
+  if (grabOffset > 0) {
+    await expectNodeUnder(comfyPage, nodeId, { x: startX, y: titleY })
+  }
   await mouse.move(startX, titleY)
   await mouse.down()
   await mouse.move(startX + DRAG_DISTANCE_PX, titleY, { steps: 20 })
@@ -106,6 +130,7 @@ export async function expectBottomPanelResizeLeavesNode(comfyPage: ComfyPage) {
     { x: startX, y: handleBox.y },
     'center'
   )
+  await expectNodeUnder(comfyPage, nodeId, { x: startX, y: startY })
   const before = await nodePos(comfyPage, nodeId)
 
   const { mouse } = comfyPage.page
