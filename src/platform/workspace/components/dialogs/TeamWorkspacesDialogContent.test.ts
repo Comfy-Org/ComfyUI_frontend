@@ -244,6 +244,21 @@ describe('TeamWorkspacesDialogContent', () => {
         screen.getByText('workspaceSwitcher.cannotCreateWorkspace')
       ).toBeInTheDocument()
     })
+
+    it('keeps a server refusal neutral at the owned-workspace limit', () => {
+      workspaceStore.workspaces = Array.from({ length: 10 }, (_, i) =>
+        createTeamWorkspace({ id: `ws-${i}`, name: `Team ${i}`, role: 'owner' })
+      )
+      workspaceStore.serverRefusesCreation = true
+      mountComponent()
+      expectNoCreateControls()
+      expect(
+        screen.getByText('workspaceSwitcher.cannotCreateWorkspace')
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('workspaceSwitcher.maxWorkspacesReached')
+      ).toBeNull()
+    })
   })
 
   describe('name validation', () => {

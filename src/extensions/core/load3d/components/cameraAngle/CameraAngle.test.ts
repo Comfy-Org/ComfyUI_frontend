@@ -87,21 +87,20 @@ vi.mock<unknown>(
   }
 )
 
-const { getNodeByLocatorIdMock } = vi.hoisted(() => ({
-  getNodeByLocatorIdMock: vi.fn(() => ({ id: 7 }))
+const { getNodeByLocatorIdMock, rootGraph } = vi.hoisted(() => ({
+  getNodeByLocatorIdMock: vi.fn<() => { id: number } | null>(() => ({ id: 7 })),
+  rootGraph: { events: new EventTarget() }
 }))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { rootGraphOrUndefined: {} }
+  app: { rootGraphOrUndefined: rootGraph }
 }))
 vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: getNodeByLocatorIdMock
 }))
 
-import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import CameraAngle from './CameraAngle.vue'
 
@@ -159,7 +158,7 @@ function api(): ApiMocks {
 
 describe('CameraAngle', () => {
   beforeEach(() => {
-    useCanvasStore().currentGraph = new LGraph()
+    rootGraph.events = new EventTarget()
     holder.state!.value = { horizontal: 0, vertical: 0, zoom: 5 }
     holder.viewMode!.value = 'camera'
     holder.previewVisible!.value = false
@@ -179,6 +178,26 @@ describe('CameraAngle', () => {
     expect(api().initialize).toHaveBeenCalledOnce()
 
     unmount()
+    expect(api().cleanup).toHaveBeenCalledOnce()
+  })
+
+  it('initializes the viewport again for the node a reloaded graph holds', async () => {
+    renderComponent()
+    getNodeByLocatorIdMock.mockReturnValueOnce({ id: 7 })
+
+    rootGraph.events.dispatchEvent(new Event('configured'))
+    await nextTick()
+
+    expect(api().initialize).toHaveBeenCalledTimes(2)
+  })
+
+  it('cleans up the viewport when a reload leaves no node behind', async () => {
+    renderComponent()
+    getNodeByLocatorIdMock.mockReturnValueOnce(null)
+
+    rootGraph.events.dispatchEvent(new Event('configured'))
+    await nextTick()
+
     expect(api().cleanup).toHaveBeenCalledOnce()
   })
 

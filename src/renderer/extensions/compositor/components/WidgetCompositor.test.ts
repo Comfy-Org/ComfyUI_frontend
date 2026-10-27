@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -15,10 +16,12 @@ import WidgetCompositor from './WidgetCompositor.vue'
 
 vi.mock(import('@/scripts/app'))
 
+const openCompositorEditor = vi.hoisted(() => vi.fn())
+
 vi.mock(
   import('@/renderer/extensions/compositor/composables/useCompositorEditor'),
   () => ({
-    useCompositorEditor: () => ({ openCompositorEditor: vi.fn() })
+    useCompositorEditor: () => ({ openCompositorEditor })
   })
 )
 vi.mock(
@@ -88,5 +91,22 @@ describe('WidgetCompositor', () => {
 
     const open = screen.getByTestId('compositor-open-button')
     expect(open.hasAttribute('disabled')).toBe(false)
+  })
+
+  it('opens the editor for the node a reloaded graph holds', async () => {
+    const graph = app.canvas.graph
+    if (!graph) throw new Error('Expected the app mock to provide a graph')
+    vi.mocked(graph.getNodeById).mockReturnValue(graphNode)
+    setCompositorLayers(graphNode, [
+      { filename: 'a.png', subfolder: '', type: 'temp' }
+    ])
+    renderWidget()
+    const reloadedNode = structuredClone(graphNode)
+    vi.mocked(graph.getNodeById).mockReturnValue(reloadedNode)
+
+    app.rootGraph.events.dispatch('configured')
+    await userEvent.click(screen.getByTestId('compositor-open-button'))
+
+    expect(openCompositorEditor.mock.lastCall?.[0]).toBe(reloadedNode)
   })
 })

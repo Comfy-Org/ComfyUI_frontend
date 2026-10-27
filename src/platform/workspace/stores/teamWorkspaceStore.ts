@@ -295,14 +295,14 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       ownedWorkspacesCount.value < MAX_OWNED_WORKSPACES
   )
 
-  /** Why creation is refused; `unknown` when the server gives no reason we can name. */
+  /** Why creation is refused; a server refusal without an organization stays `unknown`. */
   const createWorkspaceRefusal = computed<
     'organization' | 'limit' | 'unknown' | null
   >(() => {
     if (canCreateWorkspace.value) return null
     if (workspacesManagedByOrganization.value) return 'organization'
-    if (ownedWorkspacesCount.value >= MAX_OWNED_WORKSPACES) return 'limit'
-    return 'unknown'
+    if (serverRefusesCreation.value) return 'unknown'
+    return 'limit'
   })
 
   function applyWorkspaceList(response: ListedWorkspaces): void {

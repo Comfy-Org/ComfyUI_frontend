@@ -1533,24 +1533,32 @@ describe('useTeamWorkspaceStore', () => {
         reason: 'organization',
         response: {
           workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
-          default_workspace_id: mockTeamWorkspace.id
+          default_workspace_id: mockTeamWorkspace.id,
+          can_create_workspace: false
+        }
+      },
+      {
+        reason: 'unknown',
+        response: {
+          workspaces: [mockPersonalWorkspace, ...ownedTeams(9)],
+          can_create_workspace: false
+        }
+      },
+      {
+        reason: 'unknown',
+        response: {
+          workspaces: [mockPersonalWorkspace],
+          can_create_workspace: false
         }
       },
       {
         reason: 'limit',
         response: { workspaces: [mockPersonalWorkspace, ...ownedTeams(9)] }
-      },
-      {
-        reason: 'unknown',
-        response: { workspaces: [mockPersonalWorkspace] }
       }
     ])(
-      'names the $reason refusal from a can_create_workspace: false list',
+      'names the $reason refusal from the workspace list',
       async ({ reason, response }) => {
-        mockWorkspaceApi.list.mockResolvedValue({
-          ...response,
-          can_create_workspace: false
-        })
+        mockWorkspaceApi.list.mockResolvedValue(response)
 
         const store = useTeamWorkspaceStore()
         await store.initialize()

@@ -110,5 +110,24 @@ test.describe(
         })
       })
     }
+
+    test(
+      'uploads a PNG after skipping corrupt compressed metadata',
+      {
+        tag: '@canvas'
+      },
+      async ({ comfyPage, page }) => {
+        await comfyPage.dragDrop.dragAndDropFilePath(
+          metadataFixturePath('corrupt_compressed_itxt.png'),
+          { waitForUpload: true }
+        )
+
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        expect(
+          await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+        ).toHaveLength(1)
+        expect(await page.pageErrors()).toEqual([])
+      }
+    )
   }
 )

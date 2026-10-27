@@ -109,8 +109,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
