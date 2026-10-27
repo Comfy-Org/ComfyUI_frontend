@@ -252,6 +252,16 @@ export function useAgentConsent() {
     })
   }
 
+  function reportLoadFailure(error: unknown): void {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_consent_setting_load_failure'
+    })
+    toast.error(t('g.error'), {
+      description: t('agent.consent.loadError')
+    })
+  }
+
   function reportSaveFailure(error: unknown): void {
     reportError(error, {
       surface: 'agent',
@@ -450,7 +460,7 @@ export function useAgentConsent() {
       if (!scopeUnchanged() || !decisionIdentity) return
       await persistPendingAccept(pending, accountId, decisionIdentity)
     } catch (error) {
-      if (scopeUnchanged()) reportSaveFailure(error)
+      if (scopeUnchanged()) reportLoadFailure(error)
     } finally {
       if (!scopeUnchanged()) clearPendingSignInAccept(pending)
       introductionStore.isContinuingSignIn = false
@@ -481,13 +491,7 @@ export function useAgentConsent() {
         reading ? 'consent_read_failed' : 'scope_probe_failed',
         trigger
       )
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'agent_consent_setting_load_failure'
-      })
-      toast.error(t('g.error'), {
-        description: t('agent.consent.loadError')
-      })
+      reportLoadFailure(error)
       return null
     }
 

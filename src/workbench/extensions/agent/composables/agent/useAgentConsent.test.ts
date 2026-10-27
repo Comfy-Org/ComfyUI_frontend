@@ -1738,6 +1738,10 @@ describe('accepting while signed out across a page reload', () => {
     expect(useAgentComposerStore().draft).toBe('make it blue')
     expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
     expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_consent_setting_load_failure'
+    })
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     await useAgentConsent().resumeAcceptAfterReload()
     expect(useAgentConsentStore().accepted).toBe(true)
