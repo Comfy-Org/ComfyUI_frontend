@@ -144,7 +144,9 @@ describe('proveWidgetForm', () => {
       expect(proof.provable).toBe(false)
       expect(proof.refusal).toBe('values_not_positional')
     })
+  })
 
+  describe('refuses a payload it did not build', () => {
     it('when the payload was replayed from a previous save', () => {
       // An unregistered node type is replayed verbatim and never reaches the hook, and its
       // widgets are synthesised placeholders built FROM the stored values. A form there would
@@ -179,7 +181,9 @@ describe('proveWidgetForm', () => {
 
       expect(proof.refusal).toBe('replayed_serialization')
     })
+  })
 
+  describe('refuses when the widget list and the values disagree', () => {
     it('when serialize_widgets is falsy', () => {
       // `this.serialize_widgets = false` is in the low hundreds of repositories -- rgthree's
       // group muters, was-node-suite's fast groups, Crystools' debugger. Widgets exist and no
