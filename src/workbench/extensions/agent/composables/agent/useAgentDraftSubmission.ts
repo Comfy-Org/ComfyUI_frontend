@@ -78,6 +78,7 @@ export function useAgentDraftSubmission(
       snapshot.attachments
     )
     if (options.target() === snapshot.target) selection.replace(snapshot.nodes)
+    composer.markRejectedDraft()
   }
 
   watch(() => composer.submission, recoverFailedSubmission, {
