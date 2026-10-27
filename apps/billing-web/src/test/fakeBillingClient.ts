@@ -253,6 +253,7 @@ export function createFakeBillingClient(
       ...granted
     },
     denials,
+    autoTopUpEnabled: false,
     rolloutDefaultsApplied: {
       can_downgrade_to_personal: false,
       can_subscribe_self_serve: false,
