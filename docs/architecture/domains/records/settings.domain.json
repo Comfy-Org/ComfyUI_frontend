@@ -141,7 +141,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["authentication", "dialog-host"],
+  "allowedDependencies": ["account", "authentication", "dialog-host"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

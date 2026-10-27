@@ -260,7 +260,7 @@ import type {
 } from '@/platform/telemetry/types'
 import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useAuthStore } from '@/stores/authStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
@@ -353,7 +353,7 @@ const isYearlySubscription = computed(
 )
 const telemetry = useTelemetry()
 const { userId } = storeToRefs(useAuthStore())
-const workspaceStore = useTeamWorkspaceStore()
+const workspaceStore = useWorkspaceIdentity()
 const { accessBillingPortal, accessBillingPortalDirect, reportError } =
   useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()

@@ -236,11 +236,12 @@ test.describe('Socket click link selection', { tag: '@canvas' }, () => {
     const [encoder] =
       await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
     const clipOutput = await loader.getOutput(1)
-    const encoderInput = await encoder.getInput(0)
+    const encoderInput = await encoder.getInputByName('clip')
     const inputLinkId = () =>
       comfyPage.page.evaluate(
-        (id) => window.app!.graph.getNodeById(id)?.inputs[0].link ?? null,
-        encoder.id
+        ([id, index]) =>
+          window.app!.graph.getNodeById(id)?.inputs[index].link ?? null,
+        [encoder.id, encoderInput.index] as const
       )
 
     await expectOutputLinksHideAndShow(
