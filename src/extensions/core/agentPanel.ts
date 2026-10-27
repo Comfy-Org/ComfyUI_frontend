@@ -72,18 +72,6 @@ function automaticActivationVisitsComplete(): boolean {
   }
 }
 
-const STORAGE_PROBE_KEY = `${ACTIVATION_VISITS_STORAGE_KEY}.probe`
-
-function storageWritable(): boolean {
-  try {
-    localStorage.setItem(STORAGE_PROBE_KEY, '1')
-    localStorage.removeItem(STORAGE_PROBE_KEY)
-    return true
-  } catch {
-    return false
-  }
-}
-
 let registered = false
 
 export function registerAgentPanelExtension(): void {
@@ -289,7 +277,7 @@ export function registerAgentPanelExtension(): void {
           dropHold()
           return false
         }
-        if (storageWritable()) return true
+        if (introductionStore.canRecordResponse()) return true
         withholdOffer('storage_unavailable')
         dropHold()
         return false
