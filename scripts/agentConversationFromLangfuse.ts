@@ -73,12 +73,7 @@ export type Observation = z.infer<typeof zObservation>
 
 const zPage = z.object({
   data: z.array(zObservation),
-  meta: z.object({ totalPages: z.number().optional() }).passthrough().optional()
-})
-
-const zTracePage = z.object({
-  data: z.array(z.object({ id: z.string() }).passthrough()),
-  meta: z.object({ totalPages: z.number().optional() }).passthrough().optional()
+  meta: z.object({ cursor: z.string().nullish() }).passthrough().optional()
 })
 
 // The values are secrets: never logged, never written into an artifact.
@@ -101,7 +96,8 @@ export function readEnvFile(path: string): LangfuseEnv {
   )
 }
 
-// Langfuse keeps unmapped OTel attributes under metadata.attributes; flattened metadata is the fallback.
+// Langfuse keeps unmapped OTel attributes under metadata.attributes (v1) or as
+// flattened `attributes.<key>` metadata keys (v2); a bare flattened key is the fallback.
 export function attributeOf(
   observation: Observation,
   key: string
@@ -113,7 +109,9 @@ export function attributeOf(
   const nested = z
     .record(z.string(), z.unknown())
     .safeParse(metadata.data.attributes)
-  const value = nested.success ? nested.data[key] : metadata.data[key]
+  const value = nested.success
+    ? nested.data[key]
+    : (metadata.data[`attributes.${key}`] ?? metadata.data[key])
   if (typeof value === 'string') return value
   if (typeof value === 'boolean' || typeof value === 'number')
     return String(value)
@@ -320,74 +318,66 @@ export class LangfuseRequestError extends Error {
   }
 }
 
-async function pages<T>(
+const OBSERVATIONS_PATH = '/api/public/v2/observations'
+
+// v2 always returns input and output as raw strings; v1 returned the parsed
+// JSON value. Parse back so the capture sees the shapes it always has, and keep
+// text that is not JSON as text.
+function parsedIo(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+  try {
+    return JSON.parse(value) as unknown
+  } catch {
+    return value
+  }
+}
+
+// Langfuse removes the v1 /api/public/traces and /api/public/observations
+// reads on 2026-11-16 (FE-3642). v2 filters observations by trace or session
+// directly and pages by cursor.
+export async function fetchObservations(
   env: LangfuseEnv,
-  path: string,
-  query: Record<string, string>,
-  schema: z.ZodType<{ data: T[]; meta?: { totalPages?: number } }>,
-  fetchImpl: Fetch
-): Promise<T[]> {
+  selector: { traceId?: string; sessionId?: string },
+  fetchImpl: Fetch = (url, init) => fetch(url, init)
+): Promise<Observation[]> {
   const auth = Buffer.from(
     `${env.LANGFUSE_PUBLIC_KEY}:${env.LANGFUSE_SECRET_KEY}`
   ).toString('base64')
-  const items: T[] = []
+  const filter =
+    selector.traceId !== undefined
+      ? { traceId: selector.traceId }
+      : { sessionId: selector.sessionId ?? '' }
+  const observations: Observation[] = []
+  let cursor: string | undefined
   for (let page = 1; ; page += 1) {
-    const url = new URL(path, env.LANGFUSE_HOST)
+    const url = new URL(OBSERVATIONS_PATH, env.LANGFUSE_HOST)
     for (const [key, value] of Object.entries({
-      ...query,
-      page: String(page),
-      limit: '100'
+      ...filter,
+      fields: 'core,basic,io,metadata',
+      limit: '1000',
+      ...(cursor === undefined ? {} : { cursor })
     }))
       url.searchParams.set(key, value)
     const response = await fetchImpl(url.toString(), {
       headers: { authorization: `Basic ${auth}` }
     })
     if (!response.ok)
-      throw new LangfuseRequestError(path, response.status, page)
+      throw new LangfuseRequestError(OBSERVATIONS_PATH, response.status, page)
     const parsed = parseOrRefuse(
-      schema,
+      zPage,
       await response.json(),
-      `Langfuse ${path} page ${page}`
+      `Langfuse ${OBSERVATIONS_PATH} page ${page}`
     )
-    items.push(...parsed.data)
-    const totalPages = parsed.meta?.totalPages
-    if (
-      parsed.data.length === 0 ||
-      (totalPages !== undefined ? page >= totalPages : parsed.data.length < 100)
-    )
-      return items
-  }
-}
-
-export async function fetchObservations(
-  env: LangfuseEnv,
-  selector: { traceId?: string; sessionId?: string },
-  fetchImpl: Fetch = (url, init) => fetch(url, init)
-): Promise<Observation[]> {
-  const traceIds =
-    selector.traceId !== undefined
-      ? [selector.traceId]
-      : (
-          await pages(
-            env,
-            '/api/public/traces',
-            { sessionId: selector.sessionId ?? '' },
-            zTracePage,
-            fetchImpl
-          )
-        ).map((trace) => trace.id)
-  const observations: Observation[] = []
-  for (const traceId of traceIds)
     observations.push(
-      ...(await pages(
-        env,
-        '/api/public/observations',
-        { traceId },
-        zPage,
-        fetchImpl
-      ))
+      ...parsed.data.map((observation) => ({
+        ...observation,
+        input: parsedIo(observation.input),
+        output: parsedIo(observation.output)
+      }))
     )
-  return observations
+    cursor = parsed.meta?.cursor ?? undefined
+    if (cursor === undefined || parsed.data.length === 0) return observations
+  }
 }
 
 const sha256 = (bytes: Buffer | string): string =>
