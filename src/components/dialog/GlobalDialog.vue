@@ -16,6 +16,10 @@
           "
           :surface="item.dialogComponentProps.headless ? 'none' : 'card'"
           :maximized="!!item.dialogComponentProps.maximized"
+          :class="
+            item.dialogComponentProps.centerOnViewport &&
+            '-translate-x-1/2 [--workspace-inset-right:0px]'
+          "
           :data-dialog-key="item.key"
           @escape-key-down="
             (e) =>
