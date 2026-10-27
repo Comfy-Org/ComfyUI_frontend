@@ -29,7 +29,7 @@
 import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { capturePreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'

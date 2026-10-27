@@ -57,6 +57,8 @@ import {
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@comfyorg/design-system/button/Button'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import SelectionGapHandles from '@/components/graph/selectionGrid/SelectionGapHandles.vue'
 import {
   MAX_TIDY_GAP,
@@ -64,8 +66,6 @@ import {
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
-import Button from '@/components/ui/button/Button.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
 
 const TOOLBOX_INSET = 4
 const BAR_GAP_BELOW_TOOLBOX = 8

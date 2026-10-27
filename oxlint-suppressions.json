@@ -4,91 +4,6 @@
       "count": 1
     }
   },
-  "apps/website/e2e/font-metrics.spec.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/scripts/dist-html.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/scripts/generate-model-url-map.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "apps/website/scripts/router-model-shard.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/components/auth/AuthSignIn.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "apps/website/src/components/hero/AngleNode.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "apps/website/src/components/home/LottieScene.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/redirects.supported-models.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-contract.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-creator-request.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-router-content.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-router-identity.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-router-index.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "apps/website/src/config/workshop-router-openapi.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/content/workshop-display.content.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/lib/workshop/cinematic-studio/reshoot-engine/workflow.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/templates/events/EventsDirectoryRow.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "browser_tests/fixtures/customNode/connectivityExpectations.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -139,11 +54,6 @@
       "count": 1
     }
   },
-  "packages/account-core/src/vueBoundary.test.ts": {
-    "regexp/no-dupe-disjunctions": {
-      "count": 1
-    }
-  },
   "packages/viewport3d/src/load3d/HDRIManager.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
@@ -179,42 +89,12 @@
       "count": 1
     }
   },
-  "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/components/dialog/content/subscription/CancelSubscriptionDialogContent.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
   "src/components/graph/NodeTooltip.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
     }
   },
   "src/components/helpcenter/HelpCenterMenuContent.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/components/load3d/Load3dViewerContent.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/components/load3d/modelThumbnail.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/components/maskeditor/PointerZone.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/components/maskeditor/ToolPanel.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -254,11 +134,6 @@
       "count": 2
     }
   },
-  "src/components/ui/toggle-group/index.ts": {
-    "comfy/no-reexports": {
-      "count": 2
-    }
-  },
   "src/composables/auth/useAuthActions.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -267,16 +142,6 @@
   "src/composables/auth/useAuthActions.ts": {
     "comfy/no-new-error-throw": {
       "count": 3
-    }
-  },
-  "src/composables/billing/useBillingContext.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/composables/billing/useBillingDialogs.downgrade.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 4
     }
   },
   "src/composables/canvas/useFocusNode.test.ts": {
@@ -289,71 +154,13 @@
       "count": 1
     }
   },
-  "src/composables/maskeditor/brushDrawingUtils.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    },
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/composables/maskeditor/gpuUtils.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/composables/maskeditor/useBrushDrawing.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
-  "src/composables/maskeditor/useCanvasManager.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/composables/maskeditor/useGPUResources.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/composables/maskeditor/useImageLoader.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
-  "src/composables/maskeditor/useMaskEditorLoader.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 6
-    }
-  },
-  "src/composables/maskeditor/useMaskEditorSaver.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 5
-    }
-  },
   "src/composables/node/useNodeDragToCanvas.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 3
     }
   },
-  "src/composables/painter/usePainter.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 4
-    }
-  },
   "src/composables/queue/useJobList.ts": {
     "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/composables/useCameraAngle.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/composables/useCameraInfo.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
   },
@@ -389,6 +196,26 @@
   },
   "src/extensions/core/load3d/Load3dUtils.ts": {
     "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/components/Load3dViewerContent.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/components/modelThumbnail.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/composables/useCameraAngle.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/composables/useCameraInfo.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
   },
@@ -605,6 +432,11 @@
       "count": 1
     }
   },
+  "src/platform/account/auth/WorkspaceAuthGate.vue": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
   "src/platform/assets/components/AssetBrowserModal.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
@@ -680,6 +512,126 @@
       "count": 1
     }
   },
+  "src/platform/billing/components/PricingTableWorkspace.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/components/UnifiedPricingTable.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/composables/useBillingContext.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/composables/useBillingDialogs.downgrade.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 4
+    }
+  },
+  "src/platform/billing/composables/useDowngradeToPersonal.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 2
+    }
+  },
+  "src/platform/billing/composables/useDowngradeToPersonal.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 8
+    }
+  },
+  "src/platform/billing/composables/useResubscribe.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/composables/useSubscriptionCheckout.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 2
+    }
+  },
+  "src/platform/billing/composables/useSubscriptionCheckout.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/platform/billing/composables/useTeamPlan.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 5
+    }
+  },
+  "src/platform/billing/composables/useWorkspaceBilling.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/platform/billing/customerAttention.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/subscription/components/CancelSubscriptionDialogContent.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 2
+    }
+  },
+  "src/platform/billing/subscription/components/CreditsTile.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/subscription/components/CreditsTile.vue": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/subscription/components/PricingTable.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/subscription/composables/usePricingTableUrlLoader.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 2
+    }
+  },
+  "src/platform/billing/subscription/composables/useSubscriptionActions.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/subscription/composables/useSubscriptionDialog.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 10
+    }
+  },
+  "src/platform/billing/subscription/constants/tierPricing.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 2
+    }
+  },
+  "src/platform/billing/subscription/launchCancellationFlow.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 2
+    }
+  },
   "src/platform/cloud/oauth/oauthApi.ts": {
     "comfy/no-new-error-throw": {
       "count": 8
@@ -700,61 +652,6 @@
       "count": 2
     }
   },
-  "src/platform/cloud/subscription/components/CreditsTile.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/cloud/subscription/components/CreditsTile.vue": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/platform/cloud/subscription/components/PricingTable.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/cloud/subscription/composables/usePricingTableUrlLoader.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/platform/cloud/subscription/composables/useSubscriptionActions.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/cloud/subscription/composables/useSubscriptionDialog.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 10
-    }
-  },
-  "src/platform/cloud/subscription/constants/tierPricing.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 2
-    }
-  },
-  "src/platform/cloud/subscription/launchCancellationFlow.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/platform/errorCatalog/errorMessageResolver.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/platform/errorCatalog/types.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
   "src/platform/keybindings/keybindingStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
@@ -768,41 +665,6 @@
   "src/platform/keybindings/presetService.ts": {
     "comfy/no-new-error-throw": {
       "count": 6
-    }
-  },
-  "src/platform/missingModel/components/MissingModelRow.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/missingModel/composables/useMissingModelInteractions.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/platform/missingModel/missingModelDownload.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/missingModel/missingModelGrouping.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/platform/missingModel/missingModelScan.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/platform/missingModel/missingModelStore.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/nodeReplacement/nodeReplacementService.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
     }
   },
   "src/platform/serverFacts/serverFact.ts": {
@@ -890,94 +752,54 @@
       "count": 1
     }
   },
-  "src/platform/workspace/api/workspaceApi.ts": {
+  "src/platform/workflowErrors/errorCatalog/errorMessageResolver.ts": {
     "comfy/no-reexports": {
       "count": 1
     }
   },
-  "src/platform/workspace/auth/WorkspaceAuthGate.vue": {
-    "comfy/no-new-error-throw": {
-      "count": 4
+  "src/platform/workflowErrors/errorCatalog/types.ts": {
+    "comfy/no-reexports": {
+      "count": 1
     }
   },
-  "src/platform/workspace/billing/customerAttention.ts": {
+  "src/platform/workflowErrors/missingModel/components/MissingModelRow.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/workflowErrors/missingModel/composables/useMissingModelInteractions.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
     }
   },
-  "src/platform/workspace/components/PricingTableWorkspace.test.ts": {
+  "src/platform/workflowErrors/missingModel/missingModelDownload.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
   },
-  "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts": {
+  "src/platform/workflowErrors/missingModel/missingModelGrouping.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "src/platform/workflowErrors/missingModel/missingModelScan.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 2
+    }
+  },
+  "src/platform/workflowErrors/missingModel/missingModelStore.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
   },
-  "src/platform/workspace/components/UnifiedPricingTable.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
+  "src/platform/workflowErrors/nodeReplacement/nodeReplacementService.ts": {
+    "comfy/no-new-error-throw": {
       "count": 1
     }
   },
   "src/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/platform/workspace/composables/useDowngradeToPersonal.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/platform/workspace/composables/useDowngradeToPersonal.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 8
-    }
-  },
-  "src/platform/workspace/composables/useMembersPanel.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 10
-    }
-  },
-  "src/platform/workspace/composables/useResubscribe.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/workspace/composables/useSubscriptionCheckout.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/platform/workspace/composables/useSubscriptionCheckout.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
-    }
-  },
-  "src/platform/workspace/composables/useTeamPlan.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 5
-    }
-  },
-  "src/platform/workspace/composables/useWorkspaceBilling.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
-  "src/platform/workspace/composables/useWorkspaceUI.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 4
     }
   },
   "src/platform/workspace/stores/teamWorkspaceStore.test.ts": {
@@ -1055,14 +877,39 @@
       "count": 1
     }
   },
+  "src/renderer/extensions/maskEditor/components/PointerZone.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 2
+    }
+  },
+  "src/renderer/extensions/maskEditor/components/ToolPanel.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/maskEditor/composables/useImageLoader.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 6
+    }
+  },
+  "src/renderer/extensions/maskEditor/composables/useMaskEditorSaver.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 5
+    }
+  },
   "src/renderer/extensions/minimap/composables/useMinimap.progressBaseline.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 4
     }
   },
-  "src/renderer/extensions/vueNodes/components/WidgetGrid.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
+  "src/renderer/extensions/painter/composables/usePainter.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
     }
   },
   "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.ts": {
@@ -1438,11 +1285,6 @@
   },
   "src/workbench/extensions/agent/services/agent/agentEventTransport.test.ts": {
     "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/services/agent/agentToolGlyph.ts": {
-    "comfy/no-positional-boolean-params": {
       "count": 1
     }
   },

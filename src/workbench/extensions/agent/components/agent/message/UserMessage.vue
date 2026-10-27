@@ -4,14 +4,15 @@ import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Tag from '@/components/chip/Tag.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 import type { UserAttachment } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type {
@@ -156,7 +157,7 @@ function attachmentUrl(
   const capturedUrl =
     kind === 'video' || kind === 'audio' ? item.mediaUrl : item.previewUrl
   if (capturedUrl) return capturedUrl
-  if (!item.ref) return
+  if (!item.ref || isHdrImageFilename(item.name)) return
   return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
 }
 </script>

@@ -159,6 +159,8 @@ export interface BootstrapCompleteMetadata {
   total_ms: number
   outcome: 'completed' | 'failed' | 'timed_out'
   phase_count: number
+  /** Wall-clock ms not covered by any recorded phase. */
+  untraced_ms: number
   /**
    * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
    * `bootstrap/object-info`). Nested phases intentionally overlap their
@@ -804,11 +806,22 @@ export interface AgentConsentOfferExitedMetadata extends Record<
   trigger?: AgentConsentTrigger
 }
 export type AgentOnboardingNotShownMetadata =
-  | { reason: 'app_mode' | 'tour_active' }
+  | { reason: 'app_mode' | 'tour_active' | 'dialog_open' }
   | { reason: 'target_missing'; step: number }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null
+}
+/** How far the open panel got before its content was drawn. */
+export type AgentPanelRenderStage =
+  | 'dock_unresolved'
+  | 'root_unresolved'
+  | 'root_resolved_not_mounted'
+export interface AgentPanelRenderStalledMetadata extends Record<
+  string,
+  unknown
+> {
+  stage: AgentPanelRenderStage
 }
 export interface AgentEntryButtonClickedMetadata extends Record<
   string,
@@ -1153,6 +1166,26 @@ export type AgentErrorClass =
   | 'ask_answer_failed'
   | 'thread_list_load_failed'
   | 'workflow_open_failed'
+
+export type AgentRequestPath =
+  | '/agent/threads'
+  | '/agent/threads/{threadId}/messages'
+  | '/agent/threads/{threadId}/messages/{messageId}/cancel'
+  | '/agent/threads/{threadId}/asks/{askId}/answer'
+  | '/agent/run-mode'
+  | '/workflows'
+  | '/upload/image'
+  | '/other'
+
+export type AgentRequestErrorName =
+  | 'AgentApiError'
+  | 'AgentResponseUnreadableError'
+  | 'ZodError'
+  | 'TimeoutError'
+  | 'AbortError'
+  | 'TypeError'
+  | 'other'
+
 export interface AgentErrorMetadata extends Record<string, unknown> {
   error_class: AgentErrorClass
   failure_stage: 'pre_acceptance' | 'post_acceptance'
@@ -1160,6 +1193,22 @@ export interface AgentErrorMetadata extends Record<string, unknown> {
   turn_accepted: boolean
   /** `none` is a failure the user was never shown. */
   ui_treatment: 'inline_notice' | 'error_overlay' | 'toast' | 'none'
+  /**
+   * FE-3200: which request failed, how, and with what status.
+   *
+   * Absent on the failure classes that are not a single REST request — a
+   * malformed stream event has no status, and a stage that pre-dates this
+   * carrier emits nothing rather than a placeholder, so an absent value in
+   * the data means "not instrumented here", never "no status".
+   *
+   * `request_path` is a route template from a closed set and `request_error`
+   * an error identity from a closed set, both defined in
+   * `services/agent/agentRequestFailure.ts`. Neither can carry a thread id,
+   * a workflow id, a message, or a user.
+   */
+  request_path?: AgentRequestPath
+  request_status?: number
+  request_error?: AgentRequestErrorName
 }
 
 /**
@@ -1559,6 +1608,7 @@ export interface TelemetryProvider {
   trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
   trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
   trackAgentPanelClosed?(metadata: AgentPanelClosedMetadata): void
+  trackAgentPanelRenderStalled?(metadata: AgentPanelRenderStalledMetadata): void
   trackAgentEntryButtonClicked?(metadata: AgentEntryButtonClickedMetadata): void
   trackAgentCloseButtonClicked?(): void
   trackAgentConsentShown?(metadata: AgentConsentShownMetadata): void
@@ -1645,6 +1695,7 @@ export const TelemetryEvents = {
   SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
+  THEME_LOADED: 'app:theme_loaded',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
@@ -1750,6 +1801,7 @@ export const TelemetryEvents = {
   AGENT_MESSAGE_FEEDBACK: 'app:agent_message_feedback',
   AGENT_PANEL_OPENED: 'app:agent_panel_opened',
   AGENT_PANEL_CLOSED: 'app:agent_panel_closed',
+  AGENT_PANEL_RENDER_STALLED: 'app:agent_panel_render_stalled',
   AGENT_ENTRY_BUTTON_CLICKED: 'app:agent_entry_button_clicked',
   AGENT_CLOSE_BUTTON_CLICKED: 'app:agent_close_button_clicked',
   AGENT_CONSENT_SHOWN: 'app:agent_consent_shown',

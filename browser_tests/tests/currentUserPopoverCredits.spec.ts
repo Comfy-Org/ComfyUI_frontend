@@ -1,10 +1,8 @@
 import { expect } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type {
-  BillingStatusResponse,
-  WorkspaceWithRole
-} from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
@@ -38,6 +36,7 @@ const mockListWorkspacesResponse: { workspaces: WorkspaceWithRole[] } = {
 const mockTokenResponse: WorkspaceTokenResponse = {
   token: 'mock-workspace-token',
   expires_at: FUTURE_DATE,
+  user_id: 'uid-1',
   workspace: {
     id: 'ws-personal',
     name: PERSONAL_WORKSPACE_NAME,

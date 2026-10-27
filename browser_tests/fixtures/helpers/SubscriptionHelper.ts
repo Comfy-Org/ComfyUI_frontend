@@ -4,8 +4,8 @@ import type { Page, Route } from '@playwright/test'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+} from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import {
   createBalance,

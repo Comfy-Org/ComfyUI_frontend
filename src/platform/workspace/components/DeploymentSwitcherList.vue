@@ -44,6 +44,7 @@
       :title="$t('deploymentSwitcher.comfyCloud')"
       :switching="isSwitching && switchingTo === COMFY_CLOUD_ROW"
       :disabled="isSwitching"
+      :mark="markFor(null)"
       data-testid="deployment-row-cloud"
       @select="choose($event, null)"
     />
@@ -57,6 +58,7 @@
       :meta="deploymentMeta(deployment)"
       :switching="isSwitching && switchingTo === deployment.deployment_id"
       :disabled="isSwitching"
+      :mark="markFor(deployment.deployment_id)"
       :data-testid="`deployment-row-${deployment.deployment_id}`"
       @select="choose($event, deployment.deployment_id)"
     />
@@ -117,9 +119,9 @@ import { DropdownMenuLabel, DropdownMenuRadioGroup } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MenuItem from '@/components/ui/menu/MenuItem.vue'
-import MenuSeparator from '@/components/ui/menu/MenuSeparator.vue'
-import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
+import MenuItem from '@comfyorg/design-system/menu/MenuItem'
+import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/DeploymentSwitcherDefaultMenu.vue'
@@ -128,6 +130,7 @@ import {
   switcherItemClass,
   switcherTrailingSlotClass
 } from '@/platform/workspace/components/deploymentSwitcherStyles'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import {
   COMFY_CLOUD_ROW,
   deploymentStatusTone,
@@ -162,6 +165,7 @@ const {
 } = storeToRefs(useDeploymentPickStore())
 const { deploymentTitle, deploymentRowSubtitle, deploymentMeta, currentLabel } =
   useDeploymentLabels()
+const { markFor } = useDeploymentCompatibility()
 
 const createDeploymentUrl = `${getComfyPlatformBaseUrl()}/profile/deploy#builds`
 
