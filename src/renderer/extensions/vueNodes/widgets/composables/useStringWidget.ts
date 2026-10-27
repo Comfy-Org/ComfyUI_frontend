@@ -16,6 +16,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
+import { processDynamicPrompt } from '@/utils/formatUtil'
 
 function addMultilineWidget(
   node: LGraphNode,
@@ -114,6 +115,13 @@ export const useStringWidget = () => {
 
     if (typeof inputSpec.dynamicPrompts === 'boolean') {
       widget.dynamicPrompts = inputSpec.dynamicPrompts
+    }
+
+    if (widget.dynamicPrompts) {
+      widget.serializeValue = () =>
+        typeof widget.value === 'string'
+          ? processDynamicPrompt(widget.value)
+          : widget.value
     }
 
     return widget
