@@ -42,6 +42,7 @@ export interface IContextMenuValue<
 > extends IContextMenuBase {
   value?: TValue
   content: string | undefined
+  beforePaste?: boolean
   has_submenu?: boolean
   disabled?: boolean
   submenu?: IContextMenuSubmenu<TValue>
