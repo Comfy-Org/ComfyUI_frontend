@@ -16,7 +16,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import {
   clearPendingSignInAccept,
-  takePendingSignInAccept,
   writePendingSignInAccept
 } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
@@ -270,12 +269,10 @@ export function useAgentConsent() {
     }
   }
 
-  async function resumeAcceptAfterReload(): Promise<void> {
-    const draft = takePendingSignInAccept()
-    if (draft === null) return
+  async function resumeAcceptAfterReload(draft: string): Promise<void> {
     await saveAcceptanceAfterSignIn()
     if (
-      draft.trim() &&
+      draft &&
       !composerStore.draft &&
       composerStore.prompt.references.length === 0 &&
       composerStore.attachments.length === 0

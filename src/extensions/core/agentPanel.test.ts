@@ -96,9 +96,7 @@ vi.mock(
           onAccept()
         }
       ),
-      resumeAcceptAfterReload: vi.fn(async () => {
-        sessionStorage.removeItem('Comfy.AgentPanel.PendingSignInAccept')
-      })
+      resumeAcceptAfterReload: vi.fn(async () => {})
     })
     const CONSENT_DIALOG_KEY = 'agent-consent' as const
     return { CONSENT_DIALOG_KEY, useAgentConsent: () => consent }
@@ -2279,10 +2277,7 @@ describe('AgentPanel extension flag gate', () => {
 
     beforeEach(() => {
       sessionStorage.clear()
-      sessionStorage.setItem(
-        PENDING_KEY,
-        JSON.stringify({ draft: 'make it blue' })
-      )
+      sessionStorage.setItem(PENDING_KEY, 'make it blue')
       setAgentReady(true)
     })
 
@@ -2293,15 +2288,15 @@ describe('AgentPanel extension flag gate', () => {
 
     it('is finished before consent is read', async () => {
       let finishResume = () => {}
-      resume().mockImplementationOnce(async () => {
-        sessionStorage.removeItem(PENDING_KEY)
-        await new Promise<void>((resolve) => (finishResume = resolve))
-      })
+      resume().mockImplementationOnce(
+        () => new Promise<void>((resolve) => (finishResume = resolve))
+      )
 
       await loadEntryAndSetup()
       Object.assign(consentStore, { identity: 'account-a/workspace-b' })
       await nextTick()
-      expect(resume()).toHaveBeenCalledOnce()
+      expect(resume()).toHaveBeenCalledExactlyOnceWith('make it blue')
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
       expect(consentStore.load).not.toHaveBeenCalled()
 
       finishResume()
@@ -2349,6 +2344,7 @@ describe('AgentPanel extension flag gate', () => {
       await loadEntryAndSetup()
 
       expect(resume()).not.toHaveBeenCalled()
+      expect(consentStore.load).not.toHaveBeenCalled()
       expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
 
       Object.assign(workspaceStore, { isSwitching: false })

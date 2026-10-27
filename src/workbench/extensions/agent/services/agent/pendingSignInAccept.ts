@@ -2,7 +2,7 @@ const STORAGE_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
 
 export function writePendingSignInAccept(draft: string): void {
   try {
-    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ draft }))
+    window.sessionStorage.setItem(STORAGE_KEY, draft)
   } catch {
     return
   }
@@ -16,24 +16,20 @@ export function clearPendingSignInAccept(): void {
   }
 }
 
-function readPendingSignInAccept(): string | null {
+export function hasPendingSignInAccept(): boolean {
   try {
-    const stored: unknown = JSON.parse(
-      window.sessionStorage.getItem(STORAGE_KEY) ?? 'null'
-    )
-    const draft = (stored as { draft?: unknown } | null)?.draft
-    return typeof draft === 'string' ? draft : null
+    return window.sessionStorage.getItem(STORAGE_KEY) !== null
   } catch {
-    return null
+    return false
   }
 }
 
-export function hasPendingSignInAccept(): boolean {
-  return readPendingSignInAccept() !== null
-}
-
 export function takePendingSignInAccept(): string | null {
-  const draft = readPendingSignInAccept()
-  clearPendingSignInAccept()
-  return draft
+  try {
+    const draft = window.sessionStorage.getItem(STORAGE_KEY)
+    window.sessionStorage.removeItem(STORAGE_KEY)
+    return draft
+  } catch {
+    return null
+  }
 }

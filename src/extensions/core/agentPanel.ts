@@ -31,7 +31,8 @@ import { useExtensionService } from '@/services/extensionService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   clearPendingSignInAccept,
-  hasPendingSignInAccept
+  hasPendingSignInAccept,
+  takePendingSignInAccept
 } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
@@ -352,7 +353,7 @@ export function registerAgentPanelExtension(): void {
         }
         if (!resolvedUserInfo.value || workspaceStore.isSwitching) return true
         resumingAccept = true
-        void resumeAcceptAfterReload().finally(() => {
+        void resumeAcceptAfterReload(takePendingSignInAccept() ?? '').finally(() => {
           resumingAccept = false
           loadConsentIfEligible()
         })
