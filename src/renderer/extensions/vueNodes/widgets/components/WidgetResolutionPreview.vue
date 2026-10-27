@@ -26,6 +26,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { IWidgetResolutionPreviewOptions } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
@@ -45,7 +46,7 @@ const { widget, nodeId } = defineProps<{
 const { t } = useI18n()
 const widgetValueStore = useWidgetValueStore()
 
-const hostNode = computed(() =>
+const hostNode = useLiveGraphNode(() =>
   nodeId === undefined ? undefined : resolveNode(nodeId)
 )
 

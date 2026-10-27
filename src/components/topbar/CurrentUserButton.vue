@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Popover v-model:open="open">
+    <PopoverRoot v-model:open="open">
       <PopoverTrigger as-child>
         <Button
           v-if="isLoggedIn"
@@ -44,7 +44,6 @@
 
       <PopoverContent
         align="end"
-        :collision-padding="8"
         :class="
           cn(
             'max-h-(--reka-popover-content-available-height) max-w-(--reka-popover-content-available-width) overflow-visible rounded-lg border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
@@ -59,23 +58,22 @@
         />
         <CurrentUserPopoverLegacy v-else @close="closePopover" />
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
   </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { PopoverTrigger } from 'reka-ui'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { unrefElement } from '@vueuse/core'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import Button from '@/components/ui/button/Button.vue'
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import Button from '@comfyorg/design-system/button/Button'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
