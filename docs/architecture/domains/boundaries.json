@@ -4488,10 +4488,10 @@
       {
         "from": "authentication/domain",
         "allow": [
+          "ingest-api/domain/public",
           "authentication/domain",
           "cloud/domain",
           "cloud/domain/outer-1",
-          "ingest-api/domain/public",
           "workflow-persistence/domain/outer-1",
           "unclassified"
         ]
