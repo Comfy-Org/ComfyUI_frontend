@@ -174,7 +174,7 @@ function replayAppModeTour() {
         class="border border-solid hover:border-border hover:text-foreground"
         @click="replayAppModeTour"
       >
-        <i class="icon-[lucide--circle-question-mark] size-4" />
+        <i class="icon-[lucide--circle-question-mark]" />
       </Button>
     </section>
     <div

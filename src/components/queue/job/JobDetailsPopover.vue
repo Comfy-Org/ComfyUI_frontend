@@ -24,7 +24,7 @@
               :aria-label="copyAriaLabel"
               @click.stop="copyJobId"
             >
-              <i class="icon-[lucide--copy] size-4" />
+              <i class="icon-[lucide--copy]" />
             </Button>
           </div>
         </template>

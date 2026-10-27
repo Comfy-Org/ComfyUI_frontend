@@ -7,7 +7,7 @@
     data-testid="convert-to-subgraph-button"
     @click="() => commandStore.execute('Comfy.Graph.UnpackSubgraph')"
   >
-    <i class="icon-[lucide--expand] size-4" />
+    <i class="icon-[lucide--expand]" />
   </Button>
   <Button
     v-else-if="isConvertVisible"
@@ -18,7 +18,7 @@
     data-testid="convert-to-subgraph-button"
     @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
   >
-    <i class="icon-[lucide--shrink] size-4" />
+    <i class="icon-[lucide--shrink]" />
   </Button>
 </template>
 

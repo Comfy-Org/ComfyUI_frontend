@@ -12,14 +12,10 @@
       >
         <div class="flex items-center gap-1 pr-0.5">
           <div class="rounded-lg bg-muted p-2 group-hover:bg-accent">
-            <i
-              :class="currentModeIcon"
-              class="block size-4"
-              aria-hidden="true"
-            />
+            <i :class="currentModeIcon" class="block" aria-hidden="true" />
           </div>
           <i
-            class="icon-[lucide--chevron-down] block size-4 pr-1.5"
+            class="icon-[lucide--chevron-down] block pr-1.5"
             aria-hidden="true"
           />
         </div>
@@ -56,10 +52,7 @@
           @keydown.escape.prevent="closeAndRestoreFocus"
         >
           <div class="flex items-center gap-2">
-            <i
-              class="icon-[lucide--mouse-pointer-2] size-4"
-              aria-hidden="true"
-            />
+            <i class="icon-[lucide--mouse-pointer-2]" aria-hidden="true" />
             <span>{{ $t('graphCanvasMenu.select') }}</span>
           </div>
           <span
@@ -82,7 +75,7 @@
           @keydown.escape.prevent="closeAndRestoreFocus"
         >
           <div class="flex items-center gap-2">
-            <i class="icon-[lucide--hand] size-4" aria-hidden="true" />
+            <i class="icon-[lucide--hand]" aria-hidden="true" />
             <span>{{ $t('graphCanvasMenu.hand') }}</span>
           </div>
           <span

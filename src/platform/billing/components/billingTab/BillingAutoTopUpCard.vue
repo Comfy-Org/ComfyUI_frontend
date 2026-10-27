@@ -79,7 +79,7 @@
         @click="track"
       >
         {{ $t(view.status.action.label) }}
-        <i :class="cn(view.status.action.icon, 'size-4')" aria-hidden="true" />
+        <i :class="view.status.action.icon" aria-hidden="true" />
       </Button>
     </div>
   </section>

@@ -128,16 +128,17 @@ function onSearchKeydown(event: KeyboardEvent): void {
             )
           "
         >
-          <span
+          <i
             v-if="conversation.activeTurnTabPath === current?.path"
             role="img"
             :aria-label="t('g.agentWorking')"
-            class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
+            class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
           />
-          <span
+          <i
             v-else
+            aria-hidden="true"
             data-testid="workflow-selector-icon"
-            class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-foreground"
+            class="icon-[comfy--workflow] text-muted-foreground group-hover:text-foreground"
           />
           <span class="min-w-0 truncate">{{
             current?.name ?? t('agent.selectWorkflowForAgent')
@@ -201,21 +202,22 @@ function onSearchKeydown(event: KeyboardEvent): void {
                 role="status"
                 class="flex size-4 shrink-0 items-center justify-center"
               >
-                <span
-                  class="icon-[lucide--loader-circle] size-4 text-muted-foreground motion-safe:animate-spin"
+                <i
+                  class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
                   aria-hidden="true"
                 />
                 <span class="sr-only">{{ t('agent.savingWorkflow') }}</span>
               </span>
-              <span
+              <i
                 v-else-if="conversation.activeTurnTabPath === tab.path"
                 role="img"
                 :aria-label="t('g.agentWorking')"
-                class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
+                class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
               />
-              <span
+              <i
                 v-else
-                class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+                class="icon-[comfy--workflow] text-muted-foreground"
               />
               <span class="min-w-0 truncate">{{ tab.name }}</span>
               <span
@@ -239,10 +241,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
                 <DropdownMenuItemIndicator
                   class="flex size-4 items-center justify-center"
                 >
-                  <span
-                    aria-hidden="true"
-                    class="icon-[lucide--check] size-3.5"
-                  />
+                  <i aria-hidden="true" class="icon-[lucide--check] size-3.5" />
                 </DropdownMenuItemIndicator>
               </span>
             </MenuRadioItem>
