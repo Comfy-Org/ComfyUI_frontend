@@ -2,6 +2,7 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
@@ -78,6 +79,10 @@ vi.mock<unknown>(import('@/services/extensionService'), () => ({
 }))
 
 vi.mock(import('@/utils/litegraphUtil'))
+
+vi.mock(import('@comfyorg/design-system/common/VerticalDivider'), () => ({
+  default: defineComponent({ template: '<div class="vertical-divider" />' })
+}))
 
 vi.mock(import('@/utils/nodeFilterUtil'), () => ({
   isOutputNode: vi.fn(() => false),
@@ -180,8 +185,7 @@ describe('SelectionToolbox', () => {
           MoreOptions: {
             template:
               '<button data-testid="more-options-button" class="more-options" />'
-          },
-          VerticalDivider: { template: '<div class="vertical-divider" />' }
+          }
         }
       }
     })

@@ -73,7 +73,7 @@ import { DropdownMenuItemIndicator } from 'reka-ui'
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
+import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import {
   switcherItemClass,

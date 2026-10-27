@@ -7501,7 +7501,67 @@ describe('AgentPanelRoot history', () => {
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
-  it('keeps the loaded chat list and reports a non-retryable failure when a refresh ends before its last page', async () => {
+  it('records the status and path of a thread-list failure on both sinks', async () => {
+    executionErrors.showErrorOverlay.mockClear()
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(reportError).mockClear()
+    respondToFetch(threadListRoute, () => json(401, {}))
+
+    renderWithSelectedTarget()
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error_class: 'thread_list_load_failed',
+          retryable: false,
+          request_path: '/agent/threads',
+          request_status: 401,
+          request_error: 'AgentApiError'
+        })
+      )
+    )
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed',
+      tags: {
+        request_path: '/agent/threads',
+        request_status: 401,
+        request_error: 'AgentApiError'
+      },
+      fingerprint: [
+        'agent-request-failure',
+        'agent_thread_list_load_failed',
+        '/agent/threads',
+        'AgentApiError'
+      ]
+    })
+  })
+
+  it('records a thread-list request that never reached the server', async () => {
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(reportError).mockClear()
+    respondToFetch(threadListRoute, () =>
+      Promise.reject(new TypeError('Failed to fetch'))
+    )
+
+    renderWithSelectedTarget()
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error_class: 'thread_list_load_failed',
+          retryable: true,
+          request_path: '/agent/threads',
+          request_error: 'TypeError'
+        })
+      )
+    )
+    expect(
+      vi.mocked(telemetry.trackAgentError).mock.calls.at(-1)?.[0]
+    ).not.toHaveProperty('request_status')
+  })
+
+  it('shows the chats a truncated refresh did fetch and warns without the error overlay', async () => {
     respondToFetch(threadListRoute, () =>
       json(
         200,
@@ -7538,12 +7598,19 @@ describe('AgentPanelRoot history', () => {
     await openHistory()
 
     await vi.waitFor(() =>
-      expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'warning',
+          title: i18n.global.t('agent.historyIncomplete')
+        })
+      )
     )
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(telemetry.trackAgentError).toHaveBeenCalledWith(
       expect.objectContaining({
         error_class: 'thread_list_load_failed',
-        retryable: false
+        retryable: false,
+        ui_treatment: 'toast'
       })
     )
     expect(reportError).toHaveBeenCalledWith(
@@ -7552,7 +7619,69 @@ describe('AgentPanelRoot history', () => {
       }),
       expect.objectContaining({ tags: { reason: 'missing_cursor' } })
     )
-    expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
+    expect(history.sessions.map(({ id }) => id)).toEqual([
+      'th-partial',
+      'th-kept'
+    ])
+  })
+
+  it('warns once when every refresh ends truncated', async () => {
+    const incompleteWarning = i18n.global.t('agent.historyIncomplete')
+    const warnings = () =>
+      useToast().toasts.filter(({ title }) => title === incompleteWarning)
+    const truncationReports = () =>
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([error]) =>
+            error instanceof Error &&
+            error.message === 'Agent thread list ended before its last page'
+        )
+    respondToFetch(
+      threadListRoute,
+      () =>
+        json(
+          200,
+          agentThreadList(
+            [
+              agentThread({
+                id: 'th-partial',
+                title: 'Partial chat',
+                last_message_at: '2026-07-07T11:00:00Z'
+              })
+            ],
+            { has_more: true }
+          )
+        ),
+      { times: 1 }
+    )
+    renderWithSelectedTarget()
+    await vi.waitFor(() => expect(warnings()).toHaveLength(1))
+
+    respondToFetch(
+      threadListRoute,
+      () =>
+        json(
+          200,
+          agentThreadList(
+            [
+              agentThread({
+                id: 'th-partial',
+                title: 'Partial chat refreshed',
+                last_message_at: '2026-07-07T12:00:00Z'
+              })
+            ],
+            { has_more: true }
+          )
+        ),
+      { times: 1 }
+    )
+    await openHistory()
+    await screen.findByRole('button', { name: 'Partial chat refreshed' })
+
+    expect(warnings()).toHaveLength(1)
+    expect(truncationReports()).toHaveLength(1)
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
   })
 
   const staleRefreshOutcomes = [
@@ -10854,10 +10983,22 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await vi.waitFor(() =>
       expect(telemetry.trackAgentError).toHaveBeenCalledWith(
-        expect.objectContaining({ error_class: 'history_load_failed' })
+        expect.objectContaining({
+          error_class: 'history_load_failed',
+          // FE-3200: attributed at the REST boundary, so it names the request
+          // that actually failed rather than the one the `catch` sits under —
+          // `hydrateFromServer` wraps three of them.
+          request_path: '/agent/threads/{threadId}/messages',
+          request_status: 500,
+          request_error: 'AgentApiError'
+        })
       )
     )
     expect(useAgentChatHistoryStore().activeId).toBeNull()
+    // The stored thread id did not ride along into the route it reported.
+    expect(
+      JSON.stringify(vi.mocked(telemetry.trackAgentError).mock.calls)
+    ).not.toContain('th-history')
   })
 
   it('toasts a startup restoration failure that lands while history is open without a selection', async () => {

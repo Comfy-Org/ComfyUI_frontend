@@ -41,7 +41,7 @@
 import { usePreferredReducedMotion } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const {
   sources = [],
