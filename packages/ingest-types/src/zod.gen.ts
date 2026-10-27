@@ -74,6 +74,32 @@ export const zWorkspaceDeploymentList = z.object({
 })
 
 /**
+ * One declared pack that failed to import on the Release's build, as comfy-builder names it.
+ */
+export const zReleaseUnsupportedPack = z.object({
+  folder: z.string(),
+  registry_id: z.string(),
+  repository: z.string(),
+  cause: z.string()
+})
+
+/**
+ * The declared packs that failed to import on the build of the editor's Release, in the order the build declared them, and which Release that is.
+ */
+export const zReleaseUnsupportedPacks = z.object({
+  release_id: z.string().nullable(),
+  packs: z.array(zReleaseUnsupportedPack)
+})
+
+/**
+ * Which step the CPU server of the deployment this browser's editor runs on is on.
+ */
+export const zWorkspaceDeploymentCpuServer = z.object({
+  cpu_server: z.enum(['none', 'creating', 'building', 'created']),
+  deployment_id: z.string().optional()
+})
+
+/**
  * Present only for can_delete_workspace denied with plan_ending when all live subscription rows carry a known future cancel_at. This is guidance, not a promise that deletion will succeed at that time; writes recheck.
  */
 export const zWorkspaceDeletionDenialParams = z.object({
@@ -3096,6 +3122,31 @@ export const zCccjson = z.object({
   uid: z.uuid().readonly().optional()
 })
 
+export const zCccCreatorSummary = z.object({
+  avatar_url: z.string(),
+  display_name: z.string(),
+  username: z.string(),
+  workflow_count: z.int().gte(1)
+})
+
+export const zCccCreatorsPage = z.object({
+  items: z.array(zCccCreatorSummary).max(100),
+  next_cursor: z.string().max(200).optional()
+})
+
+export const zCccCreatorLink = z.object({
+  label: z.string(),
+  url: z.url()
+})
+
+export const zCccCreatorProfile = z.object({
+  avatar_url: z.string(),
+  bio: z.string().max(5000),
+  display_name: z.string(),
+  links: z.array(zCccCreatorLink).max(8),
+  username: z.string()
+})
+
 export const zCccCatalogState = z.object({
   draft_generation: z.coerce
     .bigint()
@@ -5927,6 +5978,11 @@ export const zGetNodeInfoQuery = z.object({
  */
 export const zGetNodeInfoResponse = z.record(z.string(), zNodeInfo)
 
+/**
+ * The packs the Release built without, in the order the build declared them
+ */
+export const zGetReleaseUnsupportedPacksResponse = zReleaseUnsupportedPacks
+
 export const zGetLegacyObjectInfoByNodeClassPath = z.object({
   node_class: z.string()
 })
@@ -6273,13 +6329,33 @@ export const zListCccWebsiteCardsQuery = z.object({
   use: z.array(z.string().max(200)).max(30).optional(),
   modality: z.array(z.string().max(200)).max(30).optional(),
   provider: z.array(z.string().max(200)).max(30).optional(),
-  capability: z.array(z.string().max(200)).max(30).optional()
+  capability: z.array(z.string().max(200)).max(30).optional(),
+  author: z.string().min(1).max(30).optional()
 })
 
 /**
  * At most 24 card summaries; no graphs, inputs, examples or long bodies. Anonymous responses omit total, generation and facet counts. Cursors are audience, filter, clock and state bound and expire after five minutes.
  */
 export const zListCccWebsiteCardsResponse = zCccWebsiteCardsPage
+
+export const zListCccCreatorsQuery = z.object({
+  limit: z.int().gte(1).lte(100).optional().default(24),
+  cursor: z.string().max(200).optional()
+})
+
+/**
+ * One page of creators
+ */
+export const zListCccCreatorsResponse = zCccCreatorsPage
+
+export const zGetCccCreatorPath = z.object({
+  username: z.string().min(1).max(30)
+})
+
+/**
+ * Public creator profile
+ */
+export const zGetCccCreatorResponse = zCccCreatorProfile
 
 /**
  * Build-coupled catalog instructions, permissions and endpoint contracts
@@ -7039,6 +7115,16 @@ export const zPickWorkspaceDeploymentPath = z.object({
  * Picked; the cookie on this response carries it
  */
 export const zPickWorkspaceDeploymentResponse = z.void()
+
+export const zGetWorkspaceDeploymentCpuServerPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Which step the deployment's CPU server is on
+ */
+export const zGetWorkspaceDeploymentCpuServerResponse =
+  zWorkspaceDeploymentCpuServer
 
 export const zListWorkspaceDeploymentsPath = z.object({
   id: z.string()

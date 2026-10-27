@@ -19,13 +19,9 @@
     </div>
     <p
       v-if="isInsufficientCredits"
-      class="m-0 px-8 text-sm text-muted-foreground"
+      class="m-0 px-8 pb-4 text-sm text-muted-foreground"
     >
       {{ $t('credits.topUp.insufficientWorkflowMessage') }}
-    </p>
-
-    <p class="m-0 px-8 pb-4 text-sm text-muted-foreground">
-      {{ $t('credits.topUp.purchaseDisclosure') }}
     </p>
 
     <!-- Preset amount buttons -->
@@ -52,6 +48,13 @@
           ${{ amount }}
         </Button>
       </div>
+      <p
+        v-if="planCreditCopy"
+        class="m-0 pt-3 text-sm text-muted-foreground"
+        data-testid="top-up-plan-credit-line"
+      >
+        {{ planCreditCopy }}
+      </p>
     </div>
     <!-- Amount (USD) / Credits -->
     <div class="flex gap-2 px-8 pt-8">
@@ -159,7 +162,7 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import {
   getTopupAmountPreset,
   TOPUP_AMOUNT_PRESETS_USD
@@ -168,8 +171,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import FormNumberField from '@/components/common/FormNumberField.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
@@ -177,6 +180,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
+import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -194,6 +198,7 @@ const dialogStore = useDialogStore()
 const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
+const planCreditCopy = useTopUpPlanCreditCopy()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
 // Constants

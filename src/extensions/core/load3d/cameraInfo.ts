@@ -1,34 +1,10 @@
 import { nextTick } from 'vue'
 
-import CameraInfo from '@/extensions/core/load3d/components/cameraInfo/CameraInfo.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComfyExtension } from '@/types/comfy'
 
 export const cameraInfoExtension: ComfyExtension = {
   name: 'Comfy.CreateCameraInfo',
-
-  getCustomWidgets() {
-    return {
-      CAMERA_INFO_STATE(node) {
-        const widget = new ComponentWidgetImpl({
-          node,
-          name: 'camera_info_state',
-          component: CameraInfo,
-          inputSpec: {
-            name: 'camera_info_state',
-            type: 'CAMERA_INFO_STATE',
-            isPreview: false
-          },
-          options: { serialize: false, hideInPanel: true }
-        })
-        widget.type = 'cameraInfo'
-        widget.serialize = false
-        addWidget(node, widget)
-        return { widget }
-      }
-    }
-  },
 
   async nodeCreated(node: LGraphNode) {
     if (node.constructor.comfyClass !== 'CreateCameraInfo') return

@@ -143,6 +143,7 @@ export function fakeBillingSdk() {
     topup: {
       quoteTopup: vi.fn(),
       createTopupCheckout: vi.fn(),
+      createInteractiveTopup: vi.fn(),
       createHostedTopupCheckout: vi.fn()
     },
     commands: {

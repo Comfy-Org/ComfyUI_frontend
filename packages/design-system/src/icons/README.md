@@ -100,7 +100,7 @@ ComfyUI supports three types of icons that can be used throughout the interface.
 ### With Tooltips
 
 Put the icon in a `Button` and give the button the tooltip, so keyboard users
-can reach it. See `src/components/ui/tooltip/README.md` for other triggers.
+can reach it. See `packages/design-system/src/components/tooltip/README.md` for other triggers.
 
 ```vue
 <template>

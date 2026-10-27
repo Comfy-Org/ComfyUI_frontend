@@ -91,7 +91,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { CancelRail } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'

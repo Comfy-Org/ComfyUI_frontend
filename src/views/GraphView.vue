@@ -52,7 +52,7 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
-import ToastDock from '@/components/ui/toast/ToastDock.vue'
+import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 import AppToaster from '@/components/common/AppToaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
@@ -83,6 +83,7 @@ import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
@@ -126,6 +127,7 @@ useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
 useDesktopCloudNotification()
+if (isCloud) useDeploymentCompatibility()
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
