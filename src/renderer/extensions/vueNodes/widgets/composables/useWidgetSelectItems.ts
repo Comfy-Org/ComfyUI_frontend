@@ -23,6 +23,7 @@ import type {
 } from '@/platform/assets/types/filterTypes'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
+import { isTempOutput } from '@/platform/assets/composables/media/assetMappers'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
@@ -229,9 +230,10 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       const pathWithSubfolder = subfolder
         ? `${subfolder}/${filenameForUrl}`
         : filenameForUrl
-      const annotatedPath = `${pathWithSubfolder} [output]`
+      const rootFolder = isTempOutput(asset) ? 'temp' : 'output'
+      const annotatedPath = `${pathWithSubfolder} [${rootFolder}]`
       if (missing.has(annotatedPath)) continue
-      const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
+      const displayLabel = `${getAssetDisplayFilename(asset)} [${rootFolder}]`
       items.push({
         id: `output-${asset.id}`,
         preview_url:

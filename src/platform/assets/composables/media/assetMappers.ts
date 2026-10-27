@@ -3,6 +3,7 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
 import { getAssetType as getAssetSourceType } from '@/platform/assets/utils/assetTypeUtil'
+import { getStoredOutputIdentity } from '@/platform/assets/utils/outputAssetUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
@@ -69,6 +70,8 @@ const byCreatedAtAsc = (a: AssetItem, b: AssetItem): number =>
 const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
 export function isTempOutput(asset: AssetItem): boolean {
+  const storedType = getStoredOutputIdentity(asset)?.type
+  if (storedType) return storedType === 'temp'
   return asset.tags.includes('temp') || getAssetSourceType(asset) === 'temp'
 }
 

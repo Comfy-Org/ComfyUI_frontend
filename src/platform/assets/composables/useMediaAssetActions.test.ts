@@ -15,7 +15,10 @@ import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
+import {
+  MediaAssetKey,
+  parseAssetInfo
+} from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { seedMediaNodeDefs } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
@@ -29,6 +32,8 @@ import { clearNodePreviewCacheForValues } from '@/platform/assets/utils/clearNod
 import { markDeletedAssetsAsMissingMedia } from '@/platform/assets/utils/markDeletedAssetsAsMissingMedia'
 import { getAssetType } from '@/platform/assets/utils/assetTypeUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { useMediaAssetActions as createMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
@@ -2271,6 +2276,105 @@ describe('useMediaAssetActions', () => {
         expect(referenceState(otherRoot)).toEqual(kept(otherRootReference))
       }
     )
+
+    describe('references written from an expanded-stack child', () => {
+      const outputTaggedTempAsset = createMockAsset({
+        ...job,
+        id: 'output-tagged-temp-asset',
+        name: 'ComfyUI_temp_00003_.png',
+        tags: ['output', 'temp'],
+        user_metadata: { jobId: 'job-1', subfolder: 'previews' }
+      })
+
+      async function expandedChildOf(asset: AssetItem) {
+        mockResolveOutputAssetItems.mockRestore()
+        vi.mocked(api.getJobAssets).mockResolvedValue({
+          assets: [
+            fromPartial({
+              id: asset.id,
+              name: asset.name,
+              preview_url: `/api/assets/${asset.id}/content`
+            })
+          ],
+          complete: true
+        })
+        const [group] = unflattenOutputAssets([asset])
+        const groupMetadata = getOutputAssetMetadata(group.user_metadata)
+        assert.exists(groupMetadata)
+        const [child] = await resolveOutputAssetItems(groupMetadata)
+        assert.exists(child)
+        return child
+      }
+
+      async function insertAsNode(child: AssetItem) {
+        const { actions } = mountMediaActions()
+        await actions.addWorkflow(child)
+        return { actions, node: graph.nodes.at(-1)! }
+      }
+
+      async function dropOnLoadImage(child: AssetItem) {
+        const dataTransfer = new DataTransfer()
+        const event = new DragEvent('dragstart')
+        Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+        startAssetDrag(event, child)
+        const dropped = parseAssetInfo(dataTransfer)
+        assert.exists(dropped)
+        const { actions } = mountMediaActions()
+        return {
+          actions,
+          node: addLoadImageNode(createAnnotatedPath(dropped))
+        }
+      }
+
+      const atRoot = (asset: AssetItem) =>
+        createMockAsset({
+          ...asset,
+          user_metadata: { jobId: 'job-1', subfolder: '' }
+        })
+
+      it.for([
+        [
+          'inserted as a node',
+          'tag temp',
+          insertAsNode,
+          () => tempAsset,
+          'previews/ComfyUI_temp_00001_.png [temp]'
+        ],
+        [
+          'inserted as a node',
+          'tags output and temp',
+          insertAsNode,
+          () => outputTaggedTempAsset,
+          'previews/ComfyUI_temp_00003_.png [temp]'
+        ],
+        [
+          'dropped on Load Image',
+          'tag temp',
+          dropOnLoadImage,
+          () => atRoot(tempAsset),
+          'ComfyUI_temp_00001_.png [temp]'
+        ],
+        [
+          'dropped on Load Image',
+          'tags output and temp',
+          dropOnLoadImage,
+          () => atRoot(outputTaggedTempAsset),
+          'ComfyUI_temp_00003_.png [temp]'
+        ]
+      ] as const)(
+        'writes the temp root for a child %s from an asset with %s, so deleting the child clears it',
+        async ([, , writeReference, source, written]) => {
+          const child = await expandedChildOf(source())
+          const { actions, node } = await writeReference(child)
+
+          expect(serializedImageValue(node)).toBe(written)
+
+          await actions.deleteAssets({ ...child })
+
+          expect(referenceState(node)).toEqual(cleared(written))
+        }
+      )
+    })
 
     it('ignores stored identity fields supplied in server metadata', async () => {
       const unrelated = addLoadImageNode('unrelated.png')

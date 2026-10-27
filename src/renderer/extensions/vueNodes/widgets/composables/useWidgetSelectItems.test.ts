@@ -499,6 +499,39 @@ describe('useWidgetSelectItems', () => {
       expect(mockResolveOutputAssetItems).not.toHaveBeenCalled()
     })
 
+    it.for([
+      ['tag temp', ['temp'], undefined],
+      ['tags output and temp', ['output', 'temp'], undefined],
+      [
+        'a type=temp preview URL',
+        ['output'],
+        '/api/view?filename=t.png&type=temp'
+      ]
+    ] as const)(
+      'annotates an output listed from an asset with %s with the temp root',
+      async ([, tags, previewUrl]) => {
+        mockMediaAssets.items.value = [
+          fromPartial({
+            id: 'temp-asset',
+            name: 't.png',
+            hash: 'blake3:aa7ecf08.png',
+            preview_url: previewUrl,
+            tags: [...tags]
+          })
+        ]
+
+        const { dropdownItems, filterSelected } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref('') })
+        )
+        filterSelected.value = 'outputs'
+        await nextTick()
+
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([
+          'blake3:aa7ecf08.png [temp]'
+        ])
+      }
+    )
+
     it('resolves two multi-output jobs independently', async () => {
       mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-A', 'previewA.png', '1', 2),
