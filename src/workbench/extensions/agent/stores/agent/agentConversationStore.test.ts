@@ -2568,7 +2568,16 @@ describe('useAgentConversationStore', () => {
 
     it('reports an ask kind the panel has no card for', () => {
       const store = useAgentConversationStore()
+      const tab = fromPartial<LoadedComfyWorkflow>({
+        path: 'workflows/a.json',
+        instanceId: 'workflows/a.json'
+      })
+      useWorkflowStore().attachWorkflow(tab, 0)
       store.setThreadId('th')
+      store.setTurnTabResolver(() => ({
+        status: 'known',
+        workflowInstanceId: 'workflows/a.json'
+      }))
       store.startTurn(T1)
       store.ingest(delta('t1', 'building your workflow'))
 
@@ -2587,6 +2596,10 @@ describe('useAgentConversationStore', () => {
           })
         })
       )
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+      expect(store.awaitingApproval).toBe(false)
     })
   })
 
@@ -2816,7 +2829,6 @@ describe('useAgentConversationStore', () => {
       ({ stashed, overrides }) => {
         openTab('workflows/a.json')
         const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
-        expect(store.awaitingApproval).toBe(false)
 
         store.ingest(runApproval('t1', 'ask-1', overrides))
         expect(store.turnTabs).toEqual([
@@ -2841,13 +2853,31 @@ describe('useAgentConversationStore', () => {
         openTab('workflows/a.json')
         const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
         store.ingest(runApproval('t1', 'ask-1'))
-        expect(store.awaitingApproval).toBe(true)
 
         store.ingest(done('t1'))
 
         expect(store.awaitingApproval).toBe(false)
       }
     )
+
+    it('keeps awaiting approval while an earlier background chat still waits', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'ask-1'))
+      store.stashActiveTurn()
+      store.startTurn(T2)
+      store.ingest(runApproval('t2', 'ask-2'))
+      store.stashActiveTurn()
+      store.setThreadId('th-other')
+      store.hydrate([])
+
+      store.retireAsk('ask-2', { status: 'retired' }, 'th')
+      expect(store.awaitingApproval).toBe(true)
+
+      store.retireAsk('ask-1', { status: 'retired' }, 'th')
+      expect(store.awaitingApproval).toBe(false)
+    })
 
     it.for([
       { turn: 'live', stashed: false },

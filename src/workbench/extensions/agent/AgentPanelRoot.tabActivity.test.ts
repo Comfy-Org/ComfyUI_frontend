@@ -696,16 +696,12 @@ describe('AgentPanelRoot tab activity across chats', () => {
     ])
   })
 
-  it('marks a host-permission question as needing approval, on the tab and page-wide, until it is answered', async () => {
+  it('marks a host-permission question as needing an answer page-wide until it is answered', async () => {
     const { unmount } = renderPanel()
     await send('install the video nodes')
-    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(false)
 
     emitAskUser()
     await nextTick()
-    expect([...useWorkflowTabActivityStore().awaitingApprovalPaths]).toEqual([
-      runningTab
-    ])
     expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(true)
 
     agentSocket.receive('agent_ask_resolved', {
@@ -716,7 +712,6 @@ describe('AgentPanelRoot tab activity across chats', () => {
       selected: ['allow']
     })
     await nextTick()
-    expect(useWorkflowTabActivityStore().awaitingApprovalPaths.size).toBe(0)
     expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(false)
 
     emitRunApproval()

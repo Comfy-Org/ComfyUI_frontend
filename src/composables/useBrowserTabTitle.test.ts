@@ -214,14 +214,10 @@ describe('useBrowserTabTitle', () => {
   })
 
   describe('when the agent waits for an approval', () => {
-    function persistedWorkflow() {
+    it('prefixes the title while any agent turn awaits an answer', async () => {
       workflowStore.activeWorkflow = fromPartial<
         NonNullable<typeof workflowStore.activeWorkflow>
       >({ filename: 'myFlow', isModified: false, isPersisted: true })
-    }
-
-    it('prefixes the title while any agent turn awaits an answer', async () => {
-      persistedWorkflow()
       const tabActivity = useWorkflowTabActivityStore()
       const scope = effectScope()
       scope.run(() => useBrowserTabTitle())
