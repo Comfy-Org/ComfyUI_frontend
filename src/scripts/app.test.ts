@@ -230,6 +230,7 @@ function createMockCanvas(): Partial<LGraphCanvas> {
     selectItems: vi.fn(),
     setDirty: vi.fn(),
     setGraph: vi.fn(),
+    cancelGhostPlacement: vi.fn(),
     state: fromPartial<LGraphCanvas['state']>({ ghostNodeId: null })
   }
 }
