@@ -73,7 +73,9 @@
         :cancel-payment-error
         @cancel-payment="cancelPayment"
         @confirm="
-          isTeamPreview ? handleTeamSubscribe() : handleConfirmTransition()
+          isTeamPreview
+            ? handleTeamSubscribe($event)
+            : handleConfirmTransition($event)
         "
         @back="handleBackToPricing"
       />

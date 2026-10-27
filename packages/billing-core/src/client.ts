@@ -68,10 +68,7 @@ export interface PreviewSubscribeOptions {
 }
 
 function assertExclusivePaymentCredentials(options: SubscribeOptions): void {
-  if (
-    options.confirmationToken !== undefined &&
-    options.savedPaymentMethodId !== undefined
-  ) {
+  if (options.confirmationToken && options.savedPaymentMethodId) {
     throw new TypeError(
       'confirmationToken and savedPaymentMethodId are mutually exclusive'
     )

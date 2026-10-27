@@ -34,6 +34,17 @@ describe('billing client payment credentials', () => {
       options: { savedPaymentMethodId: 'pm_saved' },
       credentials: { saved_payment_method_id: 'pm_saved' }
     },
+    {
+      options: { confirmationToken: '', savedPaymentMethodId: 'pm_saved' },
+      credentials: { saved_payment_method_id: 'pm_saved' }
+    },
+    {
+      options: {
+        confirmationToken: 'ctoken_selected',
+        savedPaymentMethodId: ''
+      },
+      credentials: { confirmation_token: 'ctoken_selected' }
+    },
     { options: { confirmationToken: '' }, credentials: {} },
     { options: { savedPaymentMethodId: '' }, credentials: {} }
   ] satisfies { options: SubscribeOptions; credentials: object }[])(
@@ -53,20 +64,17 @@ describe('billing client payment credentials', () => {
     }
   )
 
-  it.for(['ctoken_selected', ''])(
-    'rejects ambiguous credentials before sending a request: %j',
-    async (confirmationToken) => {
-      const { api, adapter } = createClient()
+  it('rejects ambiguous credentials before sending a request', async () => {
+    const { api, adapter } = createClient()
 
-      await expect(
-        api.subscribe('pro-monthly', {
-          confirmationToken,
-          savedPaymentMethodId: 'pm_saved'
-        })
-      ).rejects.toThrow(
-        'confirmationToken and savedPaymentMethodId are mutually exclusive'
-      )
-      expect(adapter).not.toHaveBeenCalled()
-    }
-  )
+    await expect(
+      api.subscribe('pro-monthly', {
+        confirmationToken: 'ctoken_selected',
+        savedPaymentMethodId: 'pm_saved'
+      })
+    ).rejects.toThrow(
+      'confirmationToken and savedPaymentMethodId are mutually exclusive'
+    )
+    expect(adapter).not.toHaveBeenCalled()
+  })
 })

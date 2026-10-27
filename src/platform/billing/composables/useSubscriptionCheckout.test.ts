@@ -1,7 +1,9 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { provideBillingDialogs } from '@/platform/billing/subscription/composables/billingDialogsAccess'
-import { render } from '@testing-library/vue'
+import SubscriptionRequiredDialogContentUnified from '@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, reactive, ref } from 'vue'
 
@@ -314,11 +316,7 @@ vi.mock<unknown>(
       fetchBalance: mockFetchBalance,
       isTeamPlan: computed(() => mockIsTeamPlan.value),
       resubscribe: mockResubscribe,
-      subscription: {
-        get value() {
-          return mockSubscription.value
-        }
-      },
+      subscription: computed(() => mockSubscription.value),
       billingStatus: {
         get value() {
           return mockBillingStatus.value
@@ -613,6 +611,68 @@ describe('useSubscriptionCheckout', () => {
     sessionStorage.clear()
     clearCheckoutJourney()
   })
+
+  it.for([
+    { planMode: 'personal', tierKey: 'standard', billingCycle: 'yearly' },
+    {
+      planMode: 'team',
+      stop: { id: 'team_700', usd: 700, credits: 147700, discountedUsd: 665 },
+      billingCycle: 'monthly',
+      isChange: true
+    }
+  ] as const)(
+    'completes a cancelled $planMode plan change from the confirmation dialog',
+    async (initialCheckout) => {
+      mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'upgrade',
+        effective_at: '2026-10-27T00:00:00Z',
+        is_immediate: true,
+        cost_today_cents: 1500,
+        cost_next_period_cents: 1600,
+        credits_today_cents: 3150,
+        credits_next_period_cents: 4200,
+        requires_reactivation_confirmation: true,
+        current_plan: {
+          ...makeCreatorMonthly(),
+          period_end: '2026-11-27T00:00:00Z'
+        },
+        new_plan: {
+          ...makeStandardYearly(),
+          period_end: '2027-10-27T00:00:00Z'
+        }
+      })
+      mockSubscribe.mockResolvedValue({
+        status: 'subscribed',
+        billing_op_id: 'op-dialog-reactivation'
+      })
+      render(SubscriptionRequiredDialogContentUnified, {
+        props: {
+          onClose: vi.fn(),
+          initialCheckout,
+          paymentIntentSource: undefined
+        },
+        global: {
+          plugins: [i18n],
+          stubs: {
+            UnifiedPricingTable: true,
+            SubscriptionSuccessWorkspace: {
+              template: '<p>Plan change completed</p>'
+            }
+          }
+        }
+      })
+
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: 'subscription.preview.reactivation.confirmButtonWithCharge'
+        })
+      )
+
+      expect(await screen.findByText('Plan change completed')).toBeVisible()
+    }
+  )
 
   describe('checkout journey instrumentation', () => {
     function journeyEvents() {
