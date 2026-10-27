@@ -25,7 +25,7 @@
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
-        <i class="pi pi-times" aria-hidden="true" />
+        <i class="icon-[lucide--x]" aria-hidden="true" />
       </button>
     </header>
 
@@ -69,7 +69,7 @@
             </div>
             <span class="shrink-0 text-sm font-medium">
               {{ $t('teamWorkspacesDialog.switch') }}
-              <i class="pi pi-arrow-right text-xs" aria-hidden="true" />
+              <i class="icon-[lucide--arrow-right] size-3" aria-hidden="true" />
             </span>
           </button>
         </li>
@@ -123,7 +123,7 @@
         :disabled="!isValidName || loading"
         @click="onCreate"
       >
-        <i class="pi pi-plus text-xs" aria-hidden="true" />
+        <i class="icon-[lucide--plus] size-3" aria-hidden="true" />
         {{ $t('teamWorkspacesDialog.createWorkspace') }}
       </Button>
     </section>

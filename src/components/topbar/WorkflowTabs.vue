@@ -56,7 +56,7 @@
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
       @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
     >
-      <i class="pi pi-plus" />
+      <i class="icon-[lucide--plus]" />
     </Button>
     <TopbarActions />
     <div

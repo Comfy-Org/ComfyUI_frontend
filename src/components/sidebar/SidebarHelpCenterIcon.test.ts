@@ -158,7 +158,7 @@ describe('SidebarHelpCenterIcon', () => {
     renderIcon()
 
     const button = screen.getByRole('button', { name: 'Give feedback' })
-    expect(button.innerHTML).toContain('pi-question-circle')
+    expect(button.innerHTML).toContain('icon-[lucide--circle-question-mark]')
     expect(button.innerHTML).not.toContain('lucide--megaphone')
   })
 
@@ -167,7 +167,7 @@ describe('SidebarHelpCenterIcon', () => {
     renderIcon()
 
     const button = screen.getByRole('button', { name: 'Help Center' })
-    expect(button.innerHTML).toContain('pi-question-circle')
+    expect(button.innerHTML).toContain('icon-[lucide--circle-question-mark]')
     expect(button.innerHTML).not.toContain('lucide--megaphone')
   })
 })

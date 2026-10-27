@@ -58,7 +58,7 @@
             </div>
             <i
               v-if="isCurrentWorkspace(workspace)"
-              class="pi pi-check shrink-0 text-sm text-foreground"
+              class="icon-[lucide--check] size-3.5 text-foreground"
             />
           </button>
         </div>
@@ -71,7 +71,7 @@
     >
       <Tooltip>
         <TooltipTrigger as-child>
-          <i class="pi pi-info-circle text-xs" />
+          <i class="icon-[lucide--info] size-3" />
         </TooltipTrigger>
         <TooltipContent side="left">{{
           $t('workspaceSwitcher.scopeTooltip')
@@ -100,7 +100,7 @@
             )
           "
         >
-          <i class="pi pi-plus text-sm text-muted-foreground" />
+          <i class="icon-[lucide--plus] size-3.5 text-muted-foreground" />
         </div>
         <div class="flex min-w-0 flex-1 flex-col text-sm text-muted-foreground">
           <span>{{ createWorkspaceLabel }}</span>

@@ -1,6 +1,6 @@
 <template>
   <SidebarIcon
-    icon="pi pi-sign-out"
+    icon="icon-[lucide--log-out]"
     :tooltip="tooltip"
     :label="$t('sideToolbar.logout')"
     @click="logout"

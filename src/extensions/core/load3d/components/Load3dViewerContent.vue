@@ -92,7 +92,7 @@
       <div class="p-4">
         <div class="flex gap-2">
           <Button variant="secondary" @click="handleCancel">
-            <i class="pi pi-times" />
+            <i class="icon-[lucide--x]" />
             {{ t('g.cancel') }}
           </Button>
         </div>

@@ -82,7 +82,7 @@
         </div>
         <div v-else-if="showEmptyState">
           <NoResultsPlaceholder
-            icon="pi pi-info-circle"
+            icon="icon-[lucide--info]"
             :title="
               $t(
                 activeTab === 'input'
