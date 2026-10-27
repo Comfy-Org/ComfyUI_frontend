@@ -96,7 +96,8 @@ describe('fetchWithRetry', () => {
       const bodies: string[] = []
       const queue = [...responses]
       const fetchImpl = vi.fn<typeof fetch>(async (input, init) => {
-        bodies.push(await new Request(input, init).text())
+        const sent = input instanceof Request ? input : new Request(input, init)
+        bodies.push(await sent.text())
         const next = queue.shift()
         if (!next) throw new Error('fetch called more times than scripted')
         return next
