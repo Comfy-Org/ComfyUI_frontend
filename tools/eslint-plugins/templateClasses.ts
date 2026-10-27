@@ -630,23 +630,48 @@ const iconElement: Rule.RuleModule = {
     const services = context.sourceCode.parserServices as
       | Partial<TemplateParserServices>
       | undefined
-    function isClassAttribute(attribute: AST.VAttribute | AST.VDirective) {
-      return attribute.directive
-        ? attribute.key.name.name === 'bind' &&
-            attribute.key.argument?.type === 'VIdentifier' &&
-            attribute.key.argument.name === 'class'
-        : attribute.key.name === 'class'
+    function isClassAttribute(
+      attribute: AST.VAttribute | AST.VDirective,
+      node: AST.Node
+    ) {
+      if (!attribute.directive) return attribute.key.name === 'class'
+      if (attribute.key.name.name !== 'bind') return false
+      if (attribute.key.argument) {
+        return (
+          attribute.key.argument.type === 'VIdentifier' &&
+          attribute.key.argument.name === 'class'
+        )
+      }
+      const expression = attribute.value?.expression
+      return (
+        expression?.type === 'ObjectExpression' &&
+        expression.properties.some(
+          (property) =>
+            property.type === 'Property' &&
+            ((property.key.type === 'Identifier' &&
+              !property.computed &&
+              property.key.name === 'class') ||
+              (property.key.type === 'Literal' &&
+                property.key.value === 'class')) &&
+            property.value.range[0] <= node.range[0] &&
+            node.range[1] <= property.value.range[1]
+        )
+      )
     }
     function checkClass(
-      node: AST.VLiteral | AST.ESLintLiteral | AST.ESLintTemplateElement
+      node: AST.VLiteral | AST.ESLintLiteral | AST.ESLintTemplateElement,
+      text: string
     ) {
-      const text = node.type === 'TemplateElement' ? node.value.raw : node.value
-      if (typeof text !== 'string' || !/(?:^|[\s:])!?icon-\[/.test(text)) return
+      if (!/(?:^|[\s:])!?icon-\[/.test(text)) return
       let parent = node.parent
-      while (parent && parent.type !== 'VAttribute') parent = parent.parent
+      while (parent && parent.type !== 'VAttribute') {
+        if (parent.type === 'BinaryExpression' && parent.operator !== '+')
+          return
+        parent = parent.parent
+      }
       if (!parent) return
       const element = parent.parent.parent
-      if (!isClassAttribute(parent) || element.rawName === 'i') return
+      if (!isClassAttribute(parent, node) || element.rawName === 'i') return
       context.report({
         node,
         messageId: 'wrongElement',
@@ -655,9 +680,11 @@ const iconElement: Rule.RuleModule = {
     }
     return (
       services?.defineTemplateBodyVisitor?.({
-        VLiteral: checkClass,
-        Literal: checkClass,
-        TemplateElement: checkClass
+        VLiteral: (node) => checkClass(node, node.value),
+        Literal: (node) => {
+          if (typeof node.value === 'string') checkClass(node, node.value)
+        },
+        TemplateElement: (node) => checkClass(node, node.value.raw)
       }) ?? {}
     )
   }

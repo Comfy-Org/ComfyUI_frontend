@@ -39,6 +39,15 @@ ruleTester.run('icon-element', templateClasses.rules['icon-element'], {
     vue('<span class="text-sm" />'),
     vue('<Button icon="icon-[lucide--check]" />'),
     vue('<div @click="track(\'icon-[lucide--check]\')" />'),
+    vue('<i v-bind="{ class: \'icon-[lucide--check]\' }" />'),
+    vue('<span v-bind="{ title: \'icon-[lucide--check]\' }" />'),
+    vue(
+      "<span v-bind=\"{ class: 'text-sm', title: 'icon-[lucide--check]' }\" />"
+    ),
+    vue(
+      "<span :class=\"iconName === 'icon-[lucide--check]' ? 'active' : ''\" />"
+    ),
+    vue('<span :class="iconName === \'icon-[lucide--check]\'" />'),
     vue('<div class="[&_i]:size-4"><i class="icon-[comfy--logo]" /></div>')
   ],
   invalid: [
@@ -50,6 +59,10 @@ ruleTester.run('icon-element', templateClasses.rules['icon-element'], {
     '<span :class="cn(loading && \'icon-[lucide--loader]\')" />',
     "<span :class=\"active ? 'icon-[lucide--check]' : 'text-sm'\" />",
     '<span :class="{ \'icon-[lucide--check]\': active }" />',
+    '<span v-bind="{ class: \'icon-[lucide--check]\' }" />',
+    "<span v-bind=\"{ 'class': cn(active && 'icon-[lucide--check]') }\" />",
+    "<span :class=\"iconName === 'check' ? 'icon-[lucide--check]' : ''\" />",
+    "<span :class=\"'icon-[lucide--' + name + ']'\" />",
     '<span :class="`icon-[${family}--${name}]`" />'
   ].map((template) => ({
     ...vue(template),
