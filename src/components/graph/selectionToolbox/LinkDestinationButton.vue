@@ -1,15 +1,12 @@
 <template>
   <span ref="goToControl" class="contents">
-    <Button
+    <ToolboxButton
       v-if="singleDestination"
-      :tooltip="goToLabel(singleDestination)"
-      variant="muted-textonly"
-      :aria-label="goToLabel(singleDestination)"
+      :label="goToLabel(singleDestination)"
+      icon="icon-[lucide--locate]"
       data-testid="go-to-link-destination-button"
       @click="goTo(singleDestination.node.id)"
-    >
-      <i class="icon-[lucide--locate]" />
-    </Button>
+    />
     <Menu v-else-if="destinations.length" :items="destinationItems">
       <template #trigger="{ open }">
         <Button
@@ -33,35 +30,6 @@
       </template>
     </Menu>
   </span>
-  <Button
-    v-if="linksHidden"
-    :tooltip="$t('commands.Comfy_Canvas_ShowSelectedLinks.label')"
-    variant="muted-textonly"
-    :aria-label="$t('commands.Comfy_Canvas_ShowSelectedLinks.label')"
-    data-testid="show-links-button"
-    @click="() => commandStore.execute('Comfy.Canvas.ShowSelectedLinks')"
-  >
-    <i class="icon-[lucide--eye]" />
-  </Button>
-  <Button
-    v-else
-    :tooltip="$t('commands.Comfy_Canvas_HideSelectedLinks.label')"
-    variant="muted-textonly"
-    :aria-label="$t('commands.Comfy_Canvas_HideSelectedLinks.label')"
-    data-testid="hide-links-button"
-    @click="() => commandStore.execute('Comfy.Canvas.HideSelectedLinks')"
-  >
-    <i class="icon-[lucide--eye-off]" />
-  </Button>
-  <Button
-    :tooltip="$t('commands.Comfy_Canvas_DeleteSelectedLinks.label')"
-    variant="muted-textonly"
-    :aria-label="$t('commands.Comfy_Canvas_DeleteSelectedLinks.label')"
-    data-testid="delete-links-button"
-    @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedLinks')"
-  >
-    <i class="icon-[lucide--trash-2]" />
-  </Button>
 </template>
 
 <script setup lang="ts">
@@ -69,32 +37,22 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import ToolboxButton from '@/components/graph/selectionToolbox/ToolboxButton.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type { LinkEnd } from '@/lib/litegraph/src/canvas/linkGeometry'
-import {
-  areSelectedLinksHidden,
-  getSelectedLinkDestinations
-} from '@/lib/litegraph/src/canvas/linkSelection'
+import { getSelectedLinkDestinations } from '@/lib/litegraph/src/canvas/linkSelection'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLinkDestinationNavigation } from '@/renderer/core/canvas/useLinkDestinationNavigation'
-import { useCommandStore } from '@/stores/commandStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import type { NodeId } from '@/types/nodeId'
 
 const { t } = useI18n()
-const commandStore = useCommandStore()
 const linkSelectionStore = useLinkSelectionStore()
 const canvasStore = useCanvasStore()
 const { goToLinkDestination } = useLinkDestinationNavigation()
 const goToControl = useTemplateRef<HTMLSpanElement>('goToControl')
-
-const linksHidden = computed(() => {
-  if (!linkSelectionStore.selection) return false
-  const graph = canvasStore.canvas?.graph
-  return !!graph && areSelectedLinksHidden(graph)
-})
 
 const destinations = computed(() => {
   if (!linkSelectionStore.selection) return []

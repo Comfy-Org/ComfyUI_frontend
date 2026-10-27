@@ -3,21 +3,21 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import LinkSelectionActions from '@/components/graph/selectionToolbox/LinkSelectionActions.vue'
+import LinkDestinationButton from '@/components/graph/selectionToolbox/LinkDestinationButton.vue'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import {
+  getSelectedLinkIds,
   selectLinksInMarquee,
   selectSlotLinks
 } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
-import enCommands from '@/locales/en/commands.json' with { type: 'json' }
 import enMain from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import {
   createMockCanvas,
   createTestDragAndScale
@@ -27,7 +27,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: { ...enMain, commands: enCommands } }
+  messages: { en: enMain }
 })
 
 function createWorkflow(
@@ -45,14 +45,10 @@ function createWorkflow(
     target.updateArea()
     return target
   })
-  const links = targets.map((target) => {
-    const link = source.connect(0, target, 0)
-    if (!link) throw new Error('connect failed')
-    return link
-  })
+  for (const target of targets) source.connect(0, target, 0)
   const canvas = createMockCanvas({ graph, ds, animateToBounds: vi.fn() })
   useCanvasStore().canvas = canvas
-  return { graph, source, targets, links, canvas }
+  return { graph, source, targets, canvas }
 }
 
 function clickSocket(
@@ -69,13 +65,13 @@ function clickSocket(
   )
 }
 
-function renderActions() {
+function renderButton() {
   const user = userEvent.setup()
-  render(LinkSelectionActions, { global: { plugins: [i18n] } })
+  render(LinkDestinationButton, { global: { plugins: [i18n] } })
   return { user }
 }
 
-describe('LinkSelectionActions', () => {
+describe('LinkDestinationButton', () => {
   it.for([
     { name: 'type', type: 'Example', expected: 'Go to Example' },
     { name: 'id', type: '', expected: undefined }
@@ -85,7 +81,7 @@ describe('LinkSelectionActions', () => {
     source.type = type
     clickSocket(graph, targets[0], 'input')
 
-    renderActions()
+    renderButton()
 
     expect(
       screen.getByRole('button', {
@@ -97,7 +93,7 @@ describe('LinkSelectionActions', () => {
   it('moves the view to the source, then offers every node its output leads to', async () => {
     const { graph, source, targets, canvas } = createWorkflow()
     clickSocket(graph, targets[0], 'input')
-    const { user } = renderActions()
+    const { user } = renderButton()
 
     await user.click(
       screen.getByRole('button', { name: 'Go to Load Checkpoint' })
@@ -117,7 +113,7 @@ describe('LinkSelectionActions', () => {
   it('lets the user choose a destination after linked nodes move', async () => {
     const { graph, source, targets, canvas } = createWorkflow()
     clickSocket(graph, source, 'output')
-    const { user } = renderActions()
+    const { user } = renderButton()
     targets[1].pos = [400, -200]
 
     await user.click(
@@ -151,7 +147,7 @@ describe('LinkSelectionActions', () => {
       source.size = [300, height]
       source.updateArea()
       clickSocket(graph, targets[0], 'input')
-      const { user } = renderActions()
+      const { user } = renderButton()
 
       await user.click(
         screen.getByRole('button', { name: 'Go to Load Checkpoint' })
@@ -177,7 +173,7 @@ describe('LinkSelectionActions', () => {
     const { graph, source, targets, canvas } = createWorkflow(ds)
     useSettingStore().settingValues['Comfy.Appearance.DisableAnimations'] = true
     clickSocket(graph, targets[0], 'input')
-    const { user } = renderActions()
+    const { user } = renderButton()
 
     await user.click(
       screen.getByRole('button', { name: 'Go to Load Checkpoint' })
@@ -213,7 +209,7 @@ describe('LinkSelectionActions', () => {
     useSettingStore().settingValues['Comfy.Appearance.DisableAnimations'] =
       false
     clickSocket(graph, targets[0], 'input')
-    const { user } = renderActions()
+    const { user } = renderButton()
 
     await user.click(
       screen.getByRole('button', { name: 'Go to Load Checkpoint' })
@@ -230,7 +226,8 @@ describe('LinkSelectionActions', () => {
   })
 
   it('offers no go-to action for a marquee selection', () => {
-    const { graph, links } = createWorkflow()
+    const { graph } = createWorkflow()
+    const links = [...graph.links.values()]
     for (const link of links)
       setLinkPolyline(link, () => [
         { x: 0, y: 10 },
@@ -238,11 +235,9 @@ describe('LinkSelectionActions', () => {
       ])
     selectLinksInMarquee({ graph, renderedPaths: links }, [40, 0, 20, 40], 50)
 
-    renderActions()
+    renderButton()
 
-    expect(
-      screen.getByRole('button', { name: 'Hide Selected Links' })
-    ).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^Go to/ })).toBeNull()
+    expect(getSelectedLinkIds(graph)).toHaveLength(2)
+    expect(screen.queryByRole('button')).toBeNull()
   })
 })
