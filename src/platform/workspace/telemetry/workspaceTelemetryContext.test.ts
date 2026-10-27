@@ -182,6 +182,7 @@ describe('useBillingCapabilities workspace scope mismatch', () => {
         can_run_workflows: false,
         can_upgrade: false
       },
+      auto_top_up_enabled: false,
       rollout_defaults_applied: {
         can_downgrade_to_personal: false,
         can_subscribe_self_serve: false,

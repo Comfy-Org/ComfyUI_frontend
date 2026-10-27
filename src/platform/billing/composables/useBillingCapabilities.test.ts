@@ -91,6 +91,7 @@ function capabilitiesResponse(
       can_downgrade_to_personal: true,
       ...overrides
     },
+    auto_top_up_enabled: false,
     rollout_defaults_applied: {
       can_downgrade_to_personal: false,
       can_subscribe_self_serve: false,
@@ -1469,6 +1470,7 @@ describe('useBillingCapabilities on the SDK rail', () => {
           can_leave_workspace: 'personal_workspace_creator',
           can_reactivate: 'no_subscription'
         },
+        autoTopUpEnabled: false,
         rolloutDefaultsApplied: {
           can_downgrade_to_personal: false,
           can_subscribe_self_serve: false,

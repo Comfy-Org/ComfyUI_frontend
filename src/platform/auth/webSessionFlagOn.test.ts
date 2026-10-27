@@ -681,6 +681,7 @@ function capabilitiesResponse({
       can_upgrade: false,
       can_downgrade_to_personal: false
     },
+    auto_top_up_enabled: false,
     rollout_defaults_applied: {
       can_downgrade_to_personal: false,
       can_subscribe_self_serve: false,

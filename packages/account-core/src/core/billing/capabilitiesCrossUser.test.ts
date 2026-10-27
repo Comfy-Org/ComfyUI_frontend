@@ -83,6 +83,7 @@ function capabilitiesBody(
     expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
     resolved_for: { user_id: canonicalUserId, workspace_id: TEAM_WORKSPACE.id },
     revision: 7,
+    auto_top_up_enabled: false,
     rollout_defaults_applied: {
       can_downgrade_to_personal: false,
       can_subscribe_self_serve: false,

@@ -175,6 +175,7 @@ const CAPABILITIES = {
   expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
   resolved_for: { user_id: 'uid-1', workspace_id: 'ws-1' },
   revision: 1,
+  auto_top_up_enabled: false,
   rollout_defaults_applied: {
     can_downgrade_to_personal: false,
     can_subscribe_self_serve: false,
