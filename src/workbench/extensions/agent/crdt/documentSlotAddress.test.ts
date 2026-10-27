@@ -276,12 +276,14 @@ describe('a local link edit lands on the document slot that carries its input', 
     onTestFinished(() => doc.destroy())
     const unsent: GraphOperation[] = []
     const outcomes: string[] = []
+    const binding = { delivers: true, workflowBound: true }
     minter = attachDocOpMinter({
       isEnabled: () => true,
-      isDocBound: () => true,
+      isDocBound: () => binding.delivers,
       enqueue: (operations) => unsent.push(...operations),
       getGraph: () => graph,
-      boundRootGraphId: () => toRootGraphId(graph.id),
+      boundRootGraphId: () =>
+        binding.workflowBound ? toRootGraphId(graph.id) : null,
       docInputNames: (nodeId) =>
         readDocSlotNames(doc, String(nodeId), 'inputs'),
       docWidgetValue: (nodeId, widgetName) =>
@@ -313,6 +315,7 @@ describe('a local link edit lands on the document slot that carries its input', 
       doc,
       unsent,
       outcomes,
+      binding,
       echo,
       foreignAppend
     }
@@ -456,6 +459,57 @@ describe('a local link edit lands on the document slot that carries its input', 
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_3`, null]
+      ],
+      reported: []
+    },
+    {
+      name: 'a disconnect held while its tab is suspended past the deadline still lands when the tab returns',
+      sink: 'TestAutogrowSink',
+      seed: firstImageWired,
+      act: async ({ sources, sink, echo, binding }) => {
+        sources[1].connect(0, sink, 1)
+        await afterFlush()
+        echo()
+        sources[2].connect(0, sink, 2)
+        await afterFlush()
+        sink.disconnectInput(2)
+        await afterFlush()
+        binding.delivers = false
+        await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+        binding.delivers = true
+      },
+      sent: [`connect grow ${IMAGES}.image_3`],
+      released: ['disconnect 2'],
+      docSlots: [
+        [`${IMAGES}.image_1`, 0],
+        [`${IMAGES}.image_2`, 1],
+        [`${IMAGES}.image_3`, null]
+      ],
+      reported: []
+    },
+    {
+      name: 'a disconnect held across an unbind is discarded, not replayed into the next binding',
+      sink: 'TestAutogrowSink',
+      seed: firstImageWired,
+      act: async ({ sources, sink, echo, binding }) => {
+        sources[1].connect(0, sink, 1)
+        await afterFlush()
+        echo()
+        sources[2].connect(0, sink, 2)
+        await afterFlush()
+        sink.disconnectInput(2)
+        await afterFlush()
+        binding.delivers = false
+        binding.workflowBound = false
+        await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+        binding.delivers = true
+        binding.workflowBound = true
+      },
+      sent: [`connect grow ${IMAGES}.image_3`],
+      docSlots: [
+        [`${IMAGES}.image_1`, 0],
+        [`${IMAGES}.image_2`, 1],
+        [`${IMAGES}.image_3`, 2]
       ],
       reported: []
     },

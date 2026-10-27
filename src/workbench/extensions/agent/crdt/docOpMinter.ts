@@ -509,6 +509,10 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   function retryGrownSlots(): void {
     grownSlotRetryTimer = null
     if (detached) return
+    if (!deps.isDocBound()) {
+      holdGrownSlotsWhileUndeliverable()
+      return
+    }
     let waiting = false
     for (const state of pendingGrownSlots.values()) {
       if (dropRetargetedGrownSlot(state)) continue
@@ -517,6 +521,16 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     }
     if (waiting)
       grownSlotRetryTimer = setTimeout(retryGrownSlots, PROMOTED_WRITE_RETRY_MS)
+  }
+
+  function holdGrownSlotsWhileUndeliverable(): void {
+    if (deps.boundRootGraphId() === null) {
+      pendingGrownSlots.clear()
+      return
+    }
+    const now = performance.now()
+    for (const state of pendingGrownSlots.values()) state.since = now
+    retryGrownSlotsSoon()
   }
 
   function retryGrownSlotsSoon(): void {

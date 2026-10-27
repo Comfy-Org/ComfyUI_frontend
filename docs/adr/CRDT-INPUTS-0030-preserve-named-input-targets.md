@@ -79,9 +79,11 @@ taken and re-ranks concurrent grows of one family by stamp, so neither the name
 nor the index is known until the echo. A later edit on that input is held until
 the document carries the input's name, then addressed by name like any other
 edit. A connect and disconnect of the same unsent grow in one tick cancel each
-other. A hold is dropped when its node is removed or cleared, when another
-document binds, or when the grow misses its catch-up deadline, which reports
-the held edits instead of minting them.
+other. A hold is dropped when its node is removed or cleared, when the session
+unbinds or another document binds, or when the grow misses its catch-up
+deadline, which reports the held edits instead of minting them. The deadline
+restarts while the bound workflow's tab is suspended, as held ops do under
+`CRDT-WRITE-0035`.
 
 Outputs resolve the same way, by document slot name first and index second.
 In practice outputs are never autogrown or reordered by growth, so a live index
