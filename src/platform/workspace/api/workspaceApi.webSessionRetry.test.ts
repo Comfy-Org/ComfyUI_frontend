@@ -14,8 +14,8 @@ import { installWorkspaceApiAuth } from './workspaceApiAuth'
 
 vi.mock(import('@/i18n'))
 
-vi.mock(import('./workspaceApiUrl'), () => ({
-  workspaceApiUrl: (path: string) => `/api${path}`
+vi.mock(import('@/platform/remote/ingest/ingestApiUrl'), () => ({
+  ingestApiUrl: (path: string) => `/api${path}`
 }))
 
 vi.mock(import('firebase/auth'), { spy: true })
