@@ -197,6 +197,7 @@ function mountPaymentElement(
     // inputs, and a customer who filled the two differently would send the
     // issuer an address that contradicts the one we collected for AVS.
     fields: { billingDetails: { address: 'never' } },
+    ...(payOnce ? { wallets: { link: 'never' as const } } : {}),
     // The host's terms note carries the recurring-charge authorization;
     // Stripe's card mandate text would say it twice.
     terms: { card: 'never' }

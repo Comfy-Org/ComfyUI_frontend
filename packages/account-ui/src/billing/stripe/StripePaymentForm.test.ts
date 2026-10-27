@@ -443,6 +443,10 @@ describe('StripePaymentForm', () => {
         paymentMethodConfiguration: expect.anything()
       })
     )
+    expect(stripeMocks.create).toHaveBeenCalledWith(
+      'payment',
+      expect.objectContaining({ wallets: { link: 'never' } })
+    )
   })
 
   it('collects deferred subscription details and emits a confirmation token', async () => {
