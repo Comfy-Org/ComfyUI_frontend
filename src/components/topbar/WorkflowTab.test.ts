@@ -138,6 +138,7 @@ function renderTab({
 
 describe('WorkflowTab - workflow status indicator', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue(undefined)
   })
 

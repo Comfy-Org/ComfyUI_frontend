@@ -3,7 +3,8 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "types": ["vitest/globals", "node"]
+    "paths": {},
+    "types": ["vitest/globals", "node", "@testing-library/jest-dom/vitest"]
   },
   "include": ["src/**/*"]
 }

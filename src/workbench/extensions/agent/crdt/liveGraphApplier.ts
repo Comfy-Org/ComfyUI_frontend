@@ -11,6 +11,7 @@ import { z } from 'zod'
 
 import {
   applyRemoteDynamicGroupRowCount,
+  dynamicGroupRowAllocationBound,
   isDynamicGroupController,
   reachesDynamicGroupRowCount,
   reportRemoteDynamicGroupRowMismatch
@@ -607,15 +608,42 @@ function supersededOverflowAlias(
   return positional !== undefined && Object.hasOwn(document, positional.name)
 }
 
-/** Rows the document carries values for under the DynamicGroup `name`. */
-function documentedRowCount(name: string, widgets: DocNode['widgets']): number {
-  if (widgets === undefined || Array.isArray(widgets)) return 0
-  const prefix = `${name}.`
-  const rows = new Set<string>()
-  for (const key of Object.keys(widgets)) {
-    if (key.startsWith(prefix)) rows.add(key.slice(prefix.length).split('.')[0])
+function closestController(
+  node: LGraphNode,
+  name: string
+): IBaseWidget | undefined {
+  let controller: IBaseWidget | undefined
+  for (const widget of node.widgets ?? []) {
+    if (!isDynamicGroupController(widget)) continue
+    if (!name.startsWith(`${widget.name}.`)) continue
+    if (!controller || widget.name.length > controller.name.length)
+      controller = widget
   }
-  return rows.size
+  return controller
+}
+
+function hiddenRowController(
+  node: LGraphNode,
+  name: string
+): IBaseWidget | undefined {
+  const controller = closestController(node, name)
+  if (!controller) return undefined
+  const [index, ...field] = name.slice(controller.name.length + 1).split('.')
+  if (!/^(0|[1-9]\d*)$/.test(index) || !field.length || !field.every(Boolean))
+    return undefined
+  const count = controller.value
+  return typeof count === 'number' && Number(index) >= count
+    ? controller
+    : undefined
+}
+
+function regrownRow(
+  node: LGraphNode,
+  name: string,
+  names: ReadonlySet<string>
+): boolean {
+  const controller = hiddenRowController(node, name)
+  return controller !== undefined && names.has(controller.name)
 }
 
 function deferredRowCounts(
@@ -718,11 +746,26 @@ function floorSizeToContent(node: LGraphNode): void {
   node.setSize([Math.max(width, minWidth), Math.max(height, minHeight)])
 }
 
+function configureRemoteNode(node: LGraphNode, info: ISerialisedNode): void {
+  applyRemoteDynamicGroupRowCount(node, () => node.configure(info))
+}
+
+function widgetAcceptedValue(widget: IBaseWidget, value: WidgetValue): boolean {
+  return (
+    !isDynamicGroupController(widget) ||
+    reachesDynamicGroupRowCount(widget, value)
+  )
+}
+
 export class LiveGraphApplier {
   private readonly deps: LiveGraphApplierDeps
   private readonly reported = new Set<string>()
   private readonly interiorIds = new Map<string, Map<string, NodeId>>()
   private readonly failureCounts: number[] = []
+  private readonly unappliedRegrownRows = new WeakMap<
+    LGraphNode,
+    ReadonlySet<string>
+  >()
 
   constructor(deps: LiveGraphApplierDeps) {
     this.deps = deps
@@ -990,11 +1033,11 @@ export class LiveGraphApplier {
     }
     if (node.has_errors) {
       node.last_serialization = info
-      node.configure(info)
+      configureRemoteNode(node, info)
     } else {
       if (node.isSubgraphNode()) {
         const beforeConfigurePromotedIds = promotedWidgetIds(node)
-        node.configure(info)
+        configureRemoteNode(node, info)
         this.applyConfiguredHostWidgets(
           node,
           docNode.widgets,
@@ -1007,7 +1050,7 @@ export class LiveGraphApplier {
           node.widgets?.map((widget) => widget.name)
         )
         const deferred = deferredRowCounts(node, constructed, docNode.widgets)
-        node.configure({
+        configureRemoteNode(node, {
           ...info,
           widgets_values:
             docNode.widgetRecord === undefined
@@ -1117,14 +1160,30 @@ export class LiveGraphApplier {
       return
     }
     if (!widgets) return
+    const regrown = this.regrownRows(node, Object.keys(widgets), names)
     this.applyWidgets(
       node,
       Object.fromEntries(
-        Object.entries(widgets).filter(([name]) => changed(node, name, names))
+        Object.entries(widgets).filter(
+          ([name]) => changed(node, name, names) || regrown.has(name)
+        )
       ),
       mode,
       { documentWidgets: widgets }
     )
+  }
+
+  private regrownRows(
+    node: LGraphNode,
+    keys: readonly string[],
+    names: ReadonlySet<string>
+  ): ReadonlySet<string> {
+    const regrown = new Set(this.unappliedRegrownRows.get(node))
+    for (const name of keys) {
+      if (regrownRow(node, name, names)) regrown.add(name)
+    }
+    if (regrown.size > 0) this.unappliedRegrownRows.set(node, regrown)
+    return regrown
   }
 
   private applyInteriors(
@@ -1218,8 +1277,11 @@ export class LiveGraphApplier {
       this.applyWidgets(live, widgets as DocNode['widgets'], mode)
       return
     }
+    const regrown = this.regrownRows(live, Object.keys(widgets), names)
     const filtered = Object.fromEntries(
-      Object.entries(widgets).filter(([name]) => names.has(name))
+      Object.entries(widgets).filter(
+        ([name]) => names.has(name) || regrown.has(name)
+      )
     )
     if (Object.keys(filtered).length === 0) return
     this.applyWidgets(live, filtered, mode, {
@@ -1266,6 +1328,11 @@ export class LiveGraphApplier {
       this.applyHostWidgets(node, widgets, mode)
       return
     }
+    if (Array.isArray(widgets)) {
+      this.applyPositionalWidgets(node, widgets)
+      this.unappliedRegrownRows.delete(node)
+      return
+    }
     const { documentWidgets = widgets, reportMissing = true } = options
     let pending = ordinaryWidgetEntries(node, widgets).filter(isWidgetEntry)
     while (pending.length > 0) {
@@ -1276,9 +1343,27 @@ export class LiveGraphApplier {
       )
       if (!resolved) {
         this.reportMissingWidgets(node, unresolved, reportMissing)
-        return
+        break
       }
       pending = unresolved
+    }
+    this.unappliedRegrownRows.delete(node)
+  }
+
+  private applyPositionalWidgets(node: LGraphNode, widgets: unknown[]): void {
+    let live = serializableWidgets(node)
+    for (
+      let index = 0;
+      index < Math.min(widgets.length, live.length);
+      index++
+    ) {
+      const widget = live[index]
+      const entry: [string, unknown] = [widget.name, widgets[index]]
+      if (!isWidgetEntry(entry)) continue
+      this.applyWidgetRound(node, [entry], widgets)
+      if (!isDynamicGroupController(widget)) continue
+      if (!reachesDynamicGroupRowCount(widget, entry[1])) return
+      live = serializableWidgets(node)
     }
   }
 
@@ -1303,7 +1388,7 @@ export class LiveGraphApplier {
       )
         continue
       if (isDynamicGroupController(widget))
-        this.applyDynamicGroupRowCount(node, widget, value, documentWidgets)
+        this.applyDynamicGroupRowCount(node, widget, value)
       else this.setWidgetValue(node, widget, value)
       resolved = true
     }
@@ -1316,6 +1401,7 @@ export class LiveGraphApplier {
     reportMissing: boolean
   ): void {
     for (const [name] of unresolved) {
+      if (hiddenRowController(node, name)) continue
       if (reportMissing || overflowWidgetIndex(name) !== null)
         this.reportMissingWidget(node, name)
     }
@@ -1435,25 +1521,31 @@ export class LiveGraphApplier {
   private applyDynamicGroupRowCount(
     node: LGraphNode,
     widget: IBaseWidget,
-    value: WidgetValue,
-    documentWidgets: DocNode['widgets']
+    value: WidgetValue
   ) {
-    const { max } = widget.options
-    const growsAboveMax =
-      typeof value === 'number' &&
-      max !== undefined &&
-      Math.trunc(value) >
-        Math.max(
-          max,
-          Number(widget.value),
-          documentedRowCount(widget.name, documentWidgets)
-        )
-    if (!growsAboveMax) {
-      applyRemoteDynamicGroupRowCount(node, () =>
-        this.setWidgetValue(node, widget, value)
-      )
-      if (reachesDynamicGroupRowCount(widget, value)) return
+    const requested =
+      typeof value === 'number' && Number.isFinite(value)
+        ? Math.max(widget.options.min ?? 0, Math.trunc(value))
+        : null
+    if (
+      requested !== null &&
+      requested > dynamicGroupRowAllocationBound(widget)
+    ) {
+      this.reportDynamicGroupRowMismatch(node, widget, value)
+      return
     }
+    const applied = applyRemoteDynamicGroupRowCount(node, () =>
+      this.setWidgetValue(node, widget, value)
+    )
+    if (applied && reachesDynamicGroupRowCount(widget, value)) return
+    this.reportDynamicGroupRowMismatch(node, widget, value)
+  }
+
+  private reportDynamicGroupRowMismatch(
+    node: LGraphNode,
+    widget: IBaseWidget,
+    value: WidgetValue
+  ) {
     this.incrementFailureCount()
     reportRemoteDynamicGroupRowMismatch(node, value, Number(widget.value), {
       ...AGENT_APPLY_TAGS,
@@ -1465,10 +1557,15 @@ export class LiveGraphApplier {
     node: LGraphNode,
     widget: IBaseWidget,
     value: WidgetValue
-  ) {
-    if (widget.type === 'button' || Object.is(widget.value, value)) return
+  ): boolean {
+    if (widget.type === 'button') return false
+    if (Object.is(widget.value, value)) return true
     const previous = widget.value
     const rollback = writeWidgetValue(node, widget, value)
+    if (!widgetAcceptedValue(widget, value)) {
+      rollback()
+      return false
+    }
     try {
       widget.callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
       node.onWidgetChanged?.(widget.name, value, previous, widget)
@@ -1477,6 +1574,7 @@ export class LiveGraphApplier {
       throw error
     }
     node.graph?.incrementVersion()
+    return true
   }
 
   private setPromotedWidgetValue(
@@ -1644,24 +1742,13 @@ function isWidgetEntry(
   return entry[1] !== undefined && isWidgetValue(entry[1])
 }
 
-/**
- * Ordinary node widget values by document name, ordered so Y.Map insertion
- * order cannot decide the outcome (`widgetEntryRank`); a positional list is
- * read in serializable-widget order.
- */
 function ordinaryWidgetEntries(
   node: LGraphNode,
-  widgets: NonNullable<DocNode['widgets']>
+  widgets: Record<string, unknown>
 ): [string, unknown][] {
-  if (!Array.isArray(widgets)) {
-    return Object.entries(widgets).sort(
-      ([a], [b]) => widgetEntryRank(node, a) - widgetEntryRank(node, b)
-    )
-  }
-  return serializableWidgets(node).map((widget, index) => [
-    widget.name,
-    widgets[index]
-  ])
+  return Object.entries(widgets).sort(
+    ([a], [b]) => widgetEntryRank(node, a) - widgetEntryRank(node, b)
+  )
 }
 
 function restoreWidgetRecord(
@@ -1674,7 +1761,7 @@ function restoreWidgetRecord(
     if (snapshot) node.last_serialization = { ...snapshot, widgets_values }
     return
   }
-  node.configure({
+  configureRemoteNode(node, {
     ...omit(node.serialize(), ['widgets_values_named']),
     widgets_values
   })

@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { User, UserCredential } from 'firebase/auth'
 import {
   afterEach,
@@ -64,9 +65,9 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
-import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
+import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
 import {
   getGlobalSetting,
   setGlobalSetting
@@ -1151,7 +1152,7 @@ describe('workspace API and global settings on the shared web session', () => {
       await useTeamWorkspaceStore().initialize()
       ingest.requests.length = 0
 
-      await workspaceApi.getBillingStatus()
+      await billingApi.getBillingStatus()
 
       expect(ingest.requests).toEqual([
         sessionRequest('GET', '/api/billing/status', {
@@ -1168,8 +1169,8 @@ describe('workspace API and global settings on the shared web session', () => {
     localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, 'ws-team')
 
     await useTeamWorkspaceStore().initialize()
-    await workspaceApi.getBillingStatus()
-    await workspaceApi.getBillingStatus()
+    await billingApi.getBillingStatus()
+    await billingApi.getBillingStatus()
 
     expect(ingest.requests.map(({ path }) => path)).toEqual([
       '/api/workspaces',
@@ -1184,7 +1185,7 @@ describe('workspace API and global settings on the shared web session', () => {
     ingest.refusals.push('csrf_invalid')
     ingest.csrfToken = 'csrf-2'
 
-    await workspaceApi.createTopup(500)
+    await billingApi.createTopup(500)
 
     expect(
       ingest.requests.map(({ path, headers }) =>
@@ -1202,7 +1203,7 @@ describe('workspace API and global settings on the shared web session', () => {
     const ingest = await bootOnSession()
     ingest.refusals.push('plan_required')
 
-    await expect(workspaceApi.getBillingStatus()).rejects.toMatchObject({
+    await expect(billingApi.getBillingStatus()).rejects.toMatchObject({
       name: 'WorkspaceApiError',
       status: 403,
       code: 'plan_required',
@@ -1214,7 +1215,7 @@ describe('workspace API and global settings on the shared web session', () => {
     const ingest = await bootOnSession()
     ingest.refusals.push('no_workspace_access')
 
-    await expect(workspaceApi.getBillingStatus()).rejects.toBeInstanceOf(
+    await expect(billingApi.getBillingStatus()).rejects.toBeInstanceOf(
       NoWorkspaceAccessError
     )
   })

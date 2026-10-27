@@ -70,7 +70,7 @@ import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import BillingAutoTopUpBanner from '@/platform/billing/components/billingTab/BillingAutoTopUpBanner.vue'
 import { useAutoTopUpBannerKind } from '@/platform/billing/composables/useAutoTopUpBannerKind'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -83,8 +83,8 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 type BannerAction = 'addCredits' | 'updatePayment'
 
@@ -103,7 +103,7 @@ const { suppressed = false } = defineProps<{
 
 const billing = useBillingContext()
 const { flags } = useFeatureFlags()
-const { permissions } = useWorkspaceUI()
+const { permissions } = useBillingUI()
 const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()

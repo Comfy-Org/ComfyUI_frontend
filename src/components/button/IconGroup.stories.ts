@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import Button from '@/components/ui/button/Button.vue'
-import IconGroup from './IconGroup.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import IconGroup from '@comfyorg/design-system/button-group/IconGroup'
 
 const meta: Meta<typeof IconGroup> = {
   title: 'Components/Button/IconGroup',
