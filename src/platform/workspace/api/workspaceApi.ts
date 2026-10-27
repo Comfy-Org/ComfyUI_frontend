@@ -64,7 +64,6 @@ export type { WorkspaceDeploymentCpuServer }
 
 const CPU_SERVER_READ_TIMEOUT_MS = 15_000
 
-export type WorkspaceApiOperation = keyof typeof workspaceApi
 export const workspaceApi = {
   async list(): Promise<ListWorkspacesResponse> {
     const auth = await requestAuth()
