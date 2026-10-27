@@ -156,15 +156,15 @@ onMounted(() => {
         <Button
           v-if="docsUrl"
           variant="link"
-          size="link"
-          class="w-fit py-0 text-xs/5"
+          size="unset"
+          class="w-fit gap-1 px-0 py-2 text-sm/5 font-normal hover:underline"
           as="a"
           :href="docsUrl"
           target="_blank"
           rel="noopener noreferrer"
         >
           {{ $t('agent.consent.readDocs') }}
-          <span class="icon-[lucide--square-arrow-out-up-right] size-3" />
+          <span class="icon-[lucide--square-arrow-out-up-right] size-4" />
         </Button>
         <div class="ml-auto flex flex-col items-end gap-1">
           <p
