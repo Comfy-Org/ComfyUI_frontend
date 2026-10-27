@@ -579,9 +579,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
-  /** @see WorkflowStore.tabsRestored */
   const tabsRestored = ref(false)
-  /** @see WorkflowStore.markTabsRestored */
   const markTabsRestored = () => {
     tabsRestored.value = true
   }

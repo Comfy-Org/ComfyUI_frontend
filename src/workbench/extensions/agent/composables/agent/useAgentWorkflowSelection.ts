@@ -275,10 +275,6 @@ export function useAgentWorkflowSelection({
     return boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
   }
 
-  /**
-   * A reload can hydrate the chat before startup recreates its unsaved draft
-   * tab from local storage, the only local owner such a draft has.
-   */
   async function startupTabsRestored(
     isCurrent: () => boolean
   ): Promise<boolean> {

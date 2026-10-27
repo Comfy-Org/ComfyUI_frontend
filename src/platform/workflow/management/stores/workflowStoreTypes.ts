@@ -49,7 +49,7 @@ export interface WorkflowStore {
    * a workflow with no open tab may simply not have been restored yet.
    */
   tabsRestored: boolean
-  /** Called by startup tab restoration when it settles, on every outcome. */
+  /** Called once startup tab restoration settles, including when startup fails first. */
   markTabsRestored: () => void
 
   /** `true` if any subgraph is currently being viewed. */
