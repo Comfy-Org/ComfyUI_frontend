@@ -20,13 +20,12 @@ Load3D (FE-840).
 On main two dispatchers share `keybindingStore`: `keybindHandler`, a window
 bubble listener from `GraphView.vue`, and `executeCanvasKeybinding`, run by
 the `processKey` patch in `app.ts` on the canvas element, which then stops
-propagation. Outside both, 24 keydown or keyup listeners sit on window,
-document or body, in 21 files;
-three hard-code undo (`changeTracker.ts`, the mask-editor package's
-`useKeyboard.ts`, `LayerEditorContent.vue`). Location comes from
-`targetElementId` containment, `escapeOverride.ts`, role checks and
-`isModalOpen` (`src/utils/modalUtil.ts`), four DOM queries run on most
-keydowns. This month's keyboard PRs each work around a missing piece: a
+propagation. Outside both, keydown and keyup listeners are spread across
+window, document and body. Undo is hard-coded in `changeTracker.ts`, the
+mask-editor package's `useKeyboard.ts` and `LayerEditorContent.vue`.
+Location comes from `targetElementId` containment, `escapeOverride.ts`, role
+checks and `isModalOpen`, with DOM queries on most keydowns.
+This month's keyboard PRs each work around a missing piece: a
 listener for key holds (#21965), a repeat check inside `keybindHandler`
 (#21906), drag-cancel listeners (#21612), an Escape listener (#21960).
 
@@ -55,9 +54,10 @@ Those survive. Three parts did not:
   (KJNodes insert mode), and `onKeyDown` overrides that skip the original
   (vslinx). Its rollback re-added the listener, so "first" held by timing.
 
-Stored shortcuts are fragile too: main drops an unset whose command is not
-registered yet, so with late custom nodes (EXTENSION-LOADING-0048) a removed
-default returns, and the first implementation parsed all settings or none.
+Stored shortcuts are fragile too: until #21982 main dropped an unset whose
+command was not registered yet, so with late custom nodes
+(EXTENSION-LOADING-0048) a removed default returned, and the first
+implementation parsed all settings or none.
 
 ## Decision
 
@@ -96,11 +96,14 @@ takes the nearest stamped ancestor and follows _logical_ parents, injected
 through Vue `provide`/`inject`, to the root, so teleported content belongs to
 the component that opened it.
 
-- Anchors are stamped once, in the `src/components/ui` wrappers for portalled
-  content. A lint rule bans direct Reka `*Content`/`*Portal` imports elsewhere;
-  unanchored content resolves at the root, no worse than today.
+- Anchors are stamped once: in the `@comfyorg/design-system` wrappers for
+  portalled content, and on raw `<Teleport>` roots. The package imports no app
+  code, so it exports an injection key its wrappers read and the app provides
+  the scope through it. A lint rule bans Reka's portalled parts and unanchored
+  `<Teleport>` elsewhere; unanchored content resolves at the root, no worse
+  than today.
 - The dialog scope is stamped on `DialogPortal.vue`'s `portalTarget`, not on
-  `DialogContent`. `GlobalDialog.vue` passes the dialog key as the variant.
+  `DialogContent`. The dialog key labels the instance for diagnostics only.
   Bindings name content scopes (`maskEditor`), never dialog keys.
 - The canvas scope wraps only `#graph-canvas`, `TransformPane.vue` and the DOM
   widget layer, inactive in app mode; `LiteGraphCanvasSplitterOverlay.vue`
@@ -108,9 +111,11 @@ the component that opened it.
 - Node scopes on `LGraphNode.vue`, `DomWidget.vue` and `WidgetDOM.vue` carry
   per-instance handlers; litegraph-drawn nodes get a virtual node scope from
   the single selected node, or the hovered one in FE-840's hover mode.
-- With focus on `body` or app chrome, the last focused region counts only
-  while connected, visible (`checkVisibility()`) and not hidden by app mode,
-  so Delete in app mode cannot reach the hidden graph.
+- With focus on `body` or app chrome, the last region focused or pressed with
+  a pointer counts, only while connected, visible (`checkVisibility()`) and
+  not hidden by app mode. A click on a panel's plain text moves it to that
+  panel, so Backspace there cannot delete nodes, and Delete in app mode cannot
+  reach the hidden graph.
 - Package code is scoped by its host (`MaskEditorContent.vue` for the mask
   editor). One bounding-box scope serves the inline and fullscreen editor, so
   Delete there removes a box, never the node.
@@ -130,9 +135,10 @@ ghost placement, which must cancel without canvas focus.
   it, a Reka layer receives it unclaimed and dismisses itself; other layers
   run their dismiss handler. The mask editor's layer owns Escape and keeps its
   dialog open, so unsaved strokes survive.
-- Exclusive layers (dialogs, lightbox, tour spotlight, embedded terminal and
-  Markdown editors, the shortcut recorder) admit outer-scope bindings only
-  with `allowIn.modal`.
+- Exclusive layers (dialogs, lightbox, tour spotlight) admit outer-scope
+  bindings only with `allowIn.modal`. The embedded terminal and Markdown
+  editors and the shortcut recorder are exclusive scopes: the same rule, but
+  only while they are on the event's chain, never merely by being open.
 - `modalOpen` is read from the stack. `isModalOpen` is only the D8 fallback,
   consulted when the winning candidate sits at the root.
 
@@ -151,17 +157,17 @@ Inside a dialog its Escape wins even if Escape is bound globally, and a user's
 binding beats an extension's wherever the extension does not own the scope.
 
 Candidates are ordered by depth (top layer or deepest scope first), then
-source (user > extension > core), then the narrower clause, then registration
-order. The first eligible one (D4) runs; an ineligible one never ends the
-search.
+source (user > extension > core), then the narrower clause, then extension
+name, then registration order, so no tie depends on load timing. The first
+eligible one (D4) runs; an ineligible one never ends the search.
 
 - **Masking.** An extension binding in a scope the extension does not own is
   skipped when an eligible user binding on the same combo exists at that scope
   or an ancestor on the chain. In its own scopes an extension keeps depth
   priority. Depth alone stops a root-level extension Escape from beating a
   dialog or link-drag Escape.
-- **Conflicts** need identical combo, scope and variant, canonical clause and
-  source. The same combo at another depth is a shadow, shown as "overridden in
+- **Conflicts** need identical combo, scope, canonical clause and source.
+  The same combo at another depth is a shadow, shown as "overridden in
   <scope>".
 - "Add keybinding" defaults to the command's home scope, so a rebind sits at
   its default's depth. Menus show a shortcut only if resolving it from the
@@ -176,8 +182,9 @@ keys while Ctrl+Z and Ctrl+A still reach the app from a dropdown or tree.
 - `allowIn: { textInput, modal }` grants permission; `when` only states a
   condition. One binding replaces `popup.ts`'s four.
 - One eligibility function checks scope, clause, permissions, availability
-  and masking for both dispatch and hold release. It reads the target from the
-  event path, not `document.activeElement`, which is wrong in shadow DOM.
+  and masking for every dispatch, hold presses included. It reads the target
+  from the event path, not `document.activeElement`, which is wrong in shadow
+  DOM.
 - Text inputs (`isContentEditable`, covering `plaintext-only` and nested
   regions) and IME composition keep reserved editing combos. Extensions may
   set `allowIn.textInput` only in scopes they own. Credential inputs
@@ -189,12 +196,14 @@ keys while Ctrl+Z and Ctrl+A still reach the app from a dropdown or tree.
   navigation, typeahead, Enter, Space, Home, End, and Ctrl/Cmd+A only with
   `aria-multiselectable="true"`. Tab list: arrows, Home, End. Buttons, links,
   media: unmodified Enter and Space.
-- A re-dispatched copy of a claimed key is never resolved again.
-  `WidgetSelectDefault.vue` stops replaying modified keys (main replays
-  Ctrl+Enter too), so Ctrl+Enter in an open dropdown queues once.
+- A copied event is a new event, so the resolver cannot tell a replay from a
+  fresh key; core replays carry no modifiers instead. `WidgetSelectDefault.vue`
+  stops replaying modified keys (main replays Ctrl+Enter too), so Ctrl+Enter
+  in an open dropdown queues once.
 - Among Reka's toggles only `SwitchRoot` acts on Enter without checking
-  `defaultPrevented`, so `src/components/ui/switch/Switch.vue` rejects a model
-  update caused by a claimed keydown (#15582). This holds in both D6 modes.
+  `defaultPrevented`, so the design system's `Switch.vue` rejects a model
+  update caused by a claimed keydown, through a claim check the app provides
+  (#15582). This holds in both D6 modes.
   Reka's `TreeItem` also selects on Enter and Ctrl+Enter regardless; the tree
   wrapper gets the same guard.
 
@@ -203,11 +212,14 @@ keys while Ctrl+Z and Ctrl+A still reach the app from a dropdown or tree.
 Space-to-pan and the link-tie key are rebindable, and no key stays stuck.
 
 - A hold names `releaseCommandId`. The press runs at the D6 commit point, so a
-  shield can veto it and leave nothing to release; repeats never press.
+  shield can veto it and leave nothing to release; repeats never press. A
+  press records its release before it awaits anything.
 - Release runs from the window-capture keyup listener, which no extension
-  precedes, exactly once: on keyup, blur, a hidden document, the scope leaving
-  the chain, unregistration, remapping, or a held modifier coming up (macOS
-  sends no keyup for a key pressed under Cmd). An async press settles first.
+  precedes, exactly once, from the press record and without re-checking
+  eligibility: on keyup, blur, a hidden document, the scope leaving the chain,
+  unregistration, remapping, or a held modifier coming up (macOS sends no
+  keyup for a key pressed under Cmd). Release never waits for an async press;
+  a press that completes after its release is ignored.
 - Modifier state comes from keyboard and pointer events and resets on blur and
   a hidden document. It replaces `useMagicKeys` in `workspaceStore.ts`; click
   handlers read their own event's `shiftKey` (#21558).
@@ -216,41 +228,48 @@ Space-to-pan and the link-tie key are rebindable, and no key stays stuck.
 
 Through the migration, extension authors see main's order: shields,
 `processKey` wrappers and document-capture listeners still run before the core
-command they guard against. A visible "Shortcut priority" setting
-(`Comfy.Keybinding.CommitPhase`: `compat` or `strict`) opts into committing at
-capture; when the criteria below hold, the default flips once, for everyone.
+command they guard against. A "Shortcut priority" setting
+(`Comfy.Keybinding.CommitPhase`: `compat` or `strict`), hidden until the
+surfaces have moved (Rollout 14), opts into committing at capture; when the
+criteria below hold, the default flips once, for everyone.
 
 - One set of listeners is installed before any extension loads and never
   re-added: keydown at window capture (resolver) and bubble (committer), keyup
-  at window capture (holds, modifiers), and blur, `visibilitychange` and
-  `focusin`. A mode change flips a flag, releases holds and drops pending
-  claims.
+  at window capture (holds, modifiers), pointerdown at window capture
+  (modifiers, last region), and blur, `visibilitychange` and `focusin`. A mode
+  change flips a flag, releases holds and drops pending claims.
 - The resolver applies D4 and resolves against a snapshot of context taken at
   capture, then records a claim for the event.
 - **Compat**, the default until the flip, commits where main runs the key and
-  prevents the default there, as main does, so listeners that defer to
-  `defaultPrevented` (Reka's Escape dismissal, the composer preview) behave
-  as today. Canvas-scope bindings commit in the canvas element's own listener
-  (`processKey`) when the event passes through it, and still stop propagation
-  there; otherwise at window bubble. Undo and redo commit at window capture,
-  where `changeTracker.ts` runs graph undo today. Every other binding commits
-  as the first window-bubble listener, where `keybindHandler` is.
+  prevents the default there, as `keybindHandler` does, so listeners that
+  defer to `defaultPrevented` (Reka's Escape dismissal, the composer preview)
+  behave as today. Canvas-scope bindings, zoom included, commit in the canvas
+  element's own listener (`processKey`) when the event passes through it, and
+  still stop propagation there; otherwise at window bubble. Every other
+  binding, undo and redo included, commits as the first window-bubble
+  listener, where `keybindHandler` is.
 - **Strict** commits every claim at capture and prevents the default there
-  unless the binding sets `preventDefault: false`, so `defaultPrevented` means
-  "claimed".
+  unless the binding sets `preventDefault: false`. The claim is recorded apart
+  from `defaultPrevented`, which native controls also set, and the extension
+  keybinding API exposes it.
 - A commit re-checks only liveness (command registered, scope mounted, hold
   pressed), never the decision, so a legacy modal that closes itself cannot
   cause a second Escape action. A dead claim is stale, not a veto.
 - **A veto** is a claim that never reaches its commit point; only
   `stopPropagation`, `stopImmediatePropagation` or `cancelBubble` cause one.
   Vetoes are counted per command and per pack, the pack read from the stopping
-  call's stack for claimed events only. A core veto goes to `reportError` and
-  fails e2e.
-- **Flip criteria**, all required: two releases of veto data; zero core vetoes
-  in e2e; every pack vetoing in at least 0.1% of sessions has shipped a fix,
-  is covered by a D8 shim, or has had a core-authored PR open for 60 days; and
-  strict passes a test pack reproducing the extension patterns above. Compat
-  then stays a visible opt-out for two releases before removal.
+  call's stack for claimed events only. A core veto fails e2e. It reaches
+  `reportError` only once the PR that moves its surface has removed the
+  surface's own stop: the Markdown widget, mask editor, lightbox and
+  bounding-box editor stop every key today.
+- **Flip criteria**, all required: two releases of veto data after the last
+  surface PR; zero core vetoes in e2e; every pack vetoing in at least 0.1% of
+  sessions, or found by an ecosystem-matrix census of packs that add capture
+  key listeners, wrap `processKey` or override `onKeyDown` (local installs
+  send no telemetry), has shipped a fix, is covered by a D8 shim, or has had a
+  core-authored PR open for 60 days; and strict passes a test pack reproducing
+  the extension patterns above. Compat then stays a visible opt-out for two
+  releases before removal.
 - No per-install automatic mode: order depends only on the mode, never on the
   installed packs or local history. A known-pack list only adds panel warnings.
 
@@ -262,19 +281,24 @@ a default that moves scope.
 - One versioned settings value, parsed entry by entry. Invalid entries and
   unknown fields are kept verbatim and written back; an unknown version opens
   read-only.
-- Unsets are kept whether or not their command is registered yet. This ships
-  first, independently. Unsets match on source, command, combo and scope, not
-  behavior flags, so a flag added to a default does not bring it back.
-- An identity map translates defaults whose scope moves (Delete, Backspace,
-  Ctrl+A and paste off `graph-canvas-container`, zoom off `graph-canvas`) on
-  every load path, so a stored "unset Backspace" keeps matching.
+- Unsets are kept whether or not their command is registered yet (#21982).
+  Unsets match on source, command, combo and scope, not behavior flags, so a
+  flag added to a default does not bring it back.
+- An identity map translates every default whose scope moves (the
+  `graph-canvas-container` and `graph-canvas` defaults) on every load path, so
+  a stored "unset Backspace" keeps matching.
+- A legacy user binding on a combo a default also holds unsets that default
+  when first read, as "Overwrite" meant on main, so a deeper default cannot
+  shadow a binding saved before this change.
 - The legacy `Comfy.Keybinding.NewBindings`/`UnsetBindings` mirror holds only
   bindings without clause or permissions, keeping their `targetElementId`. An
   older frontend's edits there merge three-way against the last mirror written;
   additions that collide with a versioned-only binding are skipped.
-- Presets carry a version; fields old frontends cannot represent sit under a
-  key their parsers drop. Host-reserved combos warn in the edit dialog and are
-  never filtered at load, since browser and Desktop share settings.
+- Versioned presets live in a folder older frontends never read or write,
+  each with a legacy-format copy in today's folder holding what the mirror
+  holds, since an older frontend rewrites a preset without the fields it
+  drops. Host-reserved combos warn in the edit dialog and are never filtered
+  at load, since browser and Desktop share settings.
 
 ### D8 — Compatibility shims
 
@@ -289,7 +313,8 @@ Extensions keep the hooks they use today, read no more broadly than main does.
 - **`onKeyDown` marker.** `litegraphService.ts` puts a marker at the bottom of
   each node type's `onKeyDown` chain, where `addNodeKeyHandler` sits today.
   Image navigation moves only nodes whose chain reached it, so an override that
-  skips the original (vslinx) keeps its veto.
+  skips the original (vslinx) keeps its veto in compat. After the flip such
+  packs declare a scope, as other shields do.
 - **`processKey` shim.** Wrappers patched at module load still run. It
   forwards to selected nodes' `onKeyDown`/`onKeyUp` every key but canvas-scope
   claims in compat (main's set), only unclaimed keys in strict, and skips
@@ -304,7 +329,8 @@ Extensions keep the hooks they use today, read no more broadly than main does.
   and reading the triggering event from command metadata with a fallback.
 - **Desktop.** The host publishes its reserved combos over the preload bridge
   (`__comfyDesktop2`), with a fallback list for older builds, and forwards
-  Ctrl/Cmd+W with its combo so it stays rebindable.
+  Ctrl/Cmd+W with its combo so it stays rebindable; today it swallows
+  Ctrl/Cmd+W, so this is a Comfy-Desktop change.
 
 ### D9 — Failure reporting
 
@@ -324,21 +350,24 @@ A broken binding is diagnosable and never stops the keyboard.
 - One resolver at window capture, installed before any extension loads, sees
   every keydown; its listeners are never re-added.
 - A keydown commits at most one binding, once, without re-deciding at commit.
-- In strict mode the dispatcher prevents the default for a claim and never
-  stops propagation; compat keeps main's prevention point and canvas stop.
-- Depth, then source, then clause, then order; an ineligible candidate never
-  ends the search, and an extension binding outside its own scopes never beats
-  an eligible user binding on the same combo at or above its scope.
+- In strict mode the dispatcher prevents the default for a claim unless the
+  binding opts out, and never stops propagation; compat keeps main's
+  prevention point and canvas stop.
+- Depth, then source, then clause, then extension name, then order; an
+  ineligible candidate never ends the search, and an extension binding outside
+  its own scopes never beats an eligible user binding on the same combo at or
+  above its scope.
 - Place comes from the event target's stamped ancestors and their logical
   parents, never from a binding's own focus test. Teleported content resolves
   inside its opener. Escape reaches the top open layer first.
 - Native editing is preserved unless a binding has `allowIn.textInput`;
   credential inputs keep every key for every source.
 - An unregistered or failing context key never satisfies a clause.
-- Dispatch and release share one eligibility function; every pressed hold
-  releases exactly once, and no extension can veto a release.
+- Every dispatch, hold presses included, uses one eligibility function; every
+  pressed hold releases exactly once from its press record, and no extension
+  can veto a release.
 - A stored entry this frontend cannot read is kept, never dropped.
-- Key order is identical on every install running the same mode.
+- Key order is identical on every install running the same mode and packs.
 - A failed command or context never stops later dispatch, and no key data
   reaches telemetry.
 
@@ -346,14 +375,17 @@ A broken binding is diagnosable and never stops the keyboard.
 
 - After the flip, extension shields no longer veto core commands; packs that
   need priority bind in scopes they declare, and listeners that act on keys
-  check `defaultPrevented`.
+  check whether the key was claimed.
+- In compat, graph undo runs during the keydown instead of a frame later, and
+  after the listeners that can stop it, so an overlay that stops Ctrl+Z also
+  stops graph undo behind it. Zoom runs before selected nodes see the key.
 - After the flip, a key committed at the canvas reaches window listeners with
   `defaultPrevented` set; until then it is stopped there, as on main.
 - In strict, a claimed Space or arrow key inside a foreign editor in the canvas
   scope loses native scrolling unless its binding sets `preventDefault: false`.
-- A user's existing global binding on a combo a deeper core scope also binds
-  (Escape, arrows, Space, Ctrl+Z) loses inside that scope, marked "overridden
-  in <scope>". How much this surprises existing users is unverified.
+- A global binding a user adds after this change, on a combo a deeper core
+  scope also binds (Escape, arrows, Space, Ctrl+Z), loses inside that scope,
+  marked "overridden in <scope>". Bindings saved before it keep winning (D7).
 - A core surface that forgets its scope resolves at the root silently; a
   development scope-chain inspector and e2e catch it.
 - Keyboard e2e runs in both modes until compat is removed. Whether an
@@ -392,24 +424,33 @@ A broken binding is diagnosable and never stops the keyboard.
 
 A new stack from main replaces the nine first-implementation PRs, reusing
 their code. The first three PRs are the late-unset fix, this record, and the
-single resolver at window capture with today's commit points.
+single resolver at window capture with today's commit points. Each PR settles
+the details of its part and updates this record where it departs from it.
+Open point fixes by others (#21960, #21558, #13377, #11949, #15582, #12308)
+land first and the stack absorbs them; #11886, which moves `keybindHandler`
+to capture and stops propagation, is superseded.
 
-1. fix: keep unsets for bindings that register late.
+1. fix: keep unsets for bindings that register late (#21982, merged).
 2. docs: this record.
 3. refactor: one resolver at window capture, today's commit points (#18144,
    IME composition, state judged when the key was pressed).
 4. feat: versioned settings and presets, three-way merge, identity map.
-5. feat: veto counting, listeners installed before extensions, the "Shortcut
-   priority" setting, ordering e2e, extension-pattern test pack.
+5. feat: veto counting, listeners installed before extensions, the hidden
+   "Shortcut priority" setting, ordering e2e, extension-pattern test pack.
 6. feat: `when`, `allowIn`, sources and extension context keys.
 7. feat: scopes and layer stack (lightbox, tours, popups, #21960, #12308).
 8. feat: canvas and node scopes (FE-2555, #11949, per-instance handlers).
 9. feat: holds and modifier state (rebindable pan, #21558, link ties).
 10. feat: undo and redo as bindings, with the mask-editor hook shim.
-11. feat: mask, layer and bounding-box editor shortcuts.
+11. feat: mask, layer and bounding-box editor shortcuts, removing their
+    blanket key stops.
 12. feat: canvas keys as commands (#13377, `processKey` and marker shims).
-13. feat: agent composer and media preview surfaces.
-14. feat: onboarding, dialog and widget surfaces (tours, #15582).
-15. feat: shortcuts panel and menus (scope labels, Desktop and PWA combos).
+13. feat: agent composer and media preview surfaces, removing the lightbox's
+    key stop.
+14. feat: onboarding, dialog and widget surfaces (tours, #15582), removing the
+    Markdown widget's key stops; the "Shortcut priority" setting becomes
+    visible.
+15. feat: shortcuts panel and menus (scope labels, Desktop and PWA combos),
+    with the Comfy-Desktop change for reserved combos and Ctrl/Cmd+W.
 16. feat: extension scopes API, API version, migration guide.
 17. feat: commit at capture by default, once the D6 criteria hold.
