@@ -23,7 +23,7 @@ export function emitGraphRestored(restore: GraphRestore): void {
     } catch (error) {
       reportError(error, {
         surface: 'graph',
-        errorType: 'graph_restore_listener_failed'
+        errorType: 'error_notifying_graph_restore_listener'
       })
     }
   }
