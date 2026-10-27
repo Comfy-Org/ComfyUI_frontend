@@ -1177,8 +1177,7 @@ export const useWorkflowService = () => {
   const beforeLoadNewGraph = (suppressWorkflowReset = true) => {
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
-    const canvas = useApp().canvasOrUndefined
-    if (canvas?.state.ghostNodeId != null) canvas.finalizeGhostPlacement(true)
+    useApp().canvasOrUndefined?.cancelGhostPlacement()
     if (activeWorkflow) {
       if (!isCanvasCaptureBlocked()) {
         const tracker = (activeWorkflow as ComfyWorkflow).changeTracker
