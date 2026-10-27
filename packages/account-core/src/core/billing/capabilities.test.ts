@@ -74,12 +74,30 @@ function capabilitiesBody(overrides: Record<string, unknown> = {}) {
     expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
     resolved_for: { user_id: 'uid-1', workspace_id: 'ws-1' },
     revision: 42,
+    auto_top_up_enabled: false,
     rollout_defaults_applied: ROLLOUT_DEFAULTS,
     ...overrides
   }
 }
 
 describe('createCapabilitiesReader', () => {
+  it.for([true, false])(
+    'preserves served auto top-up rollout %s',
+    async (served) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(capabilitiesBody({ auto_top_up_enabled: served }))
+      ])
+      const result = await createCapabilitiesReader({
+        transport,
+        scopeSource
+      }).read()
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') throw new Error('Expected successful read')
+      expect(result.value.autoTopUpEnabled).toBe(served)
+    }
+  )
+
   it('decodes the server answer and reports the resolved scope', async () => {
     const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(capabilitiesBody())])

@@ -58,6 +58,7 @@ export type CapabilityRolloutDefaults = z.infer<
  * clients can compare it as one.
  */
 const CapabilitiesBodySchema = z.object({
+  auto_top_up_enabled: zBillingCapabilitiesResponse.shape.auto_top_up_enabled,
   capabilities: zBillingCapabilities,
   expires_at: z.string(),
   has_parked_billing_operation:
@@ -75,6 +76,7 @@ type CapabilitiesBody = z.infer<typeof CapabilitiesBodySchema>
 export type CapabilityScope = BillingScope
 
 export interface CapabilitiesSnapshot {
+  readonly autoTopUpEnabled: boolean
   readonly capabilities: BillingCapabilities
   /**
    * Present only for a capability the server refused and explained. An absent
@@ -191,6 +193,7 @@ export function createCapabilitiesReader(
     return {
       status: 'ok',
       value: {
+        autoTopUpEnabled: data.auto_top_up_enabled,
         capabilities: data.capabilities,
         denials,
         hasParkedBillingOperation: data.has_parked_billing_operation,

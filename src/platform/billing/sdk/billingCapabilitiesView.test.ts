@@ -32,6 +32,7 @@ const SNAPSHOT: CapabilitiesSnapshot = {
     can_delete_workspace: 'personal_workspace',
     can_leave_workspace: 'personal_workspace_creator'
   },
+  autoTopUpEnabled: false,
   rolloutDefaultsApplied: {
     can_downgrade_to_personal: false,
     can_subscribe_self_serve: true,
@@ -47,6 +48,13 @@ const SNAPSHOT: CapabilitiesSnapshot = {
 }
 
 describe('projectBillingCapabilities', () => {
+  it.for([true, false])('preserves served auto top-up rollout %s', (served) => {
+    expect(
+      projectBillingCapabilities({ ...SNAPSHOT, autoTopUpEnabled: served })
+        .auto_top_up_enabled
+    ).toBe(served)
+  })
+
   it('reads the snapshot back as the response the composable holds', () => {
     expect(projectBillingCapabilities(SNAPSHOT)).toStrictEqual({
       capabilities: SNAPSHOT.capabilities,
@@ -57,6 +65,7 @@ describe('projectBillingCapabilities', () => {
         workspace_id: 'workspace-1'
       },
       revision: 41,
+      auto_top_up_enabled: false,
       rollout_defaults_applied: SNAPSHOT.rolloutDefaultsApplied
     })
   })

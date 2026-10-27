@@ -51,6 +51,7 @@ function capabilitiesBody(
     expires_at: '2024-06-15T12:01:00.000Z',
     resolved_for: { user_id: 'uid-1', workspace_id: 'ws-1' },
     revision: 42n,
+    auto_top_up_enabled: false,
     rollout_defaults_applied: {
       can_downgrade_to_personal: false,
       can_subscribe_self_serve: false,
@@ -61,6 +62,7 @@ function capabilitiesBody(
 }
 
 expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
+  | 'auto_top_up_enabled'
   | 'auto_top_up_setup'
   | 'capabilities'
   | 'denied_reason_params'

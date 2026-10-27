@@ -125,6 +125,7 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
         expires_at: '2026-01-01T00:00:00Z',
         resolved_for: { user_id: 'user-1', workspace_id: 'workspace-1' },
         revision: 0,
+        auto_top_up_enabled: false,
         rollout_defaults_applied: {
           can_downgrade_to_personal: false,
           can_subscribe_self_serve: false,

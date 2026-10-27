@@ -223,8 +223,18 @@ class TurnLockServer {
   }
 
   recordAsk(event: AgentWsEvent): void {
-    if (event.type === 'agent_ask')
-      this.pendingAsk = zAgentPendingAsk.parse(event.data)
+    if (event.type !== 'agent_ask') return
+    const ask = zAgentPendingAsk.parse(event.data)
+    if (ask.kind === 'run_approval') {
+      const docSeq =
+        ask.context.doc_seq === undefined
+          ? undefined
+          : Number(ask.context.doc_seq)
+      if (docSeq !== undefined) expect(Number.isSafeInteger(docSeq)).toBe(true)
+      this.pendingAsk = { ...ask, context: { ...ask.context, doc_seq: docSeq } }
+    } else {
+      this.pendingAsk = ask
+    }
   }
 
   completeTurn(): void {
