@@ -9,7 +9,7 @@ import {
   desktopHostUser,
   desktopHostWorkspaceToken,
   isDesktopHostSessionActive,
-  isDesktopHostSignInPending,
+  pendingDesktopHostSignIn,
   requestDesktopHostSignIn,
   requestDesktopHostSignOut,
   requestDesktopHostWorkspaceSwitch,
@@ -184,7 +184,7 @@ describe('desktopHostSession', () => {
       { outcome: 'answers', fails: false },
       { outcome: 'fails', fails: true }
     ])(
-      'reports a sign-in as pending until the host $outcome',
+      'exposes the sign-in while it waits, until the host $outcome',
       async ({ fails }) => {
         const { bridge } = fakeBridge({ status: 'signed_out' })
         await startDesktopHostSession(bridge)
@@ -195,14 +195,14 @@ describe('desktopHostSession', () => {
               fails ? reject(new Error('host unavailable')) : resolve(SIGNED_IN)
           })
         )
-        expect(isDesktopHostSignInPending()).toBe(false)
+        expect(pendingDesktopHostSignIn()).toBeUndefined()
 
         const signingIn = requestDesktopHostSignIn()
-        expect(isDesktopHostSignInPending()).toBe(true)
+        expect(pendingDesktopHostSignIn()).toBe(signingIn)
 
         settle()
-        await signingIn
-        expect(isDesktopHostSignInPending()).toBe(false)
+        await expect(signingIn).resolves.toBe(!fails)
+        expect(pendingDesktopHostSignIn()).toBeUndefined()
       }
     )
   })

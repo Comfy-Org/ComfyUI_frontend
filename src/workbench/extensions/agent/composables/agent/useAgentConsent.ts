@@ -13,7 +13,7 @@ import type {
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
-import { isDesktopHostSignInPending } from '@/platform/auth/desktopHost/desktopHostSession'
+import { pendingDesktopHostSignIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import {
@@ -269,7 +269,13 @@ export function useAgentConsent() {
         return null
       }
       if (!signedIn) {
-        if (!isDesktopHostSignInPending()) clearPendingSignInAccept()
+        const browserSignIn = pendingDesktopHostSignIn()
+        if (!browserSignIn) clearPendingSignInAccept()
+        else
+          void browserSignIn.then((done) => {
+            clearPendingSignInAccept()
+            if (done) void saveAcceptanceAfterSignIn()
+          })
         return null
       }
       clearPendingSignInAccept()

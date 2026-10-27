@@ -2415,6 +2415,33 @@ describe('AgentPanel extension flag gate', () => {
       expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
     })
 
+    it('drops it when another account takes over during the switch wait, through the real resume', async () => {
+      const actual = await vi.importActual<
+        typeof import('@/workbench/extensions/agent/composables/agent/useAgentConsent')
+      >('@/workbench/extensions/agent/composables/agent/useAgentConsent')
+      resume().mockImplementation((draft) =>
+        actual.useAgentConsent().resumeAcceptAfterReload(draft)
+      )
+      vi.mocked(consentStore.ensureScope).mockResolvedValue(
+        'account-b/workspace-a'
+      )
+      vi.mocked(consentStore.accept).mockResolvedValue(true)
+      Object.assign(workspaceStore, { isSwitching: true })
+      Object.assign(consentStore, { identity: null })
+
+      await loadEntryAndSetup()
+      currentUser.value = { id: 'account-b' }
+      await nextTick()
+      Object.assign(workspaceStore, { isSwitching: false })
+      Object.assign(consentStore, { identity: 'account-b/workspace-a' })
+      await nextTick()
+      await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalled())
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(consentStore.accept).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
+
     it('ignores and drops one older than ten minutes', async () => {
       storePending(Date.now() - 11 * 60 * 1000)
 
