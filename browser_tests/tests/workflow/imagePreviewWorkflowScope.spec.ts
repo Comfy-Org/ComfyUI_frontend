@@ -18,14 +18,17 @@ for (const mode of ['canvas', 'vue'] as const) {
     { tag: mode === 'vue' ? ['@vue-nodes'] : [] },
     () => {
       const held: Route[] = []
+      let releaseHeld = false
 
       test.beforeEach(async ({ comfyPage }) => {
         held.length = 0
+        releaseHeld = false
         await comfyPage.workflow.setupWorkflowsDirectory({
           [`${WORKFLOW_B}.json`]: 'nodes/lora_loader_model_only_id_10.json'
         })
         await comfyPage.page.route(VIEW_ROUTE, async (route) => {
-          if (route.request().url().includes('example.png')) held.push(route)
+          if (!releaseHeld && route.request().url().includes('example.png'))
+            held.push(route)
           else await route.fallback()
         })
         await trackHandledImageLoads(comfyPage.page)
@@ -68,6 +71,7 @@ for (const mode of ['canvas', 'vue'] as const) {
         await workflowsTab.getPersistedItem(WORKFLOW_B).dblclick()
         await expect.poll(firstNodeState).toEqual(SHARED_NODE)
 
+        releaseHeld = true
         for (const route of held.splice(0)) await route.fallback()
         await expect
           .poll(async () => {
