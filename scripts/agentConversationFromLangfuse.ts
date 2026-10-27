@@ -96,8 +96,7 @@ export function readEnvFile(path: string): LangfuseEnv {
   )
 }
 
-// Langfuse keeps unmapped OTel attributes under metadata.attributes (v1) or as
-// flattened `attributes.<key>` metadata keys (v2); a bare flattened key is the fallback.
+// Langfuse keeps unmapped OTel attributes under metadata.attributes; flattened metadata is the fallback.
 export function attributeOf(
   observation: Observation,
   key: string
@@ -320,10 +319,7 @@ export class LangfuseRequestError extends Error {
 
 const OBSERVATIONS_PATH = '/api/public/v2/observations'
 
-// v2 always returns input and output as raw strings; v1 returned the parsed
-// JSON value. Parse back so the capture sees the shapes it always has, and keep
-// text that is not JSON as text.
-function parsedIo(value: unknown): unknown {
+function parseJsonOrKeepText(value: unknown): unknown {
   if (typeof value !== 'string') return value
   try {
     return JSON.parse(value) as unknown
@@ -332,9 +328,6 @@ function parsedIo(value: unknown): unknown {
   }
 }
 
-// Langfuse removes the v1 /api/public/traces and /api/public/observations
-// reads on 2026-11-16 (FE-3642). v2 filters observations by trace or session
-// directly and pages by cursor.
 export async function fetchObservations(
   env: LangfuseEnv,
   selector: { traceId?: string; sessionId?: string },
@@ -371,12 +364,17 @@ export async function fetchObservations(
     observations.push(
       ...parsed.data.map((observation) => ({
         ...observation,
-        input: parsedIo(observation.input),
-        output: parsedIo(observation.output)
+        input: parseJsonOrKeepText(observation.input),
+        output: parseJsonOrKeepText(observation.output)
       }))
     )
-    cursor = parsed.meta?.cursor ?? undefined
-    if (cursor === undefined || parsed.data.length === 0) return observations
+    const next = parsed.meta?.cursor ?? undefined
+    if (next === undefined || parsed.data.length === 0) return observations
+    if (next === cursor)
+      refuse(
+        `Langfuse ${OBSERVATIONS_PATH} page ${page} repeated cursor ${next}`
+      )
+    cursor = next
   }
 }
 

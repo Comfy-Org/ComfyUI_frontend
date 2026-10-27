@@ -486,6 +486,59 @@ describe('fetchObservations', () => {
     expect(observation.output).toBe('plain answer, not JSON')
   })
 
+  it('refuses a cursor the server repeats instead of paging forever', async () => {
+    let calls = 0
+    const failure = await fetchObservations(
+      env,
+      { traceId: 'trace-1' },
+      async () => {
+        calls += 1
+        return page([span(`o-${calls}`, {})], 'same')
+      }
+    ).catch((error: unknown) => error)
+    expect(failure).toBeInstanceOf(RecordRefusal)
+    expect(failure instanceof RecordRefusal && failure.message).toBe(
+      'Langfuse /api/public/v2/observations page 2 repeated cursor same'
+    )
+    expect(calls).toBe(2)
+  })
+
+  it('reads a sanitized production trace from v2 exactly as v1 did', async () => {
+    const fixture = (name: string): unknown =>
+      JSON.parse(
+        readFileSync(`scripts/__fixtures__/langfuse-v2-parity/${name}`, 'utf8')
+      )
+    const v1 = (fixture('trace.v1.json') as { data: Observation[] }).data
+    const v2 = await fetchObservations(
+      env,
+      { traceId: 'trace-1' },
+      async () =>
+        new Response(JSON.stringify(fixture('trace.v2.json')), { status: 200 })
+    )
+    expect(v2.map((observation) => observation.id)).toEqual(
+      v1.map((observation) => observation.id)
+    )
+    const keys = [
+      'comfy.thread_id',
+      'comfy.turn_id',
+      'gen_ai.operation.name',
+      'gen_ai.tool.call.id',
+      'gen_ai.tool.name',
+      'comfy.tool.ok',
+      'gen_ai.response.model'
+    ]
+    v1.forEach((before, index) => {
+      const after = v2[index]
+      expect(after.input).toEqual(before.input)
+      expect(after.output).toEqual(before.output)
+      for (const key of keys)
+        expect(attributeOf(after, key)).toBe(attributeOf(before, key))
+    })
+    const capture = captureFromObservations(v2, options)
+    expect(capture.turns).toHaveLength(1)
+    expect(capture).toEqual(captureFromObservations(v1, options))
+  })
+
   it('reports a non-2xx page as a request failure, not a capture refusal', async () => {
     const fetchImpl = async () =>
       new Response('upstream detail that must not be echoed', {
