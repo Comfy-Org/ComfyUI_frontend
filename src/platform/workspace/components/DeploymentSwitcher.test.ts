@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { escapeRegExp } from 'es-toolkit'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -189,28 +190,88 @@ describe('DeploymentSwitcher', () => {
     const production = screen.getByTestId(`deployment-row-${D2}`)
     expect(production).toHaveTextContent('Studio Build')
     expect(
-      within(production).getByText("Studio's <b>production</b> & R&D · v2")
+      within(production).getByText("Studio's <b>production</b> & R&D")
     ).toBeVisible()
     expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveTextContent(
       'Studio Buildstaging'
     )
   })
 
-  it.for([
-    { row: D2, ends: 'production · v2' },
-    { row: D1, ends: 'staging · v1Stopped' },
-    { row: D9, ends: 'Deployment dep-b9b9b9b9Stopped' }
-  ])(
-    'puts the Release version after the deployment name and the status on the right unless ready: $ends',
-    async ({ row, ends }) => {
+  const rowColumns = [
+    { row: D2, title: 'Studio Build', name: 'production', detail: 'v2' },
+    { row: D1, title: 'Studio Build', name: 'staging', detail: 'Stopped' },
+    {
+      row: D9,
+      title: 'Deployment dep-b9b9b9b9',
+      name: '',
+      detail: 'Stopped'
+    }
+  ]
+
+  function columnsOf({ title, name, detail }: (typeof rowColumns)[number]) {
+    return new RegExp(`^${escapeRegExp(`${title}${name}${detail}`)}$`)
+  }
+
+  it.for(rowColumns)(
+    'gives each row the same columns, the Build, the deployment, then the version when ready or else the status: $title $name $detail',
+    async (columns) => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
       const user = renderSwitcher()
       await openList(user)
-      expect(screen.getByTestId(`deployment-row-${row}`)).toHaveTextContent(
-        new RegExp(`${ends}$`)
+      expect(
+        screen.getByTestId(`deployment-row-${columns.row}`)
+      ).toHaveTextContent(columnsOf(columns))
+    }
+  )
+
+  it.for(rowColumns)(
+    'gives each Workspace default row the same columns: $title $name $detail',
+    async (columns) => {
+      asOwner()
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      const user = renderSwitcher()
+      await openList(user)
+      await openDefaultMenu(user)
+      expect(
+        screen.getByTestId(`default-row-${columns.row}`)
+      ).toHaveTextContent(columnsOf(columns))
+    }
+  )
+
+  async function focusProductionRow(cutOffText?: string) {
+    vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(
+      function (this: Element) {
+        return this.textContent.trim() === cutOffText ? 400 : 0
+      }
+    )
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+    const production = screen.getByTestId(`deployment-row-${D2}`)
+
+    production.focus()
+    await waitFor(() => expect(production).toHaveFocus())
+  }
+
+  it.for([
+    { cell: 'name', text: 'production' },
+    { cell: 'version', text: 'v2' }
+  ])(
+    'spells out a row beside the menu when its $cell is cut off',
+    async ({ text }) => {
+      await focusProductionRow(text)
+
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        'Studio Build · production · v2'
       )
     }
   )
+
+  it('shows no tooltip for a row whose text fits', async () => {
+    await focusProductionRow()
+
+    expect(screen.queryByRole('tooltip')).toBeNull()
+  })
 
   it.for([
     {
@@ -319,19 +380,29 @@ describe('DeploymentSwitcher', () => {
     )
   })
 
-  it('links to the Developer Platform to create a custom deployment, in a new tab', async () => {
-    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-    const user = renderSwitcher()
-    await openList(user)
+  it.for([
+    {
+      workspace: 'with deployments',
+      items: listing.items,
+      label: 'Manage deployments'
+    },
+    { workspace: 'with none', items: [], label: 'Create a custom deployment' }
+  ])(
+    'links a workspace $workspace to the Builds page on the Developer Platform, in a new tab, as $label',
+    async ({ items, label }) => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({ ...listing, items })
+      const user = renderSwitcher()
+      await openList(user)
 
-    const create = screen.getByTestId('deployment-switcher-create')
-    expect(create).toHaveTextContent('Create a custom deployment')
-    expect(create).toHaveAttribute(
-      'href',
-      expect.stringMatching(/\/profile\/deploy#builds$/)
-    )
-    expect(create).toHaveAttribute('target', '_blank')
-  })
+      const builds = screen.getByTestId('deployment-switcher-builds')
+      expect(builds).toHaveTextContent(label)
+      expect(builds).toHaveAttribute(
+        'href',
+        expect.stringMatching(/\/profile\/builds$/)
+      )
+      expect(builds).toHaveAttribute('target', '_blank')
+    }
+  )
 
   it('says a workspace with no deployments has none yet, and still offers to create one', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue({
@@ -344,7 +415,7 @@ describe('DeploymentSwitcher', () => {
     expect(screen.getByTestId('deployment-switcher-empty')).toHaveTextContent(
       'This workspace has no deployments yet.'
     )
-    expect(screen.getByTestId('deployment-switcher-create')).toBeVisible()
+    expect(screen.getByTestId('deployment-switcher-builds')).toBeVisible()
     expect(screen.queryByText(/Switching reloads the editor/)).toBeNull()
   })
 
@@ -1160,7 +1231,13 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByRole('menu')).toBeNull()
   })
 
-  describe('marks which deployments can run the open workflow', () => {
+  describe('notes which rows may not run the open workflow', () => {
+    function rowsIn(group: string) {
+      return within(screen.getByRole('group', { name: group }))
+        .getAllByRole('menuitemradio')
+        .map((row) => row.dataset.testid)
+    }
+
     beforeEach(() => {
       hoisted.rootGraph = workflowWith(
         'KSampler',
@@ -1171,7 +1248,7 @@ describe('DeploymentSwitcher', () => {
         true
     })
 
-    it('shows the rows as before and sends no check while its switch is off', async () => {
+    it('shows one Run on list and sends no check while its switch is off', async () => {
       vi.mocked(useFeatureFlags().flags).deploymentCompatibilityMarksEnabled =
         false
       const user = renderSwitcher()
@@ -1184,10 +1261,35 @@ describe('DeploymentSwitcher', () => {
       expect(
         mockWorkspaceApi.checkDeploymentCompatibility
       ).not.toHaveBeenCalled()
-      expect(screen.queryByTestId('deployment-row-mark')).toBeNull()
+      expect(rowsIn('Run on')).toEqual([
+        'deployment-row-cloud',
+        `deployment-row-${D2}`,
+        `deployment-row-${D1}`,
+        `deployment-row-${D9}`
+      ])
     })
 
-    it('says which rows run it, which miss nodes (named on hover and in the row description), and which were not checked', async () => {
+    it('puts the current deployment first in the one Run on list', async () => {
+      vi.mocked(useFeatureFlags().flags).deploymentCompatibilityMarksEnabled =
+        false
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        picked_deployment_id: D1
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      await waitFor(() =>
+        expect(rowsIn('Run on')).toEqual([
+          `deployment-row-${D1}`,
+          'deployment-row-cloud',
+          `deployment-row-${D2}`,
+          `deployment-row-${D9}`
+        ])
+      )
+    })
+
+    it('names missing nodes, or a check that could not be made, on hover and in the row description', async () => {
       mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
         deployments: [
           { deployment_id: D2, missing_node_types: [], unknown: false },
@@ -1206,8 +1308,10 @@ describe('DeploymentSwitcher', () => {
       await openList(user)
 
       await waitFor(() =>
-        expect(screen.getByTestId(`deployment-row-${D2}`)).toHaveTextContent(
-          'Runs this workflow'
+        expect(
+          screen.getByTestId('deployment-row-cloud')
+        ).toHaveAccessibleDescription(
+          'Comfy Cloud cannot run this workflow. It is missing Power Lora Loader (rgthree) and Image Saver.'
         )
       )
       expect(
@@ -1216,55 +1320,35 @@ describe('DeploymentSwitcher', () => {
         'KSampler',
         'Power Lora Loader (rgthree)'
       ])
-      expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveTextContent(
-        'Missing 1 node'
+      expect(rowsIn('Run on')).toEqual([
+        'deployment-row-cloud',
+        `deployment-row-${D2}`,
+        `deployment-row-${D1}`,
+        `deployment-row-${D9}`
+      ])
+      expect(screen.getByTestId('deployment-row-cloud')).toHaveAccessibleName(
+        'Comfy Cloud'
       )
-      expect(screen.getByText('Missing 1 node')).toHaveAttribute(
-        'title',
-        'Power Lora Loader (rgthree)'
-      )
-      expect(
-        screen.getByTestId(`deployment-row-${D1}`)
-      ).toHaveAccessibleDescription('Power Lora Loader (rgthree)')
       expect(
         screen.getByTestId(`deployment-row-${D2}`)
       ).not.toHaveAccessibleDescription()
-      expect(screen.getByTestId(`deployment-row-${D9}`)).toHaveTextContent(
-        'Not checked'
-      )
-      expect(screen.getByTestId('deployment-row-cloud')).toHaveTextContent(
-        'Missing 2 nodes'
-      )
-      expect(screen.getByText('Missing 2 nodes')).toHaveAttribute(
-        'title',
-        'Power Lora Loader (rgthree), Image Saver'
-      )
       expect(
-        screen.getByTestId('deployment-row-cloud')
-      ).toHaveAccessibleDescription('Power Lora Loader (rgthree), Image Saver')
+        screen.getByTestId(`deployment-row-${D9}`)
+      ).toHaveAccessibleDescription(
+        'Could not check whether Deployment dep-b9b9b9b9 can run this workflow.'
+      )
+
+      const staging = screen.getByTestId(`deployment-row-${D1}`)
+      expect(staging).toHaveAccessibleDescription(
+        'Studio Build · staging cannot run this workflow. It is missing Power Lora Loader (rgthree).'
+      )
+      staging.focus()
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        'Studio Build · staging cannot run this workflow. It is missing Power Lora Loader (rgthree).'
+      )
     })
 
-    it('keeps the deployment title whole and shortens its subtitle first, in a list no wider than the screen', async () => {
-      mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
-        deployments: [
-          { deployment_id: D2, missing_node_types: [], unknown: false }
-        ],
-        cloud: { missing_node_types: [] }
-      })
-      const user = renderSwitcher()
-      const menu = await openList(user)
-      const row = await screen.findByTestId(`deployment-row-${D2}`)
-      await waitFor(() => expect(row).toHaveTextContent('Runs this workflow'))
-
-      expect(menu).toHaveClass('max-w-[min(25rem,calc(100vw-1rem))]')
-      expect(within(row).getByText('Studio Build')).toHaveClass('shrink-0')
-      const subtitle = within(row).getByText('production · v2')
-      expect(subtitle).toHaveClass('min-w-0', 'truncate')
-      expect(subtitle).not.toHaveClass('shrink-0')
-      expect(subtitle).toHaveAttribute('title', 'production · v2')
-    })
-
-    it('shows the rows as before when the check fails', async () => {
+    it('notes nothing when the check fails', async () => {
       mockWorkspaceApi.checkDeploymentCompatibility.mockRejectedValue(
         new WorkspaceApiError('not found', 404)
       )
@@ -1275,10 +1359,10 @@ describe('DeploymentSwitcher', () => {
       )
       await nextTick()
 
-      expect(screen.getByTestId(`deployment-row-${D2}`)).toHaveTextContent(
-        'Studio Build'
-      )
-      expect(screen.queryByTestId('deployment-row-mark')).toBeNull()
+      expect(rowsIn('Run on')).toHaveLength(4)
+      expect(
+        screen.getByTestId('deployment-row-cloud')
+      ).not.toHaveAccessibleDescription()
     })
   })
 })
