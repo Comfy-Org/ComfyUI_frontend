@@ -1420,6 +1420,67 @@ describe('live updates and media on the shared web session', () => {
     expect(useCloudWebSessionStore().signedInUser?.id).toBe('user-a')
   })
 
+  it.for<{
+    name: string
+    stall: (signal: AbortSignal | undefined) => Promise<Response>
+  }>([
+    {
+      name: 'before headers',
+      stall: (signal) =>
+        new Promise((_resolve, reject) => {
+          signal?.addEventListener('abort', () => {
+            reject(new DOMException('aborted', 'AbortError'))
+          })
+        })
+    },
+    {
+      name: 'while reading the body',
+      stall: async (signal) =>
+        new Response(
+          new ReadableStream({
+            start(body) {
+              body.enqueue(new TextEncoder().encode('{"user":'))
+              signal?.addEventListener('abort', () => {
+                body.error(new DOMException('aborted', 'AbortError'))
+              })
+            }
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+    }
+  ])(
+    'resumes live progress after a session read stalls $name, without signing out',
+    async ({ stall }) => {
+      await bootHiddenSocket()
+      vi.mocked(fetch).mockImplementationOnce((_input, init) =>
+        stall(init?.signal ?? undefined)
+      )
+      const progress = vi.fn()
+      api.addEventListener('progress', progress)
+      onTestFinished(() => api.removeEventListener('progress', progress))
+      const attempts = FakeSocket.created.length
+
+      FakeSocket.created.at(-1)?.closeFromServer()
+      await vi.advanceTimersByTimeAsync(20_000)
+
+      expect(FakeSocket.created).toHaveLength(attempts + 1)
+      const recovered = FakeSocket.created.at(-1)
+      assert.exists(recovered)
+      expect(api.socket).toBe(recovered)
+      recovered.dispatchEvent(new Event('open'))
+      recovered.dispatchEvent(
+        new MessageEvent('message', {
+          data: JSON.stringify({ type: 'progress', data: { value: 1, max: 2 } })
+        })
+      )
+      expect(progress).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: { value: 1, max: 2 } })
+      )
+      expect(useCloudWebSessionStore().signedInUser?.id).toBe('user-a')
+      expect(firebaseSignOut).not.toHaveBeenCalled()
+    }
+  )
+
   it('waits for a pending session read and does not reopen a replaced socket', async () => {
     await bootHiddenSocket()
     let resolveSession: (response: Response) => void = () => {}

@@ -100,7 +100,8 @@ stops reconnecting when the session reports sign-out. Failed opens back off
 from one second to one minute; a successful open resets the delay. An established
 connection still reconnects after 300 ms. Session connection failures do not
 start queue polling, and a temporary session-read outage does not sign the user
-out.
+out. Cloud caps each session request at 15 seconds, body included, so a stalled
+read counts as an outage and the backoff continues.
 
 | App         | Use                                                                                                                                                                            |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

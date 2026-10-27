@@ -155,10 +155,13 @@ function selectedWorkspaceId(): string | undefined {
   return currentWorkspace?.id ?? deniedWorkspaceId ?? undefined
 }
 
+const SESSION_REQUEST_TIMEOUT_MS = 15_000
+
 function sessionOptions(): WebSessionOptions {
   return {
     apiBaseUrl: api.apiURL(''),
-    fetchImpl: (input, init) => fetch(input, init)
+    fetchImpl: (input, init) => fetch(input, init),
+    timeoutMs: SESSION_REQUEST_TIMEOUT_MS
   }
 }
 
