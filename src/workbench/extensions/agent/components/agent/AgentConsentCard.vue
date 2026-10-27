@@ -69,10 +69,10 @@ const LAYOUTS = {
   },
   compact: {
     width: 'w-[min(600px,calc(100vw-2rem))]',
-    card: cn(CARD_SHELL, 'gap-0 p-0'),
-    videoWrap: 'w-full min-w-0',
-    media: cn(MEDIA_SHELL, 'h-41.5 rounded-none'),
-    fallback: cn(FALLBACK_SHELL, 'h-41.5 rounded-none'),
+    card: cn(CARD_SHELL, 'h-[85dvh] grid-rows-[minmax(0,1fr)_auto] gap-0 p-0'),
+    videoWrap: 'min-h-0 w-full [&>div]:h-full [&>div]:w-full',
+    media: cn(MEDIA_SHELL, 'h-full rounded-none'),
+    fallback: cn(FALLBACK_SHELL, 'h-full rounded-none'),
     heading: 'my-0 text-2xl/7.5 text-[22px]/7',
     copy: cn(COPY_SHELL, 'text-[13px]/4.5'),
     contentWrap: 'flex min-w-0 flex-col',
@@ -87,15 +87,10 @@ const LAYOUTS = {
       CARD_SHELL,
       'grid-cols-2 grid-rows-[auto_auto] gap-x-7 gap-y-3.5 p-5'
     ),
-    videoWrap: 'w-full min-w-0 row-span-2 self-center',
-    media: cn(
-      MEDIA_SHELL,
-      'aspect-video max-h-[calc(85dvh-2.5rem)] rounded-lg'
-    ),
-    fallback: cn(
-      FALLBACK_SHELL,
-      'aspect-video max-h-[calc(85dvh-2.5rem)] rounded-lg'
-    ),
+    videoWrap:
+      'row-span-2 flex h-full min-h-0 w-full items-center justify-center self-stretch overflow-hidden rounded-lg [&>div]:h-full [&>div]:w-auto',
+    media: 'h-full w-auto aspect-video object-cover rounded-lg',
+    fallback: cn(FALLBACK_SHELL, 'aspect-video h-full w-auto rounded-lg'),
     heading: 'my-0 text-2xl/7.5',
     copy: COPY_SHELL,
     contentWrap:
