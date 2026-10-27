@@ -271,17 +271,16 @@ export function useAgentConsent() {
   }
 
   async function resumeAcceptAfterReload(): Promise<void> {
-    const pending = takePendingSignInAccept()
-    if (!pending) return
+    const draft = takePendingSignInAccept()
+    if (draft === null) return
+    await saveAcceptanceAfterSignIn()
     if (
-      pending.draft &&
+      draft.trim() &&
       !composerStore.draft &&
       composerStore.prompt.references.length === 0 &&
-      composerStore.attachments.length === 0 &&
-      !composerStore.submission
+      composerStore.attachments.length === 0
     )
-      composerStore.restorePrompt({ text: pending.draft, references: [] }, [])
-    await saveAcceptanceAfterSignIn()
+      composerStore.restorePrompt({ text: draft, references: [] }, [])
   }
 
   async function requestConsentForCurrentUser(

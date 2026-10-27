@@ -994,8 +994,8 @@ describe('accepting while signed out across a page reload', () => {
     })
   }
 
-  function storePending(draft: string, savedAt = Date.now()) {
-    sessionStorage.setItem(PENDING_KEY, JSON.stringify({ draft, savedAt }))
+  function storePending(draft: string) {
+    sessionStorage.setItem(PENDING_KEY, JSON.stringify({ draft }))
   }
 
   function scopeResolves() {
@@ -1006,6 +1006,7 @@ describe('accepting while signed out across a page reload', () => {
 
   beforeEach(() => {
     sessionStorage.clear()
+    localStorage.clear()
     vi.mocked(useAuthDialogs().showSignInDialog).mockReset()
     telemetry.trackAgentConsentResolved.mockReset()
     reportError.mockReset()
@@ -1025,8 +1026,7 @@ describe('accepting while signed out across a page reload', () => {
     )
 
     expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toEqual({
-      draft: 'make it blue',
-      savedAt: expect.any(Number)
+      draft: 'make it blue'
     })
   })
 
@@ -1087,16 +1087,71 @@ describe('accepting while signed out across a page reload', () => {
     expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
   })
 
-  it('does not overwrite text already in the composer', async () => {
+  it('restores the draft only once the save has settled', async () => {
     storePending('make it blue')
     signedIn()
-    useAgentComposerStore().setText('something newer')
+    scopeResolves()
+    let finishSave = (_saved: boolean) => {}
+    vi.spyOn(useAgentConsentStore(), 'accept').mockReturnValueOnce(
+      new Promise((resolve) => (finishSave = resolve))
+    )
+
+    const resume = useAgentConsent().resumeAcceptAfterReload()
+    await vi.waitFor(() =>
+      expect(useAgentConsentStore().accept).toHaveBeenCalledOnce()
+    )
+    expect(useAgentComposerStore().draft).toBe('')
+
+    finishSave(true)
+    await resume
+    expect(useAgentComposerStore().draft).toBe('make it blue')
+  })
+
+  it.for([
+    {
+      composer: 'text',
+      fill: () => useAgentComposerStore().setText('something newer')
+    },
+    {
+      composer: 'a reference',
+      fill: () =>
+        useAgentComposerStore().restorePrompt({
+          text: '',
+          references: [
+            {
+              kind: 'skill',
+              name: 'portrait',
+              description: '',
+              scope: '',
+              textOffset: 0
+            }
+          ]
+        })
+    }
+  ])('does not overwrite $composer already in the composer', async ({ fill }) => {
+    storePending('make it blue')
+    signedIn()
+    fill()
+    const before = useAgentComposerStore().prompt
     scopeResolves()
     vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
 
     await useAgentConsent().resumeAcceptAfterReload()
 
-    expect(useAgentComposerStore().draft).toBe('something newer')
+    expect(useAgentComposerStore().prompt).toEqual(before)
+    expect(useAgentConsentStore().accept).toHaveBeenCalledOnce()
+  })
+
+  it('does not restore a draft that is only whitespace', async () => {
+    storePending(' ')
+    signedIn()
+    scopeResolves()
+    vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
+
+    await useAgentConsent().resumeAcceptAfterReload()
+
+    expect(useAgentComposerStore().draft).toBe('')
+    expect(useAgentConsentStore().accept).toHaveBeenCalledOnce()
   })
 
   it('accepts only once when resumed twice', async () => {
@@ -1117,11 +1172,11 @@ describe('accepting while signed out across a page reload', () => {
   })
 
   it.for([
-    {
-      case: 'expired',
-      setup: () => storePending('old', Date.now() - 11 * 60 * 1000)
-    },
     { case: 'absent', setup: () => {} },
+    {
+      case: 'not JSON',
+      setup: () => sessionStorage.setItem(PENDING_KEY, '{draft')
+    },
     {
       case: 'malformed',
       setup: () => sessionStorage.setItem(PENDING_KEY, '{"draft":1}')

@@ -1,20 +1,8 @@
-import { z } from 'zod'
-
 const STORAGE_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
-const PENDING_SIGN_IN_ACCEPT_TTL_MS = 10 * 60 * 1000
-
-const zPendingSignInAccept = z.object({
-  draft: z.string(),
-  savedAt: z.number()
-})
-type PendingSignInAccept = z.infer<typeof zPendingSignInAccept>
 
 export function writePendingSignInAccept(draft: string): void {
   try {
-    window.sessionStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ draft, savedAt: Date.now() })
-    )
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ draft }))
   } catch {
     return
   }
@@ -28,14 +16,13 @@ export function clearPendingSignInAccept(): void {
   }
 }
 
-function readPendingSignInAccept(): PendingSignInAccept | null {
+function readPendingSignInAccept(): string | null {
   try {
-    const raw = window.sessionStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    const parsed = zPendingSignInAccept.safeParse(JSON.parse(raw))
-    if (!parsed.success) return null
-    const age = Date.now() - parsed.data.savedAt
-    return age >= 0 && age <= PENDING_SIGN_IN_ACCEPT_TTL_MS ? parsed.data : null
+    const stored: unknown = JSON.parse(
+      window.sessionStorage.getItem(STORAGE_KEY) ?? 'null'
+    )
+    const draft = (stored as { draft?: unknown } | null)?.draft
+    return typeof draft === 'string' ? draft : null
   } catch {
     return null
   }
@@ -45,8 +32,8 @@ export function hasPendingSignInAccept(): boolean {
   return readPendingSignInAccept() !== null
 }
 
-export function takePendingSignInAccept(): PendingSignInAccept | null {
-  const pending = readPendingSignInAccept()
+export function takePendingSignInAccept(): string | null {
+  const draft = readPendingSignInAccept()
   clearPendingSignInAccept()
-  return pending
+  return draft
 }

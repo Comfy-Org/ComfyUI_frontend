@@ -2279,15 +2279,13 @@ describe('AgentPanel extension flag gate', () => {
 
     beforeEach(() => {
       sessionStorage.clear()
-      sessionStorage.setItem(
-        PENDING_KEY,
-        JSON.stringify({ draft: 'make it blue', savedAt: Date.now() })
-      )
+      sessionStorage.setItem(PENDING_KEY, JSON.stringify({ draft: 'make it blue' }))
       setAgentReady(true)
     })
 
     afterEach(() => {
       useAgentConsentIntroductionStore().isContinuingSignIn = false
+      sessionStorage.removeItem(PENDING_KEY)
     })
 
     it('is finished before consent is read', async () => {
@@ -2343,6 +2341,7 @@ describe('AgentPanel extension flag gate', () => {
 
     it('waits for a workspace switch to finish', async () => {
       Object.assign(workspaceStore, { isSwitching: true })
+      Object.assign(consentStore, { identity: null })
 
       await loadEntryAndSetup()
 
@@ -2350,6 +2349,7 @@ describe('AgentPanel extension flag gate', () => {
       expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
 
       Object.assign(workspaceStore, { isSwitching: false })
+      Object.assign(consentStore, { identity: 'account-a/workspace-a' })
       await nextTick()
 
       expect(resume()).toHaveBeenCalledOnce()

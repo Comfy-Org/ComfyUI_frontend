@@ -390,8 +390,7 @@ export function registerAgentPanelExtension(): void {
         [
           () => resolvedUserInfo.value?.id,
           () => consentStore.identity,
-          () => isAuthInitialized.value,
-          () => workspaceStore.isSwitching
+          () => isAuthInitialized.value
         ],
         loadConsentIfEligible
       )
