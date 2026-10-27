@@ -4864,7 +4864,11 @@
       },
       {
         "from": "execution/domain",
-        "allow": ["execution/domain", "unclassified"]
+        "allow": [
+          "execution/domain",
+          "workflow-management/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "execution/application",
@@ -4872,6 +4876,9 @@
           "execution/domain",
           "execution/application",
           "execution/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
           "unclassified"
         ]
       },
@@ -4881,6 +4888,9 @@
           "execution/domain",
           "execution/application",
           "execution/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
           "unclassified"
         ]
       },
@@ -4890,6 +4900,10 @@
           "execution/domain",
           "execution/application",
           "execution/presentation",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/presentation",
+          "workflow-management/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -4901,6 +4915,12 @@
           "execution/infrastructure",
           "execution/presentation",
           "execution/integration",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "workflow-management/presentation",
+          "workflow-management/integration",
+          "workflow-management/presentation/outer-1",
           "unclassified"
         ]
       },
