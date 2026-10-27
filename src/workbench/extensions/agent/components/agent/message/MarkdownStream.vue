@@ -5,7 +5,7 @@ import { computed, defineAsyncComponent, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import {

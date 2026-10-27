@@ -92,8 +92,8 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCredits, formatUsdFromCents } from '@/base/credits/comfyCredits'
-import Button from '@/components/ui/button/Button.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
 import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
@@ -118,8 +118,8 @@ const OPEN = 'icon-[lucide--arrow-up-right]'
 const EXTERNAL = 'icon-[lucide--external-link]'
 
 const DANGER = {
-  border: 'border-destructive-background',
-  text: 'text-destructive-background'
+  border: 'border-destructive',
+  text: 'text-destructive'
 } as const
 
 const MANAGE = {
@@ -140,7 +140,7 @@ const STATUS = {
   failed: {
     ...DANGER,
     label: 'workspacePanel.billingTab.autoTopUp.status.failed',
-    dot: 'bg-destructive-background',
+    dot: 'bg-destructive',
     action: UPDATE_PAYMENT
   },
   turnedOff: {

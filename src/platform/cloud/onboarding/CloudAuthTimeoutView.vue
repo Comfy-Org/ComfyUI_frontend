@@ -33,10 +33,12 @@
         >
           <span>{{ $t('cloudOnboarding.authTimeout.technicalDetails') }}</span>
           <i
-            :class="[
-              'pi',
-              showTechnicalDetails ? 'pi-chevron-up' : 'pi-chevron-down'
-            ]"
+            :class="
+              cn(
+                'pi',
+                showTechnicalDetails ? 'pi-chevron-up' : 'pi-chevron-down'
+              )
+            "
           ></i>
         </button>
         <div
@@ -70,10 +72,11 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 
 interface Props {
