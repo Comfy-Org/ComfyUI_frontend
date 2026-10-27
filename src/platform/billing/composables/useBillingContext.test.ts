@@ -54,26 +54,18 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
 const {
   mockPlans,
   mockFetchPlans,
-  mockBillingStatus,
   mockIsCloud,
   mockFreeTierExecutionPermitted
-} = vi.hoisted(() => {
-  const mockBillingStatus: { value: Partial<BillingStatusResponse> } = {
-    value: {
-      is_active: true,
-      has_funds: true,
-      subscription_tier: 'PRO',
-      subscription_duration: 'MONTHLY'
-    }
-  }
-  return {
-    mockPlans: { value: [] as Plan[] },
-    mockFetchPlans: vi.fn(async () => undefined),
-    mockBillingStatus,
-    mockIsCloud: { value: true },
-    mockFreeTierExecutionPermitted: { value: true }
-  }
-})
+} = vi.hoisted(() => ({
+  mockPlans: { value: [] as Plan[] },
+  mockFetchPlans: vi.fn(async () => undefined),
+  mockIsCloud: { value: true },
+  mockFreeTierExecutionPermitted: { value: true }
+}))
+
+const mockBillingStatus: { value: Partial<BillingStatusResponse> } = {
+  value: { ...DEFAULT_BILLING_STATUS }
+}
 
 let mockIsPersonal: Ref<boolean>
 let mockBillingRail: Ref<BillingRail | null | undefined>
@@ -118,23 +110,18 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/billing/api/billingApi'), () => ({
-  billingApi: {
-    getBillingStatus: vi.fn(() =>
-      Promise.resolve({ ...DEFAULT_BILLING_STATUS, ...mockBillingStatus.value })
-    ),
-    getBillingBalance: vi.fn(async () => ({
-      amount_micros: 10000000,
-      currency: 'usd'
-    })),
-    subscribe: vi.fn(async () => ({ status: 'subscribed' })),
-    previewSubscribe: vi.fn(async () => ({ allowed: true })),
-    createTopup: vi.fn(async () => undefined)
-  }
-}))
+vi.mock(import('@/platform/billing/api/billingApi'))
 
 describe('useBillingContext', () => {
   beforeEach(() => {
+    vi.mocked(billingApi.getBillingStatus).mockImplementation(async () => ({
+      ...DEFAULT_BILLING_STATUS,
+      ...mockBillingStatus.value
+    }))
+    vi.mocked(billingApi.getBillingBalance).mockResolvedValue({
+      amount_micros: 10000000,
+      currency: 'usd'
+    })
     mockIsCloud.value = true
     mockFreeTierExecutionPermitted.value = true
 
@@ -512,6 +499,13 @@ describe('useBillingContext', () => {
   ])(
     'finds an operation the server reports after the first read (pending: $pending)',
     async ({ pending, found }) => {
+      vi.mocked(billingApi.getBillingOpStatus).mockImplementation(
+        async (id) => ({
+          id,
+          status: 'pending',
+          started_at: new Date().toISOString()
+        })
+      )
       useBillingContext()
       await vi.waitFor(() =>
         expect(billingApi.getBillingStatus).toHaveBeenCalled()
