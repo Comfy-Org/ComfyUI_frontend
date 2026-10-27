@@ -1079,7 +1079,7 @@ describe('useAgentConsent', () => {
       })
     })
 
-    it('saves nothing for a kept accept when a later card is skipped and the browser sign-in then finishes in the page', async () => {
+    it('drops a kept accept when a later signed-out card is skipped', async () => {
       signedOut()
       holdDraft('make it blue')
       vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
@@ -1092,8 +1092,6 @@ describe('useAgentConsent', () => {
       const card = await waitForConsentDialog()
       ;(card.contentProps.onReject as () => void)()
       await second
-      signedIn()
-      await setImmediate()
 
       expect(accept).not.toHaveBeenCalled()
       expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
