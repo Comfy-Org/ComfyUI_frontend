@@ -493,6 +493,7 @@ export class ComfyApi extends EventTarget {
    * identity always wins and superseded attempts never open a leaked socket.
    */
   private socketGeneration = 0
+  private socketRetryDelayMs = 1_000
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -963,14 +964,11 @@ export class ComfyApi extends EventTarget {
     return (await this.addSocketAuth(params)) ? params : null
   }
 
-  /**
-   * Creates and connects a WebSocket for realtime updates
-   * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
-   */
   private async createSocket(isReconnect?: boolean) {
     if (this.socket) {
       return
     }
+    if (!isReconnect) this.socketRetryDelayMs = 1_000
     const generation = ++this.socketGeneration
 
     let opened = false
@@ -983,6 +981,8 @@ export class ComfyApi extends EventTarget {
     }
 
     if (isCloud && !(await this.addSocketAuth(params))) return
+    const sessionRequests =
+      isCloud && !params.has('token') ? webSessionRequests() : undefined
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
@@ -1003,7 +1003,9 @@ export class ComfyApi extends EventTarget {
     }, SERVER_FEATURE_FLAGS_TIMEOUT_MS)
 
     socket.addEventListener('open', () => {
+      if (this.socket !== socket) return
       opened = true
+      this.socketRetryDelayMs = 1_000
 
       socket.send(
         JSON.stringify({
@@ -1020,7 +1022,7 @@ export class ComfyApi extends EventTarget {
     socket.addEventListener('error', () => {
       if (this.socket !== socket) return
       socket.close()
-      if (!isReconnect && !opened) {
+      if (!sessionRequests && !isReconnect && !opened) {
         this._pollQueue()
       }
     })
@@ -1029,11 +1031,20 @@ export class ComfyApi extends EventTarget {
       if (this.socket !== socket) return
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
+      const recoverSession = sessionRequests && !opened
+      const delayMs = recoverSession ? this.socketRetryDelayMs : 300
+      if (recoverSession) {
+        this.socketRetryDelayMs = Math.min(delayMs * 2, 60_000)
+      }
       setTimeout(async () => {
         if (this.socket !== socket) return
+        if (recoverSession) {
+          await sessionRequests.refreshSession()
+          if (this.socket !== socket) return
+        }
         this.socket = null
         await this.createSocket(true)
-      }, 300)
+      }, delayMs)
       if (opened) {
         this.dispatchCustomEvent('status', null)
         this.dispatchCustomEvent('reconnecting')
