@@ -464,6 +464,29 @@ describe('AgentCrdtProjection with a local widget write in flight', () => {
     destroy()
   })
 
+  it('keeps a newer local write on the canvas when an older one is rejected', () => {
+    const { graph, source } = buildLiveGraph()
+    const { projection, hostApplies, hostRejects, destroy } = bindFollower(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    const steps = source.widgets![0]
+    const olderWrite = setStepsOp(source, 25)
+
+    steps.value = 25
+    projection.noteLocalWrites([olderWrite])
+    steps.value = 30
+    projection.noteLocalWrites([setStepsOp(source, 30)])
+    hostApplies([setStepsOp(source, 40, AGENT_ACTOR)])
+    hostRejects([olderWrite])
+
+    expect({
+      live: steps.value,
+      serialized: graph.serialize().nodes[0].widgets_values
+    }).toEqual({ live: 30, serialized: [30] })
+    destroy()
+  })
+
   it('does not hold registers without a local write in flight', () => {
     const { graph, source } = buildLiveGraph()
     const other = createRegisteredNode('TestSource')
