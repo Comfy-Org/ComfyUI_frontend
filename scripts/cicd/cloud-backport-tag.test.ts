@@ -101,10 +101,33 @@ const fakeSleep = `#!/usr/bin/env bash
 printf '%s\\n' "$1" >> "\${FAKE_SLEEP_LOG:?}"
 `
 
+const fakeNow = 1_700_000_000
+const fakeDate = `#!/usr/bin/env bash
+calls_file="\${FAKE_DATE_CALLS_FILE:?}"
+calls=$(cat "$calls_file" 2>/dev/null || echo 0)
+printf '%s' $((calls + 1)) > "$calls_file"
+if [[ "$calls" == 0 ]]; then
+  printf '%s\\n' "\${FAKE_NOW:?}"
+else
+  printf '%s\\n' $((FAKE_NOW + FAKE_ELAPSED))
+fi
+`
+
+function installFakeClock(directory: string, elapsed = 0) {
+  writeFileSync(join(directory, 'date'), fakeDate)
+  chmodSync(join(directory, 'date'), 0o755)
+  return {
+    FAKE_DATE_CALLS_FILE: join(directory, 'date-calls'),
+    FAKE_ELAPSED: String(elapsed),
+    FAKE_NOW: String(fakeNow)
+  }
+}
+
 function runTagScript(
   scenario: string,
   options: {
     containment?: string
+    elapsed?: number
     event?: string
     rateLimitMessage?: string
     rateLimitedCalls?: number[] | 'all'
@@ -130,6 +153,7 @@ function runTagScript(
     encoding: 'utf8',
     env: {
       ...process.env,
+      ...installFakeClock(directory, options.elapsed),
       BRANCH: 'cloud/1.54',
       EVENT_NAME: options.event ?? 'workflow_dispatch',
       GH_TOKEN: options.token ?? 'test-token',
@@ -326,11 +350,18 @@ describe('cloud backport tag workflow', () => {
       retryBudget: 5,
       sleeps: [5],
       attempts: 2
+    },
+    {
+      name: 'once elapsed time leaves no room for a retry',
+      retryBudget: 5,
+      elapsed: 1,
+      sleeps: [],
+      attempts: 1
     }
   ])(
     'fails closed when the tag lookup has a real API error $name',
-    ({ retryBudget, sleeps, attempts }) => {
-      const result = runTagScript('api-error', { retryBudget })
+    ({ retryBudget, elapsed, sleeps, attempts }) => {
+      const result = runTagScript('api-error', { elapsed, retryBudget })
       expect(result.status).not.toBe(0)
       expect(result.stderr).toContain('HTTP 503')
       expect(result.stderr).toContain(`failed after ${attempts} attempt(s)`)

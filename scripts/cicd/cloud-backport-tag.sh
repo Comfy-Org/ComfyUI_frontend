@@ -20,6 +20,7 @@ GH_API_MAX_ATTEMPTS="${GH_API_MAX_ATTEMPTS:-4}"
 GH_API_RETRY_BUDGET_SECONDS="${GH_API_RETRY_BUDGET_SECONDS:-300}"
 # gh api hides Retry-After unless --include mixes headers into the output, so use GitHub's documented 60s fallback.
 GH_API_SECONDARY_RATE_LIMIT_WAIT_SECONDS=60
+GH_API_STARTED_AT=$(date +%s)
 GH_API_WAITED_FILE=$(mktemp)
 trap 'rm -f "$GH_API_WAITED_FILE"' EXIT
 
@@ -35,7 +36,7 @@ rate_limit_wait_seconds() {
 # Retries rate-limit and 5xx responses within one retry budget shared by every
 # call in the run; every other failure returns at once.
 gh_api() {
-  local attempt=1 backoff=5 elapsed endpoint="$1" arg error_file output reset_note status wait
+  local attempt=1 backoff=5 elapsed endpoint="$1" arg error_file output reset_note status wait waited
   for arg in "$@"; do
     [[ "$arg" == repos/* ]] && endpoint="$arg"
   done
@@ -49,8 +50,9 @@ gh_api() {
       return 0
     fi
     cat "$error_file" >&2
-    elapsed=$(cat "$GH_API_WAITED_FILE")
-    elapsed=$((SECONDS > ${elapsed:-0} ? SECONDS : ${elapsed:-0}))
+    waited=$(cat "$GH_API_WAITED_FILE")
+    elapsed=$(($(date +%s) - GH_API_STARTED_AT))
+    elapsed=$((elapsed > ${waited:-0} ? elapsed : ${waited:-0}))
     if grep -Eqi 'rate limit|HTTP 429' "$error_file"; then
       if wait=$(rate_limit_wait_seconds); then
         reset_note=" (next reset in ${wait}s)"
