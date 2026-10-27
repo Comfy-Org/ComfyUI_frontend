@@ -4,7 +4,7 @@ import {
   useMediaQuery,
   useResizeObserver
 } from '@vueuse/core'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -12,7 +12,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Video from '@/components/common/Video.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Message from '@comfyorg/design-system/message/Message'
 import { applyDarkPaletteTheme } from '@/utils/colorPaletteTheme'
+import { openFeedbackDialog } from '@/workbench/extensions/agent/feedback'
 
 const {
   title,
@@ -138,9 +140,24 @@ const actionRowClass = computed(() =>
     ? 'ml-auto flex flex-wrap items-center justify-end gap-2.5'
     : 'flex w-full flex-col gap-2.5'
 )
-const acceptLabelKey = computed(() =>
-  requiresSignIn ? 'agent.consent.agreeAndContinue' : 'agent.consent.accept'
+const acceptLabelKey = computed(() => {
+  if (error) return 'agent.consent.tryAgain'
+  return requiresSignIn
+    ? 'agent.consent.agreeAndContinue'
+    : 'agent.consent.accept'
+})
+const errorVisible = ref(Boolean(error))
+
+watch(
+  () => error,
+  (value) => {
+    if (value) errorVisible.value = true
+  }
 )
+
+function openConsentFeedback(): void {
+  openFeedbackDialog('agent-consent')
+}
 
 useResizeObserver(contentRef, ([entry]) => {
   const width = entry.contentRect.width
@@ -208,9 +225,37 @@ onMounted(() => {
             {{ paragraph }}
           </p>
           <ReuseDocsLink v-if="docsUrl && !isWide" />
-          <p v-if="error" role="alert" class="my-0 text-sm/5 text-destructive">
-            {{ error }}
-          </p>
+          <Message
+            v-if="error"
+            v-model:visible="errorVisible"
+            severity="error"
+            closable
+            :close-label="$t('g.close')"
+          >
+            <template #icon>
+              <i class="icon-[lucide--circle-x] size-5 text-destructive" />
+            </template>
+            <div class="flex min-w-0 flex-col gap-0.5">
+              <p class="my-0 font-medium">
+                {{ $t('agent.consent.errorTitle') }}
+              </p>
+              <p class="my-0 text-muted-foreground">
+                <i18n-t keypath="agent.consent.errorContact" tag="span">
+                  <template #contactForm>
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="unset"
+                      class="inline h-auto p-0 font-normal underline"
+                      @click="openConsentFeedback"
+                    >
+                      {{ $t('agent.consent.contactForm') }}
+                    </Button>
+                  </template>
+                </i18n-t>
+              </p>
+            </div>
+          </Message>
         </section>
 
         <footer :class="footerClass">
