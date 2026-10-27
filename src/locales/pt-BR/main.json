@@ -283,7 +283,7 @@
     "workflowEditNotice": "O agente agora pode editar {workflow}. Ele trabalha em um fluxo de trabalho por vez, e você pode alternar entre fluxos de trabalho durante o chat.",
     "workflowReferenceUnavailableReason": "Este fluxo de trabalho referenciado não está mais disponível ou você não tem acesso a ele.",
     "workflowSyncFailedDetail": "Este fluxo de trabalho foi criado com uma versão de documento incompatível. Sua tela foi mantida inalterada.",
-    "workflowSyncFailedDetailCatalogMismatch": "Este fluxo de trabalho usa um catálogo de nós incompatível com este espaço de trabalho. Sua tela foi mantida inalterada.",
+    "workflowSyncFailedDetailCatalogMismatch": "Um nó neste fluxo de trabalho foi alterado desde a última vez que o agente o viu. Seu canvas foi mantido inalterado. Sua próxima mensagem envia seu canvas para que o agente possa reconstruir sua cópia do fluxo de trabalho.",
     "workflowSyncFailedDetailStaleClient": "Esta página está desatualizada, portanto as alterações do agente não podem ser exibidas. Recarregue a página para vê-las.",
     "workflowSyncFailedTitle": "Não é possível sincronizar este fluxo de trabalho",
     "workflows": "Fluxos de trabalho",

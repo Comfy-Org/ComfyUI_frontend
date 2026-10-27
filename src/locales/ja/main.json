@@ -283,7 +283,7 @@
     "workflowEditNotice": "エージェントが{workflow}を編集できるようになりました。一度に作業できるワークフローは1つですが、チャット中に切り替えられます。",
     "workflowReferenceUnavailableReason": "参照されているこのワークフローは利用できなくなったか、アクセス権がありません。",
     "workflowSyncFailedDetail": "このワークフローは互換性のないドキュメントバージョンで作成されています。キャンバスは変更されていません。",
-    "workflowSyncFailedDetailCatalogMismatch": "このワークフローは、このワークスペースと互換性のないノードカタログを使用しています。キャンバスは変更されていません。",
+    "workflowSyncFailedDetailCatalogMismatch": "このワークフロー内のノードは、エージェントが前回確認して以降に変更されています。キャンバスは変更されていません。次のメッセージでキャンバスが送信され、エージェントはワークフローのコピーを再構築できます。",
     "workflowSyncFailedDetailStaleClient": "このページは最新ではないため、エージェントの変更を表示できません。表示するにはページを再読み込みしてください。",
     "workflowSyncFailedTitle": "このワークフローは同期できません",
     "workflows": "ワークフロー",
