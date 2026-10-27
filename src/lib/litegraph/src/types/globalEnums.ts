@@ -82,7 +82,9 @@ export enum TitleMode {
 
 export enum LGraphEventMode {
   ALWAYS = 0,
-  ON_EVENT = 1,
+  /** @deprecated No-op mode. Numeric slot 1 is preserved for v2 ABI; the
+   *  symbol will be removed in release N+1. Use NEVER to mute a node. */
+  _UNUSED_1 = 1,
   NEVER = 2,
   ON_TRIGGER = 3,
   BYPASS = 4
