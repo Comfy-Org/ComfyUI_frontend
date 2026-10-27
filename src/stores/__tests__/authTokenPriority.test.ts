@@ -1,9 +1,5 @@
-import type { WebSession } from '@comfyorg/account-core/webSession'
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { User } from 'firebase/auth'
@@ -29,11 +25,6 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
-
-const mockInvalidateRemoteConfig = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
-  invalidateRemoteConfig: mockInvalidateRemoteConfig
-}))
 
 type MockUser = Omit<User, 'getIdToken'> & { getIdToken: Mock }
 
@@ -413,33 +404,6 @@ describe('auth token priority chain', () => {
           .invocationCallOrder[0]
       )
     })
-
-    it.for([
-      ['before', 'test-user-id'],
-      ['after', 'different-user-id']
-    ] as const)(
-      'clears account-scoped state when the web session updates %s Firebase',
-      ([, sessionUserId]) => {
-        const nextUser = {
-          ...mockUser,
-          uid: 'different-user-id',
-          email: 'different@example.com'
-        } as MockUser
-        Object.assign(useCloudWebSessionStore(), {
-          state: {
-            phase: 'signed_in',
-            session: fromPartial<WebSession>({
-              user: { id: sessionUserId }
-            })
-          }
-        })
-        mockInvalidateRemoteConfig.mockClear()
-
-        authStateCallback(nextUser)
-
-        expect(mockInvalidateRemoteConfig).toHaveBeenCalledOnce()
-      }
-    )
 
     it('keeps account-scoped state for a repeated callback with the same uid', () => {
       vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext).mockClear()

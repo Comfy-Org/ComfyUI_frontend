@@ -1,5 +1,6 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
+import type { WebSession } from '@comfyorg/account-core/webSession'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -2401,6 +2402,30 @@ describe('useAuthStore', () => {
 
       expect(mockResetSocket).toHaveBeenCalledTimes(1)
     })
+
+    it.for([
+      { timing: 'after', sessionUserId: mockUser.uid },
+      { timing: 'before', sessionUserId: accountB.uid }
+    ])(
+      'invalidates account config when the web session updates $timing Firebase',
+      ({ sessionUserId }) => {
+        Object.assign(useCloudWebSessionStore(), {
+          state: {
+            phase: 'signed_in',
+            session: fromPartial<WebSession>({
+              user: { id: sessionUserId }
+            })
+          }
+        })
+        remoteConfig.value = { subscription_required: true }
+        remoteConfigState.value = 'authenticated'
+
+        authStateCallback(accountB)
+
+        expect(remoteConfig.value.subscription_required).toBeUndefined()
+        expect(remoteConfigState.value).toBe('unloaded')
+      }
+    )
 
     it('does not invalidate workspace state for an unchanged API-key session', () => {
       vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue('api-key-a')
