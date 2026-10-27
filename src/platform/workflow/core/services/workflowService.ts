@@ -476,6 +476,20 @@ export const useWorkflowService = () => {
     workflow.isModified = wasModified
   }
 
+  async function recoverFailedWorkflowOpen(
+    workflow: ComfyWorkflow,
+    loadFromRemote: boolean,
+    wasModified: boolean,
+    isCurrent?: () => boolean
+  ) {
+    if (isCurrent?.() !== false) {
+      await restoreRetainedWorkflow(workflow, isCurrent)
+    }
+    if (isCurrent?.() === false && loadFromRemote) {
+      discardSupersededLoad(workflow, wasModified)
+    }
+  }
+
   const openWorkflow = (
     workflow: ComfyWorkflow,
     options: {
@@ -532,12 +546,12 @@ export const useWorkflowService = () => {
         )
         if (loaded === false || options.isCurrent?.() === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
-          if (options.isCurrent?.() !== false) {
-            await restoreRetainedWorkflow(workflow, options.isCurrent)
-          }
-          if (options.isCurrent?.() === false && loadFromRemote) {
-            discardSupersededLoad(workflow, wasModified)
-          }
+          await recoverFailedWorkflowOpen(
+            workflow,
+            loadFromRemote,
+            wasModified,
+            options.isCurrent
+          )
           return false
         }
         showPendingWarnings(undefined, {
@@ -803,6 +817,23 @@ export const useWorkflowService = () => {
     )
   }
 
+  function canRestoreWorkflow(
+    workflow: ComfyWorkflow,
+    workflowData: ComfyWorkflowJSON,
+    isActive: boolean
+  ) {
+    if (workflow.isPersisted && !workflow.isLoaded) return true
+    if (!isActive) return false
+    return (
+      workflow.isTemporary ||
+      areWorkflowIdsEquivalent(
+        workflow.activeState?.id,
+        workflowData.id,
+        workflow.legacyId
+      )
+    )
+  }
+
   const activateLoadedWorkflow = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
@@ -833,88 +864,80 @@ export const useWorkflowService = () => {
       }
     }
 
-    if (value === null || typeof value === 'string') {
-      if (value) {
-        const fullPath = ComfyWorkflow.basePath + appendJsonExt(value)
-        const existingWorkflow = workflowStore.getWorkflowByPath(fullPath)
-        const existingId = existingWorkflow?.activeState?.id
-        const isSameActiveWorkflowLoad =
-          !!existingWorkflow &&
-          workflowStore.isActive(existingWorkflow) &&
-          (existingWorkflow.isTemporary ||
-            areWorkflowIdsEquivalent(
-              existingId,
-              workflowData.id,
-              existingWorkflow.legacyId
-            ))
-
-        if (
-          existingWorkflow &&
-          ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
-            isSameActiveWorkflowLoad)
-        ) {
-          const loadedWorkflow = await openInCurrentContext(existingWorkflow)
-          if (graphState !== useApp().rootGraphOrUndefined?.state) return
-          activateRunErrors(loadedWorkflow)
-          if (loadedWorkflow.initialMode === undefined) {
-            const initialState = (loadedWorkflow as ComfyWorkflow).initialState
-            if (!initialState) {
-              reportWorkflowStateAnomaly(
-                'Activated workflow has no initial state',
-                'activateLoadedWorkflow.initialMode',
-                loadedWorkflow,
-                { isActive: workflowStore.isActive(loadedWorkflow) }
-              )
-            }
-            loadedWorkflow.initialMode =
-              linearModeToAppMode(initialState?.extra?.linearMode) ??
-              freshLoadMode
-            trackIfEnteringApp(loadedWorkflow)
-          }
-          if (shareId) {
-            loadedWorkflow.shareId = shareId
-          }
-          loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
-          resetAndRestoreTracker(
-            loadedWorkflow,
-            workflowData,
-            workflowStore.isActive(loadedWorkflow)
-          )
-          return
-        }
-      }
-
-      const tempWorkflow = workflowStore.createNewTemporary(
-        value ? appendJsonExt(value) : undefined,
-        workflowData
-      )
-      tempWorkflow.initialMode = freshLoadMode
-      if (shareId) {
-        tempWorkflow.shareId = shareId
-      }
-      trackIfEnteringApp(tempWorkflow)
-      const loadedWorkflow = await openInCurrentContext(tempWorkflow)
+    if (value !== null && typeof value !== 'string') {
+      const loadedWorkflow = await openInCurrentContext(value)
       if (graphState !== useApp().rootGraphOrUndefined?.state) return
       activateRunErrors(loadedWorkflow)
+      if (shareId) {
+        loadedWorkflow.shareId = shareId
+      }
+      if (loadedWorkflow.initialMode === undefined) {
+        loadedWorkflow.initialMode = freshLoadMode
+        trackIfEnteringApp(loadedWorkflow)
+      }
+      loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
+      resetAndRestoreTracker(
+        loadedWorkflow,
+        workflowData,
+        workflowStore.isActive(loadedWorkflow)
+      )
       return
     }
 
-    const loadedWorkflow = await openInCurrentContext(value)
+    const existingWorkflow = value
+      ? workflowStore.getWorkflowByPath(
+          ComfyWorkflow.basePath + appendJsonExt(value)
+        )
+      : null
+    if (
+      existingWorkflow &&
+      canRestoreWorkflow(
+        existingWorkflow,
+        workflowData,
+        workflowStore.isActive(existingWorkflow)
+      )
+    ) {
+      const loadedWorkflow = await openInCurrentContext(existingWorkflow)
+      if (graphState !== useApp().rootGraphOrUndefined?.state) return
+      activateRunErrors(loadedWorkflow)
+      if (loadedWorkflow.initialMode === undefined) {
+        const initialState = (loadedWorkflow as ComfyWorkflow).initialState
+        if (!initialState) {
+          reportWorkflowStateAnomaly(
+            'Activated workflow has no initial state',
+            'activateLoadedWorkflow.initialMode',
+            loadedWorkflow,
+            { isActive: workflowStore.isActive(loadedWorkflow) }
+          )
+        }
+        loadedWorkflow.initialMode =
+          linearModeToAppMode(initialState?.extra?.linearMode) ?? freshLoadMode
+        trackIfEnteringApp(loadedWorkflow)
+      }
+      if (shareId) {
+        loadedWorkflow.shareId = shareId
+      }
+      loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
+      resetAndRestoreTracker(
+        loadedWorkflow,
+        workflowData,
+        workflowStore.isActive(loadedWorkflow)
+      )
+      return
+    }
+
+    const tempWorkflow = workflowStore.createNewTemporary(
+      value ? appendJsonExt(value) : undefined,
+      workflowData
+    )
+    tempWorkflow.initialMode = freshLoadMode
+    if (shareId) {
+      tempWorkflow.shareId = shareId
+    }
+    trackIfEnteringApp(tempWorkflow)
+    const loadedWorkflow = await openInCurrentContext(tempWorkflow)
     if (graphState !== useApp().rootGraphOrUndefined?.state) return
     activateRunErrors(loadedWorkflow)
-    if (shareId) {
-      loadedWorkflow.shareId = shareId
-    }
-    if (loadedWorkflow.initialMode === undefined) {
-      loadedWorkflow.initialMode = freshLoadMode
-      trackIfEnteringApp(loadedWorkflow)
-    }
-    loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
-    resetAndRestoreTracker(
-      loadedWorkflow,
-      workflowData,
-      workflowStore.isActive(loadedWorkflow)
-    )
   }
 
   /**
