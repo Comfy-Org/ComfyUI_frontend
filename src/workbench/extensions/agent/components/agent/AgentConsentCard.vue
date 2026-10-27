@@ -4,7 +4,7 @@ import {
   useMediaQuery,
   useResizeObserver
 } from '@vueuse/core'
-import { computed, onMounted, ref, useId } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -133,21 +133,13 @@ const actionButtonClass = computed(() =>
     ? 'h-auto min-h-11 w-fit max-w-full whitespace-normal'
     : 'h-auto min-h-11 w-full max-w-full whitespace-normal'
 )
-const actionClusterClass = computed(() =>
-  isWide.value
-    ? 'ml-auto flex flex-col items-end gap-1'
-    : 'flex w-full flex-col gap-2.5'
-)
 const actionRowClass = computed(() =>
   isWide.value
-    ? 'flex flex-wrap justify-end gap-2.5'
+    ? 'ml-auto flex flex-wrap justify-end gap-2.5'
     : 'flex w-full flex-col gap-2.5'
 )
-const signInHintId = useId()
-const acceptAction = computed(() =>
-  requiresSignIn
-    ? { labelKey: 'agent.consent.agreeAndContinue', describedBy: signInHintId }
-    : { labelKey: 'agent.consent.accept', describedBy: undefined }
+const acceptLabelKey = computed(() =>
+  requiresSignIn ? 'agent.consent.agreeAndContinue' : 'agent.consent.accept'
 )
 
 useResizeObserver(contentRef, ([entry]) => {
@@ -223,35 +215,23 @@ onMounted(() => {
 
         <footer :class="footerClass">
           <ReuseDocsLink v-if="docsUrl && isWide" />
-          <div :class="actionClusterClass">
-            <p
-              v-if="requiresSignIn"
-              :id="signInHintId"
-              class="my-0 text-xs/5 text-muted-foreground"
+          <div :class="actionRowClass">
+            <Button
+              v-for="action in actions"
+              :key="action"
+              :variant="action === 'accept' ? 'inverted' : 'secondary'"
+              size="lg"
+              :class="actionButtonClass"
+              :loading="action === 'accept' && accepting"
+              :disabled="accepting"
+              @click="choose(action)"
             >
-              {{ $t('agent.consent.signInNext') }}
-            </p>
-            <div :class="actionRowClass">
-              <Button
-                v-for="action in actions"
-                :key="action"
-                :variant="action === 'accept' ? 'inverted' : 'secondary'"
-                size="lg"
-                :class="actionButtonClass"
-                :loading="action === 'accept' && accepting"
-                :disabled="accepting"
-                :aria-describedby="
-                  action === 'accept' ? acceptAction.describedBy : undefined
-                "
-                @click="choose(action)"
-              >
-                {{
-                  action === 'accept'
-                    ? $t(acceptAction.labelKey)
-                    : $t('agent.consent.reject')
-                }}
-              </Button>
-            </div>
+              {{
+                action === 'accept'
+                  ? $t(acceptLabelKey)
+                  : $t('agent.consent.reject')
+              }}
+            </Button>
           </div>
         </footer>
       </div>

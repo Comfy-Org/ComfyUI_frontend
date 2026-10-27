@@ -42,7 +42,6 @@ describe('AgentConsentCard', () => {
     )
     await user.click(screen.getByRole('button', { name: 'Skip for now' }))
 
-    expect(screen.queryByText("You'll sign in next.")).not.toBeInTheDocument()
     expect(emitted().accept).toHaveLength(1)
     expect(emitted().reject).toHaveLength(1)
   })
@@ -51,8 +50,11 @@ describe('AgentConsentCard', () => {
     const user = userEvent.setup()
     const { emitted } = renderCard({ requiresSignIn: true })
 
-    const accept = screen.getByRole('button', { name: 'Agree and continue' })
-    expect(accept).toHaveAccessibleDescription("You'll sign in next.")
+    const accept = screen.getByRole('button', {
+      name: 'Agree and continue with sign in'
+    })
+    expect(accept).not.toHaveAccessibleDescription()
+    expect(screen.queryByText("You'll sign in next.")).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Start using Comfy Agent' })
     ).not.toBeInTheDocument()

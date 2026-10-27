@@ -180,7 +180,7 @@ describe('useAgentConsent', () => {
 
   it.for([
     {
-      action: 'Agree and continue',
+      action: 'Agree and continue with sign in',
       signedOut: true,
       key: 'Comfy.AgentConsent.IntroductionResponded.signed-out'
     },
@@ -880,7 +880,7 @@ describe('useAgentConsent', () => {
     const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
     await renderConsentCard(dialog)
-    expect(screen.getByText("You'll sign in next.")).toBeInTheDocument()
+    expect(screen.queryByText("You'll sign in next.")).not.toBeInTheDocument()
     expect(
       screen.getByText(
         /By clicking Agree and continue, you agree to its usage\./
@@ -889,9 +889,9 @@ describe('useAgentConsent', () => {
     expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
     expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
     const continueButton = screen.getByRole('button', {
-      name: 'Agree and continue'
+      name: 'Agree and continue with sign in'
     })
-    expect(continueButton).toHaveAccessibleDescription("You'll sign in next.")
+    expect(continueButton).not.toHaveAccessibleDescription()
     await userEvent.click(continueButton)
     await request
 
@@ -924,7 +924,7 @@ describe('useAgentConsent', () => {
     const dialog = await waitForConsentDialog()
     await renderConsentCard(dialog)
     await userEvent.click(
-      screen.getByRole('button', { name: 'Agree and continue' })
+      screen.getByRole('button', { name: 'Agree and continue with sign in' })
     )
     await request
 
