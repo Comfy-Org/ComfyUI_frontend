@@ -438,19 +438,23 @@ export const useWorkflowService = () => {
    * retry loop: a failure here leaves the first failure's dialog
    * standing.
    */
-  const restoreRetainedWorkflow = async (failed: ComfyWorkflow) => {
+  const restoreRetainedWorkflow = async (
+    failed: ComfyWorkflow,
+    isCurrent?: () => boolean
+  ) => {
     const retained = getActiveWorkflow()
     if (!retained || retained.path === failed.path || !retained.isLoaded) return
 
     await useApp().loadGraphData(
       toRaw(retained.activeState) as ComfyWorkflowJSON,
-      /* clean=*/ true,
-      /* restore_view=*/ true,
+      true,
+      true,
       retained,
       {
         checkForRerouteMigration: false,
         deferWarnings: true,
-        skipAssetScans: true
+        skipAssetScans: true,
+        ...(isCurrent ? { isCurrent } : {})
       }
     )
   }
@@ -526,14 +530,14 @@ export const useWorkflowService = () => {
             ...(options.isCurrent ? { isCurrent: options.isCurrent } : {})
           }
         )
-        if (loaded === false) {
+        if (loaded === false || options.isCurrent?.() === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
-          await restoreRetainedWorkflow(workflow)
-          return false
-        }
-        if (options.isCurrent?.() === false) {
-          if (loadFromRemote) discardSupersededLoad(workflow, wasModified)
-          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          if (options.isCurrent?.() !== false) {
+            await restoreRetainedWorkflow(workflow, options.isCurrent)
+          }
+          if (options.isCurrent?.() === false && loadFromRemote) {
+            discardSupersededLoad(workflow, wasModified)
+          }
           return false
         }
         showPendingWarnings(undefined, {

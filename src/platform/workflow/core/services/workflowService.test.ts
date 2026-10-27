@@ -618,6 +618,93 @@ describe('useWorkflowService', () => {
       expect(loading.isLoaded).toBe(false)
     })
 
+    it('does not repaint a retained workflow after a cancelled graph load reports failure', async () => {
+      const workflows = useWorkflowStore()
+      const retained = createModeTestWorkflow({
+        path: 'workflows/retained.json'
+      })
+      const saved = createModeTestWorkflow({
+        path: 'workflows/saved.json',
+        loaded: false
+      })
+      workflows.activeWorkflow = retained
+      const retainedDocument = workflows.activeWorkflow
+      vi.spyOn(saved, 'load').mockImplementation(async () => {
+        saved.originalContent = '{}'
+        saved.content = '{"draft":true}'
+        saved.changeTracker = createMockChangeTracker()
+        saved.isModified = true
+        return saved
+      })
+      let finishGraphLoad = () => {}
+      const graphLoad = new Promise<false>((resolve) => {
+        finishGraphLoad = () => resolve(false)
+      })
+      vi.mocked(app.loadGraphData).mockReturnValueOnce(graphLoad)
+      let current = true
+      const opening = useWorkflowService().openWorkflow(saved, {
+        isCurrent: () => current
+      })
+      await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledOnce())
+
+      current = false
+      finishGraphLoad()
+
+      expect(await opening).toBe(false)
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(workflows.activeWorkflow).toBe(retainedDocument)
+      expect(saved.isLoaded).toBe(false)
+      expect(saved.isModified).toBe(false)
+    })
+
+    it('keeps failure recovery cancellable while retained graph preparation is pending', async () => {
+      const workflows = useWorkflowStore()
+      const retained = createModeTestWorkflow({
+        path: 'workflows/retained.json'
+      })
+      const failing = createModeTestWorkflow({
+        path: 'workflows/failing.json',
+        loaded: false
+      })
+      vi.spyOn(failing, 'load').mockImplementation(async () => {
+        failing.originalContent = '{}'
+        failing.content = '{"draft":true}'
+        failing.changeTracker = createMockChangeTracker()
+        failing.isModified = true
+        return failing
+      })
+      workflows.activeWorkflow = retained
+      const retainedDocument = workflows.activeWorkflow
+      let finishRecovery = () => {}
+      const recovery = new Promise<void>((resolve) => {
+        finishRecovery = resolve
+      })
+      let recoveryIsCurrent: (() => boolean) | undefined
+      vi.mocked(app.loadGraphData)
+        .mockResolvedValueOnce(false)
+        .mockImplementationOnce(
+          async (_data, _clean, _view, _workflow, options) => {
+            recoveryIsCurrent = options?.isCurrent
+            await recovery
+            return false
+          }
+        )
+      let current = true
+      const opening = useWorkflowService().openWorkflow(failing, {
+        isCurrent: () => current
+      })
+      await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(2))
+
+      current = false
+      finishRecovery()
+
+      expect(await opening).toBe(false)
+      expect(recoveryIsCurrent?.()).toBe(false)
+      expect(failing.isLoaded).toBe(false)
+      expect(failing.isModified).toBe(false)
+      expect(workflows.activeWorkflow).toBe(retainedDocument)
+    })
+
     it('leaves a saved workflow clean after a superseded load applied its draft', async () => {
       const workflows = useWorkflowStore()
       const current = createModeTestWorkflow({ path: 'workflows/current.json' })
