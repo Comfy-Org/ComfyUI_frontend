@@ -349,8 +349,13 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-stop',
       label: 'Interrupt',
       category: 'essentials' as const,
-      function: async () => {
-        await api.interrupt(executionStore.activeJobId)
+      function: async (metadata?: Record<string, unknown>) => {
+        const requestedJobId = metadata?.jobId
+        const jobId =
+          typeof requestedJobId === 'string' && requestedJobId.length > 0
+            ? requestedJobId
+            : executionStore.activeJobId
+        await api.interrupt(jobId)
         toast.info(t('g.interrupted'), {
           description: t('toastMessages.interrupted'),
           duration: 1000
