@@ -4,7 +4,8 @@ import type {
   PaymentProjection,
   PaymentReasonKey,
   SubscriptionCommandResult,
-  TopupResult,BillingServerCode
+  TopupResult,
+  BillingServerCode
 } from '@comfyorg/account-core/billing'
 import {
   isPurchaseRefusal,
