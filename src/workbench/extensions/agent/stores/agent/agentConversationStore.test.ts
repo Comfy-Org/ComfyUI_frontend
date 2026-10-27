@@ -2832,9 +2832,12 @@ describe('useAgentConversationStore', () => {
       }
     )
 
-    it.for([false, true])(
-      'stops awaiting approval when the asking turn ends (stashed: %s)',
-      (stashed) => {
+    it.for([
+      { turn: 'live', stashed: false },
+      { turn: 'stashed', stashed: true }
+    ])(
+      'stops awaiting approval when the asking turn ends ($turn turn)',
+      ({ stashed }) => {
         openTab('workflows/a.json')
         const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
         store.ingest(runApproval('t1', 'ask-1'))
@@ -2846,9 +2849,12 @@ describe('useAgentConversationStore', () => {
       }
     )
 
-    it.for([false, true])(
-      'awaits approval for a turn whose tab is not open (stashed: %s)',
-      (stashed) => {
+    it.for([
+      { turn: 'live', stashed: false },
+      { turn: 'stashed', stashed: true }
+    ])(
+      'awaits approval for a turn whose tab is not open ($turn turn)',
+      ({ stashed }) => {
         const store = storeWithTurnOn({ status: 'none' }, stashed)
 
         store.ingest(runApproval('t1', 'ask-1'))
