@@ -1,33 +1,26 @@
-import { render, screen } from '@testing-library/vue'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { useElementSize, useEventListener, useScroll } from '@vueuse/core'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { useElementSize } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
-import { nextTick, ref, toValue, watchEffect } from 'vue'
+import { nextTick, ref } from 'vue'
 
-import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
+import VirtualGrid from './VirtualGrid.vue'
 
 type TestItem = { key: string; name: string }
 
 let mockedWidth: Ref<number>
 let mockedHeight: Ref<number>
-let mockedScrollY: Ref<number>
 
 vi.mock(import('@vueuse/core'), { spy: true })
 
 beforeEach(() => {
   mockedWidth = ref(400)
   mockedHeight = ref(200)
-  mockedScrollY = ref(0)
-  vi.mocked(useElementSize).mockImplementation(() =>
-    fromPartial({
-      width: mockedWidth,
-      height: mockedHeight
-    })
-  )
-  vi.mocked(useScroll).mockImplementation(() =>
-    fromPartial({ y: mockedScrollY })
-  )
+  vi.mocked(useElementSize).mockImplementation(() => ({
+    width: mockedWidth,
+    height: mockedHeight,
+    stop: vi.fn()
+  }))
 })
 
 function createItems(count: number): TestItem[] {
@@ -48,7 +41,6 @@ describe('VirtualGrid', () => {
     const items = createItems(100)
     mockedWidth.value = 400
     mockedHeight.value = 200
-    mockedScrollY.value = 0
 
     render(VirtualGrid, {
       props: {
@@ -79,7 +71,6 @@ describe('VirtualGrid', () => {
     const receivedIndices: number[] = []
     mockedWidth.value = 400
     mockedHeight.value = 200
-    mockedScrollY.value = 0
 
     render(VirtualGrid, {
       props: {
@@ -112,7 +103,6 @@ describe('VirtualGrid', () => {
     const items = createItems(10)
     mockedWidth.value = 400
     mockedHeight.value = 200
-    mockedScrollY.value = 0
 
     const { container } = render(VirtualGrid, {
       props: {
@@ -157,7 +147,6 @@ describe('VirtualGrid', () => {
   it('forces cols to maxColumns when maxColumns is finite', async () => {
     mockedWidth.value = 100
     mockedHeight.value = 200
-    mockedScrollY.value = 0
 
     const items = createItems(20)
     render(VirtualGrid, {
@@ -267,6 +256,7 @@ describe('VirtualGrid scrolled deep into a large library', () => {
         defaultItemWidth: TILE_WIDTH,
         bufferRows: 1
       },
+      attrs: { 'data-testid': 'virtual-grid' },
       slots: {
         item: `<template #item="{ item }">
           <div>{{ item.name }}</div>
@@ -276,8 +266,6 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     })
   }
 
-  let scrollContainer: HTMLElement | null = null
-
   function renderedNames() {
     return screen.queryAllByText(/^asset-\d+$/).map((el) => el.textContent)
   }
@@ -285,36 +273,12 @@ describe('VirtualGrid scrolled deep into a large library', () => {
   beforeEach(() => {
     mockedWidth.value = PANEL_WIDTH
     mockedHeight.value = PANEL_HEIGHT
-    mockedScrollY.value = 0
-    scrollContainer = null
-    vi.mocked(useScroll).mockImplementation((target) => {
-      const y = ref(0)
-      watchEffect((onCleanup) => {
-        const element = toValue(target)
-        if (!(element instanceof HTMLElement)) return
-        scrollContainer = element
-
-        function sync() {
-          const current = toValue(target)
-          if (current instanceof HTMLElement) y.value = current.scrollTop
-        }
-
-        sync()
-        onCleanup(useEventListener(element, 'scroll', sync))
-      })
-      return fromPartial({ y })
-    })
   })
 
-  function syncScrollPosition() {
-    if (!scrollContainer) throw new Error('no scroll container rendered')
-    scrollContainer.dispatchEvent(new Event('scroll'))
-  }
-
-  function scrollTo(offset: number) {
-    if (!scrollContainer) throw new Error('no scroll container rendered')
-    scrollContainer.scrollTop = offset
-    syncScrollPosition()
+  async function scrollTo(offset: number) {
+    await fireEvent.scroll(screen.getByTestId('virtual-grid'), {
+      target: { scrollTop: offset }
+    })
   }
 
   it.for([
@@ -328,7 +292,7 @@ describe('VirtualGrid scrolled deep into a large library', () => {
 
       expect(renderedNames().length).toBeLessThan(LIBRARY_SIZE)
 
-      scrollTo(offset)
+      await scrollTo(offset)
       await nextTick()
 
       expect(renderedNames()).toContain(expectedItem)
@@ -340,13 +304,13 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     const { rerender } = renderLibrary(createLibrary())
     await nextTick()
 
-    scrollTo(20_000)
+    await scrollTo(20_000)
     await nextTick()
 
     const audioOnly = createLibrary().filter((_, i) => isAudio(i))
     await rerender({ items: audioOnly })
     await nextTick()
-    syncScrollPosition()
+    await fireEvent.scroll(screen.getByTestId('virtual-grid'))
     await nextTick()
 
     expect(renderedNames().length).toBeGreaterThan(0)
@@ -356,7 +320,7 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     renderLibrary(createLibrary())
     await nextTick()
 
-    scrollTo(100_000)
+    await scrollTo(100_000)
     await nextTick()
 
     mockedWidth.value = PANEL_WIDTH * 2
@@ -369,12 +333,12 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     const { rerender } = renderLibrary(createLibrary())
     await nextTick()
 
-    scrollTo(100_000)
+    await scrollTo(100_000)
     await nextTick()
 
     await rerender({ items: [] })
     await nextTick()
-    syncScrollPosition()
+    await fireEvent.scroll(screen.getByTestId('virtual-grid'))
     await nextTick()
 
     expect(renderedNames().length).toBe(0)
@@ -382,7 +346,7 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     const fullLibrary = createLibrary()
     await rerender({ items: fullLibrary })
     await nextTick()
-    syncScrollPosition()
+    await fireEvent.scroll(screen.getByTestId('virtual-grid'))
     await nextTick()
 
     expect(renderedNames().length).toBeGreaterThan(0)

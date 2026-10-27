@@ -32,7 +32,6 @@ import { useBillingContext as useSharedBillingContext } from './useBillingContex
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 function useBillingContext() {
   const scope = effectScope()
