@@ -6159,7 +6159,7 @@
       "loadError": "Could not load your Agent preference. Try again.",
       "signInError": "Could not open sign-in. Please try again.",
       "saveError": "Could not save your preference. Try again.",
-      "errorTitle": "Could not save your preference",
+      "errorTitle": "Couldn't start Comfy Agent",
       "errorCheckConnection": "Please check your connection and try again.",
       "errorContact": "If you continue having issues, please use the {contactForm}.",
       "contactForm": "contact form",

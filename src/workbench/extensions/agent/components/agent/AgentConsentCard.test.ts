@@ -90,7 +90,7 @@ describe('AgentConsentCard', () => {
     renderCard({ error: saveError })
 
     const alert = screen.getByRole('alert')
-    expect(alert).toHaveTextContent('Could not save your preference')
+    expect(alert).toHaveTextContent("Couldn't start Comfy Agent")
     expect(alert).toHaveTextContent(
       'Please check your connection and try again.'
     )
@@ -169,7 +169,7 @@ describe('AgentConsentCard', () => {
     })
 
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'Could not save your preference'
+      "Couldn't start Comfy Agent"
     )
     expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled()
   })
