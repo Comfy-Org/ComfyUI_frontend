@@ -9,7 +9,7 @@
     :close-icon="closeIcon"
   >
     <template #leftPanelHeaderTitle>
-      <i class="icon-[lucide--settings] size-4" />
+      <i class="icon-[lucide--settings]" />
       <h2 class="text-base text-foreground">{{ $t('g.settings') }}</h2>
     </template>
 

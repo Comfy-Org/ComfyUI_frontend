@@ -25,6 +25,7 @@ type VAttribute = AST.VAttribute
 interface TemplateParserServices {
   defineTemplateBodyVisitor(visitor: {
     VElement?: (node: VElement) => void
+    'VElement:exit'?: (node: VElement) => void
     VLiteral?: (node: AST.VLiteral) => void
     Literal?: (node: AST.ESLintLiteral) => void
     TemplateElement?: (node: AST.ESLintTemplateElement) => void
@@ -618,11 +619,13 @@ const iconElement: Rule.RuleModule = {
     type: 'problem',
     docs: {
       description:
-        'Require Iconify utility classes to be applied to <i> elements'
+        'Require Iconify classes on <i> elements without redundant default utilities'
     },
     messages: {
       wrongElement:
-        'Apply icon-[…] classes to an <i> element, not <{{element}}>.'
+        'Apply icon-[…] classes to an <i> element, not <{{element}}>.',
+      redundantIconUtility:
+        'Remove `{{token}}`; icon classes already provide size-4 and shrink-0.'
     },
     schema: []
   },
@@ -630,6 +633,40 @@ const iconElement: Rule.RuleModule = {
     const services = context.sourceCode.parserServices as
       | Partial<TemplateParserServices>
       | undefined
+    const classes = new Map<
+      VElement,
+      {
+        node: AST.VLiteral | AST.ESLintLiteral | AST.ESLintTemplateElement
+        tokens: string[]
+      }[]
+    >()
+    const iconClass = /(?:^|:)!?icon-(?:img-|mask-|s[\d.]+-)?\[/
+    function mutuallyExclusive(left: AST.Node, right: AST.Node) {
+      let parent = left.parent
+      while (parent && parent.type !== 'VAttribute') {
+        if (parent.type === 'ConditionalExpression') {
+          const branches = [parent.consequent, parent.alternate]
+          const leftBranch = branches.findIndex(
+            (branch) =>
+              branch.range[0] <= left.range[0] &&
+              left.range[1] <= branch.range[1]
+          )
+          const rightBranch = branches.findIndex(
+            (branch) =>
+              branch.range[0] <= right.range[0] &&
+              right.range[1] <= branch.range[1]
+          )
+          if (
+            leftBranch !== -1 &&
+            rightBranch !== -1 &&
+            leftBranch !== rightBranch
+          )
+            return true
+        }
+        parent = parent.parent
+      }
+      return false
+    }
     function isClassAttribute(
       attribute: AST.VAttribute | AST.VDirective,
       node: AST.Node
@@ -662,7 +699,6 @@ const iconElement: Rule.RuleModule = {
       node: AST.VLiteral | AST.ESLintLiteral | AST.ESLintTemplateElement,
       text: string
     ) {
-      if (!/(?:^|[\s:])!?icon-\[/.test(text)) return
       let parent = node.parent
       while (parent && parent.type !== 'VAttribute') {
         if (parent.type === 'BinaryExpression' && parent.operator !== '+')
@@ -671,15 +707,44 @@ const iconElement: Rule.RuleModule = {
       }
       if (!parent) return
       const element = parent.parent.parent
-      if (!isClassAttribute(parent, node) || element.rawName === 'i') return
-      context.report({
-        node,
-        messageId: 'wrongElement',
-        data: { element: element.rawName }
-      })
+      if (!isClassAttribute(parent, node)) return
+      const tokens = text.split(/\s+/).filter(Boolean)
+      const entries = classes.get(element) ?? []
+      entries.push({ node, tokens })
+      classes.set(element, entries)
     }
     return (
       services?.defineTemplateBodyVisitor?.({
+        'VElement:exit': (element) => {
+          const entries = classes.get(element)
+          classes.delete(element)
+          if (!entries) return
+          const icons = entries.filter(({ tokens }) =>
+            tokens.some((token) => iconClass.test(token))
+          )
+          if (element.rawName !== 'i') {
+            for (const { node } of icons) {
+              context.report({
+                node,
+                messageId: 'wrongElement',
+                data: { element: element.rawName }
+              })
+            }
+            return
+          }
+          for (const { node, tokens } of entries) {
+            if (!icons.some((icon) => !mutuallyExclusive(node, icon.node)))
+              continue
+            for (const token of tokens) {
+              if (token !== 'size-4' && token !== 'shrink-0') continue
+              context.report({
+                node,
+                messageId: 'redundantIconUtility',
+                data: { token }
+              })
+            }
+          }
+        },
         VLiteral: (node) => checkClass(node, node.value),
         Literal: (node) => {
           if (typeof node.value === 'string') checkClass(node, node.value)

@@ -35,6 +35,11 @@ function redundant(template: string, output: string, script = '') {
 ruleTester.run('icon-element', templateClasses.rules['icon-element'], {
   valid: [
     vue('<i class="icon-[lucide--check]" />'),
+    vue('<i class="icon-[lucide--check] size-5 shrink" />'),
+    vue('<i class="size-4 shrink-0" />'),
+    vue('<i class="icon-[lucide--check]" :title="\'size-4 shrink-0\'" />'),
+    vue('<i class="icon-[lucide--check]" :class="size === \'size-4\'" />'),
+    vue("<i :class=\"active ? 'icon-[lucide--check]' : 'size-4 shrink-0'\" />"),
     vue('<i :class="cn(loading && \'icon-[lucide--loader]\')" />'),
     vue('<span class="text-sm" />'),
     vue('<Button icon="icon-[lucide--check]" />'),
@@ -51,23 +56,45 @@ ruleTester.run('icon-element', templateClasses.rules['icon-element'], {
     vue('<div class="[&_i]:size-4"><i class="icon-[comfy--logo]" /></div>')
   ],
   invalid: [
-    '<span class="size-4 icon-[lucide--check]" />',
-    '<div class="icon-[comfy--logo]" />',
-    '<button class="hover:icon-[lucide--check]" />',
-    '<Button class="icon-[lucide--check]" />',
-    '<span :class="\'icon-[lucide--check]\'" />',
-    '<span :class="cn(loading && \'icon-[lucide--loader]\')" />',
-    "<span :class=\"active ? 'icon-[lucide--check]' : 'text-sm'\" />",
-    '<span :class="{ \'icon-[lucide--check]\': active }" />',
-    '<span v-bind="{ class: \'icon-[lucide--check]\' }" />',
-    "<span v-bind=\"{ 'class': cn(active && 'icon-[lucide--check]') }\" />",
-    "<span :class=\"iconName === 'check' ? 'icon-[lucide--check]' : ''\" />",
-    "<span :class=\"'icon-[lucide--' + name + ']'\" />",
-    '<span :class="`icon-[${family}--${name}]`" />'
-  ].map((template) => ({
-    ...vue(template),
-    errors: [{ messageId: 'wrongElement' }]
-  }))
+    ...[
+      '<span class="size-4 icon-[lucide--check]" />',
+      '<div class="icon-[comfy--logo]" />',
+      '<button class="hover:icon-[lucide--check]" />',
+      '<Button class="icon-[lucide--check]" />',
+      '<span :class="\'icon-[lucide--check]\'" />',
+      '<span :class="cn(loading && \'icon-[lucide--loader]\')" />',
+      "<span :class=\"active ? 'icon-[lucide--check]' : 'text-sm'\" />",
+      '<span :class="{ \'icon-[lucide--check]\': active }" />',
+      '<span v-bind="{ class: \'icon-[lucide--check]\' }" />',
+      "<span v-bind=\"{ 'class': cn(active && 'icon-[lucide--check]') }\" />",
+      "<span :class=\"iconName === 'check' ? 'icon-[lucide--check]' : ''\" />",
+      "<span :class=\"'icon-[lucide--' + name + ']'\" />",
+      '<span :class="`icon-[${family}--${name}]`" />'
+    ].map((template) => ({
+      ...vue(template),
+      errors: [{ messageId: 'wrongElement' }]
+    })),
+    ...[
+      '<i class="icon-[lucide--check] size-4" />',
+      '<i class="shrink-0" :class="\'icon-[lucide--check]\'" />',
+      '<i class="icon-[lucide--check]" :class="cn(active && \'size-4\')" />',
+      "<i :class=\"{ 'icon-[lucide--check]': active, 'shrink-0': true }\" />",
+      '<i v-bind="{ class: \'icon-[lucide--check] size-4\' }" />',
+      '<i class="icon-mask-[comfy--logo] shrink-0" />',
+      '<i class="icon-img-[comfy--logo] size-4" />',
+      '<i class="icon-s1.5-[lucide--check] size-4" />'
+    ].map((template) => ({
+      ...vue(template),
+      errors: [{ messageId: 'redundantIconUtility' }]
+    })),
+    {
+      ...vue('<i class="icon-[lucide--check] size-4 shrink-0" />'),
+      errors: [
+        { messageId: 'redundantIconUtility', data: { token: 'size-4' } },
+        { messageId: 'redundantIconUtility', data: { token: 'shrink-0' } }
+      ]
+    }
+  ]
 })
 
 ruleTester.run(

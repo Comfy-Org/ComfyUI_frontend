@@ -178,11 +178,12 @@ const options: {
               aria-hidden="true"
               :class="
                 cn(
-                  'mt-0.5 size-4 shrink-0',
+                  'mt-0.5',
                   savingMode === option.mode
                     ? 'icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin'
-                    : store.mode === option.mode &&
-                        'icon-[lucide--check] text-foreground'
+                    : store.mode === option.mode
+                      ? 'icon-[lucide--check] text-foreground'
+                      : 'size-4 shrink-0'
                 )
               "
             />
