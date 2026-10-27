@@ -33,7 +33,7 @@ import {
   isWidgetReadOnly,
   useSetWidgetValue
 } from '@/components/rightSidePanel/parameters/widgetValue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { PromptPanelTarget } from '@/stores/workspace/promptPanelStore'
 import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'

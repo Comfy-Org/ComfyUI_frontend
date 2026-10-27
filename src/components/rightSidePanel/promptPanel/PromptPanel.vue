@@ -68,6 +68,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
+import Button from '@comfyorg/design-system/button/Button'
 import {
   getWidgetState,
   isWidgetAttached,
@@ -75,7 +76,6 @@ import {
   useSetWidgetValue
 } from '@/components/rightSidePanel/parameters/widgetValue'
 import PromptEditor from '@/components/rightSidePanel/promptPanel/PromptEditor.vue'
-import Button from '@/components/ui/button/Button.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
