@@ -16,13 +16,8 @@
         >
           <i class="icon-[lucide--folder-plus] size-4" />
         </Button>
-        <Popover
-          :show-arrow="false"
-          :side-offset="4"
-          :collision-padding="8"
-          class="max-h-(--reka-popover-content-available-height) max-w-(--reka-popover-content-available-width) overflow-auto p-0 shadow-lg data-[state=open]:animate-none"
-        >
-          <template #button>
+        <PopoverRoot v-slot="{ close }">
+          <PopoverTrigger as-child>
             <Button
               :tooltip="$t('sideToolbar.nodeLibraryTab.groupBy')"
               tooltip-side="bottom"
@@ -32,8 +27,11 @@
             >
               <i :class="cn(selectedGroupingIcon, 'size-4')" />
             </Button>
-          </template>
-          <template #default="{ close }">
+          </PopoverTrigger>
+          <PopoverContent
+            class="max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+            dismiss-on-viewport-change
+          >
             <div class="flex flex-col gap-1 p-2">
               <Button
                 v-for="option in groupingOptions"
@@ -53,15 +51,10 @@
                 {{ $t(option.label) }}
               </Button>
             </div>
-          </template>
-        </Popover>
-        <Popover
-          :show-arrow="false"
-          :side-offset="4"
-          :collision-padding="8"
-          class="max-h-(--reka-popover-content-available-height) max-w-(--reka-popover-content-available-width) overflow-auto p-0 shadow-lg data-[state=open]:animate-none"
-        >
-          <template #button>
+          </PopoverContent>
+        </PopoverRoot>
+        <PopoverRoot v-slot="{ close }">
+          <PopoverTrigger as-child>
             <Button
               :tooltip="$t('sideToolbar.nodeLibraryTab.sortMode')"
               tooltip-side="bottom"
@@ -71,8 +64,11 @@
             >
               <i :class="cn(selectedSortingIcon, 'size-4')" />
             </Button>
-          </template>
-          <template #default="{ close }">
+          </PopoverTrigger>
+          <PopoverContent
+            class="max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+            dismiss-on-viewport-change
+          >
             <div class="flex flex-col gap-1 p-2">
               <Button
                 v-for="option in sortingOptions"
@@ -92,8 +88,8 @@
                 {{ $t(option.label) }}
               </Button>
             </div>
-          </template>
-        </Popover>
+          </PopoverContent>
+        </PopoverRoot>
         <Button
           :tooltip="$t('sideToolbar.nodeLibraryTab.resetView')"
           tooltip-side="bottom"
@@ -128,13 +124,8 @@
             @search="handleSearch"
           />
           <template #actions>
-            <Popover
-              :show-arrow="false"
-              :side-offset="4"
-              :collision-padding="8"
-              class="ml-[-13px] max-h-(--reka-popover-content-available-height) max-w-(--reka-popover-content-available-width) overflow-auto p-0 shadow-lg data-[state=open]:animate-none"
-            >
-              <template #button>
+            <PopoverRoot>
+              <PopoverTrigger as-child>
                 <Button
                   variant="secondary"
                   size="icon"
@@ -143,9 +134,14 @@
                 >
                   <i class="icon-[lucide--list-filter] size-4" />
                 </Button>
-              </template>
-              <NodeSearchFilter @add-filter="onAddFilter" />
-            </Popover>
+              </PopoverTrigger>
+              <PopoverContent
+                class="ml-[-13px] max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+                dismiss-on-viewport-change
+              >
+                <NodeSearchFilter @add-filter="onAddFilter" />
+              </PopoverContent>
+            </PopoverRoot>
           </template>
         </SidebarTopArea>
         <div class="px-4">
@@ -266,7 +262,8 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Popover from '@/components/ui/Popover.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import type { Ref } from 'vue'
 import {
   computed,
@@ -279,17 +276,17 @@ import {
 
 import SearchFilterChip from '@/components/common/SearchFilterChip.vue'
 import type { SearchFilter } from '@/components/common/SearchFilterChip.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { renderNodePreview } from '@/components/node/renderNodePreview'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
-import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useTelemetry } from '@/platform/telemetry'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'

@@ -260,10 +260,6 @@
       "role": "integration"
     },
     {
-      "path": "src/platform/workspace/auth/**",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/workspace/stores/legacyWorkspaceTokenRail.lifecycle.test.ts",
       "role": "infrastructure"
     },
@@ -353,7 +349,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["account", "ingest-api"],
   "allowedConsumers": ["agent", "settings"],
   "characterizationScenarios": [
     {
@@ -377,7 +373,7 @@
         "src/platform/auth/unified/remintRetry.test.ts",
         "src/platform/auth/authRejection.test.ts",
         "src/platform/auth/authCredential.test.ts",
-        "src/platform/workspace/auth/WorkspaceAuthGate.test.ts"
+        "src/platform/account/auth/WorkspaceAuthGate.test.ts"
       ]
     },
     {

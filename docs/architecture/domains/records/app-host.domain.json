@@ -125,7 +125,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["vue-node-renderer"],
+  "allowedDependencies": ["account", "vue-node-renderer"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

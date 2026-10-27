@@ -91,7 +91,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { CancelRail } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
@@ -105,7 +105,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
@@ -129,7 +129,7 @@ const { cancelSubscription, fetchStatus, subscription, tier } =
   useBillingContext()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { canCancel } = useBillingCapabilities()
-const { permissions } = useWorkspaceUI()
+const { permissions } = useBillingUI()
 const { planName, creditGrant } = useCancellationPlan()
 const telemetry = useTelemetry()
 

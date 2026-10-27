@@ -44,10 +44,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/sidebar/tabs/SidebarTopArea.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/topbar/ActionBarButtons.vue",
       "role": "presentation"
     },
