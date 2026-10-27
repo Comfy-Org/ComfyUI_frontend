@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import VideoCompareSlider from './VideoCompareSlider.vue'
+import VideoCompareSlider from '@comfyorg/design-system/common/VideoCompareSlider'
 
 const baseSrc = 'base.mp4'
 const overlaySrc = 'overlay.mp4'
