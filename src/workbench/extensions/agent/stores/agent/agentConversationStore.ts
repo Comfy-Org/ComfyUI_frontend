@@ -106,10 +106,6 @@ function isLoadSkillPart(part: AssistantMessage['parts'][number]): boolean {
   return part.type === 'tool' && part.name === 'load_skill'
 }
 
-/**
- * Every card in the message still waiting on the user: run approvals,
- * questions (the host-permission ask is one) and delete approvals.
- */
 function pendingAskIdsOf(message: AssistantMessage): string[] {
   return message.parts.flatMap((part) =>
     isPendingAskPart(part) ? [part.askId] : []
@@ -1364,10 +1360,6 @@ export const useAgentConversationStore = defineStore(
         ? awaitsAnswer(pendingAskIdsOf(activeMessage.value))
         : false
     )
-    /**
-     * Whether any live turn waits on the user, whether or not its tab is
-     * open; `turnTabs` drops turns with no open tab.
-     */
     const awaitingApproval = computed(
       () =>
         (isStreaming.value && activeTurnAwaitsAnswer.value) ||

@@ -19,8 +19,7 @@ export const useBrowserTabTitle = () => {
   const tabActivity = useWorkflowTabActivityStore()
 
   const approvalText = computed(() =>
-    tabActivity.agentAwaitingApproval ||
-    tabActivity.awaitingApprovalPaths.size > 0
+    tabActivity.agentAwaitingApproval
       ? `[${t('g.agentApprovalNeededShort', 'Approval needed')}] `
       : ''
   )

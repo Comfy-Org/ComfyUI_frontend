@@ -16,10 +16,6 @@ export const useWorkflowTabActivityStore = defineStore(
   () => {
     const agentTurnTabs = shallowRef<readonly AgentTurnTab[]>([])
     const creatingTab = ref(false)
-    /**
-     * Whether any agent turn waits on the user, including turns with no open
-     * tab; the browser tab title reads it.
-     */
     const agentAwaitingApproval = ref(false)
     const unseenModifiedPaths = ref<Set<string>>(new Set())
 

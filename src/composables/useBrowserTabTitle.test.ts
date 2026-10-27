@@ -236,26 +236,6 @@ describe('useBrowserTabTitle', () => {
       scope.stop()
     })
 
-    it('prefixes the title when a workflow tab awaits approval', async () => {
-      persistedWorkflow()
-      const tabActivity = useWorkflowTabActivityStore()
-      const scope = effectScope()
-      scope.run(() => useBrowserTabTitle())
-
-      tabActivity.setAgentTurnTabs([
-        { path: 'workflows/other.json', awaitingApproval: true }
-      ])
-      await nextTick()
-      expect(document.title).toBe('[Approval needed] myFlow - ComfyUI')
-
-      tabActivity.setAgentTurnTabs([
-        { path: 'workflows/other.json', awaitingApproval: false }
-      ])
-      await nextTick()
-      expect(document.title).toBe('myFlow - ComfyUI')
-      scope.stop()
-    })
-
     it('puts the prefix before execution progress', async () => {
       Object.assign(executionStore, { isIdle: false, executionProgress: 0.4 })
       executionStore.nodeProgressStates = {
