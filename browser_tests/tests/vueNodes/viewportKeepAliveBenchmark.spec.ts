@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
 import {
   logMeasurement,
   recordMeasurement
@@ -19,24 +20,57 @@ import {
 
 const KEEP_ALIVE_SETTING = 'Comfy.VueNodes.ViewportKeepAlive'
 const MAX_ATTACHED_RATIO_WITH_KEEP_ALIVE = 0.4
-// Kept intentionally small: the "off" baseline re-renders every attached
-// node on every frame-synced step, so cost scales with step count far
-// faster than with retention on. dx/dy (not steps) control sweep distance —
-// see runPanZoomSequence.
 const PAN_ZOOM_REPEATS = 1
-// Lets the trailing edge of the 100ms throttled refresh in
-// useViewportKeepAlive.ts (REFRESH_THROTTLE_MS) fire after the last pan/zoom
-// step, so the settle cost is captured rather than cut off mid-flight.
-const KEEP_ALIVE_SETTLE_FRAMES = 10
+const KEEP_ALIVE_REFRESH_THROTTLE_MS = 100
+const KEEP_ALIVE_SETTLE_MS = KEEP_ALIVE_REFRESH_THROTTLE_MS * 2
+const ATTACHED_COUNT_STABLE_TIMEOUT_MS = 15_000
 
-async function measureMarkDurationMs(
+async function idleForMs(
   comfyPage: ComfyPage,
-  measureName: string
-): Promise<number> {
-  return comfyPage.page.evaluate((name) => {
-    const entry = performance.getEntriesByName(name, 'measure').at(0)
-    return entry?.duration ?? 0
-  }, measureName)
+  durationMs: number
+): Promise<void> {
+  await comfyPage.page.evaluate(
+    (ms) =>
+      new Promise<void>((resolve) => {
+        const start = performance.now()
+        const tick = () => {
+          if (performance.now() - start >= ms) resolve()
+          else requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+      }),
+    durationMs
+  )
+}
+
+async function waitForAttachedNodeCountToStabilize(
+  comfyPage: ComfyPage
+): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const before = await comfyPage.vueNodes.nodes.count()
+        await idleForMs(comfyPage, KEEP_ALIVE_SETTLE_MS)
+        const after = await comfyPage.vueNodes.nodes.count()
+        return after === before
+      },
+      { timeout: ATTACHED_COUNT_STABLE_TIMEOUT_MS }
+    )
+    .toBe(true)
+}
+
+async function moveMouseToCanvasCenter(comfyPage: ComfyPage): Promise<void> {
+  const box = await comfyPage.canvas.boundingBox()
+  if (!box) throw new Error('Canvas bounding box not available')
+  await comfyPage.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+}
+
+async function wheelOnCanvas(
+  comfyPage: ComfyPage,
+  deltaY: number
+): Promise<void> {
+  await comfyPage.page.mouse.wheel(0, deltaY)
+  await comfyPage.nextFrame()
 }
 
 async function runPanZoomSequence(
@@ -44,18 +78,17 @@ async function runPanZoomSequence(
   repeats: number
 ): Promise<void> {
   for (let i = 0; i < repeats; i++) {
-    // dx/dy are 6x the panSweep() defaults: the graph spans ~5300x19600
-    // units, and the default 8/3 amplitude only traverses a few hundred
-    // units round trip — far too small to cross viewport boundaries and
-    // force real attach/detach churn.
     await comfyPage.canvasOps.panSweep({ steps: 20, dx: 48, dy: 18 })
+    await moveMouseToCanvasCenter(comfyPage)
+    const scaleBeforeZoom = await comfyPage.canvasOps.getScale()
     for (let z = 0; z < 5; z++) {
-      await comfyPage.canvasOps.zoom(-100)
-      await comfyPage.nextFrame()
+      await wheelOnCanvas(comfyPage, -100)
     }
+    await expect
+      .poll(() => comfyPage.canvasOps.getScale())
+      .toBeGreaterThan(scaleBeforeZoom)
     for (let z = 0; z < 5; z++) {
-      await comfyPage.canvasOps.zoom(100)
-      await comfyPage.nextFrame()
+      await wheelOnCanvas(comfyPage, 100)
     }
   }
 }
@@ -67,6 +100,7 @@ interface BenchmarkResult {
   attachedNodeCount: number
   domNodeCount: number
   taskDurationMs: number
+  measurement: PerfMeasurement
 }
 
 async function benchmarkViewportKeepAlive(
@@ -83,75 +117,52 @@ async function benchmarkViewportKeepAlive(
     () => window.app!.graph.nodes.length
   )
 
-  // Wait for the first node to mount, then let the throttled keep-alive
-  // refresh settle, before measuring — otherwise mount cost lands inside
-  // the measurement window. Retention keeps the attached count below the
-  // total from the start, so waiting for the full total here would hang
-  // when keep-alive is on.
   await comfyPage.vueNodes.waitForNodes()
   await comfyPage.idleFrames(30)
 
   if (keepAliveEnabled) {
-    // Sanity check that retention actually engaged for this graph size — a
-    // silent no-op here would make the run identical to "off". Detached
-    // nodes are moved out of the live document, so attached count reads
-    // lower than the total. This poll also acts as this variant's settle
-    // gate: it only resolves once retention has caught up.
     await expect
       .poll(() => comfyPage.vueNodes.nodes.count())
       .toBeLessThan(totalNodeCount)
-    // A total-retention failure (e.g. useViewportKeepAlive bailing out before
-    // the viewport is measured) would also read as "less than total" — guard
-    // against that by requiring a genuinely non-empty attached set too.
     await expect.poll(() => comfyPage.vueNodes.nodes.count()).toBeGreaterThan(0)
   } else {
-    // Confirm the baseline really does mount and hold every node attached
-    // before the timed measurement starts — keep-alive never engages here,
-    // so this should simply catch up with a slow-mounting CI container.
     await expect
       .poll(() => comfyPage.vueNodes.nodes.count(), { timeout: 30_000 })
       .toBe(totalNodeCount)
   }
+  await waitForAttachedNodeCountToStabilize(comfyPage)
 
   const label = variant
   const markStart = `${label}-start`
   const markEnd = `${label}-end`
   const measureName = `${label}-pan-zoom`
 
-  await comfyPage.page.evaluate((name) => performance.mark(name), markStart)
   await comfyPage.perf.startMeasuring()
+  await comfyPage.page.evaluate((name) => performance.mark(name), markStart)
 
   await runPanZoomSequence(comfyPage, PAN_ZOOM_REPEATS)
+  await waitForAttachedNodeCountToStabilize(comfyPage)
 
-  // Let the trailing edge of the throttled refresh (and any pending
-  // attach/detach) settle before reading final numbers.
-  await comfyPage.idleFrames(KEEP_ALIVE_SETTLE_FRAMES)
-
-  const cdpMetrics = await comfyPage.perf.stopMeasuring(label)
-  await comfyPage.page.evaluate(
+  const wallClockMs = await comfyPage.page.evaluate(
     ({ start, end, name }) => {
       performance.mark(end)
-      performance.measure(name, start, end)
+      return performance.measure(name, start, end).duration
     },
     { start: markStart, end: markEnd, name: measureName }
   )
+  const cdpMetrics = await comfyPage.perf.stopMeasuring(label)
 
-  const [wallClockMs, attachedNodeCount, domNodeCount] = await Promise.all([
-    measureMarkDurationMs(comfyPage, measureName),
+  const [attachedNodeCount, domNodeCount] = await Promise.all([
     comfyPage.vueNodes.nodes.count(),
     comfyPage.page.evaluate(() => document.getElementsByTagName('*').length)
   ])
 
-  recordMeasurement(cdpMetrics)
-  // frameDurationMs is intentionally excluded: PerformanceHelper samples it
-  // after stopMeasuring(), i.e. during idle, so it reflects idle rAF
-  // cadence rather than the pan/zoom interaction and isn't a meaningful
-  // comparison point here.
   logMeasurement(`Viewport KeepAlive (${label})`, cdpMetrics, [
     'domNodes',
     'layouts',
     'taskDurationMs',
-    'totalBlockingTimeMs'
+    'totalBlockingTimeMs',
+    'frameDurationMs'
   ])
   console.log(
     `Viewport KeepAlive (${label}): ${wallClockMs.toFixed(0)}ms wall clock, ` +
@@ -163,49 +174,36 @@ async function benchmarkViewportKeepAlive(
     totalNodeCount,
     attachedNodeCount,
     domNodeCount,
-    taskDurationMs: cdpMetrics.taskDurationMs
+    taskDurationMs: cdpMetrics.taskDurationMs,
+    measurement: cdpMetrics
   }
 }
 
 test.describe('Viewport KeepAlive benchmark', { tag: ['@perf'] }, () => {
-  // Split into separate tests (each with its own fresh comfyPage) rather
-  // than running both variants back to back on one page: a shared page
-  // gives the second variant a warmed-up JIT and a larger heap, biasing
-  // whichever variant runs second. Each variant's own duration is logged
-  // via recordMeasurement/console.log above; there's no same-test on/off
-  // ratio to assert since nothing is shared between the two runs.
-
   test('viewport KeepAlive on reduces attached nodes', async ({
     comfyPage
   }) => {
-    // Observed task duration for this variant is ~4.5-6.5s; the 60s
-    // performance-project default covers that comfortably, but workflow
-    // load + mount settle adds real wall-clock time on a loaded CI runner.
     test.setTimeout(90_000)
 
     const on = await benchmarkViewportKeepAlive(comfyPage, 'keep-alive-on')
 
-    // Retention must reduce the attached set by more than a token amount -
-    // bound to a viewport-derived fraction rather than "less than the full
-    // count", which a single detached node would also satisfy.
     expect(on.attachedNodeCount).toBeLessThan(
       on.totalNodeCount * MAX_ATTACHED_RATIO_WITH_KEEP_ALIVE
     )
-    // Catches total-retention failure (zero nodes attached), which the
-    // upper-bound check above can't distinguish from healthy retention.
     expect(on.attachedNodeCount).toBeGreaterThan(0)
+
+    recordMeasurement(on.measurement)
   })
 
   test('viewport KeepAlive off keeps every node attached', async ({
     comfyPage
   }) => {
-    // Observed task duration for this variant is ~20-26s, well above the
-    // "on" variant, so give it more headroom than the 60s project default.
     test.setTimeout(120_000)
 
     const off = await benchmarkViewportKeepAlive(comfyPage, 'keep-alive-off')
 
-    // The "off" baseline keeps every node attached for the whole sequence.
     expect(off.attachedNodeCount).toBe(off.totalNodeCount)
+
+    recordMeasurement(off.measurement)
   })
 })
