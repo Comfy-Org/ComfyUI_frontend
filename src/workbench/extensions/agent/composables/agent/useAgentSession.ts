@@ -344,12 +344,23 @@ function isRetryableAnswerFailure(error: unknown): boolean {
   return error instanceof TypeError || error instanceof DOMException
 }
 
+type CommittedAnswerSource = Parameters<typeof toAskResolution>[0]
+
+function namesCommittedAnswer({
+  selected,
+  other_text
+}: CommittedAnswerSource): boolean {
+  return Array.isArray(selected) || Boolean(other_text)
+}
+
 function isSupersededAnswer(
   submitted: AgentAnswerRequest,
-  committed: Extract<AskUserResolution, { status: 'answered' }>
+  committed: Extract<AskUserResolution, { status: 'answered' }>,
+  selectionKnown: boolean
 ): boolean {
   return (
-    xor(submitted.selected, committed.selected).length > 0 ||
+    (selectionKnown &&
+      xor(submitted.selected, committed.selected).length > 0) ||
     (submitted.other_text || undefined) !== committed.otherText
   )
 }
@@ -1529,8 +1540,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       const receipt = await sendAnswer(currentThreadId, askId, answer)
       const committed = toAskResolution(receipt)
-      if (receipt.selected !== undefined)
-        reportSupersededAnswer(askId, committed)
+      reportSupersededAnswer(askId, receipt)
       conversationStore.commitAsk(askId, currentThreadId, committed)
       return true
     } catch (error) {
@@ -1546,13 +1556,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadId: string
   ): void {
     if (error instanceof AgentApiError && error.status === 409) {
-      const conflict = zAgentAskConflict.safeParse(error.body).data
-      const committed = toAskResolution(conflict ?? {})
-      // Same guard as the 202: a conflict that names no selection cannot
-      // show that another answer won.
-      if (Array.isArray(conflict?.selected))
-        reportSupersededAnswer(askId, committed)
-      conversationStore.retireAsk(askId, committed, threadId)
+      const conflict = zAgentAskConflict.safeParse(error.body).data ?? {}
+      reportSupersededAnswer(askId, conflict)
+      conversationStore.retireAsk(askId, toAskResolution(conflict), threadId)
       return
     }
     const failure = classifyAnswerFailure(error)
@@ -1583,11 +1589,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function reportSupersededAnswer(
     askId: string,
-    committed: AskUserResolution
+    source: CommittedAnswerSource
   ): void {
+    if (!namesCommittedAnswer(source)) return
+    const committed = toAskResolution(source)
     if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
-    if (submitted === undefined || !isSupersededAnswer(submitted, committed))
+    if (
+      submitted === undefined ||
+      !isSupersededAnswer(submitted, committed, Array.isArray(source.selected))
+    )
       return
     reportError(
       new Error(
@@ -1804,7 +1815,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     observeLiveDelivery(event)
     if (event.type === 'agent_ask_resolved') {
       const resolution = toAskResolution(event.data)
-      reportSupersededAnswer(event.data.ask_id, resolution)
+      reportSupersededAnswer(event.data.ask_id, event.data)
       conversationStore.retireAsk(
         event.data.ask_id,
         resolution,
