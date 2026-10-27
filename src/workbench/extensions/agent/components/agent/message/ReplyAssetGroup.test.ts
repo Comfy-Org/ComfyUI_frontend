@@ -391,6 +391,9 @@ describe('ReplyAssetGroup', () => {
   })
 
   it('bounds sustained queue backpressure with exponential retries and one server lookup', async () => {
+    // The 1 ms boundary checks below need a clock that only moves when the
+    // test advances it; the default shouldAdvanceTime lets real time leak in.
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     vi.setSystemTime(0)
     isAssetPreviewSupported.mockReturnValue(true)
     generateModelThumbnail.mockResolvedValue({ status: 'busy' })
