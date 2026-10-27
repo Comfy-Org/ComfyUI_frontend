@@ -1171,7 +1171,6 @@ export class LiveGraphApplier {
       mode,
       { documentWidgets: widgets }
     )
-    this.unappliedRegrownRows.delete(node)
   }
 
   private regrownRows(
@@ -1288,7 +1287,6 @@ export class LiveGraphApplier {
     this.applyWidgets(live, filtered, mode, {
       documentWidgets: widgets as DocNode['widgets']
     })
-    this.unappliedRegrownRows.delete(live)
   }
 
   private propagateInteriorToHost(
@@ -1332,6 +1330,7 @@ export class LiveGraphApplier {
     }
     if (Array.isArray(widgets)) {
       this.applyPositionalWidgets(node, widgets)
+      this.unappliedRegrownRows.delete(node)
       return
     }
     const { documentWidgets = widgets, reportMissing = true } = options
@@ -1344,10 +1343,11 @@ export class LiveGraphApplier {
       )
       if (!resolved) {
         this.reportMissingWidgets(node, unresolved, reportMissing)
-        return
+        break
       }
       pending = unresolved
     }
+    this.unappliedRegrownRows.delete(node)
   }
 
   private applyPositionalWidgets(node: LGraphNode, widgets: unknown[]): void {
