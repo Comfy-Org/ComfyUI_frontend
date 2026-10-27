@@ -100,58 +100,60 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
       closeSignInDialog: true
     }
   ]) {
-  test(`keeps a signed-out accept and its draft across the sign-in reload ${name}`, async ({
-    comfyPage,
-    agentPanel,
-    desktopConsentSignIn,
-    agentConsentWrites,
-    postedMessages
-  }) => {
-    const signIn = comfyPage.page.getByTestId('desktop-host-sso')
-    const message = 'Keep this Desktop draft across the sign-in reload'
+    test(`keeps a signed-out accept and its draft across the sign-in reload ${name}`, async ({
+      comfyPage,
+      agentPanel,
+      desktopConsentSignIn,
+      agentConsentWrites,
+      postedMessages
+    }) => {
+      const signIn = comfyPage.page.getByTestId('desktop-host-sso')
+      const message = 'Keep this Desktop draft across the sign-in reload'
 
-    await test.step('Agree while signed out and start sign-in', async () => {
-      await expect(agentPanel.consentDialog).toBeVisible()
-      await agentPanel.consentRejectButton.click()
-      await agentPanel.composer.fill(message)
-      await agentPanel.sendButton.click()
-      await agentPanel.consentDialog
-        .getByRole('button', {
-          name: enMessages.agent.consent.agreeAndContinue
-        })
-        .click()
-      await signIn.click()
-      await expect.poll(() => desktopConsentSignIn.requests).toBe(1)
-      expect(agentConsentWrites).toEqual([])
-    })
-
-    if (closeSignInDialog) {
-      await test.step('A click outside closes the sign-in dialog while the browser sign-in is pending', async () => {
-        await comfyPage.page.mouse.click(5, 5)
-        await expect(signIn).toHaveCount(0)
+      await test.step('Agree while signed out and start sign-in', async () => {
+        await expect(agentPanel.consentDialog).toBeVisible()
+        await agentPanel.consentRejectButton.click()
+        await agentPanel.composer.fill(message)
+        await agentPanel.sendButton.click()
+        await agentPanel.consentDialog
+          .getByRole('button', {
+            name: enMessages.agent.consent.agreeAndContinue
+          })
+          .click()
+        await signIn.click()
+        await expect.poll(() => desktopConsentSignIn.requests).toBe(1)
+        expect(agentConsentWrites).toEqual([])
       })
-    }
 
-    await test.step('Desktop finishes sign-in in the browser and reloads the page', async () => {
-      desktopConsentSignIn.finishInBrowser()
-      await comfyPage.workflow.reloadAndWaitForApp()
-    })
+      if (closeSignInDialog) {
+        await test.step('A click outside closes the sign-in dialog while the browser sign-in is pending', async () => {
+          await comfyPage.page.mouse.click(5, 5)
+          await expect(signIn).toHaveCount(0)
+        })
+      }
 
-    await test.step('Consent is saved once and the draft waits for Send', async () => {
-      await expect.poll(() => agentConsentWrites).toEqual([true])
-      await expect(agentPanel.composer).toHaveText(message)
-    })
+      await test.step('Desktop finishes sign-in in the browser and reloads the page', async () => {
+        desktopConsentSignIn.finishInBrowser()
+        await comfyPage.workflow.reloadAndWaitForApp()
+      })
 
-    await test.step('Send posts the restored draft once, with no card', async () => {
-      expect(postedMessages).toEqual([])
-      await agentPanel.sendButton.click()
-      await expect.poll(() => postedMessages.length).toBe(1)
-      expect(JSON.parse(postedMessages[0])).toMatchObject({ content: message })
-      await expect(agentPanel.consentDialog).toHaveCount(0)
-      expect(agentConsentWrites).toEqual([true])
-      expect(postedMessages).toHaveLength(1)
+      await test.step('Consent is saved once and the draft waits for Send', async () => {
+        await expect.poll(() => agentConsentWrites).toEqual([true])
+        await expect(agentPanel.composer).toHaveText(message)
+      })
+
+      await test.step('Send posts the restored draft once, with no card', async () => {
+        expect(postedMessages).toEqual([])
+        await agentPanel.sendButton.click()
+        await expect.poll(() => postedMessages.length).toBe(1)
+        expect(JSON.parse(postedMessages[0])).toMatchObject({
+          content: message
+        })
+        await expect(agentPanel.consentDialog).toHaveCount(0)
+        expect(agentConsentWrites).toEqual([true])
+        expect(postedMessages).toHaveLength(1)
+      })
     })
-  })
   }
 
   test('sends the original signed-out submission once after sign-in and confirmed consent persistence', async ({
