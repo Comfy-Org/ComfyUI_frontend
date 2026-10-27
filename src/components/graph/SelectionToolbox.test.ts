@@ -2,7 +2,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
@@ -79,10 +78,6 @@ vi.mock<unknown>(import('@/services/extensionService'), () => ({
 }))
 
 vi.mock(import('@/utils/litegraphUtil'))
-
-vi.mock(import('@comfyorg/design-system/common/VerticalDivider'), () => ({
-  default: defineComponent({ template: '<div class="vertical-divider" />' })
-}))
 
 vi.mock(import('@/utils/nodeFilterUtil'), () => ({
   isOutputNode: vi.fn(() => false),
@@ -380,22 +375,18 @@ describe('SelectionToolbox', () => {
 
   describe('Divider Visibility Logic', () => {
     it('should show dividers between button groups when both groups have buttons', () => {
-      // Setup single node to show info + other buttons
       setCanvasSelection([new LGraphNode('Test Node')])
-      const { container } = renderComponent()
+      renderComponent()
 
-      const dividers = container.querySelectorAll('.vertical-divider')
-      expect(dividers.length).toBeGreaterThan(0)
+      expect(screen.getAllByRole('separator')).toHaveLength(2)
     })
 
     it('should not show dividers when adjacent groups are empty', () => {
-      // No selection should show minimal buttons and dividers
       setCanvasSelection([])
-      const { container } = renderComponent()
+      renderComponent()
 
-      expect(
-        container.querySelector('[data-testid="more-options-button"]')
-      ).toBeTruthy()
+      expect(screen.getByTestId('more-options-button')).toBeInTheDocument()
+      expect(screen.queryByRole('separator')).not.toBeInTheDocument()
     })
   })
 
