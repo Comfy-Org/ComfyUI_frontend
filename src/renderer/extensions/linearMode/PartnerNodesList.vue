@@ -69,7 +69,7 @@ const creditsBadges = computed(() => {
     <div class="mb-1 w-full border-b border-border/50" />
     <CollapsibleTrigger as-child>
       <Button variant="textonly" class="w-full text-sm">
-        <i class="icon-[lucide--coins] size-4 bg-credit" />
+        <i class="icon-[lucide--coins] bg-credit" />
         {{ t('linearMode.hasCreditCost') }}
         <i v-if="open" class="ml-auto icon-[lucide--chevron-up]" />
         <i v-else class="ml-auto icon-[lucide--chevron-down]" />

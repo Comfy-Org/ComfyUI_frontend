@@ -31,7 +31,7 @@
               :class="
                 cn(
                   item.value.icon,
-                  'tree-explorer-node-icon size-4 text-muted-foreground'
+                  'tree-explorer-node-icon text-muted-foreground'
                 )
               "
               :style="{ color: item.value.iconColor }"

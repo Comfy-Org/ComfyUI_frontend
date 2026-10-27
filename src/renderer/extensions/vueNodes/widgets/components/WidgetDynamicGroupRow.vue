@@ -10,7 +10,7 @@
       :aria-label="t('dynamicGroup.remove', { row: widget.label })"
       @click="removeRow"
     >
-      <i class="icon-[lucide--x] size-4" />
+      <i class="icon-[lucide--x]" />
     </Button>
   </div>
 </template>

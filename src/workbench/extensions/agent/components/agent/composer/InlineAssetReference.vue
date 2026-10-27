@@ -56,7 +56,7 @@ onBeforeUnmount(() => emit('highlight', false))
         @click.stop="emit('remove')"
       >
         <span :class="inlineReferenceRemoveBadgeClass">
-          <span aria-hidden="true" class="icon-[lucide--x] size-2" />
+          <i aria-hidden="true" class="icon-[lucide--x] size-2" />
         </span>
       </Button>
     </span>

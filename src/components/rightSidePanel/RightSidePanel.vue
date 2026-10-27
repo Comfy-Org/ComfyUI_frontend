@@ -374,7 +374,7 @@ function handleTitleCancel() {
               class="top-[2px] ml-2 shrink-0"
               @click="isEditing = true"
             >
-              <i aria-hidden="true" class="icon-[lucide--pencil] size-4" />
+              <i aria-hidden="true" class="icon-[lucide--pencil]" />
             </Button>
           </template>
           <template v-else>
@@ -405,7 +405,7 @@ function handleTitleCancel() {
             :aria-label="t('rightSidePanel.togglePanel')"
             @click="closePanel"
           >
-            <i :class="cn(panelIcon, 'size-4')" />
+            <i :class="panelIcon" />
           </Button>
         </div>
       </div>
@@ -424,7 +424,7 @@ function handleTitleCancel() {
               role="img"
               :aria-label="tab.icon.label()"
               data-testid="panel-tab-icon"
-              :class="cn(tab.icon.className, 'size-4')"
+              :class="tab.icon.className"
             />
           </Tab>
         </TabList>

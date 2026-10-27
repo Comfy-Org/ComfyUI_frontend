@@ -25,7 +25,7 @@
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
-        <i class="pi pi-times size-4" aria-hidden="true" />
+        <i class="pi pi-times" aria-hidden="true" />
       </button>
     </header>
 
