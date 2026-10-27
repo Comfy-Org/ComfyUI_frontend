@@ -228,7 +228,7 @@ describe('useBrowserTabTitle', () => {
 
       tabActivity.setAgentAwaitingApproval(true)
       await nextTick()
-      expect(document.title).toBe('[Approval needed] myFlow - ComfyUI')
+      expect(document.title).toBe('[Input needed] myFlow - ComfyUI')
 
       tabActivity.clearAgentActivity()
       await nextTick()
@@ -254,7 +254,7 @@ describe('useBrowserTabTitle', () => {
       const scope = effectScope()
       scope.run(() => useBrowserTabTitle())
       await nextTick()
-      expect(document.title).toBe('[Approval needed] [40%][50%] Foo')
+      expect(document.title).toBe('[Input needed] [40%][50%] Foo')
       scope.stop()
     })
   })

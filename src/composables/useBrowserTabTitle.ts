@@ -20,7 +20,7 @@ export const useBrowserTabTitle = () => {
 
   const approvalText = computed(() =>
     tabActivity.agentAwaitingApproval
-      ? `[${t('g.agentApprovalNeededShort', 'Approval needed')}] `
+      ? `[${t('g.agentInputNeededShort', 'Input needed')}] `
       : ''
   )
 
