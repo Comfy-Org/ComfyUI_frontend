@@ -6,6 +6,15 @@ entirely in this subtree and renders in a right dock registered by
 instances and wires every host dependency itself (REST client, `/ws` event source,
 draft-to-canvas seam).
 
+## ComfyUI restart
+
+`stores/agent/agentNodeDefinitionRefreshStore.ts`: a successful `restart_comfyui`
+tool call refreshes node definitions and then reloads the open workflow; the
+refresh shows its own "Update requested" and "Node definitions updated" toasts.
+A failed refresh runs again only when ComfyUI's `/ws` reconnects later; until
+then definitions stay stale, and **Refresh Node Definitions** recovers them. A
+restart made while the panel is closed is not observed.
+
 ## Activation and consent
 
 The dock is visible only when the `agent-in-app-experience` feature flag is
