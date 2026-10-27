@@ -2,6 +2,10 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
+import {
+  getAssetSubfolder,
+  getAssetUrl
+} from '@/platform/assets/utils/assetUrlUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
@@ -72,7 +76,7 @@ const byIsTemp = (a: AssetItem, b: AssetItem): number =>
 
 function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
-  const url = asset.preview_url ?? ''
+  const url = asset.preview_url ?? getAssetUrl(asset)
   return {
     assetId: asset.id,
     display_name: asset.display_name ?? undefined,
@@ -88,8 +92,7 @@ function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
 }
 
 /**
- * Group flat per-file output assets into one asset per job, mirroring the
- * grouped shape produced from the history API: the group id is the job id and
+ * Group flat per-file output assets into one asset per job.
  * user_metadata carries outputCount/allOutputs. Assets without output job
  * metadata pass through ungrouped.
  */
@@ -120,11 +123,10 @@ export function unflattenOutputAssets(
         ) ?? ordered.at(-1)!
     return {
       ...representative,
-      id: job_id,
       created_at: ordered.at(-1)!.created_at,
       user_metadata: {
         jobId: job_id,
-        subfolder: '',
+        subfolder: getAssetSubfolder(representative),
         ...representative.user_metadata,
         assetId: representative.id,
         outputCount: ordered.length,

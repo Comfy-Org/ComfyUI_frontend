@@ -65,6 +65,16 @@ describe('getAssetSubfolder', () => {
       )
     ).toBe('')
   })
+
+  it.for([
+    { file_path: 'output/vid/2026/clip.webm', expected: 'vid/2026' },
+    { file_path: 'output/clip.webm', expected: '' }
+  ])(
+    'falls back to the directories of file_path $file_path',
+    ({ file_path, expected }) => {
+      expect(getAssetSubfolder(createAsset({ file_path }))).toBe(expected)
+    }
+  )
 })
 
 describe('getAssetUrl', () => {
@@ -88,6 +98,20 @@ describe('getAssetUrl', () => {
   it('omits the subfolder param for an asset at the type root', () => {
     expect(getAssetUrl(createAsset())).not.toContain('subfolder')
   })
+
+  it.for([
+    { isCloud: true, expected: '5f3a9c0de1.webm' },
+    { isCloud: false, expected: 'clip.webm' }
+  ])(
+    'requests the stored filename when isCloud is $isCloud',
+    ({ isCloud, expected }) => {
+      mockIsCloud.value = isCloud
+      const asset = createAsset({ hash: '5f3a9c0de1.webm' })
+
+      const { searchParams } = new URL(getAssetUrl(asset))
+      expect(searchParams.get('filename')).toBe(expected)
+    }
+  )
 })
 
 describe('getAssetViewUrl', () => {
@@ -158,11 +182,11 @@ describe('getAssetInlineMediaUrl', () => {
     ).toBe('input')
   })
 
-  it('falls back to the inline content url without a hash', () => {
+  it('falls back to a view url on cloud without a hash', () => {
     mockIsCloud.value = true
 
     expect(getAssetInlineMediaUrl(createAsset())).toBe(
-      'http://localhost:8188/api/assets/asset-1/content?disposition=inline'
+      'http://localhost:8188/api/view?filename=clip.webm&type=output'
     )
   })
 
@@ -232,6 +256,14 @@ describe('getAssetFileUrl', () => {
 
       expect(getAssetFileUrl(asset, { disposition: 'inline' })).toBe(
         'http://localhost:8188/api/assets/asset-1/content?disposition=inline'
+      )
+    })
+
+    it('does not use the content endpoint on cloud', () => {
+      mockIsCloud.value = true
+
+      expect(getAssetFileUrl(createAsset())).not.toMatch(
+        /\/assets\/[^/]+\/content/
       )
     })
   })
