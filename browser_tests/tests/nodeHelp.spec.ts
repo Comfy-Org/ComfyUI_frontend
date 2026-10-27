@@ -36,7 +36,10 @@ async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
 async function openSelectionToolboxHelp(comfyPage: ComfyPage) {
   await expect(comfyPage.selectionToolbox).toBeVisible()
 
-  const helpButton = comfyPage.selectionToolbox.getByTestId('info-button')
+  const helpButton = comfyPage.selectionToolbox.getByRole('button', {
+    name: 'Node Info',
+    exact: true
+  })
   await expect(helpButton).toBeVisible()
   await helpButton.click()
   await comfyPage.nextFrame()

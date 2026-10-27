@@ -91,26 +91,42 @@ describe('SelectionToolbox', () => {
   it('updates actions when selection changes without remounting', async () => {
     setCanvasSelection([new LGraphNode('Test Node')])
     renderToolbox()
-    expect(screen.getByTestId('info-button')).toBeInTheDocument()
-    expect(screen.getByTestId('delete-button')).toBeInTheDocument()
-    expect(screen.getByTestId('convert-to-subgraph-button')).toBeInTheDocument()
-    expect(screen.getByTestId('bypass-button')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Node Info' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Delete Selected Items' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: 'Convert Selection to Subgraph'
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: 'Bypass/Unbypass Selected Nodes'
+      })
+    ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Color' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Frame Nodes' })).toBeNull()
 
     setCanvasSelection([new LGraphNode('A'), new LGraphNode('B')])
     await nextTick()
-    expect(screen.queryByTestId('info-button')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Node Info' })).toBeNull()
     expect(
       screen.getByRole('button', { name: 'Frame Nodes' })
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Color' })).toBeInTheDocument()
-    expect(screen.getByTestId('bypass-button')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: 'Bypass/Unbypass Selected Nodes'
+      })
+    ).toBeInTheDocument()
 
     setCanvasSelection([])
     await nextTick()
     expect(screen.getAllByRole('button')).toEqual([
-      screen.getByTestId('more-options-button')
+      screen.getByRole('button', { name: 'More Options' })
     ])
   })
 
@@ -125,20 +141,24 @@ describe('SelectionToolbox', () => {
     })
     setCanvasSelection([new LGraphNode('Test Node')])
     renderToolbox()
-    expect(screen.queryByTestId('info-button') !== null).toBe(visible)
+    expect(screen.queryByRole('button', { name: 'Node Info' }) !== null).toBe(
+      visible
+    )
   })
 
   it('hides info without a node definition', () => {
     vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(null)
     setCanvasSelection([new LGraphNode('Unknown')])
     renderToolbox()
-    expect(screen.queryByTestId('info-button')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Node Info' })).toBeNull()
   })
 
   it('opens info and tracks a successful click', async () => {
     setCanvasSelection([new LGraphNode('Test Node')])
     renderToolbox()
-    await userEvent.setup().click(screen.getByTestId('info-button'))
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Node Info' }))
     expect(useRightSidePanelStore().openPanel).toHaveBeenCalledWith('info')
     expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'selection_toolbox_node_info_opened',
@@ -147,15 +167,18 @@ describe('SelectionToolbox', () => {
   })
 
   it.for([
-    ['bypass-button', 'Comfy.Canvas.ToggleSelectedNodes.Bypass'],
-    ['delete-button', 'Comfy.Canvas.DeleteSelectedItems'],
-    ['convert-to-subgraph-button', 'Comfy.Graph.ConvertToSubgraph']
-  ])('routes %s through the command store', async ([testId, commandId]) => {
+    [
+      'Bypass/Unbypass Selected Nodes',
+      'Comfy.Canvas.ToggleSelectedNodes.Bypass'
+    ],
+    ['Delete Selected Items', 'Comfy.Canvas.DeleteSelectedItems'],
+    ['Convert Selection to Subgraph', 'Comfy.Graph.ConvertToSubgraph']
+  ])('routes %s through the command store', async ([name, commandId]) => {
     const action = vi.fn()
     useCommandStore().registerCommand({ id: commandId, function: action })
     setCanvasSelection([new LGraphNode('Test Node')])
     renderToolbox()
-    await userEvent.setup().click(screen.getByTestId(testId))
+    await userEvent.setup().click(screen.getByRole('button', { name }))
     expect(action).toHaveBeenCalledOnce()
   })
 
@@ -164,10 +187,16 @@ describe('SelectionToolbox', () => {
     node.removable = false
     setCanvasSelection([node])
     renderToolbox()
-    expect(screen.queryByTestId('delete-button')).toBeNull()
+    expect(
+      screen.queryByRole('button', {
+        name: 'Delete Selected Items'
+      })
+    ).toBeNull()
     setCanvasSelection([node, new LGraphNode('Removable')])
     await nextTick()
-    expect(screen.getByTestId('delete-button')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Delete Selected Items' })
+    ).toBeInTheDocument()
   })
 
   it('offers the mask editor for a single image and routes its command', async () => {

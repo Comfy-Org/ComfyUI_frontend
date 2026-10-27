@@ -18,20 +18,17 @@
                 v-if="linksHidden"
                 :label="$t('commands.Comfy_Canvas_ShowSelectedLinks.label')"
                 icon="icon-[lucide--eye]"
-                data-testid="show-links-button"
                 @click="commandStore.execute('Comfy.Canvas.ShowSelectedLinks')"
               />
               <ToolboxButton
                 v-else
                 :label="$t('commands.Comfy_Canvas_HideSelectedLinks.label')"
                 icon="icon-[lucide--eye-off]"
-                data-testid="hide-links-button"
                 @click="commandStore.execute('Comfy.Canvas.HideSelectedLinks')"
               />
               <ToolboxButton
                 :label="$t('commands.Comfy_Canvas_DeleteSelectedLinks.label')"
                 icon="icon-[lucide--trash-2]"
-                data-testid="delete-links-button"
                 @click="
                   commandStore.execute('Comfy.Canvas.DeleteSelectedLinks')
                 "
@@ -42,7 +39,6 @@
                 v-if="isDeletable"
                 :label="$t('commands.Comfy_Canvas_DeleteSelectedItems.label')"
                 icon="icon-[lucide--trash-2]"
-                data-testid="delete-button"
                 @click="
                   commandStore.execute('Comfy.Canvas.DeleteSelectedItems')
                 "
@@ -52,7 +48,6 @@
                 v-if="canOpenNodeInfo"
                 :label="$t('g.info')"
                 icon="icon-[lucide--info]"
-                data-testid="info-button"
                 @click="onInfoClick"
               />
 
@@ -68,7 +63,6 @@
                 v-if="isSingleSubgraph"
                 :label="$t('commands.Comfy_Graph_UnpackSubgraph.label')"
                 icon="icon-[lucide--expand]"
-                data-testid="convert-to-subgraph-button"
                 @click="commandStore.execute('Comfy.Graph.UnpackSubgraph')"
               />
               <ToolboxButton
@@ -76,7 +70,6 @@
                 :label="$t('commands.Comfy_Graph_ConvertToSubgraph.label')"
                 icon="icon-[lucide--shrink]"
                 size="icon"
-                data-testid="convert-to-subgraph-button"
                 @click="commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
               />
               <template v-if="isSingleSubgraph">
@@ -105,7 +98,6 @@
                   $t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label')
                 "
                 icon="icon-[lucide--redo-dot]"
-                data-testid="bypass-button"
                 class="hover:bg-secondary"
                 @click="
                   commandStore.execute(
@@ -117,7 +109,6 @@
                 v-if="hasAnySelection && isRefreshable"
                 :label="$t('g.refreshNode')"
                 icon="icon-[lucide--refresh-cw]"
-                data-testid="refresh-button"
                 @click="refreshSelected"
               />
               <ToolboxButton
@@ -143,7 +134,6 @@
               <ToolboxButton
                 :label="$t('g.moreOptions')"
                 icon="icon-[lucide--more-vertical]"
-                data-testid="more-options-button"
                 @click="toggleNodeOptions"
               />
             </template>
