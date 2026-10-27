@@ -2071,7 +2071,10 @@ export class ComfyApp implements IComfyApp {
         if (queuedCount > 0) {
           this.canvas.draw(true, true)
           void this.ui.queue.update().catch((error) => {
-            reportError(error, { errorType: 'queue_ui_update_failure' })
+            reportError(error, {
+              surface: 'graph',
+              errorType: 'queue_ui_update_failure'
+            })
           })
           api.dispatchCustomEvent('promptQueued', {
             number,

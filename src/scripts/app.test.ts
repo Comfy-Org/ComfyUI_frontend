@@ -1778,8 +1778,8 @@ describe('ComfyApp', () => {
       prepareEmptyPromptQueue()
       const queuePrompt = vi
         .spyOn(api, 'queuePrompt')
-        .mockResolvedValueOnce({ prompt_id: 'job-1', error: '' })
-        .mockResolvedValueOnce({ prompt_id: 'job-2', error: '' })
+        .mockResolvedValueOnce({ prompt_id: 'job-1' })
+        .mockResolvedValueOnce({ prompt_id: 'job-2' })
       let resolveUpdate!: () => void
       const updateQueue = vi.spyOn(app.ui.queue, 'update').mockImplementation(
         () =>
@@ -2110,6 +2110,7 @@ describe('ComfyApp', () => {
           }
         })
         expect(reportError).toHaveBeenCalledWith(refreshError, {
+          surface: 'graph',
           errorType: 'queue_ui_update_failure'
         })
       } finally {
