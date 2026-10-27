@@ -66,9 +66,28 @@ Settings API under `Comfy.AgentPanel.ConsentAccepted` for the authenticated
 user and workspace. Skip, Escape and outside clicks dismiss without accepting.
 Skip is remembered on the device for the account and workspace (or for
 signed-out use) and ends the automatic card; Escape and outside clicks do not.
-Failed loads or saves keep the panel closed and allow retry.
+Failed loads or saves allow retry and do not permit sending. A manual request
+to open a closed panel waits for successful consent; automatic activation can
+open the panel before consent.
 Switching user or workspace invalidates the cached acceptance and loads the
 new scope. Desktop/Local sign-in continuation authenticates before saving.
+
+### Consent offer telemetry
+
+`agent_consent_not_offered` names the surface holding an automatic offer; the
+offer retries when that surface clears. `agent_consent_offer_exited` covers
+every other ending. Some exits are correct (`consent_already_accepted`,
+`card_already_seen`, `activation_window_complete`) and the rest are offers that
+were owed and not made, so split queries by `exit`; a total is not a quantity.
+There is no exit for "the agent flag is off": it would fire on every page load
+outside the rollout, and every event already carries
+`$feature/agent-in-app-experience`.
+
+Each exit is reported once per page load per (`stage`, `exit`), except at the
+`request` stage, which is not deduplicated: the automatic path reaches it at
+most once per consent scope per page load and the button once per click, so a
+repeat there is a repeated attempt. Compare counts within one (`stage`, `exit`)
+pair, never across stages.
 
 ## First-use tour
 

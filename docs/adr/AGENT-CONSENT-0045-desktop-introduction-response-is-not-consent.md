@@ -38,9 +38,11 @@ read once, before it claims its visit.
 After that, consent is asked when the user needs it: the Agent entry button
 asks before it opens a closed panel, and Send asks before the first message.
 Skip is remembered only by the response marker; no account-wide refusal is
-stored. A scope that has already answered ends the automatic offer without a
-telemetry event, since reporting it would emit once per page load for every
-user who has answered. Neither the marker nor a Skip records audited server consent.
+stored. The startup response-marker check ends an answered introduction without
+a telemetry event, since reporting it would emit once per page load for every
+user who has answered. An accepted consent load still emits
+`consent_already_accepted`.
+Neither the marker nor a Skip records audited server consent.
 
 Agree while signed out continues through sign-in and confirmed server consent
 registration within that request. Canceling sign-in discards the pending choice;

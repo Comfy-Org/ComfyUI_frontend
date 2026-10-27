@@ -109,23 +109,28 @@ test.describe(
         name: enMessages.agent.coachTitle
       })
 
-      await expect(agentPanel.root).toBeVisible()
-      await expect(consent).toBeVisible()
-      await expect(coach).toHaveCount(0)
-      await consent
-        .getByRole('button', { name: enMessages.agent.consent.accept })
-        .click()
+      await test.step('The launch card appears over Agent', async () => {
+        await expect(agentPanel.root).toBeVisible()
+        await expect(consent).toBeVisible()
+        await expect(coach).toHaveCount(0)
+      })
 
-      await expect(consent).toHaveCount(0)
-      await expect(coach).toBeVisible()
-      expect(agentConsentWrites).toEqual([true])
-      await coach.getByRole('button', { name: enMessages.agent.skip }).click()
+      await test.step('Agree saves consent and starts the coach', async () => {
+        await consent
+          .getByRole('button', { name: enMessages.agent.consent.accept })
+          .click()
+        await expect(consent).toHaveCount(0)
+        await expect(coach).toBeVisible()
+        expect(agentConsentWrites).toEqual([true])
+      })
 
-      await agentPanel.selectWorkflow()
-      await agentPanel.composer.fill('Build a product photo workflow')
-      await agentPanel.sendButton.click()
-      await expect.poll(() => postedMessages).toHaveLength(1)
-      await expect(consent).toHaveCount(0)
+      await test.step('Skipping the coach permits one send without another consent card', async () => {
+        await coach.getByRole('button', { name: enMessages.agent.skip }).click()
+        await agentPanel.selectWorkflow()
+        await agentPanel.sendMessage('Build a product photo workflow')
+        await expect.poll(() => postedMessages).toHaveLength(1)
+        await expect(consent).toHaveCount(0)
+      })
     })
   }
 )

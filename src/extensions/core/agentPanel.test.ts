@@ -331,6 +331,41 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     })
 
+    it('does not introduce the agent when the user signs out before the startup decision', async () => {
+      currentUser.value = { id: 'account-a' }
+      let decideStartup!: (decided: boolean) => void
+      startupDecision = new Promise((resolve) => {
+        decideStartup = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      currentUser.value = null
+      await flush()
+      decideStartup(true)
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    })
+
+    it('does not show a queued card after the user signs out', async () => {
+      currentUser.value = { id: 'account-a' }
+      let canShow: boolean | undefined
+      vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+        async (_trigger, _onAccept, hooks) => {
+          currentUser.value = null
+          await nextTick()
+          canShow = hooks?.canShow?.()
+        }
+      )
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      expect(canShow).toBe(false)
+    })
+
     it('drops a held offer once its scope has answered', async () => {
       currentUser.value = { id: 'account-a' }
       activeTour.value = 'appMode'
@@ -1922,6 +1957,26 @@ describe('AgentPanel extension flag gate', () => {
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new Error('Storage unavailable')
+    })
+
+    await loadEntryAndSetup()
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+      reason: 'storage_unavailable'
+    })
+  })
+
+  it('withholds the automatic card when storage fits a shorter entry but not the visit count', async () => {
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    const visitEntryLength = ACTIVATION_VISITS_STORAGE_KEY.length + 1
+    const setItem = localStorage.setItem.bind(localStorage)
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key.length + value.length >= visitEntryLength)
+        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      setItem(key, value)
     })
 
     await loadEntryAndSetup()

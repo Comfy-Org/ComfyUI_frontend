@@ -674,30 +674,8 @@ export interface AgentConsentNotOfferedMetadata extends Record<
   reason: AgentConsentNotOfferedReason
 }
 /**
- * Why an automatic consent offer ended without either making the offer or
- * naming a surface that is holding it.
- *
- * `AgentConsentNotOfferedReason` covers the deferrals: a surface is in the way,
- * it is named, and the offer is retried when that surface clears. Everything
- * here is the other kind of ending - the attempt stopped for a reason of its
- * own. Some of those endings are correct (the offer was not needed) and some
- * are losses (it was owed and did not happen), so **a query over this event
- * must split by `exit`; a total is not a quantity.**
- *
- * Correctly not needed: `consent_already_accepted`, `card_already_seen`,
- * `activation_window_complete`.
- * Owed and not made: everything else.
- *
- * There is deliberately no value for "the agent flag is off". Every exit here
- * is downstream of that check, so reporting it would emit once per page load
- * for everyone outside the rollout - a count of exposure rather than of the
- * mechanism - and the flag is already on every event as
- * `$feature/agent-in-app-experience`.
- *
- * The `request` stage is the one place these endings are *countable*: see
- * `AgentConsentOfferStage`. Every other stage reports the presence of an
- * ending once per page load, so counts are comparable within one
- * (`stage`, `exit`) pair and never across stages.
+ * Why an automatic consent offer ended without making the offer or naming a
+ * surface that holds it. Query by `exit`; see the Agent README.
  */
 export type AgentConsentOfferExit =
   /** The stored consent read has not settled, so consent is unknown. */
@@ -749,16 +727,7 @@ export type AgentConsentOfferStage =
   | 'startup'
   /** `offerConsentUnprompted` - the offer attempt itself. */
   | 'offer'
-  /**
-   * The consent request itself - `requestConsentForCurrentUser` and the card
-   * lifecycle in `showConsentDialog` - after the chain has decided to ask.
-   *
-   * The only stage that is **not** deduplicated, because it cannot inflate:
-   * the automatic path reaches it at most once per consent scope per page load
-   * and the button path reaches it once per click, so a repeat here is a
-   * repeated attempt rather than a
-   * measure of how long the tab was open.
-   */
+  /** The consent request itself, after the chain has decided to ask. */
   | 'request'
 export interface AgentConsentOfferExitedMetadata extends Record<
   string,
