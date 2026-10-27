@@ -1107,6 +1107,15 @@ describe('useAgentConsent', () => {
           })
           expect(composer.prompt.references).toHaveLength(1)
         }
+      },
+      {
+        composer: 'an attachment',
+        fill: () =>
+          useAgentComposerStore().addAttachment({
+            id: 'image',
+            name: 'source.png',
+            ref: 'source.png'
+          })
       }
     ])(
       'does not overwrite $composer already in the composer',
@@ -1114,12 +1123,14 @@ describe('useAgentConsent', () => {
         signedIn()
         fill()
         const before = useAgentComposerStore().prompt
+        const attachmentsBefore = useAgentComposerStore().attachments
         scopeResolves()
         vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
 
         await useAgentConsent().resumeAcceptAfterReload('make it blue')
 
         expect(useAgentComposerStore().prompt).toEqual(before)
+        expect(useAgentComposerStore().attachments).toEqual(attachmentsBefore)
         expect(useAgentConsentStore().accept).toHaveBeenCalledOnce()
       }
     )
