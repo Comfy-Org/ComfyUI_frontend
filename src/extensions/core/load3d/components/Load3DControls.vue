@@ -119,7 +119,7 @@ import HDRIControls from '@/extensions/core/load3d/components/controls/HDRIContr
 import LightControls from '@/extensions/core/load3d/components/controls/LightControls.vue'
 import ModelControls from '@/extensions/core/load3d/components/controls/ModelControls.vue'
 import SceneControls from '@/extensions/core/load3d/components/controls/SceneControls.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type {
   CameraConfig,
   GizmoMode,

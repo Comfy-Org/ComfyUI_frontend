@@ -250,6 +250,8 @@ describe('BillingLocalCreditBanner', () => {
       expect(
         screen.getAllByRole('button').map((button) => button.textContent.trim())
       ).toEqual(buttons)
+      expect(screen.getByRole('button', { name: 'Dismiss' })).toHaveClass('h-8')
+      expect(screen.getByRole('status')).toHaveClass('rounded-xl', 'p-3')
       expect(banner).not.toHaveTextContent('credits refill')
     }
   )

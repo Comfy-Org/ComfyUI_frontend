@@ -27,6 +27,7 @@ const defaultFlags: FeatureFlags = {
   comfyHubUploadEnabled: false,
   comfyHubProfileGateEnabled: false,
   deploymentCompatibilityMarksEnabled: false,
+  lateCustomNodesEnabled: false,
   hostedBillingDestination: 'stripe',
   hostedBillingWebEnabled: false,
   showSignInButton: undefined,
@@ -46,7 +47,6 @@ const defaultFlags: FeatureFlags = {
   signupTurnstileMode: 'off',
   emailVerificationNudgeEnabled: false,
   supportsModelTypeTags: false,
-  onboardingTourEnabled: false,
   assetsEnabled: false,
   agentInAppExperienceEnabled: false
 }

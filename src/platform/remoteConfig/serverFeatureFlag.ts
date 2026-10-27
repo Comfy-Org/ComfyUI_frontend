@@ -20,6 +20,7 @@ export enum ServerFeatureFlag {
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED = 'deployment_compatibility_marks_enabled',
+  LATE_CUSTOM_NODES_ENABLED = 'late_custom_nodes_enabled',
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
@@ -36,7 +37,6 @@ export enum ServerFeatureFlag {
   SIGNUP_TURNSTILE = 'signup_turnstile',
   EMAIL_VERIFICATION_NUDGE_ENABLED = 'email_verification_nudge_enabled',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
-  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
   AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience',
   AGENT = 'agent'
 }

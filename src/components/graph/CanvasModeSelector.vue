@@ -1,5 +1,5 @@
 <template>
-  <Popover v-model:open="isOpen">
+  <PopoverRoot v-model:open="isOpen">
     <PopoverTrigger as-child>
       <Button
         ref="buttonRef"
@@ -29,7 +29,6 @@
     <PopoverContent
       side="top"
       :side-offset="8"
-      :collision-padding="8"
       :class="
         cn(
           menuContentClass,
@@ -94,23 +93,22 @@
         </button>
       </div>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 </template>
 
 <script setup lang="ts">
 import { unrefElement } from '@vueuse/core'
-import { PopoverTrigger } from 'reka-ui'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import type { ComponentPublicInstance } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import Button from '@comfyorg/design-system/button/Button'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import {
   menuButtonClass,
   menuContentClass
-} from '@/components/ui/menu/menuStyles'
+} from '@comfyorg/design-system/lib/menu/menuStyles'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'

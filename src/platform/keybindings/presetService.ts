@@ -114,7 +114,7 @@ export function useKeybindingPresetService() {
   function applyPreset(preset: KeybindingPreset) {
     keybindingStore.resetAllKeybindings()
     for (const binding of preset.unsetBindings) {
-      keybindingStore.unsetKeybinding(new KeybindingImpl(binding))
+      keybindingStore.addUserUnsetKeybinding(new KeybindingImpl(binding))
     }
     for (const binding of preset.newBindings) {
       keybindingStore.addUserKeybinding(new KeybindingImpl(binding))

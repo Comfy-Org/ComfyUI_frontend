@@ -14,7 +14,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import { useCommandStore } from '@/stores/commandStore'
