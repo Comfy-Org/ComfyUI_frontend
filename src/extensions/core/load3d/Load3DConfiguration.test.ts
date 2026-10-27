@@ -24,7 +24,9 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { Settings } from '@/platform/settings/types'
 
-vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial({ apiURL: (path: string) => path })
+}))
 vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@comfyorg/viewport3d/load3d/Load3d'), () => ({
@@ -275,10 +277,14 @@ describe('Load3DConfiguration model load reporting', () => {
   )
 
   describe('while keeping the loaded model', () => {
-    function viewerShowingRequestedModel(showing: boolean) {
-      vi.mocked(Load3dUtils.isSameResourceURL).mockReturnValue(showing)
+    const requestedModelUrl = '/view?filename=model.glb'
+
+    function viewerShowing(
+      originalURL: string,
+      currentModel: object | null = {}
+    ) {
       const load3d = makeLoad3dMock()
-      Object.assign(load3d, { modelManager: { originalURL: 'shown.glb' } })
+      Object.assign(load3d, { modelManager: { originalURL, currentModel } })
       return load3d
     }
 
@@ -299,7 +305,7 @@ describe('Load3DConfiguration model load reporting', () => {
     ])(
       '$name does not reload the model the viewer already shows',
       async ({ run }) => {
-        const load3d = viewerShowingRequestedModel(true)
+        const load3d = viewerShowing(requestedModelUrl)
 
         keepingLoadedModel(load3d, () => run(new Load3DConfiguration(load3d)))
         await flush()
@@ -308,22 +314,34 @@ describe('Load3DConfiguration model load reporting', () => {
       }
     )
 
-    it('loads a model the viewer does not show yet', async () => {
-      const load3d = viewerShowingRequestedModel(false)
+    it.for([
+      {
+        name: 'a different model',
+        load3d: () => viewerShowing('/view?filename=other.glb')
+      },
+      {
+        name: 'no model after a failed load of the same file',
+        load3d: () => viewerShowing(requestedModelUrl, null)
+      }
+    ])(
+      'loads the model when the viewer shows $name',
+      async ({ load3d: make }) => {
+        const load3d = make()
 
-      keepingLoadedModel(load3d, () =>
-        new Load3DConfiguration(load3d).configureForSaveMesh(
-          'output',
-          'model.glb'
+        keepingLoadedModel(load3d, () =>
+          new Load3DConfiguration(load3d).configureForSaveMesh(
+            'output',
+            'model.glb'
+          )
         )
-      )
-      await flush()
+        await flush()
 
-      expect(loadModelSpy).toHaveBeenCalledOnce()
-    })
+        expect(loadModelSpy).toHaveBeenCalledOnce()
+      }
+    )
 
     it('loads the shown model again once keeping ends', async () => {
-      const load3d = viewerShowingRequestedModel(true)
+      const load3d = viewerShowing(requestedModelUrl)
       keepingLoadedModel(load3d, () => {})
 
       new Load3DConfiguration(load3d).configureForSaveMesh(

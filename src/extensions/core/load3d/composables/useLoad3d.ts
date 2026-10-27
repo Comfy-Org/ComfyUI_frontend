@@ -270,9 +270,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     return instance
   }
 
-  const initializeLoad3d = async (
+  const initializeLoad3dKeeping = async (
     containerRef: HTMLElement | null,
-    kept: Load3d | null = null
+    kept: Load3d | null
   ) => {
     viewerContainer = containerRef
     const rawNode = toRaw(nodeRef.value)
@@ -347,6 +347,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       useToast().warning(t('toastMessages.failedToInitializeLoad3dViewer'))
     }
   }
+
+  const initializeLoad3d = (containerRef: HTMLElement | null) =>
+    initializeLoad3dKeeping(containerRef, null)
 
   const savedSceneConfigOf = (node: LGraphNode): SceneConfig => {
     const saved = node.properties['Scene Config'] as
@@ -1192,7 +1195,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       ? releaseLoad3d(!!current && isReloadedCopy(current, replaced))
       : null
     if (!node) viewerContainer = null
-    else if (viewerContainer) void initializeLoad3d(viewerContainer, kept)
+    else if (viewerContainer)
+      void initializeLoad3dKeeping(viewerContainer, kept)
   })
 
   return {

@@ -296,14 +296,7 @@ class Load3DConfiguration {
         )
       )
 
-      if (
-        keepLoadedModel &&
-        Load3dUtils.isSameResourceURL(
-          this.load3d.modelManager.originalURL,
-          modelUrl
-        )
-      )
-        return
+      if (keepLoadedModel && this.isShowingModel(modelUrl)) return
 
       const outcome = await this.load3d.loadModel(modelUrl, filename)
       reportLoadModelOutcome(outcome, { silentOnNotFound })
@@ -323,6 +316,14 @@ class Load3DConfiguration {
 
       this.load3d.emitModelReady()
     }
+  }
+
+  private isShowingModel(modelUrl: string): boolean {
+    const { currentModel, originalURL } = this.load3d.modelManager
+    return (
+      currentModel !== null &&
+      Load3dUtils.isSameResourceURL(originalURL, modelUrl)
+    )
   }
 
   private setResourceFolder(filename: string): void {
