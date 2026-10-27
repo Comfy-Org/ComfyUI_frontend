@@ -131,7 +131,10 @@
                 v-for="command in extensionToolboxCommands"
                 :key="command.id"
                 :label="
-                  st(`commands.${normalizeI18nKey(command.id)}.label`, '')
+                  st(
+                    `commands.${normalizeI18nKey(command.id)}.label`,
+                    command.label ?? ''
+                  )
                 "
                 :icon="command.icon"
                 @click="commandStore.execute(command.id)"

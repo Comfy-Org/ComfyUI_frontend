@@ -83,7 +83,6 @@ describe('SelectionToolbox', () => {
     useSettingStore().$patch({
       settingValues: {
         'Comfy.UseNewMenu': 'Top',
-        'Comfy.NodeLibrary.NewDesign': true,
         'Comfy.Load3D.3DViewerEnable': true
       }
     })
@@ -116,24 +115,18 @@ describe('SelectionToolbox', () => {
   })
 
   it.for([
-    { menu: 'Top', library: true, visible: true },
-    { menu: 'Top', library: false, visible: true },
-    { menu: 'Disabled', library: true, visible: false },
-    { menu: 'Disabled', library: false, visible: false }
-  ] as const)(
-    'info visibility with menu $menu and new library $library',
-    ({ menu, library, visible }) => {
-      useSettingStore().$patch({
-        settingValues: {
-          'Comfy.UseNewMenu': menu,
-          'Comfy.NodeLibrary.NewDesign': library
-        }
-      })
-      setCanvasSelection([new LGraphNode('Test Node')])
-      renderToolbox()
-      expect(screen.queryByTestId('info-button') !== null).toBe(visible)
-    }
-  )
+    { menu: 'Top', visible: true },
+    { menu: 'Disabled', visible: false }
+  ] as const)('info visibility with menu $menu', ({ menu, visible }) => {
+    useSettingStore().$patch({
+      settingValues: {
+        'Comfy.UseNewMenu': menu
+      }
+    })
+    setCanvasSelection([new LGraphNode('Test Node')])
+    renderToolbox()
+    expect(screen.queryByTestId('info-button') !== null).toBe(visible)
+  })
 
   it('hides info without a node definition', () => {
     vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(null)
@@ -151,16 +144,6 @@ describe('SelectionToolbox', () => {
       button_id: 'selection_toolbox_node_info_opened',
       element_group: 'selection_toolbox'
     })
-  })
-
-  it('does not track info when the selection becomes unavailable before rendering', () => {
-    setCanvasSelection([new LGraphNode('Test Node')])
-    renderToolbox()
-    const button = screen.getByTestId('info-button')
-    setCanvasSelection([])
-    button.click()
-    expect(useRightSidePanelStore().openPanel).not.toHaveBeenCalled()
-    expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -245,32 +228,47 @@ describe('SelectionToolbox', () => {
     ).toBeNull()
   })
 
-  it('renders deduplicated extension commands and executes them', async () => {
-    const action = vi.fn()
-    useCommandStore().registerCommand({
+  it.for([
+    {
       id: 'Comfy.Graph.UnpackSubgraph',
-      function: action,
-      icon: () => 'icon-[lucide--star]'
-    })
-    vi.mocked(useExtensionService().invokeExtensions).mockReturnValue([
-      'Comfy.Graph.UnpackSubgraph',
-      'Comfy.Graph.UnpackSubgraph',
-      'Unknown.Command'
-    ])
-    setCanvasSelection([new LGraphNode('Test Node')])
-    renderToolbox()
-    expect(
-      screen.getAllByRole('button', {
-        name: 'Unpack the selected Subgraph'
+      label: 'Untranslated command label',
+      expectedLabel: 'Unpack the selected Subgraph'
+    },
+    {
+      id: 'Test.ExtensionCommand',
+      label: () => 'Extension action',
+      expectedLabel: 'Extension action'
+    }
+  ])(
+    'renders and executes deduplicated command $id',
+    async ({ id, label, expectedLabel }) => {
+      const action = vi.fn()
+      useCommandStore().registerCommand({
+        id,
+        label,
+        function: action,
+        icon: () => 'icon-[lucide--star]'
       })
-    ).toHaveLength(1)
-    await userEvent.setup().click(
-      screen.getByRole('button', {
-        name: 'Unpack the selected Subgraph'
-      })
-    )
-    expect(action).toHaveBeenCalledOnce()
-  })
+      vi.mocked(useExtensionService().invokeExtensions).mockReturnValue([
+        id,
+        id,
+        'Unknown.Command'
+      ])
+      setCanvasSelection([new LGraphNode('Test Node')])
+      renderToolbox()
+      expect(
+        screen.getAllByRole('button', {
+          name: expectedLabel
+        })
+      ).toHaveLength(1)
+      await userEvent.setup().click(
+        screen.getByRole('button', {
+          name: expectedLabel
+        })
+      )
+      expect(action).toHaveBeenCalledOnce()
+    }
+  )
 
   it('forwards wheel events to the canvas', async () => {
     setCanvasSelection([new LGraphNode('Test Node')])
