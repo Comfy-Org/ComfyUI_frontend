@@ -1,0 +1,93 @@
+import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import { ref } from 'vue'
+
+import Button from '@comfyorg/design-system/button/Button'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import SingleSelect from '@comfyorg/design-system/single-select/SingleSelect'
+import ToastDock from '@comfyorg/design-system/toast/ToastDock'
+
+const meta: Meta = {
+  title: 'Components/Dialog/Overlay ordering',
+  tags: ['autodocs'],
+  render: () => ({
+    components: {
+      Button,
+      Dialog,
+      DialogContent,
+      DialogOverlay,
+      DialogPortal,
+      DialogTitle,
+      Menu,
+      PopoverContent,
+      PopoverRoot,
+      PopoverTrigger,
+      SingleSelect,
+      ToastDock
+    },
+    setup() {
+      return {
+        a: ref(false),
+        b: ref(false),
+        selected: ref('a'),
+        options: [
+          { name: 'Alpha', value: 'a' },
+          { name: 'Beta', value: 'b' }
+        ],
+        items: [{ label: 'Actions', items: [{ label: 'Nested action' }] }]
+      }
+    },
+    template: `
+      <div class="flex gap-4 p-8">
+        <Button @click="a = true">Open A</Button>
+        <Button @click="b = true">Open B</Button>
+      </div>
+      <Dialog v-model:open="a">
+        <DialogPortal>
+          <DialogOverlay data-testid="scrim-a" />
+          <DialogContent data-testid="dialog-a" class="gap-4 p-6" @pointer-down-outside.prevent>
+            <DialogTitle>Dialog A</DialogTitle>
+            <input aria-label="Dialog input" class="rounded border p-2" placeholder="Dialog input" />
+            <SingleSelect v-model="selected" label="Choose a value" accessible-label="Choose a value" :options />
+            <Menu :items><template #trigger><Button>Open menu</Button></template></Menu>
+            <PopoverRoot><PopoverTrigger as-child><Button>Open popover</Button></PopoverTrigger><PopoverContent><Button>Popover action</Button></PopoverContent></PopoverRoot>
+            <div class="flex gap-2">
+              <Button @click="b = true">Open B above A</Button>
+              <Button @click="a = false">Close A</Button>
+            </div>
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>
+      <Dialog v-model:open="b">
+        <DialogPortal>
+          <DialogOverlay data-testid="scrim-b" />
+          <DialogContent data-testid="dialog-b" class="gap-4 p-6" @pointer-down-outside.prevent>
+            <DialogTitle>Dialog B</DialogTitle>
+            <Button @click="a = true">Reopen A above B</Button>
+            <Button @click="b = false">Close B</Button>
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>
+      <ToastDock>
+        <div class="flex items-center gap-4 rounded-lg border bg-background p-4 shadow-lg">
+          <span>Upload complete</span>
+          <PopoverRoot>
+            <PopoverTrigger as-child><Button>Toast details</Button></PopoverTrigger>
+            <PopoverContent><Button>Toast popover action</Button></PopoverContent>
+          </PopoverRoot>
+        </div>
+      </ToastDock>
+    `
+  })
+}
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const Default: Story = {}
