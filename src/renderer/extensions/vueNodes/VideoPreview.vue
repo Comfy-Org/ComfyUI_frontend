@@ -70,7 +70,7 @@
           :aria-label="$t('g.downloadVideo')"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] size-4" />
+          <i class="icon-[lucide--download]" />
         </Button>
 
         <!-- Close Button -->
@@ -82,7 +82,7 @@
           :aria-label="$t('g.removeVideo')"
           @click="handleRemove"
         >
-          <i class="icon-[lucide--x] size-4" />
+          <i class="icon-[lucide--x]" />
         </Button>
       </div>
 

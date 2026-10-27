@@ -34,7 +34,7 @@
           :aria-expanded="runtimeDetailsExpanded"
           @click.stop="toggleRuntimeDetails"
         >
-          <i class="icon-[lucide--monitor-x] size-4" />
+          <i class="icon-[lucide--monitor-x]" />
         </Button>
         <LocateNodeButton :label="locateLabel" @locate="handleLocateNode" />
       </div>
@@ -113,7 +113,7 @@
                     data-testid="error-card-copy"
                     @click="handleCopyError(idx)"
                   >
-                    <i class="icon-[lucide--copy] size-4" />
+                    <i class="icon-[lucide--copy]" />
                   </Button>
                 </div>
                 <div class="max-h-[15lh] overflow-y-auto">
@@ -135,7 +135,7 @@
                   class="justify-start gap-1 px-0 hover:bg-transparent hover:text-foreground focus-visible:ring-inset"
                   @click="handleGetHelp"
                 >
-                  <i class="icon-[lucide--external-link] size-4" />
+                  <i class="icon-[lucide--external-link]" />
                   {{ t('g.getHelpAction') }}
                 </Button>
                 <Button
@@ -146,7 +146,7 @@
                   data-testid="error-card-find-on-github"
                   @click="handleCheckGithub(error)"
                 >
-                  <i class="icon-[lucide--github] size-4" />
+                  <i class="icon-[lucide--github]" />
                   {{ t('g.findOnGithub') }}
                 </Button>
               </div>

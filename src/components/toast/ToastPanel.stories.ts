@@ -50,10 +50,10 @@ const meta: Meta<PanelStoryArgs> = {
           </div>
           <template #footer="{ toggle }">
             <div class="flex h-12 items-center justify-between gap-2 border-t border-border px-4 text-sm">
-              <i :class="cn('size-4', args.statusIcon)" />
+              <i :class="args.statusIcon" />
               <span class="font-bold text-foreground">{{ args.status }}</span>
               <Button variant="muted-textonly" size="icon" @click.stop="toggle">
-                <i :class="cn('size-4', isExpanded ? 'icon-[lucide--chevron-down]' : 'icon-[lucide--chevron-up]')" />
+                <i :class="isExpanded ? 'icon-[lucide--chevron-down]' : 'icon-[lucide--chevron-up]'" />
               </Button>
             </div>
           </template>

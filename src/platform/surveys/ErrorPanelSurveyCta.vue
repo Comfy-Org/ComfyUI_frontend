@@ -17,7 +17,7 @@
         :aria-label="t('g.close')"
         @click="markSeen"
       >
-        <i class="icon-[lucide--x] size-4" />
+        <i class="icon-[lucide--x]" />
       </Button>
     </div>
   </div>

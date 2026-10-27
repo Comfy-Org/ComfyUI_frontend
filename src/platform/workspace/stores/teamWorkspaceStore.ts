@@ -197,6 +197,7 @@ function reportSsoLanding(
 const MAX_OWNED_WORKSPACES = 10
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
+const INIT_READ_WITHOUT_STATUS_RETRY = { skipStatusRetry: true }
 
 const MAX_SESSION_REVOKED_RETRIES = 1
 
@@ -264,21 +265,31 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => workspaces.value.filter((w) => w.role === 'owner').length
   )
 
-  /** The server says an SSO organization manages this account's workspaces. */
+  const serverRefusesCreation = ref(false)
+
   const workspacesManagedByOrganization = ref(false)
 
   const canCreateWorkspace = computed(
     () =>
-      !workspacesManagedByOrganization.value &&
+      !serverRefusesCreation.value &&
       ownedWorkspacesCount.value < MAX_OWNED_WORKSPACES
   )
+
+  const createWorkspaceRefusal = computed<
+    'organization' | 'limit' | 'unknown' | null
+  >(() => {
+    if (canCreateWorkspace.value) return null
+    if (workspacesManagedByOrganization.value) return 'organization'
+    if (serverRefusesCreation.value) return 'unknown'
+    return 'limit'
+  })
 
   function applyWorkspaceList(response: ListedWorkspaces): void {
     workspaces.value = sortWorkspaces(
       response.workspaces.map(createWorkspaceState)
     )
-    workspacesManagedByOrganization.value =
-      response.can_create_workspace === false
+    serverRefusesCreation.value = response.can_create_workspace === false
+    workspacesManagedByOrganization.value = !!response.default_workspace_id
   }
 
   const members = computed<WorkspaceMember[]>(
@@ -357,7 +368,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
       try {
         if (isDesktopHostSignedIn()) {
-          const response = await workspaceApi.list()
+          const response = await workspaceApi.list(
+            INIT_READ_WITHOUT_STATUS_RETRY
+          )
           if (isStaleIdentity(generation)) return
           applyWorkspaceList(response)
           const hostWorkspaceId = desktopHostUser.value?.workspaceId
@@ -371,7 +384,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         }
 
         if (isApiKeySession) {
-          const current = await workspaceApi.getCurrentWorkspace()
+          const current = await workspaceApi.getCurrentWorkspace(
+            INIT_READ_WITHOUT_STATUS_RETRY
+          )
           if (isStaleIdentity(generation)) return
           workspaces.value = [createWorkspaceStateFromCredential(current)]
           mutableActiveWorkspaceId.value = current.id
@@ -386,7 +401,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         const hasValidSession = workspaceAuthStore.initializeFromSession()
 
         if (hasValidSession && workspaceAuthStore.currentWorkspace) {
-          const response = await workspaceApi.list()
+          const response = await workspaceApi.list(
+            INIT_READ_WITHOUT_STATUS_RETRY
+          )
           if (isStaleIdentity(generation)) return
           applyWorkspaceList(response)
 
@@ -425,7 +442,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           return
         }
 
-        const response: ListedWorkspaces = await workspaceApi.list()
+        const response: ListedWorkspaces = await workspaceApi.list(
+          INIT_READ_WITHOUT_STATUS_RETRY
+        )
         if (isStaleIdentity(generation)) return
         applyWorkspaceList(response)
 
@@ -1113,6 +1132,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     initializationPromise = null
     initState.value = 'uninitialized'
     workspaces.value = []
+    serverRefusesCreation.value = false
     workspacesManagedByOrganization.value = false
     mutableActiveWorkspaceId.value = null
     error.value = null
@@ -1145,7 +1165,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     sharedWorkspaces,
     ownedWorkspacesCount,
     canCreateWorkspace,
+    serverRefusesCreation,
     workspacesManagedByOrganization,
+    createWorkspaceRefusal,
     members,
     membersLoaded,
     pendingInvites,

@@ -280,7 +280,7 @@ watch(
       class="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full shadow-md ring-1 ring-muted-foreground"
       @click="scrollToLatest"
     >
-      <span class="icon-[lucide--chevron-down] size-4" />
+      <i aria-hidden="true" class="icon-[lucide--chevron-down]" />
     </Button>
   </div>
 </template>

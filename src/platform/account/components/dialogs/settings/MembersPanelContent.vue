@@ -113,7 +113,7 @@
                 @click="toggleSort('inviteDate')"
               >
                 {{ $t('workspacePanel.members.columns.inviteDate') }}
-                <i class="icon-[lucide--chevrons-up-down] size-4" />
+                <i class="icon-[lucide--chevrons-up-down]" />
               </Button>
               <Button
                 variant="muted-textonly"
@@ -122,7 +122,7 @@
                 @click="toggleSort('expiryDate')"
               >
                 {{ $t('workspacePanel.members.columns.expiryDate') }}
-                <i class="icon-[lucide--chevrons-up-down] size-4" />
+                <i class="icon-[lucide--chevrons-up-down]" />
               </Button>
               <div />
             </template>
@@ -143,7 +143,7 @@
                 v-if="uiConfig.showCreditsColumn"
                 class="flex items-center gap-1 text-xs text-muted-foreground"
               >
-                <i class="icon-[lucide--coins] size-4" />
+                <i class="icon-[lucide--coins]" />
                 {{ $t('workspacePanel.members.columns.creditsUsed') }}
               </div>
               <!-- Empty cell for action column header (OWNER only) -->

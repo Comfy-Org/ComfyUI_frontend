@@ -25,11 +25,11 @@
     </p>
 
     <TopUpAmountFields
-      :pay-amount="payAmount"
+      :pay-amount
       :credits="creditsModel"
-      :selected-preset="selectedPreset"
+      :selected-preset
       :max-amount="MAX_AMOUNT"
-      :plan-credit-copy="planCreditCopy"
+      :plan-credit-copy
       @preset="handlePresetClick"
       @pay-amount="handlePayAmountChange"
       @credits="creditsModel = $event"
@@ -41,7 +41,7 @@
       v-if="isBelowMin"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-destructive"
     >
-      <i class="icon-[lucide--coins] size-4" />
+      <i class="icon-[lucide--coins]" />
       {{
         $t('credits.topUp.minRequired', {
           credits: formatNumber(usdToCredits(MIN_AMOUNT))
@@ -52,7 +52,7 @@
       v-if="showCeilingWarning"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-warning"
     >
-      <i class="icon-[lucide--coins] size-4" />
+      <i class="icon-[lucide--coins]" />
       {{
         $t('credits.topUp.maxAllowed', {
           credits: formatNumber(usdToCredits(MAX_AMOUNT))
@@ -84,7 +84,7 @@
           class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           {{ $t('credits.topUp.viewPricing') }}
-          <i class="icon-[lucide--external-link] size-4" />
+          <i class="icon-[lucide--external-link]" />
         </a>
       </div>
     </div>

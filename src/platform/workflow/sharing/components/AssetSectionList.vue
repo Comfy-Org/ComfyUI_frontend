@@ -21,7 +21,7 @@
           <i
             :class="
               cn(
-                'icon-[lucide--chevron-right] size-4 text-muted-foreground transition-transform',
+                'icon-[lucide--chevron-right] text-muted-foreground transition-transform',
                 expandedSectionId === section.id && 'rotate-90'
               )
             "
