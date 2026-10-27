@@ -140,11 +140,11 @@
 
     <TopUpAmountFields
       v-if="step === 'amount'"
-      :pay-amount="payAmount"
+      :pay-amount
       :credits="creditsModel"
-      :selected-preset="selectedPreset"
+      :selected-preset
       :max-amount="MAX_AMOUNT"
-      :plan-credit-copy="planCreditCopy"
+      :plan-credit-copy
       @preset="handlePresetClick"
       @pay-amount="handlePayAmountChange"
       @credits="creditsModel = $event"
