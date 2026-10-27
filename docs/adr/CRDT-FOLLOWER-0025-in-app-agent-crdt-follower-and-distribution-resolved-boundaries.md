@@ -447,9 +447,11 @@ user makes it and the moment the host answers for its op.
   reset. `revertRejected` ends the holds of the ops it reverts before it reads
   their registers back from the document, so a rejection shows the document's
   value even when a conflicting frame was held back meanwhile; the rejection
-  does not depend on the caller settling first. A newer local write to the
-  same register keeps its own hold through an older write's echo or
-  rejection.
+  does not depend on the caller settling first. A newer local write with a
+  different value keeps its own hold through an older write's echo or
+  rejection. The hold tracks values, not writes: when an older in-flight write
+  carries the same value as the newest one (25, then 30, then 25), the older
+  write's echo or settlement ends the newest write's hold.
 - **Never shadowed, replayed, or re-stamped.** Pending ops are not applied to a
   copy of the graph, are not re-applied to the canvas over a later frame or
   after a lineage reset, and keep the `op_id` and stamp they were minted with.
