@@ -212,6 +212,14 @@ describe('BillingAutoTopUpCard', () => {
       lines: [RULE, 'Monthly limit: $50 of $200 used'],
       action: 'Manage',
       expectedIcon: 'icon-[lucide--arrow-up-right]'
+    },
+    {
+      status: 'on',
+      settings: { ...configured, target_credits: null },
+      label: 'On',
+      lines: ['Monthly limit: $50 of $200 used'],
+      action: 'Manage',
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
     }
   ])(
     'renders the served $status status as $label',
