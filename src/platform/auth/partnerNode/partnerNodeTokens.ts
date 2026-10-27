@@ -1,6 +1,6 @@
 import { createPartnerNodeTokenSource } from '@/platform/auth/partnerNode/partnerNodeTokenSource'
-import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 
 export const partnerNodeTokens = createPartnerNodeTokenSource({
-  apiUrl: workspaceApiUrl
+  apiUrl: ingestApiUrl
 })

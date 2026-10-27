@@ -10,7 +10,7 @@ import type {
   BillingStatus,
   Plan,
   TeamCreditStops
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import WorkspaceInvoicesContent from './WorkspaceInvoicesContent.vue'
 

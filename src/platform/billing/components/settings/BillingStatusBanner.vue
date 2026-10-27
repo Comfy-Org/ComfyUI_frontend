@@ -105,7 +105,7 @@ import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/billing/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
 import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 type BannerAction =
@@ -121,7 +121,7 @@ const { section } = defineProps<{
 
 const { t, d } = useI18n()
 const { renewalDate, subscription } = useBillingContext()
-const { permissions, canReactivatePlan, workspaceType } = useWorkspaceUI()
+const { permissions, canReactivatePlan, workspaceType } = useBillingUI()
 const { canTopUp, topUpDenial, canManageBilling, runDeniedPaymentPastDue } =
   useBillingCapabilities()
 const { kind, audience, dismiss } = useBillingBanner()
