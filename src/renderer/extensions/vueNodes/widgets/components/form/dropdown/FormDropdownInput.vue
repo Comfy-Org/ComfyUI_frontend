@@ -100,7 +100,7 @@ defineExpose({ focus, showPicker })
         class="icon-[lucide--chevron-down]"
         :class="
           cn(
-            'mr-2 shrink-0 text-muted-foreground transition-transform duration-200',
+            'mr-2 text-muted-foreground transition-transform duration-200',
             isOpen && 'rotate-180'
           )
         "

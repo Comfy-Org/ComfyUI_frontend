@@ -6,10 +6,7 @@
     <div class="flex items-center gap-2 border-b px-3 py-2">
       <i
         :class="
-          cn(
-            'shrink-0',
-            isLayerContext ? 'icon-[lucide--image]' : 'icon-[lucide--grid-2x2]'
-          )
+          isLayerContext ? 'icon-[lucide--image]' : 'icon-[lucide--grid-2x2]'
         "
       />
       <span class="truncate text-xs font-semibold text-foreground">
@@ -214,7 +211,6 @@ import {
 } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { BlendFn } from '@comfyorg/layer-editor/mode'
 import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
 

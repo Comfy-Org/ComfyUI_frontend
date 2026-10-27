@@ -66,7 +66,8 @@ function getDynamicCSSRulesWithStroke(icon, strokeWidth) {
     ...generated.common?.rules,
     ...generated.css[0].rules,
     width: SIZE,
-    height: SIZE
+    height: SIZE,
+    'flex-shrink': '0'
   }
 }
 

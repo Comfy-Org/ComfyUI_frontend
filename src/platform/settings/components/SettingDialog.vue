@@ -178,9 +178,7 @@ const closeButtonVariant = computed(() =>
   unifiedBillingSettingsEnabled.value ? 'textonly' : undefined
 )
 const closeIcon = computed(() =>
-  unifiedBillingSettingsEnabled.value
-    ? 'icon-[lucide--x] size-4 shrink-0'
-    : undefined
+  unifiedBillingSettingsEnabled.value ? 'icon-[lucide--x]' : undefined
 )
 const isWorkspaceCategoryActive = computed(
   () =>

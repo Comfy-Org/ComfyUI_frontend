@@ -104,7 +104,7 @@ function handleKeydownEnter(event: KeyboardEvent) {
     <i
       :class="
         cn(
-          'ml-2 shrink-0 transition-colors duration-150',
+          'ml-2 transition-colors duration-150',
           isQuerying
             ? 'icon-[lucide--loader-circle] animate-spin'
             : 'icon-[lucide--search]',

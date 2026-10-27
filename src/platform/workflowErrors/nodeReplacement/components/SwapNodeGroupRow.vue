@@ -100,7 +100,7 @@
       >
         <i
           aria-hidden="true"
-          class="mr-1 icon-[lucide--repeat] shrink-0 text-foreground"
+          class="mr-1 icon-[lucide--repeat] text-foreground"
         />
         <span class="min-w-0 truncate text-foreground">
           {{ t('nodeReplacement.replaceNode', 'Replace Node') }}

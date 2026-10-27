@@ -184,7 +184,7 @@ it.for([
     state: 'on',
     enabled: true,
     variantClass: 'bg-transparent',
-    iconClass: 'icon-[lucide--x] size-4 shrink-0'
+    iconClass: 'icon-[lucide--x]'
   }
 ])(
   'passes the $state close control through the settings modal',

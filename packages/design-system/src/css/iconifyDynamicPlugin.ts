@@ -30,8 +30,13 @@ function getModeCSSRules(icon: string, mode: 'mask' | 'background') {
   })
   if (generated.css.length !== 1) return {}
 
-  const size = { width: SIZE, height: SIZE }
-  return { ...generated.common?.rules, ...generated.css[0].rules, ...size }
+  return {
+    ...generated.common?.rules,
+    ...generated.css[0].rules,
+    width: SIZE,
+    height: SIZE,
+    'flex-shrink': '0'
+  }
 }
 
 export default plugin(({ matchComponents }) => {
@@ -41,7 +46,8 @@ export default plugin(({ matchComponents }) => {
         return {
           ...getDynamicCSSRules(icon, options),
           width: SIZE,
-          height: SIZE
+          height: SIZE,
+          'flex-shrink': '0'
         }
       } catch {
         return {}

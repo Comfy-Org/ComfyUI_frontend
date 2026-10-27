@@ -218,19 +218,19 @@ async function cancelDownload(taskId: TaskId) {
             </span>
           </template>
           <template v-else-if="failedJobs.length > 0">
-            <i class="icon-[lucide--circle-alert] shrink-0 text-destructive" />
+            <i class="icon-[lucide--circle-alert] text-destructive" />
             <span class="min-w-0 truncate font-bold">
               {{ outcomeLabel }}
             </span>
           </template>
           <template v-else-if="cancelledJobs.length > 0">
-            <i class="icon-[lucide--circle-x] shrink-0 text-muted-foreground" />
+            <i class="icon-[lucide--circle-x] text-muted-foreground" />
             <span class="min-w-0 truncate font-bold">
               {{ outcomeLabel }}
             </span>
           </template>
           <template v-else>
-            <i class="icon-[lucide--check-circle] shrink-0 text-success" />
+            <i class="icon-[lucide--check-circle] text-success" />
             <span class="min-w-0 truncate font-bold">
               {{ outcomeLabel }}
             </span>

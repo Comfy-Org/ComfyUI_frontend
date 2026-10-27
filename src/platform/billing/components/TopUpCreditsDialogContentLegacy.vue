@@ -99,7 +99,7 @@
           :format-options="{ maximumFractionDigits: 0 }"
         >
           <template #prefix>
-            <i class="icon-[lucide--coins] shrink-0 text-credit" />
+            <i class="icon-[lucide--coins] text-credit" />
           </template>
         </FormNumberField>
       </div>

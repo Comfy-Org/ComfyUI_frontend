@@ -51,7 +51,7 @@
           class="m-0 mt-1 flex items-center gap-2 text-sm/4 font-normal text-muted-foreground"
         >
           <i
-            class="icon-[lucide--circle-alert] shrink-0 text-warning"
+            class="icon-[lucide--circle-alert] text-warning"
             aria-hidden="true"
           />
           <span>{{ $t('workspacePanel.partnerNodes.allowAllOffHint') }}</span>
@@ -235,7 +235,7 @@
                   <i
                     :class="
                       cn(
-                        'shrink-0 text-muted-foreground transition-transform',
+                        'text-muted-foreground transition-transform',
                         'icon-[lucide--chevron-down]',
                         !isProviderExpanded(provider) && '-rotate-90'
                       )

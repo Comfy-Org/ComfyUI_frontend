@@ -82,7 +82,7 @@ function onDismiss(): void {
       class="shrink-0"
       @click="onDismiss"
     >
-      <span class="icon-[lucide--x] size-5" />
+      <i aria-hidden="true" class="icon-[lucide--x] size-5" />
     </Button>
   </div>
 </template>

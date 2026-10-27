@@ -20,7 +20,7 @@
             aria-hidden="true"
             :class="
               cn(
-                'mt-0.5 shrink-0',
+                'mt-0.5',
                 hasError
                   ? 'icon-[lucide--circle-x] text-destructive'
                   : 'icon-[lucide--triangle-alert] text-warning'

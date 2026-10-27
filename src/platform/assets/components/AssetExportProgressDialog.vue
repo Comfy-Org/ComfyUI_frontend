@@ -183,7 +183,7 @@ function closeDialog() {
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <Tooltip :disabled="isExpanded">
             <TooltipTrigger as-child>
-              <i :class="cn('shrink-0', footerIconClass)" />
+              <i :class="footerIconClass" />
             </TooltipTrigger>
             <TooltipContent>{{ footerLabel }}</TooltipContent>
           </Tooltip>

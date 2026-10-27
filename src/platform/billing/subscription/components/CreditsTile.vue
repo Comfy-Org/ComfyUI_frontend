@@ -44,7 +44,7 @@
         v-if="emptyStateNotice"
         class="flex items-start gap-2 rounded-lg bg-background p-3 text-sm"
       >
-        <i class="mt-0.5 icon-[lucide--info] shrink-0 text-foreground" />
+        <i class="mt-0.5 icon-[lucide--info] text-foreground" />
         <div class="flex flex-col gap-1">
           <span class="text-foreground">{{ emptyStateNotice.title }}</span>
           <span class="text-muted-foreground">{{

@@ -88,7 +88,7 @@
             class="m-1 flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors focus-within:border-primary"
           >
             <i
-              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
+              class="icon-[lucide--search] text-sm text-muted-foreground"
               aria-hidden="true"
             />
             <ComboboxInput

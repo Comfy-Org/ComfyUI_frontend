@@ -212,7 +212,7 @@
           :format-options="{ maximumFractionDigits: 0 }"
         >
           <template #prefix>
-            <i class="icon-[lucide--coins] shrink-0 text-credit" />
+            <i class="icon-[lucide--coins] text-credit" />
           </template>
         </FormNumberField>
       </div>
@@ -352,7 +352,7 @@
         >
           <div class="flex items-center gap-2">
             <i
-              class="icon-[lucide--circle-alert] size-4 shrink-0 text-muted-foreground"
+              class="icon-[lucide--circle-alert] text-muted-foreground"
               aria-hidden="true"
             />
             <span class="text-sm text-foreground">{{

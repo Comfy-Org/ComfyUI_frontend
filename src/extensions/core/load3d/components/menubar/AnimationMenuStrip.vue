@@ -81,9 +81,9 @@
           type="button"
           :aria-label="t('load3d.menuBar.animationClip')"
         >
-          <i class="icon-[lucide--clapperboard] shrink-0" />
+          <i class="icon-[lucide--clapperboard]" />
           <span v-if="!compact" class="truncate">{{ selectedClipName }}</span>
-          <i class="icon-[lucide--chevron-down] shrink-0 opacity-70" />
+          <i class="icon-[lucide--chevron-down] opacity-70" />
         </Button>
       </PopoverTrigger>
       <PopoverContent

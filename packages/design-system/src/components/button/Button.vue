@@ -55,7 +55,7 @@ const WithoutTooltip: FunctionalComponent = (_, { slots }) =>
     >
       <i
         v-if="loading"
-        class="icon-[lucide--loader-circle] shrink-0 animate-spin"
+        class="icon-[lucide--loader-circle] animate-spin"
         aria-hidden="true"
       />
       <template v-if="loading">

@@ -71,7 +71,7 @@
       >
         <i
           aria-hidden="true"
-          :class="cn('icon-[lucide--check] shrink-0', !selected && 'opacity-0')"
+          :class="cn('icon-[lucide--check]', !selected && 'opacity-0')"
         />
       </Button>
 

@@ -57,7 +57,7 @@
             class="size-4 shrink-0"
           />
           {{ t('assetBrowser.modelInfo.viewOnSource', { source: sourceName }) }}
-          <i class="icon-[lucide--external-link] shrink-0" />
+          <i class="icon-[lucide--external-link]" />
         </a>
       </ModelInfoField>
     </PropertiesAccordionItem>

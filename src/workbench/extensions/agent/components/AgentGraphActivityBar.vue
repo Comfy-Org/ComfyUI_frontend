@@ -84,11 +84,7 @@ function viewNodes(): void {
         class="max-w-full flex-wrap gap-3"
       >
         <template #icon>
-          <i
-            :class="presentation.iconClass"
-            class="shrink-0"
-            aria-hidden="true"
-          />
+          <i :class="presentation.iconClass" aria-hidden="true" />
         </template>
         <template #title>
           {{ presentation.title }}

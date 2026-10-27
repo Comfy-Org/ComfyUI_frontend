@@ -10,7 +10,7 @@
       rel="noopener noreferrer"
     >
       {{ $t('deployToComfyApi.readDocs') }}
-      <span class="icon-[lucide--square-arrow-out-up-right] size-4" />
+      <i aria-hidden="true" class="icon-[lucide--square-arrow-out-up-right]" />
     </Button>
   </DefineDocsLink>
 

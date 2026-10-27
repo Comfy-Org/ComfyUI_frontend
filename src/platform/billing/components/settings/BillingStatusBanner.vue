@@ -8,12 +8,9 @@
         <div class="flex items-center gap-2">
           <i
             :class="
-              cn(
-                'shrink-0',
-                banner.muted
-                  ? 'icon-[lucide--circle-alert] text-muted-foreground'
-                  : 'icon-[lucide--triangle-alert] text-warning'
-              )
+              banner.muted
+                ? 'icon-[lucide--circle-alert] text-muted-foreground'
+                : 'icon-[lucide--triangle-alert] text-warning'
             "
           />
           <span class="text-sm text-foreground">{{ banner.title }}</span>
@@ -82,7 +79,6 @@
 
 <script setup lang="ts">
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

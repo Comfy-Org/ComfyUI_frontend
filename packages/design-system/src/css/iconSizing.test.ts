@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { build } from 'vite'
 import { assert, expect, it } from 'vitest'
 
-it('compiles size-4 icon defaults with explicit sizing overrides', async () => {
+it('compiles non-shrinking size-4 icons with explicit overrides', async () => {
   const entry = resolve(import.meta.dirname, 'icon-sizing.css')
   const result = await build({
     configFile: false,
@@ -20,7 +20,7 @@ it('compiles size-4 icon defaults with explicit sizing overrides', async () => {
               @import 'tailwindcss/utilities' layer(utilities) source(none);
               @plugin './iconifyDynamicPlugin.ts';
               @plugin './lucideStrokePlugin.js';
-              @source inline('icon-[lucide--check] icon-img-[comfy--comfy-logo] icon-mask-[comfy--comfy-logo] icon-s1.5-[lucide--check] size-3 size-6 w-8 h-5');
+              @source inline('icon-[lucide--check] icon-img-[comfy--comfy-logo] icon-mask-[comfy--comfy-logo] icon-s1.5-[lucide--check] size-3 size-6 w-8 h-5 shrink');
             `
             : undefined
       },
@@ -61,10 +61,10 @@ it('compiles size-4 icon defaults with explicit sizing overrides', async () => {
       '.icon-s1.5-[lucide--check]'
     ].map((selector) => {
       const rule = rules.get(selector)
-      return [rule?.width, rule?.height]
+      return [rule?.width, rule?.height, rule?.['flex-shrink']]
     })
   ).toEqual(
-    Array(4).fill(['calc(var(--spacing) * 4)', 'calc(var(--spacing) * 4)'])
+    Array(4).fill(['calc(var(--spacing) * 4)', 'calc(var(--spacing) * 4)', '0'])
   )
   expect(rules.get('.size-3')).toEqual({
     width: 'calc(var(--spacing) * 3)',
@@ -76,4 +76,5 @@ it('compiles size-4 icon defaults with explicit sizing overrides', async () => {
   })
   expect(rules.get('.w-8')?.width).toBe('calc(var(--spacing) * 8)')
   expect(rules.get('.h-5')?.height).toBe('calc(var(--spacing) * 5)')
+  expect(rules.get('.shrink')?.['flex-shrink']).toBe('1')
 })

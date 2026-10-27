@@ -190,10 +190,7 @@ const menuEntries = computed<MenuItem[]>(() => [
               class="min-w-0 flex-1 truncate"
               v-text="workflowStore.activeWorkflow?.filename"
             />
-            <i
-              class="icon-[lucide--chevron-down] shrink-0"
-              aria-hidden="true"
-            />
+            <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
           </Button>
         </template>
         <MenuRadioGroup
