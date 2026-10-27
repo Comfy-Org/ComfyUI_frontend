@@ -126,7 +126,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": ["account", "workflow-persistence"],
-  "allowedConsumers": ["workflow-persistence"],
+  "allowedConsumers": ["selection-toolbox", "workflow-persistence"],
   "characterizationScenarios": [
     {
       "name": "Bootstrap loads i18n, waits for cloud auth with a bounded retry, and loads settings and workflows once",

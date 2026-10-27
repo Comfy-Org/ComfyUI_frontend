@@ -25,7 +25,7 @@
           data-testid="workflows-refresh-icon"
           :class="
             cn(
-              'icon-[lucide--refresh-cw] size-4',
+              'icon-[lucide--refresh-cw]',
               workflowStore.isSyncLoading && 'animate-spin'
             )
           "

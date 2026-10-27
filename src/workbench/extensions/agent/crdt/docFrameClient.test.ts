@@ -14,8 +14,6 @@ import type { ServerDocFrameType } from './docFrameCodes'
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
 

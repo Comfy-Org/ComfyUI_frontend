@@ -340,6 +340,53 @@ describe('useAuthStore', () => {
         })
       })
     })
+
+    it('keeps the status and code on the thrown error', async () => {
+      respondToFetch(BALANCE_URL, () =>
+        Response.json(
+          { error: 'SERVICE_UNAVAILABLE', message: 'try again' },
+          { status: 503, headers: { 'Retry-After': '3600' } }
+        )
+      )
+
+      await expect(store.fetchBalance()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        status: 503,
+        code: 'SERVICE_UNAVAILABLE'
+      })
+    })
+
+    it('reports an unknown code when the failure body is not JSON', async () => {
+      respondToFetch(
+        BALANCE_URL,
+        () =>
+          new Response('upstream connect error', {
+            status: 503,
+            headers: { 'Retry-After': '3600' }
+          })
+      )
+
+      await expect(store.fetchBalance()).rejects.toMatchObject({
+        status: 503,
+        code: 'UNKNOWN_ERROR'
+      })
+    })
+
+    it('returns the balance when a 503 clears on retry', async () => {
+      vi.useFakeTimers()
+      let calls = 0
+      respondToFetch(BALANCE_URL, () =>
+        ++calls === 1
+          ? errorResponse(503, 'Balance temporarily unavailable')
+          : balanceResponse()
+      )
+
+      const pending = store.fetchBalance()
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      await expect(pending).resolves.toEqual({ balance: 0 })
+      expect(calls).toBe(2)
+    })
   })
 
   describe('password update', () => {

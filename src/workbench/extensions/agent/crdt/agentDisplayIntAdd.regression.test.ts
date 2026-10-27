@@ -20,8 +20,6 @@ import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { attachDocOpMinter } from './docOpMinter'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const DISPLAY_INT = 'Display Int (rgthree)'
 const WORKFLOW_ID = 'wf-pm-2003'
 

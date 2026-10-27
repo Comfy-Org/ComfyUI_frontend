@@ -8,7 +8,6 @@ import { api } from '@/scripts/api'
 import { recordConsentOfferDeclined } from './consentOfferDeclined'
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('recordConsentOfferDeclined', () => {
   beforeEach(() => {

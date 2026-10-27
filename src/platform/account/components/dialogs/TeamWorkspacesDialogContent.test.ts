@@ -4,7 +4,7 @@ import { getActivePinia } from 'pinia'
 import { useDialogStore } from '@/stores/dialogStore'
 /* oxlint-disable testing-library/no-container */
 /* oxlint-disable testing-library/no-node-access */
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -119,6 +119,8 @@ describe('TeamWorkspacesDialogContent', () => {
     pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
     workspaceStore.workspaces = []
+    workspaceStore.serverRefusesCreation = false
+    workspaceStore.workspacesManagedByOrganization = false
   })
 
   describe('workspace listing', () => {
@@ -188,6 +190,69 @@ describe('TeamWorkspacesDialogContent', () => {
         'workspaceSwitcher.failedToSwitch',
         { description: 'Network error' }
       )
+    })
+  })
+
+  describe('when creation is refused', () => {
+    function expectNoCreateControls() {
+      expect(
+        screen.queryByLabelText(
+          'workspacePanel.createWorkspaceDialog.nameLabel'
+        )
+      ).toBeNull()
+      expect(
+        screen.queryByRole('button', {
+          name: 'teamWorkspacesDialog.createWorkspace'
+        })
+      ).toBeNull()
+    }
+
+    it('replaces the create form with the organization notice', () => {
+      setOwnedWorkspaces()
+      workspaceStore.serverRefusesCreation = true
+      workspaceStore.workspacesManagedByOrganization = true
+      mountComponent()
+      expectNoCreateControls()
+      expect(
+        screen.getByText('workspaceSwitcher.managedByOrganization')
+      ).toBeInTheDocument()
+      expect(screen.getByText('Team Alpha')).toBeInTheDocument()
+    })
+
+    it('explains the owned-workspace limit', () => {
+      workspaceStore.workspaces = Array.from({ length: 10 }, (_, i) =>
+        createTeamWorkspace({ id: `ws-${i}`, name: `Team ${i}`, role: 'owner' })
+      )
+      mountComponent()
+      expectNoCreateControls()
+      expect(
+        screen.getByText('workspaceSwitcher.maxWorkspacesReached')
+      ).toBeInTheDocument()
+    })
+
+    it('uses neutral copy when the server refuses without a known reason', () => {
+      setOwnedWorkspaces()
+      workspaceStore.serverRefusesCreation = true
+      mountComponent()
+      expectNoCreateControls()
+      expect(
+        screen.getByText('workspaceSwitcher.cannotCreateWorkspace')
+      ).toBeInTheDocument()
+    })
+
+    it('keeps a server refusal neutral at the owned-workspace limit', () => {
+      workspaceStore.workspaces = Array.from({ length: 10 }, (_, i) =>
+        createTeamWorkspace({ id: `ws-${i}`, name: `Team ${i}`, role: 'owner' })
+      )
+      workspaceStore.serverRefusesCreation = true
+      mountComponent()
+      expectNoCreateControls()
+      expect(
+        screen.getByText('workspaceSwitcher.cannotCreateWorkspace')
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('workspaceSwitcher.maxWorkspacesReached')
+      ).toBeNull()
     })
   })
 

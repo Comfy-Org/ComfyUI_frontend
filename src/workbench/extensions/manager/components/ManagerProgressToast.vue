@@ -234,7 +234,7 @@ onBeforeUnmount(() => {
                 </span>
                 <i
                   aria-hidden="true"
-                  class="icon-[lucide--chevron-right] size-4 text-neutral-300 group-open/log:rotate-90"
+                  class="icon-[lucide--chevron-right] text-neutral-300 group-open/log:rotate-90"
                 />
               </summary>
               <div

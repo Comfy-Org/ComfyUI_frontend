@@ -55,7 +55,7 @@
         :side-offset="16"
         prioritize-position
         dismiss-on-viewport-change
-        class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
+        class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
         data-testid="workspace-switcher-panel"
       >
         <WorkspaceSwitcherPopover @select="close" />
@@ -115,7 +115,7 @@
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
-      <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
+      <i class="icon-[lucide--coins] text-muted-foreground" />
       <span class="flex-1 text-sm text-foreground">{{
         $t('credits.credits')
       }}</span>

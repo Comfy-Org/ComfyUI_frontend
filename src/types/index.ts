@@ -255,6 +255,9 @@ declare global {
      */
     __comfyDesktop2Remote?: boolean
 
-    __comfyDesktop2?: ComfyDesktop2Bridge & { Auth?: DesktopHostAuthBridge }
+    __comfyDesktop2?: ComfyDesktop2Bridge & {
+      Auth?: DesktopHostAuthBridge
+      getInstallId?: () => string
+    }
   }
 }

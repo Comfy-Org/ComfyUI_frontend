@@ -43,7 +43,7 @@
                 :aria-label="control.label"
                 @click="toggleAudio(control.side)"
               >
-                <i :class="cn('size-4', control.icon)" />
+                <i :class="control.icon" />
               </Button>
 
               <Button
@@ -54,7 +54,7 @@
                 :aria-label="t('g.close')"
                 @click="educationStore.dismissCard"
               >
-                <i class="icon-[lucide--x] size-4" />
+                <i class="icon-[lucide--x]" />
               </Button>
             </VideoCompareSlider>
 
@@ -62,7 +62,7 @@
               <div
                 class="flex h-14 flex-1 items-center justify-center gap-1.5 bg-secondary px-3 pt-7 pb-1.5 text-white opacity-60 backdrop-blur-md"
               >
-                <i class="icon-[lucide--boxes] size-4" />
+                <i class="icon-[lucide--boxes]" />
                 <span class="text-xs font-semibold">
                   {{ t('partnerNodesEducation.openTab') }}
                 </span>
@@ -70,9 +70,7 @@
               <div
                 class="flex h-14 flex-1 items-center justify-center gap-1.5 bg-accent px-3 pt-7 pb-1.5 backdrop-blur-md"
               >
-                <i
-                  class="icon-[tabler--crown-filled] size-4 text-brand-yellow"
-                />
+                <i class="icon-[tabler--crown-filled] text-brand-yellow" />
                 <span class="text-xs font-semibold text-white">
                   {{ t('partnerNodesEducation.partnerTab') }}
                 </span>
@@ -138,9 +136,7 @@
                   class="flex w-15 justify-center"
                 >
                   <i
-                    :class="
-                      cn('size-4', comparisonStatusClasses[column.status])
-                    "
+                    :class="comparisonStatusClasses[column.status]"
                     aria-hidden="true"
                   />
                   <span class="sr-only">

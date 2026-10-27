@@ -34,7 +34,6 @@ import {
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const hoisted = vi.hoisted(() => ({
   rootGraph: undefined as unknown,

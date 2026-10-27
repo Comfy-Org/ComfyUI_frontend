@@ -24,8 +24,6 @@ import { askIdOf } from '@/workbench/extensions/agent/services/agent/agentMessag
 import type { TurnTab } from './agentConversationStore'
 import { useAgentConversationStore } from './agentConversationStore'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string): AgentChatEvent =>
   chat({
