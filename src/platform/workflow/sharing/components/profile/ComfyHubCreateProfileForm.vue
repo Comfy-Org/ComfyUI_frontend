@@ -138,9 +138,9 @@ import { useI18n } from 'vue-i18n'
 import { useObjectUrl } from '@vueuse/core'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import {
   isFileTooLarge,
   MAX_IMAGE_SIZE_MB

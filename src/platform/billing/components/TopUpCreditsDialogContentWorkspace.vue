@@ -344,6 +344,25 @@
         <i class="icon-[lucide--external-link] size-4" />
       </Button>
       <div v-else class="flex flex-col gap-2">
+        <div
+          v-if="processingPayment && step === 'amount'"
+          role="status"
+          class="flex flex-col gap-1 rounded-2xl border border-border/60 p-4"
+          data-testid="topup-payment-processing-notice"
+        >
+          <div class="flex items-center gap-2">
+            <i
+              class="icon-[lucide--circle-alert] size-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span class="text-sm text-foreground">{{
+              processingNoticeTitle
+            }}</span>
+          </div>
+          <p class="m-0 pl-6 text-sm text-muted-foreground">
+            {{ $t('credits.topUp.paymentProcessingBody') }}
+          </p>
+        </div>
         <Button
           v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
@@ -410,7 +429,7 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import {
@@ -424,10 +443,11 @@ import { useI18n } from 'vue-i18n'
 import {
   centsToCredits,
   creditsToUsd,
+  formatUsdFromCents,
   usdToCredits
 } from '@/base/credits/comfyCredits'
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import FormNumberField from '@/components/common/FormNumberField.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
@@ -451,6 +471,7 @@ import { topupCheckoutReturnUrl } from '@/platform/billing/topupCheckoutReturnUr
 import { isBlockedOnCustomerPhase } from '@/platform/billing/customerAttention'
 import { UncreditedTopupResponse } from '@/platform/billing/sdk/topupOperationView'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
 import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -476,7 +497,25 @@ const { isInsufficientCredits = false, source } = defineProps<{
   source?: PaymentIntentSource
 }>()
 
-const { n, t } = useI18n()
+const { locale, n, t } = useI18n()
+const { payment: processingPayment } = useProcessingTopupPayment()
+const processingNoticeTitle = computed(() => {
+  const cents = processingPayment.value?.paymentAmountCents
+  if (typeof cents !== 'number')
+    return t('credits.topUp.paymentProcessingTitleNoAmount')
+  return t('credits.topUp.paymentProcessingTitle', {
+    amount: formatUsdFromCents({
+      cents,
+      locale: locale.value,
+      numberOptions: {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+        maximumFractionDigits: cents % 100 === 0 ? 0 : 2
+      }
+    })
+  })
+})
 const dialogStore = useDialogStore()
 const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()

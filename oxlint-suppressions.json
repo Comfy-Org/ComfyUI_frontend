@@ -4,91 +4,6 @@
       "count": 1
     }
   },
-  "apps/website/e2e/font-metrics.spec.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/scripts/dist-html.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/scripts/generate-model-url-map.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "apps/website/scripts/router-model-shard.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/components/auth/AuthSignIn.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "apps/website/src/components/hero/AngleNode.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "apps/website/src/components/home/LottieScene.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/redirects.supported-models.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-contract.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-creator-request.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-router-content.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-router-identity.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-router-index.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "apps/website/src/config/workshop-router-openapi.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/content/workshop-display.content.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/lib/workshop/cinematic-studio/reshoot-engine/workflow.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/templates/events/EventsDirectoryRow.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "browser_tests/fixtures/customNode/connectivityExpectations.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -216,11 +131,6 @@
   },
   "src/components/sidebar/tabs/nodeLibrary/NodeBookmarkTreeExplorer.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/components/ui/toggle-group/index.ts": {
-    "comfy/no-reexports": {
       "count": 2
     }
   },

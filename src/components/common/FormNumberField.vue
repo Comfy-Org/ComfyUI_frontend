@@ -22,10 +22,10 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 
-import NumberField from '@/components/ui/number-field/NumberField.vue'
-import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
-import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import NumberField from '@comfyorg/design-system/number-field/NumberField'
+import NumberFieldDecrement from '@comfyorg/design-system/number-field/NumberFieldDecrement'
+import NumberFieldIncrement from '@comfyorg/design-system/number-field/NumberFieldIncrement'
+import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 
 const { class: className = 'w-32' } = defineProps<{
   class?: HTMLAttributes['class']

@@ -239,6 +239,13 @@ export function useFeatureFlags() {
         false
       )
     },
+    get lateCustomNodesEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.LATE_CUSTOM_NODES_ENABLED,
+        remoteConfig.value.late_custom_nodes_enabled,
+        false
+      )
+    },
     get hostedBillingDestination() {
       return hostedBillingDestination()
     },

@@ -412,7 +412,6 @@
           "src/components/common/WaveAudioPlayer.stories.ts",
           "src/components/common/WaveAudioPlayer.test.ts",
           "src/components/common/WaveAudioPlayer.vue",
-          "src/renderer/extensions/vueNodes/components/AudioPreview.vue",
           "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.test.ts",
           "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue",
           "src/renderer/extensions/vueNodes/widgets/components/audio/**"
@@ -838,7 +837,6 @@
       {
         "name": "canvas-renderer/presentation",
         "patterns": [
-          "src/components/graph/CanvasBanner.vue",
           "src/components/graph/CanvasModeSelector.test.ts",
           "src/components/graph/CanvasModeSelector.vue",
           "src/components/graph/GraphCanvasMenu.vue",
@@ -988,8 +986,6 @@
           "src/types/toastOptions.ts",
           "src/utils/histogramUtil.test.ts",
           "src/utils/histogramUtil.ts",
-          "src/utils/textTickerUtils.test.ts",
-          "src/utils/textTickerUtils.ts",
           "src/utils/treeUtil.test.ts",
           "src/utils/treeUtil.ts",
           "src/utils/validationUtil.ts"
@@ -1002,12 +998,10 @@
           "src/components/ui/toast/toastStore.ts",
           "src/composables/palette/**",
           "src/composables/tree/**",
-          "src/composables/useAttrsClass.ts",
           "src/composables/useCurveEditor.test.ts",
           "src/composables/useCurveEditor.ts",
           "src/composables/useImageQuiet.ts",
           "src/composables/useIntersectionObserver.ts",
-          "src/composables/usePopoverSizing.ts",
           "src/composables/useRangeEditor.test.ts",
           "src/composables/useRangeEditor.ts",
           "src/composables/useTreeExpansion.ts"
@@ -1026,56 +1020,17 @@
       {
         "name": "design-system/presentation",
         "patterns": [
-          "src/components/actionbar/TinyChevronIcon.vue",
           "src/components/button/**",
           "src/components/card/**",
           "src/components/chip/**",
           "src/components/curve/CurveEditor.test.ts",
           "src/components/curve/CurveEditor.vue",
-          "src/components/icons/**",
           "src/components/loader/**",
           "src/components/range/RangeEditor.test.ts",
           "src/components/range/RangeEditor.vue",
-          "src/components/tab/**",
-          "src/components/ui/Popover.vue",
-          "src/components/ui/ZoomPane.vue",
-          "src/components/ui/badge/**",
-          "src/components/ui/button-group/**",
-          "src/components/ui/button/**",
           "src/components/ui/chart/**",
-          "src/components/ui/checkbox/**",
           "src/components/ui/color-picker/**",
-          "src/components/ui/dialog/**",
-          "src/components/ui/field/**",
-          "src/components/ui/hover-card/**",
-          "src/components/ui/input-group/**",
-          "src/components/ui/input/**",
-          "src/components/ui/knob/**",
-          "src/components/ui/label/**",
-          "src/components/ui/menu/**",
-          "src/components/ui/message/**",
-          "src/components/ui/multi-select/**",
-          "src/components/ui/number-field/**",
-          "src/components/ui/pagination/**",
-          "src/components/ui/popover/**",
-          "src/components/ui/radio-group/**",
-          "src/components/ui/search-input/**",
-          "src/components/ui/select/**",
-          "src/components/ui/single-select/**",
-          "src/components/ui/skeleton/**",
-          "src/components/ui/slider/**",
-          "src/components/ui/spinner/**",
-          "src/components/ui/splitter/**",
-          "src/components/ui/switch/**",
-          "src/components/ui/table/**",
-          "src/components/ui/tabs/**",
-          "src/components/ui/tags-input/**",
-          "src/components/ui/textarea/**",
-          "src/components/ui/toggle-group/**",
-          "src/components/ui/tooltip/**",
-          "src/components/ui/tree/**",
-          "src/utils/gridUtil.ts",
-          "src/utils/mouseDownUtil.ts"
+          "src/utils/gridUtil.ts"
         ]
       },
       {
@@ -2665,8 +2620,7 @@
           "src/components/graph/selectionToolbox/MaskEditorButton.vue",
           "src/components/graph/selectionToolbox/NodeOptionsButton.vue",
           "src/components/graph/selectionToolbox/RefreshSelectionButton.vue",
-          "src/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue",
-          "src/components/graph/selectionToolbox/VerticalDivider.vue"
+          "src/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue"
         ]
       },
       {
@@ -2739,7 +2693,6 @@
         "name": "settings/presentation",
         "patterns": [
           "src/components/common/BackgroundImageUpload.vue",
-          "src/components/common/CustomFormValue.vue",
           "src/components/common/FormColorPicker.test.ts",
           "src/components/common/FormColorPicker.vue",
           "src/components/common/FormImageUpload.vue",
@@ -3040,7 +2993,6 @@
         "name": "viewport-3d/presentation",
         "patterns": [
           "src/extensions/core/load3d/components/ViewportWidgetShell.test.ts",
-          "src/extensions/core/load3d/components/ViewportWidgetShell.vue",
           "src/extensions/core/load3d/components/menubar/menuBarStyles.ts"
         ]
       },
@@ -3092,7 +3044,8 @@
         "patterns": [
           "src/renderer/extensions/vueNodes/VideoPreview.agentReset.test.ts",
           "src/renderer/extensions/vueNodes/VideoPreview.test.ts",
-          "src/renderer/extensions/vueNodes/VideoPreview.vue"
+          "src/renderer/extensions/vueNodes/VideoPreview.vue",
+          "src/renderer/extensions/vueNodes/components/**"
         ]
       },
       {
@@ -3270,7 +3223,6 @@
           "src/components/sidebar/tabs/SidebarTabCloseButton.vue",
           "src/components/sidebar/tabs/SidebarTabTemplate.test.ts",
           "src/components/sidebar/tabs/SidebarTabTemplate.vue",
-          "src/components/sidebar/tabs/SidebarTopArea.vue",
           "src/components/topbar/ActionBarButtons.vue",
           "src/components/topbar/TopbarBadge.test.ts",
           "src/components/topbar/TopbarBadge.vue",
@@ -3654,7 +3606,6 @@
           "src/components/gradientslider/**",
           "src/components/palette/**",
           "src/components/rightSidePanel/layout/**",
-          "src/components/ui/toast/**",
           "src/components/widget/**"
         ]
       },
@@ -3855,10 +3806,6 @@
         ]
       },
       {
-        "name": "vue-node-renderer/presentation/outer-1",
-        "patterns": ["src/renderer/extensions/vueNodes/components/**"]
-      },
-      {
         "name": "vue-node-renderer/integration/outer-1",
         "patterns": ["src/renderer/extensions/vueNodes/composables/**"]
       },
@@ -4015,6 +3962,7 @@
           "agent/domain",
           "authentication/domain",
           "design-system/domain",
+          "dialog-host/domain",
           "error-reporting/domain",
           "extension-runtime/domain",
           "workbench-shell/domain",
@@ -4035,6 +3983,8 @@
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -4066,6 +4016,8 @@
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -4097,6 +4049,8 @@
           "design-system/domain",
           "design-system/application",
           "design-system/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
           "error-reporting/domain",
           "error-reporting/application",
           "extension-runtime/domain",
@@ -4110,6 +4064,7 @@
           "workflow-management/presentation",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/presentation/outer-1",
           "workflow-management/presentation/outer-1",
@@ -4134,6 +4089,9 @@
           "design-system/application",
           "design-system/infrastructure",
           "design-system/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/integration",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -4156,6 +4114,7 @@
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
@@ -4350,7 +4309,13 @@
       },
       {
         "from": "billing/domain",
-        "allow": ["billing/domain", "billing/domain/outer-1", "unclassified"]
+        "allow": [
+          "billing/domain",
+          "design-system/domain",
+          "billing/domain/outer-1",
+          "design-system/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "billing/application",
@@ -4358,9 +4323,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4371,9 +4340,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4384,8 +4357,13 @@
           "billing/domain",
           "billing/application",
           "billing/presentation",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
           "billing/domain/outer-1",
           "billing/application/outer-1",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4398,9 +4376,15 @@
           "billing/infrastructure",
           "billing/presentation",
           "billing/integration",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "design-system/presentation",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4926,6 +4910,7 @@
       {
         "from": "extension-runtime/integration",
         "allow": [
+          "webcam-capture/integration/public",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/infrastructure",
@@ -6391,7 +6376,6 @@
           "vue-node-renderer/application",
           "vue-node-renderer/presentation",
           "vue-node-renderer/application/outer-1",
-          "vue-node-renderer/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -6404,7 +6388,6 @@
           "vue-node-renderer/presentation",
           "vue-node-renderer/integration",
           "vue-node-renderer/application/outer-1",
-          "vue-node-renderer/presentation/outer-1",
           "vue-node-renderer/integration/outer-1",
           "unclassified"
         ]
@@ -6746,6 +6729,9 @@
           "design-system/application",
           "design-system/infrastructure",
           "design-system/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/integration",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -6768,6 +6754,7 @@
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
@@ -6850,7 +6837,13 @@
       },
       {
         "from": "billing/domain/outer-1",
-        "allow": ["billing/domain", "billing/domain/outer-1", "unclassified"]
+        "allow": [
+          "billing/domain",
+          "design-system/domain",
+          "billing/domain/outer-1",
+          "design-system/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "billing/application/outer-1",
@@ -6858,9 +6851,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -6871,9 +6868,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -7440,17 +7441,6 @@
         ]
       },
       {
-        "from": "vue-node-renderer/presentation/outer-1",
-        "allow": [
-          "vue-node-renderer/domain",
-          "vue-node-renderer/application",
-          "vue-node-renderer/presentation",
-          "vue-node-renderer/application/outer-1",
-          "vue-node-renderer/presentation/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "vue-node-renderer/integration/outer-1",
         "allow": [
           "vue-node-renderer/domain",
@@ -7459,7 +7449,6 @@
           "vue-node-renderer/presentation",
           "vue-node-renderer/integration",
           "vue-node-renderer/application/outer-1",
-          "vue-node-renderer/presentation/outer-1",
           "vue-node-renderer/integration/outer-1",
           "unclassified"
         ]
@@ -7561,9 +7550,13 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "design-system/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -8042,7 +8035,6 @@
           "version-compatibility/application/outer-1",
           "video-edit/application/outer-1",
           "vue-node-renderer/application/outer-1",
-          "vue-node-renderer/presentation/outer-1",
           "vue-node-renderer/integration/outer-1",
           "vue-node-widgets/presentation/outer-1",
           "vue-node-widgets/integration/outer-1",

@@ -5,10 +5,10 @@ import { storeToRefs } from 'pinia'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
@@ -38,6 +38,7 @@ import type { AgentPanelView } from '@/workbench/extensions/agent/stores/agent/a
 import { deriveSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
+import AgentSyncRetryAlert from './AgentSyncRetryAlert.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
@@ -85,7 +86,8 @@ const {
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
   starterPromptAssignment = 'control',
-  attributeStarterPromptExperiment = false
+  attributeStarterPromptExperiment = false,
+  syncRetryAvailable = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -132,6 +134,7 @@ const {
   freeUsePlacement?: FreeUseVariant
   starterPromptAssignment?: AgentStarterPromptAssignment
   attributeStarterPromptExperiment?: boolean
+  syncRetryAvailable?: boolean
 }>()
 const emit = defineEmits<{
   send: [
@@ -168,6 +171,7 @@ const emit = defineEmits<{
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
   starterPromptRendered: [assignment: AgentStarterPromptAssignment]
+  retrySync: []
 }>()
 
 const openingChat = computed(() => openingWorkflowName !== undefined)
@@ -233,7 +237,10 @@ function onOpenHistory(): void {
   }
   emit('openHistory')
 }
-async function onSelectHistory(id: string): Promise<void> {
+async function openHistoryChat(
+  id: string,
+  onFailure: 'stay' | 'leave'
+): Promise<void> {
   if (view.value.screen !== 'history' || loadingHistoryId.value === id) return
   const opening: AgentPanelView = {
     ...view.value,
@@ -246,10 +253,15 @@ async function onSelectHistory(id: string): Promise<void> {
     opened = await selectHistory(id, isCurrent)
   } finally {
     if (isCurrent())
-      view.value = opened
-        ? { screen: 'chat' }
-        : { ...opening, selection: { status: 'failed', id } }
+      view.value =
+        opened || onFailure === 'leave'
+          ? { screen: 'chat' }
+          : { ...opening, selection: { status: 'failed', id } }
   }
+}
+
+function onSelectHistory(id: string): Promise<void> {
+  return openHistoryChat(id, 'stay')
 }
 
 function onBackFromHistory(): void {
@@ -260,7 +272,7 @@ function onBackFromHistory(): void {
   )
     view.value = { screen: 'chat' }
   else if (view.value.previousThreadId === null) onNewChat()
-  else void onSelectHistory(view.value.previousThreadId)
+  else void openHistoryChat(view.value.previousThreadId, 'leave')
 }
 
 function onDeleteHistory(id: string): void {
@@ -573,6 +585,10 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           data-testid="agent-composer-stack"
           class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4"
         >
+          <AgentSyncRetryAlert
+            :visible="syncRetryAvailable"
+            @retry="emit('retrySync')"
+          />
           <slot name="composerNotice" />
           <AgentPaywallCard
             v-if="creditsExhausted"
