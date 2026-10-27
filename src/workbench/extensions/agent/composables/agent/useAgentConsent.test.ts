@@ -970,173 +970,203 @@ describe('useAgentConsent', () => {
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(onOpen).not.toHaveBeenCalled()
   })
-})
 
-describe('accepting while signed out across a page reload', () => {
-  const PENDING_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
+  describe('accepting while signed out across a page reload', () => {
+    const PENDING_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
 
-  function signedOut() {
-    useCurrentUser().isLoggedIn = computed(() => false)
-    useCurrentUser().resolvedUserInfo = computed(() => null)
-  }
+    function signedOut() {
+      useCurrentUser().isLoggedIn = computed(() => false)
+      useCurrentUser().resolvedUserInfo = computed(() => null)
+    }
 
-  function signedIn() {
-    useCurrentUser().isLoggedIn = computed(() => true)
-    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
-  }
+    function signedIn() {
+      useCurrentUser().isLoggedIn = computed(() => true)
+      useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
+    }
 
-  function holdDraft(text: string) {
-    useAgentComposerStore().startSubmission({
-      prompt: { text, references: [] },
-      attachments: [],
-      nodes: [],
-      target: {} as ComfyWorkflow
-    })
-  }
+    function holdDraft(text: string) {
+      useAgentComposerStore().startSubmission({
+        prompt: { text, references: [] },
+        attachments: [],
+        nodes: [],
+        target: {} as ComfyWorkflow
+      })
+    }
 
-  function scopeResolves() {
-    vi.spyOn(useAgentConsentStore(), 'ensureScope').mockResolvedValue(
-      'account-a/workspace-a'
-    )
-  }
-
-  beforeEach(() => {
-    sessionStorage.clear()
-    localStorage.clear()
-    vi.mocked(useAuthDialogs().showSignInDialog).mockReset()
-    telemetry.trackAgentConsentResolved.mockReset()
-    reportError.mockReset()
-  })
-
-  it('keeps the held draft while the sign-in dialog is open', async () => {
-    signedOut()
-    holdDraft('make it blue')
-    vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(
-      new Promise(() => {})
-    )
-
-    void useAgentConsent().withConsent('first_message', vi.fn())
-    await startConsent()
-    await vi.waitFor(() =>
-      expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
-    )
-
-    expect(sessionStorage.getItem(PENDING_KEY)).toBe('make it blue')
-  })
-
-  it('keeps nothing when the signed-out card is rejected', async () => {
-    signedOut()
-    holdDraft('make it blue')
-
-    const request = useAgentConsent().withConsent('first_message', vi.fn())
-    const dialog = await waitForConsentDialog()
-    ;(dialog.contentProps.onReject as () => void)()
-    await request
-
-    expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
-    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
-  })
-
-  it.for([
-    { outcome: 'cancelled', result: () => Promise.resolve(false) },
-    {
-      outcome: 'failed',
-      result: () => Promise.reject(new Error('Sign-in chunk could not load'))
-    },
-    { outcome: 'completed', result: () => Promise.resolve(true) }
-  ])(
-    'clears the held draft when sign-in is $outcome in the page',
-    async ({ result }) => {
-      signedOut()
-      vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
-        result
+    function scopeResolves() {
+      vi.spyOn(useAgentConsentStore(), 'ensureScope').mockResolvedValue(
+        'account-a/workspace-a'
       )
-      scopeResolves()
-      vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
+    }
+
+    beforeEach(() => {
+      sessionStorage.clear()
+      localStorage.clear()
+      vi.mocked(useAuthDialogs().showSignInDialog).mockReset()
+      telemetry.trackAgentConsentResolved.mockReset()
+      reportError.mockReset()
+    })
+
+    it('keeps the held draft while the sign-in dialog is open', async () => {
+      signedOut()
+      holdDraft('make it blue')
+      vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(
+        new Promise(() => {})
+      )
+
+      void useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await vi.waitFor(() =>
+        expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+      )
+
+      expect(sessionStorage.getItem(PENDING_KEY)).toBe('make it blue')
+    })
+
+    it('keeps nothing when the signed-out card is rejected', async () => {
+      signedOut()
+      holdDraft('make it blue')
 
       const request = useAgentConsent().withConsent('first_message', vi.fn())
-      await startConsent()
+      const dialog = await waitForConsentDialog()
+      ;(dialog.contentProps.onReject as () => void)()
       await request
 
+      expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
       expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
-    }
-  )
+    })
 
-  it('saves consent once after the reload and then restores the draft', async () => {
-    signedIn()
-    scopeResolves()
-    let finishSave = (_saved: boolean) => {}
-    const accept = vi
-      .spyOn(useAgentConsentStore(), 'accept')
-      .mockReturnValueOnce(new Promise((resolve) => (finishSave = resolve)))
+    it.for([
+      { outcome: 'cancelled', result: () => Promise.resolve(false) },
+      {
+        outcome: 'failed',
+        result: () => Promise.reject(new Error('Sign-in chunk could not load'))
+      },
+      { outcome: 'completed', result: () => Promise.resolve(true) }
+    ])(
+      'clears the held draft when sign-in is $outcome in the page',
+      async ({ result }) => {
+        signedOut()
+        vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
+          result
+        )
+        scopeResolves()
+        vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
 
-    const resume = useAgentConsent().resumeAcceptAfterReload('make it blue')
-    await vi.waitFor(() => expect(accept).toHaveBeenCalledOnce())
-    expect(useAgentComposerStore().draft).toBe('')
+        const request = useAgentConsent().withConsent('first_message', vi.fn())
+        await startConsent()
+        await request
 
-    finishSave(true)
-    await resume
-    expect(accept).toHaveBeenCalledExactlyOnceWith('account-a/workspace-a')
-    expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
-      [{ decision: 'accepted', save_error_shown: false }]
-    ])
-    expect(useAgentComposerStore().draft).toBe('make it blue')
-    expect(useAgentComposerStore().submission).toBeNull()
-  })
-
-  it.for([
-    {
-      composer: 'text',
-      fill: () => useAgentComposerStore().setText('something newer')
-    },
-    {
-      composer: 'a reference',
-      fill: () => {
-        const composer = useAgentComposerStore()
-        composer.setSkillScope('scope')
-        composer.restorePrompt({
-          text: '',
-          references: [
-            {
-              kind: 'skill',
-              name: 'portrait',
-              description: '',
-              scope: 'scope',
-              textOffset: 0
-            }
-          ]
-        })
-        expect(composer.prompt.references).toHaveLength(1)
+        expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
       }
-    }
-  ])(
-    'does not overwrite $composer already in the composer',
-    async ({ fill }) => {
+    )
+
+    it('saves consent once after the reload and then restores the draft', async () => {
       signedIn()
-      fill()
-      const before = useAgentComposerStore().prompt
       scopeResolves()
-      vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
+      let finishSave = (_saved: boolean) => {}
+      const accept = vi
+        .spyOn(useAgentConsentStore(), 'accept')
+        .mockReturnValueOnce(new Promise((resolve) => (finishSave = resolve)))
+
+      const resume = useAgentConsent().resumeAcceptAfterReload('make it blue')
+      await vi.waitFor(() => expect(accept).toHaveBeenCalledOnce())
+      expect(useAgentComposerStore().draft).toBe('')
+
+      finishSave(true)
+      await resume
+      expect(accept).toHaveBeenCalledExactlyOnceWith('account-a/workspace-a')
+      expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
+        [{ decision: 'accepted', save_error_shown: false }]
+      ])
+      expect(useAgentComposerStore().draft).toBe('make it blue')
+      expect(useAgentComposerStore().submission).toBeNull()
+    })
+
+    it.for([
+      {
+        composer: 'text',
+        fill: () => useAgentComposerStore().setText('something newer')
+      },
+      {
+        composer: 'a reference',
+        fill: () => {
+          const composer = useAgentComposerStore()
+          composer.setSkillScope('scope')
+          composer.restorePrompt({
+            text: '',
+            references: [
+              {
+                kind: 'skill',
+                name: 'portrait',
+                description: '',
+                scope: 'scope',
+                textOffset: 0
+              }
+            ]
+          })
+          expect(composer.prompt.references).toHaveLength(1)
+        }
+      }
+    ])(
+      'does not overwrite $composer already in the composer',
+      async ({ fill }) => {
+        signedIn()
+        fill()
+        const before = useAgentComposerStore().prompt
+        scopeResolves()
+        vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
+
+        await useAgentConsent().resumeAcceptAfterReload('make it blue')
+
+        expect(useAgentComposerStore().prompt).toEqual(before)
+        expect(useAgentConsentStore().accept).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('reports a failed save after the reload and still restores the draft', async () => {
+      signedIn()
+      scopeResolves()
+      const error = new Error('save failed')
+      vi.spyOn(useAgentConsentStore(), 'accept').mockRejectedValueOnce(error)
 
       await useAgentConsent().resumeAcceptAfterReload('make it blue')
 
-      expect(useAgentComposerStore().prompt).toEqual(before)
-      expect(useAgentConsentStore().accept).toHaveBeenCalledOnce()
-    }
-  )
-
-  it('reports a failed save after the reload and still restores the draft', async () => {
-    signedIn()
-    scopeResolves()
-    const error = new Error('save failed')
-    vi.spyOn(useAgentConsentStore(), 'accept').mockRejectedValueOnce(error)
-
-    await useAgentConsent().resumeAcceptAfterReload('make it blue')
-
-    expect(reportError).toHaveBeenCalledWith(error, {
-      surface: 'agent',
-      errorType: 'agent_consent_setting_write_failure'
+      expect(reportError).toHaveBeenCalledWith(error, {
+        surface: 'agent',
+        errorType: 'agent_consent_setting_write_failure'
+      })
+      expect(useAgentComposerStore().draft).toBe('make it blue')
     })
-    expect(useAgentComposerStore().draft).toBe('make it blue')
+
+    it('holds a Send made during the post-reload save until it settles, without a card', async () => {
+      signedIn()
+      const save = deferred<Response>()
+      fetchWithUnifiedRemint.mockImplementation(
+        async (_url: string, init: RequestInit) =>
+          init.method === 'POST' ? save.promise : settingResponse(false)
+      )
+      const resume = useAgentConsent().resumeAcceptAfterReload('old draft')
+      await vi.waitFor(() =>
+        expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({ method: 'POST' })
+        )
+      )
+
+      holdDraft('newer message')
+      const onSend = vi.fn()
+      const request = useAgentConsent().withConsent('first_message', onSend)
+      await setImmediate()
+      expect(useDialogStore().dialogStack).toHaveLength(0)
+      expect(onSend).not.toHaveBeenCalled()
+
+      save.resolve(savedResponse())
+      await Promise.all([resume, request])
+
+      expect(onSend).toHaveBeenCalledOnce()
+      expect(useDialogStore().dialogStack).toHaveLength(0)
+      expect(useAgentComposerStore().draft).toBe('')
+    })
   })
 })

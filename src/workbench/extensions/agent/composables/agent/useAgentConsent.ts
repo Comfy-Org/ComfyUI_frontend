@@ -1,3 +1,4 @@
+import { until } from '@vueuse/core'
 import { defineAsyncComponent, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
@@ -270,12 +271,18 @@ export function useAgentConsent() {
   }
 
   async function resumeAcceptAfterReload(draft: string): Promise<void> {
-    await saveAcceptanceAfterSignIn()
+    introductionStore.isContinuingSignIn = true
+    try {
+      await saveAcceptanceAfterSignIn()
+    } finally {
+      introductionStore.isContinuingSignIn = false
+    }
     if (
       draft &&
       !composerStore.draft &&
       composerStore.prompt.references.length === 0 &&
-      composerStore.attachments.length === 0
+      composerStore.attachments.length === 0 &&
+      !composerStore.submission
     )
       composerStore.restorePrompt({ text: draft, references: [] }, [])
   }
@@ -326,6 +333,8 @@ export function useAgentConsent() {
     onAccept: () => void,
     hooks: ConsentOfferHooks = {}
   ): Promise<void> {
+    if (introductionStore.isContinuingSignIn)
+      await until(() => introductionStore.isContinuingSignIn).toBe(false)
     const decisionIdentity = isLoggedIn.value
       ? await requestConsentForCurrentUser(trigger, hooks)
       : await acceptAfterSignIn(trigger, hooks)
