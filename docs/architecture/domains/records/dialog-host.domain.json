@@ -50,7 +50,12 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": ["agent", "bounding-boxes", "image-compositor", "settings"],
+  "allowedConsumers": [
+    "agent",
+    "bounding-boxes",
+    "image-compositor",
+    "settings"
+  ],
   "characterizationScenarios": [
     {
       "name": "Global dialog renders stacked dialogs and restores body pointer events on close",
