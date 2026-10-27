@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { getDroppedAsset } from '@/utils/eventUtils'
 
 import { startAssetDrag } from './assetDragUtil'
@@ -110,6 +112,33 @@ describe('asset drag media sources', () => {
         mediaUrl: media,
         previewUrl: poster
       })
+    }
+  )
+})
+
+describe('asset drag identity', () => {
+  it.for([
+    ['a subfolder', { subfolder: 'previews' }, 'previews/flat_temp.png [temp]'],
+    ['no subfolder', undefined, 'flat_temp.png [temp]'],
+    ['a non-string subfolder', { subfolder: 7 }, 'flat_temp.png [temp]']
+  ] as const)(
+    'drops a temp asset with no job and metadata naming %s at its own root and folder',
+    ([, user_metadata, written]) => {
+      const dataTransfer = new DataTransfer()
+      const event = new DragEvent('dragstart', { cancelable: true })
+      Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+
+      startAssetDrag(event, {
+        id: 'flat-temp-asset',
+        name: 'flat_temp.png',
+        tags: ['output', 'temp'],
+        created_at: '2026-10-21T00:00:00Z',
+        updated_at: '2026-10-21T00:00:00Z',
+        user_metadata
+      } satisfies AssetItem)
+      const dropped = parseAssetInfo(dataTransfer)
+
+      expect(dropped && createAnnotatedPath(dropped)).toBe(written)
     }
   )
 })

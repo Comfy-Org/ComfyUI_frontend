@@ -1,4 +1,5 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getOutputSubfolder } from '@/platform/assets/utils/assetMetadataUtils'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -78,11 +79,6 @@ export function isTempOutput(asset: AssetItem): boolean {
 const byIsTemp = (a: AssetItem, b: AssetItem): number =>
   Number(isTempOutput(b)) - Number(isTempOutput(a))
 
-function getOutputSubfolder(asset: AssetItem): string {
-  const subfolder = asset.user_metadata?.subfolder
-  return typeof subfolder === 'string' ? subfolder : ''
-}
-
 function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   const url = asset.preview_url ?? ''
@@ -94,7 +90,7 @@ function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
     format: metadata?.format,
     mediaType: getMediaTypeFromFilename(asset.name),
     nodeId: metadata?.nodeId ?? '',
-    subfolder: getOutputSubfolder(asset),
+    subfolder: getOutputSubfolder(asset.user_metadata) ?? '',
     type: isTempOutput(asset) ? 'temp' : 'output',
     url,
     previewUrl: asset.thumbnail_url ?? url

@@ -4,8 +4,11 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import {
+  FLAT_FOLDER_TEMP_ASSET,
   FLAT_TEMP_ASSET,
   STALE_TEMP_ASSET,
   TEMP_FOLDER_JOB_ID,
@@ -20,7 +23,21 @@ import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
+type Reveal = (tab: AssetsSidebarTab) => Promise<void>
+
+const asCard: Reveal = async () => {}
+const inExpandedStack =
+  (index: number): Reveal =>
+  (tab) =>
+    tab.expandOutputStack(index)
+
 const rootControls = (asset: Asset) => [`${asset.hash} [output]`, asset.name]
+const folderControls = (asset: Asset) => [
+  `previews/${asset.hash} [output]`,
+  `previews/${asset.hash} [input]`,
+  `previews/${asset.name} [output]`,
+  `previews/${asset.name} [input]`
+]
 const controlTitle = (index: number) => `Survivor control ${index + 1}`
 
 test.use({
@@ -36,9 +53,10 @@ test.beforeEach(async ({ comfyPage }) => {
       FLAT_TEMP_ASSET,
       TEMP_FOLDER_SAVED,
       TEMP_FOLDER_PREVIEW,
-      TEMP_FOLDER_SINGLE
+      TEMP_FOLDER_SINGLE,
+      FLAT_FOLDER_TEMP_ASSET
     ],
-    total: 7,
+    total: 8,
     has_more: false
   })
   for (const [jobId, jobAssets] of [
@@ -72,172 +90,232 @@ test.beforeEach(async ({ comfyPage }) => {
   )
 })
 
+async function addControls(comfyPage: ComfyPage, values: string[]) {
+  await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+  await comfyPage.page.evaluate(
+    ({ titles, values }) => {
+      const graph = window.app!.graph
+      const [first] = graph.findNodesByType('LoadImage')
+      titles.forEach((title, index) => {
+        const node = window.LiteGraph!.createNode('LoadImage')
+        if (!node) throw new Error('LoadImage could not be created')
+        node.title = title
+        node.pos = [first.pos[0] + 400 * (index + 1), first.pos[1]]
+        graph.add(node)
+        const widget = node.widgets?.find((w) => w.name === 'image')
+        if (!widget) throw new Error('Load Image widget not found')
+        widget.value = values[index]
+      })
+    },
+    { titles: values.map((_, index) => controlTitle(index)), values }
+  )
+}
+
+async function controlRefs(comfyPage: ComfyPage, count: number) {
+  return Promise.all(
+    Array.from(
+      { length: count },
+      async (_, index) =>
+        (await comfyPage.nodeOps.getNodeRefsByTitle(controlTitle(index)))[0]
+    )
+  )
+}
+
+async function openAssetRow(
+  comfyPage: ComfyPage,
+  asset: Asset,
+  reveal: Reveal
+) {
+  const tab = comfyPage.menu.assetsTab
+  await tab.open()
+  await tab.openSettingsMenu()
+  await tab.listViewOption.click()
+  await tab.closeSettingsMenu()
+  await reveal(tab)
+  const row = comfyPage.page.getByRole('button', {
+    name: `${asset.name} - image asset`,
+    exact: true
+  })
+  await expect(row).toBeVisible()
+  return row
+}
+
 for (const route of [
   {
     shape: 'a group card tagged output and temp',
     asset: STALE_TEMP_ASSET,
+    reveal: asCard,
     written: `${STALE_TEMP_ASSET.hash} [temp]`,
-    controls: rootControls(STALE_TEMP_ASSET),
-    expand: false
+    controls: rootControls(STALE_TEMP_ASSET)
   },
   {
     shape: 'an expanded-stack child at the root folder',
     asset: TEMP_STACK_PREVIEW,
+    reveal: inExpandedStack(1),
     written: `${TEMP_STACK_PREVIEW.name} [temp]`,
-    controls: rootControls(TEMP_STACK_PREVIEW),
-    expand: true
+    controls: rootControls(TEMP_STACK_PREVIEW)
   },
   {
-    shape: 'a card with no job tagged output and temp',
+    shape: 'a card with no job at the root folder',
     asset: FLAT_TEMP_ASSET,
+    reveal: asCard,
     written: `${FLAT_TEMP_ASSET.hash} [temp]`,
-    controls: rootControls(FLAT_TEMP_ASSET),
-    expand: false
+    controls: rootControls(FLAT_TEMP_ASSET)
   },
   {
-    shape: 'dropping an expanded-stack child',
-    asset: TEMP_STACK_PREVIEW,
-    written: `${TEMP_STACK_PREVIEW.name} [temp]`,
-    controls: rootControls(TEMP_STACK_PREVIEW),
-    expand: true,
-    drop: true
-  },
-  {
-    shape: 'dropping an expanded-stack child in a subfolder',
-    asset: TEMP_FOLDER_PREVIEW,
-    written: `previews/${TEMP_FOLDER_PREVIEW.name} [temp]`,
-    controls: [
-      `previews/${TEMP_FOLDER_PREVIEW.hash} [output]`,
-      `previews/${TEMP_FOLDER_PREVIEW.hash} [input]`,
-      `previews/${TEMP_FOLDER_PREVIEW.name} [output]`,
-      `previews/${TEMP_FOLDER_PREVIEW.name} [input]`
-    ],
-    expand: true,
-    drop: true
-  },
-  {
-    shape: 'dropping a card with no job',
-    asset: FLAT_TEMP_ASSET,
-    written: `${FLAT_TEMP_ASSET.name} [temp]`,
-    controls: rootControls(FLAT_TEMP_ASSET),
-    expand: false,
-    drop: true
+    shape: 'a card with no job whose metadata names only its subfolder',
+    asset: FLAT_FOLDER_TEMP_ASSET,
+    reveal: asCard,
+    written: `previews/${FLAT_FOLDER_TEMP_ASSET.hash} [temp]`,
+    controls: folderControls(FLAT_FOLDER_TEMP_ASSET)
   }
 ]) {
   test.describe(
-    `Temp asset ${route.drop ? 'written by' : 'inserted as a node from'} ${route.shape}${route.drop ? ' onto Load Image' : ''}, then deleted`,
-    { tag: route.drop ? ['@cloud', '@vue-nodes'] : ['@cloud'] },
+    `Temp asset inserted as a node from ${route.shape}, then deleted`,
+    { tag: ['@cloud'] },
     () => {
       test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-        await comfyPage.page.evaluate(
-          ({ titles, values }) => {
-            const graph = window.app!.graph
-            const [first] = graph.findNodesByType('LoadImage')
-            titles.forEach((title, index) => {
-              const node = window.LiteGraph!.createNode('LoadImage')
-              if (!node) throw new Error('LoadImage could not be created')
-              node.title = title
-              node.pos = [first.pos[0] + 400 * (index + 1), first.pos[1]]
-              graph.add(node)
-              const widget = node.widgets?.find((w) => w.name === 'image')
-              if (!widget) throw new Error('Load Image widget not found')
-              widget.value = values[index]
-            })
-          },
-          {
-            titles: route.controls.map((_, index) => controlTitle(index)),
-            values: route.controls
-          }
-        )
+        await addControls(comfyPage, route.controls)
       })
 
-      test('writes the temp root and deleting the asset clears only that reference', async ({
+      test('writes the temp root and folder, and deleting the asset clears only that reference', async ({
         comfyPage
       }) => {
-        const controls = await Promise.all(
-          route.controls.map(
-            async (_, index) =>
-              (
-                await comfyPage.nodeOps.getNodeRefsByTitle(controlTitle(index))
-              )[0]
-          )
-        )
-        const controlValues = () =>
-          Promise.all(
-            controls.map(async (node) =>
-              (await node.getWidgetByName('image')).getValue()
-            )
-          )
-        const [target] =
-          await comfyPage.nodeOps.getNodeRefsByTitle('Load Image')
+        const controls = await controlRefs(comfyPage, route.controls.length)
+        const existing = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+        const row = await openAssetRow(comfyPage, route.asset, route.reveal)
         const tab = comfyPage.menu.assetsTab
-        await tab.open()
-        await tab.openSettingsMenu()
-        await tab.listViewOption.click()
-        await tab.closeSettingsMenu()
-        if (route.expand)
-          await tab.expandOutputStack(
-            route.asset.job_id === TEMP_FOLDER_JOB_ID ? 0 : 1
-          )
-        const row = comfyPage.page.getByRole('button', {
-          name: `${route.asset.name} - image asset`,
-          exact: true
-        })
-        await expect(row).toBeVisible()
 
-        const written = await test.step('Write the reference', async () => {
-          if (route.drop) {
-            await target.centerOnNode()
-            await row.dragTo(comfyPage.vueNodes.getNodeByTitle('Load Image'))
-            return target
-          }
-          await row.click({ button: 'right' })
-          await tab.contextMenuItem('Insert as node in workflow').click()
-          await expect
-            .poll(
-              async () =>
-                (await comfyPage.nodeOps.getNodeRefsByType('LoadImage')).length
-            )
-            .toBe(route.controls.length + 2)
-          const inserted = (
-            await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-          ).find(
-            (node) =>
-              node.id !== target.id &&
-              controls.every((control) => control.id !== node.id)
+        await row.click({ button: 'right' })
+        await tab.contextMenuItem('Insert as node in workflow').click()
+        await expect
+          .poll(
+            async () =>
+              (await comfyPage.nodeOps.getNodeRefsByType('LoadImage')).length
           )
-          if (!inserted) throw new Error('Inserted Load Image node not found')
-          return inserted
-        })
-
-        const writtenWidget = await written.getWidgetByName('image')
-        const writtenPreviewCount = () =>
+          .toBe(existing.length + 1)
+        const inserted = (
+          await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+        ).find((node) => existing.every(({ id }) => id !== node.id))
+        if (!inserted) throw new Error('Inserted Load Image node not found')
+        const insertedWidget = await inserted.getWidgetByName('image')
+        const insertedPreviewCount = () =>
           comfyPage.page.evaluate(
             (id) => window.app!.graph.getNodeById(id)?.imgs?.length ?? 0,
-            written.id
+            inserted.id
           )
-        await expect.poll(() => writtenWidget.getValue()).toBe(route.written)
-        await expect.poll(writtenPreviewCount).toBeGreaterThan(0)
+        await expect.poll(() => insertedWidget.getValue()).toBe(route.written)
+        await expect.poll(insertedPreviewCount).toBeGreaterThan(0)
 
-        await test.step('Delete the asset from the same row', async () => {
-          const deleteRequest = comfyPage.page.waitForRequest(
-            (request) =>
-              request.method() === 'DELETE' &&
-              new URL(request.url()).pathname ===
-                `/api/assets/${route.asset.id}`
+        const deleteRequest = comfyPage.page.waitForRequest(
+          (request) =>
+            request.method() === 'DELETE' &&
+            new URL(request.url()).pathname === `/api/assets/${route.asset.id}`
+        )
+        await row.click({ button: 'right' })
+        await tab.contextMenuItem('Delete').click()
+        await comfyPage.confirmDialog.click('delete')
+        await deleteRequest
+
+        await expect.poll(() => insertedWidget.getValue()).toBe('')
+        await expect.poll(insertedPreviewCount).toBe(0)
+        await expect
+          .poll(() =>
+            Promise.all(
+              controls.map(async (node) =>
+                (await node.getWidgetByName('image')).getValue()
+              )
+            )
           )
-          await row.click({ button: 'right' })
-          await tab.contextMenuItem('Delete').click()
-          await comfyPage.confirmDialog.click('delete')
-          await deleteRequest
-        })
+          .toEqual(route.controls)
+        await openErrorsTab(comfyPage)
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.missingMediaRow)
+        ).toHaveText(['Load Image - image'])
+      })
+    }
+  )
+}
 
-        await expect.poll(() => writtenWidget.getValue()).toBe('')
-        await expect.poll(writtenPreviewCount).toBe(0)
-        await expect.poll(controlValues).toEqual(route.controls)
+for (const route of [
+  {
+    shape: 'an expanded-stack child at the root folder',
+    asset: TEMP_STACK_PREVIEW,
+    reveal: inExpandedStack(1),
+    written: `${TEMP_STACK_PREVIEW.name} [temp]`,
+    controls: rootControls(TEMP_STACK_PREVIEW)
+  },
+  {
+    shape: 'an expanded-stack child whose metadata names only its subfolder',
+    asset: TEMP_FOLDER_PREVIEW,
+    reveal: inExpandedStack(0),
+    written: `previews/${TEMP_FOLDER_PREVIEW.name} [temp]`,
+    controls: folderControls(TEMP_FOLDER_PREVIEW)
+  },
+  {
+    shape: 'a card with no job at the root folder',
+    asset: FLAT_TEMP_ASSET,
+    reveal: asCard,
+    written: `${FLAT_TEMP_ASSET.name} [temp]`,
+    controls: rootControls(FLAT_TEMP_ASSET)
+  },
+  {
+    shape: 'a card with no job whose metadata names only its subfolder',
+    asset: FLAT_FOLDER_TEMP_ASSET,
+    reveal: asCard,
+    written: `previews/${FLAT_FOLDER_TEMP_ASSET.name} [temp]`,
+    controls: folderControls(FLAT_FOLDER_TEMP_ASSET)
+  }
+]) {
+  test.describe(
+    `Temp asset dropped onto Load Image from ${route.shape}, then deleted`,
+    { tag: ['@cloud', '@vue-nodes'] },
+    () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await addControls(comfyPage, route.controls)
+      })
 
-        if (route.drop) return
+      test('writes the temp root and folder, and deleting the asset clears only that reference', async ({
+        comfyPage
+      }) => {
+        const controls = await controlRefs(comfyPage, route.controls.length)
+        const [target] =
+          await comfyPage.nodeOps.getNodeRefsByTitle('Load Image')
+        const targetWidget = await target.getWidgetByName('image')
+        const targetPreviewCount = () =>
+          comfyPage.page.evaluate(
+            (id) => window.app!.graph.getNodeById(id)?.imgs?.length ?? 0,
+            target.id
+          )
+        const row = await openAssetRow(comfyPage, route.asset, route.reveal)
+        const tab = comfyPage.menu.assetsTab
+
+        await target.centerOnNode()
+        await row.dragTo(comfyPage.vueNodes.getNodeByTitle('Load Image'))
+        await expect.poll(() => targetWidget.getValue()).toBe(route.written)
+        await expect.poll(targetPreviewCount).toBeGreaterThan(0)
+
+        const deleteRequest = comfyPage.page.waitForRequest(
+          (request) =>
+            request.method() === 'DELETE' &&
+            new URL(request.url()).pathname === `/api/assets/${route.asset.id}`
+        )
+        await row.click({ button: 'right' })
+        await tab.contextMenuItem('Delete').click()
+        await comfyPage.confirmDialog.click('delete')
+        await deleteRequest
+
+        await expect.poll(() => targetWidget.getValue()).toBe('')
+        await expect.poll(targetPreviewCount).toBe(0)
+        await expect
+          .poll(() =>
+            Promise.all(
+              controls.map(async (node) =>
+                (await node.getWidgetByName('image')).getValue()
+              )
+            )
+          )
+          .toEqual(route.controls)
         await openErrorsTab(comfyPage)
         await expect(
           comfyPage.page.getByTestId(TestIds.dialogs.missingMediaRow)
@@ -254,9 +332,14 @@ for (const option of [
     written: `${STALE_TEMP_ASSET.hash} [temp]`
   },
   {
-    shape: 'a group card in a subfolder',
+    shape: 'a group card whose metadata names only its subfolder',
     asset: TEMP_FOLDER_SINGLE,
     written: `previews/${TEMP_FOLDER_SINGLE.hash} [temp]`
+  },
+  {
+    shape: 'a card with no job whose metadata names only its subfolder',
+    asset: FLAT_FOLDER_TEMP_ASSET,
+    written: `previews/${FLAT_FOLDER_TEMP_ASSET.hash} [temp]`
   }
 ]) {
   test.describe(
@@ -280,18 +363,9 @@ for (const option of [
         await dropdown.selectOption(`${option.asset.name} [temp]`)
         await expect.poll(() => imageWidget.getValue()).toBe(option.written)
 
-        const tab = comfyPage.menu.assetsTab
-        await tab.open()
-        await tab.openSettingsMenu()
-        await tab.listViewOption.click()
-        await tab.closeSettingsMenu()
-        await comfyPage.page
-          .getByRole('button', {
-            name: `${option.asset.name} - image asset`,
-            exact: true
-          })
-          .click({ button: 'right' })
-        await tab.contextMenuItem('Delete').click()
+        const row = await openAssetRow(comfyPage, option.asset, asCard)
+        await row.click({ button: 'right' })
+        await comfyPage.menu.assetsTab.contextMenuItem('Delete').click()
         await comfyPage.confirmDialog.click('delete')
 
         await expect.poll(() => imageWidget.getValue()).toBe('')

@@ -15,7 +15,8 @@ import {
   getAssetDisplayFilename,
   getAssetDisplayName,
   getAssetFilename,
-  getAssetUrlFilename
+  getAssetUrlFilename,
+  getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type {
   FilterOption,
@@ -223,7 +224,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const filenameForUrl = getAssetUrlFilename(asset)
-      const subfolder = getOutputAssetMetadata(asset.user_metadata)?.subfolder
+      const subfolder = getOutputSubfolder(asset.user_metadata)
       const pathWithSubfolder = subfolder
         ? `${subfolder}/${filenameForUrl}`
         : filenameForUrl

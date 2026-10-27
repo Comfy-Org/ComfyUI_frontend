@@ -500,3 +500,15 @@ export const TEMP_FOLDER_SINGLE: Asset = createOutputAsset({
   updated_at: '2026-10-23T00:00:00.000Z',
   last_access_time: '2026-10-23T00:00:00.000Z'
 })
+
+/** No job; names its folder only in `user_metadata.subfolder`. */
+export const FLAT_FOLDER_TEMP_ASSET: Asset = createOutputAsset({
+  id: 'b5b5b5b5-b5b5-45b5-b5b5-b5b5b5b5b5b5',
+  name: 'flat_folder.png',
+  hash: 'blake3:b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5',
+  tags: ['output', 'temp'],
+  user_metadata: { subfolder: 'previews' },
+  created_at: '2026-10-24T00:00:00.000Z',
+  updated_at: '2026-10-24T00:00:00.000Z',
+  last_access_time: '2026-10-24T00:00:00.000Z'
+})

@@ -25,7 +25,8 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   getAssetDisplayName,
-  getAssetStoredFilename
+  getAssetStoredFilename,
+  getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { getAssetType } from '@/platform/assets/utils/assetTypeUtil'
 import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
@@ -51,12 +52,11 @@ import type { AssetDownload } from './useAssetDownload'
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
 function createAssetWidgetPath(asset: AssetItem): string {
-  const metadata = getOutputAssetMetadata(asset.user_metadata)
   const assetType = isTempOutput(asset) ? 'temp' : getAssetType(asset, 'input')
 
   return createAnnotatedPath({
     filename: getAssetStoredFilename(asset),
-    subfolder: metadata?.subfolder ?? '',
+    subfolder: getOutputSubfolder(asset.user_metadata) ?? '',
     type: isResultItemType(assetType) ? assetType : undefined
   })
 }
@@ -628,7 +628,7 @@ export function useMediaAssetActions() {
           isTempOutput(asset)
             ? 'temp'
             : (stored?.type ?? getAssetType(asset, 'input')),
-          metadata?.subfolder,
+          getOutputSubfolder(asset.user_metadata),
           asset.hash ?? stored?.hash
         )
         return [

@@ -532,6 +532,28 @@ describe('useWidgetSelectItems', () => {
       }
     )
 
+    it('prefixes the subfolder of a temp output with no job whose metadata names only the subfolder', async () => {
+      mockMediaAssets.items.value = [
+        fromPartial({
+          id: 'flat-temp-asset',
+          name: 'flat_temp.png',
+          hash: 'blake3:ff34ab12.png',
+          tags: ['output', 'temp'],
+          user_metadata: { subfolder: 'previews' }
+        })
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({ values: () => [], modelValue: ref('') })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value.map((item) => item.name)).toEqual([
+        'previews/blake3:ff34ab12.png [temp]'
+      ])
+    })
+
     it('prefixes the subfolder onto a temp image output listed by hash', async () => {
       mockMediaAssets.items.value = [
         fromPartial({

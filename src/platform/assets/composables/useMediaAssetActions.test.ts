@@ -388,14 +388,12 @@ describe('useMediaAssetActions', () => {
       it('annotates a single output asset with its metadata subfolder', async () => {
         const addedNodes = captureAddedNodes()
         mockGetAssetType.mockReturnValue('output')
-        mockGetOutputAssetMetadata.mockReturnValue({
-          subfolder: 'runs/2026'
-        })
         const actions = useMediaAssetActions()
 
         await actions.addWorkflow(
           createMockAsset({
-            name: 'generated.png'
+            name: 'generated.png',
+            user_metadata: { subfolder: 'runs/2026' }
           })
         )
 
@@ -1932,14 +1930,12 @@ describe('useMediaAssetActions', () => {
     it('emits the [output]-annotated variant for output assets, including subfolder', async () => {
       mockDeleteAsset.mockResolvedValue(undefined)
       mockGetAssetType.mockReturnValue('output')
-      mockGetOutputAssetMetadata.mockReturnValue({
-        subfolder: 'outputs/2025'
-      })
       const actions = useMediaAssetActions()
       const asset = createMockAsset({
         id: 'asset-output',
         name: 'gen.png',
-        tags: ['output']
+        tags: ['output'],
+        user_metadata: { subfolder: 'outputs/2025' }
       })
 
       await actions.deleteAssets(asset)
@@ -2307,6 +2303,72 @@ describe('useMediaAssetActions', () => {
         kept('ff34ab12.png'),
         kept('flat_temp.png [input]')
       ])
+    })
+
+    describe('a temp asset with no job whose metadata names only its subfolder', () => {
+      const folderTempAsset = createMockAsset({
+        id: 'folder-temp-asset',
+        name: 'flat_temp.png',
+        hash: 'ff34ab12.png',
+        tags: ['output', 'temp'],
+        user_metadata: { subfolder: 'previews' }
+      })
+
+      beforeEach(() => {
+        mockGetOutputAssetMetadata.mockReturnValue(null)
+      })
+
+      it.for([
+        [
+          'inserted as a node',
+          async (asset: AssetItem) => {
+            const { actions } = mountMediaActions()
+            await actions.addWorkflow(asset)
+            return { actions, nodes: [...graph.nodes] }
+          }
+        ],
+        ['inserted in bulk', (asset: AssetItem) => addReferencesTo([asset])]
+      ] as const)(
+        'is %s at its folder and temp root, and deleting it clears only that reference',
+        async ([, insert]) => {
+          const { actions, nodes } = await insert(folderTempAsset)
+          const survivors = [
+            addLoadImageNode('previews/ff34ab12.png [output]'),
+            addLoadImageNode('previews/ff34ab12.png [input]'),
+            addLoadImageNode('previews/flat_temp.png [output]'),
+            addLoadImageNode('previews/flat_temp.png [input]')
+          ]
+
+          expect(nodes.map(serializedImageValue)).toEqual([
+            'previews/ff34ab12.png [temp]'
+          ])
+
+          await actions.deleteAssets(folderTempAsset)
+
+          expect(nodes.map(referenceState)).toEqual([
+            cleared('previews/ff34ab12.png [temp]')
+          ])
+          expect(survivors.map(referenceState)).toEqual([
+            kept('previews/ff34ab12.png [output]'),
+            kept('previews/ff34ab12.png [input]'),
+            kept('previews/flat_temp.png [output]'),
+            kept('previews/flat_temp.png [input]')
+          ])
+        }
+      )
+
+      it('deleting it clears a reference written at its folder by drag or dropdown', async () => {
+        const dropped = addLoadImageNode('previews/flat_temp.png [temp]')
+        const selected = addLoadImageNode('previews/ff34ab12.png [temp]')
+        const { actions } = mountMediaActions()
+
+        await actions.deleteAssets(folderTempAsset)
+
+        expect([dropped, selected].map(referenceState)).toEqual([
+          cleared('previews/flat_temp.png [temp]'),
+          cleared('previews/ff34ab12.png [temp]')
+        ])
+      })
     })
 
     describe('references written from an expanded-stack child', () => {
