@@ -19,11 +19,6 @@ import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import {
-  isInGraphLoadHook,
-  rejectGraphLoadFromHook,
-  rejectGraphLoadFromHookOrigin
-} from '@/scripts/graphLoadGuard'
 import { registerApp } from '@/scripts/appRegistry'
 import {
   clipspace,
@@ -104,7 +99,15 @@ import { useAccountPreconditionDialog } from '@/platform/billing/subscription/co
 import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
-import { useExtensionService } from '@/services/extensionService'
+import {
+  isGraphLoadHookActive,
+  useExtensionService
+} from '@/services/extensionService'
+import { beginChangeCaptureSuppression } from '@/services/changeCaptureSuppression'
+import {
+  isGraphLoadFailurePresented,
+  markGraphLoadFailurePresented
+} from '@/services/graphLoadFailure'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -341,16 +344,6 @@ function toNodeDefs(response: unknown): Record<string, ComfyNodeDefV1> {
   )
   setBackendNodeText(Object.values(defs))
   return _.mapValues(defs, (def) => translateNodeDef(def))
-}
-
-const presentedGraphLoadFailures = new WeakSet<object>()
-
-function wasGraphLoadFailurePresented(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    presentedGraphLoadFailures.has(error)
-  )
 }
 
 export class ComfyApp implements IComfyApp {
@@ -725,7 +718,7 @@ export class ComfyApp implements IComfyApp {
         }
         useWorkflowService().showPendingWarnings()
       } catch (error: unknown) {
-        if (wasGraphLoadFailurePresented(error)) return
+        if (isGraphLoadFailurePresented(error)) return
         useToast().warning(
           t('toastMessages.dropFileError', {
             error: getErrorMessage(error) ?? t('g.unknownError')
@@ -1176,30 +1169,23 @@ export class ComfyApp implements IComfyApp {
     }
   }
 
-  /**
-   * Shared failure reporting for a graph load that cannot proceed: shows the
-   * load-error dialog, logs it, and notifies `onGraphLoadError` so any
-   * loading-state a `beforeLoadGraph` listener opened for this same load is
-   * closed out, exactly as if `rootGraph.configure` itself had thrown.
-   * Callers still decide what to return/rethrow.
-   */
   private async reportGraphLoadFailure(
     error: unknown,
     options: { notifyExtensions?: boolean } = {}
-  ): Promise<void> {
+  ): Promise<Error> {
     const { notifyExtensions = true } = options
-    if (typeof error === 'object' && error !== null)
-      presentedGraphLoadFailures.add(error)
-    useDialogService().showErrorDialog(error, {
+    const failure = markGraphLoadFailurePresented(error)
+    useDialogService().showErrorDialog(failure, {
       title: t('errorDialog.loadWorkflowTitle'),
       reportType: 'loadWorkflowError'
     })
-    console.error(error)
+    console.error(failure)
     if (notifyExtensions)
       await useExtensionService().invokeExtensionsAsync(
         'onGraphLoadError',
-        error
+        failure
       )
+    return failure
   }
 
   private enqueueGraphLoad<T>(operation: () => Promise<T>): Promise<T> {
@@ -1218,7 +1204,7 @@ export class ComfyApp implements IComfyApp {
     workflow: string | null | ComfyWorkflow = null,
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
-    rejectGraphLoadFromHook()
+    if (isGraphLoadHookActive()) return false
     return this.enqueueGraphLoad(() =>
       this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
     )
@@ -1243,9 +1229,8 @@ export class ComfyApp implements IComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
-    useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-
+    useWorkflowService().beforeLoadNewGraph(clean)
     ChangeTracker.isLoadingGraph = true
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
@@ -2130,7 +2115,7 @@ export class ComfyApp implements IComfyApp {
       onNodeCreated?: (node: LGraphNode) => void
     }
   ) {
-    const fromGraphLoadHook = isInGraphLoadHook()
+    const fromGraphLoadHook = isGraphLoadHookActive()
     const previousDiscovery = this.fileLoadDiscoveryQueue
     let releaseDiscovery!: () => void
     this.fileLoadDiscoveryQueue = new Promise<void>((resolve) => {
@@ -2173,9 +2158,8 @@ export class ComfyApp implements IComfyApp {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     const { workflow, prompt, parameters, templates } = workflowData ?? {}
 
-    rejectGraphLoadFromHookOrigin(
-      fromGraphLoadHook && Boolean(workflow || prompt || parameters)
-    )
+    if (fromGraphLoadHook && Boolean(workflow || prompt || parameters))
+      return false
 
     if (!(workflow || prompt || parameters || templates)) {
       const mediaNodeTypes: Record<string, [string, typeof pasteImageNode]> = {
@@ -2233,11 +2217,17 @@ export class ComfyApp implements IComfyApp {
           !Array.isArray(workflowObj)
         ) {
           const graphData = workflowObj as ComfyWorkflowJSON
-          await this.loadGraphData(graphData, true, true, fileName, {
-            openSource,
-            deferWarnings: options?.deferWarnings
-          })
-          return
+          const outcome = await this.loadGraphData(
+            graphData,
+            true,
+            true,
+            fileName,
+            {
+              openSource,
+              deferWarnings: options?.deferWarnings
+            }
+          )
+          return outcome === false ? false : undefined
         } else {
           console.error(
             'Invalid workflow structure, trying parameters fallback'
@@ -2257,15 +2247,16 @@ export class ComfyApp implements IComfyApp {
             : prompt
         if (this.isApiJson(promptObj)) {
           try {
-            await this.loadApiJson(promptObj, fileName, {
+            const outcome = await this.loadApiJson(promptObj, fileName, {
               deferWarnings: options?.deferWarnings
             })
+            return outcome === false ? false : undefined
           } catch (err) {
             reportError(err, {
               surface: 'graph',
               errorType: 'api_prompt_load_failure'
             })
-            if (!wasGraphLoadFailurePresented(err))
+            if (!isGraphLoadFailurePresented(err))
               this.showErrorOnFileLoad(file)
           }
           return
@@ -2278,9 +2269,8 @@ export class ComfyApp implements IComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      rejectGraphLoadFromHook()
       return await this.enqueueGraphLoad(async () => {
-        const lifecycle = { started: false, completed: false }
+        const lifecycle = { started: false }
         let releaseCaptureSuppression: (() => void) | undefined
         try {
           const outcome = await importA1111(
@@ -2288,16 +2278,15 @@ export class ComfyApp implements IComfyApp {
             parameters,
             async () => {
               try {
-                useWorkflowService().beforeLoadNewGraph(false)
                 await useExtensionService().invokeExtensionsAsync(
                   'beforeLoadGraph'
                 )
                 lifecycle.started = true
+                useWorkflowService().beforeLoadNewGraph(false)
               } finally {
                 useMissingNodesErrorStore().setMissingNodeTypes([])
               }
-              releaseCaptureSuppression =
-                ChangeTracker.beginCaptureSuppression()
+              releaseCaptureSuppression = beginChangeCaptureSuppression()
               this.canvas.setGraph(this.rootGraph)
             }
           )
@@ -2331,13 +2320,10 @@ export class ComfyApp implements IComfyApp {
             this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
           )
           await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-          lifecycle.completed = true
           return
         } catch (error) {
-          if (lifecycle.started && !lifecycle.completed) {
-            await this.reportGraphLoadFailure(error)
-          }
-          throw error
+          if (!lifecycle.started) throw error
+          throw await this.reportGraphLoadFailure(error)
         } finally {
           releaseCaptureSuppression?.()
         }
@@ -2473,8 +2459,8 @@ export class ComfyApp implements IComfyApp {
     apiData: ComfyApiWorkflow,
     fileName: string,
     options: { deferWarnings?: boolean } = {}
-  ): Promise<void> {
-    rejectGraphLoadFromHook()
+  ): Promise<void | false> {
+    if (isGraphLoadHookActive()) return false
     return this.enqueueGraphLoad(() =>
       this.loadApiJsonNow(apiData, fileName, options)
     )
@@ -2485,13 +2471,14 @@ export class ComfyApp implements IComfyApp {
     fileName: string,
     options: { deferWarnings?: boolean }
   ): Promise<void> {
-    useWorkflowService().beforeLoadNewGraph(false)
     let lifecycleStarted = false
     let lifecycleCompleted = false
-    const releaseCaptureSuppression = ChangeTracker.beginCaptureSuppression()
+    let releaseCaptureSuppression: (() => void) | undefined
     try {
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
       lifecycleStarted = true
+      useWorkflowService().beforeLoadNewGraph(false)
+      releaseCaptureSuppression = beginChangeCaptureSuppression()
       this.canvas.setGraph(this.rootGraph)
       withGraphIntentSource('load', () => this.clean())
 
@@ -2627,8 +2614,8 @@ export class ComfyApp implements IComfyApp {
                         (inp) => inp.name === input
                       )
                     }
-                  } catch (_error) {
-                    // Conversion is best-effort; fall through to the widget.
+                  } catch {
+                    return false
                   }
                 }
                 if (toSlot === -1) return false
@@ -2697,13 +2684,14 @@ export class ComfyApp implements IComfyApp {
         this.showMissingNodesError(missingNodeTypes, options)
       }
     } catch (error) {
-      if (!lifecycleCompleted)
-        await this.reportGraphLoadFailure(error, {
+      if (!lifecycleCompleted) {
+        throw await this.reportGraphLoadFailure(error, {
           notifyExtensions: lifecycleStarted
         })
+      }
       throw error
     } finally {
-      releaseCaptureSuppression()
+      releaseCaptureSuppression?.()
     }
   }
 

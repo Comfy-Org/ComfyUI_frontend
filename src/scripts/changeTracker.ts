@@ -11,6 +11,7 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { reportWorkflowStateAnomaly } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { isChangeCaptureSuppressed } from '@/services/changeCaptureSuppression'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   collectSubgraphDefinitions,
@@ -334,7 +335,6 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
 
 export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
-  private static captureSuppressionDepth = 0
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.
    * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
@@ -344,20 +344,6 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   static isLoadingGraph = false
 
-  /**
-   * Stops capturing undo states until the returned release runs. Call it once
-   * graph replacement work can no longer be mistaken for a user edit; the
-   * outgoing workflow must already be flushed. Releasing twice is a no-op.
-   */
-  static beginCaptureSuppression(): () => void {
-    ChangeTracker.captureSuppressionDepth++
-    let released = false
-    return () => {
-      if (released) return
-      released = true
-      ChangeTracker.captureSuppressionDepth--
-    }
-  }
   /**
    * The active state of the workflow.
    */
@@ -522,7 +508,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
       isInsideChangeTransaction ||
       isUndoRedoing ||
       ChangeTracker.isLoadingGraph ||
-      ChangeTracker.captureSuppressionDepth > 0
+      isChangeCaptureSuppressed()
     )
       return
 
@@ -561,7 +547,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
     if (
       this !== useWorkflowStore().activeWorkflow?.changeTracker ||
       ChangeTracker.isLoadingGraph ||
-      ChangeTracker.captureSuppressionDepth > 0
+      isChangeCaptureSuppressed()
     )
       return
 

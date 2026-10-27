@@ -97,35 +97,26 @@ test.describe('Workflow load queue', { tag: '@vue-nodes' }, () => {
   }) => {
     const { page, vueNodes } = comfyPage
 
-    const result = await page.evaluate(
-      async ([nested, next]) => {
-        let nestedOutcome = 'not attempted'
-        let attempted = false
-        window.app!.registerExtension({
-          name: 'e2e.nestedLoadAfterAwait',
-          beforeLoadGraph: async (app) => {
-            if (attempted) return
-            attempted = true
-            await Promise.resolve()
-            try {
-              await app.loadGraphData(nested)
-              nestedOutcome = 'resolved'
-            } catch (error) {
-              nestedOutcome = (error as Error).message
-            }
-          }
-        })
+    const result = await page.evaluate(async (nested) => {
+      let nestedOutcome = 'not attempted'
+      let attempted = false
+      window.app!.registerExtension({
+        name: 'e2e.nestedLoadAfterAwait',
+        beforeLoadGraph: async (app) => {
+          if (attempted) return
+          attempted = true
+          await Promise.resolve()
+          const outcome = await app.loadGraphData(nested)
+          nestedOutcome = outcome === false ? 'refused' : 'resolved'
+        }
+      })
 
-        await window.app!.loadGraphData(nested)
-        await window.app!.loadGraphData(next)
-        return { nestedOutcome }
-      },
-      [noteWorkflow('nested workflow'), noteWorkflow('next workflow')] as const
-    )
+      await window.app!.loadGraphData(nested)
+      return { nestedOutcome }
+    }, noteWorkflow('nested workflow'))
+    await comfyPage.workflow.loadGraphData(noteWorkflow('next workflow'))
 
-    expect(result.nestedOutcome).toBe(
-      'A graph-load lifecycle hook cannot start a nested graph load'
-    )
+    expect(result.nestedOutcome).toBe('refused')
 
     await expect(vueNodes.nodes).toHaveCount(1)
     await expect(vueNodes.getNodeByTitle('next workflow').first()).toBeVisible()

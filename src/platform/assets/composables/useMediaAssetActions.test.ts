@@ -23,6 +23,7 @@ import { scanNodeMediaCandidates } from '@/platform/workflowErrors/missingMedia/
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
 import { useLitegraphService } from '@/services/litegraphService'
+import { markGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { clearDeletedAssetWidgetValues } from '@/platform/assets/utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '@/platform/assets/utils/clearNodePreviewCacheForValues'
@@ -562,6 +563,23 @@ describe('useMediaAssetActions', () => {
         expect.any(String),
         expect.objectContaining({ description: 'boom' })
       )
+    })
+
+    it('does not warn again when API graph failure was already presented', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'open.json'
+      })
+      mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
+      mockLoadApiJson.mockRejectedValueOnce(
+        markGraphLoadFailurePresented(new Error('boom'))
+      )
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(useToast().warning).not.toHaveBeenCalled()
+      expect(mockReportError).toHaveBeenCalledOnce()
     })
 
     it('warns when fetching the stored API graph fails', async () => {

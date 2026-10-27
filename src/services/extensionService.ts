@@ -15,10 +15,6 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { useApp } from '@/scripts/appInstance'
-import {
-  createGraphLoadHookDispatch,
-  duringGraphLoadHook
-} from '@/scripts/graphLoadGuard'
 import { provideExtensionService } from '@/services/extensionServiceAccess'
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
@@ -37,6 +33,53 @@ const graphLoadLifecycleHooks = new Set<string>([
   'afterLoadGraph',
   'onGraphLoadError'
 ] satisfies (keyof ComfyExtension)[])
+
+const graphLoadEntrypoints = [
+  'loadGraphData',
+  'loadApiJson'
+] satisfies (keyof ComfyApp)[]
+
+let graphLoadHookDepth = 0
+
+export function isGraphLoadHookActive(): boolean {
+  return graphLoadHookDepth > 0
+}
+
+async function runGraphLoadHookDispatch<T>(
+  operation: () => Promise<T>
+): Promise<T> {
+  graphLoadHookDepth++
+  try {
+    return await operation()
+  } finally {
+    graphLoadHookDepth--
+  }
+}
+
+function createGraphLoadHookDispatch(app: ComfyApp) {
+  let dispatching = true
+  const overrides = new Map<PropertyKey, unknown>()
+  for (const name of graphLoadEntrypoints) {
+    const original = app[name]
+    overrides.set(name, (...args: unknown[]) =>
+      dispatching ? Promise.resolve(false) : Reflect.apply(original, app, args)
+    )
+  }
+  const hookApp = new Proxy(app, {
+    get(target, property) {
+      const override = overrides.get(property)
+      if (override !== undefined) return override
+      const value: unknown = Reflect.get(target, property, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    }
+  })
+  return {
+    hookApp,
+    endDispatch: () => {
+      dispatching = false
+    }
+  }
+}
 
 type StartupHook =
   | 'init'
@@ -272,11 +315,10 @@ export const useExtensionService = () => {
       }
       return pending
     }
-    const pending = graphLoadDispatch
-      ? duringGraphLoadHook(invokeAll)
-      : invokeAll()
     try {
-      return await Promise.all(pending)
+      return graphLoadDispatch
+        ? await runGraphLoadHookDispatch(() => Promise.all(invokeAll()))
+        : await Promise.all(invokeAll())
     } finally {
       graphLoadDispatch?.endDispatch()
     }

@@ -17,6 +17,7 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -307,7 +308,11 @@ export function useMediaAssetActions() {
   const openApiPromptAsWorkflow = async (
     asset: AssetItem,
     filename: string
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<{
+    success: boolean
+    error?: string
+    errorPresentation?: 'handled'
+  }> => {
     try {
       const apiPrompt = await extractApiPromptFromAsset(asset)
       if (!app.isApiJson(apiPrompt)) return { success: false }
@@ -322,7 +327,10 @@ export function useMediaAssetActions() {
       })
       return {
         success: false,
-        error: error instanceof Error ? error.message : undefined
+        error: error instanceof Error ? error.message : undefined,
+        errorPresentation: isGraphLoadFailurePresented(error)
+          ? 'handled'
+          : undefined
       }
     }
   }
@@ -349,7 +357,11 @@ export function useMediaAssetActions() {
 
     const result = await openAssetWorkflow(targetAsset)
 
-    if (!result.success) {
+    if (
+      !result.success &&
+      (!('errorPresentation' in result) ||
+        result.errorPresentation !== 'handled')
+    ) {
       toast.warning(t('g.warning'), {
         description: result.error || t('mediaAsset.noWorkflowDataFound'),
         duration: 2000

@@ -163,35 +163,29 @@ describe('invokeExtensionsAsync', () => {
     {
       entrypoint: 'loadApiJson',
       call: (app: HookApp) => app.loadApiJson({}, 'nested.json')
-    },
-    {
-      entrypoint: 'handleFile',
-      call: (app: HookApp) => app.handleFile(new File([], 'nested.png'))
     }
   ]
 
   it.for(nestedEntrypoints)(
-    'rejects $entrypoint started directly in a graph-load hook',
+    'refuses $entrypoint started directly in a graph-load hook',
     async ({ call }) => {
       let nested: Promise<unknown> | undefined
       register({
         name: 'nested-loader',
         beforeLoadGraph: async (app: HookApp) => {
           nested = call(app)
-          await nested.catch(() => {})
+          await nested
         }
       })
 
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-      await expect(nested).rejects.toThrow(
-        'A graph-load lifecycle hook cannot start a nested graph load'
-      )
+      await expect(nested).resolves.toBe(false)
     }
   )
 
   it.for(nestedEntrypoints)(
-    'rejects $entrypoint started after an await in a graph-load hook',
+    'refuses $entrypoint started after an await in a graph-load hook',
     async ({ call }) => {
       let nested: Promise<unknown> | undefined
       register({
@@ -199,81 +193,51 @@ describe('invokeExtensionsAsync', () => {
         beforeLoadGraph: async (app: HookApp) => {
           await Promise.resolve()
           nested = call(app)
-          await nested.catch(() => {})
+          await nested
         }
       })
 
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-      await expect(nested).rejects.toThrow(
-        'A graph-load lifecycle hook cannot start a nested graph load'
-      )
+      await expect(nested).resolves.toBe(false)
     }
   )
 
-  it('rejects a nested load reached through the global app during dispatch', async () => {
+  it('refuses a nested load reached through the global app after an await', async () => {
     let nested: Promise<unknown> | undefined
     register({
       name: 'global-app-loader',
-      beforeLoadGraph: () => {
+      beforeLoadGraph: async () => {
+        await Promise.resolve()
         nested = useApp().loadGraphData()
-        nested.catch(() => {})
+        await nested
       }
     })
 
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-    await expect(nested).rejects.toThrow(
-      'A graph-load lifecycle hook cannot start a nested graph load'
-    )
+    await expect(nested).resolves.toBe(false)
   })
 
-  it('reports the hook that attempted the nested load in each rejection', async () => {
-    const rejections: unknown[] = []
-    register(
-      {
-        name: 'first-nested-loader',
-        beforeLoadGraph: async (app: HookApp) => {
-          await app.loadGraphData().catch((error: unknown) => {
-            rejections.push(error)
-          })
-        }
-      },
-      {
-        name: 'second-nested-loader',
-        beforeLoadGraph: async (app: HookApp) => {
-          await app.loadGraphData().catch((error: unknown) => {
-            rejections.push(error)
-          })
-        }
-      }
+  it('refuses a graph-bearing file reached through the global app', async () => {
+    const file = new File(
+      [JSON.stringify({ version: 0.4, nodes: [], links: [] })],
+      'nested.json',
+      { type: 'application/json' }
     )
-
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-
-    expect(rejections).toHaveLength(2)
-    expect(rejections[0]).not.toBe(rejections[1])
-  })
-
-  it('writes an entrypoint patch through to the real app', async () => {
-    const app = useApp()
-    const original = app.loadGraphData
+    let nested: Promise<unknown> | undefined
     register({
-      name: 'patching-extension',
-      beforeLoadGraph: (hookApp: HookApp) => {
-        hookApp.loadGraphData = async function (...args) {
-          return original.apply(this, args)
-        }
+      name: 'global-file-loader',
+      beforeLoadGraph: async () => {
+        await Promise.resolve()
+        nested = useApp().handleFile(file)
+        await nested
       }
     })
 
-    try {
-      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-      expect(app.loadGraphData).not.toBe(original)
-    } finally {
-      app.loadGraphData = original
-    }
+    await expect(nested).resolves.toBe(false)
   })
 
   it('lets a retained hook app load once the hook dispatch has finished', async () => {
@@ -305,7 +269,8 @@ describe('invokeExtensionsAsync', () => {
       beforeLoadGraph: (hookApp: HookApp) => {
         const retained = hookApp.loadGraphData
         hookApp.loadGraphData = async function (...args) {
-          return retained.apply(this, args)
+          await retained.apply(this, args)
+          return false
         }
       }
     })
@@ -313,7 +278,7 @@ describe('invokeExtensionsAsync', () => {
     try {
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-      await expect(app.loadGraphData()).resolves.toBeUndefined()
+      await expect(app.loadGraphData()).resolves.toBe(false)
       expect(loadGraphData).toHaveBeenCalledOnce()
     } finally {
       app.loadGraphData = original

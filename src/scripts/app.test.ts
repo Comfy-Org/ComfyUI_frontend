@@ -23,7 +23,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { markRaw, ref } from 'vue'
+import { effectScope, markRaw, ref } from 'vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -33,6 +33,7 @@ vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@/components/curve/types'
 import type { useExtensionService } from '@/services/extensionService'
+import { isGraphLoadHookActive } from '@/services/extensionService'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -57,7 +58,6 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { duringGraphLoadHook } from '@/scripts/graphLoadGuard'
 import {
   createTestCanvasElement,
   createTestDragAndScale,
@@ -84,6 +84,7 @@ import {
 } from '@/composables/usePaste'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { getFromPngFile } from '@/scripts/metadata/png'
 import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
 import * as missingMediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
@@ -193,6 +194,7 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
 }))
 
 vi.mock(import('@/services/extensionService'), () => ({
+  isGraphLoadHookActive: vi.fn(() => false),
   useExtensionService: vi.fn(() =>
     fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
   )
@@ -1182,16 +1184,6 @@ describe('ComfyApp', () => {
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
     })
 
-    it('rejects a graph load reached through the global app during a lifecycle hook', async () => {
-      await expect(
-        duringGraphLoadHook(() =>
-          app.loadGraphData(createWorkflowGraphData(), false)
-        )
-      ).rejects.toThrow(
-        'A graph-load lifecycle hook cannot start a nested graph load'
-      )
-    })
-
     it('closes a failed API JSON lifecycle and resumes undo capture', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
@@ -1237,40 +1229,58 @@ describe('ComfyApp', () => {
       ])
     })
 
-    it('does not capture an API import into the outgoing workflow', async () => {
-      app.canvasElRef.value = document.createElement('canvas')
-      const graph = new LGraph()
-      graph.add(new LGraphNode('outgoing'))
-      const previousGraph = singletonApp.rootGraphOrUndefined
-      onTestFinished(() => {
-        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
-      })
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
-      const outgoing = markLoaded(
-        new ComfyWorkflow({
-          path: 'workflows/outgoing-api.json',
-          modified: 0,
-          size: 0
+    it.for(['API JSON', 'A1111'])(
+      'does not capture a %s import into the outgoing workflow',
+      async (format) => {
+        onTestFinished(attachLegacyUI(singletonApp))
+        app.canvasElRef.value = document.createElement('canvas')
+        const graph = new LGraph()
+        graph.add(new LGraphNode('outgoing'))
+        const previousGraph = singletonApp.rootGraphOrUndefined
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
         })
-      )
-      const outgoingState = structuredClone(
-        graph.serialize()
-      ) as ComfyWorkflowJSON
-      const tracker = markRaw(new ChangeTracker(outgoing, outgoingState))
-      outgoing.changeTracker = tracker
-      useWorkflowStore().activeWorkflow = outgoing
-      mockExtensionService.invokeExtensionsAsync.mockImplementation(
-        async (hook) => {
-          if (hook === 'afterConfigureGraph') tracker.captureCanvasState()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const outgoing = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/outgoing-api.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        const outgoingState = structuredClone(
+          graph.serialize()
+        ) as ComfyWorkflowJSON
+        const tracker = markRaw(new ChangeTracker(outgoing, outgoingState))
+        outgoing.changeTracker = tracker
+        useWorkflowStore().activeWorkflow = outgoing
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (hook) => {
+            if (hook === 'afterConfigureGraph') tracker.captureCanvasState()
+          }
+        )
+
+        if (format === 'API JSON') {
+          await app.loadApiJson({}, 'empty.json')
+        } else {
+          vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+            parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+          })
+          mockImportA1111.mockImplementation(
+            async (incomingGraph, _parameters, beforeGraphClear) => {
+              await beforeGraphClear?.()
+              incomingGraph.clear()
+              return 'imported'
+            }
+          )
+          await app.handleFile(createTestFile('a1111.png', 'image/png'))
         }
-      )
 
-      await app.loadApiJson({}, 'empty.json')
-
-      expect(tracker.activeState).toEqual(outgoingState)
-      expect(tracker.undoQueue).toHaveLength(0)
-    })
+        expect(tracker.activeState).toEqual(outgoingState)
+        expect(tracker.undoQueue).toHaveLength(0)
+      }
+    )
 
     it.for([
       {
@@ -1293,7 +1303,7 @@ describe('ComfyApp', () => {
         }
       }
     ])(
-      'flushes a pending outgoing edit before a $path import clears the graph',
+      'flushes an outgoing edit made during $path preparation',
       async ({ load }) => {
         app.canvasElRef.value = document.createElement('canvas')
         const graph = new LGraph()
@@ -1325,12 +1335,17 @@ describe('ComfyApp', () => {
         )
         outgoing.changeTracker = tracker
         useWorkflowStore().activeWorkflow = outgoing
-        graph.nodes[0].title = 'edited-but-not-captured'
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (hook) => {
+            if (hook === 'beforeLoadGraph')
+              graph.nodes[0].title = 'edited-during-preparation'
+          }
+        )
 
         await load()
 
         expect(tracker.activeState.nodes.map((node) => node.title)).toEqual([
-          'edited-but-not-captured'
+          'edited-during-preparation'
         ])
       }
     )
@@ -3447,7 +3462,12 @@ describe('ComfyApp', () => {
 
     it('closes a failed import lifecycle and restores change tracking', async () => {
       const graph = new LGraph()
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+      })
       Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         parameters: 'positive\nNegative prompt: negative\nSteps: 20'
       })
@@ -3467,6 +3487,27 @@ describe('ComfyApp', () => {
           ([hook]) => hook
         )
       ).toEqual(['beforeLoadGraph', 'onGraphLoadError'])
+      onTestFinished(attachLegacyUI(singletonApp))
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/recovered-a1111.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const tracker = markRaw(
+        new ChangeTracker(
+          workflow,
+          structuredClone(graph.serialize()) as ComfyWorkflowJSON
+        )
+      )
+      workflow.changeTracker = tracker
+      useWorkflowStore().activeWorkflow = workflow
+      graph.add(new LGraphNode('after-a1111-failure'))
+      tracker.captureCanvasState()
+      expect(tracker.activeState.nodes.map((node) => node.title)).toEqual([
+        'after-a1111-failure'
+      ])
     })
   })
 
@@ -3599,43 +3640,46 @@ describe('ComfyApp', () => {
       const parsed = createWorkflowGraphData()
       parsed.extra = { marker: 'recovered' }
       vi.mocked(getWorkflowDataFromFile)
-        .mockRejectedValueOnce(new RangeError('truncated MP3'))
+        .mockImplementationOnce(async (file) => await getFromPngFile(file))
         .mockResolvedValueOnce({ workflow: parsed })
+      const pngSignature = new Uint8Array([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
+      ])
+      const truncatedPng = new Uint8Array(pngSignature.length + 1)
+      truncatedPng.set(pngSignature)
 
-      const failed = app.handleFile(createTestFile('broken.mp3', 'audio/mpeg'))
+      const failed = app.handleFile(
+        new File([truncatedPng], 'broken.png', { type: 'image/png' })
+      )
       const next = app.handleFile(
         createTestFile('next.json', 'application/json')
       )
 
-      await expect(failed).rejects.toThrow('truncated MP3')
+      await expect(failed).rejects.toThrow(RangeError)
       await next
 
       expect(app.rootGraph.extra).toMatchObject({ marker: 'recovered' })
     })
 
     it('allows a non-graph media file from a graph lifecycle hook', async () => {
+      vi.mocked(isGraphLoadHookActive).mockReturnValueOnce(true)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
       vi.mocked(createNode).mockResolvedValue(null)
 
       await expect(
-        duringGraphLoadHook(() =>
-          app.handleFile(createTestFile('preview.png', 'image/png'))
-        )
+        app.handleFile(createTestFile('preview.png', 'image/png'))
       ).resolves.toBeUndefined()
     })
 
-    it('rejects a graph-bearing file dropped during a lifecycle hook', async () => {
+    it('refuses a graph-bearing file from a graph lifecycle hook', async () => {
+      vi.mocked(isGraphLoadHookActive).mockReturnValueOnce(true)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         workflow: createWorkflowGraphData()
       })
 
       await expect(
-        duringGraphLoadHook(() =>
-          app.handleFile(createTestFile('nested.json', 'application/json'))
-        )
-      ).rejects.toThrow(
-        'A graph-load lifecycle hook cannot start a nested graph load'
-      )
+        app.handleFile(createTestFile('nested.json', 'application/json'))
+      ).resolves.toBe(false)
     })
 
     it('cleans before extensions prepare the incoming workflow', async () => {
@@ -4749,6 +4793,12 @@ describe('ComfyApp', () => {
   })
 
   describe('drop handler', () => {
+    function addScopedDropHandler() {
+      const scope = effectScope()
+      scope.run(() => app['addDropHandler']())
+      onTestFinished(() => scope.stop())
+    }
+
     it('syncs the drop position and waits for the replacement workflow before restoring warnings', async () => {
       const graphMouse: [number, number] = [-999, -999]
       const adjustMouseEvent = vi.fn((e: DragEvent) => {
@@ -4806,7 +4856,7 @@ describe('ComfyApp', () => {
       )
 
       try {
-        ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+        addScopedDropHandler()
 
         document.dispatchEvent(new DragEvent('drop'))
         await vi.waitFor(() => {
@@ -4840,7 +4890,7 @@ describe('ComfyApp', () => {
       vi.spyOn(litegraphUtil, 'isSelectOnly').mockReturnValue(true)
       const onDragDrop = vi.fn()
       app.dragOverNode = fromPartial({ onDragDrop })
-      app['addDropHandler']()
+      addScopedDropHandler()
 
       const event = new DragEvent('drop')
       const preventDefault = vi.spyOn(event, 'preventDefault')
@@ -4876,7 +4926,7 @@ describe('ComfyApp', () => {
         vi.mocked(reportError).mockImplementation(() => {})
         const noFiles = Promise.resolve<File[]>([])
         vi.mocked(extractFilesFromDragEvent).mockReturnValue(noFiles)
-        ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+        addScopedDropHandler()
 
         const dataTransfer = new DataTransfer()
         dataTransfer.setData(mime, 'https://example.com/content')
@@ -4902,22 +4952,34 @@ describe('ComfyApp', () => {
       {
         when: 'the failed import already reported itself',
         reachLifecycle: true,
-        warns: false
+        failure: new Error('A1111 import failed'),
+        expectedWarnings: 0
+      },
+      {
+        when: 'the reported import threw a primitive',
+        reachLifecycle: true,
+        failure: 'A1111 import failed',
+        expectedWarnings: 0
       },
       {
         when: 'the import failed before it reported anything',
         reachLifecycle: false,
-        warns: true
+        failure: new Error('A1111 import failed'),
+        expectedWarnings: 1
       }
     ])(
       'warns about a dropped file only when $when',
-      async ({ reachLifecycle, warns }) => {
+      async ({ reachLifecycle, failure, expectedWarnings }) => {
         app.canvas = fromPartial<LGraphCanvas>({
           ...createMockCanvas(),
           graph_mouse: [0, 0],
           adjustMouseEvent: vi.fn()
         })
         const graph = new LGraph()
+        const previousGraph = singletonApp.rootGraphOrUndefined
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+        })
         Reflect.set(app, 'rootGraphInternal', graph)
         Reflect.set(singletonApp, 'rootGraphInternal', graph)
         vi.mocked(extractFilesFromDragEvent).mockResolvedValue([
@@ -4929,10 +4991,19 @@ describe('ComfyApp', () => {
         mockImportA1111.mockImplementation(
           async (_graph, _parameters, beforeGraphClear) => {
             if (reachLifecycle) await beforeGraphClear?.()
-            throw new Error('A1111 import failed')
+            throw failure
           }
         )
-        ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+        const handleFile = app.handleFile.bind(app)
+        let dropFinished = false
+        vi.spyOn(app, 'handleFile').mockImplementation(async (...args) => {
+          try {
+            return await handleFile(...args)
+          } finally {
+            dropFinished = true
+          }
+        })
+        addScopedDropHandler()
 
         document.dispatchEvent(new DragEvent('drop'))
 
@@ -4945,18 +5016,8 @@ describe('ComfyApp', () => {
             .mock.calls.filter(([title]) =>
               title.includes('A1111 import failed')
             )
-        if (warns) {
-          await vi.waitFor(() => {
-            expect(droppedFileWarnings().length).toBeGreaterThan(0)
-          })
-        } else {
-          await vi.waitFor(() => {
-            expect(
-              mockExtensionService.invokeExtensionsAsync
-            ).toHaveBeenCalledWith('onGraphLoadError', expect.anything())
-          })
-          expect(droppedFileWarnings()).toEqual([])
-        }
+        await vi.waitFor(() => expect(dropFinished).toBe(true))
+        expect(droppedFileWarnings()).toHaveLength(expectedWarnings)
       }
     )
   })

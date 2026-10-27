@@ -14,6 +14,7 @@ import type {
 } from '@/platform/telemetry/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCommandStore } from '@/stores/commandStore'
+import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 
 import { api } from './api'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
@@ -43,7 +44,7 @@ export interface LegacyUIApp {
     options?: { intent?: WorkflowQueueIntent }
   ): Promise<boolean>
   showErrorOnFileLoad(file: File): void
-  handleFile(file: File, openSource?: WorkflowOpenSource): Promise<void>
+  handleFile(file: File, openSource?: WorkflowOpenSource): Promise<void | false>
   refreshComboInNodes(): Promise<void>
   openClipspace(): void
   clean(): void
@@ -386,7 +387,8 @@ export class ComfyUI {
             await this.app.handleFile(file, 'file_button')
           } catch (error) {
             console.error('Failed to load file:', error)
-            this.app.showErrorOnFileLoad(file)
+            if (!isGraphLoadFailurePresented(error))
+              this.app.showErrorOnFileLoad(file)
           } finally {
             fileInput.value = ''
           }
