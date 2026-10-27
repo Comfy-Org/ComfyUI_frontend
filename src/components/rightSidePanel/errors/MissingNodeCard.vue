@@ -1,5 +1,6 @@
 <template>
   <div data-testid="missing-node-card" class="px-3">
+    <MissingNodeDeploymentOffer v-if="isCloud" />
     <!-- Core node version warning (OSS only) -->
     <div
       v-if="!isCloud && hasMissingCoreNodes"
@@ -8,7 +9,7 @@
     >
       <i
         aria-hidden="true"
-        class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0 text-warning"
+        class="mt-0.5 icon-[lucide--triangle-alert] text-warning"
       />
       <div class="flex flex-col gap-1.5 text-xs/relaxed text-muted-foreground">
         <p class="m-0">
@@ -82,11 +83,7 @@
       @click="applyChanges()"
     >
       <DotSpinner v-if="isRestarting" duration="1s" :size="12" />
-      <i
-        v-else
-        aria-hidden="true"
-        class="icon-[lucide--refresh-cw] size-4 shrink-0"
-      />
+      <i v-else aria-hidden="true" class="icon-[lucide--refresh-cw]" />
       <span class="min-w-0 truncate">{{
         t('rightSidePanel.missingNodePacks.applyChanges')
       }}</span>
@@ -98,8 +95,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { compare, valid } from 'semver'
-import Button from '@/components/ui/button/Button.vue'
-import DotSpinner from '@/components/common/DotSpinner.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import { useApplyChanges } from '@/workbench/extensions/manager/composables/useApplyChanges'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { isCloud } from '@/platform/distribution/types'
@@ -110,6 +107,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import MissingPackGroupRow from '@/components/rightSidePanel/errors/MissingPackGroupRow.vue'
 import { someNodeTypeInSelection } from '@/components/rightSidePanel/errors/selectionEmphasis'
+import MissingNodeDeploymentOffer from '@/platform/workspace/components/MissingNodeDeploymentOffer.vue'
 
 const { showInfoButton, missingPackGroups } = defineProps<{
   showInfoButton: boolean

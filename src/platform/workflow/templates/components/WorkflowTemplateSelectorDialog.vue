@@ -34,7 +34,7 @@
           class="shrink-0 hover:bg-transparent"
           @click="onBackToTemplates"
         >
-          <i aria-hidden="true" class="icon-[lucide--arrow-left] size-4" />
+          <i aria-hidden="true" class="icon-[lucide--arrow-left]" />
           {{ pageTitle }}
         </Button>
       </nav>
@@ -286,7 +286,7 @@
                     class="not-group-hover/card:opacity-0"
                     @click.stop="openTutorial(template)"
                   >
-                    <i class="icon-[lucide--info] size-4" />
+                    <i class="icon-[lucide--info]" />
                   </Button>
                   <PaidTemplateBadge v-if="template.isPartnerNode" />
                 </template>
@@ -449,21 +449,21 @@ import {
 import { useI18n } from 'vue-i18n'
 import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
 
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
+import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
+import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
+import CardTop from '@comfyorg/design-system/content-card/CardTop'
 import Tag from '@/components/chip/Tag.vue'
 import PaidTemplateBadge from '@/platform/workflow/templates/components/PaidTemplateBadge.vue'
 import TemplateFilterControls from '@/platform/workflow/templates/components/TemplateFilterControls.vue'
 import WorkflowTemplateDetail from '@/platform/workflow/templates/components/WorkflowTemplateDetail.vue'
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import TemplatePreview from '@/platform/workflow/templates/components/thumbnails/TemplatePreview.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { selectCountBadgeClass } from '@comfyorg/design-system/select.variants'
-import type { SelectOption } from '@/components/ui/select/types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'

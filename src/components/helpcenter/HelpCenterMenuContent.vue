@@ -34,7 +34,7 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="ml-auto icon-[lucide--external-link] size-4 text-primary"
+            class="ml-auto icon-[lucide--external-link] text-primary"
           />
           <i
             v-if="menuItem.key === 'more'"
@@ -159,7 +159,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
+import PuzzleIcon from '@comfyorg/design-system/icon/PuzzleIcon'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'

@@ -7,7 +7,14 @@ import { useExtensionStore } from '@/stores/extensionStore'
 
 import type { ComfyExtension } from '@/types/comfy'
 
-import { isLoad3dNode, isThreeJsNode } from './nodeTypes'
+import { isThreeJsNode } from './nodeTypes'
+import { load3dSettings } from './load3dSettings'
+import { load3dWidgets } from './load3dWidgets'
+
+interface GraphNodeTypes {
+  nodes?: readonly { type?: unknown }[]
+  definitions?: { subgraphs?: readonly GraphNodeTypes[] }
+}
 
 let load3dExtensionsLoaded = false
 let load3dExtensionsLoading: Promise<ComfyExtension[] | undefined> | null = null
@@ -71,29 +78,73 @@ async function importLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
   return extensions.filter((extension) => isExtensionEnabled(extension.name))
 }
 
+function enableMeshUpload(nodeData: ComfyNodeDef) {
+  const modelFile = nodeData.input?.required?.model_file
+  if (!modelFile?.[1]) return
+  modelFile[1].mesh_upload = true
+  modelFile[1].upload_subfolder = '3d'
+}
+
+function addPreview3dInput(nodeData: ComfyNodeDef) {
+  const input = (nodeData.input ??= {})
+  ;(input.required ??= {}).image = ['PREVIEW_3D']
+}
+
+function addLoad3dAdvancedViewport(nodeData: ComfyNodeDef) {
+  enableMeshUpload(nodeData)
+  const required = nodeData.input?.required
+  if (required) required.viewport_state = ['LOAD_3D_ADVANCED', {}]
+}
+
+const nodeDefPatches: Record<string, (nodeData: ComfyNodeDef) => void> = {
+  Load3D: enableMeshUpload,
+  Load3DAdvanced: addLoad3dAdvancedViewport,
+  Preview3D: addPreview3dInput,
+  SaveGLB: addPreview3dInput
+}
+
+function containsThreeJsNode(graph: GraphNodeTypes): boolean {
+  return (
+    (graph.nodes ?? []).some(
+      ({ type }) => typeof type === 'string' && isThreeJsNode(type)
+    ) || (graph.definitions?.subgraphs ?? []).some(containsThreeJsNode)
+  )
+}
+
+async function replayNodeCreated(extension: ComfyExtension, node: LGraphNode) {
+  try {
+    await extension.nodeCreated?.(node, app)
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'error_replaying_3d_node_created',
+      surface: 'graph',
+      context: { extension: extension.name }
+    })
+  }
+}
+
 export const load3dLazyExtension: ComfyExtension = {
   name: 'Comfy.Load3DLazy',
+  settings: load3dSettings,
 
-  async beforeRegisterNodeDef(
-    nodeType: typeof LGraphNode,
-    nodeData: ComfyNodeDef
-  ) {
-    if (!isThreeJsNode(nodeData.name)) return
+  getCustomWidgets: () => load3dWidgets,
 
-    if (isLoad3dNode(nodeData.name)) {
-      if (nodeData.name === 'Load3D' || nodeData.name === 'Load3DAdvanced') {
-        const modelFile = nodeData.input?.required?.model_file
-        if (modelFile?.[1]) {
-          modelFile[1].mesh_upload = true
-          modelFile[1].upload_subfolder = '3d'
-        }
-      }
-    }
+  beforeRegisterNodeDef(_nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
+    nodeDefPatches[nodeData.name]?.(nodeData)
+  },
 
+  async beforeConfigureGraph(graphData) {
+    if (containsThreeJsNode(graphData)) await loadLoad3dExtensions()
+  },
+
+  async nodeCreated(node: LGraphNode) {
+    const { comfyClass } = node.constructor
+    if (!comfyClass || !isThreeJsNode(comfyClass)) return
     const newExtensions = await loadLoad3dExtensions()
-    if (!newExtensions) return
-    for (const ext of newExtensions) {
-      await ext.beforeRegisterNodeDef?.(nodeType, nodeData, app)
-    }
+    await Promise.all(
+      (newExtensions ?? []).map((extension) =>
+        replayNodeCreated(extension, node)
+      )
+    )
   }
 }

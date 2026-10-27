@@ -22,11 +22,11 @@ import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { isCloud } from '@/platform/distribution/types'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 const { t } = useI18n()
 
@@ -35,7 +35,7 @@ registerSubscribeToRunPrompt()
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMdOrLarger = breakpoints.greaterOrEqual('md')
 
-const { permissions } = useWorkspaceUI()
+const { permissions } = useBillingUI()
 const { showSubscriptionDialog } = useSubscriptionPaywall()
 const { trackRunButton } = useRunButtonTelemetry()
 

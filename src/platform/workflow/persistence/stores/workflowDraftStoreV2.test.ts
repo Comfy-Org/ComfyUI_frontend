@@ -122,6 +122,42 @@ describe('workflowDraftStoreV2', () => {
       expect(draft!.updatedAt).toEqual(expect.any(Number))
     })
 
+    it('retains CRDT lineage when draft content changes', () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/test.json'
+
+      store.saveDraft(path, '{"nodes":[]}', {
+        name: 'test',
+        isTemporary: true
+      })
+      store.setLineage(path, { workflowId: 'wf-1', lineageSeq: 12 })
+      store.saveDraft(path, '{"nodes":[1]}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      expect(store.getDraft(path)?.lineage).toEqual({
+        workflowId: 'wf-1',
+        lineageSeq: 12
+      })
+    })
+
+    it('does not rewrite a draft when its CRDT lineage is unchanged', () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/test.json'
+      const lineage = { workflowId: 'wf-1', lineageSeq: 12 }
+      store.saveDraft(path, '{"nodes":[]}', {
+        name: 'test',
+        isTemporary: true
+      })
+      store.setLineage(path, lineage)
+      const setItemSpy = vi.spyOn(localStorage, 'setItem')
+
+      store.setLineage(path, lineage)
+
+      expect(setItemSpy).not.toHaveBeenCalled()
+    })
+
     it('keeps payload updatedAt stable when only recency is refreshed', () => {
       const store = useWorkflowDraftStoreV2()
 
@@ -521,6 +557,25 @@ describe('workflowDraftStoreV2', () => {
       })
 
       expect(result).toBe(false)
+    })
+
+    it('does not apply a draft after its identity becomes stale', async () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/test.json', '{"nodes":[]}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      const result = await store.loadPersistedWorkflow({
+        preferredPath: 'workflows/test.json',
+        isCurrent: () => false
+      })
+      const { app } = (await vi.importMock('@/scripts/app')) as {
+        app: { loadGraphData: MockInstance }
+      }
+
+      expect(result).toBe(false)
+      expect(app.loadGraphData).not.toHaveBeenCalled()
     })
   })
 

@@ -8,10 +8,10 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
+import type { TeamCreditStops } from '@comfyorg/billing-core'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.PRICING
 
@@ -108,7 +108,7 @@ export function usePricingTableUrlLoader() {
   const router = useRouter()
   const subscriptionDialog = useSubscriptionDialog()
   const { teamCreditStops, fetchPlans } = useBillingContext()
-  const { permissions, canOpenPricingSurface } = useWorkspaceUI()
+  const { permissions, canOpenPricingSurface } = useBillingUI()
   const { initialize: initializeCapabilities } = useBillingCapabilities()
 
   /** Reads `?pricing=`, strips it, and opens the table when the gate allows. */

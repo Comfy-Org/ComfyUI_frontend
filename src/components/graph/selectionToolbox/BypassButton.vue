@@ -7,12 +7,12 @@
     class="hover:bg-secondary"
     @click="toggleBypass"
   >
-    <i class="icon-[lucide--redo-dot] size-4" />
+    <i class="icon-[lucide--redo-dot]" />
   </Button>
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCommandStore } from '@/stores/commandStore'
 
 const commandStore = useCommandStore()
