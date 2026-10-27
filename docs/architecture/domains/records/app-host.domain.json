@@ -125,7 +125,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["account"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
