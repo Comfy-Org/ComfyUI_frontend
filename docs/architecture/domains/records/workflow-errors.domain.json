@@ -80,9 +80,11 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/components/rightSidePanel/errors/LocateNodeButton.vue"
+  ],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["missing-media", "missing-models", "node-replacement"],
   "characterizationScenarios": [
     {
       "name": "Error groups classify execution errors, missing nodes, missing models, and swappable nodes",
