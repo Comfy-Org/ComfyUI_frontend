@@ -129,7 +129,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["ingest-api"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

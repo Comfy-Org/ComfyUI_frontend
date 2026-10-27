@@ -7,7 +7,7 @@ import type {
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -18,6 +18,7 @@ import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFail
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useDialogStore } from '@/stores/dialogStore'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import CancelSubscriptionDialogContent from './CancelSubscriptionDialogContent.vue'
 
@@ -89,7 +90,7 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -124,10 +125,13 @@ describe('CancelSubscriptionDialogContent', () => {
     useBillingRouting().shouldUseWorkspaceBilling = computed(
       () => mockShouldUseWorkspaceBilling.value
     )
-    const permissions = useWorkspaceUI().permissions.value
-    vi.mocked(useWorkspaceUI()).permissions = computed(() => ({
+    const permissions = useBillingUI().permissions.value
+    vi.mocked(useBillingUI()).permissions = computed(() => ({
       ...permissions,
-      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value
+      canManageSubscriptionLifecycle: receiveServerFact(
+        'can_manage_subscription',
+        mockCanManageSubscriptionLifecycle.value
+      )
     }))
     mockShouldUseWorkspaceBilling.value = false
     useBillingCapabilities().canCancel = computed(() => true)
