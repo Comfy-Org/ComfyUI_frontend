@@ -1,5 +1,5 @@
 <template>
-  <Popover v-model:open="upDirectionOpen">
+  <PopoverRoot v-model:open="upDirectionOpen">
     <PopoverTrigger as-child>
       <Button
         variant="textonly"
@@ -14,12 +14,7 @@
         <span v-if="!compact">{{ t('load3d.menuBar.upDirection') }}</span>
       </Button>
     </PopoverTrigger>
-    <PopoverContent
-      side="bottom"
-      align="start"
-      :side-offset="8"
-      :class="menuPanelClass"
-    >
+    <PopoverContent align="start" :side-offset="8" :class="menuPanelClass">
       <button
         v-for="d in upDirections"
         :key="d"
@@ -33,9 +28,9 @@
         {{ d.toUpperCase() }}
       </button>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 
-  <Popover v-if="materialModes.length" v-model:open="materialOpen">
+  <PopoverRoot v-if="materialModes.length" v-model:open="materialOpen">
     <PopoverTrigger as-child>
       <Button
         variant="textonly"
@@ -50,12 +45,7 @@
         <span v-if="!compact">{{ t('load3d.menuBar.material') }}</span>
       </Button>
     </PopoverTrigger>
-    <PopoverContent
-      side="bottom"
-      align="start"
-      :side-offset="8"
-      :class="menuPanelClass"
-    >
+    <PopoverContent align="start" :side-offset="8" :class="menuPanelClass">
       <button
         v-for="m in materialModes"
         :key="m"
@@ -69,7 +59,7 @@
         {{ t(`load3d.materialModes.${m}`) }}
       </button>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 
   <Button
     v-if="hasSkeleton"
@@ -89,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -100,13 +90,12 @@ import {
   menuPanelClass
 } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuButtonClass,
   selectedMenuButtonClass
-} from '@/components/ui/menu/menuStyles'
+} from '@comfyorg/design-system/lib/menu/menuStyles'
 import type {
   MaterialMode,
   ModelConfig,

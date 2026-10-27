@@ -93,11 +93,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import type { HSVA } from '@/utils/colorUtil'
 
 import ColorPickerSaturationValue from './ColorPickerSaturationValue.vue'

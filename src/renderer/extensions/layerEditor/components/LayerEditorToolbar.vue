@@ -25,7 +25,7 @@
       </ToggleGroupItem>
     </ToggleGroup>
 
-    <Popover v-model:open="zoomOpen">
+    <PopoverRoot v-model:open="zoomOpen">
       <PopoverTrigger as-child>
         <button
           :class="
@@ -43,7 +43,7 @@
       </PopoverTrigger>
       <PopoverContent
         :side-offset="8"
-        :class="cn(menuContentClass, 'z-overlay flex w-auto min-w-20 flex-col')"
+        :class="cn(menuContentClass, 'flex w-auto min-w-20 flex-col')"
       >
         <button
           v-for="item in zoomItems"
@@ -57,7 +57,7 @@
           {{ t('layerEditor.fitView') }}
         </button>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
     <button
       :class="toolButtonClass(false)"
@@ -91,18 +91,17 @@
 
 <script setup lang="ts">
 import type { AcceptableValue } from 'reka-ui'
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuContentClass,
   menuButtonClass
-} from '@/components/ui/menu/menuStyles'
-import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
-import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
+} from '@comfyorg/design-system/lib/menu/menuStyles'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useLayerEditorExport } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import { cn } from '@comfyorg/tailwind-utils'

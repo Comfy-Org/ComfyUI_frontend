@@ -592,6 +592,13 @@
       }
     },
     {
+      "files": ["packages/design-system/src/components/**"],
+      "rules": {
+        "comfy/no-relative-parent-paths": "error",
+        "import/no-relative-parent-imports": "error"
+      }
+    },
+    {
       "files": ["browser_tests/**/*.ts"],
       "excludeFiles": ["browser_tests/fixtures/networkIsolationFixture.ts"],
       "rules": {

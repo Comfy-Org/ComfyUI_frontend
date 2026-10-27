@@ -12,7 +12,7 @@ import { useI18n } from 'vue-i18n'
 import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import type { ModelThumbnailResult } from '@/extensions/core/load3d/components/modelThumbnail'
 import { generateModelThumbnail } from '@/extensions/core/load3d/components/modelThumbnail'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   findOutputAsset,
   findServerPreviewUrl,

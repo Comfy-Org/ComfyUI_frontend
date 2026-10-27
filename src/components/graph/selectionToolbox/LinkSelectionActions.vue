@@ -33,7 +33,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { areSelectedLinksHidden } from '@/lib/litegraph/src/canvas/linkSelection'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
