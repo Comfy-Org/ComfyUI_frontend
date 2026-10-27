@@ -633,6 +633,53 @@ describe('ComfyApp', () => {
       }
     )
 
+    it('keeps the graph awaiting node types when post-configure node resizing fails', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/reload.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const graph = new LGraph()
+      workflow.adoptGraph(graph)
+      useWorkflowStore().attachWorkflow(workflow)
+      Reflect.set(app, 'rootGraphInternal', graph)
+      graphsAwaitingNodeTypes.add(graph)
+      onTestFinished(() => {
+        graphsAwaitingNodeTypes.delete(graph)
+      })
+      graph.onConfigure = () => {
+        const [node] = graph.nodes
+        assert(node)
+        node.onResize = () => {
+          throw new Error('node resize failed')
+        }
+      }
+      const data = zComfyWorkflow.parse({
+        ...createWorkflowGraphData(),
+        nodes: [
+          {
+            id: 2,
+            type: 'test/ReloadNode',
+            pos: [0, 0],
+            size: [100, 100],
+            flags: {},
+            order: 0,
+            mode: 0,
+            properties: {}
+          }
+        ]
+      })
+
+      await expect(
+        app.loadGraphData(data, true, false, workflow)
+      ).rejects.toThrow('node resize failed')
+
+      expect(graphsAwaitingNodeTypes.has(graph)).toBe(true)
+    })
+
     it.for([
       {
         failingStep: 'configure',

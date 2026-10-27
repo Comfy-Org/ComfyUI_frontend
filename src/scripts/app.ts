@@ -1495,7 +1495,6 @@ export class ComfyApp implements IComfyApp {
         }
         try {
           graph.configure(graphData as ISerialisedGraph)
-          graphsAwaitingNodeTypes.delete(graph)
 
           const originalMainGraphRenderer = graph.extra.workflowRendererVersion
 
@@ -1619,6 +1618,7 @@ export class ComfyApp implements IComfyApp {
           graph !== this.rootGraph
         ) {
           workflow.changeTracker?.reset(configuredGraphData)
+          graphsAwaitingNodeTypes.delete(graph)
           return true
         }
 
@@ -1707,6 +1707,7 @@ export class ComfyApp implements IComfyApp {
         requestAnimationFrame(() => {
           this.canvas.setDirty(true, true)
         })
+        graphsAwaitingNodeTypes.delete(graph)
         return activatedWorkflow ?? true
       } finally {
         void useSubgraphNavigationStore().updateHash(
