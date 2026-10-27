@@ -82,6 +82,7 @@
               'max-w-(--reka-combobox-content-available-width) min-w-[min(var(--reka-combobox-trigger-width),var(--reka-combobox-content-available-width))]'
             )
           "
+          @keydown.capture="replayNavigationAfterPendingHighlight"
           @keydown.escape.stop="handleOpenChange(false)"
           @focus-outside="handleFocusOutside"
         >
@@ -368,6 +369,27 @@ function focusSearchInput() {
 
   input.focus({ preventScroll: true })
   return true
+}
+
+const NAVIGATION_KEYS = new Set([
+  'ArrowDown',
+  'ArrowUp',
+  'Home',
+  'End',
+  'PageDown',
+  'PageUp',
+  'Enter'
+])
+
+function replayNavigationAfterPendingHighlight(event: KeyboardEvent) {
+  if (!event.isTrusted || event.isComposing || !NAVIGATION_KEYS.has(event.key))
+    return
+  const { target } = event
+  event.preventDefault()
+  event.stopPropagation()
+  requestAnimationFrame(() =>
+    target?.dispatchEvent(new KeyboardEvent(event.type, event))
+  )
 }
 
 function handleOpenChange(open: boolean) {
