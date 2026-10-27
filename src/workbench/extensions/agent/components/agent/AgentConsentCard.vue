@@ -48,7 +48,7 @@ const FALLBACK_SHELL =
 const COPY_SHELL = 'my-0 text-sm/5 text-muted-foreground'
 const SECTION_SHELL = 'flex min-w-0 flex-col gap-3'
 const FOOTER_WIDE =
-  'flex min-w-0 flex-wrap items-end justify-between gap-x-3 gap-y-2'
+  'flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2'
 const FOOTER_NARROW = 'flex min-w-0 flex-col gap-2.5'
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
 
@@ -135,7 +135,7 @@ const actionButtonClass = computed(() =>
 )
 const actionRowClass = computed(() =>
   isWide.value
-    ? 'ml-auto flex flex-wrap justify-end gap-2.5'
+    ? 'ml-auto flex flex-wrap items-center justify-end gap-2.5'
     : 'flex w-full flex-col gap-2.5'
 )
 const acceptLabelKey = computed(() =>
