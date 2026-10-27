@@ -326,6 +326,23 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     })
 
+    it('reports nothing when a user past the automatic launches signs out', async () => {
+      currentUser.value = { id: 'account-a' }
+      localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a',
+        'true'
+      )
+
+      await loadEntryAndSetup()
+      await flush()
+      currentUser.value = null
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(await offerExited()).not.toHaveBeenCalled()
+    })
+
     it('does not introduce the agent when the user signs out before the startup decision', async () => {
       currentUser.value = { id: 'account-a' }
       let decideStartup!: (decided: boolean) => void
@@ -2034,7 +2051,7 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
-  it('treats unreadable storage as past the automatic launches', async () => {
+  it('withholds the automatic card as storage-unavailable when storage cannot be read', async () => {
     setAgentReady(true)
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
@@ -2045,11 +2062,12 @@ describe('AgentPanel extension flag gate', () => {
     await flush()
 
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-    expect(await offerExited()).toHaveBeenCalledWith({
-      exit: 'activation_window_complete',
-      stage: 'startup',
-      retry_armed: false
+    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+      reason: 'storage_unavailable'
     })
+    expect(await offerExited()).not.toHaveBeenCalledWith(
+      expect.objectContaining({ exit: 'activation_window_complete' })
+    )
   })
 
   it('stays silent when the saved consent cannot be read', async () => {
