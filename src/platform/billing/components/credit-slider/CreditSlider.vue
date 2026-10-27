@@ -206,7 +206,7 @@ const { t } = useI18n()
         <i
           :class="
             cn(
-              'icon-[lucide--coins] size-3 shrink-0',
+              'icon-[lucide--coins] size-3',
               i === selectedIndex ? 'bg-credit' : 'bg-muted-foreground'
             )
           "

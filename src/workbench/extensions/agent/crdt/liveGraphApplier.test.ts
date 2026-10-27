@@ -47,8 +47,6 @@ import type {
 } from './liveGraphApplier'
 import { changesForRejectedOps } from './rejectedOpChanges'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 class TestSource extends LGraphNode {
   constructor() {
     super('Test Source')

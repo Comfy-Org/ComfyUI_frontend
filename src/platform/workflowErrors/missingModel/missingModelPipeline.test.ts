@@ -32,8 +32,6 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 import * as graphTraversal from '@/utils/graphTraversalUtil'
 
 vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })

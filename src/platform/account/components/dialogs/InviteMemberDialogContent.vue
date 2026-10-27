@@ -2,7 +2,7 @@
   <AppDialogPanel unpadded @close="onClose">
     <template #title>
       <template v-if="step === 'invited'">
-        <i class="pi pi-check-circle size-4 text-success" />
+        <i class="pi pi-check-circle text-success" />
         {{
           $t(
             'workspacePanel.inviteLinks.sentTitle',

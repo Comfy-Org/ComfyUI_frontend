@@ -3,8 +3,6 @@ import type {
   RectEdges as Bounds
 } from '@comfyorg/shared-frontend-utils/geometry'
 
-export type { Bounds as PlacementRect } from '@comfyorg/shared-frontend-utils/geometry'
-
 interface PlacementOffset {
   dx: number
   dy: number

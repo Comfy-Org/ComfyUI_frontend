@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import {
@@ -8,8 +8,6 @@ import {
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 
 import { useLinkPresentationStore } from './linkPresentationStore'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const graphA = {
   rootGraphId: toRootGraphId('graph-a'),

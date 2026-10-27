@@ -6,7 +6,6 @@ import type { GroupId } from '@comfyorg/graph-model/groupId'
 import type { GroupLayout, NodeLayout } from '@comfyorg/graph-model/layout'
 import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-export type { RectTuple as StoredRect } from '@comfyorg/shared-frontend-utils/geometry'
 
 type StoredNode = {
   id: NodeId

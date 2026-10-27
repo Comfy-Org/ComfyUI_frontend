@@ -11,11 +11,11 @@
         "
         :aria-label="t('linearMode.appModeToolbar.appBuilder')"
       >
-        <i class="icon-[lucide--hammer] size-4" />
+        <i class="icon-[lucide--hammer]" />
         <span class="text-sm font-medium">
           {{ t('linearMode.appModeToolbar.appBuilder') }}
         </span>
-        <i class="icon-[lucide--chevron-down] size-4 text-muted-foreground" />
+        <i class="icon-[lucide--chevron-down] text-muted-foreground" />
       </button>
     </template>
   </Menu>

@@ -31,7 +31,7 @@
           data-testid="compositor-download-psd"
           @click="onDownloadPsd"
         >
-          <i class="icon-[lucide--download] size-4" />
+          <i class="icon-[lucide--download]" />
         </Button>
       </div>
     </div>
@@ -53,7 +53,7 @@
       data-testid="compositor-open-button"
       @click="openEditor"
     >
-      <i class="icon-[lucide--layers] size-4" />
+      <i class="icon-[lucide--layers]" />
       {{ t('compositor.open') }}
     </Button>
   </div>

@@ -9,7 +9,7 @@
     :close-icon="closeIcon"
   >
     <template #leftPanelHeaderTitle>
-      <i class="icon-[lucide--settings] size-4" />
+      <i class="icon-[lucide--settings]" />
       <h2 class="text-base text-foreground">{{ $t('g.settings') }}</h2>
     </template>
 
@@ -179,9 +179,7 @@ const closeButtonVariant = computed(() =>
   unifiedBillingSettingsEnabled.value ? 'textonly' : undefined
 )
 const closeIcon = computed(() =>
-  unifiedBillingSettingsEnabled.value
-    ? 'icon-[lucide--x] size-4 shrink-0'
-    : undefined
+  unifiedBillingSettingsEnabled.value ? 'icon-[lucide--x]' : undefined
 )
 const isWorkspaceCategoryActive = computed(
   () =>

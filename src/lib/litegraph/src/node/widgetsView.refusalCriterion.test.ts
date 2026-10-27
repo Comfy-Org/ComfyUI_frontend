@@ -6,8 +6,6 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 function reportedTypes(): (string | undefined)[] {
   return vi.mocked(reportError).mock.calls.map((call) => call[1].errorType)
 }

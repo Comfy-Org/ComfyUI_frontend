@@ -33,7 +33,7 @@
             ring-class="ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
           />
           <i
-            class="icon-[lucide--chevron-down] size-3 shrink-0 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
+            class="icon-[lucide--chevron-down] size-3 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
             aria-hidden="true"
           />
         </Button>

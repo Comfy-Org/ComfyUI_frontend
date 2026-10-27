@@ -23,7 +23,7 @@
             <i
               :class="
                 cn(
-                  'icon-[lucide--chevron-down] size-4 transition-transform',
+                  'icon-[lucide--chevron-down] transition-transform',
                   collapsed && '-rotate-90'
                 )
               "
@@ -60,7 +60,7 @@
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
-        class="icon-[comfy--pin] size-4"
+        class="icon-[comfy--pin]"
         data-testid="node-pin-indicator"
       />
     </div>

@@ -15,8 +15,6 @@ import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 function deferred<T>() {
   let resolve: (value: T | PromiseLike<T>) => void = () => {}
   const promise = new Promise<T>((done) => {

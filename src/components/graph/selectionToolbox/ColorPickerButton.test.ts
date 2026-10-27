@@ -61,13 +61,13 @@ describe('ColorPickerButton', () => {
   it('should render when nodes are selected', () => {
     setCanvasSelection([createMockPositionable()])
     renderComponent()
-    expect(screen.getByTestId('color-picker-button')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Color' })).toBeInTheDocument()
   })
 
   it('should toggle color picker visibility on button click', async () => {
     setCanvasSelection([createMockPositionable()])
     const { user } = renderComponent()
-    const button = screen.getByTestId('color-picker-button')
+    const button = screen.getByRole('button', { name: 'Color' })
 
     expect(screen.queryByTestId('noColor')).not.toBeInTheDocument()
 

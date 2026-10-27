@@ -20,8 +20,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 function addGroup(node: LGraphNode, min = 0) {
   useLitegraphService().addNodeInput(node, {
     name: 'rows',

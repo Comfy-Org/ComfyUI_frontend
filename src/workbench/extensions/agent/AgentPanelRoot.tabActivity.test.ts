@@ -81,7 +81,6 @@ vi.mock<unknown>(
 )
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'), {

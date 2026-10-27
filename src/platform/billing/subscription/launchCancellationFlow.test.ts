@@ -35,7 +35,6 @@ const mocks = vi.hoisted(
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/i18n'))
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 
 const offer = {

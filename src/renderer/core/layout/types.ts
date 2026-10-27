@@ -5,7 +5,6 @@ import type {
   Bounds
 } from '@comfyorg/shared-frontend-utils/geometry'
 import type { NodeLayout, GroupLayout } from '@comfyorg/graph-model/layout'
-export type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 /**
  * Layout System - Type Definitions
  *

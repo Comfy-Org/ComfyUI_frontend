@@ -625,7 +625,7 @@ defineExpose({
         "
       >
         <template v-if="uploadingAttachmentCount > 0">
-          <span
+          <i
             aria-hidden="true"
             class="icon-[lucide--loader-circle] size-3 animate-spin"
           />
@@ -642,7 +642,10 @@ defineExpose({
           role="status"
           class="-mb-2 flex items-center gap-1 px-3 pt-3 text-xs text-muted-foreground"
         >
-          <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
+          <i
+            aria-hidden="true"
+            class="icon-[lucide--loader-circle] size-3 animate-spin"
+          />
           {{ t('agent.savingWorkflow') }}
         </div>
         <div class="grid flex-1">

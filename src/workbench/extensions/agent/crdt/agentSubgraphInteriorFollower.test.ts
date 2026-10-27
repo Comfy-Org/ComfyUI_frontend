@@ -10,8 +10,7 @@ import {
   describe,
   expect,
   it,
-  onTestFinished,
-  vi
+  onTestFinished
 } from 'vitest'
 import * as Y from 'yjs'
 
@@ -33,8 +32,6 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class InteriorNode extends LGraphNode {
   constructor() {

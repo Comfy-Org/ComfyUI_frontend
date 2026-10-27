@@ -28,7 +28,7 @@
           :aria-label="t('load3d.menuBar.videoRecordingTooltip')"
           data-testid="load3d-recording-duration"
         >
-          <i class="icon-[lucide--film] size-4" />
+          <i class="icon-[lucide--film]" />
           {{ formatDuration(recordingDuration ?? 0) }}
         </Button>
       </PopoverTrigger>
@@ -38,7 +38,7 @@
           :class="menuButtonClass"
           @click="downloadRecording"
         >
-          <i class="icon-[lucide--download] size-4" />
+          <i class="icon-[lucide--download]" />
           {{ t('load3d.menuBar.downloadRecording') }}
         </button>
         <button
@@ -46,11 +46,11 @@
           :class="menuButtonClass"
           @click="startNewRecording"
         >
-          <i class="icon-[lucide--video] size-4" />
+          <i class="icon-[lucide--video]" />
           {{ t('load3d.menuBar.startNewRecording') }}
         </button>
         <button type="button" :class="menuButtonClass" @click="deleteRecording">
-          <i class="icon-[lucide--trash-2] size-4" />
+          <i class="icon-[lucide--trash-2]" />
           {{ t('load3d.menuBar.deleteRecording') }}
         </button>
       </PopoverContent>
@@ -78,7 +78,7 @@
     :aria-label="compact ? t('load3d.menuBar.record') : undefined"
     @click="emit('startRecording')"
   >
-    <i class="icon-[lucide--video] size-4" />
+    <i class="icon-[lucide--video]" />
     <span v-if="!compact">{{ t('load3d.menuBar.record') }}</span>
   </Button>
 </template>

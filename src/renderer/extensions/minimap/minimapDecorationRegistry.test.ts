@@ -11,8 +11,6 @@ import {
 } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const scopeA = {
   rootGraphId: toRootGraphId('workflow-a'),
   owningGraphId: toOwningGraphId('workflow-a')

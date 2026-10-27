@@ -51,9 +51,6 @@ interface MinimapRenderSettings {
   renderBypass: boolean
   renderError: boolean
 }
-export type { SizedExtents as MinimapBounds } from '@comfyorg/shared-frontend-utils/geometry'
-
-export type { Bounds as ViewportTransform } from '@comfyorg/shared-frontend-utils/geometry'
 
 export interface UpdateFlags {
   bounds: boolean
