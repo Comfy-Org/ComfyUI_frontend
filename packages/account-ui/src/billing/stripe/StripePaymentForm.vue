@@ -99,7 +99,8 @@ const {
   canSubmit = true,
   locked = false,
   themeKey = '',
-  pageLayout = false
+  pageLayout = false,
+  payOnce = false
 } = defineProps<{
   publishableKey: string
   amountCents: number
@@ -122,6 +123,8 @@ const {
   /** The full-page checkout titles the column itself, so the form drops its
    *  heading and subtitle and sets the address label in the body style. */
   pageLayout?: boolean
+  /** A one-time payment the card is never saved for, instead of a renewing subscription. */
+  payOnce?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -242,15 +245,17 @@ function mountAddressElement(
   })
 }
 
+function intentOptions() {
+  return payOnce
+    ? ({ mode: 'payment' } as const)
+    : ({ mode: 'subscription', setupFutureUsage: 'off_session' } as const)
+}
+
 onMounted(async () => {
   if (!publishableKey || !paymentMethodConfigurationId) {
     failElementInit()
     return
   }
-  // A non-positive amount means the caller mounted this before its quote
-  // resolved. Stay silent rather than latching an error the caller cannot
-  // clear: callers gate on a ready quote, and a wrong error here reads to the
-  // customer as "payment is broken" when the amount is merely still loading.
   if (amountCents <= 0) return
 
   try {
@@ -264,14 +269,9 @@ onMounted(async () => {
     return
   }
   stripeElements.value = stripe.elements({
-    mode: 'subscription',
+    ...intentOptions(),
     amount: amountCents,
     currency: currency.toLowerCase(),
-    // Intent-wide by policy: every method offered here must be chargeable
-    // off-session at renewal, so Stripe's dynamic filtering is the gate —
-    // a configuration-enabled method without off-session support (or without
-    // this account's permission for it) simply never renders.
-    setupFutureUsage: 'off_session',
     paymentMethodConfiguration: paymentMethodConfigurationId,
     appearance: resolveAppearance(paymentElementTarget.value)
   })

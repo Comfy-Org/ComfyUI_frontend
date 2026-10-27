@@ -102,7 +102,7 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
     label: widgetState?.label ?? widget.label,
     options: { ...baseOptions, disabled },
     callback:
-      widgetType.toLowerCase() === 'button'
+      typeof widgetType === 'string' && widgetType.toLowerCase() === 'button'
         ? (value) =>
             widget.callback?.(value, canvasStore.canvas ?? undefined, node)
         : undefined,
@@ -161,7 +161,7 @@ const displayLabel = customRef((track, trigger) => {
         'widget-item group col-span-full grid grid-cols-subgrid rounded-lg',
         isDraggable && [
           draggableItemClass,
-          'draggable-item drag-handle cursor-grab bg-background outline-background will-change-auto [&.is-draggable]:cursor-grabbing [&.is-draggable]:opacity-70 [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0'
+          'bg-background outline-background will-change-auto [&.is-draggable]:opacity-70 [&.is-draggable]:outline-4'
         ]
       )
     "

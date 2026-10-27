@@ -17,6 +17,10 @@ import type {
   CreateTopupResponse,
   CreateWorkspaceRequest,
   CurrentWorkspaceResponse,
+  DeploymentCompatibility,
+  DeploymentCompatibilityRequest,
+  HostedTopupCheckout,
+  HostedTopupCheckoutList,
   ListInvitesResponse,
   ListMembersResponse,
   ListWorkspacesResponse,
@@ -47,12 +51,15 @@ import type {
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
   WorkspaceDeployment,
+  WorkspaceDeploymentCpuServer,
   WorkspaceDeploymentList,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import {
+  zDeploymentCompatibility,
   zRetentionAcceptance,
-  zRetentionFlowResponse
+  zRetentionFlowResponse,
+  zWorkspaceDeploymentCpuServer
 } from '@comfyorg/ingest-types/zod'
 import type { AxiosInstance } from 'axios'
 import axios from 'axios'
@@ -66,7 +73,7 @@ import {
   UNKNOWN_ERROR_CODE,
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
-import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
+import { attachCapabilityRevisionInterceptor } from '@/platform/billing/api/capabilityRevision'
 import { DEPLOYMENT_LISTING_TIMEOUT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type {
   WorkspaceId,
@@ -171,6 +178,12 @@ export type BillingRecoveryAction = NonNullable<
 
 export type { WorkspaceDeployment }
 export type { WorkspaceDeploymentList }
+
+export type { DeploymentCompatibility }
+
+export type { WorkspaceDeploymentCpuServer }
+
+const CPU_SERVER_READ_TIMEOUT_MS = 15_000
 
 interface GetBillingEventsParams {
   page?: number
@@ -427,6 +440,46 @@ export const workspaceApi = {
       )
     } catch (err) {
       handleAxiosError(err, 'clearDefaultDeployment')
+    }
+  },
+
+  /**
+   * Which step the CPU server of the deployment this browser runs on is on.
+   * GET /api/workspaces/:id/deployment/cpu-server
+   */
+  async getDeploymentCpuServer(
+    workspaceId: WorkspaceId
+  ): Promise<WorkspaceDeploymentCpuServer> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployment/cpu-server`),
+        { ...auth, timeout: CPU_SERVER_READ_TIMEOUT_MS }
+      )
+      return zWorkspaceDeploymentCpuServer.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'getDeploymentCpuServer')
+    }
+  },
+
+  /**
+   * Ask which of these node types each deployment, and Comfy Cloud, lacks.
+   * POST /api/workspaces/:id/deployments/compatibility
+   */
+  async checkDeploymentCompatibility(
+    workspaceId: WorkspaceId,
+    nodeTypes: string[]
+  ): Promise<DeploymentCompatibility> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployments/compatibility`),
+        { node_types: nodeTypes } satisfies DeploymentCompatibilityRequest,
+        auth
+      )
+      return zDeploymentCompatibility.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'checkDeploymentCompatibility')
     }
   },
 
@@ -988,6 +1041,42 @@ export const workspaceApi = {
       return response.data
     } catch (err) {
       handleAxiosError(err, 'createTopupCheckout')
+    }
+  },
+
+  /**
+   * List the workspace's hosted top-up checkouts
+   * GET /api/billing/topup/checkouts
+   */
+  async listTopupCheckouts(): Promise<HostedTopupCheckoutList> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<HostedTopupCheckoutList>(
+        workspaceApiUrl('/billing/topup/checkouts'),
+        { ...auth, timeout: 10_000 }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'listTopupCheckouts')
+    }
+  },
+
+  /**
+   * Get the current payment state of one hosted top-up checkout
+   * GET /api/billing/topup/checkouts/{id}
+   */
+  async getTopupCheckout(sessionId: string): Promise<HostedTopupCheckout> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<HostedTopupCheckout>(
+        workspaceApiUrl(
+          `/billing/topup/checkouts/${encodeURIComponent(sessionId)}`
+        ),
+        { ...auth, timeout: 10_000 }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'getTopupCheckout')
     }
   },
 

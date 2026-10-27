@@ -9,14 +9,17 @@ import { coachmarkElements } from '@/platform/onboarding/coachmarkRegistry'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-vi.mock(import('@/components/actionbar/ComfyRunButton'), async () => {
-  const { defineComponent } = await import('vue')
-  return {
-    default: defineComponent({
-      template: '<button type="button">Run</button><span />'
-    })
+vi.mock(
+  import('@/components/actionbar/ComfyRunButton/ComfyRunButton.vue'),
+  async () => {
+    const { defineComponent } = await import('vue')
+    return {
+      default: defineComponent({
+        template: '<button type="button">Run</button><span />'
+      })
+    }
   }
-})
+)
 
 const renderActionbar = (showRunProgressBar: boolean) => {
   const dockedProgressContainer = document.createElement('div')

@@ -2832,6 +2832,7 @@ describe('store construction order', () => {
   const tokenResponse = {
     token: 'construction-token',
     expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+    user_id: 'uid-1',
     workspace: { id: 'workspace-personal', name: 'Personal', type: 'personal' },
     role: 'owner',
     permissions: ['owner:*']

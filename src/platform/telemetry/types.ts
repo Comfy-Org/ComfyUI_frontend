@@ -159,6 +159,8 @@ export interface BootstrapCompleteMetadata {
   total_ms: number
   outcome: 'completed' | 'failed' | 'timed_out'
   phase_count: number
+  /** Wall-clock ms not covered by any recorded phase. */
+  untraced_ms: number
   /**
    * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
    * `bootstrap/object-info`). Nested phases intentionally overlap their
@@ -683,7 +685,7 @@ export interface AgentConsentNotOfferedMetadata extends Record<
  * must split by `exit`; a total is not a quantity.**
  *
  * Correctly not needed: `consent_already_accepted`, `card_already_seen`,
- * `already_offered`, `consent_declined`.
+ * `activation_window_complete`.
  * Owed and not made: everything else.
  *
  * There is deliberately no value for "the agent flag is off". Every exit here
@@ -698,14 +700,6 @@ export interface AgentConsentNotOfferedMetadata extends Record<
  * (`stage`, `exit`) pair and never across stages.
  */
 export type AgentConsentOfferExit =
-  /** No Comfy account is signed in. */
-  | 'signed_out'
-  /** Signed in, but the account has not resolved to a user id yet. */
-  | 'account_unresolved'
-  /** No active workspace id yet, and no switch is in progress. */
-  | 'workspace_unresolved'
-  /** A workspace switch is in progress, so the consent scope is moving. */
-  | 'workspace_switching'
   /** The stored consent read has not settled, so consent is unknown. */
   | 'consent_unresolved'
   /** The stored consent read rejected. */
@@ -716,16 +710,10 @@ export type AgentConsentOfferExit =
   | 'offer_in_flight'
   /** The card has already been on screen for this scope this page load. */
   | 'card_already_seen'
-  /** Panel activation owns consent timing, so the automatic offer is dropped. */
-  | 'activation_opened_panel'
-  /** The bounded panel-discovery window is complete and the panel is closed. */
+  /** This launch is past the panel's automatic-open launches. */
   | 'activation_window_complete'
-  /** The one-shot auto-show key for this scope is already burned. */
-  | 'already_offered'
   /** The first-run startup probe rejected. */
   | 'startup_probe_failed'
-  /** A prior explicit rejection suppressed this automatic offer. */
-  | 'consent_declined'
   /**
    * The consent scope moved while it was being resolved - a different account,
    * a workspace transition, or a switch that started - so the read that would
@@ -767,8 +755,8 @@ export type AgentConsentOfferStage =
    *
    * The only stage that is **not** deduplicated, because it cannot inflate:
    * the automatic path reaches it at most once per consent scope per page load
-   * (the one-shot auto-show key is burned first) and the button path reaches it
-   * once per click, so a repeat here is a repeated attempt rather than a
+   * and the button path reaches it once per click, so a repeat here is a
+   * repeated attempt rather than a
    * measure of how long the tab was open.
    */
   | 'request'
@@ -804,7 +792,7 @@ export interface AgentConsentOfferExitedMetadata extends Record<
   trigger?: AgentConsentTrigger
 }
 export type AgentOnboardingNotShownMetadata =
-  | { reason: 'app_mode' | 'tour_active' }
+  | { reason: 'app_mode' | 'tour_active' | 'dialog_open' }
   | { reason: 'target_missing'; step: number }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
@@ -1164,6 +1152,26 @@ export type AgentErrorClass =
   | 'ask_answer_failed'
   | 'thread_list_load_failed'
   | 'workflow_open_failed'
+
+export type AgentRequestPath =
+  | '/agent/threads'
+  | '/agent/threads/{threadId}/messages'
+  | '/agent/threads/{threadId}/messages/{messageId}/cancel'
+  | '/agent/threads/{threadId}/asks/{askId}/answer'
+  | '/agent/run-mode'
+  | '/workflows'
+  | '/upload/image'
+  | '/other'
+
+export type AgentRequestErrorName =
+  | 'AgentApiError'
+  | 'AgentResponseUnreadableError'
+  | 'ZodError'
+  | 'TimeoutError'
+  | 'AbortError'
+  | 'TypeError'
+  | 'other'
+
 export interface AgentErrorMetadata extends Record<string, unknown> {
   error_class: AgentErrorClass
   failure_stage: 'pre_acceptance' | 'post_acceptance'
@@ -1171,6 +1179,22 @@ export interface AgentErrorMetadata extends Record<string, unknown> {
   turn_accepted: boolean
   /** `none` is a failure the user was never shown. */
   ui_treatment: 'inline_notice' | 'error_overlay' | 'toast' | 'none'
+  /**
+   * FE-3200: which request failed, how, and with what status.
+   *
+   * Absent on the failure classes that are not a single REST request — a
+   * malformed stream event has no status, and a stage that pre-dates this
+   * carrier emits nothing rather than a placeholder, so an absent value in
+   * the data means "not instrumented here", never "no status".
+   *
+   * `request_path` is a route template from a closed set and `request_error`
+   * an error identity from a closed set, both defined in
+   * `services/agent/agentRequestFailure.ts`. Neither can carry a thread id,
+   * a workflow id, a message, or a user.
+   */
+  request_path?: AgentRequestPath
+  request_status?: number
+  request_error?: AgentRequestErrorName
 }
 
 /**
@@ -1657,6 +1681,7 @@ export const TelemetryEvents = {
   SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
+  THEME_LOADED: 'app:theme_loaded',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',

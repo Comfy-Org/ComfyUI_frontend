@@ -16,7 +16,7 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
     initialLocalStorage: { [AGENT_COACH_SEEN_KEY]: 'true' }
   })
 
-  test('keeps the panel locked after Skip and asks again only on Send', async ({
+  test('remembers Skip, opens the panel for two launches, then asks on the Agent button and Send', async ({
     comfyPage,
     agentPanel,
     agentConsentWrites,
@@ -41,17 +41,18 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
       expect(postedMessages).toEqual([])
     })
 
-    await test.step('The Agent button only closes and reopens the panel', async () => {
+    await test.step('The Agent button closes the panel and asks for consent before reopening it', async () => {
       await agentPanel.openButton.click()
       await expect(agentPanel.root).toHaveCount(0)
       await agentPanel.openButton.click()
-      await expect(agentPanel.root).toBeVisible()
+      await expect(agentPanel.consentDialog).toBeVisible()
+      await agentPanel.consentRejectButton.click()
       await expect(agentPanel.consentDialog).toHaveCount(0)
+      await expect(agentPanel.root).toHaveCount(0)
+      expect(agentConsentWrites).toEqual([])
     })
 
-    await test.step('The next launch keeps the locked panel without repeating the introduction', async () => {
-      await agentPanel.openButton.click()
-      await expect(agentPanel.root).toHaveCount(0)
+    await test.step('The second launch opens the panel again without repeating the introduction', async () => {
       await expect(agentPanel.openButton).toHaveAttribute(
         'aria-pressed',
         'false'
@@ -72,6 +73,23 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
       )
       expect(agentConsentWrites).toEqual([])
       expect(postedMessages).toEqual([])
+    })
+
+    await test.step('The third launch leaves the panel closed with no card, and the button asks first', async () => {
+      await agentPanel.openButton.click()
+      await expect(agentPanel.root).toHaveCount(0)
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await expect(agentPanel.openButton).toHaveAttribute(
+        'aria-pressed',
+        'false'
+      )
+      await expect(agentPanel.root).toHaveCount(0)
+      await expect(agentPanel.consentDialog).toHaveCount(0)
+      await agentPanel.openButton.click()
+      await expect(agentPanel.consentDialog).toBeVisible()
+      await agentPanel.consentRejectButton.click()
+      await expect(agentPanel.root).toHaveCount(0)
+      expect(agentConsentWrites).toEqual([])
     })
   })
 

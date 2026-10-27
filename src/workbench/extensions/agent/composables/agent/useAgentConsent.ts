@@ -15,7 +15,6 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
-import { recordConsentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
 import {
   clearPendingSignInAccept,
   readPendingSignInAccept,
@@ -27,7 +26,6 @@ import type { PendingSignInAccept } from '@/workbench/extensions/agent/services/
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
@@ -49,7 +47,6 @@ const AgentConsentCard = defineAsyncComponent(
 )
 
 export interface ConsentOfferHooks {
-  onShown?: () => void
   /** Asked right before the card mounts, after every await that precedes it. */
   canShow?: () => boolean
 }
@@ -59,7 +56,6 @@ export function useAgentConsent() {
   const { showSignInDialog } = useAuthDialogs()
   const consentStore = useAgentConsentStore()
   const introductionStore = useAgentConsentIntroductionStore()
-  const agentPanelStore = useAgentPanelStore()
   const composerStore = useAgentComposerStore()
   const toast = useToast()
   const { isLoggedIn, resolvedUserInfo, isAuthInitialized } = useCurrentUser()
@@ -105,7 +101,7 @@ export function useAgentConsent() {
     trigger: AgentConsentTrigger,
     persistOnAccept = true,
     expectedIdentity?: string,
-    { onShown, canShow }: ConsentOfferHooks = {}
+    { canShow }: ConsentOfferHooks = {}
   ): Promise<boolean> {
     const pendingAccept = readPendingSignInAccept()
     return new Promise<boolean>((resolve) => {
@@ -217,8 +213,6 @@ export function useAgentConsent() {
           onVnodeMounted: () => {
             shown = true
             useTelemetry()?.trackAgentConsentShown({ trigger })
-            if (expectedIdentity && identity.value !== expectedIdentity) return
-            onShown?.()
           },
           onAccept: () => void accept(),
           onReject: () => {
@@ -226,12 +220,6 @@ export function useAgentConsent() {
             markIntroductionResponded()
             if (pendingAccept) clearPendingSignInAccept(pendingAccept)
             reportOutcome('rejected')
-            if (
-              agentPanelStore.onboarding.persistSkipAsRefusal &&
-              expectedIdentity &&
-              identity.value === expectedIdentity
-            )
-              void recordConsentOfferDeclined()
             closeWith(false)
           }
         },
@@ -280,11 +268,8 @@ export function useAgentConsent() {
       userId,
       workspaceId: workspaceStore.activeWorkspaceId ?? undefined
     })
-    if (bound.ok) return true
-    clearPendingSignInAccept(pending)
-    if (!agentPanelStore.onboarding.introduceBeforeSignIn) return true
-    reportSaveFailure(bound.error)
-    return false
+    if (!bound.ok) clearPendingSignInAccept(pending)
+    return true
   }
 
   async function saveAcceptanceAfterSignIn(
@@ -328,10 +313,6 @@ export function useAgentConsent() {
     introductionStore.isContinuingSignIn = true
     const result = writePendingSignInAccept(heldDraftText())
     try {
-      if (!result.ok && agentPanelStore.onboarding.introduceBeforeSignIn) {
-        reportSaveFailure(result.error)
-        return null
-      }
       let signedIn: boolean
       try {
         signedIn = await showSignInDialog()

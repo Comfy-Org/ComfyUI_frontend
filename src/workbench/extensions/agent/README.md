@@ -24,12 +24,17 @@ The panel speaks one contract on the cloud and on the local agent:
   socket connects again. A rejected credential is not retried until the
   account changes.
 - **ComfyUI restart** (`stores/agent/agentNodeDefinitionRefreshStore.ts`). A
-  successful `restart_comfyui` tool call refreshes node definitions and then
-  reloads the open workflow; the refresh shows its own "Update requested" and
-  "Node definitions updated" toasts. A failed refresh runs again only when
-  ComfyUI's `/ws` reconnects later; until then definitions stay stale, and
-  **Refresh Node Definitions** recovers them. A restart made while the panel is
-  closed is not observed.
+  successful `restart_comfyui` tool call means ComfyUI restarts once the turn
+  ends. Every `/ws` reconnect within 10 minutes of that call, before or after
+  it, refreshes node definitions and then reloads the open workflow, because
+  the call and the reconnect arrive on different sockets in either order. An
+  unrelated reconnect in that window refreshes too and leaves the restart's
+  own reconnect to refresh again. The refresh shows its own "Update requested"
+  and "Node definitions updated" toasts. A failed refresh runs again on the
+  next reconnect in the window. A reconnect outside the window does nothing, so
+  if none comes within it the store does nothing, and **Refresh Node
+  Definitions** recovers definitions. A restart made while the panel is closed
+  is not observed.
 - **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the
   saved-workflow index on every backend.
 - **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests
@@ -42,9 +47,9 @@ The panel speaks one contract on the cloud and on the local agent:
 
 ## Activation and consent
 
-The dock is visible only when the server's `agent` feature reports
-`state: "ready"`, the panel has an open intent, and the current user and
-workspace have accepted Agent consent. Cloud and ComfyUI (`--enable-agent`)
+The dock is visible when the server's `agent` feature reports
+`state: "ready"` and the panel has an open intent; sending still requires
+Agent consent for the current user and workspace. Cloud and ComfyUI (`--enable-agent`)
 publish the same feature, and ComfyUI pushes `agent_status` when it changes;
 while it is `starting` or `failed` the entry button shows that, inert. Builds
 with `VITE_AGENT_STANDALONE=true` (the local agent harness) ignore the feature
@@ -52,13 +57,16 @@ and, in development mode, force the panel on; consent is still required. A
 plain `pnpm dev` shows the panel only when the ComfyUI it proxies publishes the
 feature. A restored open intent cannot bypass consent.
 
-On first use, click **Agent**, then **Start using Comfy Agent**.
-Acceptance is stored through the hosted Global Settings API under
-`Comfy.AgentPanel.ConsentAccepted` for the authenticated user and workspace.
-Agent opens after the save succeeds. Skip, Escape and outside clicks dismiss
-without accepting. Skip stores an account preference that suppresses future
-automatic offers; Escape and outside clicks do not. An explicit Send can offer
-consent again. Failed loads or saves keep the panel closed and allow retry.
+Cloud and Desktop share one onboarding rule (ADR-AGENT-CONSENT-0045). On the
+first two launches the panel opens by itself, with the consent card over it
+until the user answers. After that, **Agent** asks for consent before it opens
+a closed panel, and Send asks before the first message. Signed-out users see
+the card before sign-in. Acceptance is stored through the hosted Global
+Settings API under `Comfy.AgentPanel.ConsentAccepted` for the authenticated
+user and workspace. Skip, Escape and outside clicks dismiss without accepting.
+Skip is remembered on the device for the account and workspace (or for
+signed-out use) and ends the automatic card; Escape and outside clicks do not.
+Failed loads or saves keep the panel closed and allow retry.
 Switching user or workspace invalidates the cached acceptance and loads the
 new scope. Desktop/Local sign-in continuation authenticates before saving.
 
