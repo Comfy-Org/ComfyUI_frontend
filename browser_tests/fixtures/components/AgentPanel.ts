@@ -39,10 +39,13 @@ export class AgentPanel {
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
   public readonly fileInput: Locator
+  public readonly historyButton: Locator
   public readonly loadFailedMessage: Locator
   public readonly loadRetryButton: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
+  public readonly replyAssetThumbnails: Locator
+  public readonly replyAssetTiles: Locator
   public readonly resizeHandle: Locator
   public readonly root: Locator
   public readonly scrollAssetsRight: Locator
@@ -99,6 +102,9 @@ export class AgentPanel {
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
     this.fileInput = this.root.getByTestId('agent-file-input')
+    this.historyButton = this.root.getByRole('button', {
+      name: enMessages.agent.showChatHistory
+    })
     this.loadFailedMessage = this.dockedPanelShell.getByText(
       enMessages.agent.loadFailed
     )
@@ -110,6 +116,10 @@ export class AgentPanel {
       name: enMessages.agent.entryButton,
       exact: true
     })
+    this.replyAssetThumbnails = this.root.getByRole('img', {
+      name: /^mesh-\d+/
+    })
+    this.replyAssetTiles = this.root.getByRole('button', { name: /^mesh-\d+$/ })
     this.resizeHandle = page.getByTestId('agent-panel-resize-handle')
     this.scrollAssetsRight = this.root.getByRole('button', {
       name: enMessages.g.scrollRight
@@ -138,6 +148,13 @@ export class AgentPanel {
     this.workSummary = this.root.getByRole('button', {
       name: new RegExp(`^${escapeRegExp(enMessages.agent.worked)}`)
     })
+  }
+
+  async openChatFromHistory(title: string): Promise<void> {
+    await this.historyButton.click()
+    const row = this.root.getByRole('button', { name: title, exact: true })
+    await expect(row).toBeEnabled()
+    await row.click()
   }
 
   async scrollAssetsToEnd(): Promise<void> {

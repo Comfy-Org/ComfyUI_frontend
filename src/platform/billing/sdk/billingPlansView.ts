@@ -4,7 +4,7 @@ import type {
   BillingPlansResponse,
   Plan,
   TeamCreditStops
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { asSafeNumber } from './safeInt64'
 
@@ -70,9 +70,14 @@ function projectStopPrice(
 ): StopPrice | undefined {
   const list_price_cents = asSafeNumber(price.list_price_cents)
   const price_cents = asSafeNumber(price.price_cents)
-  if (list_price_cents === undefined || price_cents === undefined)
+  const period_charge_cents = asSafeNumber(price.period_charge_cents)
+  if (
+    list_price_cents === undefined ||
+    price_cents === undefined ||
+    period_charge_cents === undefined
+  )
     return undefined
-  return { ...price, list_price_cents, price_cents }
+  return { ...price, list_price_cents, price_cents, period_charge_cents }
 }
 
 function projectStop(

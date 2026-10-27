@@ -40,6 +40,20 @@ describe('BillingPlanCheckoutBanner', () => {
     ).toHaveAttribute('href', 'https://pay.example/verify')
   })
 
+  it('uses the 12px banner shell with md buttons', () => {
+    renderBanner({
+      kind: 'verifyPayment',
+      opId: 'op-1',
+      actionUrl: 'https://pay.example/verify'
+    })
+
+    expect(screen.getByRole('status')).toHaveClass('rounded-xl', 'p-3')
+    expect(screen.getByRole('button', { name: 'Dismiss' })).toHaveClass('h-8')
+    expect(
+      screen.getByRole('link', { name: 'Verify your payment' })
+    ).toHaveClass('h-8')
+  })
+
   it('shows verify payment with no link when the operation omits action_url', () => {
     renderBanner({ kind: 'verifyPayment', opId: 'op-1', actionUrl: null })
 

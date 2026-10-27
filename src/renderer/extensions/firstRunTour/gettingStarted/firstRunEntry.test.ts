@@ -6,7 +6,6 @@ import * as VueUse from '@vueuse/core'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import {
@@ -67,7 +66,6 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => ({ isNewUser: () => mocks.isNewUser })
 }))
 
-vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock<unknown>(
@@ -105,7 +103,6 @@ describe('useFirstRunEntry', () => {
     vi.mocked(firebaseIdentity.onUserChanged).mockReturnValue(() => undefined)
     vi.mocked(firebaseIdentity.onTokenChanged).mockReturnValue(() => undefined)
     Object.assign(useAuthStore(), { userId: OWNER_ID })
-    vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = true
     useSettingStore().settingValues = {}
     vi.mocked(useSettingStore().set).mockImplementation(async (key, value) => {
       Object.assign(useSettingStore().settingValues, { [key]: value })
@@ -122,13 +119,7 @@ describe('useFirstRunEntry', () => {
   const transientDisqualifiers = [
     ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
     ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
-    ['new-user state undetermined', () => void (mocks.isNewUser = null)],
-    [
-      'the tour flag off',
-      () => {
-        vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = false
-      }
-    ]
+    ['new-user state undetermined', () => void (mocks.isNewUser = null)]
   ] as const
 
   describe('what the boot reports to surfaces that must yield to it', () => {
@@ -486,13 +477,7 @@ describe('useFirstRunEntry', () => {
     const cannotServe = [
       ['not on cloud', () => void (mocks.isCloud = false)],
       ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
-      ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
-      [
-        'the tour flag off',
-        () => {
-          vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = false
-        }
-      ]
+      ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)]
     ] as const
 
     it.for(cannotServe)(
