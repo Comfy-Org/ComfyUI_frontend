@@ -7,7 +7,7 @@ import type {
 import { getActionbarDockState } from '@/platform/telemetry/utils/getActionbarDockState'
 import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
-import { getWorkspaceTelemetryContext } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
+import { getWorkspaceTelemetryContext } from '@/platform/billing/telemetry/workspaceTelemetryContext'
 
 type RunButtonTelemetryOptions = {
   subscribe_to_run?: boolean

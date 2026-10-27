@@ -14,6 +14,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -21,7 +22,7 @@ import type {
   BillingRail,
   BillingStatusResponse,
   Plan
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
@@ -113,8 +114,8 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: {
+vi.mock<unknown>(import('@/platform/billing/api/billingApi'), () => ({
+  billingApi: {
     getBillingStatus: vi.fn(() =>
       Promise.resolve({ ...DEFAULT_BILLING_STATUS, ...mockBillingStatus.value })
     ),
@@ -136,7 +137,9 @@ describe('useAgentDockMount with the real billing context', () => {
     const workspaceStore = useTeamWorkspaceStore()
     const refs = storeToRefs(workspaceStore)
     mockIsPersonal = refs.isInPersonalWorkspace
-    mockBillingRail = refs.activeWorkspaceBillingRail
+    mockBillingRail = storeToRefs(
+      useWorkspaceBillingStateStore()
+    ).activeWorkspaceBillingRail
     Object.assign(workspaceStore, {
       activeWorkspace: computed(() =>
         fromPartial<NonNullable<typeof workspaceStore.activeWorkspace>>({
@@ -155,7 +158,7 @@ describe('useAgentDockMount with the real billing context', () => {
     mockIsPersonal.value = true
     mockBillingRail.value = undefined
     vi.mocked(
-      useTeamWorkspaceStore().setWorkspaceBillingRail
+      useWorkspaceBillingStateStore().setWorkspaceBillingRail
     ).mockImplementation((_workspaceId: string, billingRail: BillingRail) => {
       mockBillingRail.value = billingRail
     })
