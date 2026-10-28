@@ -204,7 +204,9 @@ describe('useBillingContext', () => {
       endDate: null,
       isCancelled: false,
       hasFunds: true,
-      agentHasFunds: true
+      agentHasFunds: true,
+      agentScopedHasFunds: undefined,
+      agentScopedHasFundsAuthoritative: false
     })
   })
 

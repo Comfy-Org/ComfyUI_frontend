@@ -2,11 +2,17 @@ import { expect, mergeTests } from '@playwright/test'
 
 import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import {
+  agentTest,
+  bootAgentApp,
+  mockAgentTurnApi
+} from '@e2e/fixtures/agentPanelFixture'
 import { DEFAULT_BILLING_STATUS } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const FLAG = 'agent-free-use-message-placement'
 const PLACEMENT = 'near-composer'
@@ -24,7 +30,7 @@ function billingStatus({
   }
 }
 
-const test = mergeTests(agentTest, hostTelemetryFixture)
+const test = mergeTests(agentTest, hostTelemetryFixture, webSocketFixture)
 
 test.describe(
   'Agent free-use placement experiment',
@@ -148,8 +154,15 @@ test.describe(
     })
 
     test('removes the free-use claim after the local Agent grant is spent', async ({
+      getAgentSocket,
       page
     }) => {
+      const accepted = {
+        thread_id: '783eff5c-2133-45bb-9733-2b9637d3e79c',
+        message_id: 'fb9d7a52-bc14-43c5-9039-52a346507e96',
+        workflow_id: 'a385d379-9f50-4495-975d-b310a62370f6'
+      }
+      await mockAgentTurnApi(page, accepted)
       await bootAgentApp(page, true, {
         features: { enable_telemetry: true },
         billingStatus: billingStatus({ grantHeld: true })
@@ -165,8 +178,18 @@ test.describe(
       await page.route('**/api/billing/status', (route) =>
         route.fulfill({ json: billingStatus({ grantHeld: false }) })
       )
-      const billingRead = page.waitForResponse('**/api/billing/status')
+      const billingRead = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'GET' &&
+          new URL(response.url()).pathname === '/api/billing/status'
+      )
       await agentPanel.sendMessage('Use the current workflow')
+      const socket = await getAgentSocket()
+      const completed: AgentWsEvent = {
+        type: 'agent_message_done',
+        data: { ...accepted, usage: null }
+      }
+      socket.send(JSON.stringify(completed))
       await billingRead
 
       await expect(notice).toBeHidden()
