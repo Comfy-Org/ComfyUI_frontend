@@ -36,8 +36,12 @@ Both are public entry points of the keybindings domain; the agent domain
 declares `keybindings` as an allowed dependency and keybindings declares `agent`
 as an allowed consumer, so the reply panel reaches no other keybindings module.
 
-`renderShortcutKeycaps` rewrites one block of rendered reply HTML. A
-modifier-bearing key combo becomes `<kbd>` keycaps. When that combo is a canvas
+`renderShortcutKeycaps` rewrites one block of rendered reply HTML. Matching runs
+over a _run_ of text nodes that read as one stretch of prose rather than over
+each node alone, so a combo markdown split by emphasis (`Press **Ctrl**+**B**`)
+is still one combo; a run ends at a code span, link, existing keycap or block
+boundary, so nothing is joined across them. A modifier-bearing key combo becomes
+`<kbd>` keycaps. When that combo is a canvas
 action's shipped default and the user has rebound it, the keycaps show the
 user's keys instead. Every other combo is styled exactly as written.
 
@@ -92,13 +96,6 @@ needs no agent change and costs no tokens.
 A correction is invisible to the model. It will keep writing the key it
 remembers, and the panel will keep rewriting it. Anything that reads the agent's
 raw reply text, rather than the rendered panel, sees the unrewritten key.
-
-A combo split across inline elements by markdown emphasis, as in
-`Press **Ctrl**+**B**`, is not matched: each text node is rewritten on its own.
-Reassembling a match across a run of sibling nodes, then splicing the
-replacement back into the right ones, is where this kind of code goes wrong, and
-the trigger is an unusual shape for the model to emit. The failure is benign: the
-reply shows the key as written, which is where it stood before this change.
 
 A key the model invented, rather than remembered, is styled and left wrong. We
 cannot tell which command such a combo was meant to be without guessing from the

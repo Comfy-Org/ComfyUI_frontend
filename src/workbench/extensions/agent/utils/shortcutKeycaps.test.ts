@@ -97,6 +97,28 @@ describe('renderShortcutKeycaps', () => {
     expect(out).toContain('<kbd>Alt</kbd>+<kbd>Q</kbd>')
   })
 
+  it('reads a combo that markdown emphasis split across elements', () => {
+    const rebound = (commandId: string) =>
+      commandId === BYPASS ? ['Alt', 'q'] : undefined
+    const out = renderShortcutKeycaps(
+      '<p>Press <strong>Ctrl</strong>+<strong>B</strong> to bypass it.</p>',
+      rebound
+    )
+    const text = new DOMParser().parseFromString(out, 'text/html').body
+      .textContent
+    expect(text).toBe('Press Alt+Q to bypass it.')
+  })
+
+  it('does not join text across a block boundary', () => {
+    const html = '<li>Ends with Ctrl</li><li>+B starts the next</li>'
+    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
+  })
+
+  it('does not join text across a code span', () => {
+    const html = '<p>Ctrl<code>x</code>+B is not a shortcut.</p>'
+    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
+  })
+
   it('keeps a plus that is the key rather than the separator', () => {
     const out = renderShortcutKeycaps(
       '<p>Press Alt+Shift++ to zoom in.</p>',

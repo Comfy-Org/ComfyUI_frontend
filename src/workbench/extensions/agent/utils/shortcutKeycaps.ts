@@ -12,6 +12,35 @@ const NON_PROSE_ELEMENTS = new Set([
   'STYLE'
 ])
 
+const INLINE_ELEMENTS = new Set([
+  'SPAN',
+  'STRONG',
+  'EM',
+  'B',
+  'I',
+  'U',
+  'S',
+  'SMALL',
+  'MARK',
+  'SUB',
+  'SUP',
+  'Q',
+  'CITE',
+  'ABBR',
+  'TIME',
+  'VAR',
+  'SAMP',
+  'DFN',
+  'BDI',
+  'BDO',
+  'FONT',
+  'INS',
+  'DEL',
+  'RUBY',
+  'RT',
+  'RP'
+])
+
 const MODIFIER = String.raw`[Cc]trl|CTRL|[Cc]ontrol|[Cc]md|[Cc]ommand|⌘|[Aa]lt|ALT|[Oo]ption|[Oo]pt|⌥|[Ss]hift|SHIFT|⇧`
 
 const NAMED_KEY = String.raw`F\d{1,2}|Enter|Return|Esc(?:ape)?|Space(?:bar)?|Tab|Delete|Del|Backspace|Home|End|PageUp|PageDown|Up|Down|Left|Right`
@@ -48,27 +77,69 @@ function keysAsWritten(combo: string): string[] {
   return keys
 }
 
-function rewriteTextNode(node: Text, resolve: KeySequenceResolver): boolean {
-  const text = node.data
-  const combos = [...text.matchAll(new RegExp(MODIFIER_BEARING_COMBO, 'g'))]
-  if (combos.length === 0) return false
+interface Match {
+  start: number
+  end: number
+  keys: string[]
+}
 
+function matchesIn(text: string, resolve: KeySequenceResolver): Match[] {
+  return [...text.matchAll(new RegExp(MODIFIER_BEARING_COMBO, 'g'))].map(
+    (match) => {
+      const written = keysAsWritten(match[0])
+      const commandId = canvasCommandForWrittenKeys(written)
+      const bound = commandId ? resolve(commandId) : undefined
+      return {
+        start: match.index,
+        end: match.index + match[0].length,
+        keys: bound?.length ? bound : written
+      }
+    }
+  )
+}
+
+function coveringMatches(
+  matches: Match[],
+  start: number,
+  end: number
+): Match[] {
+  return matches.filter((match) => match.end > start && match.start < end)
+}
+
+function spliceMatches(node: Text, nodeStart: number, matches: Match[]): void {
+  const text = node.data
+  const nodeEnd = nodeStart + text.length
   const fragment = document.createDocumentFragment()
   let cursor = 0
-  for (const match of combos) {
-    const start = match.index
-    if (start > cursor) fragment.append(text.slice(cursor, start))
 
-    const written = keysAsWritten(match[0])
-    const commandId = canvasCommandForWrittenKeys(written)
-    const bound = commandId ? resolve(commandId) : undefined
-    fragment.append(keycaps(bound?.length ? bound : written))
-
-    cursor = start + match[0].length
+  for (const match of coveringMatches(matches, nodeStart, nodeEnd)) {
+    const localStart = Math.max(match.start, nodeStart) - nodeStart
+    if (localStart > cursor) fragment.append(text.slice(cursor, localStart))
+    if (match.start >= nodeStart) fragment.append(keycaps(match.keys))
+    cursor = Math.min(match.end, nodeEnd) - nodeStart
   }
-  fragment.append(text.slice(cursor))
 
+  if (cursor < text.length) fragment.append(text.slice(cursor))
   node.replaceWith(fragment)
+}
+
+/**
+ * Rewrites one run of text nodes that read as a single stretch of prose. A combo
+ * may straddle them, as `Press **Ctrl**+**B**` does, so matching happens on the
+ * joined text and each match is spliced back into the nodes it covers. The
+ * keycaps land in the node the match starts in; later nodes drop their covered
+ * part.
+ */
+function rewriteRun(run: Text[], resolve: KeySequenceResolver): boolean {
+  const matches = matchesIn(run.map((node) => node.data).join(''), resolve)
+  if (matches.length === 0) return false
+
+  let nodeStart = 0
+  for (const node of run) {
+    const length = node.data.length
+    spliceMatches(node, nodeStart, matches)
+    nodeStart += length
+  }
   return true
 }
 
@@ -77,6 +148,35 @@ function isProse(node: Text): boolean {
     if (NON_PROSE_ELEMENTS.has(parent.tagName)) return false
   }
   return true
+}
+
+/** The nearest ancestor that is not inline, which is as far as a run may reach. */
+function blockOf(node: Text): Element | null {
+  let parent = node.parentElement
+  while (parent && INLINE_ELEMENTS.has(parent.tagName)) {
+    parent = parent.parentElement
+  }
+  return parent
+}
+
+function proseRuns(root: DocumentFragment): Text[][] {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  const runs: Text[][] = []
+  let current: Text[] = []
+  let currentBlock: Element | null = null
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text
+    const block = isProse(node) ? blockOf(node) : null
+    if (!block || block !== currentBlock) {
+      if (current.length > 0) runs.push(current)
+      current = []
+      currentBlock = block
+    }
+    if (block) current.push(node)
+  }
+  if (current.length > 0) runs.push(current)
+  return runs
 }
 
 /**
@@ -92,20 +192,10 @@ export function renderShortcutKeycaps(
 
   const template = document.createElement('template')
   template.innerHTML = html
-  const walker = document.createTreeWalker(
-    template.content,
-    NodeFilter.SHOW_TEXT
-  )
-
-  const proseNodes: Text[] = []
-  while (walker.nextNode()) {
-    const node = walker.currentNode as Text
-    if (isProse(node)) proseNodes.push(node)
-  }
 
   let rewritten = false
-  for (const node of proseNodes) {
-    if (rewriteTextNode(node, resolve)) rewritten = true
+  for (const run of proseRuns(template.content)) {
+    if (rewriteRun(run, resolve)) rewritten = true
   }
   return rewritten ? template.innerHTML : html
 }
