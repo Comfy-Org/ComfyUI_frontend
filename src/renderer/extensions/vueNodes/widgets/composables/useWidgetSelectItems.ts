@@ -64,12 +64,24 @@ function getMediaUrl(
   return `/api/view?${params}`
 }
 
+function isPlainRelativePath(filepath: string): boolean {
+  return filepath
+    .split(/[\\/]/)
+    .every(
+      (segment) =>
+        segment !== '' &&
+        segment !== '.' &&
+        segment !== '..' &&
+        !segment.includes(':')
+    )
+}
+
 function getAnnotatedValueMediaUrl(
   value: string,
   assetKind: AssetKind | undefined
 ): string {
   const { filepath, rootFolder } = parseAnnotatedPath(value)
-  if (/^([A-Za-z]:|[\\/])|[\\/]$/.test(filepath))
+  if (!isPlainRelativePath(filepath))
     return getMediaUrl(filepath, rootFolder, assetKind)
   const { filename, subfolder } = parseFilePath(filepath)
   return getMediaUrl(filename, rootFolder, assetKind, subfolder)
