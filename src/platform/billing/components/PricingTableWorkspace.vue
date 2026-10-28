@@ -99,7 +99,7 @@
                 {{ t(creditsPerMemberLabelKey) }}
               </span>
               <div class="flex items-center gap-1">
-                <i class="icon-[lucide--coins] size-4 text-credit" />
+                <i class="icon-[lucide--coins] text-credit" />
                 <span class="text-sm/normal font-bold">
                   {{ n(getCreditsPerMember(tier)) }}
                 </span>
@@ -172,7 +172,7 @@
                       <PopoverContent
                         align="start"
                         dismiss-on-viewport-change
-                        class="max-h-(--reka-popover-content-available-height) w-auto max-w-sm overflow-auto rounded-lg border-border/50 shadow-lg data-[state=open]:animate-none"
+                        class="w-auto max-w-sm rounded-lg border-border/50 shadow-lg data-[state=open]:animate-none"
                       >
                         <div class="flex flex-col gap-2">
                           <p class="text-sm/normal text-foreground">
@@ -277,7 +277,7 @@ import type {
   TierPricing
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type { Plan } from '@comfyorg/billing-core'
 import { useCommandStore } from '@/stores/commandStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>

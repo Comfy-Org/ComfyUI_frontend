@@ -1239,6 +1239,11 @@ watch(
   (tabs) => tabActivity.setAgentTurnTabs(tabs),
   { immediate: true, flush: 'sync' }
 )
+watch(
+  () => conversationStore.awaitingApproval,
+  (awaiting) => tabActivity.setAgentAwaitingApproval(awaiting),
+  { immediate: true, flush: 'sync' }
+)
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {
@@ -1618,6 +1623,7 @@ onBeforeUnmount(() => {
     },
     clearAgentTurnTabs: () => {
       tabActivity.setAgentTurnTabs([])
+      tabActivity.setAgentAwaitingApproval(false)
     },
     resetTurnTabResolver: () => {
       conversationStore.setTurnTabResolver(() => ({ status: 'unknown' }))
@@ -2446,9 +2452,9 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       role="status"
       class="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed bg-secondary/90 p-4 font-inter text-sm/5 text-foreground"
     >
-      <span
+      <i
         aria-hidden="true"
-        class="icon-[lucide--upload] size-8 shrink-0 text-muted-foreground"
+        class="icon-[lucide--upload] size-8 text-muted-foreground"
       />
       <span>{{ t('agent.dragAndDropAssets') }}</span>
     </div>

@@ -27,7 +27,7 @@
         class="shrink-0 no-underline"
       >
         {{ $t('workspacePanel.billingTab.plan.actions.contactSales') }}
-        <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--external-link]" aria-hidden="true" />
       </Button>
       <Button
         v-else-if="action"

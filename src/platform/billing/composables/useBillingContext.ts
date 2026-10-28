@@ -1,3 +1,4 @@
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
@@ -14,13 +15,13 @@ import { isCloud } from '@/platform/distribution/types'
 import type {
   PreviewSubscribeOptions,
   SubscribeOptions
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 import {
   onBillingRefresh,
   provideCheckoutOperationReader
 } from '@/platform/billing/billingRefresh'
 import type { BillingRefreshScope } from '@/platform/billing/billingRefresh'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 import type {
   BalanceInfo,
@@ -100,7 +101,7 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
  * ```
  */
 function useBillingContextInternal(): BillingContext {
-  const store = useTeamWorkspaceStore()
+  const store = useWorkspaceIdentity()
   const { type, shouldUseUnifiedPricing } = useBillingRouting()
 
   const legacyBillingRef = shallowRef<(BillingState & BillingActions) | null>(
@@ -242,7 +243,8 @@ function useBillingContextInternal(): BillingContext {
     (sub) => {
       if (!sub) return
 
-      store.updateActiveWorkspace({
+      if (!store.activeWorkspaceId) return
+      useWorkspaceBillingStateStore().updateSummary(store.activeWorkspaceId, {
         isSubscribed: sub.isActive && !sub.isCancelled,
         subscriptionPlan: sub.planSlug
       })

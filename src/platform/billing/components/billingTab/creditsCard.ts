@@ -1,5 +1,5 @@
 import type { BalanceInfo } from '@/platform/billing/composables/types'
-import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatus } from '@comfyorg/billing-core'
 import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
 
 export interface CreditsCardFacts {

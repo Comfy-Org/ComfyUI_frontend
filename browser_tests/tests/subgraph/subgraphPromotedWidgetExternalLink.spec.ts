@@ -16,7 +16,7 @@ const HOST_TEXT_INPUT = 0
 const HOST_WIDTH_INPUT = 1
 const PLAIN_WIDTH_INPUT = 0
 const PLAIN_BATCH_SIZE_INPUT = 2
-const PLAIN_TEXT_INPUT = 1
+const PLAIN_TEXT_INPUT = 0
 const ENDPOINT_TOLERANCE_PX = 2
 /** Canvas pixel below every node in the asset; clicking it also lets the change tracker capture the drag-connect. */
 const EMPTY_CANVAS_POSITION = { x: 640, y: 690 }

@@ -29,8 +29,6 @@ vi.mock(import('@/utils/envUtil'), () => ({
     fromPartial<ElectronAPI>({ getElectronVersion: mocks.getElectronVersion })
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const { registerElectronAdapterExtension } = await import('./electronAdapter')
 const importEffects = {
   versionReads: mocks.getElectronVersion.mock.calls.length,

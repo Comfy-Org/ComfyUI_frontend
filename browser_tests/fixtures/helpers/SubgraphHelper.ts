@@ -414,8 +414,11 @@ export class SubgraphHelper {
       )
     const existingIds = new Set(await findSubgraphNodeIds())
 
-    await this.page
-      .getByTestId(TestIds.selectionToolbox.convertSubgraph)
+    await this.comfyPage.selectionToolbox
+      .getByRole('button', {
+        name: 'Convert Selection to Subgraph',
+        exact: true
+      })
       .click()
 
     const findAddedIds = async () =>

@@ -37,7 +37,7 @@ watch(controlModel, props.widget.controlWidget.update)
         <PopoverContent
           :side-offset="5"
           dismiss-on-viewport-change
-          class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
+          class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
         >
           <ValueControlPopover v-model="controlModel" />
           <PopoverArrow class="fill-background stroke-border/50" />
