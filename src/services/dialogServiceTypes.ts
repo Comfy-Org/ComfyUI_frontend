@@ -104,9 +104,16 @@ export interface ExtensionDialogService extends CoreDialogService {
   showTopUpCreditsDialog(
     options?: TopUpCreditsDialogOptions
   ): Promise<DialogInstance | undefined>
+  /**
+   * Resolves once the dialog has been opened or declined. The internal
+   * composable reports which happened; that is deliberately not widened onto
+   * this extension-facing type, because narrowing `Promise<void>` to
+   * `Promise<boolean>` breaks any extension assigning this method to a
+   * `() => Promise<void>` callback.
+   */
   showSubscriptionRequiredDialog(
     options?: SubscriptionDialogOptions
-  ): Promise<boolean>
+  ): Promise<void>
   showBillingComingSoonDialog(): DialogInstance
   showCancelSubscriptionDialog(
     cancelAt?: string,
