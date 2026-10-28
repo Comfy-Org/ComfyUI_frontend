@@ -110,6 +110,12 @@ export interface DocOpMinterDeps {
  */
 export const PROMOTED_WRITE_CATCH_UP_DEADLINE_MS =
   SUBSCRIBE_ACK_MAX_TIMEOUTS * SUBSCRIBE_ACK_TIMEOUT_MS
+/**
+ * How long a grow displaced by another actor's slot may stay unechoed before
+ * it is treated as lost: twice the catch-up deadline, since its batch can be
+ * held for that long before it is even sent.
+ */
+const DISPLACED_GROW_EXPIRY_MS = 2 * PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
 /** How often a held promoted-host write rechecks the catch-up gate. */
 export const PROMOTED_WRITE_RETRY_MS = 100
 
@@ -149,6 +155,12 @@ type PendingOp =
 type PendingGrows = {
   base: number
   names: readonly string[]
+  /** When each of these grows was minted, by name. */
+  grownAt: ReadonlyMap<string, number>
+  /**
+   * Another actor's slot landed where one of these grows was predicted, so
+   * the remaining grows' slots are unknown until they echo by name.
+   */
   displaced?: boolean
 }
 type SlotGrow = MissingSlotGrowth['grow']
@@ -1101,16 +1113,32 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   ): PendingGrows | undefined {
     const grows = pendingGrows.get(key)
     if (grows === undefined) return undefined
-    const echoed = docNames.slice(grows.base)
+    if (grows.names.every((name) => docNames.includes(name))) {
+      pendingGrows.delete(key)
+      return undefined
+    }
     if (grows.displaced) {
-      if (grows.names.every((name) => echoed.includes(name)))
+      // A grow still unechoed well past the catch-up deadline (which can hold
+      // its batch through a resubscribe) was refused or lost. Forget the
+      // entry, so later grows on this node are predicted again instead of
+      // joining an entry that can never settle.
+      const oldestUnechoed = Math.min(
+        ...grows.names
+          .filter((name) => !docNames.includes(name))
+          .map((name) => grows.grownAt.get(name) ?? 0)
+      )
+      if (performance.now() - oldestUnechoed >= DISPLACED_GROW_EXPIRY_MS)
         pendingGrows.delete(key)
       return undefined
     }
+    const echoed = docNames.slice(grows.base)
     const onlyOurEchoes =
       docNames.length >= grows.base &&
       echoed.length < grows.names.length &&
-      echoed.every((name, index) => name === grows.names[index])
+      echoed.every((name, index) => name === grows.names[index]) &&
+      grows.names
+        .slice(echoed.length)
+        .every((name) => !docNames.includes(name))
     if (onlyOurEchoes) return grows
     pendingGrows.set(key, { ...grows, displaced: true })
     return undefined
@@ -1122,11 +1150,12 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     docNames: readonly (string | undefined)[]
   ): void {
     const grows = unechoedGrows(key, docNames) ?? pendingGrows.get(key)
+    const grownAt = new Map(grows?.grownAt).set(name, performance.now())
     pendingGrows.set(
       key,
       grows
-        ? { ...grows, names: [...grows.names, name] }
-        : { base: docNames.length, names: [name] }
+        ? { ...grows, names: [...grows.names, name], grownAt }
+        : { base: docNames.length, names: [name], grownAt }
     )
   }
 
@@ -1146,10 +1175,22 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   function forgetCancelledGrow(
     key: string,
     toNode: WireNodeId,
-    grow: SlotGrow
+    grow: SlotGrow,
+    docNames?: readonly (string | undefined)[] | null
   ): void {
+    // A timer can cancel a grow in a later task than the one that last
+    // checked the document, so bring the entry up to date first.
+    if (docNames) unechoedGrows(key, docNames)
     const grows = pendingGrows.get(key)
     if (grows === undefined || !grows.names.includes(grow.name)) return
+    if (grows.displaced) {
+      // Displaced grows are not contiguous from `base`, so their slots
+      // cannot be re-predicted: forget the name and leave the queue alone.
+      const names = grows.names.filter((name) => name !== grow.name)
+      if (names.length === 0) pendingGrows.delete(key)
+      else pendingGrows.set(key, { ...grows, names })
+      return
+    }
     const reconciled = withCancelledGrowReconciled(pending, toNode, grows, grow)
     pending = reconciled.pending
     if (reconciled.names.length === 0) pendingGrows.delete(key)
@@ -1160,7 +1201,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     forgetCancelledGrow(
       nodeKey(state.rootGraphId, state.nodeId),
       state.nodeId,
-      state.grow
+      state.grow,
+      deps.docInputNames(state.nodeId)
     )
   }
 
