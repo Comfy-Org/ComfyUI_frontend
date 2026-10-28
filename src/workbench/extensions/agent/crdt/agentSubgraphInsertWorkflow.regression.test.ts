@@ -13,7 +13,7 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import * as Y from 'yjs'
 
 import {
@@ -28,12 +28,10 @@ import {
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class PromotedWidgetNode extends LGraphNode {
   constructor() {

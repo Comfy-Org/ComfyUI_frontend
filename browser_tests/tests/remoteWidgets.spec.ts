@@ -179,13 +179,13 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)
 
-      // Select remote widget node
       await comfyPage.page.keyboard.press('Control+A')
 
       await expect(
-        comfyPage.page.locator(
-          '.selection-toolbox button[data-testid="refresh-button"]'
-        )
+        comfyPage.selectionToolbox.getByRole('button', {
+          name: 'Refresh Node',
+          exact: true
+        })
       ).toBeVisible()
     })
 

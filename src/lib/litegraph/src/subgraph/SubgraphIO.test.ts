@@ -2,8 +2,8 @@ import { assert, describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
-import { LinkDirection } from '@/lib/litegraph/src//types/globalEnums'
-import { toLinkId } from '@/types/linkId'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {

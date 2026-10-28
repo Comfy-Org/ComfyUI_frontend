@@ -45,7 +45,7 @@
               :aria-label="$t('userSettings.updatePassword')"
               @click="onUpdatePassword"
             >
-              <i class="pi pi-pen-to-square" />
+              <i class="icon-[lucide--square-pen]" />
             </Button>
           </div>
         </div>
@@ -54,7 +54,7 @@
         <div v-else class="mt-4 flex flex-col gap-2">
           <div class="flex flex-wrap items-center gap-2">
             <Button class="w-32" variant="secondary" @click="handleSignOut">
-              <i class="pi pi-sign-out" />
+              <i class="icon-[lucide--log-out]" />
               {{ $t('auth.signOut.signOut') }}
             </Button>
             <SignOutEverywhereButton />
@@ -81,7 +81,7 @@
         </p>
 
         <Button class="w-52" variant="primary" :loading @click="handleSignIn">
-          <i class="pi pi-user" />
+          <i class="icon-[lucide--user]" />
           {{ $t('auth.login.signInOrSignUp') }}
         </Button>
       </div>
@@ -94,7 +94,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import SignOutEverywhereButton from '@/platform/auth/session/components/SignOutEverywhereButton.vue'

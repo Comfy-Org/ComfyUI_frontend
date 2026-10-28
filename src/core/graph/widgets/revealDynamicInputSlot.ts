@@ -2,7 +2,7 @@ import { isEqual } from 'es-toolkit'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   dynamicComboOptionTypes,
   inputSpecTree

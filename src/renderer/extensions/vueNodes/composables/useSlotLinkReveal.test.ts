@@ -7,12 +7,15 @@ import {
 } from '@/lib/litegraph/src/canvas/linkRevealState'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
 
 import { useSlotLinkReveal } from './useSlotLinkReveal'
 

@@ -77,7 +77,7 @@
           size="icon"
           @click="dismissWarningBanner"
         >
-          <i class="pi pi-times text-xs text-foreground"></i>
+          <i class="icon-[lucide--x] size-3 text-foreground"></i>
         </Button>
       </div>
 
@@ -87,7 +87,7 @@
         class="mx-6 mb-4 w-auto"
       >
         <template #icon>
-          <i class="icon-[lucide--info] size-4" />
+          <i class="icon-[lucide--info]" />
         </template>
         {{ $t('manager.legacyManagerSearchTip') }}
       </Message>
@@ -191,11 +191,11 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
-import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
+import SearchAutocomplete from '@comfyorg/design-system/search-input/SearchAutocomplete'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useExternalLink } from '@/composables/useExternalLink'

@@ -25,7 +25,7 @@ import type {
   LGraphCanvas,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import ErrorGroupList from './ErrorGroupList.vue'

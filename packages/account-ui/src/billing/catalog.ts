@@ -29,6 +29,11 @@ export interface TeamCreditStopPrice {
   readonly credits: number
   /** The yearly discount as a whole percent; monthly billing halves it. */
   readonly discountPercentYearly: number
+  /** The served discounted price per month of each cycle, in USD. */
+  readonly priceUsd: {
+    readonly monthly: number
+    readonly yearly: number
+  }
   /** What the server bills for one period of each cycle, in USD. */
   readonly periodChargeUsd: {
     readonly monthly: number
@@ -44,7 +49,7 @@ export function mapApiTeamCreditStops(
   stops: readonly {
     id: string
     credits: number
-    monthly: { period_charge_cents: number }
+    monthly: { price_cents: number; period_charge_cents: number }
     yearly: {
       list_price_cents: number
       price_cents: number
@@ -63,6 +68,10 @@ export function mapApiTeamCreditStops(
       usd: Math.round(listCents / 100),
       credits: stop.credits,
       discountPercentYearly,
+      priceUsd: {
+        monthly: stop.monthly.price_cents / 100,
+        yearly: stop.yearly.price_cents / 100
+      },
       periodChargeUsd: {
         monthly: stop.monthly.period_charge_cents / 100,
         yearly: stop.yearly.period_charge_cents / 100
@@ -72,14 +81,15 @@ export function mapApiTeamCreditStops(
 }
 
 /**
- * The discounted monthly price of a credit stop for a billing cycle. The
- * pricing table and both checkout hosts price a team stop through this, so
- * the slider and the confirm never drift.
+ * The discounted monthly price of a credit stop for a billing cycle: the
+ * served price when the stop has one, else the list price less its discount.
  */
 export function getStopDiscountedMonthlyUsd(
-  stop: Pick<TeamCreditStopPrice, 'usd' | 'discountPercentYearly'>,
+  stop: Pick<TeamCreditStopPrice, 'usd' | 'discountPercentYearly'> &
+    Partial<Pick<TeamCreditStopPrice, 'priceUsd'>>,
   cycle: 'monthly' | 'yearly'
 ): number {
+  if (stop.priceUsd) return stop.priceUsd[cycle]
   const percent =
     cycle === 'monthly'
       ? stop.discountPercentYearly / 2

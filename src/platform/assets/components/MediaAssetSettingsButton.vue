@@ -1,7 +1,7 @@
 <template>
   <div class="inline-flex items-center">
-    <Popover>
-      <template #button>
+    <PopoverRoot v-slot="{ close }">
+      <PopoverTrigger as-child>
         <Button
           :tooltip="$t('sideToolbar.mediaAssets.viewSettings')"
           variant="secondary"
@@ -10,15 +10,21 @@
         >
           <i class="icon-[lucide--settings-2]" />
         </Button>
-      </template>
-      <template #default="{ close }">
+      </PopoverTrigger>
+      <PopoverContent
+        :side-offset="5"
+        dismiss-on-viewport-change
+        class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
+      >
         <slot :close />
-      </template>
-    </Popover>
+        <PopoverArrow class="fill-background stroke-border/50" />
+      </PopoverContent>
+    </PopoverRoot>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/Popover.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 </script>

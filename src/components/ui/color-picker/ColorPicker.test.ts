@@ -68,4 +68,29 @@ describe('ColorPicker', () => {
       screen.getByRole('slider', { name: 'Updated intensity' })
     ).toBeVisible()
   })
+  it('names the default trigger after the value it displays', async () => {
+    const user = userEvent.setup()
+    render(ColorPicker, {
+      props: {
+        modelValue: '#ff000080',
+        hexLabel: 'Hex',
+        rgbaLabel: 'RGBA',
+        hueLabel: 'Hue',
+        alphaLabel: 'Alpha',
+        redLabel: 'Red',
+        greenLabel: 'Green',
+        blueLabel: 'Blue',
+        saturationBrightnessLabel: 'Saturation and brightness',
+        formatLabel: 'Format'
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: '#ff0000 50%' }))
+    await user.click(screen.getByRole('combobox', { name: 'Format' }))
+    await user.click(await screen.findByRole('option', { name: 'RGBA' }))
+
+    expect(
+      screen.getByRole('button', { name: '255 0 0 50%' })
+    ).toBeInTheDocument()
+  })
 })

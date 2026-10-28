@@ -3,12 +3,12 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { inputAsSerialisable } from '@/lib/litegraph/src/node/slotUtils'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { chainCallback } from '@/lib/litegraph/src/utils/chainCallback'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { BooleanWidget } from '@/lib/litegraph/src/widgets/BooleanWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 const foreignBehavior = Symbol('foreignBehavior')
 

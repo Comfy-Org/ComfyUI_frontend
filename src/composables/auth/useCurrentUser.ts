@@ -92,15 +92,15 @@ export const useCurrentUser = () => {
 
   const providerIcon = computed(() => {
     if (isApiKeyLogin.value) {
-      return 'pi pi-key'
+      return 'icon-[lucide--key]'
     }
     if (providerId.value?.includes('google')) {
       return 'pi pi-google'
     }
     if (providerId.value?.includes('github')) {
-      return 'pi pi-github'
+      return 'icon-[lucide--github]'
     }
-    return 'pi pi-user'
+    return 'icon-[lucide--user]'
   })
 
   const isEmailProvider = computed(() => {
