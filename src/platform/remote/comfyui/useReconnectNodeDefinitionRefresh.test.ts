@@ -169,6 +169,17 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     expect(refresh).not.toHaveBeenCalled()
   })
 
+  it('keeps the open workflow when the refresh resolves without registering the new type', async () => {
+    const refresh = registerRefreshCommand(vi.fn(async () => {}))
+    showCanvas(node('NewPackNode', { missing: true }))
+    serverHas('NewPackNode')
+
+    await useReconnectNodeDefinitionRefresh()()
+
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
+  })
+
   it('does not fetch node definitions on cloud', async () => {
     distribution.isCloud = true
     const refresh = registerRefreshCommand()
