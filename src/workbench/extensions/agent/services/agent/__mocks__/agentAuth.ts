@@ -14,9 +14,9 @@ export const withAgentAuth = vi.fn<typeof realWithAgentAuth>(
 
 // Consent reads its credential through this. A suite that mocks this module and then
 // touches the consent store gets `undefined is not a function` without it.
-export const agentSettingsAuthHeader = vi.fn<typeof realAgentSettingsAuthHeader>(
-  async () => ({ Authorization: 'Bearer workspace-token' })
-)
+export const agentSettingsAuthHeader = vi.fn<
+  typeof realAgentSettingsAuthHeader
+>(async () => ({ Authorization: 'Bearer workspace-token' }))
 
 export const agentSocketAuthParams = vi.fn<typeof realAgentSocketAuthParams>(
   async () => new URLSearchParams()
