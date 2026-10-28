@@ -1265,6 +1265,11 @@ describe('useQueueStore', () => {
         failOnce()
         await store.update()
         expect(reportError).toHaveBeenCalledExactlyOnceWith(...expectedReport)
+        // getHistory swallows failures unless asked to throw, so the store must
+        // opt in for a history outage to reach the tracker.
+        expect(api.getHistory).toHaveBeenCalledWith(expect.any(Number), {
+          throwOnError: true
+        })
 
         vi.mocked(api.getQueue).mockResolvedValueOnce(emptyQueue)
         vi.mocked(api.getHistory).mockResolvedValueOnce([])
