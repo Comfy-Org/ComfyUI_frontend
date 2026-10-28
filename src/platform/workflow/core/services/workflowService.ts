@@ -26,7 +26,8 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useApp } from '@/scripts/appInstance'
-import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
+import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { nodeTypesMayStillArrive } from '@/platform/lateCustomNodes/lateNodeTypes'
 import { showPlaceholdersAsWaiting } from '@/platform/lateCustomNodes/waitingNodes'
@@ -399,7 +400,7 @@ export const useWorkflowService = () => {
    * Load the default workflow
    */
   const loadDefaultWorkflow = () =>
-    queueWorkflowLoad(() => useApp().loadGraphData(defaultGraph))
+    queueWorkflowLoad(() => useApp().loadGraphData(getDefaultWorkflow()))
 
   /**
    * Load a blank workflow
