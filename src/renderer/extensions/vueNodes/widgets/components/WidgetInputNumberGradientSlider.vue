@@ -40,7 +40,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import GradientSlider from '@/components/gradientslider/GradientSlider.vue'
+import GradientSlider from '@comfyorg/design-system/slider/GradientSlider'
 import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 import type { ColorStop } from '@/lib/litegraph/src/interfaces'

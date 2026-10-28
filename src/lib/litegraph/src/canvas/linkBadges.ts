@@ -1,5 +1,5 @@
 import type { LLink } from '@/lib/litegraph/src/types/entityRegistry'
-import { textOnColor } from '@/utils/colorUtil'
+import { textOnColor } from '@comfyorg/design-system/lib/color-picker/colorUtil'
 
 import type {
   HasBoundingRect,

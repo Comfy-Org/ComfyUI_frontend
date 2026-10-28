@@ -14,7 +14,7 @@ import type {
   WidgetSurfaces,
   WidgetVisibilityComponent
 } from '@/types/widgetVisibility'
-import type { ColorFormat } from '@/utils/colorUtil'
+import type { ColorFormat } from '@comfyorg/design-system/lib/color-picker/colorUtil'
 import type { InputSpec } from '@comfyorg/object-info-parser'
 
 import type {

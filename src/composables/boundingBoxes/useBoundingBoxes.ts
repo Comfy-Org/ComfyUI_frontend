@@ -31,7 +31,10 @@ import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { readableTextColor, textOnColor } from '@/utils/colorUtil'
+import {
+  readableTextColor,
+  textOnColor
+} from '@comfyorg/design-system/lib/color-picker/colorUtil'
 
 const HANDLE_PX = 8
 const DIMENSION_STEP = 16

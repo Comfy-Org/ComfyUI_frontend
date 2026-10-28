@@ -8,6 +8,7 @@
       <div v-if="isLoggedIn" class="flex flex-col gap-2">
         <UserAvatar
           v-if="userPhotoUrl"
+          :label="$t('auth.login.userAvatar')"
           :photo-url="userPhotoUrl"
           size="large"
         />
@@ -93,7 +94,7 @@
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import UserAvatar from '@/components/common/UserAvatar.vue'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'

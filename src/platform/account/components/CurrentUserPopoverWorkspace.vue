@@ -4,6 +4,7 @@
     <!-- User Info Section -->
     <div class="mb-4 flex flex-col items-center px-0 py-3">
       <UserAvatar
+        :label="$t('auth.login.userAvatar')"
         class="mb-1"
         :photo-url="userPhotoUrl"
         icon-class="size-6"
@@ -253,7 +254,7 @@ import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
-import UserAvatar from '@/components/common/UserAvatar.vue'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/platform/account/components/WorkspaceSwitcherPopover.vue'
 import Button from '@comfyorg/design-system/button/Button'

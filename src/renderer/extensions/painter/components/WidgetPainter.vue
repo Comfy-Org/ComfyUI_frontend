@@ -287,7 +287,7 @@ import {
   usePainter
 } from '@/renderer/extensions/painter/composables/usePainter'
 import type { NodeId } from '@/types/nodeId'
-import { toHexFromFormat } from '@/utils/colorUtil'
+import { toHexFromFormat } from '@comfyorg/design-system/lib/color-picker/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { nodeId } = defineProps<{

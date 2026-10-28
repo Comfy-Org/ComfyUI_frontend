@@ -9,7 +9,7 @@ import {
 } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
 import { useLinkStore } from '@/stores/linkStore'
-import { adjustColor } from '@/utils/colorUtil'
+import { adjustColor } from '@comfyorg/design-system/lib/color-picker/colorUtil'
 import {
   createMockLGraph,
   createMockLGraphNode,
@@ -20,7 +20,7 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-vi.mock(import('@/utils/colorUtil'), () => ({
+vi.mock(import('@comfyorg/design-system/lib/color-picker/colorUtil'), () => ({
   adjustColor: vi.fn((color: string) => color + '_adjusted')
 }))
 

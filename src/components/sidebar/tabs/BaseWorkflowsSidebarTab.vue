@@ -158,7 +158,7 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 import TextDivider from '@comfyorg/design-system/common/TextDivider'

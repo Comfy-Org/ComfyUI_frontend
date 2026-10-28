@@ -30,7 +30,7 @@ import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
-import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 
 import { GetNodeParentGroupKey } from '@/components/rightSidePanel/shared'

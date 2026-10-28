@@ -11,7 +11,11 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { GroupId } from '@/types/groupId'
 import { toGroupId } from '@/types/groupId'
-import { hexToRgb, luminance, readableTextColor } from '@/utils/colorUtil'
+import {
+  hexToRgb,
+  luminance,
+  readableTextColor
+} from '@comfyorg/design-system/lib/color-picker/colorUtil'
 
 import { canvasClass } from './canvas/canvasClassAccess'
 import { LGraphNode } from './LGraphNode'

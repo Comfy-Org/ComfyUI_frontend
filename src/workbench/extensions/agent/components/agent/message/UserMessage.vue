@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@comfyorg/design-system/button/Button'
-import Tag from '@/components/chip/Tag.vue'
+import Tag from '@comfyorg/design-system/chip/Tag'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'

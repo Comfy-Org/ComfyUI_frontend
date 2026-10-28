@@ -6,7 +6,7 @@ import type {
 import { computed, ref, toRefs } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import type { ColorFormat } from '@/utils/colorUtil'
+import type { ColorFormat } from '@comfyorg/design-system/lib/color-picker/colorUtil'
 
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 

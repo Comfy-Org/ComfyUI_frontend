@@ -17,7 +17,7 @@ import {
   intToHex,
   isColorFormat,
   toHexFromFormat
-} from '@/utils/colorUtil'
+} from '@comfyorg/design-system/lib/color-picker/colorUtil'
 
 import type { IColorWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 

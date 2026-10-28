@@ -13,12 +13,14 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { GroupId } from '@/types/groupId'
 import { toGroupId } from '@/types/groupId'
-import * as colorUtil from '@/utils/colorUtil'
+import * as colorUtil from '@comfyorg/design-system/lib/color-picker/colorUtil'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { test } from './__fixtures__/testExtensions'
 
-vi.mock(import('@/utils/colorUtil'), { spy: true })
+vi.mock(import('@comfyorg/design-system/lib/color-picker/colorUtil'), {
+  spy: true
+})
 
 function createMockContext() {
   return {

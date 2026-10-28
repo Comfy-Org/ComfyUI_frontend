@@ -10,7 +10,7 @@ import {
 } from '@comfyorg/mask-editor/brushUtils'
 import { StrokeProcessor } from '@comfyorg/mask-editor/StrokeProcessor'
 import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
-import { hexToRgb } from '@/utils/colorUtil'
+import { hexToRgb } from '@comfyorg/design-system/lib/color-picker/colorUtil'
 import type { Point } from '@comfyorg/mask-editor/types'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToast } from '@/components/ui/toast/toastStore'
