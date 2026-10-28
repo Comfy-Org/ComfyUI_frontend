@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { reportPreloadError } from '@/platform/telemetry/assetLoadErrorReporting'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import App from './App.vue'
@@ -12,6 +13,7 @@ vi.mock<unknown>(import('@/components/dialog/GlobalDialog.vue'), () => ({
   default: { template: '<div />' }
 }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
+vi.mock(import('@/platform/telemetry/assetLoadErrorReporting'))
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/composables/useConflictDetection'),
   () => ({
@@ -52,5 +54,48 @@ describe('App', () => {
     expect(overlay).toHaveClass('z-blocking')
     unmount()
     expect(overlay.style.zIndex).toBe('')
+  })
+
+  function dispatchPreloadError(payload: Error) {
+    const event = Object.assign(
+      new Event('vite:preloadError', { cancelable: true }),
+      { payload }
+    )
+    window.dispatchEvent(event)
+    return event
+  }
+
+  it.for([
+    "Unexpected token '}'",
+    'Unexpected end of input',
+    'Importing a module script failed.'
+  ])(
+    'lets a preload failure without a URL (%s) propagate to the importer',
+    (message) => {
+      const { unmount } = render(App, {
+        global: { stubs: { RouterView: true } }
+      })
+
+      const event = dispatchPreloadError(new SyntaxError(message))
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(reportPreloadError).not.toHaveBeenCalled()
+      unmount()
+    }
+  )
+
+  it('swallows and reports a first-party chunk preload failure', () => {
+    const { unmount } = render(App, {
+      global: { stubs: { RouterView: true } }
+    })
+    const payload = new Error(
+      'Failed to fetch dynamically imported module: https://cloud.comfy.org/assets/GraphView-abc123.js'
+    )
+
+    const event = dispatchPreloadError(payload)
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(reportPreloadError).toHaveBeenCalledExactlyOnceWith(payload)
+    unmount()
   })
 })

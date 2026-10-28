@@ -116,6 +116,24 @@ describe('extension loading', () => {
       })
     })
 
+    it.for([
+      "Unexpected token '}'",
+      'Unexpected end of input',
+      'Unexpected end of script',
+      'unexpected garbage after module'
+    ])(
+      'attributes a module that does not parse (%s) to its extension path',
+      (message) => {
+        const ext = '/extensions/comfyui-pack/js/guide.js'
+
+        reportExtensionLoadFailures([{ ext, error: new SyntaxError(message) }])
+
+        expect(
+          vi.mocked(reportError).mock.calls[0][1].context?.failures
+        ).toEqual([{ ext, message, stack: expect.any(String) }])
+      }
+    )
+
     it('keeps a batch at the cap untruncated', () => {
       reportExtensionLoadFailures(
         Array.from({ length: 10 }, (_, i) =>

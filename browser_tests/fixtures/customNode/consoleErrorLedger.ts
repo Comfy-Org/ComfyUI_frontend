@@ -143,7 +143,7 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
     {
       id: 'ltx-director-guide-syntax',
       pattern:
-        /\[vite:preloadError\].*Unexpected token '\}'\} \[http:\/\/localhost:8188\/assets\//,
+        /^\[Reported error\]: error_loading_extension \/extensions\/WhatDreamsCost-ComfyUI\/(?:.+\/)?ltx_director_guide\.js$/,
       global: true,
       requiredStartupId: 'ltx-director-guide-syntax',
       reason:
@@ -164,7 +164,7 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
     {
       id: 'duplicate-color-overlay',
       pattern:
-        /\[vite:preloadError\].*Extension named 'ColorOverlay' already registered\./,
+        /^\[Reported error\]: error_loading_extension \/extensions\/comfyui_layerstyle(?:_advance)?\/(?:.+\/)?dz_node_palette\.js$/i,
       global: true,
       requiredStartupId: 'duplicate-color-overlay',
       reason:
@@ -290,15 +290,31 @@ export function unallowlistedGlobalExtensionErrorsForPacks(
   return withoutMatches(rules, errors)
 }
 
+const EXTENSION_LOAD_REPORT_RE =
+  /^(\[Reported error\]: error_loading_extension) [\s\S]*^Failed extensions: (.+?)(?: \[[^\]]*\])?$/m
+
+// The loader reports every failed import in one aggregate line; split it per
+// extension so one allowlisted pack cannot hide another pack's failure.
+function perExtensionLoadReports(error: string): string[] {
+  const match = error.match(EXTENSION_LOAD_REPORT_RE)
+  if (!match) return [error]
+  const [, report, extensions] = match
+  return extensions.split(', ').map((ext) => `${report} ${ext}`)
+}
+
 export function customExtensionStartupErrors(
   errors: readonly string[]
 ): string[] {
-  return errors.filter(
-    (error) =>
-      /\/extensions\/(?!core\/)/i.test(error) ||
-      /(?:error (?:loading|calling)|failed to load) extension\b/i.test(error) ||
-      /\[vite:preloadError\]/.test(error)
-  )
+  return errors
+    .flatMap(perExtensionLoadReports)
+    .filter(
+      (error) =>
+        /\/extensions\/(?!core\/)/i.test(error) ||
+        /(?:error (?:loading|calling)|failed to load) extension\b/i.test(
+          error
+        ) ||
+        /\[vite:preloadError\]/.test(error)
+    )
 }
 
 export function staleRequiredStartupErrorRulesForPacks(

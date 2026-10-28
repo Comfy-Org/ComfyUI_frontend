@@ -34,9 +34,20 @@ describe('consoleErrorLedger', () => {
     ])
   })
 
+  it('splits the aggregate extension load report into one error per extension', () => {
+    expect(
+      customExtensionStartupErrors([
+        '[Reported error]: error_loading_extension AggregateError: Error loading extensions\n    at reportExtensionLoadFailures (http://localhost:8188/assets/main-abc.js:1:1)\nFailed extensions: /extensions/WhatDreamsCost-ComfyUI/ltx_director_guide.js, /extensions/Pack/widget.js [http://localhost:8188/assets/main-abc.js]'
+      ])
+    ).toEqual([
+      '[Reported error]: error_loading_extension /extensions/WhatDreamsCost-ComfyUI/ltx_director_guide.js',
+      '[Reported error]: error_loading_extension /extensions/Pack/widget.js'
+    ])
+  })
+
   it('required startup errors fail stale and filter only their exact signatures', () => {
     const error =
-      "[vite:preloadError] {url: null, message: Unexpected token '}'} [http://localhost:8188/assets/main-abc.js]"
+      '[Reported error]: error_loading_extension /extensions/WhatDreamsCost-ComfyUI/ltx_director_guide.js'
     expect(
       staleRequiredStartupErrorRulesForPacks(['WhatDreamsCost-ComfyUI'], [])
     ).toEqual(['WhatDreamsCost-ComfyUI/ltx-director-guide-syntax'])

@@ -13,6 +13,7 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
@@ -29,6 +30,7 @@ import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
+import { parsePreloadError } from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 registerExtensionDialogService(createExtensionDialogService())
@@ -68,7 +70,11 @@ onMounted(() => {
 
   // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
   // See: https://vite.dev/guide/build#load-error-handling
-  window.addEventListener('vite:preloadError', (event) => {
+  useEventListener(window, 'vite:preloadError', (event) => {
+    // Vite rethrows the failure to the importer unless the event is
+    // prevented. A failure with no URL (e.g. a custom extension that does not
+    // parse) is left to propagate so the extension loader can attribute it.
+    if (parsePreloadError(event.payload).url === null) return
     event.preventDefault()
     reportPreloadError(event.payload)
     // No toast: third-party custom node extensions frequently trigger this

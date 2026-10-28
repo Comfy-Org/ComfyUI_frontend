@@ -1,5 +1,19 @@
 import type { ConsoleMessage, Page, TestInfo } from '@playwright/test'
 
+import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
+
+import { EXTENSION_LOAD_ERROR_TYPE } from '@/platform/telemetry/extensionLoadTelemetry'
+
+const EXTENSION_LOAD_REPORT = `${REPORTED_ERROR_PREFIX}${EXTENSION_LOAD_ERROR_TYPE}`
+
+function isCollectedMessage(message: ConsoleMessage): boolean {
+  if (message.type() === 'error') return true
+  return (
+    message.type() === 'warning' &&
+    message.text().startsWith(EXTENSION_LOAD_REPORT)
+  )
+}
+
 const startupErrors = new WeakMap<Page, readonly string[]>()
 
 export function recordStartupConsoleErrors(
@@ -31,7 +45,7 @@ export function collectConsoleErrors(page: Page): {
 } {
   const errors: string[] = []
   const listener = (message: ConsoleMessage) => {
-    if (message.type() !== 'error') return
+    if (!isCollectedMessage(message)) return
     const url = message.location().url
     errors.push(url ? `${message.text()} [${url}]` : message.text())
   }
