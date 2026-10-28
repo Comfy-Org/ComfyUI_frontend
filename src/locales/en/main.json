@@ -233,6 +233,7 @@
     "custom": "Custom",
     "createdByAgent": "Created by agent",
     "agentCreated": "Agent-created",
+    "agentBadge": "AI",
     "agentExtensionAdded": "Your agent added {name}",
     "agentExtensionsAdded": "Your agent added {count} extensions",
     "agentExtensionDisableFailed": "Couldn't disable the extension. Try again.",

@@ -50,7 +50,7 @@ vi.mock(import('@/scripts/api'))
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} }
+  messages: { en: { g: { agentBadge: 'AI', agentCreated: 'Agent-created' } } }
 })
 
 type SideToolbarProps = ComponentProps<typeof SideToolbar>
@@ -202,7 +202,7 @@ describe('SideToolbar', () => {
     expect(screen.getAllByText('AI')).toHaveLength(2)
 
     await fireEvent.contextMenu(
-      screen.getByRole('button', { name: 'Workflows' })
+      screen.getByRole('button', { name: 'Workflows (Agent-created)' })
     )
     await user.click(await screen.findByRole('menuitem', { name: /disable/i }))
 
@@ -213,6 +213,36 @@ describe('SideToolbar', () => {
       })
     )
     await vi.waitFor(() => expect(reload).toHaveBeenCalledOnce())
+  })
+
+  it('keeps an agent tab badged and named when the tab carries its own iconBadge', () => {
+    useExtensionStore().registerExtension({
+      name: 'agent.cushions.toolbar',
+      provenance: { createdBy: 'comfy-agent' }
+    })
+    useSidebarTabStore().sidebarTabs = [
+      {
+        ...assetsTab,
+        iconBadge: () => '7',
+        source: { extensionName: 'agent.cushions.toolbar' }
+      }
+    ]
+    renderToolbar()
+
+    expect(screen.getByText('7')).toBeInTheDocument()
+    expect(screen.getByText('AI')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Assets (Agent-created)' })
+    ).toBeInTheDocument()
+  })
+
+  it('leaves a non-agent tab unbadged and unnamed by provenance', () => {
+    useSidebarTabStore().sidebarTabs = [{ ...assetsTab, iconBadge: () => '7' }]
+    renderToolbar()
+
+    expect(screen.getByText('7')).toBeInTheDocument()
+    expect(screen.queryByText('AI')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Assets' })).toBeInTheDocument()
   })
 
   it('navigates Settings to the Agent-created extensions from the tab menu', async () => {
@@ -226,7 +256,9 @@ describe('SideToolbar', () => {
     ]
     renderToolbar()
 
-    await fireEvent.contextMenu(screen.getByRole('button', { name: 'Assets' }))
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Assets (Agent-created)' })
+    )
     await user.click(await screen.findByRole('menuitem', { name: /manage/i }))
 
     expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('extension', {

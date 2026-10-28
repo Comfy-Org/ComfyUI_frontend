@@ -47,6 +47,23 @@ describe('SidebarIcon', () => {
     expect(screen.getByText(badge)).toBeInTheDocument()
   })
 
+  it('shows the provenance badge alongside an iconBadge', () => {
+    renderSidebarIcon({ iconBadge: '2', provenanceBadge: 'AI' })
+    expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.getByText('AI')).toBeInTheDocument()
+  })
+
+  it('names the provenance in the accessible name', () => {
+    renderSidebarIcon({
+      tooltip: 'Assets',
+      provenanceBadge: 'AI',
+      provenanceLabel: 'Agent-created'
+    })
+    expect(screen.getByRole('button')).toHaveAccessibleName(
+      'Assets (Agent-created)'
+    )
+  })
+
   it('shows tooltip on hover', async () => {
     const tooltipText = 'Settings'
     const { user } = renderSidebarIcon({ tooltip: tooltipText })
