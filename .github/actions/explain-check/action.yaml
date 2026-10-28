@@ -85,9 +85,6 @@ runs:
             ;;
         esac
 
-        # The slug is the upsert key and part of the file path below; refuse
-        # anything that could escape the workspace. Same rule as
-        # upsert-comment-section.
         if ! [[ "$INPUT_SLUG" =~ ^[a-z0-9-]+$ ]]; then
           echo "::error::explain-check: slug '$INPUT_SLUG' must match ^[a-z0-9-]+$"
           exit 1

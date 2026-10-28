@@ -327,9 +327,6 @@ else
     fi
 
     # Extract and display failed tests from all browsers (flaky tests are treated as passing)
-    # The count and the names come from different fields, and the index.html
-    # fallback in extract-playwright-counts.ts reports a count with no names —
-    # so collect first and only open the box if there is something to show.
     if [ $total_failed -gt 0 ]; then
         failed_test_lines=""
 

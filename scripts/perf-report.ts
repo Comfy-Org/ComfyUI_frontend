@@ -219,19 +219,21 @@ function frameTimeToFps(ms: number): number {
   return ms > 0 ? 1000 / ms : 0
 }
 
-/**
- * PerformanceHelper records a frame duration of 0 when sampling times out or
- * collects fewer than two timestamps. That is missing data, not a scenario
- * running at 0 FPS, so it must never count as a target miss.
- */
 function sampledFrameMetric(
   samples: PerfMeasurement[],
   key: 'frameDurationMs' | 'p95FrameDurationMs'
 ): number | null {
-  // Drop the unsampled runs before the median: left in, a 0 drags the median
-  // frame time down and reports a scenario faster than it ran.
   const sampled = samples.filter((s) => (getMetricValue(s, key) ?? 0) > 0)
   return medianMetric(sampled, key)
+}
+
+function reportedMedian(
+  samples: PerfMeasurement[],
+  key: MetricKey
+): number | null {
+  return key === 'frameDurationMs' || key === 'p95FrameDurationMs'
+    ? sampledFrameMetric(samples, key)
+    : medianMetric(samples, key)
 }
 
 interface FpsTargetTally {
@@ -270,7 +272,7 @@ function baselineMedian(
   baseSamples: PerfMeasurement[] | undefined,
   key: MetricKey
 ): number | null {
-  return baseSamples?.length ? medianMetric(baseSamples, key) : null
+  return baseSamples?.length ? reportedMedian(baseSamples, key) : null
 }
 
 function formatIfPresent(
@@ -372,7 +374,7 @@ function compareMetric(
   historical: PerfReport[]
 ): ComparedRow | null {
   const { key, label, unit, minAbsDelta } = metric
-  const prVal = medianMetric(prSamples, key)
+  const prVal = reportedMedian(prSamples, key)
   if (prVal === null) return null
 
   const baseVal = baselineMedian(baseSamples, key)
@@ -543,7 +545,7 @@ function renderColdStartReport(
     const baseSamples = baselineGroups.get(testName)
 
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const prVal = medianMetric(prSamples, key)
+      const prVal = reportedMedian(prSamples, key)
       if (prVal === null) continue
 
       const baseVal = baselineMedian(baseSamples, key)
@@ -574,7 +576,7 @@ function renderNoBaselineReport(
   )
   for (const [testName, prSamples] of prGroups) {
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const prVal = medianMetric(prSamples, key)
+      const prVal = reportedMedian(prSamples, key)
       if (prVal === null) continue
       lines.push(`| ${testName}: ${label} | ${formatValue(prVal, unit)} |`)
     }
@@ -613,13 +615,6 @@ function renderRawData(current: PerfReport): string[] {
   ]
 }
 
-/**
- * The per-test target verdict lives in the collapsed summary, so without this
- * the heading can read ✅ over a hidden ❌. It leads, because a reader scanning
- * the comment takes the verdict from the first glyph and a target miss
- * outranks "nothing moved since the baseline". A run that measured nothing, or
- * sampled no frames, has not checked the target and must not read as clean.
- */
 function perfHeadingStatus(
   current: PerfReport,
   prGroups: Map<string, PerfMeasurement[]>,

@@ -91,8 +91,6 @@ runs:
         COMMENT_FILE=$(mktemp)
 
         {
-          # Neutral on purpose: release-draft-create.yaml calls this for
-          # prereleases too, whose GitHub release is still an unpublished draft.
           echo "## 🚀 $SECTION_TITLE: ✅ Publish jobs finished for \`$NEW_VERSION\`"
           echo ""
           echo "<details>"

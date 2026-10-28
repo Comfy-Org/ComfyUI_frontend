@@ -124,8 +124,6 @@ function bar(covered: number, total: number): string {
 }
 
 const lines: string[] = []
-// The shard caveat qualifies the verdict, so it stays visible under the
-// heading rather than folded into the box with the totals.
 const notice: string[] = []
 const metadata = readCoverageMetadata(
   join(dirname(lcovPath), COVERAGE_METADATA_FILE)

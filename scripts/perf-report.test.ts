@@ -29,11 +29,11 @@ function render(measurements: Record<string, unknown>[]): string {
   }
 }
 
-const heading = (output: string) => output.split('\n')[0]
+function heading(output: string): string {
+  return output.split('\n')[0]
+}
 
 describe('perf-report heading', () => {
-  // PerformanceHelper records p95FrameDurationMs as 0 when frame sampling
-  // times out. That is missing data, not a scenario running at 0 FPS.
   it('does not count a scenario without frame samples as missing the FPS target', () => {
     const output = render([
       { name: 'fast', frameDurationMs: 16, p95FrameDurationMs: 17 },
@@ -58,9 +58,6 @@ describe('perf-report heading', () => {
     )
   })
 
-  // A run that recorded no frames stores 0 alongside the real samples. It must
-  // be dropped before the median, or it halves the frame time and turns a
-  // real miss into a pass.
   it('ignores unsampled runs when taking the median frame time', () => {
     const output = render([
       { name: 'slow', frameDurationMs: 0, p95FrameDurationMs: 0 },
@@ -90,6 +87,17 @@ describe('perf-report heading', () => {
     ])
 
     expect(output).toContain('> **fast**: 62.5 avg FPS · 58.8 P5 FPS ✅')
+  })
+
+  it('leaves unsampled runs out of the frame time tables', () => {
+    const output = render([
+      { name: 'slow', frameDurationMs: 0, p95FrameDurationMs: 0 },
+      { name: 'slow', frameDurationMs: 0, p95FrameDurationMs: 0 },
+      { name: 'slow', frameDurationMs: 30, p95FrameDurationMs: 40 }
+    ])
+
+    expect(output).toContain('| slow: p95 frame time | 40ms |')
+    expect(output).toContain('| slow: avg frame time | 30ms |')
   })
 
   it('does not report a run that measured nothing as clean', () => {

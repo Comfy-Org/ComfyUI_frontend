@@ -28,9 +28,6 @@ function render(args: string[]): string {
 }
 
 describe('unified-report', () => {
-  // A heading that follows another section without a blank line is swallowed
-  // into the previous block (a `</details>` keeps an HTML block open), so every
-  // section after the first must start on a fresh paragraph.
   it('separates each section from the one before it with a blank line', () => {
     const output = render([
       '--size-status=failed',
@@ -38,14 +35,15 @@ describe('unified-report', () => {
       '--coverage-status=failed'
     ])
 
-    const headings = output.match(/^## .*$/gm) ?? []
-    expect(headings).toEqual([
-      '## 📦 Bundle: ⚠️ Size data collection failed — check the CI workflow logs',
-      '## ⚡ Performance: ⏳ Performance tests in progress…',
-      '## 🔬 E2E Coverage: ⚠️ Coverage collection failed — check the CI workflow logs'
-    ])
-    for (const heading of headings.slice(1)) {
-      expect(output).toContain(`\n\n${heading}`)
-    }
+    expect(output).toBe(
+      [
+        '## 📦 Bundle: ⚠️ Size data collection failed — check the CI workflow logs',
+        '',
+        '## ⚡ Performance: ⏳ Performance tests in progress…',
+        '',
+        '## 🔬 E2E Coverage: ⚠️ Coverage collection failed — check the CI workflow logs',
+        ''
+      ].join('\n')
+    )
   })
 })

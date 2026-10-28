@@ -73,8 +73,6 @@ describe('renderPrReportSection', () => {
     ).toContain('\n\nNo new findings.\n\n</details>')
   })
 
-  // A failure call to action has to be readable without expanding anything:
-  // the heading says what is wrong, the notice says what to do about it.
   it('keeps the notice visible between the heading and the collapsed box', () => {
     const rendered = renderPrReportSection({
       icon: '⚡',
