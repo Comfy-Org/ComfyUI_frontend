@@ -126,10 +126,7 @@ export const useAuthActions = () => {
     }
   }
 
-  /**
-   * `beforeSignOut` runs once unsaved work is settled; false keeps the user signed in.
-   * `signInPath` is the cloud sign-in page the browser lands on afterwards.
-   */
+  /** `beforeSignOut` runs once unsaved work is settled; false keeps the user signed in. */
   const logout = wrapWithErrorHandlingAsync(
     async ({
       beforeSignOut,
@@ -137,7 +134,7 @@ export const useAuthActions = () => {
     }: {
       beforeSignOut?: () => Promise<boolean>
       signInPath?: string
-    } = {}) => {
+    } = {}): Promise<boolean> => {
       if (isCloud) {
         const workflowStore = useWorkflowStore()
         const modifiedWorkflows = workflowStore.modifiedWorkflows
@@ -149,14 +146,14 @@ export const useAuthActions = () => {
             type: 'dirtyClose',
             denyLabel: t('auth.signOut.signOutAnyway')
           })
-          if (confirmed === null) return
+          if (confirmed === null) return false
 
           if (confirmed) {
             const workflowService = useWorkflowService()
             for (const workflow of modifiedWorkflows) {
               try {
                 const saved = await workflowService.saveWorkflow(workflow)
-                if (!saved) return
+                if (!saved) return false
               } catch {
                 throw new Error(
                   t('auth.signOut.saveFailed', { workflow: workflow.path })
@@ -167,7 +164,7 @@ export const useAuthActions = () => {
         }
       }
 
-      if (beforeSignOut && !(await beforeSignOut())) return
+      if (beforeSignOut && !(await beforeSignOut())) return false
 
       await authStore.logout()
       if (isCloud) {
@@ -188,6 +185,7 @@ export const useAuthActions = () => {
           window.location.reload()
         }
       }
+      return true
     },
     reportError
   )

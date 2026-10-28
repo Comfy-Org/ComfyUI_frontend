@@ -71,9 +71,9 @@ describe('InviteWrongAccountDialogContent', () => {
   })
 
   it('disables Switch account while the sign-out is pending', async () => {
-    let resolveLogout!: () => void
+    let resolveLogout!: (signedOut: boolean) => void
     vi.mocked(useAuthActions().logout).mockImplementation(
-      () => new Promise<void>((resolve) => (resolveLogout = resolve))
+      () => new Promise<boolean>((resolve) => (resolveLogout = resolve))
     )
     renderComponent()
 
@@ -85,7 +85,7 @@ describe('InviteWrongAccountDialogContent', () => {
     expect(switchButton).toBeDisabled()
     expect(switchButton).toHaveAttribute('aria-busy', 'true')
 
-    resolveLogout()
+    resolveLogout(true)
     await waitFor(() => expect(switchButton).not.toBeDisabled())
   })
 

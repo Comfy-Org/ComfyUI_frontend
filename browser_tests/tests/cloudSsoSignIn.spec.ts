@@ -265,7 +265,12 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
       cloudAuth
     }) => {
       const accountB = { email: 'account-b@test.comfy.org', name: 'Account B' }
-      let sessionAccount = { email: CLOUD_SELF_EMAIL, name: 'E2E Test User' }
+      const signedInEmails: string[] = []
+      page.on('request', (request) => {
+        if (request.url().includes('accounts:signInWithPassword')) {
+          signedInEmails.push(request.postDataJSON().email)
+        }
+      })
       await page.route('**/api/features', (route) =>
         route.fulfill({
           json: {
@@ -281,10 +286,18 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
               status: 200,
               json: {
                 ...CONSENT_CHALLENGE,
-                user_email: sessionAccount.email,
-                user_display_name: sessionAccount.name
+                user_email: signedInEmails.at(-1)
               } satisfies OAuthConsentChallenge
             })
+      )
+      const appShell = await page.request
+        .get(APP_URL)
+        .then((response) => response.text())
+        .then((html) => html.replace('<head>', '<head><base href="/">'))
+      await page.route('**/cloud/login?**', (route) =>
+        route.request().resourceType() === 'document'
+          ? route.fulfill({ contentType: 'text/html', body: appShell })
+          : route.fallback()
       )
       await answerDiscover(page, 200, NOT_SSO)
       await cloudAuth.mockLiveEmailSignIn()
@@ -305,7 +318,6 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
       expect(loginQuery.get('switchAccount')).toBe('true')
       expect(loginQuery.get('oauth_request_id')).toBe(OAUTH_REQUEST_ID)
 
-      sessionAccount = accountB
       await cloudAuth.mockLiveEmailSignIn(accountB.email, accountB.name)
       await submitEmailSignIn(page, accountB.email)
 

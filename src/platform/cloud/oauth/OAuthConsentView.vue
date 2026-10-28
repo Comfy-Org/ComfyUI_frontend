@@ -270,7 +270,7 @@ const { initialChallenge } = defineProps<{
 const { t, te } = useI18n()
 const route = useRoute()
 const { flags } = useFeatureFlags()
-const { userEmail, userDisplayName, userPhotoUrl } = useCurrentUser()
+const { userEmail, userPhotoUrl } = useCurrentUser()
 
 function getDefaultWorkspaceId(
   source: OAuthConsentChallenge | undefined
@@ -290,18 +290,14 @@ const switchingAccount = ref(false)
 const signedInAccount = computed(() => {
   if (!flags.oauthConsentSwitchAccountEnabled) return null
   const sessionEmail = challenge.value?.user_email
-  if (sessionEmail) {
-    return {
-      email: sessionEmail,
-      displayName: challenge.value?.user_display_name,
-      photoUrl: sessionEmail === userEmail.value ? userPhotoUrl.value : null
-    }
-  }
-  if (!userEmail.value) return null
+  if (!sessionEmail) return null
   return {
-    email: userEmail.value,
-    displayName: userDisplayName.value,
-    photoUrl: userPhotoUrl.value
+    email: sessionEmail,
+    displayName: challenge.value?.user_display_name,
+    photoUrl:
+      sessionEmail.toLowerCase() === userEmail.value?.toLowerCase()
+        ? userPhotoUrl.value
+        : null
   }
 })
 
@@ -414,13 +410,11 @@ function switchAccountSignInPath(oauthRequestId: string): string {
 async function switchAccount() {
   if (!challenge.value) return
   switchingAccount.value = true
-  try {
-    await useAuthActions().logout({
-      signInPath: switchAccountSignInPath(challenge.value.oauth_request_id)
-    })
-  } finally {
-    switchingAccount.value = false
-  }
+  const signedOut = await useAuthActions().logout({
+    signInPath: switchAccountSignInPath(challenge.value.oauth_request_id)
+  })
+  if (signedOut === false) switchingAccount.value = false
+  else if (signedOut === undefined) window.location.reload()
 }
 
 onMounted(() => {

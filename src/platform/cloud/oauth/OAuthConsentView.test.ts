@@ -360,56 +360,37 @@ describe('OAuthConsentView signed-in account', () => {
       userEmail: computed(() => email),
       userDisplayName: computed(() => displayName)
     })
+  const sessionUser = { user_email: 'a@example.com' }
+  const consentControls = () =>
+    ['Continue', 'Cancel', 'Switch account'].map((name) =>
+      screen.getByRole('button', { name })
+    )
 
   beforeEach(() => {
     vi.mocked(useFeatureFlags().flags).oauthConsentSwitchAccountEnabled = true
     sessionStorage.setItem('Comfy.OAuthRequestId', challenge.oauth_request_id)
   })
 
-  it.for([
-    {
-      case: 'the session user from the challenge over the client user',
-      overrides: {
-        user_email: 'b@example.com',
-        user_display_name: 'Account B'
-      },
-      shown: ['Account B', 'b@example.com'],
-      hidden: 'a@example.com'
-    },
-    {
-      case: 'the client user when an older backend omits it',
-      overrides: {},
-      shown: ['Account A', 'a@example.com'],
-      hidden: 'b@example.com'
-    }
-  ] satisfies {
-    case: string
-    overrides: Partial<OAuthConsentChallenge>
-    shown: string[]
-    hidden: string
-  }[])('shows $case', ({ overrides, shown, hidden }) => {
+  it('shows the session user from the challenge over the client user', () => {
     signInAs('a@example.com', 'Account A')
-    renderConsent(overrides)
+    renderConsent({
+      user_email: 'b@example.com',
+      user_display_name: 'Account B'
+    })
 
     const account = screen.getByRole('region', { name: 'Signed in as' })
-    for (const text of shown) expect(account).toHaveTextContent(text)
-    expect(account).not.toHaveTextContent(hidden)
+    expect(account).toHaveTextContent('Account B')
+    expect(account).toHaveTextContent('b@example.com')
+    expect(account).not.toHaveTextContent('a@example.com')
   })
 
-  it('renders no account row when no identity is known', () => {
-    signInAs()
-    renderConsent()
-
-    expect(
-      screen.queryByRole('region', { name: 'Signed in as' })
-    ).not.toBeInTheDocument()
-    expect(screen.getByText('Comfy Desktop wants access')).toBeVisible()
-  })
-
-  it('renders no account row while the feature flag is off', () => {
-    vi.mocked(useFeatureFlags().flags).oauthConsentSwitchAccountEnabled = false
-    signInAs('a@example.com')
-    renderConsent({ user_email: 'a@example.com' })
+  it.for([
+    { case: 'the challenge omits the session user', flag: true },
+    { case: 'the feature flag is off', flag: false }
+  ])('renders no account row when $case', ({ flag }) => {
+    vi.mocked(useFeatureFlags().flags).oauthConsentSwitchAccountEnabled = flag
+    signInAs('a@example.com', 'Account A')
+    renderConsent(flag ? {} : sessionUser)
 
     expect(
       screen.queryByRole('region', { name: 'Signed in as' })
@@ -417,25 +398,39 @@ describe('OAuthConsentView signed-in account', () => {
     expect(
       screen.queryByRole('button', { name: 'Switch account' })
     ).not.toBeInTheDocument()
+    expect(screen.getByText('Comfy Desktop wants access')).toBeVisible()
   })
 
-  it('signs out and returns to sign-in carrying the same request to resume', async () => {
-    signInAs('a@example.com')
+  it('signs out and keeps the consent disabled while leaving for sign-in with the same request', async () => {
     const user = userEvent.setup()
-    renderConsent()
+    renderConsent({ ...sessionUser, workspaces: [challenge.workspaces[0]] })
 
     await user.click(screen.getByRole('button', { name: 'Switch account' }))
 
     expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
       signInPath: `/cloud/login?switchAccount=true&oauth_request_id=${challenge.oauth_request_id}`
     })
+    for (const control of consentControls()) expect(control).toBeDisabled()
     expect(mockSubmitOAuthConsentDecision).not.toHaveBeenCalled()
   })
 
-  it('never puts an unvalidated request id into the sign-in path', async () => {
-    signInAs('a@example.com')
+  it('reloads instead of restoring the consent when the sign-out fails', async () => {
+    vi.mocked(useAuthActions().logout).mockResolvedValueOnce(undefined)
+    const reload = vi
+      .spyOn(window.location, 'reload')
+      .mockImplementation(() => {})
     const user = userEvent.setup()
-    renderConsent({ oauth_request_id: '//evil.example/' })
+    renderConsent({ ...sessionUser, workspaces: [challenge.workspaces[0]] })
+
+    await user.click(screen.getByRole('button', { name: 'Switch account' }))
+
+    expect(reload).toHaveBeenCalledOnce()
+    for (const control of consentControls()) expect(control).toBeDisabled()
+  })
+
+  it('never puts an unvalidated request id into the sign-in path', async () => {
+    const user = userEvent.setup()
+    renderConsent({ ...sessionUser, oauth_request_id: '//evil.example/' })
 
     await user.click(screen.getByRole('button', { name: 'Switch account' }))
 
@@ -445,9 +440,9 @@ describe('OAuthConsentView signed-in account', () => {
   })
 
   it('stays on the same request when the sign-out is cancelled', async () => {
-    signInAs('a@example.com')
+    vi.mocked(useAuthActions().logout).mockResolvedValueOnce(false)
     const user = userEvent.setup()
-    renderConsent({ workspaces: [challenge.workspaces[0]] })
+    renderConsent({ ...sessionUser, workspaces: [challenge.workspaces[0]] })
 
     await user.click(screen.getByRole('button', { name: 'Switch account' }))
 
