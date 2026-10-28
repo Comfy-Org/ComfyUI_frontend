@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { render, screen } from '@testing-library/vue'
 
-import type { ColorStop } from '@/lib/litegraph/src/interfaces'
+import type { ColorStop } from '@comfyorg/graph-model/interfaces'
 
 import GradientSlider from './GradientSlider.vue'
 import { interpolateStops, stopsToGradient } from './gradients'

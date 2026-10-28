@@ -28,7 +28,7 @@
     "validate": "Validate",
     "removeImage": "Remove image",
     "removeVideo": "Remove video",
-    "removeTag": "Remove tag",
+    "removeTagNamed": "Remove {tag}",
     "remove": "Remove",
     "removeFilter": "Remove {label} filter",
     "chart": "Chart",
@@ -2582,6 +2582,15 @@
     "fileSizeMegabytes": "{count} MB",
     "noVideoSource": "Select or connect a video to preview and edit"
   },
+  "videoConcat": {
+    "noClips": "Connect videos to preview and order them",
+    "clips": "Clips",
+    "clipLabel": "Clip {position}",
+    "previewClips": "Clips",
+    "previewResult": "Last run",
+    "reorderHint": "Drag clips or press Alt + arrow keys to reorder, click to jump",
+    "mixedDimensions": "Mixed sizes"
+  },
   "toastMessages": {
     "nothingToPasteIntoNode": "Nothing to paste into this node",
     "notificationsLabel": "Notification",
@@ -3618,7 +3627,7 @@
         "onHold": "No default payment method. Set one to resume auto top-up.",
         "paused": "Monthly limit reached. Resumes {date}.",
         "pausedNoDate": "Monthly limit reached.",
-        "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",
+        "rule": "Tops up to {target} credits when below {threshold} credits.",
         "status": {
           "failed": "Failed",
           "turnedOff": "Turned off",

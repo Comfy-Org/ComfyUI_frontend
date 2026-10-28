@@ -1,7 +1,7 @@
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { DeclaredModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { zDeclaredModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { getParentExecutionIds } from '@/types/nodeIdentification'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import type { DeclaredModelFile } from '@comfyorg/graph-model/workflowSchema'
+import { zDeclaredModelFile } from '@comfyorg/graph-model/workflowSchema'
+import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 import type { FlattenableWorkflowNode } from './workflowFlattening'
 
 type NodeModelMetadata = {

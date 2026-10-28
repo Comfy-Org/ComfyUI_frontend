@@ -8,7 +8,7 @@ import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 const GRAPH_SIZE_GROWTH: [number, number] = [90, 100]

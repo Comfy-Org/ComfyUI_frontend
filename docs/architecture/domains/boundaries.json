@@ -801,8 +801,7 @@
         "name": "bounding-boxes/domain",
         "patterns": [
           "src/composables/boundingBoxes/boundingBoxesUtil.test.ts",
-          "src/composables/boundingBoxes/boundingBoxesUtil.ts",
-          "src/types/boundingBoxes.ts"
+          "src/composables/boundingBoxes/boundingBoxesUtil.ts"
         ]
       },
       {
@@ -1392,7 +1391,6 @@
           "src/lib/litegraph/src/canvas/reduceGesture.ts",
           "src/lib/litegraph/src/infrastructure/LGraphCanvasEventMap.ts",
           "src/lib/litegraph/src/types/contextMenu.ts",
-          "src/lib/litegraph/src/types/events.ts",
           "src/lib/litegraph/src/types/panel.ts",
           "src/types/badgeData.ts",
           "src/utils/vintageClipboard.ts"
@@ -1596,26 +1594,17 @@
           "src/lib/litegraph/src/idAllocation.property.test.ts",
           "src/lib/litegraph/src/idAllocation.test.ts",
           "src/lib/litegraph/src/idAllocation.ts",
-          "src/lib/litegraph/src/interfaces.ts",
           "src/lib/litegraph/src/measure.test.ts",
           "src/lib/litegraph/src/measure.ts",
           "src/lib/litegraph/src/serialization.test.ts",
           "src/lib/litegraph/src/strings.ts",
-          "src/types/graphScopeId.ts",
-          "src/types/groupId.ts",
           "src/types/linkId.test.ts",
-          "src/types/linkId.ts",
           "src/types/linkTopology.ts",
           "src/types/nodeId.test.ts",
-          "src/types/nodeId.ts",
           "src/types/nodeIdentification.test.ts",
-          "src/types/nodeIdentification.ts",
           "src/types/nodeState.ts",
-          "src/types/rerouteChain.ts",
           "src/types/rerouteId.test.ts",
-          "src/types/rerouteId.ts",
-          "src/types/slotId.test.ts",
-          "src/types/slotId.ts"
+          "src/types/slotId.test.ts"
         ]
       },
       {
@@ -1997,8 +1986,7 @@
         "patterns": [
           "src/lib/litegraph/src/canvas/linkGeometry.ts",
           "src/lib/litegraph/src/canvas/linkRevealState.test.ts",
-          "src/lib/litegraph/src/canvas/linkRevealState.ts",
-          "src/types/linkPresentation.ts"
+          "src/lib/litegraph/src/canvas/linkRevealState.ts"
         ]
       },
       {
@@ -2435,7 +2423,6 @@
           "src/core/graph/widgets/revealDynamicInputSlot.ts",
           "src/core/graph/widgets/valueControl.test.ts",
           "src/core/graph/widgets/valueControl.ts",
-          "src/lib/litegraph/src/types/widgets.ts",
           "src/lib/litegraph/src/utils/mathParser.test.ts",
           "src/lib/litegraph/src/utils/mathParser.ts",
           "src/lib/litegraph/src/utils/namedValuesShadowDiff.test.ts",
@@ -2445,7 +2432,6 @@
           "src/lib/litegraph/src/widgetConnectionSuppression.test.ts",
           "src/lib/litegraph/src/widgetValueNullContract.test.ts",
           "src/types/widgetId.test.ts",
-          "src/types/widgetId.ts",
           "src/types/widgetState.ts",
           "src/types/widgetVisibility.test.ts",
           "src/types/widgetVisibility.ts",

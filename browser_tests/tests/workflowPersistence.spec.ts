@@ -7,7 +7,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const generateUniqueFilename = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`

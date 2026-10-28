@@ -16,7 +16,7 @@ import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/co
 import * as lazyDeployToComfyApiDialog from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 const i18n = createI18n({

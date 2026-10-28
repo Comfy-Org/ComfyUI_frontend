@@ -10,8 +10,8 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({

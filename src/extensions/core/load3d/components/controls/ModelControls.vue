@@ -10,7 +10,7 @@
         :aria-label="t('load3d.upDirection')"
         @click="toggleUpDirection"
       >
-        <i class="pi pi-arrow-up text-lg text-foreground" />
+        <i class="icon-[lucide--arrow-up] size-4.5 text-foreground" />
       </Button>
       <div
         v-show="showUpDirection"
@@ -40,7 +40,7 @@
         :aria-label="t('load3d.materialMode')"
         @click="toggleMaterialMode"
       >
-        <i class="pi pi-box text-lg text-foreground" />
+        <i class="icon-[lucide--box] size-4.5 text-foreground" />
       </Button>
       <div
         v-show="showMaterialMode"
@@ -70,7 +70,7 @@
         :aria-label="t('load3d.showSkeleton')"
         @click="showSkeleton = !showSkeleton"
       >
-        <i class="pi pi-sitemap text-lg text-foreground" />
+        <i class="icon-[lucide--network] size-4.5 text-foreground" />
       </Button>
     </div>
   </div>

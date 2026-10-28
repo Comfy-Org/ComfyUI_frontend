@@ -79,9 +79,9 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import { cn } from '@comfyorg/tailwind-utils'
