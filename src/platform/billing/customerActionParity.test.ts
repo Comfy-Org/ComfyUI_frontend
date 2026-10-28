@@ -9,7 +9,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { describe, expect, it } from 'vitest'
 
-import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingOpStatusResponse } from '@comfyorg/billing-core'
 
 import { legacyOperationActionHold } from './customerAttention'
 

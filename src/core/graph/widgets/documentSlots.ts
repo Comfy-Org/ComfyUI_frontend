@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { DynamicComboSelection } from '@/stores/nodeDefStore'
 

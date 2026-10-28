@@ -26,8 +26,6 @@ vi.mock(import('algoliasearch/dist/lite/builds/browser'), () => ({
   liteClient: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 vi.mock(import('@/services/providers/registrySearchProvider'))
 
 async function searchResult(

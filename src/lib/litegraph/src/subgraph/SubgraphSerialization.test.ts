@@ -21,8 +21,8 @@ import {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 
-import { toLinkId } from '@/types/linkId'
-import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId, UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import {
   createTestSubgraph,

@@ -19,11 +19,11 @@ import { z } from 'zod'
 
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { useLitegraphService } from '@/services/litegraphService'
-import { toRootGraphId } from '@/types/graphScopeId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 
 import { DocChangeCollector } from './docChangeCollector'
 import {

@@ -119,7 +119,7 @@ describe('useCurrentUser', () => {
     expect(user.userDisplayName.value).toBe('Firebase F')
     expect(user.userPhotoUrl.value).toBe('https://example.com/f.png')
     expect(user.providerName.value).toBe('GitHub')
-    expect(user.providerIcon.value).toBe('pi pi-github')
+    expect(user.providerIcon.value).toBe('icon-[lucide--github]')
     expect(user.isEmailProvider.value).toBe(false)
   })
 

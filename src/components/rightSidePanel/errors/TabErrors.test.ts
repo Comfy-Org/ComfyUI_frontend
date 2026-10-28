@@ -18,7 +18,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
