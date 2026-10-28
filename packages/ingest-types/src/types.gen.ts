@@ -631,6 +631,10 @@ export type UsageGroupLabel = {
    */
   key_prefix?: string
   /**
+   * Only for `source` when kind is `api_key` and the key is known to this workspace: true when the key has been revoked. Its spend stays under its name.
+   */
+  key_revoked?: boolean
+  /**
    * Only for `source`. A `deployment` key is one Serverless deployment's id (`deployment_id` set); the bare key `deployment` is deployment spend recorded without an id.
    */
   kind?: 'api_key' | 'session' | 'deployment'
@@ -5296,6 +5300,18 @@ export type BillingStatusResponse = {
    */
   cancel_at?: string
   /**
+   * When the current billing period began. Together with renewal_date it is the range for "current billing period" views; render the pair as received rather than deriving one from the other. Present exactly when renewal_date is: omitted for a canceled plan, a never-subscribed workspace and a free plan with no subscription.
+   */
+  current_period_start?: string
+  /**
+   * Actual recorded subscription end, only when subscription_state is ended. Null when unknown or not ended; never inferred from cancel_at, period end or update time.
+   */
+  ended_at: string | null
+  /**
+   * Present when subscription_state is ended but no actual end timestamp was recorded. Render an undated ended state; do not infer a date.
+   */
+  ended_at_unavailable_reason?: 'not_recorded'
+  /**
    * Whether the workspace has available credits
    */
   has_funds: boolean
@@ -5354,7 +5370,7 @@ export type BillingStatusResponse = {
    */
   previous_plan?: PreviousPlan
   /**
-   * When the current billing period ends and the next one begins
+   * When the current billing period ends and the next one begins: the end of the period current_period_start begins.
    */
   renewal_date?: string
   renewal_invoice?: RenewalInvoice
@@ -5680,6 +5696,10 @@ export type BillingOpCancelResponse = {
  * Paginated list of billing events for a workspace.
  */
 export type BillingEventsResponse = {
+  /**
+   * When this environment began recording the member and source behind every charge, the same instant as `attribution_since` on the usage time series. A charge created before it shows "Not recorded" for member and source: the record does not hold them. A charge at or after it with no member is genuinely unattributed, not unrecorded. Absent where no such start is configured, and on the admin history feed.
+   */
+  attribution_since?: string
   events: Array<BillingEvent>
   /**
    * Items per page
@@ -5711,6 +5731,10 @@ export type BillingEvent = {
    * The API key the charge came through, from the event's `spend_source`; absent for a signed-in session or a deployment.
    */
   api_key_prefix?: string
+  /**
+   * True when that key, known to this workspace, has been revoked. Absent when the key is unknown.
+   */
+  api_key_revoked?: boolean
   /**
    * When the event occurred
    */
@@ -6279,8 +6303,10 @@ export type BillingCapabilityDenials = {
     | 'subscription_status_unrecognized'
   /**
    * Present only when can_top_up is false. Current reach order: membership,
-   * owner role, initial personal provisioning, past-due billing, then unknown
-   * existing tier or status. tier_not_self_serve here means an unknown tier;
+   * owner role, initial personal provisioning, past-due billing, unknown
+   * existing tier or status, then the staff top-up pause
+   * (topup_purchases_paused, which lifts without customer action).
+   * tier_not_self_serve here means an unknown tier;
    * recognised Enterprise and Free qualify. Known absence and ended terms
    * do not refuse purchases. Legacy free_plan, no_subscription and
    * subscription_ended remain accepted from older servers during rollout;
@@ -6294,6 +6320,7 @@ export type BillingCapabilityDenials = {
     | 'payment_past_due'
     | 'tier_not_self_serve'
     | 'subscription_status_unrecognized'
+    | 'topup_purchases_paused'
     | 'free_plan'
     | 'no_subscription'
     | 'subscription_ended'
@@ -6756,7 +6783,8 @@ export type BillingCapabilities = {
    * Non-members, non-owner members, non-creator initial personal billing
    * provisioning and past-due billing (payment_failed or paused) are refused.
    * Unknown existing subscription tier or status is refused, matching purchase
-   * and quote validation. This is guidance, not authorization: write routes
+   * and quote validation, and so is every purchase while staff pause top-ups.
+   * This is guidance, not authorization: write routes
    * retain workspace, rail, provider, amount and operation checks. Cloud
    * workflow execution still requires its existing subscription/run policy.
    *
@@ -6901,22 +6929,38 @@ export type BillingBalanceResponse = {
 }
 
 /**
- * Every field is required. On every save, disabled included,
- * threshold_credits and reload_credits must be positive whole credits
- * and a non-null monthly_budget_cents must be positive. When enabled is
- * true, a non-null monthly_budget_cents must be at most
- * max_monthly_budget_cents; a null one means no owner limit and is
- * stored as max_monthly_budget_cents. reload_credits must be at least
- * min_reload_credits, at most max_reload_credits, greater than
- * threshold_credits, and one reload must cost no more than the budget.
- * A save with enabled false accepts a
- * null budget, stores it as null, and skips the enabled-only rules.
+ * Every listed field is required, and one of target_credits or
+ * reload_credits. reload_credits alone means target_credits =
+ * threshold_credits + reload_credits. On every save, disabled included,
+ * threshold_credits must be a positive whole number of credits and a
+ * non-null monthly_budget_cents positive. When enabled is true:
+ * target_credits must be greater than threshold_credits; target_credits
+ * and reload_credits must agree (reload_credits = target_credits -
+ * threshold_credits) when both are sent; a non-null monthly_budget_cents
+ * must be at most max_monthly_budget_cents, and a null one means no
+ * owner limit and is stored as max_monthly_budget_cents; target_credits
+ * must be at least threshold_credits + min_reload_credits and at most
+ * threshold_credits + max_reload_credits; and the smallest automatic
+ * reload (from one credit below threshold_credits to target_credits)
+ * must cost no more than the budget. A save with enabled false accepts a
+ * null budget, stores it as null, and skips the enabled-only rules. A
+ * save with enabled false is never refused over target_credits or
+ * reload_credits: it stores target_credits minus threshold_credits when
+ * the target is above the threshold, else a positive reload_credits,
+ * else min_reload_credits.
  *
  */
 export type AutoReloadSettingsRequest = {
   enabled: boolean
   monthly_budget_cents: number | null
-  reload_credits: number
+  /**
+   * Older form, target_credits minus threshold_credits; must agree with target_credits when both are sent on an enabled save.
+   */
+  reload_credits?: number
+  /**
+   * The balance to top up to.
+   */
+  target_credits?: number
   threshold_credits: number
 }
 
@@ -6964,12 +7008,12 @@ export type AutoReloadSettings = {
    */
   max_monthly_budget_cents: number
   /**
-   * The per-reload cap: the largest reload_credits the owner may configure. The cap is applied on enabled saves; a disable keeps a reload saved above it. Each reload must also fit the monthly limit (monthly_budget_cents, at most max_monthly_budget_cents), so the effective maximum is the lower of the two. Null when billing-api did not report the cap.
+   * The most credits a single automatic reload buys. An enabled save needs target_credits at most threshold_credits plus this; a disable keeps a target saved above it. The smallest automatic reload must also fit the monthly limit (monthly_budget_cents, at most max_monthly_budget_cents). Null when billing-api did not report the cap.
    *
    */
   max_reload_credits: number | null
   /**
-   * The smallest reload_credits an enabled save accepts.
+   * The fewest credits a single automatic reload buys. An enabled save needs target_credits at least threshold_credits plus this.
    */
   min_reload_credits: number
   monthly_budget_cents: number | null
@@ -6979,11 +7023,11 @@ export type AutoReloadSettings = {
    */
   monthly_budget_is_default: boolean
   /**
-   * Enabled, but no budget cycle is known, monthly_budget_cents is null, or the remaining budget cannot fund one full reload. Always false when disabled. Read guidance only; it does not enforce charging.
+   * Enabled, but no budget cycle is known, monthly_budget_cents is null, or the remaining budget cannot fund even the smallest automatic reload, from one credit below threshold_credits to target_credits. Always false when disabled. Read guidance only; it does not enforce charging.
    */
   paused_by_budget: boolean
   /**
-   * True only when paused_by_budget holds because the unspent part of the monthly limit is positive but smaller than one reload; false when the limit is fully used or exceeded, when no cycle or limit is known, and when disabled.
+   * True only when paused_by_budget holds because the unspent part of the monthly limit is positive but smaller than the smallest automatic reload (from one credit below threshold_credits to target_credits); false when the limit is fully used or exceeded, when no cycle or limit is known, and when disabled.
    */
   paused_by_budget_remainder: boolean
   /**
@@ -6991,11 +7035,11 @@ export type AutoReloadSettings = {
    */
   paused_by_decline: boolean
   /**
-   * Current server price of reload_credits. Display only; never sent back.
+   * Current server price of the smallest automatic reload, from one credit below threshold_credits to target_credits (reload_credits + 1 credit, clamped to the reload bounds). Reloads for lower balances cost more, so show it as a starting price. Display only; never sent back.
    */
   reload_amount_cents: number | null
   /**
-   * Credits bought by each automatic reload.
+   * target_credits minus threshold_credits. Kept for older clients; read target_credits. A reload buys the gap between the balance and target_credits, so it can buy more than this.
    */
   reload_credits: number | null
   /**
@@ -7022,6 +7066,10 @@ export type AutoReloadSettings = {
    *
    */
   status: 'failed' | 'off' | 'on_hold' | 'paused_by_budget' | 'on'
+  /**
+   * The balance an automatic reload tops up to: threshold_credits plus reload_credits. Null when not configured, when that sum does not fit in an int64, and from an older billing-api that does not report it.
+   */
+  target_credits: number | null
   /**
    * Reload when the balance falls below this many credits.
    */
@@ -9543,7 +9591,7 @@ export type CreateAssetData = {
      */
     hash?: string
     /**
-     * Optional caller-chosen asset ID. If the upload's content matches an asset you already own in this workspace, that asset is returned and its `id` may differ from the one requested. Otherwise, an ID already taken by any asset is refused with 400 `ASSET_ID_UNAVAILABLE`.
+     * Optional caller-chosen asset ID. Any letter case is accepted; the asset is stored and returned under the canonical lowercase form, and a value that is not a UUID is refused with 400 `INVALID_BODY`. If the upload's content matches an asset you already own in this workspace, that asset is returned and its `id` may differ from the one requested. Otherwise, an ID already taken by any asset is refused with 400 `ASSET_ID_UNAVAILABLE`.
      */
     id?: string
     /**
@@ -9555,7 +9603,7 @@ export type CreateAssetData = {
      */
     name?: string
     /**
-     * Optional preview asset ID. Must be your own asset in this workspace; anything else (including a catalog asset, another user's published asset, or an ID that does not exist) is refused with 400 `INVALID_PREVIEW_ID`. If not provided, images use their own ID as preview, except OpenEXR and Radiance HDR, which get no preview; a preview_id equal to the asset's own id is ignored for those.
+     * Optional preview asset ID, in any letter case (a value that is not a UUID is refused with 400 `INVALID_BODY`). Must be your own asset in this workspace; anything else (including a catalog asset, another user's published asset, or an ID that does not exist) is refused with 400 `INVALID_PREVIEW_ID`. If not provided, images use their own ID as preview, except OpenEXR and Radiance HDR, which get no preview; a preview_id equal to the asset's own id is ignored for those.
      */
     preview_id?: string
     /**
@@ -11921,6 +11969,10 @@ export type SubscribeErrors = {
    */
   403: ForbiddenError
   /**
+   * `SUBSCRIBE_ATTEMPTS_LIMITED`: a new workspace, or an older one that has never paid, made too many failed payment attempts in a short time; no subscription was started. A later sign-up is admitted again.
+   */
+  429: ErrorResponse
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -12925,6 +12977,10 @@ export type GetFeaturesResponses = {
      * Whether new free-tier subscriptions are enabled for this caller. Current servers always emit a boolean; clients should tolerate absence when talking to older servers that predate this declared field.
      */
     new_free_tier_subscriptions?: boolean
+    /**
+     * Whether this environment advertises the authenticated private saved-workflow UUID link contract (?workflow=UUID&workspace=ID, with deployment=ID for a custom environment or environment=standard). Absent or false means unsupported. Published only from an explicit boolean FrontendFeatureFlags dynamic-config entry, enabled by an operator after the matching frontend release. This describes URL support, not workflow access or deployment eligibility; those remain authenticated checks. No default configuration enables it.
+     */
+    private_workflow_links_enabled?: boolean
     /**
      * Global switch, the same for every caller and readable without credentials. When true, the frontend shows enterprise single sign-on (the SSO sign-in entry and SSO workspace states); when false it shows today's app. It gates no backend behaviour. Defaults to false.
      */

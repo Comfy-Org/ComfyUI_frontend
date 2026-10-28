@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   addWidget,
   ComponentWidgetImpl,
@@ -12,8 +12,6 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 vi.mock(import('@/utils/formatUtil'), () => ({
   generateUUID: () => 'test-uuid'
 }))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('DOMWidget Y Position Preservation', () => {
   test('ComponentWidgetImpl createCopyForNode preserves Y position and component wiring', () => {

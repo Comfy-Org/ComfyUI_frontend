@@ -234,7 +234,7 @@ onBeforeUnmount(() => {
                 </span>
                 <i
                   aria-hidden="true"
-                  class="icon-[lucide--chevron-right] size-4 text-neutral-300 group-open/log:rotate-90"
+                  class="icon-[lucide--chevron-right] text-neutral-300 group-open/log:rotate-90"
                 />
               </summary>
               <div
@@ -335,7 +335,11 @@ onBeforeUnmount(() => {
               @click.stop="toggle"
             >
               <i
-                :class="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+                :class="
+                  isExpanded
+                    ? 'icon-[lucide--chevron-up]'
+                    : 'icon-[lucide--chevron-down]'
+                "
               />
             </Button>
             <Button
@@ -346,7 +350,7 @@ onBeforeUnmount(() => {
               :disabled="isInProgress"
               @click.stop="closeToast"
             >
-              <i class="pi pi-times" />
+              <i class="icon-[lucide--x]" />
             </Button>
           </div>
         </div>

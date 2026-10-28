@@ -79,7 +79,7 @@
         @click="track"
       >
         {{ $t(view.status.action.label) }}
-        <i :class="cn(view.status.action.icon, 'size-4')" aria-hidden="true" />
+        <i :class="view.status.action.icon" aria-hidden="true" />
       </Button>
     </div>
   </section>
@@ -94,12 +94,12 @@ import { useI18n } from 'vue-i18n'
 import { formatCredits, formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
-import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
+import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 
 type Status = AutoReloadSettings['status']
 type ViewKey = Status | 'turnedOff'
@@ -241,18 +241,15 @@ function limitTooltip(resetsAt: string | null) {
 }
 
 function ruleLines({
-  reload_amount_cents: amountCents,
-  reload_credits: reloadCredits,
+  target_credits: targetCredits,
   threshold_credits: thresholdCredits
 }: AutoReloadSettings): Line[] {
-  if (amountCents === null) return []
-  if (reloadCredits === null) return []
+  if (targetCredits === null) return []
   if (thresholdCredits === null) return []
   return [
     {
       text: t('workspacePanel.billingTab.autoTopUp.rule', {
-        amount: usd(amountCents),
-        credits: credits(reloadCredits),
+        target: credits(targetCredits),
         threshold: credits(thresholdCredits)
       })
     }

@@ -339,6 +339,7 @@ export const zUsageGroupLabel = z.object({
   key: z.string(),
   key_name: z.string().optional(),
   key_prefix: z.string().optional(),
+  key_revoked: z.boolean().optional(),
   kind: z.enum(['api_key', 'session', 'deployment']).optional(),
   owner_display_name: z.string().optional(),
   owner_email: z.string().optional(),
@@ -3358,6 +3359,9 @@ export const zBillingStatusResponse = z.object({
   billing_rail: z.enum(['legacy_stripe', 'metronome', 'stripe']).optional(),
   billing_status: zBillingStatus.optional(),
   cancel_at: z.iso.datetime().optional(),
+  current_period_start: z.iso.datetime().optional(),
+  ended_at: z.iso.datetime().nullable(),
+  ended_at_unavailable_reason: z.enum(['not_recorded']).optional(),
   has_funds: z.boolean(),
   is_active: z.boolean(),
   latest_subscription_op_id: z.string().optional(),
@@ -3567,6 +3571,7 @@ export const zBillingOpCancelResponse = z.object({
 export const zBillingEvent = z.object({
   api_key_name: z.string().optional(),
   api_key_prefix: z.string().optional(),
+  api_key_revoked: z.boolean().optional(),
   createdAt: z.iso.datetime(),
   deployment_id: z.string().optional(),
   deployment_name: z.string().optional(),
@@ -3583,6 +3588,7 @@ export const zBillingEvent = z.object({
  * Paginated list of billing events for a workspace.
  */
 export const zBillingEventsResponse = z.object({
+  attribution_since: z.iso.datetime().optional(),
   events: z.array(zBillingEvent),
   limit: z.int(),
   page: z.int(),
@@ -3841,6 +3847,7 @@ export const zBillingCapabilityDenials = z.object({
       'payment_past_due',
       'tier_not_self_serve',
       'subscription_status_unrecognized',
+      'topup_purchases_paused',
       'free_plan',
       'no_subscription',
       'subscription_ended'
@@ -4023,16 +4030,25 @@ export const zBillingBalanceResponse = z.object({
 })
 
 /**
- * Every field is required. On every save, disabled included,
- * threshold_credits and reload_credits must be positive whole credits
- * and a non-null monthly_budget_cents must be positive. When enabled is
- * true, a non-null monthly_budget_cents must be at most
- * max_monthly_budget_cents; a null one means no owner limit and is
- * stored as max_monthly_budget_cents. reload_credits must be at least
- * min_reload_credits, at most max_reload_credits, greater than
- * threshold_credits, and one reload must cost no more than the budget.
- * A save with enabled false accepts a
- * null budget, stores it as null, and skips the enabled-only rules.
+ * Every listed field is required, and one of target_credits or
+ * reload_credits. reload_credits alone means target_credits =
+ * threshold_credits + reload_credits. On every save, disabled included,
+ * threshold_credits must be a positive whole number of credits and a
+ * non-null monthly_budget_cents positive. When enabled is true:
+ * target_credits must be greater than threshold_credits; target_credits
+ * and reload_credits must agree (reload_credits = target_credits -
+ * threshold_credits) when both are sent; a non-null monthly_budget_cents
+ * must be at most max_monthly_budget_cents, and a null one means no
+ * owner limit and is stored as max_monthly_budget_cents; target_credits
+ * must be at least threshold_credits + min_reload_credits and at most
+ * threshold_credits + max_reload_credits; and the smallest automatic
+ * reload (from one credit below threshold_credits to target_credits)
+ * must cost no more than the budget. A save with enabled false accepts a
+ * null budget, stores it as null, and skips the enabled-only rules. A
+ * save with enabled false is never refused over target_credits or
+ * reload_credits: it stores target_credits minus threshold_credits when
+ * the target is above the threshold, else a positive reload_credits,
+ * else min_reload_credits.
  *
  */
 export const zAutoReloadSettingsRequest = z.object({
@@ -4053,7 +4069,17 @@ export const zAutoReloadSettingsRequest = z.object({
     })
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
+    })
+    .optional(),
+  target_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   threshold_credits: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -4164,6 +4190,15 @@ export const zAutoReloadSettings = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
   status: z.enum(['failed', 'off', 'on_hold', 'paused_by_budget', 'on']),
+  target_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable(),
   threshold_credits: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -5814,6 +5849,7 @@ export const zGetFeaturesResponse = z.object({
     .optional(),
   max_upload_size: z.int().optional(),
   new_free_tier_subscriptions: z.boolean().optional(),
+  private_workflow_links_enabled: z.boolean().optional(),
   sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
   supports_preview_metadata: z.boolean().optional(),

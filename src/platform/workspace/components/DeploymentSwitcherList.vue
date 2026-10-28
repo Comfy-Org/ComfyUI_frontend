@@ -7,7 +7,7 @@
       data-testid="deployment-switcher-notice"
     >
       <i
-        class="mt-px icon-[lucide--triangle-alert] size-3.5 shrink-0 text-warning"
+        class="mt-px icon-[lucide--triangle-alert] size-3.5 text-warning"
         aria-hidden="true"
       />
       <span class="text-pretty">{{ notice }}</span>
@@ -89,7 +89,7 @@
         data-testid="deployment-switcher-create"
       >
         <i
-          class="icon-[lucide--plus] size-3.5 shrink-0 text-muted-foreground"
+          class="icon-[lucide--plus] size-3.5 text-muted-foreground"
           aria-hidden="true"
         />
         {{ $t('deploymentSwitcher.createCustomDeployment') }}

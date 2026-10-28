@@ -12,7 +12,7 @@ import type {
   PreviewSubscribeResponse,
   SubscribeOptions,
   SubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 import { useAuthStore } from '@/stores/authStore'
 
 import type {

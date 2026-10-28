@@ -22,7 +22,7 @@
     />
     <i
       v-if="!normalizedPreviewUrl || error"
-      class="icon-[lucide--image] size-4 text-muted-foreground"
+      class="icon-[lucide--image] text-muted-foreground"
     />
   </div>
 </template>

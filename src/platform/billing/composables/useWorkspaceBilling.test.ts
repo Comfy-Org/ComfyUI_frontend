@@ -1,3 +1,4 @@
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { disarmHostedBillingReturnRefresh } from '@/platform/billing/openHostedBillingTab'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -19,11 +20,12 @@ import { effectScope } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { WorkspaceApiError as mockWorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import type {
   BillingStatusResponse,
   SubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 import {
   CancellationScopeChangedError,
   useWorkspaceBilling
@@ -50,26 +52,8 @@ const mockBillingPlans = vi.hoisted(() => ({
 
 const mockReportError = vi.hoisted(() => vi.fn())
 
-// Hoisted so the vi.mock factory below can reference it: a plain top-level
-// const is in its temporal dead zone when the hoisted factory runs under
-// coverage instrumentation, which collects the file to zero tests.
-const mockWorkspaceApiError = vi.hoisted(
-  () =>
-    class WorkspaceApiError extends Error {
-      constructor(
-        message: string,
-        public readonly status?: number,
-        public readonly code?: string
-      ) {
-        super(message)
-        this.name = 'WorkspaceApiError'
-      }
-    }
-)
-
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: mockWorkspaceApi,
-  WorkspaceApiError: mockWorkspaceApiError
+vi.mock<unknown>(import('@/platform/billing/api/billingApi'), () => ({
+  billingApi: mockWorkspaceApi
 }))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
@@ -132,6 +116,7 @@ function createDeferred<T>() {
 }
 
 const activeStatus = {
+  ended_at: null,
   is_active: true,
   max_seats: 73,
   occupied_seats: 72,
@@ -196,9 +181,9 @@ beforeEach(() => {
   Object.assign(useTeamWorkspaceStore(), {
     activeWorkspace: { id: 'workspace-1' }
   })
-  vi.mocked(useTeamWorkspaceStore().setWorkspaceBillingRail).mockImplementation(
-    () => {}
-  )
+  vi.mocked(
+    useWorkspaceBillingStateStore().setWorkspaceBillingRail
+  ).mockImplementation(() => {})
 })
 
 describe('useWorkspaceBilling', () => {
@@ -331,7 +316,7 @@ describe('useWorkspaceBilling', () => {
       expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
       expect(billing.isFreeTier.value).toBe(false)
       expect(
-        useTeamWorkspaceStore().setWorkspaceBillingRail
+        useWorkspaceBillingStateStore().setWorkspaceBillingRail
       ).toHaveBeenCalledWith('workspace-1', 'stripe')
     })
 
@@ -623,7 +608,7 @@ describe('useWorkspaceBilling', () => {
 
       expect(billing.isFreeTier.value).toBe(true)
       expect(
-        useTeamWorkspaceStore().setWorkspaceBillingRail
+        useWorkspaceBillingStateStore().setWorkspaceBillingRail
       ).not.toHaveBeenCalled()
     })
 

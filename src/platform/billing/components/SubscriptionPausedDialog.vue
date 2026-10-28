@@ -17,7 +17,7 @@
       >
         <i
           v-if="canManage && isUpdatingPayment"
-          class="pi pi-spin pi-spinner"
+          class="icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none"
         />
         {{
           $t(

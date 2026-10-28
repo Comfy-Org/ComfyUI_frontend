@@ -222,14 +222,14 @@ const createCardTemplate = (args: CardStoryArgs) => ({
                 class="!bg-white/90 !text-neutral-900"
                 @click="() => console.log('Info clicked')"
               >
-                <i class="icon-[lucide--info] size-4" />
+                <i class="icon-[lucide--info]" />
               </Button>
               <Button
                 class="!bg-white/90"
                 :class="favorited ? '!text-red-500' : '!text-neutral-900'"
                 @click="toggleFavorite"
               >
-                <i class="icon-[lucide--heart] size-4" :class="favorited ? 'fill-current' : ''" />
+                <i class="icon-[lucide--heart]" :class="favorited ? 'fill-current' : ''" />
               </Button>
             </template>
             

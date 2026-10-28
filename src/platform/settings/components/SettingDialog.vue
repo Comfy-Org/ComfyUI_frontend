@@ -9,7 +9,7 @@
     :close-icon="closeIcon"
   >
     <template #leftPanelHeaderTitle>
-      <i class="icon-[lucide--settings] size-4" />
+      <i class="icon-[lucide--settings]" />
       <h2 class="text-base text-foreground">{{ $t('g.settings') }}</h2>
     </template>
 
@@ -63,7 +63,7 @@
       <SettingsWorkspaceHeader
         v-else-if="isWorkspaceCategoryActive"
         :workspace-name="workspaceName"
-        :subscription-tier="activeWorkspace?.subscriptionTier"
+        :subscription-tier="activeSummary?.subscriptionTier"
         :collapsed="isHeaderCollapsed"
         :large="unifiedBillingSettingsEnabled"
       />
@@ -124,6 +124,7 @@ import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@comfyorg/design-system/navigation/NavTitle'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -178,16 +179,15 @@ const closeButtonVariant = computed(() =>
   unifiedBillingSettingsEnabled.value ? 'textonly' : undefined
 )
 const closeIcon = computed(() =>
-  unifiedBillingSettingsEnabled.value
-    ? 'icon-[lucide--x] size-4 shrink-0'
-    : undefined
+  unifiedBillingSettingsEnabled.value ? 'icon-[lucide--x]' : undefined
 )
 const isWorkspaceCategoryActive = computed(
   () =>
     activeCategoryKey.value !== null &&
     WORKSPACE_CATEGORY_KEYS.has(activeCategoryKey.value)
 )
-const { workspaceName, activeWorkspace } = storeToRefs(useTeamWorkspaceStore())
+const { workspaceName } = storeToRefs(useTeamWorkspaceStore())
+const { activeSummary } = storeToRefs(useWorkspaceBillingStateStore())
 
 const { isHeaderCollapsed, handlePanelScroll, resetHeaderCollapse } =
   useSettingsHeaderCollapse()
