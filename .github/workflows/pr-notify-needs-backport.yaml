@@ -1,0 +1,218 @@
+---
+# Description: DMs the backport watchers the moment `needs-backport` is added
+# to a pull request.
+#
+# Why: the label was only ever reported after the fact. ComfyPR-Bot's backport
+# digest lands in #frontend-releases when a release cuts, so the gap between
+# somebody deciding a change has to ship on a release line and anybody hearing
+# about it was as wide as the gap between releases — and by then the decision
+# is being re-litigated from a list rather than caught while its context is
+# still fresh.
+#
+# Who gets the DM is the SLACK_NEEDS_BACKPORT_WATCHERS repository variable, so
+# the list changes without a PR. The literal default below is the fallback: an
+# unset variable would otherwise make this whole workflow a no-op that nobody
+# would notice, which is the failure mode it exists to remove.
+name: 'PR: Notify Needs Backport'
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+# Deliberately no `concurrency`: the run only reads a PR and posts a message,
+# so there is nothing to serialize, and a group would add a way to lose a
+# notification. Only one run may be *pending* per group whatever
+# `cancel-in-progress` says, and the group is evaluated before the label gate
+# below — so every `size:*` and version label on the PR would join it, and a
+# queued `needs-backport` run could be cancelled by an unrelated one.
+jobs:
+  notify:
+    name: DM the backport watchers
+    # Every label on every PR fires this event. The job-level condition is
+    # evaluated before a runner is allocated, so the other labels cost nothing.
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.label.name == 'needs-backport'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # pull_request_target checks out the default branch, never PR head code.
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      # Read the PR rather than trust the webhook payload. `needs-backport`
+      # and the target label are applied together but arrive as separate
+      # events, so the payload's label list is a snapshot that can be missing
+      # whichever of the two landed second — and the DM would then warn about
+      # a target that was already there. By the time this runs the labelling
+      # is long finished.
+      #
+      # REST rather than `gh pr view`, which pr-backport.yaml records as
+      # failing under the auto-provided token: its GraphQL selection wants
+      # scopes this job has no reason to hold. This endpoint needs only
+      # `pull-requests: read`.
+      - name: Read the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GH_REPO}/pulls/${PR_NUMBER}" > pr.json
+
+          # pr-backport.yaml drops a target label whose branch does not exist,
+          # so the DM checks for itself before promising a cherry-pick into a
+          # release line that has not been cut yet. Branches only, where
+          # pr-backport.yaml's `git ls-remote --exit-code` would take any ref
+          # — a target label colliding with a tag would fail its checkout
+          # later anyway.
+          #
+          # Failing soft, unlike the read above: the branch list only sharpens
+          # the message, and the script treats an empty file as "unknown" and
+          # says nothing about branches. Letting `set -e` have this one would
+          # trade a slightly vaguer DM for no DM at all.
+          git ls-remote --heads origin \
+            | awk '{ sub("refs/heads/", "", $2); print $2 }' > branches.txt \
+            || echo "::warning::Could not list the remote branches."
+
+      - name: Build the direct messages
+        id: build
+        # Every PR-controlled value reaches the script through a file or the
+        # environment. This job runs under pull_request_target, so it holds
+        # SLACK_BOT_TOKEN on a PR anyone can open: interpolating a title into
+        # `run:` would hand whoever wrote that title a shell next to the secret.
+        env:
+          LABELED_BY: ${{ github.event.sender.login }}
+          # Space- or comma-separated Slack member IDs. Default: @huang47, who
+          # asked to be notified on the label rather than on the release cut.
+          SLACK_NEEDS_BACKPORT_WATCHERS: >-
+            ${{ vars.SLACK_NEEDS_BACKPORT_WATCHERS || 'U0BA79D8R1T' }}
+        run: |
+          pnpm exec tsx scripts/cicd/notify-needs-backport.ts \
+            --pr pr.json --branches branches.txt --out dms.json
+
+      # A step with an `if` loses the implicit success() guard, so it is spelled
+      # out: without it a failed build step would still reach the send below.
+      - name: Send the direct messages
+        if: success() && steps.build.outputs.count != '0'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          UNDELIVERED=0
+          REJECTED=0
+          # Read from a process substitution rather than a pipe so the two
+          # counters survive the loop.
+          while IFS= read -r BODY; do
+            CHANNEL=$(jq -r '.channel' <<<"$BODY")
+            # Every failure below is caught rather than left to `set -e`:
+            # under it, one unreachable recipient would abort the loop and
+            # the rest would go unnotified with no annotation at all.
+            #
+            # One attempt, deliberately. `chat.postMessage` carries no
+            # idempotency key, so curl's --retry would repost a DM whose
+            # response merely timed out, and curl's own documentation warns
+            # against parsing a response captured this way while retrying,
+            # because the capture accumulates every attempt's body. What a
+            # retry would buy is small — Slack's transient answers are
+            # already reported below as an undelivered DM rather than as
+            # somebody's mistake — and a duplicate DM recorded as dropped is
+            # worse than a dropped one recorded as dropped.
+            if ! RESPONSE=$(curl -sS -X POST \
+              --connect-timeout 10 --max-time 30 \
+              -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+              -H 'Content-Type: application/json' \
+              -d "$BODY" \
+              https://slack.com/api/chat.postMessage); then
+              echo "::warning::Could not reach Slack to DM ${CHANNEL}"
+              echo "Slack could not be reached to DM \`${CHANNEL}\`." \
+                >> "$GITHUB_STEP_SUMMARY"
+              UNDELIVERED=1
+              continue
+            fi
+
+            # Slack answers HTTP 200 with {"ok":false,"error":...} on auth,
+            # scope and recipient errors, so the status code alone would
+            # report a dropped DM as a success.
+            #
+            # The emptiness test is not redundant, though which jq runs
+            # decides whether it is load-bearing: given no input at all, jq
+            # 1.6 exits 0 having judged nothing, while 1.7 exits 4. The
+            # runner image picks that version, not us — ubuntu-22.04 carries
+            # 1.6 — so on an empty body this is the only thing standing
+            # between a dropped DM and a "Notified" line.
+            if [ -n "$RESPONSE" ] &&
+              jq -e '.ok == true' <<<"$RESPONSE" >/dev/null 2>&1; then
+              echo "Notified ${CHANNEL}"
+              continue
+            fi
+
+            ERROR=$(jq -r '.error // empty' <<<"$RESPONSE" 2>/dev/null) \
+              || ERROR=''
+
+            # Sorted by who has to act. The left-hand cases are Slack's own
+            # temporary conditions and nobody can do anything about them; the
+            # rest name something a human has to change, and they are the ones
+            # worth failing the check for.
+            case "$ERROR" in
+              '' | ratelimited | rate_limited | service_unavailable \
+                | internal_error | fatal_error | request_timeout)
+                echo "::warning::Slack could not deliver the DM to" \
+                  "${CHANNEL}: ${ERROR:-no usable response}"
+                # On the run page too, not just as an annotation: the label
+                # event happens once, so this DM is simply gone and this line
+                # is the only lasting record that it was owed.
+                echo "Slack did not take the DM to \`${CHANNEL}\`:" \
+                  "${ERROR:-no usable response}" >> "$GITHUB_STEP_SUMMARY"
+                UNDELIVERED=1
+                ;;
+              *)
+                echo "::error::Slack rejected the DM to ${CHANNEL}: ${ERROR}"
+                echo "Slack rejected the DM to \`${CHANNEL}\`: ${ERROR}" \
+                  >> "$GITHUB_STEP_SUMMARY"
+                REJECTED=1
+                ;;
+            esac
+          done < <(jq -c '.[]' dms.json)
+
+          # The two outcomes are not the same kind of thing, and neither is
+          # `continue-on-error` for both.
+          #
+          # A rejection names something a human must change — a wrong member
+          # ID, a missing scope, a revoked token — and it will silence this
+          # watcher on every PR until they do, so it fails the check.
+          #
+          # An outage does not: nobody reading the PR can act on it, and
+          # failing would put a red cross on a
+          # contributor's PR for something they did not cause. Be clear about
+          # the cost, because it is not nothing: that DM is dropped, not
+          # deferred. A non-zero exit would not recover it either — Actions
+          # retries nothing on its own, and a manual re-run rebuilds the whole
+          # list and would DM everyone who already got it. The label stays on
+          # the PR, so the release-cut digest still reports it.
+          if [ "$REJECTED" = 1 ]; then
+            exit 1
+          fi
+          if [ "$UNDELIVERED" = 1 ]; then
+            echo "::warning::A DM was dropped; see the summary for which."
+          fi
+
+      # Separate from the build step on purpose. Failing there would skip the
+      # send step, which is guarded on `success()`, so one mistyped entry in
+      # the watcher list would silence the DM to everyone else on it. The
+      # usable watchers are notified first; then the run goes red.
+      - name: Fail on an unusable watcher list
+        if: "!cancelled() && steps.build.outputs.watchers_invalid == '1'"
+        run: |
+          echo "::error::SLACK_NEEDS_BACKPORT_WATCHERS holds an entry that is" \
+            "not a Slack member ID. The Build step names it."
+          exit 1
