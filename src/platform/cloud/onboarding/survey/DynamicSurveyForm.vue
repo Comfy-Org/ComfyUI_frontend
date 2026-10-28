@@ -63,7 +63,7 @@
         class="px-0 text-primary-comfy-canvas/70 hover:text-primary-comfy-canvas"
         @click="goPrevious"
       >
-        <i class="icon-[lucide--chevron-left] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--chevron-left]" aria-hidden="true" />
         {{ $t('g.back') }}
       </Button>
       <span v-else />
@@ -76,7 +76,7 @@
         @click="goNext"
       >
         {{ $t('g.next') }}
-        <i class="icon-[lucide--chevron-right] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--chevron-right]" aria-hidden="true" />
       </Button>
       <Button
         v-else-if="isLast"

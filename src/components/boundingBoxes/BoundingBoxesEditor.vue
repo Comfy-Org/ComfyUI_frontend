@@ -20,7 +20,7 @@
             "
             @click="grid = !grid"
           >
-            <i class="icon-[lucide--grid-3x3] size-4" />
+            <i class="icon-[lucide--grid-3x3]" />
             <span>{{ $t('boundingBoxes.grid') }}</span>
           </Button>
           <WidgetHistoryButtons
@@ -36,7 +36,7 @@
             :class="actionBtnClass"
             @click="clearAll"
           >
-            <i class="icon-[lucide--trash-2] size-4" />
+            <i class="icon-[lucide--trash-2]" />
             <span>{{ $t('boundingBoxes.clearAll') }}</span>
           </Button>
           <slot name="toolbar-end" />
@@ -127,8 +127,8 @@ import { BOUNDING_BOXES_HEADER_ACTIONS_ID } from '@/components/boundingBoxes/bou
 import Button from '@comfyorg/design-system/button/Button'
 import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 import { useBoundingBoxes } from '@/composables/boundingBoxes/useBoundingBoxes'
-import type { BoundingBox } from '@/types/boundingBoxes'
-import type { NodeId } from '@/types/nodeId'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const layouts = {

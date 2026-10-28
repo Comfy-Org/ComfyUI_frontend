@@ -7,7 +7,7 @@ import {
   useViewportKeepAlive
 } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlive'
 import { registerNodeTypeCullingOptOut } from '@/services/vueNodeCullingService'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const camera = reactive({ x: 0, y: 0, z: 1 })
 

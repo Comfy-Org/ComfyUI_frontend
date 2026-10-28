@@ -44,7 +44,7 @@
             :disabled="queuedCount === 0"
             @click="clearQueuedWorkflows"
           >
-            <i class="icon-[lucide--list-x] size-4" />
+            <i class="icon-[lucide--list-x]" />
           </Button>
         </div>
       </div>

@@ -218,6 +218,7 @@
     "@vitest/coverage-v8": "catalog:",
     "happy-dom": "catalog:",
     "reka-ui": "catalog:",
+    "storybook": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

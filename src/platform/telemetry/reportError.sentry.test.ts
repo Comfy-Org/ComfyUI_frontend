@@ -5,6 +5,8 @@ import { createApp } from 'vue'
 
 import { reportError } from './reportError'
 
+vi.unmock(import('@/platform/telemetry/reportError'))
+
 it('suppresses a report raised by real Sentry payload normalization', async () => {
   const consoleError = vi.mocked(console.error)
   const beforeSend = vi.fn((event: ErrorEvent) => event)

@@ -67,7 +67,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -75,11 +75,14 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import type { RootGraphId } from '@/types/graphScopeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
-import { parseNodeId } from '@/types/nodeId'
-import { parseNodeLocatorId } from '@/types/nodeIdentification'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -1239,6 +1242,11 @@ watch(
   (tabs) => tabActivity.setAgentTurnTabs(tabs),
   { immediate: true, flush: 'sync' }
 )
+watch(
+  () => conversationStore.awaitingApproval,
+  (awaiting) => tabActivity.setAgentAwaitingApproval(awaiting),
+  { immediate: true, flush: 'sync' }
+)
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {
@@ -1618,6 +1626,7 @@ onBeforeUnmount(() => {
     },
     clearAgentTurnTabs: () => {
       tabActivity.setAgentTurnTabs([])
+      tabActivity.setAgentAwaitingApproval(false)
     },
     resetTurnTabResolver: () => {
       conversationStore.setTurnTabResolver(() => ({ status: 'unknown' }))
@@ -1939,12 +1948,6 @@ const { submit: onSend } = useAgentDraftSubmission({
   },
   // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
-    if (
-      !agentPanelStore.onboarding.introduceBeforeSignIn &&
-      !hasAgentCredential() &&
-      !(await ensureSignedIn())
-    )
-      return false
     const submissionId = composerStore.submission?.id
     if (
       !consentAccepted.value &&
@@ -1991,10 +1994,6 @@ const { submit: onSend } = useAgentDraftSubmission({
           nodes,
           references,
           () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
-          // The same id reported on app:agent_message_sent just above. Sent to
-          // the server so it can echo it onto agent_turn_started, which is what
-          // makes the message -> turn step attributable instead of only
-          // countable.
           meta.clientMessageId,
           onAccepted
         )
@@ -2456,9 +2455,9 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       role="status"
       class="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed bg-secondary/90 p-4 font-inter text-sm/5 text-foreground"
     >
-      <span
+      <i
         aria-hidden="true"
-        class="icon-[lucide--upload] size-8 shrink-0 text-muted-foreground"
+        class="icon-[lucide--upload] size-8 text-muted-foreground"
       />
       <span>{{ t('agent.dragAndDropAssets') }}</span>
     </div>

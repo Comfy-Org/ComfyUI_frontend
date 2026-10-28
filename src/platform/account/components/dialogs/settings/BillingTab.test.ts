@@ -46,7 +46,6 @@ vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string, correlationId?: string) =>
     `https://platform.test${path}?workspace=ws_1&correlation_id=${correlationId}`

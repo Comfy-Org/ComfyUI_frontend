@@ -89,7 +89,6 @@ vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/platform/remote/ingest/ingestApiUrl'), () => ({
   ingestApiUrl: (route: string) => `https://api.example.com/api${route}`

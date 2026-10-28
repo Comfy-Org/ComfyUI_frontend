@@ -5858,7 +5858,6 @@
         "onHold": "기본 결제 수단이 없습니다. 자동 충전을 재개하려면 설정하세요.",
         "paused": "월간 한도에 도달했습니다. {date}에 재개됩니다.",
         "pausedNoDate": "월간 한도에 도달했습니다.",
-        "rule": "크레딧이 {threshold} 미만이면 {amount}({credits} 크레딧)을 추가합니다.",
         "status": {
           "failed": "실패",
           "off": "끔",

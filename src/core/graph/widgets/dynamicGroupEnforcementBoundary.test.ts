@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useLitegraphService } from '@/services/litegraphService'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { followedDoc } from '@/workbench/extensions/agent/crdt/__fixtures__/followedDoc'
 import { LiveGraphApplier } from '@/workbench/extensions/agent/crdt/liveGraphApplier'
 

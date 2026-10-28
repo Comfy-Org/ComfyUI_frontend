@@ -1,9 +1,9 @@
 import type {
   ContextMenu,
   LGraphNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
-import type { ColorOption } from '@/lib/litegraph/src/interfaces'
+import type { ColorOption } from '@comfyorg/graph-model/interfaces'
 import type {
   IContextMenuOptions,
   IContextMenuValue

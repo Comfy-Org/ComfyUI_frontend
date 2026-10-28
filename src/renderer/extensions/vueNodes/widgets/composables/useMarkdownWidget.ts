@@ -9,7 +9,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 function addMarkdownWidget(
   node: LGraphNode,

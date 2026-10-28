@@ -35,10 +35,6 @@
         "patterns": ["src/renderer/core/layout/transform/useTransformState.ts"]
       },
       {
-        "name": "graph-model/domain/public",
-        "patterns": ["src/types/nodeId.ts"]
-      },
-      {
         "name": "ingest-api/domain/public",
         "patterns": ["src/platform/remote/ingest/ingestApiError.ts"]
       },
@@ -827,8 +823,7 @@
         "name": "bounding-boxes/domain",
         "patterns": [
           "src/composables/boundingBoxes/boundingBoxesUtil.test.ts",
-          "src/composables/boundingBoxes/boundingBoxesUtil.ts",
-          "src/types/boundingBoxes.ts"
+          "src/composables/boundingBoxes/boundingBoxesUtil.ts"
         ]
       },
       {
@@ -1418,7 +1413,6 @@
           "src/lib/litegraph/src/canvas/reduceGesture.ts",
           "src/lib/litegraph/src/infrastructure/LGraphCanvasEventMap.ts",
           "src/lib/litegraph/src/types/contextMenu.ts",
-          "src/lib/litegraph/src/types/events.ts",
           "src/lib/litegraph/src/types/panel.ts",
           "src/types/badgeData.ts",
           "src/utils/vintageClipboard.ts"
@@ -1622,26 +1616,17 @@
           "src/lib/litegraph/src/idAllocation.property.test.ts",
           "src/lib/litegraph/src/idAllocation.test.ts",
           "src/lib/litegraph/src/idAllocation.ts",
-          "src/lib/litegraph/src/interfaces.ts",
           "src/lib/litegraph/src/measure.test.ts",
           "src/lib/litegraph/src/measure.ts",
           "src/lib/litegraph/src/serialization.test.ts",
           "src/lib/litegraph/src/strings.ts",
-          "src/types/graphScopeId.ts",
-          "src/types/groupId.ts",
           "src/types/linkId.test.ts",
-          "src/types/linkId.ts",
           "src/types/linkTopology.ts",
           "src/types/nodeId.test.ts",
-          "src/types/nodeId.ts",
           "src/types/nodeIdentification.test.ts",
-          "src/types/nodeIdentification.ts",
           "src/types/nodeState.ts",
-          "src/types/rerouteChain.ts",
           "src/types/rerouteId.test.ts",
-          "src/types/rerouteId.ts",
-          "src/types/slotId.test.ts",
-          "src/types/slotId.ts"
+          "src/types/slotId.test.ts"
         ]
       },
       {
@@ -1800,6 +1785,7 @@
           "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
           "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
           "src/renderer/extensions/layerEditor/components/**",
+          "src/renderer/extensions/layerEditor/composables/layerEditorDialog.test.ts",
           "src/renderer/extensions/layerEditor/composables/layerEditorDialog.ts"
         ]
       },
@@ -2022,8 +2008,7 @@
         "patterns": [
           "src/lib/litegraph/src/canvas/linkGeometry.ts",
           "src/lib/litegraph/src/canvas/linkRevealState.test.ts",
-          "src/lib/litegraph/src/canvas/linkRevealState.ts",
-          "src/types/linkPresentation.ts"
+          "src/lib/litegraph/src/canvas/linkRevealState.ts"
         ]
       },
       {
@@ -2460,7 +2445,6 @@
           "src/core/graph/widgets/revealDynamicInputSlot.ts",
           "src/core/graph/widgets/valueControl.test.ts",
           "src/core/graph/widgets/valueControl.ts",
-          "src/lib/litegraph/src/types/widgets.ts",
           "src/lib/litegraph/src/utils/mathParser.test.ts",
           "src/lib/litegraph/src/utils/mathParser.ts",
           "src/lib/litegraph/src/utils/namedValuesShadowDiff.test.ts",
@@ -2470,7 +2454,6 @@
           "src/lib/litegraph/src/widgetConnectionSuppression.test.ts",
           "src/lib/litegraph/src/widgetValueNullContract.test.ts",
           "src/types/widgetId.test.ts",
-          "src/types/widgetId.ts",
           "src/types/widgetState.ts",
           "src/types/widgetVisibility.test.ts",
           "src/types/widgetVisibility.ts",
@@ -2717,33 +2700,19 @@
         "patterns": [
           "src/components/graph/NodeContextMenu.test.ts",
           "src/components/graph/NodeContextMenu.vue",
-          "src/components/graph/SelectionToolbox.test.ts",
-          "src/components/graph/SelectionToolbox.vue",
           "src/components/graph/selectionToolbox/ArrangeButton.vue",
-          "src/components/graph/selectionToolbox/BypassButton.test.ts",
-          "src/components/graph/selectionToolbox/BypassButton.vue",
           "src/components/graph/selectionToolbox/ColorPickerButton.test.ts",
           "src/components/graph/selectionToolbox/ColorPickerButton.vue",
-          "src/components/graph/selectionToolbox/ConfigureSubgraph.vue",
-          "src/components/graph/selectionToolbox/ConvertToSubgraphButton.vue",
-          "src/components/graph/selectionToolbox/DeleteButton.vue",
           "src/components/graph/selectionToolbox/ExecuteButton.test.ts",
           "src/components/graph/selectionToolbox/ExecuteButton.vue",
-          "src/components/graph/selectionToolbox/ExtensionCommandButton.vue",
-          "src/components/graph/selectionToolbox/FrameNodes.vue",
-          "src/components/graph/selectionToolbox/InfoButton.test.ts",
-          "src/components/graph/selectionToolbox/InfoButton.vue",
-          "src/components/graph/selectionToolbox/Load3DViewerButton.vue",
-          "src/components/graph/selectionToolbox/MaskEditorButton.test.ts",
-          "src/components/graph/selectionToolbox/MaskEditorButton.vue",
-          "src/components/graph/selectionToolbox/NodeOptionsButton.vue",
-          "src/components/graph/selectionToolbox/RefreshSelectionButton.vue",
-          "src/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue"
+          "src/components/graph/selectionToolbox/ToolboxButton.vue"
         ]
       },
       {
         "name": "selection-toolbox/integration",
         "patterns": [
+          "src/components/graph/SelectionToolbox.test.ts",
+          "src/components/graph/SelectionToolbox.vue",
           "src/composables/graph/useArrangeNodes.test.ts",
           "src/composables/graph/useArrangeNodes.ts",
           "src/composables/graph/useArrangeSession.test.ts",
@@ -3435,8 +3404,6 @@
       {
         "name": "workflow-management/application",
         "patterns": [
-          "src/composables/useNewMenuItemIndicator.test.ts",
-          "src/composables/useNewMenuItemIndicator.ts",
           "src/composables/useWorkflowActionsMenu.test.ts",
           "src/composables/useWorkflowActionsMenu.ts",
           "src/platform/workflow/core/services/**",
@@ -4099,21 +4066,6 @@
         ]
       },
       {
-        "from": "graph-model/domain/public",
-        "allow": [
-          "comfyui-api/domain/public",
-          "graph-model/domain/public",
-          "node-definition/domain/public",
-          "comfyui-api/domain",
-          "graph-model/domain",
-          "node-definition/domain",
-          "graph-model/domain/outer-1",
-          "node-definition/domain/outer-1",
-          "comfyui-api/domain/outer-2",
-          "unclassified"
-        ]
-      },
-      {
         "from": "ingest-api/domain/public",
         "allow": [
           "ingest-api/domain/public",
@@ -4182,7 +4134,6 @@
         "allow": [
           "graph-layout/domain/public",
           "graph-layout/application/public",
-          "graph-model/domain/public",
           "link-connection/application/public",
           "litegraph-api/integration/public",
           "vue-node-renderer/integration/public",
@@ -4779,7 +4730,6 @@
       {
         "from": "bounding-boxes/domain",
         "allow": [
-          "graph-model/domain/public",
           "bounding-boxes/domain",
           "color-conversion/domain",
           "design-system/domain",
@@ -4794,7 +4744,6 @@
       {
         "from": "bounding-boxes/application",
         "allow": [
-          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "color-conversion/domain",
@@ -4817,7 +4766,6 @@
       {
         "from": "bounding-boxes/presentation",
         "allow": [
-          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
@@ -4844,7 +4792,6 @@
       {
         "from": "bounding-boxes/integration",
         "allow": [
-          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
@@ -5191,7 +5138,11 @@
       },
       {
         "from": "execution/domain",
-        "allow": ["execution/domain", "unclassified"]
+        "allow": [
+          "execution/domain",
+          "workflow-management/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "execution/application",
@@ -5199,6 +5150,9 @@
           "execution/domain",
           "execution/application",
           "execution/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
           "unclassified"
         ]
       },
@@ -5208,6 +5162,9 @@
           "execution/domain",
           "execution/application",
           "execution/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
           "unclassified"
         ]
       },
@@ -5217,6 +5174,10 @@
           "execution/domain",
           "execution/application",
           "execution/presentation",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/presentation",
+          "workflow-management/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -5228,6 +5189,12 @@
           "execution/infrastructure",
           "execution/presentation",
           "execution/integration",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "workflow-management/presentation",
+          "workflow-management/integration",
+          "workflow-management/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -5472,7 +5439,6 @@
         "from": "graph-model/domain",
         "allow": [
           "comfyui-api/domain/public",
-          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -5487,7 +5453,6 @@
         "from": "graph-model/application",
         "allow": [
           "comfyui-api/domain/public",
-          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -5504,7 +5469,6 @@
         "from": "graph-model/infrastructure",
         "allow": [
           "comfyui-api/domain/public",
-          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -5521,7 +5485,6 @@
         "from": "graph-model/integration",
         "allow": [
           "comfyui-api/domain/public",
-          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -5635,6 +5598,7 @@
       {
         "from": "image-compositor/domain",
         "allow": [
+          "dialog-host/domain",
           "image-compositor/domain",
           "image-compositor/domain/outer-2",
           "unclassified"
@@ -5643,6 +5607,8 @@
       {
         "from": "image-compositor/infrastructure",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
           "image-compositor/domain",
           "image-compositor/infrastructure",
           "image-compositor/application/outer-1",
@@ -5653,8 +5619,11 @@
       {
         "from": "image-compositor/presentation",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
           "image-compositor/domain",
           "image-compositor/presentation",
+          "dialog-host/presentation/outer-1",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",
           "unclassified"
@@ -5663,10 +5632,14 @@
       {
         "from": "image-compositor/integration",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/integration",
           "image-compositor/domain",
           "image-compositor/infrastructure",
           "image-compositor/presentation",
           "image-compositor/integration",
+          "dialog-host/presentation/outer-1",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",
           "unclassified"
@@ -6408,23 +6381,72 @@
       },
       {
         "from": "selection-toolbox/domain",
-        "allow": ["selection-toolbox/domain", "unclassified"]
+        "allow": [
+          "app-host/domain",
+          "canvas-renderer/domain",
+          "selection-toolbox/domain",
+          "telemetry/domain",
+          "app-host/domain/outer-1",
+          "telemetry/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "selection-toolbox/presentation",
         "allow": [
+          "app-host/domain",
+          "app-host/application",
+          "app-host/presentation",
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/presentation",
+          "properties-panel/application",
+          "properties-panel/presentation",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
+          "telemetry/domain",
+          "telemetry/application",
+          "app-host/domain/outer-1",
+          "app-host/presentation/outer-1",
+          "canvas-renderer/application/outer-1",
+          "telemetry/domain/outer-1",
+          "properties-panel/presentation/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "selection-toolbox/integration",
         "allow": [
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "app-host/presentation",
+          "app-host/integration",
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/infrastructure",
+          "canvas-renderer/presentation",
+          "canvas-renderer/integration",
+          "properties-panel/application",
+          "properties-panel/presentation",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "selection-toolbox/integration",
+          "telemetry/domain",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "telemetry/integration",
+          "test-support/integration",
+          "app-host/domain/outer-1",
+          "app-host/presentation/outer-1",
+          "canvas-renderer/application/outer-1",
+          "canvas-renderer/infrastructure/outer-1",
+          "canvas-renderer/integration/outer-1",
           "selection-toolbox/integration/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/integration/outer-1",
+          "test-support/integration/outer-1",
+          "properties-panel/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -6777,7 +6799,6 @@
         "from": "vue-node-renderer/domain",
         "allow": [
           "graph-layout/domain/public",
-          "graph-model/domain/public",
           "graph-layout/domain",
           "graph-model/domain",
           "link-connection/domain",
@@ -6792,7 +6813,6 @@
         "allow": [
           "graph-layout/domain/public",
           "graph-layout/application/public",
-          "graph-model/domain/public",
           "link-connection/application/public",
           "graph-layout/domain",
           "graph-layout/application",
@@ -6818,7 +6838,6 @@
         "allow": [
           "graph-layout/domain/public",
           "graph-layout/application/public",
-          "graph-model/domain/public",
           "link-connection/application/public",
           "graph-layout/domain",
           "graph-layout/application",
@@ -6844,7 +6863,6 @@
         "allow": [
           "graph-layout/domain/public",
           "graph-layout/application/public",
-          "graph-model/domain/public",
           "link-connection/application/public",
           "graph-layout/domain",
           "graph-layout/application",
@@ -6868,7 +6886,6 @@
         "allow": [
           "graph-layout/domain/public",
           "graph-layout/application/public",
-          "graph-model/domain/public",
           "link-connection/application/public",
           "litegraph-api/integration/public",
           "vue-node-renderer/integration/public",
@@ -7441,7 +7458,6 @@
       {
         "from": "bounding-boxes/application/outer-1",
         "allow": [
-          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "color-conversion/domain",
@@ -7672,7 +7688,6 @@
         "from": "graph-model/domain/outer-1",
         "allow": [
           "comfyui-api/domain/public",
-          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -7687,7 +7702,6 @@
         "from": "graph-model/integration/outer-1",
         "allow": [
           "comfyui-api/domain/public",
-          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -7709,6 +7723,8 @@
       {
         "from": "image-compositor/application/outer-1",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
           "image-compositor/domain",
           "image-compositor/infrastructure",
           "image-compositor/application/outer-1",
@@ -7871,10 +7887,36 @@
       {
         "from": "selection-toolbox/integration/outer-1",
         "allow": [
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "app-host/presentation",
+          "app-host/integration",
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/infrastructure",
+          "canvas-renderer/presentation",
+          "canvas-renderer/integration",
+          "properties-panel/application",
+          "properties-panel/presentation",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "selection-toolbox/integration",
+          "telemetry/domain",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "telemetry/integration",
+          "test-support/integration",
+          "app-host/domain/outer-1",
+          "app-host/presentation/outer-1",
+          "canvas-renderer/application/outer-1",
+          "canvas-renderer/infrastructure/outer-1",
+          "canvas-renderer/integration/outer-1",
           "selection-toolbox/integration/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/integration/outer-1",
+          "test-support/integration/outer-1",
+          "properties-panel/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -7992,7 +8034,6 @@
         "allow": [
           "graph-layout/domain/public",
           "graph-layout/application/public",
-          "graph-model/domain/public",
           "link-connection/application/public",
           "graph-layout/domain",
           "graph-layout/application",
@@ -8018,7 +8059,6 @@
         "allow": [
           "graph-layout/domain/public",
           "graph-layout/application/public",
-          "graph-model/domain/public",
           "link-connection/application/public",
           "litegraph-api/integration/public",
           "vue-node-renderer/integration/public",
@@ -8210,6 +8250,7 @@
       {
         "from": "image-compositor/domain/outer-2",
         "allow": [
+          "dialog-host/domain",
           "image-compositor/domain",
           "image-compositor/domain/outer-2",
           "unclassified"
@@ -8284,7 +8325,6 @@
           "comfyui-api/domain/public",
           "graph-layout/domain/public",
           "graph-layout/application/public",
-          "graph-model/domain/public",
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
           "keybindings/integration/public",

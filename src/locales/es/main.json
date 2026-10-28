@@ -5858,7 +5858,6 @@
         "onHold": "No hay un método de pago predeterminado. Configura uno para reanudar la recarga automática.",
         "paused": "Se alcanzó el límite mensual. Se reanuda el {date}.",
         "pausedNoDate": "Se alcanzó el límite mensual.",
-        "rule": "Añade {amount} ({credits} créditos) cuando haya menos de {threshold} créditos.",
         "status": {
           "failed": "Error",
           "off": "Desactivada",

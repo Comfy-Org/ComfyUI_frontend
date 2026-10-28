@@ -3127,7 +3127,6 @@
     "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.ts:complexity",
     "src/lib/litegraph/src/node/NodeSlot.ts:complexity",
     "src/lib/litegraph/src/subgraph/subgraphUtils.ts:circular dependency",
-    "src/composables/useNewMenuItemIndicator.ts:high impact",
     "src/utils/hdrFormatUtil.ts:high impact",
     "src/lib/litegraph/src/canvas/LinkConnector.ts:complexity",
     "src/lib/litegraph/src/widgets/NumberWidget.ts:high impact",

@@ -28,7 +28,7 @@
     "validate": "Validate",
     "removeImage": "Remove image",
     "removeVideo": "Remove video",
-    "removeTag": "Remove tag",
+    "removeTagNamed": "Remove {tag}",
     "remove": "Remove",
     "removeFilter": "Remove {label} filter",
     "chart": "Chart",
@@ -302,7 +302,7 @@
     "cancelled": "Cancelled",
     "agentWorking": "Agent is working on this workflow",
     "agentModified": "Agent updated this workflow",
-    "agentNeedsApproval": "Agent needs your approval",
+    "agentNeedsApproval": "Agent is waiting for your answer",
     "job": "Job",
     "asset": "{count} asset | {count} assets",
     "untitled": "Untitled",
@@ -381,6 +381,7 @@
     "recordingFailedToStart": "Could not start recording",
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
+    "agentInputNeededShort": "Input needed",
     "duplicate": "Duplicate",
     "itemsCopiedToClipboard": "Items copied to clipboard",
     "selectItemsToCopy": "Select items to copy",
@@ -2581,6 +2582,15 @@
     "fileSizeMegabytes": "{count} MB",
     "noVideoSource": "Select or connect a video to preview and edit"
   },
+  "videoConcat": {
+    "noClips": "Connect videos to preview and order them",
+    "clips": "Clips",
+    "clipLabel": "Clip {position}",
+    "previewClips": "Clips",
+    "previewResult": "Last run",
+    "reorderHint": "Drag clips or press Alt + arrow keys to reorder, click to jump",
+    "mixedDimensions": "Mixed sizes"
+  },
   "toastMessages": {
     "nothingToPasteIntoNode": "Nothing to paste into this node",
     "notificationsLabel": "Notification",
@@ -3617,7 +3627,7 @@
         "onHold": "No default payment method. Set one to resume auto top-up.",
         "paused": "Monthly limit reached. Resumes {date}.",
         "pausedNoDate": "Monthly limit reached.",
-        "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",
+        "rule": "Tops up to {target} credits when below {threshold} credits.",
         "status": {
           "failed": "Failed",
           "turnedOff": "Turned off",
@@ -4051,6 +4061,7 @@
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
+    "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
     "failedToSwitch": "Failed to switch workspace"
   },
   "deploymentSwitcher": {

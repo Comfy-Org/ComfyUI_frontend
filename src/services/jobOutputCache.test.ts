@@ -8,7 +8,7 @@ import type {
   JobDetail,
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import {
   findActiveIndex,
   getJobAssets,

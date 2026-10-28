@@ -47,6 +47,7 @@ import {
   trackSsoSignInCompleted
 } from '@/platform/auth/sso/ssoTelemetry'
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
+import { getDesktopInstallId } from '@/platform/auth/session/desktopInstallId'
 import {
   clearInteractiveSignIn,
   markInteractiveSignIn,
@@ -317,7 +318,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       getSession: currentSession
     })
     const authorize = createRequestAuthorizer({
-      getWorkspaceToken: mint.getWorkspaceToken
+      getWorkspaceToken: mint.getWorkspaceToken,
+      getInstallId: getDesktopInstallId
     })
     releaseRequests = provideWebSessionRequests({
       refreshSession: async () => {

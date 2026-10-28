@@ -13,10 +13,7 @@
     @auxclick.middle="openBuilder"
   >
     {{ $t('deployToComfyApi.openBuilder') }}
-    <i
-      class="icon-[lucide--square-arrow-out-up-right] size-4"
-      aria-hidden="true"
-    />
+    <i class="icon-[lucide--square-arrow-out-up-right]" aria-hidden="true" />
   </Button>
   <Button
     v-else

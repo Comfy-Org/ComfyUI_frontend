@@ -17,7 +17,7 @@ import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/l
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const overlayMock = vi.hoisted(() => ({
   overlayMessage: 'KSampler is missing a required input: model',
