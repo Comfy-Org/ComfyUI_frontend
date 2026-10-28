@@ -722,6 +722,21 @@ describe('verifyMediaCandidates', () => {
       assetsEnabled: false,
       isMissing: undefined,
       fetched: false
+    },
+    {
+      source: 'store hash under a subfolder',
+      name: 'myproject/aa11.png [output]',
+      output: [makeAsset('img_00001_.png', 'aa11.png')],
+      isMissing: false,
+      fetched: false
+    },
+    {
+      source: 'store name in another subfolder without assets',
+      name: 'myproject/photo.png [output]',
+      output: [makeAsset('photo.png')],
+      assetsEnabled: false,
+      isMissing: undefined,
+      fetched: false
     }
   ])(
     'resolves from $source',
@@ -751,6 +766,20 @@ describe('verifyMediaCandidates', () => {
       ['/assets?hash=photo.png&limit=1', { signal }]
     ])
     expect(candidates.map((c) => c.isMissing)).toEqual([true, true])
+  })
+
+  it('queries remote assets by the hash filename of a subfolder-qualified value', async () => {
+    stubAssets({})
+    const { signal } = new AbortController()
+    const candidates = [
+      makeCandidate('1', 'clipspace/bb22.png [input]', { isMissing: undefined })
+    ]
+
+    await verifyMediaCandidates(candidates, { signal })
+
+    expect(hashLookups()).toEqual([
+      ['/assets?hash=bb22.png&limit=1', { signal }]
+    ])
   })
 
   it('leaves resolved candidates untouched', async () => {
