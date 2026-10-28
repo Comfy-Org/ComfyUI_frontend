@@ -2,7 +2,10 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
-import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
+import type {
+  SsoTelemetryEvent,
+  WebSessionTelemetryEvent
+} from '@comfyorg/account-core/telemetry'
 import type {
   AddCreditsClickMetadata,
   AgentAttachButtonClickedMetadata,
@@ -10,12 +13,14 @@ import type {
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
   AgentFreeUseNoticeMetadata,
+  AgentGraphProjectionMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
@@ -23,10 +28,12 @@ import type {
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentPanelRenderStalledMetadata,
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
   AgentStarterPromptClickedMetadata,
+  AgentStarterPromptExposureMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -44,6 +51,8 @@ import type {
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   ImageLoadFailureMetadata,
+  InAppSurveyEvent,
+  InAppSurveyStage,
   LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
@@ -86,7 +95,9 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
-  WorkspaceInviteMetadata
+  WorkspaceInviteMetadata,
+  WorkspaceScopeMismatchMetadata,
+  WorkspaceTelemetryContext
 } from './types'
 
 /**
@@ -137,6 +148,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   // fallow-ignore-next-line unused-class-member
   trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
     this.dispatch((provider) => provider.trackWebSessionEvent?.(event))
+  }
+
+  trackSsoEvent(event: SsoTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackSsoEvent?.(event))
   }
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
@@ -221,6 +236,18 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackBillingEvent?.(event))
   }
 
+  // fallow-ignore-next-line unused-class-member
+  setWorkspaceContext(context: WorkspaceTelemetryContext | undefined): void {
+    this.dispatch((provider) => provider.setWorkspaceContext?.(context))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackWorkspaceScopeMismatch(metadata: WorkspaceScopeMismatchMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackWorkspaceScopeMismatch?.(metadata)
+    )
+  }
+
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
     this.dispatch((provider) => provider.trackCheckoutJourneyEvent?.(event))
   }
@@ -235,6 +262,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     )
   }
 
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentCreditTransitionNotice?.(metadata)
+    )
+  }
+
   trackRunButton(properties: RunButtonProperties): void {
     this.dispatch((provider) => provider.trackRunButton?.(properties))
   }
@@ -244,6 +279,11 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     responses?: SurveyResponses
   ): void {
     this.dispatch((provider) => provider.trackSurvey?.(stage, responses))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackInAppSurvey(stage: InAppSurveyStage, event: InAppSurveyEvent): void {
+    this.dispatch((provider) => provider.trackInAppSurvey?.(stage, event))
   }
 
   trackOnboardingTour(
@@ -400,6 +440,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAgentPanelClosed?.(metadata))
   }
 
+  trackAgentPanelRenderStalled(
+    metadata: AgentPanelRenderStalledMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentPanelRenderStalled?.(metadata)
+    )
+  }
+
   trackAgentEntryButtonClicked(
     metadata: AgentEntryButtonClickedMetadata
   ): void {
@@ -440,12 +488,18 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     )
   }
 
-  // fallow-ignore-next-line unused-class-member
+  trackAgentStarterPromptExposure(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentStarterPromptExposure?.(metadata)
+    )
+  }
+
   trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
     this.dispatch((provider) => provider.trackAgentFreeUseNotice?.(metadata))
   }
 
-  // fallow-ignore-next-line unused-class-member
   trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
     this.dispatch((provider) => provider.trackAgentFreeUseExposure?.(metadata))
   }
@@ -464,6 +518,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.dispatch((provider) => provider.trackAgentWorkflowApplied?.(metadata))
+  }
+
+  trackAgentGraphProjection(metadata: AgentGraphProjectionMetadata): void {
+    this.dispatch((provider) => provider.trackAgentGraphProjection?.(metadata))
   }
 
   // fallow-ignore-next-line unused-class-member

@@ -1,13 +1,25 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { ApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useAuthStore } from '@/stores/authStore'
+import { DEFAULT_RETRY_POLICY, NO_RETRY_POLICY } from '@/utils/retryPolicy'
 
 const { addBreadcrumb } = vi.hoisted(() => ({
   addBreadcrumb: vi.fn()
@@ -62,8 +74,8 @@ const fetchTimeoutRejection = {
 
 describe('api.fetchApi', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn())
     mockDistribution.isCloud = false
+    installCloudApiAuth()
     // Reset api state
     api.user = 'test-user'
   })
@@ -224,6 +236,107 @@ describe('api.fetchApi', () => {
       expect(send).toHaveBeenCalledOnce()
     })
 
+    describe('on the session with a retryable failure', () => {
+      function provideSessionSending(...answers: Response[]) {
+        const send = vi.fn<WebSessionRequests['send']>(async () => {
+          const answer = answers.shift()
+          if (!answer) throw new Error('send called more times than scripted')
+          return answer
+        })
+        onTestFinished(
+          provideWebSessionRequests(
+            fromPartial<WebSessionRequests>({
+              scope: async () => ({ session: fromPartial({}), epoch: 1 }),
+              send
+            })
+          )
+        )
+        return send
+      }
+
+      const unavailable = () => new Response(null, { status: 503 })
+
+      beforeEach(() => {
+        signInOnCloud()
+        vi.useFakeTimers()
+      })
+
+      it('recovers from a 503 with exactly two sends', async () => {
+        const send = provideSessionSending(
+          unavailable(),
+          new Response('ok', { status: 200 })
+        )
+
+        const pending = api.fetchApi('/test')
+        await vi.advanceTimersByTimeAsync(10_000)
+
+        expect((await pending).status).toBe(200)
+        expect(send).toHaveBeenCalledTimes(2)
+      })
+
+      it('stops at the policy attempt count on a persistent 503', async () => {
+        const send = provideSessionSending(
+          unavailable(),
+          unavailable(),
+          unavailable()
+        )
+
+        const pending = api.fetchApi('/test')
+        await vi.advanceTimersByTimeAsync(10_000)
+
+        expect((await pending).status).toBe(503)
+        expect(send).toHaveBeenCalledTimes(DEFAULT_RETRY_POLICY.maxAttempts)
+      })
+
+      it('rejects with the timeout, not the last 503, when it fires mid-backoff', async () => {
+        const send = provideSessionSending(
+          new Response(null, { status: 503, headers: { 'Retry-After': '5' } })
+        )
+
+        const settled = api
+          .fetchApi('/test', { timeoutMs: 1_000 })
+          .catch((reason: unknown) => reason)
+        await vi.advanceTimersByTimeAsync(1_000)
+
+        expect(await settled).toMatchObject(fetchTimeoutRejection.reason)
+        expect(send).toHaveBeenCalledOnce()
+      })
+
+      it('rejects with the caller reason when it cancels mid-backoff', async () => {
+        const controller = new AbortController()
+        const send = provideSessionSending(
+          new Response(null, { status: 503, headers: { 'Retry-After': '5' } })
+        )
+
+        const settled = api
+          .fetchApi('/test', { signal: controller.signal })
+          .catch((reason: unknown) => reason)
+        await vi.advanceTimersByTimeAsync(500)
+        controller.abort('dialog closed')
+
+        expect(await settled).toBe('dialog closed')
+        expect(send).toHaveBeenCalledOnce()
+      })
+
+      it('sends once on a 503 when skipStatusRetry is set', async () => {
+        const send = provideSessionSending(unavailable())
+
+        const response = await api.fetchApi('/test', { skipStatusRetry: true })
+
+        expect(response.status).toBe(503)
+        expect(send).toHaveBeenCalledOnce()
+      })
+
+      it('does not retry a POST', async () => {
+        const send = provideSessionSending(unavailable())
+
+        const response = await api.fetchApi('/test', { method: 'POST' })
+
+        expect(response.status).toBe(503)
+        expect(send).toHaveBeenCalledOnce()
+      })
+    })
+
     it('reports cloud-auth-header when a header was attached', async () => {
       signInOnCloud()
       vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
@@ -274,6 +387,67 @@ describe('api.fetchApi', () => {
       expect(onAuthScheme).toHaveBeenCalledExactlyOnceWith('none')
     })
 
+    it('is not broken by a throwing onAuthCredential callback', async () => {
+      signInOnCloud()
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
+        Authorization: 'Bearer tokenA'
+      })
+      vi.mocked(global.fetch).mockResolvedValue(new Response('ok'))
+
+      const response = await api.fetchApi('/test', {
+        onAuthCredential: () => {
+          throw new Error('callback bug')
+        }
+      })
+
+      expect(await response.text()).toBe('ok')
+      expect(vi.mocked(global.fetch).mock.calls[0][1]?.headers).toMatchObject({
+        Authorization: 'Bearer tokenA'
+      })
+    })
+
+    it('reports the credential kind each auth path sent', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const offCloud = vi.fn()
+      await api.fetchApi('/test', { onAuthCredential: offCloud })
+
+      signInOnCloud()
+      const getAuthHeader = vi.mocked(useAuthStore().getAuthHeader)
+      const bearer = vi.fn()
+      getAuthHeader.mockResolvedValueOnce({ Authorization: 'Bearer tokenA' })
+      await api.fetchApi('/test', { onAuthCredential: bearer })
+      const apiKey = vi.fn()
+      getAuthHeader.mockResolvedValueOnce({ 'X-API-KEY': 'key' })
+      await api.fetchApi('/test', { onAuthCredential: apiKey })
+      const missing = vi.fn()
+      getAuthHeader.mockResolvedValueOnce(null)
+      await api.fetchApi('/test', { onAuthCredential: missing })
+      const session = vi.fn()
+      const release = provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({
+          scope: async () => ({ session: fromPartial({}), epoch: 1 }),
+          send: vi.fn().mockResolvedValue(new Response())
+        })
+      )
+      try {
+        await api.fetchApi('/test', { onAuthCredential: session })
+      } finally {
+        release()
+      }
+
+      expect(
+        [offCloud, bearer, apiKey, missing, session].map(
+          (callback) => callback.mock.calls
+        )
+      ).toEqual([
+        [['none']],
+        [['bearer']],
+        [['api-key']],
+        [['none']],
+        [['session-cookie']]
+      ])
+    })
+
     it('is not forwarded to fetch as a request option', async () => {
       vi.mocked(global.fetch).mockResolvedValue(new Response())
 
@@ -282,6 +456,109 @@ describe('api.fetchApi', () => {
       expect(vi.mocked(global.fetch).mock.calls[0][1]).not.toHaveProperty(
         'onAuthScheme'
       )
+    })
+  })
+
+  describe('auth provider', () => {
+    it.for([
+      {
+        name: 'anonymous request skips the 401 retry decision',
+        authHeader: null,
+        expectedAuthorization: null,
+        expectedRetryOn401: false,
+        expectedRetryDecisions: 0
+      },
+      {
+        name: 'authenticated request applies the header and retry decision',
+        authHeader: { Authorization: 'Bearer token' },
+        expectedAuthorization: 'Bearer token',
+        expectedRetryOn401: true,
+        expectedRetryDecisions: 1
+      }
+    ])('$name', async (row) => {
+      mockDistribution.isCloud = true
+      const provider: ApiAuthProvider = {
+        ...anonymousApiAuthProvider,
+        getAuthHeader: vi.fn().mockResolvedValue(row.authHeader),
+        shouldRetryOn401: vi.fn().mockResolvedValue(true),
+        fetch: vi.fn().mockResolvedValue(new Response())
+      }
+      api.setAuthProvider(provider)
+
+      await api.fetchApi('/test')
+
+      const [, init, retryOn401] = vi.mocked(provider.fetch).mock.calls[0]
+      expect(new Headers(init.headers).get('Authorization')).toBe(
+        row.expectedAuthorization
+      )
+      expect(retryOn401).toBe(row.expectedRetryOn401)
+      expect(provider.shouldRetryOn401).toHaveBeenCalledTimes(
+        row.expectedRetryDecisions
+      )
+      expect(global.fetch).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      { skipStatusRetry: true, expected: NO_RETRY_POLICY },
+      { skipStatusRetry: undefined, expected: undefined }
+    ])(
+      'passes retry policy $expected when skipStatusRetry is $skipStatusRetry',
+      async ({ skipStatusRetry, expected }) => {
+        mockDistribution.isCloud = true
+        const provider: ApiAuthProvider = {
+          ...anonymousApiAuthProvider,
+          fetch: vi.fn().mockResolvedValue(new Response())
+        }
+        api.setAuthProvider(provider)
+
+        await api.fetchApi('/test', { skipStatusRetry })
+
+        const [, init, , , retryPolicy] = vi.mocked(provider.fetch).mock
+          .calls[0]
+        expect(retryPolicy).toBe(expected)
+        expect(init).not.toHaveProperty('skipStatusRetry')
+      }
+    )
+  })
+
+  describe('socketAuthParams', () => {
+    it.for([
+      {
+        name: 'a web session takes its workspace and no token',
+        scope: { session: fromPartial({}), epoch: 1, workspaceId: 'ws-1' },
+        token: 'cloud-token',
+        expected: 'workspace_id=ws-1'
+      },
+      {
+        name: 'a web session with no one signed in opens nothing',
+        scope: undefined,
+        token: undefined,
+        expected: null
+      }
+    ])('$name', async ({ scope, token, expected }) => {
+      api.setAuthProvider({
+        ...anonymousApiAuthProvider,
+        getAuthToken: vi.fn().mockResolvedValue(token)
+      })
+      const release = provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({ scope: async () => scope })
+      )
+
+      try {
+        const params = await api.socketAuthParams()
+        expect(params === null ? null : params.toString()).toBe(expected)
+      } finally {
+        release()
+      }
+    })
+
+    it('takes the cloud token without a web session', async () => {
+      api.setAuthProvider({
+        ...anonymousApiAuthProvider,
+        getAuthToken: vi.fn().mockResolvedValue('cloud-token')
+      })
+
+      expect((await api.socketAuthParams())?.get('token')).toBe('cloud-token')
     })
   })
 
@@ -324,6 +601,19 @@ describe('api.fetchApi', () => {
         expect.objectContaining({
           cache: 'force-cache'
         })
+      )
+    })
+
+    it('forwards the redirect policy to fetch', async () => {
+      const mockFetch = vi
+        .mocked(global.fetch)
+        .mockResolvedValue(new Response())
+
+      await api.fetchApi('/test', { redirect: 'error' })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ redirect: 'error' })
       )
     })
   })

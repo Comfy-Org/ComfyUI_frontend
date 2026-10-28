@@ -7,9 +7,12 @@ import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
-import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { WidgetValue } from '@/types/widgetValue'
+
+export type { WidgetValue } from '@/types/widgetValue'
 
 export const CONTROL_OPTIONS = [
   'fixed',
@@ -22,9 +25,6 @@ export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
 export function isControlOption(value: unknown): value is ControlOptions {
   return CONTROL_OPTIONS.some((option) => option === value)
 }
-
-/** Valid types for widget values */
-export type WidgetValue = string | number | boolean | object | undefined | null
 
 function normalizeControlOption(val: WidgetValue): ControlOptions {
   if (isControlOption(val)) return val
@@ -73,31 +73,30 @@ export interface SimplifiedWidget<
   /** Optional method to compute widget size requirements */
   computeSize?: () => { minHeight: number; maxHeight?: number }
 
-  /** Localized display label (falls back to name if not provided) */
-  label?: string
+  controlWidget?: SafeControlWidget
 
   displayLabel?: string
 
-  /** Widget options including filtered PrimeVue props */
-  options?: O
+  /** Localized display label (falls back to name if not provided) */
+  label?: string
+
+  linkedUpstream?: LinkedUpstreamInfo
+
+  /** NodeLocatorId for the node that owns this widget's execution outputs */
+  nodeLocatorId?: NodeLocatorId
 
   /** Override for use with subgraph promoted asset widgets*/
   nodeType?: string
 
+  options?: O
+
   /** Optional serialization method for custom value handling */
   serializeValue?: () => unknown
-
-  /** NodeLocatorId for the node that owns this widget's execution outputs */
-  nodeLocatorId?: NodeLocatorId
 
   /** Optional input specification backing this widget */
   spec?: InputSpecV2
 
   tooltip?: string
-
-  controlWidget?: SafeControlWidget
-
-  linkedUpstream?: LinkedUpstreamInfo
 }
 
 export interface SimplifiedControlWidget<

@@ -13,7 +13,7 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import * as Y from 'yjs'
 
 import {
@@ -32,8 +32,6 @@ import { toNodeId } from '@/types/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class PromotedWidgetNode extends LGraphNode {
   constructor() {
@@ -167,7 +165,7 @@ describe('pasting a subgraph blueprint through insert_workflow', () => {
     )
     expect(instance).toBeDefined()
 
-    expect(vi.mocked(reportError)).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
     expect(instance!.widgets.map((widget) => widget.name)).toEqual(['value'])
     expect(instance!.widgets[0]?.value).toBe(BLUEPRINT_VALUE)
   })

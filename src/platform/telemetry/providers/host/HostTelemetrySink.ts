@@ -14,9 +14,11 @@ import type {
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentFreeUseExposureMetadata,
   AgentFreeUseNoticeMetadata,
+  AgentGraphProjectionMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
@@ -24,12 +26,14 @@ import type {
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentPanelRenderStalledMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
   AgentStarterPromptClickedMetadata,
+  AgentStarterPromptExposureMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -73,9 +77,12 @@ import type {
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata
-} from '../../types'
-import { CANCELLATION_STAGE_EVENTS, TelemetryEvents } from '../../types'
-import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
+} from '@/platform/telemetry/types'
+import {
+  CANCELLATION_STAGE_EVENTS,
+  TelemetryEvents
+} from '@/platform/telemetry/types'
+import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<
   ComfyDesktop2TelemetryBridge['capture']
@@ -183,6 +190,12 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
     this.capture(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
+  }
+
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE, metadata)
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
@@ -337,6 +350,12 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.AGENT_PANEL_CLOSED, metadata)
   }
 
+  trackAgentPanelRenderStalled(
+    metadata: AgentPanelRenderStalledMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_PANEL_RENDER_STALLED, metadata)
+  }
+
   trackAgentEntryButtonClicked(
     metadata: AgentEntryButtonClickedMetadata
   ): void {
@@ -373,6 +392,12 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
   }
 
+  trackAgentStarterPromptExposure(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE, metadata)
+  }
+
   trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
     this.capture(TelemetryEvents.AGENT_FREE_USE_NOTICE, metadata)
   }
@@ -393,6 +418,11 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.capture(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentGraphProjection(metadata: AgentGraphProjectionMetadata): void {
+    this.capture(TelemetryEvents.AGENT_GRAPH_PROJECTION, metadata)
   }
 
   trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {

@@ -12,6 +12,8 @@
         <SearchInput
           ref="searchBoxRef"
           v-model="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="$t('g.search')"
           :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
           @search="handleSearch"
         />
@@ -26,38 +28,29 @@
             v-model="nodeFilters"
             :filter-labels="nodeFilterLabels"
           />
-          <DropdownMenu
+          <Menu
             v-if="selectedTab === 'essentials'"
-            :entries="jumpMenuEntries"
+            :items="jumpMenuEntries"
+            :label="$t('essentials.jumpTo')"
           >
-            <template #button>
-              <Button size="icon" :aria-label="$t('essentials.jumpTo')">
-                <i class="icon-[lucide--list-tree] size-4" />
-              </Button>
+            <template #trigger>
+              <Button
+                size="icon"
+                :aria-label="$t('essentials.jumpTo')"
+                icon="icon-[lucide--list-tree]"
+              />
             </template>
-          </DropdownMenu>
-          <DropdownMenu v-else>
-            <template #button>
-              <Button size="icon" :aria-label="$t('g.sort')">
-                <i class="icon-[lucide--settings-2] size-4" />
-              </Button>
+          </Menu>
+          <Menu v-else>
+            <template #trigger>
+              <Button
+                size="icon"
+                :aria-label="$t('g.sort')"
+                icon="icon-[lucide--settings-2]"
+              />
             </template>
-            <template #default="{ itemClass }">
-              <DropdownMenuRadioGroup v-model="sortOrder">
-                <DropdownMenuRadioItem
-                  v-for="option in sortingOptions"
-                  :key="option.id"
-                  :value="option.id"
-                  :class="itemClass"
-                >
-                  <span class="flex-1">{{ $t(option.label) }}</span>
-                  <DropdownMenuItemIndicator class="size-4 shrink-0">
-                    <i class="icon-[lucide--check]" />
-                  </DropdownMenuItemIndicator>
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </template>
-          </DropdownMenu>
+            <MenuRadioGroup v-model="sortOrder" :options="sortingOptions" />
+          </Menu>
         </template>
       </SidebarTopArea>
     </template>
@@ -106,8 +99,7 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { mapValues } from 'es-toolkit'
-import type { MenuItem } from 'primevue/menuitem'
-import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from 'reka-ui'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import {
   computed,
   nextTick,
@@ -118,13 +110,14 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import FilterDropdown from '@/components/common/FilterDropdown.vue'
-import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
-import TabPanel from '@/components/tab/TabPanel.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
+import TabPanel from '@comfyorg/design-system/tab/TabPanel'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
@@ -135,16 +128,16 @@ import {
   DEFAULT_TAB_ID,
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { buildNodeDefTree, useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   NodeCategoryId,
+  NodeLibrarySection,
   NodeSection,
   SortingStrategyId,
   TabId
 } from '@/types/nodeOrganizationTypes'
 import type {
-  NodeLibrarySection,
   RenderedTreeExplorerNode,
   TreeNode
 } from '@/types/treeExplorerTypes'
@@ -154,7 +147,7 @@ import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
 import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
-import SidebarTopArea from './SidebarTopArea.vue'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 
 const { flags } = useFeatureFlags()
 
@@ -187,8 +180,8 @@ const sortOrder = usePerTabState(selectedTab, sortOrderByTab)
 
 const sortingOptions = computed(() =>
   nodeOrganizationService.getSortingStrategies().map((strategy) => ({
-    id: strategy.id,
-    label: strategy.label
+    value: strategy.id,
+    label: t(strategy.label)
   }))
 )
 
@@ -250,7 +243,7 @@ const sections = computed(() => {
   return nodeOrganizationService.organizeNodesTab(activeNodes.value)
 })
 
-function getFolderIcon(node: TreeNode): string {
+function getFolderIcon(node: TreeNode<ComfyNodeDefImpl>): string {
   const firstLeaf = findFirstLeaf(node)
   if (
     firstLeaf?.data?.api_node &&
@@ -261,7 +254,9 @@ function getFolderIcon(node: TreeNode): string {
   return 'icon-[lucide--folder]'
 }
 
-function findFirstLeaf(node: TreeNode): TreeNode | undefined {
+function findFirstLeaf(
+  node: TreeNode<ComfyNodeDefImpl>
+): TreeNode<ComfyNodeDefImpl> | undefined {
   if (node.leaf) return node
   for (const child of node.children ?? []) {
     const leaf = findFirstLeaf(child)
@@ -271,7 +266,7 @@ function findFirstLeaf(node: TreeNode): TreeNode | undefined {
 }
 
 function fillNodeInfo(
-  node: TreeNode
+  node: TreeNode<ComfyNodeDefImpl>
 ): RenderedTreeExplorerNode<ComfyNodeDefImpl> {
   const children = node.children?.map(fillNodeInfo)
   const totalLeaves = node.leaf
@@ -280,7 +275,7 @@ function fillNodeInfo(
 
   return {
     key: node.key,
-    label: node.leaf ? node.data?.display_name : node.label,
+    label: node.leaf ? (node.data?.display_name ?? node.label) : node.label,
     leaf: node.leaf,
     data: node.data,
     icon: node.leaf ? 'icon-[comfy--node]' : getFolderIcon(node),
@@ -290,7 +285,9 @@ function fillNodeInfo(
   }
 }
 
-function applySorting(tree: TreeNode): TreeNode {
+function applySorting(
+  tree: TreeNode<ComfyNodeDefImpl>
+): TreeNode<ComfyNodeDefImpl> {
   if (sortOrder.value === 'alphabetical') {
     return sortedTree(tree, { groupLeaf: true })
   }
@@ -325,7 +322,7 @@ const renderedSections = computed(() =>
   )
 )
 
-function collectFolderKeys(node: TreeNode): string[] {
+function collectFolderKeys(node: TreeNode<ComfyNodeDefImpl>): string[] {
   if (node.leaf) return []
   const keys = [node.key]
   for (const child of node.children ?? []) {
@@ -337,14 +334,6 @@ function collectFolderKeys(node: TreeNode): string[] {
 function handleNodeClick(node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) {
   if (node.type === 'node' && node.data) {
     startDrag(node.data)
-  }
-  if (node.type === 'folder') {
-    const index = expandedKeys.value.indexOf(node.key)
-    if (index === -1) {
-      expandedKeys.value = [...expandedKeys.value, node.key]
-    } else {
-      expandedKeys.value = expandedKeys.value.filter((k) => k !== node.key)
-    }
   }
 }
 
@@ -410,23 +399,19 @@ async function jumpToSubgroup(subgroupKey: string) {
 }
 
 const jumpMenuEntries = computed<MenuItem[]>(() => {
-  const entries = ESSENTIAL_SECTIONS.map((section) => {
+  return ESSENTIAL_SECTIONS.map((section) => {
     if (!section.subgroups)
       return {
         label: t(`essentials.${section.key}`),
-        command: () => jumpToSection(section.key),
-        noIcon: true
+        command: () => jumpToSection(section.key)
       }
 
     const items = section.subgroups.map((subgroup) => ({
       label: t(`essentials.${subgroup.key}`),
-      command: () => jumpToSubgroup(subgroup.key),
-      noIcon: true
+      command: () => jumpToSubgroup(subgroup.key)
     }))
     return { label: t(`essentials.${section.key}`), items }
   })
-  const label = t('essentials.jumpTo').toUpperCase()
-  return [{ label, noIcon: true }, ...entries]
 })
 
 const tabs = computed<Array<{ value: TabId; label: string }>>(() => {

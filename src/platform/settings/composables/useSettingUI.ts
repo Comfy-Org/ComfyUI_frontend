@@ -5,15 +5,18 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   getSettingInfo,
   useSettingStore
 } from '@/platform/settings/settingStore'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -32,6 +35,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   Other: 'icon-[lucide--ellipsis]',
   PlanCredits: 'icon-[lucide--receipt-text]',
   secrets: 'icon-[lucide--key-round]',
+  'skill-packs': 'icon-[lucide--book-open-text]',
   'server-config': 'icon-[lucide--server]',
   user: 'icon-[lucide--user]',
   workspace: 'icon-[lucide--building-2]',
@@ -51,6 +55,7 @@ export function useSettingUI(
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
+  const { canManageMembers } = useBillingCapabilities()
   const settingStore = useSettingStore()
   const activeCategory = ref<SettingTreeNode | null>(null)
 
@@ -58,6 +63,7 @@ export function useSettingUI(
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { workspaceRole } = useWorkspaceUI()
   const governanceStore = usePartnerNodeGovernanceStore()
+  const skillPacksStore = useSkillPacksStore()
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -133,7 +139,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/CreditsPanel.vue')
+      () => import('@/platform/billing/components/settings/CreditsPanel.vue')
     )
   }
 
@@ -150,7 +156,7 @@ export function useSettingUI(
 
   const workspaceSettingsPanelComponent = defineAsyncComponent(
     () =>
-      import('@/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.vue')
+      import('@/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue')
   )
 
   const planCreditsPanel: SettingPanelItem = {
@@ -161,6 +167,18 @@ export function useSettingUI(
     },
     component: workspaceSettingsPanelComponent,
     props: { section: 'planCredits' }
+  }
+
+  const billingPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace',
+      label: 'Billing',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () =>
+        import('@/platform/account/components/dialogs/settings/BillingTab.vue')
+    )
   }
 
   const membersPanel: SettingPanelItem = {
@@ -194,9 +212,16 @@ export function useSettingUI(
 
   const visibleWorkspacePanels = computed<SettingPanelItem[]>(() => {
     if (!shouldShowWorkspacePanel.value) return []
-    const workspacePanels = isCloud
-      ? [planCreditsPanel, membersPanel]
-      : [planCreditsPanel]
+    const planPanel = flags.unifiedBillingSettingsEnabled
+      ? billingPanel
+      : planCreditsPanel
+    const canViewMembers = pendingServerFact(
+      'BE-24066',
+      isCloud || canManageMembers.value
+    )
+    const workspacePanels = canViewMembers
+      ? [planPanel, membersPanel]
+      : [planPanel]
     return shouldShowWorkspaceAllowlist.value
       ? [...workspacePanels, allowlistPanel]
       : workspacePanels
@@ -217,6 +242,22 @@ export function useSettingUI(
     () => flags.userSecretsEnabled && isLoggedIn.value
   )
 
+  const skillPacksPanel: SettingPanelItem = {
+    node: {
+      key: 'skill-packs',
+      label: 'SkillPacks',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/platform/skills/components/SkillPacksPanel.vue')
+    )
+  }
+
+  // Both cohort flags plus a runtime check that the routes have not 404'd.
+  const shouldShowSkillPacksPanel = computed(
+    () => skillPacksStore.enabled && isLoggedIn.value
+  )
+
   const keybindingPanel: SettingPanelItem = {
     node: {
       key: 'keybinding',
@@ -224,7 +265,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/KeybindingPanel.vue')
+      () => import('@/platform/keybindings/components/KeybindingPanel.vue')
     )
   }
 
@@ -258,7 +299,8 @@ export function useSettingUI(
     keybindingPanel,
     extensionPanel,
     ...(isDesktop ? [serverConfigPanel] : []),
-    ...(shouldShowSecretsPanel.value ? [secretsPanel] : [])
+    ...(shouldShowSecretsPanel.value ? [secretsPanel] : []),
+    ...(shouldShowSkillPacksPanel.value ? [skillPacksPanel] : [])
   ])
 
   /**
@@ -313,6 +355,9 @@ export function useSettingUI(
         ...coreSettingCategories.value.slice(0, 1).map(translateCategory),
         ...(shouldShowSecretsPanel.value
           ? [translateCategory(secretsPanel.node)]
+          : []),
+        ...(shouldShowSkillPacksPanel.value
+          ? [translateCategory(skillPacksPanel.node)]
           : []),
         ...coreSettingCategories.value.slice(1).map(translateCategory),
         translateCategory(keybindingPanel.node),
@@ -373,7 +418,12 @@ export function useSettingUI(
 
   onMounted(() => {
     activeCategory.value = defaultCategory.value
+    void skillPacksStore.startFlagGate()
   })
+
+  const unifiedBillingSettingsEnabled = computed(
+    () => flags.unifiedBillingSettingsEnabled
+  )
 
   return {
     panels,
@@ -382,6 +432,7 @@ export function useSettingUI(
     groupedMenuTreeNodes,
     settingCategories,
     navGroups,
+    unifiedBillingSettingsEnabled,
     findCategoryByKey,
     findPanelByKey
   }

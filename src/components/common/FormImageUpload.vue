@@ -3,14 +3,14 @@
     <div class="flex items-center gap-2">
       <div
         class="preview-box flex size-16 items-center justify-center rounded-sm border p-2"
-        :class="{ 'bg-base-background': !modelValue }"
+        :class="{ 'bg-background': !modelValue }"
       >
         <img
           v-if="modelValue"
           :src="modelValue"
           class="max-h-full max-w-full object-contain"
         />
-        <i v-else class="pi pi-image text-xl text-smoke-400" />
+        <i v-else class="pi pi-image text-xl text-muted-foreground" />
       </div>
 
       <div class="flex flex-col gap-2">
@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 defineProps<{
   modelValue: string

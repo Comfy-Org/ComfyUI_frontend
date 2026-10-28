@@ -113,6 +113,59 @@ test('a tier upgrade itemizes the remaining time and the unused-time credit, wit
   ])
 })
 
+test('a raised team commitment reads like a tier upgrade: remaining and unused time named by each rate, credits added today, and Confirm upgrade', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const preview = cloud.scenario.preview
+  const team = (cents: number) => ({
+    ...preview.new_plan,
+    slug: 'team_per_credit_monthly',
+    tier: 'TEAM' as const,
+    price_cents: cents,
+    seat_summary: { ...preview.new_plan.seat_summary, total_cost_cents: cents }
+  })
+  cloud.scenario.preview = {
+    ...preview,
+    transition_type: 'upgrade',
+    proration_at: '2026-07-10T09:30:00.000Z',
+    amount_due_cents: 19_000,
+    cost_today_cents: 19_000,
+    proration_remaining_cents: 38_000,
+    proration_unused_cents: 19_000,
+    credits_today_cents: 19_000,
+    credits_next_period_cents: 40_000,
+    credits_today: 40_090,
+    credits_next_period: 84_400,
+    renewal_amount_cents: 40_000,
+    renewal_at: RENEWAL_AT,
+    current_plan: team(20_000),
+    new_plan: team(40_000)
+  }
+  await signIn(
+    entryPath('checkout', {
+      plan: 'team_per_credit_monthly',
+      team_credit_stop_id: 'stop_400'
+    })
+  )
+
+  await expectSummary(page, [
+    'Upgrade to Team Plan · Personal',
+    '$190 USD',
+    '40,090 credits added today (expire July 28)',
+    'Remaining time on Team $400 /mo$380.00',
+    'Credits refill to 84,400 each month',
+    'Unused time on Team $200 /mo−$190.00',
+    'Total due today$190.00',
+    'Existing credits are kept',
+    'Renews at $400.00 on July 28, 2026'
+  ])
+  await expect(
+    page.getByRole('button', { name: 'Confirm upgrade' })
+  ).toBeVisible()
+})
+
 test('294-8224: an upgrade a code takes to $0 says what the payment method on file will pay', async ({
   page,
   cloud,
@@ -298,4 +351,22 @@ test('744-15697: an account balance the server applied is the last deduction, an
     'Credit already on your account',
     'Total due today$27.50'
   ])
+})
+
+test('on a tablet both columns keep the desktop width cap, centered on one edge', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await page.setViewportSize({ width: 768, height: 1024 })
+  cloud.scenario.paymentMethods = []
+  await signIn(CHECKOUT)
+
+  const back = await page.getByRole('button', { name: 'Back' }).boundingBox()
+  const pay = await page
+    .getByRole('button', { name: 'Pay and subscribe' })
+    .boundingBox()
+  expect(pay?.width).toBe(464)
+  expect(back?.x).toBe(152)
+  expect(pay?.x).toBe(152)
 })

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   getMinimapDecorations,
@@ -7,8 +7,6 @@ import {
 import { reportError } from '@/platform/telemetry/reportError'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const scopeA = {
   rootGraphId: toRootGraphId('workflow-a'),
@@ -20,10 +18,6 @@ const scopeB = {
 }
 
 describe('minimapDecorationRegistry', () => {
-  beforeEach(() => {
-    vi.mocked(reportError).mockClear()
-  })
-
   it('hands a contested id to the newest registrant', () => {
     const outgoing = registerMinimapDecorationLayer('test.takeover')
     outgoing.replace([{ target: { ...scopeA, nodeId: toNodeId('1') } }])

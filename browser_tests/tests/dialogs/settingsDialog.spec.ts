@@ -4,8 +4,46 @@ import type { Keybinding } from '@/platform/keybindings/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const MOCK_COMFYUI_VERSION = '9.99.0-e2e-test'
+
+test.describe('Settings dialog - extension actions', { tag: '@ui' }, () => {
+  test.use({ viewport: { width: 1920, height: 1080 } })
+
+  test('opens the actions menu from its trigger without closing the dialog', async ({
+    comfyPage
+  }) => {
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
+    await dialog.openExtensionActions()
+
+    await comfyPage.contextMenu.clickMenuItemExact('Enable Selected')
+    await expect(dialog.root).toBeVisible()
+  })
+})
+
+test.describe(
+  'Settings dialog - left panel',
+  { tag: ['@ui', '@screenshot'] },
+  () => {
+    test('outlines the search field against the panel at rest', async ({
+      comfyPage
+    }) => {
+      const dialog = comfyPage.settingDialog
+      await dialog.open()
+      await expect(dialog.searchBox).toBeFocused()
+      await dialog.searchBox.blur()
+      await expect(dialog.searchBox).not.toBeFocused()
+
+      await expectElementScreenshot(
+        dialog.leftPanel,
+        'settings-left-panel.png',
+        { threshold: 0.05 }
+      )
+    })
+  }
+)
 
 test.describe('Settings dialog', { tag: '@ui' }, () => {
   test('About panel renders mocked version from server', async ({

@@ -5,10 +5,6 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   const getFirstClipNode = (comfyPage: ComfyPage) =>
     comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode (Prompt)').first()
 
@@ -72,7 +68,7 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
 
   test('should use native context menu when focused', async ({ comfyPage }) => {
     const textarea = getFirstMultilineStringWidget(comfyPage)
-    const vueContextMenu = comfyPage.page.locator('.p-contextmenu')
+    const vueContextMenu = comfyPage.page.getByRole('menu')
 
     await textarea.focus()
     await textarea.click({ button: 'right' })

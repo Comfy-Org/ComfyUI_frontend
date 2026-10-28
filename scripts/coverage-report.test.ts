@@ -49,6 +49,11 @@ describe('coverage-report shard banner', () => {
     expect(output).not.toContain('[!WARNING]')
     expect(output).not.toContain('[!NOTE]')
     expect(output).toContain('| Lines | 3 | 6 | 50.0%')
+    expect(output.split('<details>')[0]).toContain('Line coverage: **50.0%**')
+    expect(output.split('<details>')[0]).not.toContain('| Metric |')
+    expect(output).toMatch(
+      /<summary>Coverage totals<\/summary>\n\n\| Metric[\s\S]*\| Lines \| 3 \| 6 \| 50.0%[\s\S]*\n\n<\/details>/
+    )
   })
 
   // The totals may well be fine - a red matrix just cannot prove it. That
@@ -59,6 +64,9 @@ describe('coverage-report shard banner', () => {
     expect(output).toContain('[!NOTE]')
     expect(output).not.toContain('[!WARNING]')
     expect(output).toContain('cannot be confirmed comparable')
+    expect(output.split('<details>')[0]).toContain(
+      'Fix the failing shards and re-run coverage'
+    )
   })
 
   it('notes that completeness is unknown when metadata is absent', () => {

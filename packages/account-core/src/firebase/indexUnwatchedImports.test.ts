@@ -20,7 +20,7 @@ vi.mock<unknown>(import('firebase/auth'), () => ({
 
 describe('an identity that is not watched', () => {
   it('loads and resolves Auth without reading the persistences only a watched identity defaults to', async () => {
-    const { createFirebaseIdentity } = await import('./index.js')
+    const { createFirebaseIdentity } = await import('./index')
 
     const identity = createFirebaseIdentity({
       options: { apiKey: 'test' },

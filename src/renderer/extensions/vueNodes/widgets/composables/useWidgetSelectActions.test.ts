@@ -6,8 +6,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { api } from '@/scripts/api'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import enMessages from '@/locales/en/main.json'
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
@@ -76,6 +77,32 @@ describe('useWidgetSelectActions', () => {
   })
 
   describe('handleFilesUpdate', () => {
+    it('rejects extensionless videos before upload', async () => {
+      const modelValue = ref<string | undefined>('existing.mp4')
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: ['existing.mp4'] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([
+        new File(['video'], 'extensionless', { type: 'video/mp4' })
+      ])
+
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(modelValue.value).toBe('existing.mp4')
+      expect(useToast().warning).toHaveBeenCalledWith(
+        enMessages.g.videoFilenameExtensionRequired
+      )
+    })
+
     it('uploads file and updates modelValue', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({
@@ -194,8 +221,7 @@ describe('useWidgetSelectActions', () => {
 
       expect(modelValue.value).toBe('original.png')
 
-      const toastStore = useToastStore()
-      expect(toastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'Upload failed: Internal Server Error'
       )
     })
@@ -223,9 +249,7 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'fail.png')])
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'Upload failed: HTTP 502'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Upload failed: HTTP 502')
     })
 
     it('shows a file-too-large toast on a 413 with no known upload limit', async () => {
@@ -252,7 +276,7 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'huge.png')])
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'File is too large to upload.'
       )
     })
@@ -281,7 +305,7 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'huge.png')])
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'File is too large to upload (limit: 100 MB).'
       )
     })

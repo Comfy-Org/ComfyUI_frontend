@@ -5,7 +5,6 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import { AgentNonValueWidgetRig } from '@e2e/fixtures/agentNonValueWidgetRig'
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
  * The sibling `agentProgressTextWidgetNotMinted` spec covers the ephemeral
@@ -28,7 +27,6 @@ const NODE_ID = 711
 const WORKFLOW_ID = 'e7a4c6d2-0000-4000-8000-000000000080'
 const MESSAGE_ID = 'e7a4c6d2-0000-4000-8000-000000000081'
 const THREAD_ID = 'e7a4c6d2-0000-4000-8000-000000000082'
-const SOCKET_SID = 'e7a4c6d2-0000-4000-8000-000000000083'
 
 const PREVIEW_WIDGET = '$$node-text-preview'
 const SEED_VALUE = 777777
@@ -92,7 +90,6 @@ const rigConfig = {
   nodeDefs: { [NODE_TYPE]: nodeDef },
   samplerNodeId: NODE_ID,
   seed,
-  socketSid: SOCKET_SID,
   threadId: THREAD_ID,
   visibleNodeId: NODE_ID,
   workflowId: WORKFLOW_ID
@@ -103,7 +100,8 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
   () => {
     test('an ephemeral widget that leaves serialize undefined mints nothing and never tells the user an edit was rejected', async ({
-      page
+      page,
+      toast
     }) => {
       test.setTimeout(60_000)
       const rig = await AgentNonValueWidgetRig.boot(page, rigConfig)
@@ -156,7 +154,7 @@ test.describe(
       })
 
       await test.step('no rejection toast, hand edit still on screen', async () => {
-        const rejectionToast = new ToastHelper(page).toastErrors.filter({
+        const rejectionToast = toast.toastErrors.filter({
           hasText: 'Widget edit was rejected and was not saved'
         })
         await expect(rejectionToast).toHaveCount(0)

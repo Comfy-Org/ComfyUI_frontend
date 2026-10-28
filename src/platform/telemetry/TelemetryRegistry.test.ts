@@ -8,6 +8,7 @@ import { TelemetryRegistry } from './TelemetryRegistry'
 import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
@@ -21,6 +22,7 @@ import type {
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentStarterPromptClickedMetadata,
+  AgentStarterPromptExposureMetadata,
   AgentWorkflowAppliedMetadata,
   TelemetryProvider
 } from './types'
@@ -102,6 +104,22 @@ describe('TelemetryRegistry', () => {
 
     expect(a.trackAuthFailed).toHaveBeenCalledExactlyOnceWith(payload)
     expect(b.trackAuthFailed).toHaveBeenCalledExactlyOnceWith(payload)
+  })
+
+  it('dispatches an SSO event to every provider that records it', () => {
+    const a: TelemetryProvider = { trackSsoEvent: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event = {
+      name: 'app:sso_continue_clicked',
+      properties: { surface: 'cloud_app', flow_id: 'flow-1' }
+    } as const
+    registry.trackSsoEvent(event)
+
+    expect(a.trackSsoEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
   it('dispatches unified auth retry outcomes to supporting providers', () => {
@@ -315,10 +333,14 @@ describe('TelemetryRegistry', () => {
       prompt_index: 0,
       prompt_count: 5,
       prompt_text_hash: 'deadbeef',
+      visible_prompt_count: 5,
       locale: 'en',
       click_id: 'click-1',
       draft_was_empty: true
     } satisfies AgentStarterPromptClickedMetadata
+    const starterPromptExposureMetadata = {
+      '$feature/agent-starter-prompt-set': 'test'
+    } satisfies AgentStarterPromptExposureMetadata
     const consentShownMetadata = {
       trigger: 'button_click'
     } satisfies AgentConsentShownMetadata
@@ -360,6 +382,9 @@ describe('TelemetryRegistry', () => {
       action: 'shown',
       placement: 'above-input'
     } satisfies AgentFreeUseNoticeMetadata
+    const creditTransitionNoticeMetadata = {
+      action: 'shown'
+    } satisfies AgentCreditTransitionNoticeMetadata
 
     const cases = [
       {
@@ -380,6 +405,14 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentFreeUseNotice(freeUseNoticeMetadata)
       },
       {
+        method: 'trackAgentCreditTransitionNotice',
+        expected: { ...creditTransitionNoticeMetadata },
+        invoke: (registry) =>
+          registry.trackAgentCreditTransitionNotice(
+            creditTransitionNoticeMetadata
+          )
+      },
+      {
         method: 'trackAgentMessageFeedback',
         expected: { ...feedbackMetadata },
         invoke: (registry) =>
@@ -396,6 +429,12 @@ describe('TelemetryRegistry', () => {
         expected: { ...panelClosedMetadata },
         invoke: (registry) =>
           registry.trackAgentPanelClosed(panelClosedMetadata)
+      },
+      {
+        method: 'trackAgentPanelRenderStalled',
+        expected: { stage: 'root_unresolved' },
+        invoke: (registry) =>
+          registry.trackAgentPanelRenderStalled({ stage: 'root_unresolved' })
       },
       {
         method: 'trackAgentEntryButtonClicked',
@@ -419,6 +458,14 @@ describe('TelemetryRegistry', () => {
         expected: { ...starterPromptClickedMetadata },
         invoke: (registry) =>
           registry.trackAgentStarterPromptClicked(starterPromptClickedMetadata)
+      },
+      {
+        method: 'trackAgentStarterPromptExposure',
+        expected: { ...starterPromptExposureMetadata },
+        invoke: (registry) =>
+          registry.trackAgentStarterPromptExposure(
+            starterPromptExposureMetadata
+          )
       },
       {
         method: 'trackAgentConsentShown',
@@ -459,6 +506,28 @@ describe('TelemetryRegistry', () => {
         expected: { ...workflowAppliedMetadata },
         invoke: (registry) =>
           registry.trackAgentWorkflowApplied(workflowAppliedMetadata)
+      },
+      {
+        method: 'trackAgentGraphProjection',
+        expected: {
+          op_id: 'op-1',
+          op_count: 2,
+          sequence: 7,
+          stage: 'applied',
+          added_count: 0,
+          removed_count: 2,
+          apply_failure_count: 0
+        },
+        invoke: (registry) =>
+          registry.trackAgentGraphProjection({
+            op_id: 'op-1',
+            op_count: 2,
+            sequence: 7,
+            stage: 'applied',
+            added_count: 0,
+            removed_count: 2,
+            apply_failure_count: 0
+          })
       },
       {
         method: 'trackAgentStopClicked',
@@ -528,13 +597,13 @@ describe('TelemetryRegistry', () => {
       {
         method: 'trackAgentConsentOfferExited',
         expected: {
-          exit: 'already_offered',
+          exit: 'card_already_seen',
           stage: 'offer',
           retry_armed: false
         },
         invoke: (registry) =>
           registry.trackAgentConsentOfferExited({
-            exit: 'already_offered',
+            exit: 'card_already_seen',
             stage: 'offer',
             retry_armed: false
           })

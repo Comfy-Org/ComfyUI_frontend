@@ -4,7 +4,7 @@
     class="w-fit rounded-xl px-2 py-0.5 text-xs wrap-break-word"
   >
     <i
-      class="pi pi-circle-fill mr-1.5 p-0 text-[0.6rem]"
+      class="pi pi-circle-fill mr-1.5 text-[0.6rem]"
       :style="{ opacity: 0.8 }"
     />
     {{ $t(`manager.status.${statusLabel}`) }}
@@ -14,8 +14,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { MessageVariants } from '@/components/ui/message/message.variants'
-import Message from '@/components/ui/message/Message.vue'
+import type { MessageVariants } from '@comfyorg/design-system/lib/message/message.variants'
+import Message from '@comfyorg/design-system/message/Message'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type PackVersionStatus = components['schemas']['NodeVersionStatus']

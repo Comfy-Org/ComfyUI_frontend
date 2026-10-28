@@ -8,9 +8,9 @@
 import { zGetBillingPlansResponse } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
-import type { BillingResult, BillingTransport } from './billingContracts.js'
-import type { BillingScope, BillingScopeSource } from './billingScope.js'
-import { createScopedReader } from './scopedReader.js'
+import type { BillingResult, BillingTransport } from './billingContracts'
+import type { BillingScope, BillingScopeSource } from './billingScope'
+import { createScopedReader } from './scopedReader'
 
 export const PLANS_ROUTE = '/billing/plans'
 

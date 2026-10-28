@@ -36,7 +36,12 @@ describe('ComfyUI file input', () => {
     const file = new File([''], 'a1111.png', { type: 'image/png' })
     const error = new Error('import failed')
     vi.mocked(app.handleFile).mockRejectedValue(error)
-    new ComfyUI(app)
+    new ComfyUI(app, {
+      resetView: vi.fn(),
+      restoreOutputs: vi.fn(),
+      trackRunButton: vi.fn(),
+      enterFocusMode: vi.fn()
+    })
     const fileInput = document.getElementById(
       'comfy-file-input'
     ) as HTMLInputElement
@@ -44,7 +49,6 @@ describe('ComfyUI file input', () => {
       files: { value: [file], configurable: true },
       value: { value: 'a1111.png', writable: true, configurable: true }
     })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     fileInput.dispatchEvent(new Event('change'))
 
@@ -52,8 +56,8 @@ describe('ComfyUI file input', () => {
       expect(app.showErrorOnFileLoad).toHaveBeenCalledWith(file)
     )
     expect(app.handleFile).toHaveBeenCalledWith(file, 'file_button')
-    expect(consoleError).toHaveBeenCalledWith('Failed to load file:', error)
-    expect(consoleError.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(console.error).toHaveBeenCalledWith('Failed to load file:', error)
+    expect(vi.mocked(console.error).mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(app.showErrorOnFileLoad).mock.invocationCallOrder[0]
     )
     expect(fileInput.value).toBe('')

@@ -317,8 +317,8 @@ Stripped from production builds. Set a JSON value under an `ff:` prefix in
 `localStorage`:
 
 ```js
-localStorage.setItem('ff:linear_toggle_enabled', 'true')
-localStorage.removeItem('ff:linear_toggle_enabled')
+localStorage.setItem('ff:node_library_essentials_enabled', 'true')
+localStorage.removeItem('ff:node_library_essentials_enabled')
 ```
 
 #### Session overrides (`?ff=` query parameter)
@@ -392,16 +392,22 @@ if feature_flags.supports_feature(sockets_metadata, sid, "your_new_feature"):
 ```
 
 2. **For server or extension features**, add the flag path to the
-   `ServerFeatureFlag` enum and expose a named getter on the `flags` object in
+   `ServerFeatureFlag` enum in `src/platform/remoteConfig/serverFeatureFlag.ts`
+   and expose a named getter on the `flags` object in
    `src/composables/useFeatureFlags.ts`. Nested extension flags use a
    dot-separated path:
 
 ```typescript
-// In useFeatureFlags.ts
+// In src/platform/remoteConfig/serverFeatureFlag.ts
 export enum ServerFeatureFlag {
   // ... existing entries
   YOUR_EXTENSION_NEW_FEATURE = 'extension.yourExtension.supports_new_feature'
 }
+```
+
+```typescript
+// In src/composables/useFeatureFlags.ts
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 
 export function useFeatureFlags() {
   const flags = reactive({

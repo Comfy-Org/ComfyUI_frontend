@@ -1,0 +1,186 @@
+import type { ChartData, ChartOptions } from 'chart.js'
+import {
+  BarController,
+  BarElement,
+  CategoryScale,
+  Chart,
+  Colors,
+  Filler,
+  Legend,
+  LinearScale,
+  LineController,
+  LineElement,
+  PointElement,
+  Tooltip
+} from 'chart.js'
+import { onBeforeUnmount, onMounted, toRaw, watch } from 'vue'
+
+import type { Ref } from 'vue'
+
+export type SupportedChartType = 'bar' | 'line'
+
+Chart.register(
+  BarController,
+  BarElement,
+  CategoryScale,
+  Colors,
+  Filler,
+  Legend,
+  LinearScale,
+  LineController,
+  LineElement,
+  PointElement,
+  Tooltip
+)
+
+function getCssVar(name: string): string {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim()
+}
+
+function getDefaultOptions(type: SupportedChartType): ChartOptions {
+  const foreground = getCssVar('--color-foreground') || '#ffffff'
+  const muted = getCssVar('--color-muted-foreground') || '#8a8a8a'
+
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        align: 'start',
+        labels: {
+          color: foreground,
+          usePointStyle: true,
+          pointStyle: 'circle',
+          boxWidth: 8,
+          boxHeight: 8,
+          padding: 16,
+          font: { family: 'Inter', size: 11 },
+          generateLabels(chart) {
+            const datasets = chart.data.datasets
+            return datasets.map((dataset, i) => {
+              const color =
+                (dataset as { borderColor?: string }).borderColor ??
+                (dataset as { backgroundColor?: string }).backgroundColor ??
+                '#888'
+              return {
+                text: dataset.label ?? '',
+                fillStyle: color,
+                strokeStyle: color,
+                lineWidth: 0,
+                pointStyle: 'circle' as const,
+                hidden: !chart.isDatasetVisible(i),
+                datasetIndex: i
+              }
+            })
+          }
+        }
+      },
+      tooltip: {
+        enabled: true
+      }
+    },
+    elements: {
+      point: {
+        radius: 0,
+        hoverRadius: 4
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: muted,
+          font: { family: 'Inter', size: 11 },
+          padding: 8
+        },
+        grid: {
+          display: true,
+          color: muted + '33',
+          drawTicks: false
+        },
+        border: { display: true, color: muted }
+      },
+      y: {
+        ticks: {
+          color: muted,
+          font: { family: 'Inter', size: 11 },
+          padding: 4
+        },
+        grid: {
+          display: false,
+          drawTicks: false
+        },
+        border: { display: true, color: muted }
+      }
+    },
+    ...(type === 'bar' && {
+      datasets: {
+        bar: {
+          borderRadius: { topLeft: 4, topRight: 4 },
+          borderSkipped: false,
+          barPercentage: 0.6,
+          categoryPercentage: 0.8
+        }
+      }
+    })
+  }
+}
+
+export function useChart(
+  canvasRef: Readonly<Ref<HTMLCanvasElement | null>>,
+  type: Readonly<Ref<SupportedChartType>>,
+  data: Readonly<Ref<ChartData>>
+) {
+  let chart: Chart | undefined
+
+  function copyData(): ChartData {
+    const { datasets, labels, ...rest } = toRaw(data.value)
+    return {
+      ...rest,
+      labels: labels && [...labels],
+      datasets: datasets.map((dataset) => ({
+        ...dataset,
+        data: Array.isArray(dataset.data) ? [...dataset.data] : dataset.data
+      }))
+    }
+  }
+
+  function createChart() {
+    if (!canvasRef.value) return
+
+    chart?.destroy()
+    chart = new Chart(canvasRef.value, {
+      type: type.value,
+      data: copyData(),
+      options: getDefaultOptions(type.value)
+    })
+  }
+
+  onMounted(createChart)
+
+  watch(type, createChart)
+
+  watch(
+    data,
+    () => {
+      if (!chart) return
+      const next = copyData()
+      const previousCount = chart.data.datasets.length
+      for (const [index, dataset] of next.datasets.entries()) {
+        if (index >= previousCount) break
+        const { hidden } = chart.getDatasetMeta(index)
+        if (typeof hidden === 'boolean') dataset.hidden = hidden
+      }
+      chart.data = next
+      chart.update()
+    },
+    { deep: true }
+  )
+
+  onBeforeUnmount(() => {
+    chart?.destroy()
+    chart = undefined
+  })
+}

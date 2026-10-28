@@ -8,6 +8,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 /**
  * PM-1303 / PM-1310: Guard the Flux2ImageNode prompt and layout across
@@ -43,9 +44,7 @@ function getPromptBox(comfyPage: ComfyPage): Locator {
   return getNode(comfyPage).getByRole('textbox', { name: 'prompt' })
 }
 
-/** One full generation of the node the way an API node runs it. */
-async function runGeneration(
-  comfyPage: ComfyPage,
+async function startGeneration(
   exec: ExecutionHelper,
   ws: WebSocketRoute,
   nodeId: string
@@ -55,6 +54,15 @@ async function runGeneration(
   exec.executing(jobId, nodeId)
   exec.nodeRunning(jobId, nodeId, 0, 1)
   ws.send(progressTextFrame(nodeId, RUNNING_STATUS))
+  return jobId
+}
+
+async function finishGeneration(
+  comfyPage: ComfyPage,
+  exec: ExecutionHelper,
+  jobId: string,
+  nodeId: string
+) {
   exec.executed(jobId, nodeId, {
     images: [{ filename: 'example.png', subfolder: '', type: 'input' }]
   })
@@ -64,6 +72,17 @@ async function runGeneration(
   await expect(
     getNode(comfyPage).getByRole('img', { name: 'View image 1 of 1' })
   ).toBeVisible()
+}
+
+/** One full generation of the node the way an API node runs it. */
+async function runGeneration(
+  comfyPage: ComfyPage,
+  exec: ExecutionHelper,
+  ws: WebSocketRoute,
+  nodeId: string
+) {
+  const jobId = await startGeneration(exec, ws, nodeId)
+  await finishGeneration(comfyPage, exec, jobId, nodeId)
 }
 
 /** Prompt widget identity as the widget store and litegraph see it. */
@@ -152,16 +171,21 @@ test.describe(
       expect(after.autogrowInputs).toEqual(before.autogrowInputs)
     })
 
-    test('completed generations remove progress text from the node and widget store', async ({
+    test('progress text shows while the node runs and is removed when the generation completes', async ({
       comfyPage,
       getWebSocket
     }) => {
       const ws = await getWebSocket()
       const exec = new ExecutionHelper(comfyPage, ws)
       const { nodeId } = await readPromptWidget(comfyPage)
+      const progressText = getNode(comfyPage).getByText('Time elapsed: 3s')
 
-      await runGeneration(comfyPage, exec, ws, nodeId)
+      const jobId = await startGeneration(exec, ws, nodeId)
+      await expect(progressText).toBeVisible()
 
+      await finishGeneration(comfyPage, exec, jobId, nodeId)
+
+      await expect(progressText).toBeHidden()
       expect(await readPromptWidget(comfyPage)).toMatchObject({
         liteWidgetNames: expect.not.arrayContaining(['$$node-text-preview']),
         storeHasProgressText: false
@@ -179,20 +203,20 @@ test.describe(
         const node = getNode(comfyPage)
         const promptBox = getPromptBox(comfyPage)
         await expect(promptBox).toBeVisible()
-        await expect(node).toHaveScreenshot('flux2-prompt-before-runs.png', {
+        await expectElementScreenshot(node, 'flux2-prompt-before-runs.png', {
           maxDiffPixels: 10
         })
 
         await runGeneration(comfyPage, exec, ws, nodeId)
         await expect(promptBox).toBeVisible()
-        await expect(node).toHaveScreenshot('flux2-prompt-after-run-1.png', {
+        await expectElementScreenshot(node, 'flux2-prompt-after-run-1.png', {
           maxDiffPixels: 10
         })
 
         await runGeneration(comfyPage, exec, ws, nodeId)
         await expect(promptBox).toBeVisible()
         await expect(promptBox).toHaveValue(PROMPT)
-        await expect(node).toHaveScreenshot('flux2-prompt-after-run-2.png', {
+        await expectElementScreenshot(node, 'flux2-prompt-after-run-2.png', {
           maxDiffPixels: 10
         })
       }

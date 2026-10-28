@@ -10,6 +10,7 @@ import {
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import {
   getSurveyCompletedStatus as getSurveyCompletedStatusFor,
@@ -21,12 +22,12 @@ type IdentityListener = (user: User | null) => void
 const identityListeners = vi.hoisted(() => new Set<IdentityListener>())
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
+vi.mock(import('firebase/auth'), { spy: true })
 
 const fetchApi = vi.mocked(api.fetchApi)
 const OWNER_ID = 'account-a'
@@ -40,6 +41,7 @@ vi.mock(import('@sentry/vue'), () => ({
 }))
 
 beforeEach(() => {
+  stubFirebaseAuthHarness()
   identityListeners.clear()
   vi.mocked(firebaseIdentity.onUserChanged).mockImplementation((listener) => {
     identityListeners.add(listener)

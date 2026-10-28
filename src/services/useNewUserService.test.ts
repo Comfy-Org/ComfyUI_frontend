@@ -18,8 +18,6 @@ Object.defineProperty(window, 'localStorage', {
 import { useNewUserService } from '@/services/useNewUserService'
 import { reportError } from '@/platform/telemetry/reportError'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 describe('useNewUserService', () => {
   let service: ReturnType<typeof useNewUserService>
   let scope: ReturnType<typeof effectScope>
@@ -262,7 +260,6 @@ describe('useNewUserService', () => {
       const mockCallback = vi
         .fn()
         .mockRejectedValue(new Error('Callback error'))
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
@@ -272,11 +269,10 @@ describe('useNewUserService', () => {
 
       await service.registerInitCallback(mockCallback)
 
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'New user initialization callback failed:',
         expect.any(Error)
       )
-      consoleSpy.mockRestore()
     })
   })
 
@@ -341,7 +337,6 @@ describe('useNewUserService', () => {
 
     it('should handle callback errors during initialization', async () => {
       const mockCallback = vi.fn().mockRejectedValue(new Error('Init error'))
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await service.registerInitCallback(mockCallback)
 
@@ -351,11 +346,10 @@ describe('useNewUserService', () => {
 
       await service.initializeIfNewUser()
 
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'New user initialization callback failed:',
         expect.any(Error)
       )
-      consoleSpy.mockRestore()
     })
 
     it('should not reinitialize if already determined', async () => {
