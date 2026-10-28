@@ -797,8 +797,7 @@
         "name": "bounding-boxes/domain",
         "patterns": [
           "src/composables/boundingBoxes/boundingBoxesUtil.test.ts",
-          "src/composables/boundingBoxes/boundingBoxesUtil.ts",
-          "src/types/boundingBoxes.ts"
+          "src/composables/boundingBoxes/boundingBoxesUtil.ts"
         ]
       },
       {
@@ -1388,7 +1387,6 @@
           "src/lib/litegraph/src/canvas/reduceGesture.ts",
           "src/lib/litegraph/src/infrastructure/LGraphCanvasEventMap.ts",
           "src/lib/litegraph/src/types/contextMenu.ts",
-          "src/lib/litegraph/src/types/events.ts",
           "src/lib/litegraph/src/types/panel.ts",
           "src/types/badgeData.ts",
           "src/utils/vintageClipboard.ts"
@@ -1592,26 +1590,17 @@
           "src/lib/litegraph/src/idAllocation.property.test.ts",
           "src/lib/litegraph/src/idAllocation.test.ts",
           "src/lib/litegraph/src/idAllocation.ts",
-          "src/lib/litegraph/src/interfaces.ts",
           "src/lib/litegraph/src/measure.test.ts",
           "src/lib/litegraph/src/measure.ts",
           "src/lib/litegraph/src/serialization.test.ts",
           "src/lib/litegraph/src/strings.ts",
-          "src/types/graphScopeId.ts",
-          "src/types/groupId.ts",
           "src/types/linkId.test.ts",
-          "src/types/linkId.ts",
           "src/types/linkTopology.ts",
           "src/types/nodeId.test.ts",
-          "src/types/nodeId.ts",
           "src/types/nodeIdentification.test.ts",
-          "src/types/nodeIdentification.ts",
           "src/types/nodeState.ts",
-          "src/types/rerouteChain.ts",
           "src/types/rerouteId.test.ts",
-          "src/types/rerouteId.ts",
-          "src/types/slotId.test.ts",
-          "src/types/slotId.ts"
+          "src/types/slotId.test.ts"
         ]
       },
       {
@@ -1770,6 +1759,7 @@
           "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
           "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
           "src/renderer/extensions/layerEditor/components/**",
+          "src/renderer/extensions/layerEditor/composables/layerEditorDialog.test.ts",
           "src/renderer/extensions/layerEditor/composables/layerEditorDialog.ts"
         ]
       },
@@ -1992,8 +1982,7 @@
         "patterns": [
           "src/lib/litegraph/src/canvas/linkGeometry.ts",
           "src/lib/litegraph/src/canvas/linkRevealState.test.ts",
-          "src/lib/litegraph/src/canvas/linkRevealState.ts",
-          "src/types/linkPresentation.ts"
+          "src/lib/litegraph/src/canvas/linkRevealState.ts"
         ]
       },
       {
@@ -2430,7 +2419,6 @@
           "src/core/graph/widgets/revealDynamicInputSlot.ts",
           "src/core/graph/widgets/valueControl.test.ts",
           "src/core/graph/widgets/valueControl.ts",
-          "src/lib/litegraph/src/types/widgets.ts",
           "src/lib/litegraph/src/utils/mathParser.test.ts",
           "src/lib/litegraph/src/utils/mathParser.ts",
           "src/lib/litegraph/src/utils/namedValuesShadowDiff.test.ts",
@@ -2440,7 +2428,6 @@
           "src/lib/litegraph/src/widgetConnectionSuppression.test.ts",
           "src/lib/litegraph/src/widgetValueNullContract.test.ts",
           "src/types/widgetId.test.ts",
-          "src/types/widgetId.ts",
           "src/types/widgetState.ts",
           "src/types/widgetVisibility.test.ts",
           "src/types/widgetVisibility.ts",
@@ -3391,8 +3378,6 @@
       {
         "name": "workflow-management/application",
         "patterns": [
-          "src/composables/useNewMenuItemIndicator.test.ts",
-          "src/composables/useNewMenuItemIndicator.ts",
           "src/composables/useWorkflowActionsMenu.test.ts",
           "src/composables/useWorkflowActionsMenu.ts",
           "src/platform/workflow/core/services/**",
@@ -5101,7 +5086,11 @@
       },
       {
         "from": "execution/domain",
-        "allow": ["execution/domain", "unclassified"]
+        "allow": [
+          "execution/domain",
+          "workflow-management/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "execution/application",
@@ -5109,6 +5098,9 @@
           "execution/domain",
           "execution/application",
           "execution/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
           "unclassified"
         ]
       },
@@ -5118,6 +5110,9 @@
           "execution/domain",
           "execution/application",
           "execution/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
           "unclassified"
         ]
       },
@@ -5127,6 +5122,10 @@
           "execution/domain",
           "execution/application",
           "execution/presentation",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/presentation",
+          "workflow-management/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -5138,6 +5137,12 @@
           "execution/infrastructure",
           "execution/presentation",
           "execution/integration",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "workflow-management/presentation",
+          "workflow-management/integration",
+          "workflow-management/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -5532,6 +5537,7 @@
       {
         "from": "image-compositor/domain",
         "allow": [
+          "dialog-host/domain",
           "image-compositor/domain",
           "image-compositor/domain/outer-2",
           "unclassified"
@@ -5540,6 +5546,8 @@
       {
         "from": "image-compositor/infrastructure",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
           "image-compositor/domain",
           "image-compositor/infrastructure",
           "image-compositor/application/outer-1",
@@ -5550,8 +5558,11 @@
       {
         "from": "image-compositor/presentation",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
           "image-compositor/domain",
           "image-compositor/presentation",
+          "dialog-host/presentation/outer-1",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",
           "unclassified"
@@ -5560,10 +5571,14 @@
       {
         "from": "image-compositor/integration",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/integration",
           "image-compositor/domain",
           "image-compositor/infrastructure",
           "image-compositor/presentation",
           "image-compositor/integration",
+          "dialog-host/presentation/outer-1",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",
           "unclassified"
@@ -7626,6 +7641,8 @@
       {
         "from": "image-compositor/application/outer-1",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
           "image-compositor/domain",
           "image-compositor/infrastructure",
           "image-compositor/application/outer-1",
@@ -8119,6 +8136,7 @@
       {
         "from": "image-compositor/domain/outer-2",
         "allow": [
+          "dialog-host/domain",
           "image-compositor/domain",
           "image-compositor/domain/outer-2",
           "unclassified"

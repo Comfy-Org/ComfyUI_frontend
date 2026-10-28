@@ -48,11 +48,14 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
@@ -208,7 +211,7 @@ const appMock = vi.hoisted(() => {
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: appMock }))
 
-vi.mock(import('@/platform/workflow/validation/schemas/workflowSchema'), {
+vi.mock(import('@comfyorg/graph-model/workflowSchema'), {
   spy: true
 })
 
@@ -8675,51 +8678,37 @@ describe('AgentPanelRoot workflow binding', () => {
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
 
-  it('asks signed-out users in a browser tab on a local Core to sign in before consent', async () => {
-    distribution.isCloud = false
-    makeTab('wf-42')
-    useAuthStore().currentUser = null
-    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
-    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValue(false)
-    Object.assign(useAgentConsentStore(), { accepted: false })
-    const bodies = mockMessagesEndpoint('wf-42')
-    renderWithSelectedTarget()
+  it.for([
+    { host: 'Desktop', desktop: true },
+    { host: 'a browser tab on a local Core', desktop: false }
+  ])(
+    'asks signed-out users in $host for consent before opening sign-in and keeps their draft on Skip',
+    async ({ desktop }) => {
+      distribution.isCloud = false
+      distribution.isDesktop = desktop
+      makeTab('wf-42')
+      useAuthStore().currentUser = null
+      vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
+      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValue(false)
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      withConsent.mockResolvedValueOnce()
+      const bodies = mockMessagesEndpoint('wf-42')
+      renderWithSelectedTarget()
 
-    await userEvent.click(screen.getByRole('textbox'))
-    await userEvent.paste('build me a workflow')
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('build me a workflow')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
 
-    expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
-    expect(withConsent).not.toHaveBeenCalled()
-    expect(bodies).toHaveLength(0)
-  })
-
-  it('asks signed-out Desktop users for consent before opening sign-in and keeps their draft on Skip', async () => {
-    distribution.isCloud = false
-    distribution.isDesktop = true
-    makeTab('wf-42')
-    useAuthStore().currentUser = null
-    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
-    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValue(false)
-    Object.assign(useAgentConsentStore(), { accepted: false })
-    withConsent.mockResolvedValueOnce()
-    const bodies = mockMessagesEndpoint('wf-42')
-    renderWithSelectedTarget()
-
-    await userEvent.click(screen.getByRole('textbox'))
-    await userEvent.paste('build me a workflow')
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
-
-    expect(withConsent).toHaveBeenCalledExactlyOnceWith(
-      'first_message',
-      expect.any(Function)
-    )
-    expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
-    expect(bodies).toHaveLength(0)
-    expect(useAgentComposerStore().draft).toBe('build me a workflow')
-  })
+      expect(withConsent).toHaveBeenCalledExactlyOnceWith(
+        'first_message',
+        expect.any(Function)
+      )
+      expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+      expect(bodies).toHaveLength(0)
+      expect(useAgentComposerStore().draft).toBe('build me a workflow')
+    }
+  )
 
   it.for([
     {

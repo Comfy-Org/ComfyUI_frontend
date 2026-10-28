@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   createMediaNodeDef,

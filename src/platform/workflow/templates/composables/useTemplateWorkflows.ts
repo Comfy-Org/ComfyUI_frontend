@@ -24,11 +24,11 @@ import {
 import type {
   ComfyWorkflowJSON,
   LegacyLoadableWorkflow
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import {
   validateComfyWorkflow,
   zLegacyLoadableWorkflow
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'

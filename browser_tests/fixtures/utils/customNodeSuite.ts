@@ -1,4 +1,5 @@
 import type { Page, Request, Response } from '@playwright/test'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import type {
   ActivePathPointer,
@@ -8,7 +9,6 @@ import type {
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const CUSTOM_NODE_BLANK_WORKFLOW_PATH =
   'workflows/Custom Nodes E2E Blank Workflow.json'

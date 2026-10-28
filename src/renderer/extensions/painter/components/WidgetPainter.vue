@@ -286,7 +286,7 @@ import {
   PAINTER_TOOLS,
   usePainter
 } from '@/renderer/extensions/painter/composables/usePainter'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toHexFromFormat } from '@/utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 

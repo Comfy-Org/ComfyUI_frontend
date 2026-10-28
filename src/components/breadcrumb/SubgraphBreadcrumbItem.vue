@@ -34,7 +34,7 @@
       >
         {{ t('breadcrumbsMenu.blueprint') }}
       </Badge>
-      <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
+      <i v-if="isActive" class="icon-[lucide--chevron-down] size-2.5"></i>
     </Button>
   </DefineTrigger>
   <Menu

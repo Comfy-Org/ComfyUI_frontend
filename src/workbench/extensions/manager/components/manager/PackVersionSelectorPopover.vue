@@ -16,7 +16,7 @@
       <NoResultsPlaceholder
         :title="$t('g.noResultsFound')"
         :message="$t('manager.tryAgainLater')"
-        icon="pi pi-exclamation-circle"
+        icon="icon-[lucide--circle-alert]"
         class="p-0"
       />
     </div>
