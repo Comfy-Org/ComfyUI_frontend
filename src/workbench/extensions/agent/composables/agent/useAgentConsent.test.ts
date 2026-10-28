@@ -623,6 +623,35 @@ describe('useAgentConsent', () => {
     expect(reportError).toHaveBeenCalledOnce()
   })
 
+  // The point of writing consent with the workspace credential is that a user who
+  // has a personal one but no workspace token must not quietly fall back to it: the
+  // row would land under the wrong workspace, and the grant check reads workspace_id
+  // and user_id together, so the user would appear not to have consented.
+  it('writes no consent when the account has no workspace token', async () => {
+    const onOpen = vi.fn()
+    void useAgentConsent().withConsent('button_click', onOpen)
+    const dialog = await waitForConsentDialog()
+    vi.mocked(useAuthStore().getWorkspaceAuthTokenOrThrow).mockRejectedValue(
+      new Error('token exchange failed')
+    )
+    fetchWithUnifiedRemint.mockClear()
+
+    ;(dialog.contentProps.onAccept as () => void)()
+    await vi.waitFor(() =>
+      expect(dialog.contentProps.error).toBe(
+        i18n.global.t('agent.consent.saveError')
+      )
+    )
+
+    expect(fetchWithUnifiedRemint).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ method: 'POST' }),
+      expect.anything()
+    )
+    expect(useAuthStore().getUserAuthHeader).not.toHaveBeenCalled()
+    expect(onOpen).not.toHaveBeenCalled()
+  })
+
   it('keeps a missing-auth save retryable in the same account', async () => {
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent('button_click', onOpen)
