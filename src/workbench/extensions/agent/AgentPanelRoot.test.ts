@@ -1,5 +1,10 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
+import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import { setImmediate } from 'node:timers/promises'
 
 import type {
@@ -16082,6 +16087,51 @@ describe('AgentPanelRoot agent socket', () => {
 
     expect(agentSocket.reconnect).toHaveBeenCalledOnce()
     expect(reset).toHaveBeenCalledOnce()
+  })
+
+  // followDesktopHostWorkspace clears the id before refreshing and leaves it null if
+  // the refresh fails or the host workspace is not listed. That null never resolves,
+  // so skipping it would leave the socket serving the previous workspace while Desktop
+  // has already moved to another one.
+  it('drops the socket when the workspace goes null while Desktop pins another', async () => {
+    const reset = vi.fn()
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset,
+      stop: () => {}
+    })
+    const hostOn = (workspaceId: string) =>
+      fromPartial<DesktopHostAuthState>({
+        status: 'signed_in',
+        userId: 'account-a',
+        workspaceId
+      })
+    await startDesktopHostSession({
+      getState: async () => hostOn('ws-host'),
+      getWorkspaceToken: async () => 'host-token',
+      requestSignIn: async () => hostOn('ws-host'),
+      signOut: async () => ({ status: 'signed_out' }),
+      switchWorkspace: async () => hostOn('ws-host'),
+      onChanged: () => () => {}
+    })
+    try {
+      signInAs({ firebase: 'account-a', apiKeyUser: null })
+      const workspaces = useTeamWorkspaceStore()
+      Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      agentSocket.reconnect.mockClear()
+
+      Object.assign(workspaces, { activeWorkspaceId: null })
+      await nextTick()
+
+      expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+      expect(reset).toHaveBeenCalledOnce()
+    } finally {
+      stopDesktopHostSession()
+    }
   })
 
   // Sign-out clears the account and the workspace separately, and the socket has to

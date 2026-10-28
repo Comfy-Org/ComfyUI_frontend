@@ -47,6 +47,7 @@ import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useAuthStore } from '@/stores/authStore'
 import {
   AGENT_ATTACH_ACCEPT,
@@ -290,8 +291,18 @@ watch(
     // be undefined there, so the socket fails auth and backs off -- and it would discard
     // an identity lookup still in flight. Waiting for the workspace costs nothing: the
     // credential in use is still the previous workspace's, and B reconnects on arrival.
-    // An account change is never skipped, so sign-out still drops the socket.
-    if (workspace === null && account === wasAccount && account !== null) return
+    // An account change is never skipped, so sign-out still drops the socket. Nor is
+    // a null skipped while Desktop pins a workspace: followDesktopHostWorkspace clears
+    // the id before refreshing and leaves it null when the refresh fails or the
+    // workspace is not listed, and that null never resolves. Holding the socket through
+    // it would keep serving the previous workspace after the host moved to another.
+    if (
+      workspace === null &&
+      account === wasAccount &&
+      account !== null &&
+      desktopHostUser.value?.workspaceId == null
+    )
+      return
     events.reconnect()
     agentIdentity.reset()
   }
