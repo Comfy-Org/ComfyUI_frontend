@@ -56,7 +56,7 @@
         @click="openHistory"
       >
         {{ $t('workspacePanel.invoices.fullHistory') }}
-        <i class="icon-[lucide--external-link] size-4" />
+        <i class="icon-[lucide--external-link]" />
       </Button>
     </div>
   </div>
@@ -66,7 +66,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useNextInvoice } from '@/platform/billing/composables/useNextInvoice'
 import { useErrorHandling } from '@/composables/useErrorHandling'

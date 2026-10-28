@@ -12,8 +12,6 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 function createNode(): LGraphNode {
   const graph = new LGraph()
   const node = new LGraphNode('test')

@@ -234,6 +234,27 @@ describe('BillingCreditsCard', () => {
     )
   })
 
+  it('puts the credits title above a 12px card', () => {
+    renderCard(activeFacts)
+
+    expect(screen.getByRole('heading', { name: /^Credits/ })).toHaveClass(
+      'text-base',
+      'font-medium',
+      'gap-1.5'
+    )
+    expect(screen.getByTestId('billing-credits-surface')).toHaveClass(
+      'rounded-xl',
+      'border-card'
+    )
+    expect(screen.getByTestId('billing-credits-available')).toHaveClass(
+      'text-2xl',
+      'font-medium'
+    )
+    expect(screen.getByTestId('billing-credits-plan')).toHaveClass(
+      'font-semibold'
+    )
+  })
+
   it('asks for the balance again from Try again', async () => {
     const { emitted } = renderCard({ ...activeFacts, balance: null })
 

@@ -20,7 +20,6 @@ import { useNodeOutputsExport } from './useNodeOutputsExport'
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/assets/services/assetService'))
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn(),
   downloadFileAsBlob: vi.fn()

@@ -19,7 +19,7 @@
           rel="noopener noreferrer"
           @click="handleLearnMore"
         >
-          <i class="icon-[lucide--external-link] size-4"></i>
+          <i class="icon-[lucide--external-link]"></i>
           {{ $t('releaseToast.whatsNew') }}
         </a>
       </template>
@@ -52,8 +52,8 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NotificationPopup from '@/components/common/NotificationPopup.vue'
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
-import Button from '@/components/ui/button/Button.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import Button from '@comfyorg/design-system/button/Button'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useCommandStore } from '@/stores/commandStore'

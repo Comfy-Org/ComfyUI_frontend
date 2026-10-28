@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
 
+vi.unmock(import('@/platform/telemetry/reportError'))
+
 const captureException = vi.fn()
 const isEnabled = vi.fn()
 const addError = vi.fn()
@@ -175,6 +177,37 @@ describe('reportError', () => {
 
     expect(captureException).not.toHaveBeenCalled()
     expect(addError).not.toHaveBeenCalled()
+  })
+
+  it('overrides Sentry grouping only when a fingerprint is given', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed',
+      fingerprint: ['agent-request-failure', '/agent/threads']
+    })
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed'
+    })
+
+    expect(captureException.mock.calls[0][1]).toMatchObject({
+      fingerprint: ['agent-request-failure', '/agent/threads']
+    })
+    expect(captureException.mock.calls[1][1]).not.toHaveProperty('fingerprint')
+  })
+
+  it('does not send a fingerprint to Datadog, which groups on errorType', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_history_load_failed',
+      fingerprint: ['agent-request-failure']
+    })
+
+    expect(addError.mock.calls[0][1]).not.toHaveProperty('fingerprint')
   })
 
   it('names a Datadog copy without changing the original error', async () => {

@@ -7,7 +7,6 @@ import type { PromptSnapshot } from '@/workbench/extensions/agent/types/workflow
 import UserMessage from './UserMessage.vue'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 it('renders a sent skill with its own description beside workflows and returns it when editing', async () => {
   const snapshot: PromptSnapshot = {

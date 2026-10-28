@@ -10,8 +10,8 @@ import type {
 } from '@/platform/billing/subscription/utils/retentionOffer'
 import { reduceRetentionOffer } from '@/platform/billing/subscription/utils/retentionOffer'
 import { reportError } from '@/platform/telemetry/reportError'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 
 type RedemptionResult = Exclude<
@@ -41,7 +41,7 @@ async function redeem(
   workspaceId: string
 ): Promise<RedemptionResult> {
   try {
-    const acceptance = await workspaceApi.acceptRetentionOffer(sessionId)
+    const acceptance = await billingApi.acceptRetentionOffer(sessionId)
     if (acceptance.status === 'succeeded') return { type: 'applied' }
     const operation = await useBillingOperationStore().startOperation(
       acceptance.billing_op_id,

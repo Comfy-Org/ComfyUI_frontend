@@ -12,7 +12,7 @@
           class="size-5 rounded-full border"
           :style="{ backgroundColor: getItemColor(item) }"
         />
-        <i v-else-if="item.icon" :class="cn(item.icon, 'size-4')" />
+        <i v-else-if="item.icon" :class="item.icon" />
         <span class="flex-1">{{ item.label }}</span>
         <span
           v-if="item.shortcut"
@@ -20,29 +20,25 @@
         >
           {{ item.shortcut }}
         </span>
-        <i
-          v-if="hasSubmenu"
-          class="icon-[lucide--chevron-right] size-4 opacity-60"
-        />
+        <i v-if="hasSubmenu" class="icon-[lucide--chevron-right] opacity-60" />
       </div>
     </template>
   </Menu>
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import Menu from '@/components/ui/menu/Menu.vue'
-import { getMenuAnchorPosition } from '@/components/ui/menu/menuAnchor'
-import { usePointMenu } from '@/components/ui/menu/usePointMenu'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import { getMenuAnchorPosition } from '@comfyorg/design-system/lib/menu/menuAnchor'
+import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
 import type {
   MenuItem,
   MenuItemAction,
   MenuItemRadioGroup,
   MenuItemSeparator,
   MenuItemSubmenu
-} from '@/components/ui/menu/types'
+} from '@comfyorg/design-system/lib/menu/types'
 import {
   registerNodeOptionsInstance,
   useMoreOptionsMenu

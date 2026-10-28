@@ -54,7 +54,6 @@ vi.mock(
 )
 
 vi.mock(import('@/composables/auth/useAuthDialogs'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const { __setHasPartnerNodes } =
   partnerNodesInGraphModule as typeof partnerNodesInGraphModule & {

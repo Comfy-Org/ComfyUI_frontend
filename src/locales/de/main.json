@@ -58,6 +58,7 @@
     "coachGraphTitle": "Bearbeiten Sie weiter, während der Agent arbeitet",
     "coachHistoryBody": "Frühere Chats werden hier gespeichert. Öffnen Sie einen, um ihn zu prüfen oder die Arbeit mit dem Agenten fortzusetzen.",
     "coachHistoryTitle": "Machen Sie dort weiter, wo Sie aufgehört haben",
+    "coachHoldNotice": "Ihre Nachricht wird gesendet, wenn Sie die Tour abschließen oder überspringen.",
     "coachProgress": "{current} von {total}",
     "coachTitle": "Lernen Sie Ihren Comfy Agent kennen",
     "coachWorkflowBody": "Er wechselt mit Ihren Tabs, bis Sie eine Nachricht senden, einen Workflow auswählen oder eine Node-Referenz hinzufügen.",
@@ -131,6 +132,7 @@
     "feedbackCaption": "Feedback teilen",
     "focusNode": "Auf Canvas anzeigen",
     "focusNodeLabel": "{node} auf Canvas anzeigen",
+    "followedChatOpenFailed": "Der Chat für {workflowName} konnte nicht geöffnet werden.",
     "freeUseNotice": "Testen Sie Ihren ersten Chat kostenlos!",
     "freeUseNoticeLabel": "Hinweis zur kostenlosen Nutzung",
     "friend": "da",
@@ -168,6 +170,8 @@
     "nodesAdded": "Der Agent hat 1 Node zum Graphen hinzugefügt | Der Agent hat {count} Nodes zum Graphen hinzugefügt",
     "notHelpful": "Nicht hilfreich",
     "openWorkflowTab": "{name} öffnen",
+    "openingChat": "Chat wird geöffnet …",
+    "openingWorkflowChat": "Chat für {workflowName} wird geöffnet …",
     "otherOpenWorkflows": "Andere offene Workflows",
     "paywall": {
       "addCredits": "Credits hinzufügen",
@@ -193,13 +197,14 @@
     "removeNodeLabel": "Referenz zu {node} entfernen",
     "removeWorkflowReference": "Referenz von {name} entfernen",
     "retryAfterSeconds": "Sie können es in {seconds}s erneut versuchen.",
+    "retryFollowedChat": "Öffnen des Chats für {workflowName} erneut versuchen",
     "runApproval": {
       "answerFailed": "Ihre Antwort konnte nicht gesendet werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
       "answerSuperseded": "Dies wurde bereits an anderer Stelle beantwortet, daher wurde diese Antwort statt Ihrer verwendet.",
       "answerUncertain": "Es konnte nicht bestätigt werden, dass Ihre Antwort den Agenten erreicht hat. Sie wurde möglicherweise trotzdem angewendet – laden Sie die Seite neu, um den aktuellen Stand zu sehen.",
       "cancel": "Abbrechen",
-      "lead": "Dieses Tool möchte den Workflow ausführen:",
-      "leadBound": "Dieses Tool möchte diesen Workflow ausführen.",
+      "lead": "Comfy Agent möchte den Workflow ausführen:",
+      "leadBound": "Comfy Agent möchte diesen Workflow ausführen.",
       "question": "Stimmen Sie zu?",
       "run": "Ausführen",
       "thisWorkflow": "diesen Workflow"
@@ -310,6 +315,7 @@
     "workflowSyncFailedDetail": "Dieser Workflow wurde mit einer inkompatiblen Dokumentversion erstellt. Ihr Canvas wurde nicht verändert.",
     "workflowSyncFailedDetailCatalogMismatch": "Ein Node in diesem Workflow wurde geändert, seit der Agent ihn zuletzt gesehen hat. Ihr Canvas wurde nicht verändert. Ihre nächste Nachricht sendet Ihren Canvas, damit der Agent seine Kopie des Workflows neu erstellen kann.",
     "workflowSyncFailedDetailStaleClient": "Diese Seite ist nicht aktuell, daher können die Änderungen des Agenten nicht angezeigt werden. Laden Sie die Seite neu, um sie zu sehen.",
+    "workflowSyncFailedDetailStaleHost": "Diese Seite ist dem Agent-Service voraus, daher können die Änderungen des Agenten hier noch nicht angezeigt werden. Laden Sie die Seite neu, sobald der Service die Aktualisierung abgeschlossen hat, um sie zu sehen.",
     "workflowSyncFailedTitle": "Dieser Workflow kann nicht synchronisiert werden",
     "workflows": "Workflows",
     "working": "Wird bearbeitet..."
@@ -1259,6 +1265,13 @@
       "openCheckout": "Checkout öffnen",
       "openPaymentPage": "Zahlungsseite öffnen",
       "payAmount": "{amount} bezahlen",
+      "paymentProcessingBody": "Sie müssen nicht erneut bezahlen.",
+      "paymentProcessingFlyout": "Zahlung wird verarbeitet. Sie müssen nicht erneut bezahlen.",
+      "paymentProcessingTitle": "Eine Zahlung über {amount} wird noch verarbeitet",
+      "paymentProcessingTitleNoAmount": "Eine Zahlung wird noch verarbeitet",
+      "planRequiredFreeRuns": "Der Kauf von Credits startet keinen Cloud-Plan. Abonnieren Sie, um Workflows weiterhin auszuführen, sobald Ihre kostenlosen Ausführungen aufgebraucht sind.",
+      "planRequiredResubscribe": "Der Kauf von Credits startet Ihren Cloud-Plan nicht erneut. Abonnieren Sie erneut, um Workflows in der Cloud auszuführen.",
+      "planRequiredSubscribe": "Der Kauf von Credits startet keinen Cloud-Plan. Abonnieren Sie, um Workflows in der Cloud auszuführen.",
       "purchaseError": "Kauf fehlgeschlagen",
       "purchaseErrorDetail": "Credits konnten nicht gekauft werden: {error}",
       "purchaseSuccess": "Credits wurden erfolgreich hinzugefügt!",
@@ -1450,15 +1463,18 @@
     "lookupUnavailable": "Es konnte nicht geprüft werden, auf welchem Deployment dieser Editor ausgeführt wird.",
     "lookupUnavailableDetail": "Die angezeigten Modelle stammen von Comfy Cloud. Laden Sie neu, um es erneut zu versuchen.",
     "membersStartOn": "Mitglieder ohne eigene Auswahl starten auf",
+    "missingNodes": "{count} Node fehlt | {count} Nodes fehlen",
     "nameWithVersion": "{name} · v{version}",
     "namedDeployment": "{name}",
     "noDeployments": "Dieser Workspace hat noch keine Deployments.",
+    "notChecked": "Nicht geprüft",
     "notReadyTooltip": "Wird auf {deployment} ausgeführt. Es ist nicht bereit, daher werden Jobs erst ausgeführt, wenn es bereit ist.",
     "pickGone": "Das von Ihnen ausgewählte Deployment existiert nicht mehr.",
     "pickGoneDetail": "Dieser Browser wird jetzt auf Comfy Cloud ausgeführt. Wählen Sie erneut ein Deployment aus, um eines zu verwenden.",
     "releaseChanged": "Dieses Deployment führt jetzt ein anderes Release aus. Laden Sie neu, um dessen Nodes zu erhalten.",
     "reload": "Neu laden",
     "runOn": "Ausführen auf",
+    "runsThisWorkflow": "Führt diesen Workflow aus",
     "status": {
       "notReady": "Nicht bereit",
       "provisioning": "Wird gestartet",
@@ -1472,6 +1488,13 @@
     "triggerLabel": "Wird auf {deployment} ausgeführt. Wählen Sie aus, wo dieser Editor ausgeführt wird",
     "triggerLabelNotReady": "{status} Wählen Sie aus, wo dieser Editor ausgeführt wird",
     "unnamedDeployment": "Deployment {id}",
+    "unsaved": {
+      "message": "Beim Wechsel zu {deployment} wird der Tab neu geladen. Diese Workflows enthalten noch nicht gespeicherte Änderungen.",
+      "saveAndSwitch": "Speichern und wechseln",
+      "switchWithoutSaving": "Ohne Speichern wechseln",
+      "tabsReturn": "Ihre geöffneten Tabs werden nach dem Neuladen in jedem Fall wiederhergestellt.",
+      "title": "Workflows vor dem Wechsel speichern?"
+    },
     "workspaceDefault": "Workspace-Standard"
   },
   "desktopLogin": {
@@ -1960,8 +1983,11 @@
     "missingMedia": "Bei einigen Nodes fehlen erforderliche Eingaben",
     "missingModels": "{count} erforderliches Modell fehlt | {count} erforderliche Modelle fehlen",
     "missingNodes": "Einige Nodes fehlen und müssen installiert werden",
+    "moreDeployments": "{count} weitere",
     "multipleIssueCount": "{count} Problem gefunden | {count} Probleme gefunden",
     "multipleIssuesMessage": "Beheben Sie diese Probleme, bevor Sie den Workflow ausführen.",
+    "runsOn": "Läuft auf {deployment}",
+    "switchDeployment": "Wechseln",
     "viewDetails": "Details anzeigen"
   },
   "errorPanelSurvey": {
@@ -2031,6 +2057,7 @@
     "addNode": "Node hinzufügen...",
     "addNodeFilterCondition": "Node-Filterbedingung hinzufügen",
     "agentModified": "Agent hat diesen Workflow aktualisiert",
+    "agentNeedsApproval": "Der Agent benötigt Ihre Zustimmung",
     "agentWorking": "Agent arbeitet an diesem Workflow",
     "all": "Alle",
     "allKeybindingsReset": "Alle Tastenkombinationen auf Standard zurückgesetzt",
@@ -2695,6 +2722,19 @@
   },
   "issueReport": {
     "helpFix": "Helfen Sie bei der Behebung"
+  },
+  "lateCustomNodes": {
+    "failed": "Einige Custom Nodes wurden nicht gestartet",
+    "failedDetail": "Laden Sie die Seite neu, um Folgendes zu aktivieren: {packs}",
+    "ready": "Custom Nodes sind bereit",
+    "reload": "Neu laden",
+    "starting": "Custom Nodes werden gestartet ... {seconds} s",
+    "startingDetail": "In der Regel etwa 20 s. Ihre Buttons und Menüs erscheinen hier automatisch.",
+    "stepBuilding": "Der Server für Ihre Custom Nodes wird erstellt.\nErsteinrichtung für diese Version, dauert einige Minuten.",
+    "stepCreating": "Der Server für Ihre Custom Nodes wird erstellt.\nErsteinrichtung.",
+    "stepStarting": "Custom Nodes werden geladen.\nDies dauert in der Regel weniger als eine halbe Minute.",
+    "waitingBadge": "Wartet auf sein Paket",
+    "waitingFor": "Warten auf: {packs}"
   },
   "layerEditor": {
     "alignBottom": "Unten ausrichten",
@@ -3431,7 +3471,6 @@
     "Node Library": "Node-Bibliothek",
     "Node Links": "Node-Verbindungen",
     "Open": "Öffnen",
-    "Open 3D Viewer (Beta) for Selected Node": "3D-Viewer (Beta) für ausgewählten Node öffnen",
     "Open Color Picker in MaskEditor": "Farbwähler in MaskEditor öffnen",
     "Open Custom Nodes Folder": "Ordner für Custom Nodes öffnen",
     "Open DevTools": "DevTools öffnen",
@@ -4154,13 +4193,16 @@
       "unknownCategory": "Unbekannt"
     },
     "missingNodePacks": {
+      "andMore": "und {count} weitere",
       "applyChanges": "Änderungen anwenden",
       "collapse": "Einklappen",
       "expand": "Ausklappen",
       "installAll": "Alle installieren",
       "installed": "Installiert",
       "installing": "Wird installiert...",
+      "noDeploymentRunsIt": "Keine Bereitstellung in diesem Workspace verfügt über alle diese Nodes.",
       "ossManagerDisabledHint": "Um fehlende Nodes zu installieren, führen Sie zunächst {pipCmd} in Ihrer Python-Umgebung aus, um den Node Manager zu installieren. Starten Sie anschließend ComfyUI mit dem Flag {flag} neu.",
+      "runsOn": "Läuft auf:",
       "title": "Fehlende Node-Packs",
       "unknownPack": "Unbekanntes Pack",
       "unsupportedTitle": "Nicht unterstützte Node-Packs",
@@ -5730,7 +5772,7 @@
         "title": "Automatisches Aufladen fehlgeschlagen"
       },
       "autoTopUpOff": {
-        "body": "Ihre Karte wurde dreimal hintereinander abgelehnt. Aktualisieren Sie Ihre Zahlungsmethode und aktivieren Sie anschließend das automatische Aufladen wieder.",
+        "body": "Ihre Zahlungsmethode wurde dreimal hintereinander abgelehnt. Aktualisieren Sie Ihre Zahlungsmethode und aktivieren Sie anschließend die automatische Aufladung wieder.",
         "title": "Automatisches Aufladen deaktiviert"
       },
       "ending": {
@@ -5761,6 +5803,11 @@
         "personalBody": "Sie haben alle Ihre Credits verbraucht. Fügen Sie weitere Credits hinzu oder warten Sie, bis die Credits am {date} aufgefüllt werden.",
         "personalBodyNoDate": "Sie haben alle Ihre Credits verbraucht. Fügen Sie weitere Credits hinzu.",
         "title": "Keine Credits mehr"
+      },
+      "parked": {
+        "body": "Kontaktieren Sie den Support, damit wir das Problem beheben können.",
+        "contactSupport": "Support kontaktieren",
+        "title": "Bei einer kürzlichen Zahlung ist etwas schiefgelaufen"
       },
       "paused": {
         "body": "Das Abonnement dieses Workspace ist pausiert. Aktualisieren Sie die Zahlungsmethode, um es fortzusetzen."
@@ -5834,8 +5881,6 @@
         "planTooltip": "In Ihrem Plan enthaltenes Guthaben. Es wird in jedem Abrechnungszeitraum aufgefüllt.",
         "rateInfo": "Über Guthaben",
         "rateTooltip": "Guthaben bezahlt Ausführungen. {credits} Guthaben = 1 $.",
-        "resubscribe": "Abonnieren Sie erneut, um Guthaben in Cloud zu verwenden.",
-        "subscribe": "Abonnieren Sie, um Guthaben in Cloud zu verwenden.",
         "title": "Guthaben",
         "topUp": "Aufladen",
         "topUpTooltip": "Von Ihnen hinzugefügtes Guthaben. Es wird verwendet, sobald das Planguthaben aufgebraucht ist.",
@@ -5855,6 +5900,7 @@
       "plan": {
         "actions": {
           "choosePlan": "Plan auswählen",
+          "contactSales": "Vertrieb kontaktieren",
           "manage": "Verwalten",
           "resume": "Plan fortsetzen",
           "stay": "Bei {plan} bleiben",
@@ -5886,6 +5932,22 @@
         },
         "unknown": {
           "title": "Ihr Plan"
+        }
+      },
+      "topupCheckout": {
+        "creditsApplying": {
+          "body": "Ihre Credits werden hinzugefügt. Ihnen wird nichts erneut berechnet.",
+          "title": "Zahlung erhalten"
+        },
+        "dismiss": "Schließen",
+        "failed": {
+          "body": "Es wurden keine Credits hinzugefügt. Versuchen Sie es erneut oder verwenden Sie eine andere Zahlungsmethode.",
+          "title": "Ihre Aufladung über {amount} wurde nicht durchgeführt",
+          "titleNoAmount": "Ihre Aufladung wurde nicht durchgeführt"
+        },
+        "processing": {
+          "body": "Ihre Bank bestätigt die Zahlung. Credits werden hinzugefügt, sobald sie freigegeben ist, daher müssen Sie nicht erneut bezahlen.",
+          "title": "Zahlung wird verarbeitet"
         }
       },
       "tryAgain": "Erneut versuchen"

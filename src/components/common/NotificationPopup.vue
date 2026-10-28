@@ -16,7 +16,7 @@
           v-if="icon"
           class="flex shrink-0 items-center justify-center rounded-lg bg-primary/90 p-3"
         >
-          <i :class="cn('size-4 text-white', icon)" />
+          <i :class="cn('text-white', icon)" />
         </div>
         <div class="flex flex-1 flex-col gap-1 font-normal">
           <div class="text-sm leading-[1.429]">
@@ -64,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
