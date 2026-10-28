@@ -109,13 +109,7 @@
 
       <LocateNodeButton
         v-if="primaryLocatableNodeType"
-        :label="
-          t(
-            'rightSidePanel.locateNodeFor',
-            { item: getLabel(primaryLocatableNodeType) },
-            { escapeParameter: false }
-          )
-        "
+        :label="locateNodeLabelFor(getLabel(primaryLocatableNodeType))"
         @locate="handleLocateNode(primaryLocatableNodeType)"
       />
     </div>
@@ -146,11 +140,7 @@
             <LocateNodeButton
               v-if="isLocatableNodeType(nodeType)"
               :label="
-                t(
-                  'rightSidePanel.locateNodeFor',
-                  { item: `${nodeType.type} #${nodeType.nodeId}` },
-                  { escapeParameter: false }
-                )
+                locateNodeLabelFor(`${nodeType.type} #${nodeType.nodeId}`)
               "
               @locate="handleLocateNode(nodeType)"
             />
@@ -225,6 +215,10 @@ function isLocatableNodeType(
   nodeType: MissingNodeType
 ): nodeType is Exclude<MissingNodeType, string> & { nodeId: string | number } {
   return typeof nodeType !== 'string' && nodeType.nodeId != null
+}
+
+function locateNodeLabelFor(item: string): string {
+  return t('rightSidePanel.locateNodeFor', { item }, { escapeParameter: false })
 }
 
 function handleLocateNode(nodeType: MissingNodeType) {
