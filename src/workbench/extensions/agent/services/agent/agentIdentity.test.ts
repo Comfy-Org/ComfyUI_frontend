@@ -280,8 +280,36 @@ describe('resolveAgentIdentity', () => {
       await vi.advanceTimersByTimeAsync(10 * 60_000)
     }
 
+    // 8 reports for the first window, then exactly one marker saying the rest are
+    // suppressed -- without it this is indistinguishable from a cycle that ended.
     expect(getIdentity).toHaveBeenCalledTimes(32)
-    expect(identity.onFailure).toHaveBeenCalledTimes(8)
+    expect(identity.onFailure).toHaveBeenCalledTimes(9)
+    expect(identity.onFailure).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('further failure reports suppressed')
+      })
+    )
+  })
+
+  it('reports a terminal failure even after the retryable budget is spent', async () => {
+    const transient = new Error('agent still starting')
+    const terminal = new AgentApiError('forbidden', 403, undefined)
+    const getIdentity = vi
+      .fn<() => Promise<{ userId: string }>>()
+      .mockRejectedValue(transient)
+    const identity = harness(getIdentity, (error) => error !== terminal)
+
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    identity.onFailure.mockClear()
+
+    // The budget is spent. A 401/403 or a missing route is the most actionable
+    // failure there is, so it must not be swallowed by the transient pool.
+    getIdentity.mockRejectedValue(terminal)
+    identity.connect()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(identity.onFailure).toHaveBeenCalledWith(terminal)
+    expect(identity.state.value).toEqual({ status: 'rejected' })
   })
 
   it('reports again for a new account, because reset refreshes the report budget', async () => {
