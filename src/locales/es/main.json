@@ -58,6 +58,7 @@
     "coachGraphTitle": "Deja que el agente se ejecute mientras editas",
     "coachHistoryBody": "Los chats anteriores se guardan aquí. Abre uno para revisarlo o seguir trabajando con el agente.",
     "coachHistoryTitle": "Retoma donde lo dejaste",
+    "coachHoldNotice": "Tu mensaje se enviará cuando termines u omitas el recorrido.",
     "coachProgress": "{current} de {total}",
     "coachTitle": "Conoce a tu agente de Comfy",
     "coachWorkflowBody": "Cambia con tus pestañas hasta que envías un mensaje, eliges un flujo de trabajo o añades una referencia a un nodo.",
@@ -131,6 +132,7 @@
     "feedbackCaption": "Comparte tus comentarios",
     "focusNode": "Mostrar en el lienzo",
     "focusNodeLabel": "Mostrar {node} en el lienzo",
+    "followedChatOpenFailed": "No se pudo abrir el chat de {workflowName}.",
     "freeUseNotice": "¡Prueba tu primer chat gratis!",
     "freeUseNoticeLabel": "Aviso de uso gratuito",
     "friend": "amigo",
@@ -168,6 +170,8 @@
     "nodesAdded": "El agente añadió 1 nodo al grafo | El agente añadió {count} nodos al grafo",
     "notHelpful": "No útil",
     "openWorkflowTab": "Abrir {name}",
+    "openingChat": "Abriendo el chat…",
+    "openingWorkflowChat": "Abriendo el chat de {workflowName}…",
     "otherOpenWorkflows": "Otros flujos de trabajo abiertos",
     "paywall": {
       "addCredits": "Añadir créditos",
@@ -193,13 +197,14 @@
     "removeNodeLabel": "Eliminar la referencia a {node}",
     "removeWorkflowReference": "Eliminar referencia a {name}",
     "retryAfterSeconds": "Puedes volver a intentarlo en {seconds}s.",
+    "retryFollowedChat": "Reintentar abrir el chat de {workflowName}",
     "runApproval": {
       "answerFailed": "No se pudo enviar tu respuesta. Recarga la página e inténtalo de nuevo.",
       "answerSuperseded": "Esto ya se respondió en otro lugar, por lo que se usó esa respuesta en lugar de la tuya.",
       "answerUncertain": "No se pudo confirmar que tu respuesta llegara al agente. Es posible que se haya aplicado de todos modos; recarga la página para ver cuál es el estado.",
       "cancel": "Cancelar",
-      "lead": "Esta herramienta quiere ejecutar el flujo de trabajo:",
-      "leadBound": "Esta herramienta quiere ejecutar este flujo de trabajo.",
+      "lead": "Comfy Agent quiere ejecutar el flujo de trabajo:",
+      "leadBound": "Comfy Agent quiere ejecutar este flujo de trabajo.",
       "question": "¿Lo apruebas?",
       "run": "Ejecutar",
       "thisWorkflow": "este flujo de trabajo"
@@ -310,6 +315,7 @@
     "workflowSyncFailedDetail": "Este flujo de trabajo se creó con una versión de documento incompatible. Tu lienzo no se ha modificado.",
     "workflowSyncFailedDetailCatalogMismatch": "Un nodo de este flujo de trabajo ha cambiado desde la última vez que el agente lo vio. Tu lienzo no se ha modificado. Tu próximo mensaje enviará tu lienzo para que el agente pueda reconstruir su copia del flujo de trabajo.",
     "workflowSyncFailedDetailStaleClient": "Esta página no está actualizada, por lo que no se pueden mostrar los cambios del agente. Recarga la página para verlos.",
+    "workflowSyncFailedDetailStaleHost": "Esta página está más actualizada que el servicio del agente, por lo que los cambios del agente aún no pueden mostrarse aquí. Recarga la página cuando el servicio termine de actualizarse para verlos.",
     "workflowSyncFailedTitle": "Este flujo de trabajo no se puede sincronizar",
     "workflows": "Flujos de trabajo",
     "working": "Trabajando..."
@@ -1259,6 +1265,13 @@
       "openCheckout": "Abrir página de pago",
       "openPaymentPage": "Abrir página de pago",
       "payAmount": "Pagar {amount}",
+      "paymentProcessingBody": "No necesitas pagar de nuevo.",
+      "paymentProcessingFlyout": "Procesando el pago. No necesitas pagar de nuevo.",
+      "paymentProcessingTitle": "Un pago de {amount} aún se está procesando",
+      "paymentProcessingTitleNoAmount": "Un pago aún se está procesando",
+      "planRequiredFreeRuns": "Comprar créditos no inicia un plan de Cloud. Suscríbete para seguir ejecutando flujos de trabajo una vez que hayas usado tus ejecuciones gratuitas.",
+      "planRequiredResubscribe": "Comprar créditos no reinicia tu plan de Cloud. Vuelve a suscribirte para ejecutar flujos de trabajo en Cloud.",
+      "planRequiredSubscribe": "Comprar créditos no inicia un plan de Cloud. Suscríbete para ejecutar flujos de trabajo en Cloud.",
       "purchaseError": "Compra fallida",
       "purchaseErrorDetail": "No se pudo comprar créditos: {error}",
       "purchaseSuccess": "¡Créditos añadidos correctamente!",
@@ -1450,15 +1463,18 @@
     "lookupUnavailable": "No se pudo comprobar en qué implementación se ejecuta este editor.",
     "lookupUnavailableDetail": "Los modelos mostrados son los de Comfy Cloud. Recarga para intentarlo de nuevo.",
     "membersStartOn": "Los miembros sin una selección propia comienzan en",
+    "missingNodes": "Falta {count} nodo | Faltan {count} nodos",
     "nameWithVersion": "{name} · v{version}",
     "namedDeployment": "{name}",
     "noDeployments": "Este espacio de trabajo aún no tiene implementaciones.",
+    "notChecked": "Sin comprobar",
     "notReadyTooltip": "Ejecutándose en {deployment}. No está listo, por lo que los trabajos no se ejecutarán hasta que lo esté.",
     "pickGone": "La implementación que elegiste ya no existe.",
     "pickGoneDetail": "Este navegador ahora se ejecuta en Comfy Cloud. Vuelve a elegir una implementación para usar una.",
     "releaseChanged": "Esta implementación ahora ejecuta una versión diferente. Recarga para obtener sus nodos.",
     "reload": "Recargar",
     "runOn": "Ejecutar en",
+    "runsThisWorkflow": "Ejecuta este flujo de trabajo",
     "status": {
       "notReady": "No está listo",
       "provisioning": "Iniciando",
@@ -1472,6 +1488,13 @@
     "triggerLabel": "Se está ejecutando en {deployment}. Elige dónde se ejecuta este editor",
     "triggerLabelNotReady": "{status} Elige dónde se ejecuta este editor",
     "unnamedDeployment": "Implementación {id}",
+    "unsaved": {
+      "message": "Cambiar a {deployment} recarga la pestaña. Estos flujos de trabajo tienen cambios que aún no se han guardado.",
+      "saveAndSwitch": "Guardar y cambiar",
+      "switchWithoutSaving": "Cambiar sin guardar",
+      "tabsReturn": "Tus pestañas abiertas volverán después de la recarga de cualquier modo.",
+      "title": "¿Guardar tus flujos de trabajo antes de cambiar?"
+    },
     "workspaceDefault": "Valor predeterminado del espacio de trabajo"
   },
   "desktopLogin": {
@@ -1960,8 +1983,11 @@
     "missingMedia": "A algunos nodos les faltan entradas requeridas",
     "missingModels": "Falta {count} modelo requerido | Faltan {count} modelos requeridos",
     "missingNodes": "Faltan algunos nodos y necesitan ser instalados",
+    "moreDeployments": "{count} más",
     "multipleIssueCount": "Se encontró {count} problema | Se encontraron {count} problemas",
     "multipleIssuesMessage": "Resuelve estos problemas antes de ejecutar el flujo de trabajo.",
+    "runsOn": "Se ejecuta en {deployment}",
+    "switchDeployment": "Cambiar",
     "viewDetails": "Ver detalles"
   },
   "errorPanelSurvey": {
@@ -2031,6 +2057,7 @@
     "addNode": "Agregar un nodo...",
     "addNodeFilterCondition": "Agregar condición de filtro de nodo",
     "agentModified": "El agente actualizó este flujo de trabajo",
+    "agentNeedsApproval": "El agente necesita tu aprobación",
     "agentWorking": "El agente está trabajando en este flujo de trabajo",
     "all": "Todo",
     "allKeybindingsReset": "Todas las combinaciones de teclas se restablecieron a los valores predeterminados",
@@ -2695,6 +2722,19 @@
   },
   "issueReport": {
     "helpFix": "Ayuda a Solucionar Esto"
+  },
+  "lateCustomNodes": {
+    "failed": "Algunos nodos personalizados no se iniciaron",
+    "failedDetail": "Recarga la página para activar: {packs}",
+    "ready": "Los nodos personalizados están listos",
+    "reload": "Recargar",
+    "starting": "Los nodos personalizados se están iniciando... {seconds} s",
+    "startingDetail": "Normalmente tarda unos 20 s. Sus botones y menús aparecerán aquí automáticamente.",
+    "stepBuilding": "Compilando el servidor para tus nodos personalizados.\nConfiguración inicial para esta versión; tarda unos minutos.",
+    "stepCreating": "Creando el servidor para tus nodos personalizados.\nConfiguración inicial.",
+    "stepStarting": "Cargando nodos personalizados.\nEsto suele tardar menos de medio minuto.",
+    "waitingBadge": "Esperando su paquete",
+    "waitingFor": "Esperando a: {packs}"
   },
   "layerEditor": {
     "alignBottom": "Alinear abajo",
@@ -3431,7 +3471,6 @@
     "Node Library": "Biblioteca de Nodos",
     "Node Links": "Enlaces de nodos",
     "Open": "Abrir",
-    "Open 3D Viewer (Beta) for Selected Node": "Abrir visor 3D (Beta) para el nodo seleccionado",
     "Open Color Picker in MaskEditor": "Abrir selector de color en MaskEditor",
     "Open Custom Nodes Folder": "Abrir carpeta de nodos personalizados",
     "Open DevTools": "Abrir herramientas de desarrollo",
@@ -4154,13 +4193,16 @@
       "unknownCategory": "Desconocido"
     },
     "missingNodePacks": {
+      "andMore": "y {count} más",
       "applyChanges": "Aplicar cambios",
       "collapse": "Colapsar",
       "expand": "Expandir",
       "installAll": "Instalar todo",
       "installed": "Instalado",
       "installing": "Instalando...",
+      "noDeploymentRunsIt": "Ningún despliegue de este espacio de trabajo tiene todos estos nodos.",
       "ossManagerDisabledHint": "Para instalar los nodos que faltan, primero ejecuta {pipCmd} en tu entorno de Python para instalar Node Manager, luego reinicia ComfyUI con la bandera {flag}.",
+      "runsOn": "Se ejecuta en:",
       "title": "Paquetes de nodos faltantes",
       "unknownPack": "Paquete desconocido",
       "unsupportedTitle": "Paquetes de nodos no compatibles",
@@ -5730,7 +5772,7 @@
         "title": "La recarga automática falló"
       },
       "autoTopUpOff": {
-        "body": "Tu tarjeta fue rechazada 3 veces seguidas. Actualiza tu método de pago y luego vuelve a activar la recarga automática.",
+        "body": "Tu método de pago fue rechazado 3 veces seguidas. Actualiza tu método de pago y vuelve a activar la recarga automática.",
         "title": "Recarga automática desactivada"
       },
       "ending": {
@@ -5761,6 +5803,11 @@
         "personalBody": "Has usado todos tus créditos. Añade más créditos o espera hasta que se repongan el {date}.",
         "personalBodyNoDate": "Has usado todos tus créditos. Añade más créditos.",
         "title": "Sin créditos"
+      },
+      "parked": {
+        "body": "Contacta con soporte para que podamos solucionarlo.",
+        "contactSupport": "Contactar con soporte",
+        "title": "Algo salió mal con un pago reciente"
       },
       "paused": {
         "body": "La suscripción de este espacio de trabajo está pausada. Actualiza el pago para reanudar."
@@ -5834,8 +5881,6 @@
         "planTooltip": "Créditos incluidos con tu plan. Se reponen en cada período de facturación.",
         "rateInfo": "Acerca de los créditos",
         "rateTooltip": "Los créditos pagan las ejecuciones. {credits} créditos = $1.",
-        "resubscribe": "Vuelve a suscribirte para usar créditos en Cloud.",
-        "subscribe": "Suscríbete para usar créditos en Cloud.",
         "title": "Créditos",
         "topUp": "Recarga",
         "topUpTooltip": "Créditos que añadiste. Se usan una vez que se agotan los créditos del plan.",
@@ -5855,6 +5900,7 @@
       "plan": {
         "actions": {
           "choosePlan": "Elegir un plan",
+          "contactSales": "Contactar con ventas",
           "manage": "Gestionar",
           "resume": "Reanudar plan",
           "stay": "Mantener {plan}",
@@ -5886,6 +5932,22 @@
         },
         "unknown": {
           "title": "Tu plan"
+        }
+      },
+      "topupCheckout": {
+        "creditsApplying": {
+          "body": "Se están añadiendo tus créditos. No se te cobrará de nuevo.",
+          "title": "Pago recibido"
+        },
+        "dismiss": "Descartar",
+        "failed": {
+          "body": "No se añadieron créditos. Inténtalo de nuevo o usa otro método de pago.",
+          "title": "Tu recarga de {amount} no se procesó",
+          "titleNoAmount": "Tu recarga no se procesó"
+        },
+        "processing": {
+          "body": "Tu banco está confirmando el pago. Los créditos se añaden una vez que se liquide, por lo que no necesitas pagar de nuevo.",
+          "title": "Procesando el pago"
         }
       },
       "tryAgain": "Intentar de nuevo"

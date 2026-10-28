@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import { defaultWindow, useEventListener, useTimeoutFn } from '@vueuse/core'
 
 import type { TelemetryDispatcher } from '@/platform/telemetry/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 const MAX_CANCELLATION_ATTEMPTS = 4
 const CANCELLATION_BASE_DELAY_MS = 5000

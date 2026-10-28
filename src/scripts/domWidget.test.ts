@@ -21,8 +21,6 @@ vi.mock(import('@/utils/formatUtil'), () => ({
   generateUUID: vi.fn(() => 'test-uuid')
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 describe('DOMWidget Y Position Preservation', () => {
   test('ComponentWidgetImpl createCopyForNode preserves Y position and component wiring', () => {
     const mockNode = new LGraphNode('test-node')

@@ -634,6 +634,53 @@ describe('ComfyApp', () => {
       }
     )
 
+    it('keeps the graph awaiting node types when post-configure node resizing fails', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/reload.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const graph = new LGraph()
+      workflow.adoptGraph(graph)
+      useWorkflowStore().attachWorkflow(workflow)
+      Reflect.set(app, 'rootGraphInternal', graph)
+      graphsAwaitingNodeTypes.add(graph)
+      onTestFinished(() => {
+        graphsAwaitingNodeTypes.delete(graph)
+      })
+      graph.onConfigure = () => {
+        const [node] = graph.nodes
+        assert(node)
+        node.onResize = () => {
+          throw new Error('node resize failed')
+        }
+      }
+      const data = zComfyWorkflow.parse({
+        ...createWorkflowGraphData(),
+        nodes: [
+          {
+            id: 2,
+            type: 'test/ReloadNode',
+            pos: [0, 0],
+            size: [100, 100],
+            flags: {},
+            order: 0,
+            mode: 0,
+            properties: {}
+          }
+        ]
+      })
+
+      await expect(
+        app.loadGraphData(data, true, false, workflow)
+      ).rejects.toThrow('node resize failed')
+
+      expect(graphsAwaitingNodeTypes.has(graph)).toBe(true)
+    })
+
     it.for([
       {
         failingStep: 'configure',
@@ -2374,6 +2421,32 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('redraws and refreshes the queue UI once after submitting a batch', async () => {
+      prepareEmptyPromptQueue()
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockResolvedValueOnce({ prompt_id: 'job-1' })
+        .mockResolvedValueOnce({ prompt_id: 'job-2' })
+      let resolveUpdate!: () => void
+      const updateQueue = vi.spyOn(app.ui.queue, 'update').mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveUpdate = resolve
+          })
+      )
+
+      // The queue UI refresh is fire-and-forget: queuePrompt resolves while the
+      // update is still pending, having already redrawn the canvas once.
+      await app.queuePrompt(0, 2)
+
+      expect(updateQueue).toHaveBeenCalledOnce()
+      expect(queuePrompt).toHaveBeenCalledTimes(2)
+      expect(mockCanvas.draw).toHaveBeenCalledOnce()
+
+      // Settle the detached update so the test leaves no pending promise.
+      resolveUpdate()
+    })
+
     it('attributes a queued job to the mode used when submission started', async () => {
       prepareEmptyPromptQueue()
       const workflow = useWorkflowStore().activeWorkflow
@@ -2671,20 +2744,21 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
         prompt_id: 'job-1'
       })
-      vi.spyOn(app.ui.queue, 'update').mockRejectedValue(
-        new Error('Queue UI refresh failed')
-      )
+      const refreshError = new Error('Queue UI refresh failed')
+      vi.spyOn(app.ui.queue, 'update').mockRejectedValue(refreshError)
 
       try {
-        await expect(
-          app.queuePrompt(0, 1, {
-            intent: { trigger_source: 'button' }
-          })
-        ).rejects.toThrow('Queue UI refresh failed')
+        await app.queuePrompt(0, 1, {
+          intent: { trigger_source: 'button' }
+        })
         expect(useExecutionStore().queuedJobs['job-1']).toMatchObject({
           workflowExecutionIntent: {
             trigger_source: 'button'
           }
+        })
+        expect(reportError).toHaveBeenCalledWith(refreshError, {
+          surface: 'graph',
+          errorType: 'queue_ui_update_failure'
         })
       } finally {
         setTelemetryRegistry(null)
@@ -4137,6 +4211,68 @@ describe('ComfyApp', () => {
       expect(executionErrorHandler).toBeTypeOf('function')
       expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
     })
+
+    it.for([
+      {
+        event: 'execution_start',
+        dispatch: () =>
+          api.dispatchCustomEvent('execution_start', {
+            prompt_id: 'job-b',
+            timestamp: 0
+          })
+      },
+      {
+        event: 'executed',
+        dispatch: () =>
+          api.dispatchCustomEvent('executed', {
+            node: '1',
+            display_node: '1',
+            prompt_id: 'job-b',
+            output: { text: ['background result'] }
+          })
+      }
+    ])(
+      'routes $event callbacks to the background job graph',
+      ({ dispatch }) => {
+        const visible = new LGraph()
+        const background = new LGraph()
+        const visibleNode = new LGraphNode('visible')
+        const backgroundNode = new LGraphNode('background')
+        visibleNode.onExecutionStart = () => {
+          visibleNode.title = 'updated'
+        }
+        visibleNode.onExecuted = () => {
+          visibleNode.title = 'updated'
+        }
+        backgroundNode.onExecutionStart = () => {
+          backgroundNode.title = 'updated'
+        }
+        backgroundNode.onExecuted = () => {
+          backgroundNode.title = 'updated'
+        }
+        visible.add(visibleNode)
+        background.add(backgroundNode)
+        const workflowA = markLoaded(
+          new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+        )
+        const workflowB = markLoaded(
+          new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+        )
+        workflowA.adoptGraph(visible)
+        workflowB.adoptGraph(background)
+        useWorkflowStore().activeWorkflow = workflowA
+        Reflect.set(app, 'rootGraphInternal', visible)
+        useExecutionStore().registerJobOwner('job-b', workflowB)
+        Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+
+        dispatch()
+
+        expect([visibleNode.title, backgroundNode.title]).toEqual([
+          'visible',
+          'updated'
+        ])
+      }
+    )
 
     it('keeps outputs and previews of a background run off the visible workflow', () => {
       Reflect.set(app, 'rootGraphInternal', new LGraph())

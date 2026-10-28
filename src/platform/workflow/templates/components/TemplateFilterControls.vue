@@ -44,14 +44,14 @@
     :options="sortOptions"
   >
     <template #icon>
-      <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
+      <i class="icon-[lucide--arrow-up-down] size-3.5 text-muted-foreground" />
     </template>
   </AppSingleSelect>
 </template>
 
 <script setup lang="ts">
 import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
-import type { SelectOption } from '@/components/ui/select/types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import type { TemplateSortMode } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 

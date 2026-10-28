@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { visible } = defineProps<{ visible: boolean }>()
 const emit = defineEmits<{ retry: [] }>()
@@ -14,9 +14,9 @@ const { t } = useI18n()
     role="alert"
     class="flex items-center gap-3 rounded-lg border border-destructive/40 bg-background p-3 text-sm"
   >
-    <span
+    <i
       aria-hidden="true"
-      class="icon-[lucide--circle-alert] size-5 shrink-0 text-destructive"
+      class="icon-[lucide--circle-alert] size-5 text-destructive"
     />
     <p class="m-0 min-w-0 flex-1">
       {{ t('agent.workflowSyncFailedTitle') }}

@@ -3,10 +3,10 @@ import { storeToRefs } from 'pinia'
 import { computed, provide, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import EditableText from '@/components/common/EditableText.vue'
-import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
-import Button from '@/components/ui/button/Button.vue'
+import EditableText from '@comfyorg/design-system/common/EditableText'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
+import Button from '@comfyorg/design-system/button/Button'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
 import { app } from '@/scripts/app'
 import {
@@ -374,7 +374,7 @@ function handleTitleCancel() {
               class="top-[2px] ml-2 shrink-0"
               @click="isEditing = true"
             >
-              <i aria-hidden="true" class="icon-[lucide--pencil] size-4" />
+              <i aria-hidden="true" class="icon-[lucide--pencil]" />
             </Button>
           </template>
           <template v-else>
@@ -405,7 +405,7 @@ function handleTitleCancel() {
             :aria-label="t('rightSidePanel.togglePanel')"
             @click="closePanel"
           >
-            <i :class="cn(panelIcon, 'size-4')" />
+            <i :class="panelIcon" />
           </Button>
         </div>
       </div>
@@ -424,7 +424,7 @@ function handleTitleCancel() {
               role="img"
               :aria-label="tab.icon.label()"
               data-testid="panel-tab-icon"
-              :class="cn(tab.icon.className, 'size-4')"
+              :class="tab.icon.className"
             />
           </Tab>
         </TabList>

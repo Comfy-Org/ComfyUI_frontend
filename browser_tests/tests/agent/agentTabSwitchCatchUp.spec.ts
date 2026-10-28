@@ -275,7 +275,8 @@ test.describe(
         (element) => getComputedStyle(element).backgroundColor
       )
       await page
-        .getByTestId(TestIds.selectionToolbox.colorPickerButton)
+        .getByTestId(TestIds.selectionToolbox.root)
+        .getByRole('button', { name: 'Color', exact: true })
         .dispatchEvent('click')
       await page
         .getByTestId(TestIds.selectionToolbox.colorRed)

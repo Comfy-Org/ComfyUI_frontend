@@ -884,7 +884,6 @@ test.describe('Workflow Persistence', () => {
     const tab = comfyPage.menu.workflowsTab
     await tab.open()
 
-    // Link count requires internal graph state — not exposed via DOM
     const linkCountBefore = await getLinkCount(comfyPage)
     expect(linkCountBefore).toBeGreaterThan(0)
 
@@ -893,7 +892,11 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.workflow.waitForWorkflowIdle()
 
-    await tab.switchToWorkflow('links-test')
+    await tab.root
+      .getByRole('treeitem', { name: 'links-test', exact: true })
+      .getByRole('button', { name: 'Close', exact: true })
+      .click()
+    await tab.getPersistedItem('links-test').dblclick()
     await comfyPage.workflow.waitForWorkflowIdle()
 
     await expect.poll(() => getLinkCount(comfyPage)).toBe(linkCountBefore)
@@ -1004,7 +1007,7 @@ test.describe('Workflow Persistence', () => {
 
     await comfyPage.menu.topbar.getWorkflowTab(workflowA).click()
     await comfyPage.workflow.waitForWorkflowIdle()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
 
     const restoredNode = await getRequiredFirstNodeRef(
       comfyPage,

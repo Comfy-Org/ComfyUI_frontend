@@ -13,10 +13,7 @@
     @auxclick.middle="openBuilder"
   >
     {{ $t('deployToComfyApi.openBuilder') }}
-    <i
-      class="icon-[lucide--square-arrow-out-up-right] size-4"
-      aria-hidden="true"
-    />
+    <i class="icon-[lucide--square-arrow-out-up-right]" aria-hidden="true" />
   </Button>
   <Button
     v-else
@@ -32,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useTelemetry } from '@/platform/telemetry'
 import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 

@@ -14,16 +14,14 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { reportError } from '@/platform/telemetry/reportError'
 import * as workflowService from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -49,6 +47,7 @@ vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@vueuse/router'), async () => {
   const { ref } = await import('vue')
   return { useRouteHash: () => ref('') }

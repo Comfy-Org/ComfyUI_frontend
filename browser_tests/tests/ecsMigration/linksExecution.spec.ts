@@ -89,13 +89,13 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
       const clickPosition = { x: 200, y: 200 }
       await comfyPage.searchBoxV2.addNode('KSampler', {
         position: clickPosition
       })
 
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+      await comfyPage.expectNodeCount(1)
       const placement = await comfyPage.page.evaluate(() => {
         const node = window.app!.graph.nodes.find(
           ({ type }) => type === 'KSampler'

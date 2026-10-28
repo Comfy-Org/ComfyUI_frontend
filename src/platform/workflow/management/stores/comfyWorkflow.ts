@@ -400,10 +400,13 @@ export class ComfyWorkflow extends UserFile {
   override unload(): void {
     const rootGraphId = this.changeTracker?.activeState.id
     if (rootGraphId) workflowRuntime().forgetNodeHistories(rootGraphId)
-    this.releaseGraph()
-    this.changeTracker = null
-    this.activeMode = null
-    super.unload()
+    try {
+      this.releaseGraph()
+    } finally {
+      this.changeTracker = null
+      this.activeMode = null
+      super.unload()
+    }
   }
 
   override async save() {

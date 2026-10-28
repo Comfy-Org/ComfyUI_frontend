@@ -60,7 +60,7 @@
 import { computed } from 'vue'
 
 import HighlightedText from '@/components/searchbox/HighlightedText.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'

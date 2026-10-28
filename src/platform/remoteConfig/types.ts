@@ -105,11 +105,9 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey
-  onboarding_tour_enabled?: boolean
   /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
   manager_survey_url?: string
   cancellation_survey_id?: string
-  linear_toggle_enabled?: boolean
   'agent-in-app-experience'?: boolean
   partner_node_governance_enabled?: boolean
   /** Kill switch for the local partner-nodes run gate; defaults on client-side. */

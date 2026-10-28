@@ -27,7 +27,7 @@
           aria-hidden="true"
           :class="
             cn(
-              'icon-[lucide--chevron-right] size-4 text-muted-foreground transition-transform duration-200',
+              'icon-[lucide--chevron-right] text-muted-foreground transition-transform duration-200',
               expanded && 'rotate-90'
             )
           "
@@ -35,7 +35,7 @@
       </Button>
       <i
         v-if="isUnknownPack"
-        class="icon-[lucide--triangle-alert] size-4 shrink-0 text-warning"
+        class="icon-[lucide--triangle-alert] text-warning"
       />
       <span class="flex min-w-0 flex-1 items-center gap-2">
         <span class="flex min-w-0 items-center gap-2.5">
@@ -86,7 +86,7 @@
             :aria-label="t('rightSidePanel.missingNodePacks.viewInManager')"
             @click="emit('openManagerInfo', group.packId ?? '')"
           >
-            <i class="icon-[lucide--info] size-4" />
+            <i class="icon-[lucide--info]" />
           </Button>
           <span
             v-if="showNodeCount"
@@ -163,6 +163,26 @@
       />
     </div>
 
+    <p
+      v-if="unsupportedPack"
+      :class="
+        cn(
+          'm-0 text-xs/relaxed wrap-break-word text-muted-foreground',
+          hasMultipleNodeTypes && 'pl-5'
+        )
+      "
+    >
+      {{
+        unsupportedPack.cause
+          ? t(
+              'rightSidePanel.missingNodePacks.unsupportedOnBuild',
+              { cause: unsupportedPack.cause },
+              { escapeParameter: false }
+            )
+          : t('rightSidePanel.missingNodePacks.unsupportedOnBuildNoCause')
+      }}
+    </p>
+
     <TransitionCollapse>
       <ul
         v-if="showNodeTypeList"
@@ -224,10 +244,11 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { selectionEmphasisClass } from './selectionEmphasis'
-import Button from '@/components/ui/button/Button.vue'
-import DotSpinner from '@/components/common/DotSpinner.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import LocateNodeButton from '@/components/rightSidePanel/errors/LocateNodeButton.vue'
-import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
+import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
@@ -259,6 +280,7 @@ const { missingNodePacks, isLoading } = useMissingNodes()
 const comfyManagerStore = useComfyManagerStore()
 const { shouldShowManagerButtons } = useManagerState()
 const { openManager } = useManagerDialog()
+const deploymentPick = useDeploymentPickStore()
 
 const nodePack = computed(() => {
   if (!group.packId) return null
@@ -306,6 +328,15 @@ const showSearchAction = computed(
     !showInstallAction.value &&
     !showLoadingAction.value
 )
+
+const unsupportedPack = computed(() => {
+  for (const nodeType of group.nodeTypes) {
+    if (typeof nodeType === 'string' || !nodeType.cnrId) continue
+    const pack = deploymentPick.unsupportedPackFor(nodeType.cnrId)
+    if (pack) return pack
+  }
+  return undefined
+})
 
 const hasMultipleNodeTypes = computed(() => group.nodeTypes.length > 1)
 const showNodeCount = computed(() => group.nodeTypes.length !== 1)

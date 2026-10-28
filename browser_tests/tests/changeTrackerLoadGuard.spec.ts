@@ -1,7 +1,4 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.describe('Change Tracker - load guard', { tag: '@workflow' }, () => {
@@ -12,7 +9,7 @@ test.describe('Change Tracker - load guard', { tag: '@workflow' }, () => {
   test('Prevents captureCanvasState from corrupting workflow state during tab switch', async ({
     comfyPage
   }) => {
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
+    await comfyPage.expectNodeCount(7)
 
     await comfyPage.menu.topbar.saveWorkflow('workflow-a')
 
@@ -29,17 +26,17 @@ test.describe('Change Tracker - load guard', { tag: '@workflow' }, () => {
     })
 
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     const tab0 = comfyPage.menu.topbar.getWorkflowTab('workflow-a')
     await tab0.click()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
+    await comfyPage.expectNodeCount(7)
 
     const tab1 = comfyPage.menu.topbar.getWorkflowTab('Unsaved Workflow')
     await tab1.click()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     await tab0.click()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
+    await comfyPage.expectNodeCount(7)
   })
 })

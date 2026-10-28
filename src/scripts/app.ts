@@ -800,25 +800,36 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('executed', ({ detail }) => {
-      if (!useExecutionStore().belongsToActiveWorkflow(detail.prompt_id)) return
-      const nodeOutputStore = useNodeOutputStore()
+      const executionStore = useExecutionStore()
+      const isActive = executionStore.belongsToActiveWorkflow(detail.prompt_id)
+      const workflow = executionStore.queuedJobs[detail.prompt_id]?.workflow
+      const graph = workflow ? workflow.graph : isActive ? this.rootGraph : null
       const executionId = tryNormalizeNodeExecutionId(
         detail.display_node || detail.node
       )
       if (!executionId) return
 
-      nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
-        merge: detail.merge
-      })
+      if (isActive) {
+        useNodeOutputStore().setNodeOutputsByExecutionId(
+          executionId,
+          detail.output,
+          { merge: detail.merge }
+        )
+      }
 
-      const node = getNodeByExecutionId(this.rootGraph, executionId)
+      if (!graph) return
+      const node = getNodeByExecutionId(graph, executionId)
       if (node && node.onExecuted) {
         node.onExecuted(detail.output)
       }
     })
 
-    api.addEventListener('execution_start', () => {
-      triggerCallbackOnAllNodes(this.rootGraph, 'onExecutionStart')
+    api.addEventListener('execution_start', ({ detail }) => {
+      const executionStore = useExecutionStore()
+      const isActive = executionStore.belongsToActiveWorkflow(detail.prompt_id)
+      const workflow = executionStore.queuedJobs[detail.prompt_id]?.workflow
+      const graph = workflow ? workflow.graph : isActive ? this.rootGraph : null
+      if (graph) triggerCallbackOnAllNodes(graph, 'onExecutionStart')
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
@@ -1495,7 +1506,6 @@ export class ComfyApp implements IComfyApp {
         }
         try {
           graph.configure(graphData as ISerialisedGraph)
-          graphsAwaitingNodeTypes.delete(graph)
 
           const originalMainGraphRenderer = graph.extra.workflowRendererVersion
 
@@ -1619,6 +1629,7 @@ export class ComfyApp implements IComfyApp {
           graph !== this.rootGraph
         ) {
           workflow.changeTracker?.reset(configuredGraphData)
+          graphsAwaitingNodeTypes.delete(graph)
           return true
         }
 
@@ -1707,6 +1718,7 @@ export class ComfyApp implements IComfyApp {
         requestAnimationFrame(() => {
           this.canvas.setDirty(true, true)
         })
+        graphsAwaitingNodeTypes.delete(graph)
         return activatedWorkflow ?? true
       } finally {
         void useSubgraphNavigationStore().updateHash(
@@ -2117,11 +2129,16 @@ export class ComfyApp implements IComfyApp {
             applyPromotedWidgetControl(node, 'afterQueued')
           }
           useFreeTierQuota().trackRun()
-          this.canvas.draw(true, true)
-          await this.ui.queue.update()
         }
 
         if (queuedCount > 0) {
+          this.canvas.draw(true, true)
+          void this.ui.queue.update().catch((error) => {
+            reportError(error, {
+              surface: 'graph',
+              errorType: 'queue_ui_update_failure'
+            })
+          })
           api.dispatchCustomEvent('promptQueued', {
             number,
             batchCount: queuedCount,
