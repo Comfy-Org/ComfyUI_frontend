@@ -101,8 +101,13 @@ export function createLocalWebAuthBridge(
   function adopt(
     tokens: OAuthTokens
   ): 'adopted' | 'invalid-token' | 'storage-unavailable' {
-    if (!readAccessTokenIdentity(tokens.accessToken)) return 'invalid-token'
-    return env.tokens.write(tokens) ? 'adopted' : 'storage-unavailable'
+    const identity = readAccessTokenIdentity(tokens.accessToken)
+    if (!identity) return 'invalid-token'
+    if (!env.tokens.write(tokens)) return 'storage-unavailable'
+    if (identity.workspaceId) {
+      env.tokens.writeWorkspace(identity.workspaceId, tokens)
+    }
+    return 'adopted'
   }
 
   function signOutLocally(): DesktopHostAuthState {
@@ -127,6 +132,16 @@ export function createLocalWebAuthBridge(
     return undefined
   }
 
+  async function refreshWorkspaceTokens(
+    workspaceId: string
+  ): Promise<OAuthTokens | undefined> {
+    const kept = env.tokens.readWorkspace(workspaceId)
+    if (!kept) return undefined
+    if (isFresh(kept)) return kept
+    const result = await refreshAccessToken(kept.refreshToken, tokenOptions())
+    return result.ok ? result.tokens : undefined
+  }
+
   async function freshTokens(): Promise<OAuthTokens | undefined> {
     const tokens = env.tokens.read()
     if (!tokens) return undefined
@@ -138,6 +153,29 @@ export function createLocalWebAuthBridge(
   }
 
   env.tokens.subscribe(emit)
+
+  async function requestSignIn(): Promise<DesktopHostAuthState> {
+    const pkce = await createPkceRequest().catch(() => undefined)
+    if (
+      !pkce ||
+      !savePendingSignIn(env.sessionStorage, {
+        verifier: pkce.verifier,
+        state: pkce.state
+      })
+    ) {
+      return currentState()
+    }
+    env.navigate(
+      authorizeUrl({
+        issuer: env.issuer,
+        clientId: LOCAL_WEB_CLIENT_ID,
+        redirectUri: localRedirectUri(new URL(env.pageUrl()).origin),
+        challenge: pkce.challenge,
+        state: pkce.state
+      })
+    )
+    return new Promise<DesktopHostAuthState>(() => {})
+  }
 
   return {
     getState: async () => currentState(),
@@ -154,27 +192,20 @@ export function createLocalWebAuthBridge(
       return identity?.workspaceId === workspaceId ? tokens.accessToken : null
     },
 
-    async requestSignIn() {
-      const pkce = await createPkceRequest().catch(() => undefined)
-      if (
-        !pkce ||
-        !savePendingSignIn(env.sessionStorage, {
-          verifier: pkce.verifier,
-          state: pkce.state
-        })
-      ) {
+    requestSignIn,
+
+    async switchWorkspace(workspaceId) {
+      const current = currentState()
+      if (current.status === 'signed_in' && current.workspaceId === workspaceId)
+        return current
+      const tokens = await env.withRefreshLock(() =>
+        refreshWorkspaceTokens(workspaceId)
+      )
+      if (tokens && adopt(tokens) === 'adopted') {
+        emit()
         return currentState()
       }
-      env.navigate(
-        authorizeUrl({
-          issuer: env.issuer,
-          clientId: LOCAL_WEB_CLIENT_ID,
-          redirectUri: localRedirectUri(new URL(env.pageUrl()).origin),
-          challenge: pkce.challenge,
-          state: pkce.state
-        })
-      )
-      return new Promise<DesktopHostAuthState>(() => {})
+      return requestSignIn()
     },
 
     signOut: () => env.withRefreshLock(async () => signOutLocally()),

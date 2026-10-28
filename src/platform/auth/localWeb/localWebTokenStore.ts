@@ -6,12 +6,19 @@ export interface LocalWebTokenStore {
   read(): OAuthTokens | undefined
   /** False when the storage refused the write, so nothing was persisted. */
   write(tokens: OAuthTokens): boolean
+  /** Tokens kept for a workspace this page signed in to before, if any. */
+  readWorkspace(workspaceId: string): OAuthTokens | undefined
+  /** False when the storage refused the write, so nothing was persisted. */
+  writeWorkspace(workspaceId: string, tokens: OAuthTokens): boolean
+  /** Forgets the active tokens and every workspace's tokens. */
   clear(): void
   /** Calls back when another tab changes the stored tokens. */
   subscribe(listener: () => void): () => void
 }
 
 export const LOCAL_WEB_TOKENS_KEY = 'Comfy.LocalWebSignIn.Tokens'
+export const LOCAL_WEB_WORKSPACE_TOKENS_KEY =
+  'Comfy.LocalWebSignIn.WorkspaceTokens'
 
 type TokenStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
@@ -22,16 +29,25 @@ const zStoredTokens = z.object({
   scope: z.string()
 })
 
+const zStoredWorkspaceTokens = z.record(z.string(), zStoredTokens)
+
 export function createMemoryTokenStore(): LocalWebTokenStore {
   let tokens: OAuthTokens | undefined
+  const byWorkspace = new Map<string, OAuthTokens>()
   return {
     read: () => tokens,
     write: (next) => {
       tokens = next
       return true
     },
+    readWorkspace: (workspaceId) => byWorkspace.get(workspaceId),
+    writeWorkspace: (workspaceId, next) => {
+      byWorkspace.set(workspaceId, next)
+      return true
+    },
     clear: () => {
       tokens = undefined
+      byWorkspace.clear()
     },
     subscribe: () => () => {}
   }
@@ -44,6 +60,18 @@ function parseStoredTokens(raw: string | null): OAuthTokens | undefined {
     return parsed.success ? parsed.data : undefined
   } catch {
     return undefined
+  }
+}
+
+function parseStoredWorkspaceTokens(
+  raw: string | null
+): Record<string, OAuthTokens> {
+  if (raw === null) return {}
+  try {
+    const parsed = zStoredWorkspaceTokens.safeParse(JSON.parse(raw))
+    return parsed.success ? parsed.data : {}
+  } catch {
+    return {}
   }
 }
 
@@ -63,6 +91,13 @@ export function createStorageTokenStore(
   storage: TokenStorage,
   storageEvents: Pick<EventTarget, 'addEventListener' | 'removeEventListener'>
 ): LocalWebTokenStore {
+  const readWorkspaces = () =>
+    parseStoredWorkspaceTokens(
+      ignoringStorageErrors(
+        () => storage.getItem(LOCAL_WEB_WORKSPACE_TOKENS_KEY),
+        null
+      )
+    )
   return {
     read: () =>
       parseStoredTokens(
@@ -73,11 +108,20 @@ export function createStorageTokenStore(
         storage.setItem(LOCAL_WEB_TOKENS_KEY, JSON.stringify(tokens))
         return true
       }, false),
+    readWorkspace: (workspaceId) => readWorkspaces()[workspaceId],
+    writeWorkspace: (workspaceId, tokens) =>
+      ignoringStorageErrors(() => {
+        storage.setItem(
+          LOCAL_WEB_WORKSPACE_TOKENS_KEY,
+          JSON.stringify({ ...readWorkspaces(), [workspaceId]: tokens })
+        )
+        return true
+      }, false),
     clear() {
-      ignoringStorageErrors(
-        () => storage.removeItem(LOCAL_WEB_TOKENS_KEY),
-        undefined
-      )
+      ignoringStorageErrors(() => {
+        storage.removeItem(LOCAL_WEB_TOKENS_KEY)
+        storage.removeItem(LOCAL_WEB_WORKSPACE_TOKENS_KEY)
+      }, undefined)
     },
     subscribe(listener) {
       const onStorage = (event: Event) => {

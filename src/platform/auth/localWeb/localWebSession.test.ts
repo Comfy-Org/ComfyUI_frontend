@@ -68,7 +68,7 @@ describe('startLocalWebSession', () => {
       'http://127.0.0.1:8188/?code=code-1&state=state-1'
     )
 
-    await expect(startLocalWebSession(env)).resolves.toBe(false)
+    await expect(startLocalWebSession(env)).resolves.toBe('off')
 
     expect(isDesktopHostSessionActive()).toBe(false)
     expect(page.url).toBe('http://127.0.0.1:8188/?code=code-1&state=state-1')
@@ -85,7 +85,7 @@ describe('startLocalWebSession', () => {
     vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
     const { env } = environment(url)
 
-    await expect(startLocalWebSession(env)).resolves.toBe(false)
+    await expect(startLocalWebSession(env)).resolves.toBe('off')
 
     expect(isDesktopHostSessionActive()).toBe(false)
   })
@@ -96,7 +96,7 @@ describe('startLocalWebSession', () => {
       'http://localhost:8188/?code=code-1&state=state-1'
     )
 
-    await expect(startLocalWebSession(env)).resolves.toBe(true)
+    await expect(startLocalWebSession(env)).resolves.toBe('started')
 
     expect(desktopHostUser.value).toEqual({
       id: 'user-1',
@@ -106,7 +106,7 @@ describe('startLocalWebSession', () => {
     expect(page.url).toBe('http://localhost:8188/')
   })
 
-  it('starts signed out and reports a failed exchange', async () => {
+  it('starts signed out and reports a failed exchange so the page can say so', async () => {
     vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
     const { env } = environment(
       'http://127.0.0.1:8188/?code=code-1&state=state-1'
@@ -118,7 +118,7 @@ describe('startLocalWebSession', () => {
         })
     )
 
-    await startLocalWebSession(env)
+    await expect(startLocalWebSession(env)).resolves.toBe('sign-in-failed')
 
     expect(isDesktopHostSessionActive()).toBe(true)
     expect(desktopHostUser.value).toBeNull()
@@ -137,7 +137,7 @@ describe('startLocalWebSession', () => {
       'http://127.0.0.1:8188/?error=access_denied&state=state-1'
     )
 
-    await startLocalWebSession(env)
+    await expect(startLocalWebSession(env)).resolves.toBe('started')
 
     expect(reportError).not.toHaveBeenCalled()
   })

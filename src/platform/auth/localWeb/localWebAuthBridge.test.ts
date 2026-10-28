@@ -398,6 +398,88 @@ describe('signOut', () => {
   })
 })
 
+const WS2_TOKEN = accessToken({
+  sub: 'user-1',
+  email: 'a@example.com',
+  workspace_id: 'ws-2'
+})
+
+async function signedInToBothWorkspaces(ws1ExpiresIn = 3600) {
+  const harness = await signedIn(ws1ExpiresIn)
+  harness.page.url = 'http://127.0.0.1:8188/?code=code-2&state=state-2'
+  harness.storage.setItem(
+    PENDING_KEY,
+    JSON.stringify({ verifier: 'verifier-2', state: 'state-2' })
+  )
+  harness.env.fetchImpl.mockResolvedValueOnce(
+    tokenResponse(WS2_TOKEN, 'refresh-ws2')
+  )
+  await harness.bridge.completeSignIn()
+  harness.env.fetchImpl.mockClear()
+  harness.states.length = 0
+  return harness
+}
+
+describe('switchWorkspace', () => {
+  it('stays on the current workspace without leaving the page', async () => {
+    const { bridge, env } = await signedIn()
+
+    await expect(bridge.switchWorkspace?.('ws-1')).resolves.toMatchObject({
+      status: 'signed_in',
+      workspaceId: 'ws-1'
+    })
+    expect(env.navigate).not.toHaveBeenCalled()
+  })
+
+  it('goes to consent for a workspace this page never signed in to', async () => {
+    const { bridge, env } = await signedIn()
+
+    void bridge.switchWorkspace?.('ws-2')
+
+    await vi.waitFor(() => expect(env.navigate).toHaveBeenCalledOnce())
+    expect(new URL(env.navigate.mock.calls[0][0]).pathname).toBe(
+      '/oauth/authorize'
+    )
+  })
+
+  it('switches straight back to a workspace it signed in to before', async () => {
+    const { bridge, env, states } = await signedInToBothWorkspaces()
+
+    await expect(bridge.switchWorkspace?.('ws-1')).resolves.toMatchObject({
+      status: 'signed_in',
+      workspaceId: 'ws-1'
+    })
+    expect(states.at(-1)).toMatchObject({ workspaceId: 'ws-1' })
+    await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBe(WS1_TOKEN)
+    expect(env.navigate).not.toHaveBeenCalled()
+    expect(env.fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('refreshes the kept tokens of an expired workspace before switching to it', async () => {
+    const { bridge, env, clock } = await signedInToBothWorkspaces(30)
+    clock.now += 60_000
+    env.fetchImpl.mockResolvedValueOnce(tokenResponse(WS1_TOKEN, 'refresh-3'))
+
+    await expect(bridge.switchWorkspace?.('ws-1')).resolves.toMatchObject({
+      workspaceId: 'ws-1'
+    })
+    expect(formOf(env.fetchImpl.mock.calls[0][1])).toMatchObject({
+      grant_type: 'refresh_token',
+      refresh_token: 'refresh-1'
+    })
+    expect(env.navigate).not.toHaveBeenCalled()
+  })
+
+  it('forgets every workspace on sign-out', async () => {
+    const { bridge, env } = await signedInToBothWorkspaces()
+    await bridge.signOut()
+
+    void bridge.switchWorkspace?.('ws-1')
+
+    await vi.waitFor(() => expect(env.navigate).toHaveBeenCalledOnce())
+  })
+})
+
 function serialLock(): LocalWebAuthEnvironment['withRefreshLock'] {
   let tail: Promise<unknown> = Promise.resolve()
   return <T>(task: () => Promise<T>): Promise<T> => {
