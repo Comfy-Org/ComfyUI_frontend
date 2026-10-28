@@ -5863,7 +5863,6 @@
         "onHold": "沒有預設付款方式。請設定付款方式以恢復自動儲值。",
         "paused": "已達每月上限。將於 {date} 恢復。",
         "pausedNoDate": "已達每月上限。",
-        "rule": "低於 {threshold} 點數時，新增 {amount}（{credits} 點數）。",
         "status": {
           "failed": "失敗",
           "off": "關閉",

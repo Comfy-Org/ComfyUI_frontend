@@ -6801,6 +6801,10 @@ export type AutoReloadSettings = {
    */
   status: 'failed' | 'off' | 'on_hold' | 'paused_by_budget' | 'on'
   /**
+   * The balance an automatic reload tops up to: threshold_credits plus reload_credits. Null when not configured, when that sum does not fit in an int64, and from an older billing-api that does not report it.
+   */
+  target_credits: number | null
+  /**
    * Reload when the balance falls below this many credits.
    */
   threshold_credits: number | null
