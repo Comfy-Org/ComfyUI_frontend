@@ -1652,12 +1652,6 @@ const {
   expose: exposeStarterPromptSet
 } = useStarterPromptSet()
 
-/**
- * `Try your first chat for free!` is a claim about the Agent's own granted
- * allowance, so it renders only when `scoped_has_funds.agent` is true and the
- * response names the billing rail that supplied it. Billing-disabled fallback
- * responses report true without a rail; that is not an authoritative grant.
- */
 const freeUseGrantActive = computed(
   () =>
     subscription.value?.agentScopedHasFundsAuthoritative === true &&
