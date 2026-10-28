@@ -284,9 +284,11 @@ describe('resolveAgentIdentity', () => {
     // suppressed -- without it this is indistinguishable from a cycle that ended.
     expect(getIdentity).toHaveBeenCalledTimes(32)
     expect(identity.onFailure).toHaveBeenCalledTimes(9)
+    // The ninth failure, not the first of the second window: `failures` restarts on
+    // every reopen, so the marker has to count cumulatively or it reads "after 1".
     expect(identity.onFailure).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining('further failure reports suppressed')
+        message: expect.stringContaining('after 9 attempts')
       })
     )
   })

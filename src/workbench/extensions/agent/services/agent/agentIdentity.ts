@@ -46,6 +46,9 @@ export function resolveAgentIdentity(
   let failures = 0
   let reported = 0
   let suppressed = false
+  // `failures` restarts whenever the socket reopens, so it cannot describe how long
+  // the lookup has been failing. Only `reset()` clears this one.
+  let totalFailures = 0
   let retryTimer: ReturnType<typeof setTimeout> | null = null
   let generation = 0
   let exhausted = false
@@ -70,6 +73,7 @@ export function resolveAgentIdentity(
 
   function settleFailure(error: unknown): void {
     failures += 1
+    totalFailures += 1
     // A terminal failure -- a 401/403, or a 404 for a route that is not there -- is
     // the most actionable one there is and ends the lookup for good, so it always
     // reports. Charging it against the same budget as the transient failures meant an
@@ -88,7 +92,7 @@ export function resolveAgentIdentity(
       suppressed = true
       deps.onFailure(
         new Error(
-          `Agent identity lookup still failing after ${failures} attempts; further failure reports suppressed`,
+          `Agent identity lookup still failing after ${totalFailures} attempts; further failure reports suppressed`,
           { cause: error }
         )
       )
@@ -135,6 +139,7 @@ export function resolveAgentIdentity(
       generation += 1
       state.value = { status: 'pending' }
       failures = 0
+      totalFailures = 0
       reported = 0
       suppressed = false
       exhausted = false
