@@ -1,5 +1,5 @@
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from './nodeId'
+import { toNodeId } from './nodeId'
 
 export type SlotId = string & { readonly __brand: 'SlotId' }
 export type SlotIndex = number

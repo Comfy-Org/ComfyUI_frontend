@@ -1,5 +1,5 @@
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from './nodeId'
+import type { NodeId } from './nodeId'
 type UUID = string
 
 /**

@@ -24,10 +24,10 @@ import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import type {
   INodeInputSlot,
   ISubgraphInput
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import { useLitegraphService } from '@/services/litegraphService'

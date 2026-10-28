@@ -85,7 +85,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useImageCompareImages } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages'
 import { app } from '@/scripts/app'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 

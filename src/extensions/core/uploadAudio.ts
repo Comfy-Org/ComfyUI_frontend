@@ -6,10 +6,7 @@ import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IStringWidget
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, IStringWidget } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
@@ -21,7 +18,7 @@ import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/types/domWidget'
 import { useAudioService } from '@/services/audioService'
 import type { NodeLocatorId } from '@/types'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { getErrorMessage } from '@/utils/errorUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { findViewableResultItem, toViewRequest } from '@/utils/resultItemUtil'

@@ -1,6 +1,6 @@
 import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
-import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
 import type { TaskStatus } from '@/platform/tasks/services/taskSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 

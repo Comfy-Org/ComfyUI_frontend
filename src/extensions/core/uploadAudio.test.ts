@@ -9,7 +9,7 @@ import type { ComfyExtension } from '@/types/comfy'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const {

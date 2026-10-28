@@ -1,9 +1,6 @@
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/types/nodeId'
-import type { WidgetValue } from '@/types/widgetValue'
+import type { IBaseWidget, IWidgetOptions } from './widgets'
+import type { NodeId } from './nodeId'
+import type { WidgetValue } from './widgetValue'
 
 export interface WidgetState<
   TValue = WidgetValue,

@@ -4,13 +4,13 @@ import type {
   ClipboardItems,
   ExportedSubgraph,
   RendererType
-} from '@/lib/litegraph/src/types/serialisation'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
-import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
-import { parseLinkId, toLinkId } from '@/types/linkId'
-import type { LinkPresentation } from '@/types/linkPresentation'
-import type { NodeProperty } from '@/types/nodeState'
-import { toRerouteId } from '@/types/rerouteId'
+} from './serialisation'
+import { isWidgetValue } from './widgets'
+import type { TWidgetValue } from './widgets'
+import { parseLinkId, toLinkId } from './linkId'
+import type { LinkPresentation } from './linkPresentation'
+import type { NodeProperty } from './nodeProperty'
+import { toRerouteId } from './rerouteId'
 
 const zRendererType = z.enum([
   'LG',

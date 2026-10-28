@@ -175,7 +175,7 @@ it.for([
     state: 'off',
     enabled: false,
     variantClass: 'bg-secondary',
-    iconClass: 'pi pi-times'
+    iconClass: 'icon-[lucide--x]'
   },
   {
     state: 'on',

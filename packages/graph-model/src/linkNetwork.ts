@@ -4,11 +4,11 @@ import type {
   Reroute,
   SubgraphInputNode,
   SubgraphOutputNode
-} from '@/lib/litegraph/src/types/entityRegistry'
-import type { LinkId } from '@/types/linkId'
-import type { NodeId } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
-import type { UUID } from '@/utils/uuid'
+} from './entityRegistry'
+import type { LinkId } from './linkId'
+import type { NodeId } from './nodeId'
+import type { RerouteId } from './rerouteId'
+import type { UUID } from './uuid'
 
 export interface ReadonlyLinkNetwork {
   readonly rootGraph: { readonly id: UUID }
@@ -25,22 +25,16 @@ export interface ReadonlyLinkNetwork {
   readonly outputNode?: SubgraphOutputNode
 }
 
-/**
- * Contains a list of links, reroutes, and nodes.
- */
 export interface LinkNetwork extends ReadonlyLinkNetwork {
   readonly links: Map<LinkId, LLink>
   readonly reroutes: Map<RerouteId, Reroute>
   addFloatingLink(link: LLink): LLink | undefined
   removeReroute(id: RerouteId): unknown
-  /** Removes a reroute from the map and its stores, without chain splicing. */
+
   _removeReroute(id: RerouteId): void
   removeFloatingLink(link: LLink): void
 }
 
-/**
- * Locates graph items.
- */
 export interface ItemLocator {
   getNodeOnPos(x: number, y: number, nodeList?: LGraphNode[]): LGraphNode | null
   getRerouteOnPos(x: number, y: number): Reroute | undefined

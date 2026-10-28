@@ -2,7 +2,11 @@ import type { NodeTexture } from '#/compositor'
 import { generateId } from '#/id'
 import { defaultMode } from '#/mode'
 import type { NodeKind } from '#/nodeKind'
-import type { RasterData, Rect, Transform, Vec2 } from '#/node'
+import type { RasterData, Transform } from '#/node'
+import type {
+  CompactRect as Rect,
+  Point2D as Vec2
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 function defaultTransform(w: number, h: number): Transform {
   return { x: 0, y: 0, w, h, rotation: 0 }

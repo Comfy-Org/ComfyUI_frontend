@@ -10,7 +10,7 @@
         {{ props.item.name }}
         <Tooltip v-if="props.item.tooltip">
           <TooltipTrigger as-child>
-            <i class="pi pi-info-circle" />
+            <i class="icon-[lucide--info]" />
           </TooltipTrigger>
           <TooltipContent>{{ props.item.tooltip }}</TooltipContent>
         </Tooltip>

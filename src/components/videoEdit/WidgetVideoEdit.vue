@@ -42,9 +42,9 @@ import type {
   IWidgetVideoEditOptions,
   VideoEditFeature,
   VideoEditValue
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { app } from '@/scripts/app'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
