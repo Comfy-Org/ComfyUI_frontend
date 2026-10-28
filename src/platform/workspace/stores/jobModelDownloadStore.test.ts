@@ -1,0 +1,114 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { ModelDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { api } from '@/scripts/api'
+import { useJobModelDownloadStore } from '@/platform/workspace/stores/jobModelDownloadStore'
+
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
+
+function message(
+  overrides: Partial<ModelDownloadWsMessage> = {}
+): ModelDownloadWsMessage {
+  return {
+    status: 'downloading',
+    name: 'my_style_v2.safetensors',
+    dir: 'loras',
+    index: 1,
+    count: 1,
+    bytes_downloaded: 52428800,
+    bytes_total: 152043520,
+    progress: 0.3448,
+    prompt_id: 'job-1',
+    workflow_id: 'wf-1',
+    ...overrides
+  }
+}
+
+function dispatch(msg: ModelDownloadWsMessage) {
+  api.dispatchCustomEvent('model_download', msg)
+}
+
+describe('useJobModelDownloadStore', () => {
+  beforeEach(() => {
+    vi.mocked(reportError).mockImplementation(() => undefined)
+  })
+
+  it('keeps the latest download state of each job', () => {
+    const store = useJobModelDownloadStore()
+
+    dispatch(message({ bytes_downloaded: 0, progress: 0 }))
+    dispatch(message())
+    dispatch(message({ prompt_id: 'job-2', name: 'other.safetensors' }))
+
+    expect(store.downloadFor('job-1')).toEqual({
+      name: 'my_style_v2.safetensors',
+      index: 1,
+      count: 1,
+      bytesDownloaded: 52428800,
+      bytesTotal: 152043520,
+      progress: 0.3448
+    })
+    expect(store.downloadFor('job-2')?.name).toBe('other.safetensors')
+  })
+
+  it.for(['done', 'cached', 'failed'] as const)(
+    'stops showing the download once the file is %s',
+    (status) => {
+      const store = useJobModelDownloadStore()
+      dispatch(message())
+
+      dispatch(message({ status, bytes_downloaded: 152043520, progress: 1 }))
+
+      expect(store.downloadFor('job-1')).toBeUndefined()
+    }
+  )
+
+  it.for([
+    'execution_start',
+    'execution_success',
+    'execution_error',
+    'execution_interrupted'
+  ] as const)('ends the download on %s for that job only', (type) => {
+    const store = useJobModelDownloadStore()
+    dispatch(message())
+    dispatch(message({ prompt_id: 'job-2' }))
+
+    api.dispatchCustomEvent(type, { prompt_id: 'job-1', timestamp: 1 })
+
+    expect(store.downloadFor('job-1')).toBeUndefined()
+    expect(store.downloadFor('job-2')).toBeDefined()
+  })
+
+  it('drops downloads of jobs the queue no longer lists', () => {
+    const store = useJobModelDownloadStore()
+    dispatch(message())
+    dispatch(message({ prompt_id: 'job-2' }))
+
+    store.reconcileActiveJobs(new Set(['job-2']))
+
+    expect(store.downloadFor('job-1')).toBeUndefined()
+    expect(store.downloadFor('job-2')).toBeDefined()
+  })
+
+  it('ignores a malformed event and reports the first one', () => {
+    const store = useJobModelDownloadStore()
+
+    const malformed = fromPartial<ModelDownloadWsMessage>({
+      prompt_id: 'job-1'
+    })
+    api.dispatchCustomEvent('model_download', malformed)
+    api.dispatchCustomEvent('model_download', malformed)
+
+    expect(store.downloadFor('job-1')).toBeUndefined()
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'error_parsing_model_download_message'
+      })
+    )
+  })
+})

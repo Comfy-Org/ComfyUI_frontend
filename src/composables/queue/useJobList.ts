@@ -8,6 +8,8 @@ import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import { useJobModelDownloadStore } from '@/platform/workspace/stores/jobModelDownloadStore'
+import type { JobModelDownload } from '@/platform/workspace/stores/jobModelDownloadStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobState } from '@/types/queue'
@@ -20,7 +22,7 @@ import {
 } from '@/utils/dateTimeUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { buildJobDisplay } from '@/utils/queueDisplay'
-import { jobStateFromTask } from '@/utils/queueUtil'
+import { isActiveJobState, jobStateFromTask } from '@/utils/queueUtil'
 
 import type { JobTab } from '@/composables/queue/jobTabs'
 
@@ -92,13 +94,19 @@ type TaskWithState = {
   state: JobState
 }
 
+function downloadPercent({ progress }: JobModelDownload) {
+  return progress === null ? undefined : progress * 100
+}
+
 /**
  * Builds the reactive job list, filters, and grouped view for the queue overlay.
  */
+
 export function useJobList() {
   const { t, locale } = useI18n()
   const queueStore = useQueueStore()
   const executionStore = useExecutionStore()
+  const modelDownloadStore = useJobModelDownloadStore()
   const jobPreviewStore = useJobPreviewStore()
   const workflowStore = useWorkflowStore()
 
@@ -266,9 +274,38 @@ export function useJobList() {
     searchableTaskEntries.value.map(({ task }) => task)
   )
 
+  function activeDownload(jobId: string, state: JobState) {
+    return isActiveJobState(state)
+      ? modelDownloadStore.downloadFor(jobId)
+      : undefined
+  }
+
+  /**
+   * The row's fills. A model download uses the light fill only, the one the
+   * running node uses, so the name and size stay readable over it.
+   */
+  function progressFills(
+    state: JobState,
+    isActive: boolean,
+    modelDownload: JobModelDownload | undefined
+  ) {
+    if (modelDownload) {
+      return {
+        progressTotalPercent: undefined,
+        progressCurrentPercent: downloadPercent(modelDownload)
+      }
+    }
+    const running = state === 'running' && isActive
+    return {
+      progressTotalPercent: running ? totalPercent.value : undefined,
+      progressCurrentPercent: running ? currentNodePercent.value : undefined
+    }
+  }
+
   const jobItems = computed<JobListItem[]>(() => {
     return filteredTaskEntries.value.map(({ task, state }) => {
       const isActive = task.jobId === (executionStore.activeJobId ?? '')
+      const modelDownload = activeDownload(task.jobId, state)
       const showAddedHint = shouldShowAddedHint(task, state)
       const promptKey = taskIdToKey(task.jobId)
       const promptPreviewUrl =
@@ -285,7 +322,8 @@ export function useJobList() {
         currentNodePercent: isActive ? currentNodePercent.value : undefined,
         currentNodeName: isActive ? currentNodeName.value : undefined,
         showAddedHint,
-        isCloud
+        isCloud,
+        modelDownload
       })
 
       return {
@@ -297,12 +335,7 @@ export function useJobList() {
         iconImageUrl: promptPreviewUrl ?? display.iconImageUrl,
         showClear: display.showClear,
         taskRef: task,
-        progressTotalPercent:
-          state === 'running' && isActive ? totalPercent.value : undefined,
-        progressCurrentPercent:
-          state === 'running' && isActive
-            ? currentNodePercent.value
-            : undefined,
+        ...progressFills(state, isActive, modelDownload),
         runningNodeName:
           state === 'running' && isActive ? currentNodeName.value : undefined,
         executionTimeMs: task.executionTime,

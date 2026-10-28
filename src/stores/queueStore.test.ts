@@ -4,6 +4,7 @@ import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useJobModelDownloadStore } from '@/platform/workspace/stores/jobModelDownloadStore'
 import {
   TaskItemImpl,
   useQueuePendingTaskCountStore,
@@ -393,6 +394,33 @@ describe('useQueueStore', () => {
       expect(store.runningTasks[0].jobId).toBe('run-1')
       expect(store.pendingTasks[0].jobId).toBe('pend-2')
       expect(store.pendingTasks[1].jobId).toBe('pend-1')
+    })
+
+    it('drops the model download of a job the queue no longer lists', async () => {
+      const downloads = useJobModelDownloadStore()
+      for (const prompt_id of ['run-1', 'gone']) {
+        api.dispatchCustomEvent('model_download', {
+          status: 'downloading',
+          name: 'my_style_v2.safetensors',
+          dir: 'loras',
+          index: 1,
+          count: 1,
+          bytes_downloaded: 1,
+          bytes_total: 2,
+          progress: 0.5,
+          prompt_id
+        })
+      }
+      vi.mocked(api.getQueue).mockResolvedValue({
+        Running: [createRunningJob(1, 'run-1')],
+        Pending: []
+      })
+      vi.mocked(api.getHistory).mockResolvedValue([])
+
+      await store.update()
+
+      expect(downloads.downloadFor('run-1')).toBeDefined()
+      expect(downloads.downloadFor('gone')).toBeUndefined()
     })
 
     it('should load history tasks from API', async () => {

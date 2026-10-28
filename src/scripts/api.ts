@@ -52,6 +52,7 @@ import type {
   FeatureFlagsWsMessage,
   LogsRawResponse,
   LogsWsMessage,
+  ModelDownloadWsMessage,
   NotificationWsMessage,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
@@ -276,6 +277,7 @@ interface BackendApiCalls {
   feature_flags: FeatureFlagsWsMessage
   agent_status: AgentStatusWsMessage
   asset_download: AssetDownloadWsMessage
+  model_download: ModelDownloadWsMessage
   asset_export: AssetExportWsMessage
   'assets.seed.completed': AssetSeedCompletedWsMessage
 }

@@ -135,6 +135,23 @@ export interface AssetDownloadWsMessage {
   asset_id?: string
   error?: string
 }
+/**
+ * One model file a Cloud job on a deployment downloads before it runs, sent
+ * as the latest state of that file; `prompt_id` is the Cloud job id.
+ */
+export const zModelDownloadWsMessage = z.object({
+  status: z.enum(['downloading', 'done', 'cached', 'failed']),
+  name: z.string(),
+  dir: z.string(),
+  index: z.number().int(),
+  count: z.number().int(),
+  bytes_downloaded: z.number(),
+  bytes_total: z.number().nullable(),
+  progress: z.number().nullable(),
+  prompt_id: z.string(),
+  workflow_id: z.string().optional()
+})
+export type ModelDownloadWsMessage = z.infer<typeof zModelDownloadWsMessage>
 export interface AssetExportWsMessage {
   task_id: string
   export_name?: string
