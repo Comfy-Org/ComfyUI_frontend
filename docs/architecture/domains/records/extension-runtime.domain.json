@@ -189,7 +189,12 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["extension-manager", "webcam-capture"],
+  "allowedDependencies": [
+    "error-reporting",
+    "extension-manager",
+    "telemetry",
+    "webcam-capture"
+  ],
   "allowedConsumers": ["agent", "extension-manager"],
   "characterizationScenarios": [
     {

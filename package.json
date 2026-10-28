@@ -110,6 +110,7 @@
     "@comfyorg/registry-types": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
+    "@comfyorg/telemetry": "workspace:*",
     "@comfyorg/viewport3d": "workspace:*",
     "@customerio/cdp-analytics-browser": "catalog:",
     "@datadog/browser-rum": "catalog:",

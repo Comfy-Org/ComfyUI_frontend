@@ -4,7 +4,7 @@ import type { AxiosAdapter } from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 import { toValue } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useRegistrySearch } from '@/platform/customNodes/manager/composables/useRegistrySearch'
 
 const registryAdapter = await vi.hoisted(async () => {

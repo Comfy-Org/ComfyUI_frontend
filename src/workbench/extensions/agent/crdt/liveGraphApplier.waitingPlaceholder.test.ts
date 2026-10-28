@@ -7,7 +7,7 @@ import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/wa
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
 
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 describe('LiveGraphApplier on a node waiting for its pack', () => {
   it('keeps a remote edit made to the node while it waits', () => {

@@ -21,7 +21,7 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import { useDialogService } from './dialogService'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => true) })

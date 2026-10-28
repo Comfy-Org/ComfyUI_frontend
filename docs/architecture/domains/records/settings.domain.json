@@ -141,7 +141,12 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["account", "authentication", "dialog-host"],
+  "allowedDependencies": [
+    "account",
+    "authentication",
+    "dialog-host",
+    "telemetry"
+  ],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

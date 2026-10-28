@@ -4,7 +4,7 @@ import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent
 import { useAttachment } from './useAttachment'
 import { useComposer } from './useComposer'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 describe('attachment validation staging', () => {
   it('stages every file while the video header is pending', async () => {

@@ -1,20 +1,10 @@
 import type { DatadogRum } from '@datadog/browser-rum'
-// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
-import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
-
+import type * as Sentry from '@sentry/vue'
 import type { ComfyDesktop2TelemetryProperties } from '@comfyorg/comfyui-desktop-bridge-types'
 import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
-
-import { isCloud } from '@/platform/distribution/types'
-import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
-import {
-  getDatadogRum,
-  getFrontendBucket
-} from '@/platform/telemetry/rumContext'
-import { toError } from '@/utils/errorUtil'
-
+import { toError } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { redactTelemetryValues } from './redactTelemetryUrls'
-
+import { getDatadogRum, getFrontendBucket } from './rumContext'
 export type Surface =
   | 'agent'
   | 'billing'
@@ -23,35 +13,26 @@ export type Surface =
   | 'assets'
   | 'workspace'
   | 'platform'
-
 export interface ReportErrorOptions {
-  /**
-   * Stable machine-readable slug for this failure mode. Lands as the
-   * native RUM `error.type`, the `error_type` Sentry tag, and the legacy
-   * `error_type` RUM context field.
-   */
   errorType: string
-  /** Product surface responsible for acting on this failure. */
   surface: Surface
   tags?: Record<string, string | number | boolean | undefined>
   context?: Record<string, unknown>
   level?: 'warning' | 'error'
-  /**
-   * Overrides Sentry's computed grouping for this report.
-   *
-   * Reach for it when the default grouping puts a failure somewhere it cannot
-   * be found: a merged issue, or a frame-less async rejection that collapses
-   * into a generic bucket with everything else. Sentry-only — Datadog groups on
-   * `errorType`, which lands as the native `error.type`, so it needs no
-   * equivalent. Values must be bounded and free of user data; they become a
-   * durable issue identity.
-   */
   fingerprint?: string[]
-  /**
-   * Opt out of the console line for callers that already wrote one — only
-   * `assert()`, which logs before any reporter is registered.
-   */
   logToConsole?: boolean
+}
+export interface ErrorReporterDependencies {
+  captureException: typeof Sentry.captureException
+  isSentryEnabled: typeof Sentry.isEnabled
+  isCloud: () => boolean
+  isHostTelemetryEnabled: () => boolean
+  getDesktopTelemetry: () => unknown
+}
+let dependencies: ErrorReporterDependencies | undefined
+
+export function configureErrorReporter(next: ErrorReporterDependencies): void {
+  dependencies = next
 }
 
 interface DeliveryState {
@@ -59,42 +40,26 @@ interface DeliveryState {
   datadog: boolean
   desktop: boolean
 }
-
 interface PendingReport {
   error: Error
   options: ReportErrorOptions
   delivered: DeliveryState
 }
-
 const NO_DELIVERY: DeliveryState = {
   sentry: false,
   datadog: false,
   desktop: false
 }
-
-/**
- * Reports raised before any sink is live are held here rather than dropped.
- * On cloud, Datadog RUM arrives behind `initTelemetry()`'s dynamic imports, so
- * its delivery remains pending even when Sentry received the report first.
- */
 const pendingReports: PendingReport[] = []
 const MAX_PENDING_REPORTS = 25
 const reportedErrors = new WeakSet<Error>()
-
-/**
- * Prevents an error with its own complete diagnostic from being reported again
- * by a higher-level catch boundary. The original error remains unchanged for
- * user-facing handling.
- */
 export function markErrorReported(error: Error): void {
   reportedErrors.add(error)
 }
-
 function liveDatadogRum(): DatadogRum | undefined {
   const rum = getDatadogRum()
   return rum?.getInitConfiguration() ? rum : undefined
 }
-
 const definedEntriesOf = <V>(
   values: Record<string, V> | undefined
 ): Record<string, Exclude<V, undefined>> =>
@@ -104,12 +69,8 @@ const definedEntriesOf = <V>(
         entry[1] !== undefined
     )
   )
-
-/** Written from `options`, so a caller tag of the same name never lands. */
 const RESERVED_TAG_KEYS = new Set(['error_type', 'level', 'surface', 'bucket'])
-
 let dispatching = false
-
 const definedTagsOf = (
   tags: ReportErrorOptions['tags']
 ): Record<string, string | number | boolean> =>
@@ -126,27 +87,24 @@ const definedTagsOf = (
       }
     )
   )
-
 type DesktopCaptureException = (
-  error: { message: string; stack?: string },
+  error: {
+    message: string
+    stack?: string
+  },
   properties: ComfyDesktop2TelemetryProperties
 ) => void
-
 function desktopExceptionSink(): DesktopCaptureException | undefined {
-  if (!isHostTelemetryEnabled()) return
-
-  const telemetry = window.__comfyDesktop2?.Telemetry
+  if (!dependencies?.isHostTelemetryEnabled()) return
+  const telemetry = dependencies.getDesktopTelemetry()
   if (!telemetry || typeof telemetry !== 'object') return
   if (!('captureException' in telemetry)) return
-
   const capture = telemetry.captureException
   if (typeof capture !== 'function') return
-
   return (error, properties) => {
     Reflect.apply(capture, telemetry, [error, properties])
   }
 }
-
 function dispatchToDesktop(
   error: Error,
   errorType: string,
@@ -157,7 +115,6 @@ function dispatchToDesktop(
   try {
     const capture = desktopExceptionSink()
     if (!capture) return false
-
     capture(
       {
         message: error.message,
@@ -180,7 +137,6 @@ function dispatchToDesktop(
     return false
   }
 }
-
 function dispatchToSentry(
   error: Error,
   errorType: string,
@@ -190,8 +146,9 @@ function dispatchToSentry(
   level: ReportErrorOptions['level'],
   fingerprint: ReportErrorOptions['fingerprint']
 ): boolean {
+  if (!dependencies) return false
   try {
-    captureException(error, {
+    dependencies.captureException(error, {
       tags: { ...tags, error_type: errorType, surface },
       extra: context,
       level,
@@ -207,7 +164,6 @@ function dispatchToSentry(
     return false
   }
 }
-
 function dispatchToDatadog(
   datadogRum: DatadogRum,
   error: Error,
@@ -241,7 +197,6 @@ function dispatchToDatadog(
     return false
   }
 }
-
 function dispatch(
   error: Error,
   options: ReportErrorOptions,
@@ -254,11 +209,10 @@ function dispatch(
     ...definedTagsOf(options.tags),
     ...(bucket ? { bucket } : {})
   }
-  const sentryLive = !alreadyDelivered.sentry && isSentryEnabled()
+  const sentryLive = !alreadyDelivered.sentry && dependencies?.isSentryEnabled()
   const datadogRum = alreadyDelivered.datadog ? undefined : liveDatadogRum()
   let sentryDelivered = alreadyDelivered.sentry
   let datadogDelivered = alreadyDelivered.datadog
-
   dispatching = true
   try {
     if (sentryLive) {
@@ -286,65 +240,40 @@ function dispatch(
   } finally {
     dispatching = false
   }
-
   const desktopDelivered =
     alreadyDelivered.desktop ||
     dispatchToDesktop(error, errorType, surface, tags, level)
-
   return {
     sentry: sentryDelivered,
     datadog: datadogDelivered,
     desktop: desktopDelivered
   }
 }
-
 function enqueuePendingReport(report: PendingReport): void {
   if (pendingReports.length < MAX_PENDING_REPORTS) {
     pendingReports.push(report)
   }
 }
-
-/**
- * Cloud wants the report in both of its own sinks and never has the Desktop
- * bridge, so `desktop` stays out of that branch — holding for a sink that
- * cannot arrive would pend every cloud report forever.
- *
- * Off cloud, Datadog RUM is gated on a comfy.org hostname it never sees on
- * Desktop, so a report the bridge accepted has to retire on that alone or the
- * buffer stays permanently full and every later report re-drains it.
- */
 function isPending(delivered: DeliveryState): boolean {
-  return isCloud
+  return dependencies?.isCloud()
     ? !delivered.sentry || !delivered.datadog
     : !delivered.sentry && !delivered.datadog && !delivered.desktop
 }
-
-/**
- * A probe, not a delivery: `isHostTelemetryEnabled()` reads `localStorage` and
- * the bridge lookup touches an Electron context that can be revoked, and both
- * throw where `flushErrorReports()` promises not to.
- */
 function hasLiveSink(): boolean {
   try {
-    return isSentryEnabled() || !!liveDatadogRum() || !!desktopExceptionSink()
+    return (
+      dependencies?.isSentryEnabled() ||
+      !!liveDatadogRum() ||
+      !!desktopExceptionSink()
+    )
   } catch (probeFailure) {
     console.error('[reportError] sink probe failed', probeFailure)
     return false
   }
 }
-
-/**
- * Drains reports buffered before a sink came up. Safe to call repeatedly;
- * a no-op while every sink is still inert.
- *
- * Callers are `main.ts` and `bootstrap.ts` on the boot path, so this must
- * never throw: a sink that explodes here would take the whole app down
- * instead of the one report it failed to deliver.
- */
 export function flushErrorReports(): void {
   if (!pendingReports.length) return
   if (!hasLiveSink()) return
-
   const drained = pendingReports.splice(0, pendingReports.length)
   for (const report of drained) {
     const { error, options } = report
@@ -359,7 +288,6 @@ export function flushErrorReports(): void {
     }
   }
 }
-
 function logReport(
   cause: unknown,
   options: ReportErrorOptions,
@@ -369,24 +297,6 @@ function logReport(
   const log = options.level === 'warning' ? console.warn : console.error
   log(`${REPORTED_ERROR_PREFIX}${options.errorType}${suffix}`, cause)
 }
-
-/**
- * Report an error to every observability sink at once.
- *
- * Prefer this to calling `captureException` or `datadogRum.addError`
- * directly: a raw `captureException` reaches Sentry only, which is how
- * `workspace_auth_gate_initialization_failure` stayed invisible on every
- * Datadog dashboard while it was firing in production.
- *
- * Also writes the failure to the console, so callers never pair this with a
- * `console.error` of their own: Sentry is off in DEV, RUM only comes up behind
- * `initTelemetry()`, and a caller that forgot the pair went silent on dev and
- * self-hosted installs.
- *
- * A report raised while a sink is still delivering only reaches the console.
- *
- * Never throws — a failing error reporter must not become a second failure.
- */
 export function reportError(cause: unknown, options: ReportErrorOptions): void {
   try {
     if (cause instanceof Error && reportedErrors.has(cause)) return
@@ -396,7 +306,6 @@ export function reportError(cause: unknown, options: ReportErrorOptions): void {
     }
     logReport(cause, options)
     flushErrorReports()
-
     const error = toError(cause)
     const delivered = dispatch(error, options)
     if (isPending(delivered)) {

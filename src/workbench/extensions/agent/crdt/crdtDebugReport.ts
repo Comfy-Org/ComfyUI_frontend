@@ -19,7 +19,7 @@
  * degrade to a note in the log section rather than abort the whole bundle.
  */
 import { DISTRIBUTION } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 

@@ -393,7 +393,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
 import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'

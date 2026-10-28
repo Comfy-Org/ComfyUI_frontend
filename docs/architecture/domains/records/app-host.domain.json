@@ -125,8 +125,17 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["account", "extension-manager"],
-  "allowedConsumers": ["extension-manager", "selection-toolbox"],
+  "allowedDependencies": [
+    "account",
+    "error-reporting",
+    "extension-manager",
+    "telemetry"
+  ],
+  "allowedConsumers": [
+    "error-reporting",
+    "extension-manager",
+    "selection-toolbox"
+  ],
   "characterizationScenarios": [
     {
       "name": "Bootstrap loads i18n, waits for cloud auth with a bounded retry, and loads settings and workflows once",

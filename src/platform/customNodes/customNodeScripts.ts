@@ -9,9 +9,12 @@ import {
 } from '@/platform/telemetry/customNodeLoadTelemetry'
 import type { CustomNodeFailureDiagnostic } from '@/platform/telemetry/customNodeLoadTelemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
-import { getErrorMessage, toError } from '@/utils/errorUtil'
+import {
+  getErrorMessage,
+  toError
+} from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/rum.js',
