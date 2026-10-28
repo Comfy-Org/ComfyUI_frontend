@@ -31,10 +31,6 @@ const { text } = defineProps<{
 const apiBaseUrl = new URL(api.apiURL(''), window.location.origin).href
 const normalizedBase = apiBaseUrl.replace(/\/+$/, '')
 
-// Shortcut keys are resolved per render instead of being written into the
-// agent's prompt, so a user who rebound an action is shown their own key
-// (DES-779). Resolved through the keybindings domain's own entry point, which
-// keeps the prose transform a plain function of a resolver.
 const resolveShortcutKeys = useCanvasActionShortcutKeys()
 
 interface ProseSegment {

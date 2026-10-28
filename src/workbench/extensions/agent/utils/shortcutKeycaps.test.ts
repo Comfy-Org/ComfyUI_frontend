@@ -4,7 +4,6 @@ import { renderShortcutKeycaps } from './shortcutKeycaps'
 
 const BYPASS = 'Comfy.Canvas.ToggleSelectedNodes.Bypass'
 
-/** The shipped bindings for the commands these tests touch. */
 const defaults: Record<string, string[]> = {
   [BYPASS]: ['Ctrl', 'b'],
   'Comfy.Canvas.ToggleSelectedNodes.Mute': ['Ctrl', 'm'],

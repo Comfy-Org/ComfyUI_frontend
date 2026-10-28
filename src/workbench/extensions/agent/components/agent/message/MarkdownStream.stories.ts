@@ -18,10 +18,6 @@ const renderAtPanelWidth: Story['render'] = (args) => ({
   template: '<div class="w-[372px]"><MarkdownStream v-bind="args" /></div>'
 })
 
-// DES-779. A reply pointing the user at a canvas action renders the shortcut as
-// keycaps. In the running app the keys come from that user's own bindings; here
-// the keybinding store is empty, so the keys the text carries are what render,
-// which is the fallback the component uses for an unbound command.
 export const KeyboardShortcut: Story = {
   args: {
     text: 'Both upscalers are wired. Select the second one and press Ctrl+B to bypass it, then run again.'
@@ -43,8 +39,6 @@ export const SeveralShortcuts: Story = {
   render: renderAtPanelWidth
 }
 
-// A keycap beside the inline-code styling it borrows from, so the two stay
-// distinguishable.
 export const ShortcutBesideCode: Story = {
   args: {
     text: 'The prompt lives on `6.text`. Press Ctrl+Enter when you are happy with it.'

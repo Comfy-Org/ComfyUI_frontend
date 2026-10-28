@@ -1,20 +1,6 @@
 import { useKeybindingStore } from './keybindingStore'
 
-/**
- * Canvas actions the agent routinely tells a user to perform by hand, mapped to
- * the command each one is bound to.
- *
- * The keys themselves are deliberately not written down here. They are read out
- * of the keybinding store when a reply renders, so a user who rebound an action
- * or loaded a preset is shown the key that actually works for them. A list of
- * keys in the agent's prompt cannot do that: it can only carry the shipped
- * default, it drifts from `defaults.ts` with nothing to catch it, and it is
- * re-billed on every turn whether or not shortcuts come up (DES-779).
- *
- * `canvasActionShortcuts.test.ts` holds every id here against the shipped
- * defaults, so renaming or unbinding a command fails there rather than silently
- * dropping the keycap from agent replies.
- */
+/** Canvas action phrases an agent reply may use, mapped to the command each runs. */
 export const CANVAS_ACTION_COMMAND_IDS = {
   bypass: 'Comfy.Canvas.ToggleSelectedNodes.Bypass',
   mute: 'Comfy.Canvas.ToggleSelectedNodes.Mute',
@@ -33,13 +19,8 @@ export const CANVAS_ACTION_COMMAND_IDS = {
 } as const satisfies Record<string, string>
 
 /**
- * A resolver for the keys a command is currently bound to, in the same words
- * the Keybindings settings panel shows (`['Ctrl', 'b']`), or undefined when
- * nothing is bound to it. User bindings and presets win over the defaults,
- * which is the whole reason to ask at render time rather than ship a list.
- *
- * Call it in setup and keep the returned function: it closes over the store so
- * callers never reach into it themselves.
+ * Returns a resolver for the key labels a command is currently bound to, as the
+ * Keybindings settings panel shows them, or undefined when it is unbound.
  */
 export function useCanvasActionShortcutKeys(): (
   commandId: string
