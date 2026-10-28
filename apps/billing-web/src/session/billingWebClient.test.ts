@@ -1,5 +1,6 @@
 import { datadogRum } from '@datadog/browser-rum'
 
+import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 import type { BillingSession } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 import { disposeBillingClient } from '@comfyorg/account-ui/billing'
@@ -134,13 +135,14 @@ describe('createBillingWebClient', () => {
 
 const STATUS_BODY = {
   billing_rail: 'stripe',
+  ended_at: null,
   has_funds: true,
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
   scheduled_change: null,
   team_credit_stop: null
-}
+} satisfies BillingStatusResponse
 
 /** The network edge: the billing routes the lifecycle reads, answered by route. */
 function stubBillingRoutes(operation: Record<string, unknown>) {
