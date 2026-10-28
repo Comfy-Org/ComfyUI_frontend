@@ -1,118 +1,16 @@
 import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
+import { loadCustomNodeScripts } from '@/platform/customNodes/customNodeScripts'
 import { askCpuServer } from '@/platform/customNodes/lateLoading/cpuServerStep'
-import {
-  importNoticingFetchFailure,
-  lateLoadingApplies,
-  loadCustomNodesWithDeadline
-} from '@/platform/customNodes/lateLoading/lateLoading'
+import { lateLoadingApplies } from '@/platform/customNodes/lateLoading/lateLoading'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import {
-  CUSTOM_NODE_FAILURES_TRUNCATED_FIELD,
-  CUSTOM_NODE_LOAD_ERROR_TYPE
-} from '@/platform/telemetry/customNodeLoadTelemetry'
-import type { CustomNodeFailureDiagnostic } from '@/platform/telemetry/customNodeLoadTelemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
-import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
-import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
-import { getErrorMessage, toError } from '@/utils/errorUtil'
-
-const INLINED_CLOUD_EXTENSIONS = new Set([
-  '/extensions/cloud/rum.js',
-  '/extensions/cloud/sentry.js'
-])
-
-export function shouldLoadCustomNodeScript(
-  script: string,
-  isCloudBuild: boolean
-): boolean {
-  if (script.includes('extensions/core')) return false
-  return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(script)
-}
-
-const MAX_CUSTOM_NODE_PATH_LENGTH = 512
-const MAX_CUSTOM_NODE_DIAGNOSTIC_LENGTH = 2048
-const MAX_REPORTED_FAILURES = 10
-
-export interface CustomNodeLoadFailure {
-  ext: string
-  error: unknown
-}
-
-function toFailureDiagnostic({
-  ext,
-  error
-}: CustomNodeLoadFailure): CustomNodeFailureDiagnostic {
-  const path = ext.slice(0, MAX_CUSTOM_NODE_PATH_LENGTH)
-  try {
-    return {
-      ext: path,
-      message: (getErrorMessage(error) ?? toError(error).message).slice(
-        0,
-        MAX_CUSTOM_NODE_DIAGNOSTIC_LENGTH
-      ),
-      stack:
-        error instanceof Error
-          ? error.stack?.slice(0, MAX_CUSTOM_NODE_DIAGNOSTIC_LENGTH)
-          : undefined
-    }
-  } catch {
-    return { ext: path, message: 'Unknown extension load failure' }
-  }
-}
-
-function importModule(url: string): Promise<unknown> {
-  return import(/* @vite-ignore */ url)
-}
-
-async function importCustomNodeScript(
-  ext: string,
-  { late = false, retry = false } = {}
-): Promise<CustomNodeLoadFailure | undefined> {
-  const base = api.fileURL(ext)
-  const url = retry ? `${base}${base.includes('?') ? '&' : '?'}retry=1` : base
-  try {
-    await (late
-      ? importNoticingFetchFailure(url, importModule)
-      : importModule(url))
-  } catch (error) {
-    return { ext, error }
-  }
-}
-
-export function reportCustomNodeLoadFailures(
-  failures: CustomNodeLoadFailure[]
-): void {
-  if (failures.length === 0) return
-
-  const reportedFailures = failures
-    .slice(0, MAX_REPORTED_FAILURES)
-    .map(toFailureDiagnostic)
-  const errors = reportedFailures.map(({ message, stack }) =>
-    Object.assign(new Error(message), stack ? { stack } : {})
-  )
-  const aggregate = new AggregateError(errors, 'Error loading extensions')
-  aggregate.stack = `${aggregate.stack ?? aggregate.message}\nFailed extensions: ${reportedFailures.map(({ ext }) => ext).join(', ')}`
-
-  reportError(aggregate, {
-    errorType: CUSTOM_NODE_LOAD_ERROR_TYPE,
-    surface: 'platform',
-    level: 'warning',
-    tags: { failed_extension_count: failures.length },
-    context: {
-      failures: reportedFailures,
-      ...(failures.length > MAX_REPORTED_FAILURES && {
-        [CUSTOM_NODE_FAILURES_TRUNCATED_FIELD]: true
-      })
-    }
-  })
-}
 
 /**
- * Loads the core extensions, then every extension served by the backend, in
- * parallel. Core extensions load first because custom extensions may depend
- * on them. Late custom extensions stop turning on when `signal` aborts.
+ * Registers the core extensions, then loads the custom node scripts the backend serves.
+ * Late custom nodes stop turning on when `signal` aborts.
  */
 export async function loadExtensions(
   signal: AbortSignal = new AbortController().signal
@@ -134,28 +32,5 @@ export async function loadExtensions(
     await registerCoreExtensions()
   })
   extensionStore.captureCoreExtensions()
-  const customNodeScripts = extensions.filter((script) =>
-    shouldLoadCustomNodeScript(script, __DISTRIBUTION__ === 'cloud')
-  )
-  if (firstCpuServerReading) {
-    await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>
-      loadCustomNodesWithDeadline(
-        customNodeScripts,
-        {
-          importScript: (ext, { retry } = {}) =>
-            importCustomNodeScript(ext, { late: true, retry }),
-          reportFailures: reportCustomNodeLoadFailures
-        },
-        signal,
-        firstCpuServerReading
-      )
-    )
-    return
-  }
-  const outcomes = await bootstrapTracer.settle(
-    'bootstrap/extensions-load-custom',
-    () =>
-      Promise.all(customNodeScripts.map((ext) => importCustomNodeScript(ext)))
-  )
-  reportCustomNodeLoadFailures(outcomes.filter((outcome) => !!outcome))
+  await loadCustomNodeScripts(extensions, signal, firstCpuServerReading)
 }

@@ -1312,6 +1312,8 @@
           "src/scripts/api.storeUserData.test.ts",
           "src/scripts/api.ts",
           "src/scripts/apiTimeouts.ts",
+          "src/platform/customNodes/customNodeScripts.test.ts",
+          "src/platform/customNodes/customNodeScripts.ts",
           "src/platform/extensions/services/extensionLoader.test.ts",
           "src/platform/extensions/services/extensionLoader.ts"
         ]
