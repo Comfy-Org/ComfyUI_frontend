@@ -42,16 +42,22 @@ case "$method $endpoint" in
   *"/labels") jq -r "$filter" "$FAKE_LABELS" ;;
   *"/comments") cat "$FAKE_COMMENTS" | jq -rs "$filter" ;;
   *"/pulls?"*)
-    base='' branch="\${endpoint##*:}"
+    base='' head="\${endpoint#*head=}" head="\${head%%&*}"
     case "$endpoint" in *base=*) base="\${endpoint#*base=}" base="\${base%%&*}" ;; esac
-    if awk -v b="$base" -v h="$branch" '$2 == h && (b == "" || $1 == b) { f = 1 } END { exit !f }' "$FAKE_BACKPORTS"; then echo '[{}]'; else echo '[]'; fi | jq -r "$filter" ;;
+    awk -v b="$base" -v h="$head" '("Comfy-Org:" $2) == h && (b == "" || $1 == b) { print ($3 == "" ? "merged" : $3) }' "$FAKE_BACKPORTS" |
+      jq -Rs 'split("\\n") | map(select(. != "")) | map({state: (if . == "open" then "open" else "closed" end), merged_at: (if . == "merged" then "2026-10-01T00:00:00Z" else null end)})' |
+      jq -r "$filter" ;;
   *) echo "unexpected gh call: $method $endpoint" >&2; exit 2 ;;
 esac
 `
 
 interface PrSetup {
   labels: string[]
-  backports?: Array<{ base: string; head: string }>
+  backports?: Array<{
+    base: string
+    head: string
+    state?: 'open' | 'closed' | 'merged'
+  }>
   comments?: Array<{ author: string; body: string }>
   locked?: boolean
 }
@@ -73,7 +79,9 @@ function createPr({
   )
   writeFileSync(
     join(directory, 'backports'),
-    backports.map(({ base, head }) => `${base} ${head}`).join('\n')
+    backports
+      .map(({ base, head, state = 'merged' }) => `${base} ${head} ${state}`)
+      .join('\n')
   )
   writeFileSync(
     comments,
@@ -170,6 +178,24 @@ describe('backport warning for release labels without needs-backport', () => {
     expect(pr.postedComments()).toHaveLength(1)
   })
 
+  it('still warns when the only backport PR was closed without merging', () => {
+    const pr = createPr({
+      labels: ['core/1.57'],
+      backports: [
+        {
+          base: 'core/1.57',
+          head: 'backport-21241-to-core-1.57',
+          state: 'closed'
+        }
+      ]
+    })
+
+    pr.runWarning()
+
+    expect(pr.postedComments()).toHaveLength(1)
+    expect(pr.postedComments()[0]).toContain('`core/1.57`')
+  })
+
   it.for<[string, PrSetup]>([
     ['no release label', { labels: ['bug'] }],
     [
@@ -179,6 +205,19 @@ describe('backport warning for release labels without needs-backport', () => {
     [
       'needs-backport was added after the event fired',
       { labels: ['core/1.57', 'needs-backport'] }
+    ],
+    [
+      'the backport PR is still open',
+      {
+        labels: ['core/1.57'],
+        backports: [
+          {
+            base: 'core/1.57',
+            head: 'backport-21241-to-core-1.57',
+            state: 'open'
+          }
+        ]
+      }
     ],
     [
       'every release label is already backported',

@@ -685,7 +685,7 @@ jobs:
           WARNED=$(gh api --paginate \
             "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" --jq '.[]
               | select(.user.login == "github-actions[bot]")
-              | .body
+              | (.body // "")
               | capture("^<!-- pr-backport:missing-needs-backport (?<labels>[^>]*) -->").labels
               | split(" ")[]')
 
@@ -698,7 +698,7 @@ jobs:
             BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${label//\//-}"
             BACKPORT_PRS=$(gh api \
               "repos/${GH_REPO}/pulls?state=all&base=${label}&head=${GH_REPO%%/*}:${BACKPORT_BRANCH}" \
-              --jq 'length')
+              --jq 'map(select(.state == "open" or .merged_at != null)) | length')
             if [ "${BACKPORT_PRS}" -eq 0 ]; then
               PENDING+=("${label}")
             fi
