@@ -98,6 +98,7 @@ import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
@@ -130,7 +131,6 @@ const {
   mockExtensionService,
   mockRefreshMissingModelPipeline,
   mockImportA1111,
-  mockAccountPreconditionOpen,
   mockWorkflowService,
   mockValidateWorkflow
 } = vi.hoisted(() => ({
@@ -140,7 +140,6 @@ const {
   },
   mockRefreshMissingModelPipeline: vi.fn(),
   mockImportA1111: vi.fn<typeof importA1111>(),
-  mockAccountPreconditionOpen: vi.fn(),
   mockWorkflowService: {
     beforeLoadNewGraph: vi.fn<WorkflowService['beforeLoadNewGraph']>(),
     afterLoadNewGraph: vi.fn<WorkflowService['afterLoadNewGraph']>(),
@@ -149,14 +148,7 @@ const {
   mockValidateWorkflow: vi.fn<WorkflowValidation['validateWorkflow']>()
 }))
 
-vi.mock(
-  import('@/platform/billing/subscription/composables/useAccountPreconditionDialog'),
-  () => ({
-    useAccountPreconditionDialog: () => ({
-      open: mockAccountPreconditionOpen
-    })
-  })
-)
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
 vi.mock(
   import('@/platform/workflow/validation/composables/useWorkflowValidation'),
@@ -1938,27 +1930,6 @@ describe('ComfyApp', () => {
       }
     })
 
-    it('opens the subscription dialog for a cloud-subscription queue rejection', async () => {
-      prepareEmptyPromptQueue()
-      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
-        new PromptExecutionError({
-          error: {
-            type: 'CLOUD_SUBSCRIPTION_REQUIRED',
-            message: 'You have enough credits for this workflow',
-            details: ''
-          }
-        })
-      )
-      mockAccountPreconditionOpen.mockResolvedValueOnce(true)
-
-      await app.queuePrompt(0)
-
-      expect(mockAccountPreconditionOpen).toHaveBeenCalledExactlyOnceWith(
-        'subscription'
-      )
-      expect(useExecutionErrorStore().lastPromptError).toBeNull()
-    })
-
     it('falls back to the error panel when the subscription dialog cannot open', async () => {
       prepareEmptyPromptQueue()
       vi.spyOn(api, 'queuePrompt').mockRejectedValue(
@@ -1970,40 +1941,42 @@ describe('ComfyApp', () => {
           }
         })
       )
-      mockAccountPreconditionOpen.mockResolvedValueOnce(false)
+      vi.mocked(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).mockResolvedValueOnce(false)
 
       await app.queuePrompt(0)
 
-      expect(mockAccountPreconditionOpen).toHaveBeenCalledExactlyOnceWith(
-        'subscription'
-      )
+      expect(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'subscription_required' })
       expect(useExecutionErrorStore().lastPromptError).toMatchObject({
         type: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })
     })
 
     it('still reports a rejected submission once the dialog takes over', async () => {
-      // Routing more 402s to the dialog must not change what queuePrompt
-      // returns for a rejection it already reported as failed: the dialog
-      // branch breaks past the result assignment the error-panel path makes.
       prepareEmptyPromptQueue()
       vi.spyOn(api, 'queuePrompt').mockRejectedValue(
         new PromptExecutionError({
           error: {
             type: 'CLOUD_SUBSCRIPTION_REQUIRED',
-            message: 'A cloud subscription is required',
+            message: 'You have enough credits for this workflow',
             details: ''
           },
           node_errors: {}
         })
       )
-      mockAccountPreconditionOpen.mockResolvedValueOnce(true)
+      vi.mocked(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).mockResolvedValueOnce(true)
 
       await expect(app.queuePrompt(0)).resolves.toBe(false)
 
-      expect(mockAccountPreconditionOpen).toHaveBeenCalledExactlyOnceWith(
-        'subscription'
-      )
+      expect(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'subscription_required' })
+      expect(useExecutionErrorStore().lastPromptError).toBeNull()
     })
 
     it('records a rejected submission on the workflow that queued it', async () => {

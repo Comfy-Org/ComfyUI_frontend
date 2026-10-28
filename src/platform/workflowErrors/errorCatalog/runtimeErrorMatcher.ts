@@ -52,10 +52,6 @@ const EXECUTE_PROMPT_SUBSCRIPTION_TYPES = new Set([
   'PARTNER_NODE_PAYMENT_REQUIRED',
   'MODEL_PAYMENT_REQUIRED'
 ])
-const SUBSCRIPTION_REQUIRED_TYPES = new Set([
-  'InactiveSubscriptionError',
-  ...EXECUTE_PROMPT_SUBSCRIPTION_TYPES
-])
 const SUBSCRIPTION_UPGRADE_REQUIRED_PREFIX =
   'the following private models require a subscription upgrade:'
 const TIMEOUT_MESSAGES = new Set(['Job execution time exceeded maximum limit'])
@@ -270,7 +266,7 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
   },
   {
     matches: (info, message) =>
-      SUBSCRIPTION_REQUIRED_TYPES.has(info.exceptionType) ||
+      info.exceptionType === 'InactiveSubscriptionError' ||
       SUBSCRIPTION_REQUIRED_MESSAGES.has(message),
     resolve: () => catalogMatch(SUBSCRIPTION_REQUIRED_CATALOG_ID)
   },

@@ -1738,7 +1738,6 @@ export class ComfyApp implements IComfyApp {
       batchCount
     })
 
-    // Only have one action process the items so each one gets a unique seed correctly
     if (this.processingQueue) {
       return false
     }
@@ -1750,7 +1749,6 @@ export class ComfyApp implements IComfyApp {
     executionErrorStore.clearRunErrors()
     let queueResultOverride: boolean | null = null
 
-    // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const teamWorkspaceStore = useTeamWorkspaceStore()
     try {
       await teamWorkspaceStore.waitForWorkspaceSwitch()
@@ -1779,17 +1777,10 @@ export class ComfyApp implements IComfyApp {
         workspaceGenerationBeforeAuthentication !==
           executionWorkspaceGeneration) &&
       (isCloud || workspaceIdBeforeAuthentication !== null)
-    // Desktop host auth is the only credential while active: a stored
-    // personal key may belong to another account and never rides along.
     const desktopHostAuth = isDesktopHostSignedIn()
     const comfyOrgApiKey = desktopHostAuth
       ? null
       : useApiKeyAuthStore().getApiKey()
-    // An API-key session mints no workspace JWT: the key itself is the
-    // execution credential and the server resolves its bound workspace. Only a
-    // key-authenticated session may pass without a token — a Firebase session
-    // whose token mint failed must still fail closed rather than fall back to
-    // a stored key and charge the key's workspace.
     const isApiKeySessionExecution =
       !desktopHostAuth &&
       !useAuthStore().currentUser &&
@@ -1845,8 +1836,6 @@ export class ComfyApp implements IComfyApp {
             }
           }
 
-          // Allow widgets to run callbacks before a prompt has been queued
-          // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
@@ -1854,9 +1843,6 @@ export class ComfyApp implements IComfyApp {
             applyPromotedWidgetControl(node, 'beforeQueued')
           })
 
-          // Capture workflow and mode before await — both may change if the
-          // user switches tabs or toggles app/graph mode while the request is
-          // in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
           const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
@@ -1962,6 +1948,9 @@ export class ComfyApp implements IComfyApp {
               ...workflowExecutionIntent,
               ...(workflowContext && { workflowContext })
             })
+            if (error instanceof PromptExecutionError) {
+              queueResultOverride = !error.response.node_errors
+            }
             const hasPromptNodeErrors =
               error instanceof PromptExecutionError &&
               Object.keys(error.response.node_errors ?? {}).length > 0
@@ -1976,19 +1965,9 @@ export class ComfyApp implements IComfyApp {
                 })
               : undefined
             if (promptPrecondition) {
-              // Account preconditions (sign-in, subscription, credits) open
-              // their own modal and must stay out of the error panel and
-              // error count.
               const opened =
                 await useAccountPreconditionDialog().open(promptPrecondition)
               if (opened) {
-                // This break skips the legacy result assignment below, so
-                // take it here too. Classifying more 402s as preconditions
-                // must not change what queuePrompt reports for the same
-                // rejection.
-                if (error instanceof PromptExecutionError) {
-                  queueResultOverride = !error.response.node_errors
-                }
                 console.error(error)
                 break
               }
@@ -1997,17 +1976,12 @@ export class ComfyApp implements IComfyApp {
               error instanceof PromptExecutionError &&
               promptError?.type === 'missing_node_type'
             ) {
-              // Re-scan the full graph instead of using the server's single-node response.
               rescanAndSurfaceMissingNodes(this.rootGraph)
             } else if (
               error instanceof PromptExecutionError &&
               error.status === 403 &&
               !hasPromptNodeErrors
             ) {
-              // User is authenticated but not authorized (e.g. not whitelisted).
-              // Show a clear message instead of a generic error or sign-in prompt.
-              // The response may be middleware JSON {"message": "..."} or the
-              // standard {"error": {"message": "..."}} shape, so check both.
               const raw: Record<string, unknown> = error.response
               const rawError =
                 raw.error && typeof raw.error === 'object'
@@ -2037,17 +2011,12 @@ export class ComfyApp implements IComfyApp {
             console.error(error)
 
             if (error instanceof PromptExecutionError) {
-              // Keep the legacy result before empty node errors are normalized.
               const nodeErrors = error.response.node_errors
-              queueResultOverride = !nodeErrors
               executionErrorStore.recordNodeErrors(
                 nodeErrors ?? null,
                 queuedRunErrorKey
               )
 
-              // Store prompt-level error separately only when no node-specific errors exist,
-              // because node errors already carry the full context. Prompt-level errors
-              // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
               if (
                 (!nodeErrors || Object.keys(nodeErrors).length === 0) &&
                 promptError
@@ -2068,8 +2037,6 @@ export class ComfyApp implements IComfyApp {
 
           queuedCount++
 
-          // Allow widgets to run callbacks after a prompt has been queued
-          // e.g. random seed after every gen
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })

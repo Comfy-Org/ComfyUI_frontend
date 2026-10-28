@@ -5,11 +5,6 @@ type BillingDialogsAccess = Pick<
   ExtensionDialogService,
   'showDowngradeToPersonalDialog'
 > & {
-  /**
-   * Resolves whether the dialog actually opened. In-app callers branch on
-   * that; the extension-facing signature stays `Promise<void>` so it remains
-   * assignable to the callbacks extensions already wrote against it.
-   */
   showSubscriptionRequiredDialog(
     options?: SubscriptionDialogOptions
   ): Promise<boolean>

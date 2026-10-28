@@ -43,40 +43,6 @@ describe('resolveAccountPrecondition', () => {
     ).toBe('subscription')
   })
 
-  it.for([
-    'A cloud subscription is required to queue workflows.',
-    'A cloud subscription is required to use your credits on cloud.'
-  ])(
-    'classifies the free-tier cloud-subscription 402 (%s) by its CLOUD_SUBSCRIPTION_REQUIRED type',
-    (exceptionMessage) => {
-      expect(
-        resolveAccountPrecondition({
-          exceptionType: 'CLOUD_SUBSCRIPTION_REQUIRED',
-          exceptionMessage
-        })
-      ).toBe('subscription')
-    }
-  )
-
-  it.for([
-    [
-      'FREE_TIER_EXHAUSTED',
-      "You've used all your free generations. Upgrade to keep creating."
-    ],
-    [
-      'PARTNER_NODE_PAYMENT_REQUIRED',
-      'Partner-node workflows require a paid subscription'
-    ],
-    ['MODEL_PAYMENT_REQUIRED', 'This model requires a paid subscription']
-  ])(
-    'classifies the free-tier %s 402 as a subscription precondition',
-    ([exceptionType, exceptionMessage]) => {
-      expect(
-        resolveAccountPrecondition({ exceptionType, exceptionMessage })
-      ).toBe('subscription')
-    }
-  )
-
   it('keeps the retryable FREE_TIER_UNAVAILABLE 429 out of the subscription route', () => {
     expect(
       resolveAccountPrecondition({

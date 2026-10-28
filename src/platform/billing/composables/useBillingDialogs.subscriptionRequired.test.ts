@@ -1,11 +1,3 @@
-/**
- * showSubscriptionRequiredDialog is the seam every "Subscribe" CTA routes
- * through (topbar, paywall banners, and the in-app agent's paywall card via
- * useAccountPreconditionDialog). It must never resolve to a dead click: when
- * window.__CONFIG__ hasn't been populated yet it should retry a fetch before
- * giving up, and a gate that stays closed must be observable rather than a
- * silent no-op.
- */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
@@ -76,8 +68,6 @@ describe('showSubscriptionRequiredDialog', () => {
   })
 
   it('retries the /features fetch instead of trusting an unloaded config snapshot', async () => {
-    // A caller (e.g. the agent panel's paywall card) can fire before the
-    // bootstrap fetch resolves, so window.__CONFIG__ is still empty.
     remoteConfigState.value = 'unloaded'
     window.__CONFIG__ = {}
     refreshRemoteConfig.mockImplementation(() => {
@@ -94,9 +84,6 @@ describe('showSubscriptionRequiredDialog', () => {
   })
 
   it('resolves false instead of rejecting when the config refresh fails', async () => {
-    // queuePrompt awaits this boolean to decide whether the dialog has taken
-    // over its 402. A rejection here would propagate out of queuePrompt and
-    // replace the user's original payment error with a chunk-load failure.
     remoteConfigState.value = 'unloaded'
     window.__CONFIG__ = {}
     refreshRemoteConfig.mockRejectedValueOnce(new Error('offline'))

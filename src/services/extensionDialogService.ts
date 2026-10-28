@@ -8,8 +8,6 @@ import { useDialogService } from '@/services/dialogService'
 
 export function createExtensionDialogService(): ExtensionDialogService {
   const { showPublishDialog } = useComfyHubPublishDialog()
-  // The composable reports whether the subscription dialog opened; extensions
-  // keep the stable void-returning signature.
   const { showSubscriptionRequiredDialog, ...billingDialogs } =
     useBillingDialogs()
   return {

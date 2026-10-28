@@ -6,11 +6,6 @@ import type { PromptFailureResponse } from '@/platform/remote/comfyui/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-// Regression for #12840: a free-tier paywall on queue (`POST /prompt` 402 with
-// `{ error: { type: 'PAYMENT_REQUIRED', message: 'Subscription required to
-// queue workflows' } }`) is an account precondition. It must open its own modal
-// and stay out of the error panel, instead of surfacing the raw backend string
-// with non-actionable Find-on-GitHub / Copy actions.
 test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
   test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
@@ -45,42 +40,6 @@ test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     ).toBeVisible()
-  })
-
-  test.describe('cloud-subscription 402', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.page.route('**/api/prompt', async (route) => {
-        await route.fulfill({
-          status: 402,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            error: {
-              credits_locked: true,
-              message:
-                'A cloud subscription is required to use your credits on cloud.',
-              type: 'CLOUD_SUBSCRIPTION_REQUIRED'
-            }
-          })
-        })
-      })
-    })
-
-    test('falls back when the cloud subscription dialog is unavailable', async ({
-      comfyPage
-    }) => {
-      const refused = comfyPage.page.waitForResponse(
-        (response) =>
-          response.request().method() === 'POST' &&
-          response.url().endsWith('/api/prompt')
-      )
-      await comfyPage.page.evaluate(() => window.app!.queuePrompt(0))
-      await refused
-      await comfyPage.nextFrame()
-
-      await expect(
-        comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-      ).toBeVisible()
-    })
   })
 
   test('still surfaces ordinary queue errors in the error panel', async ({
