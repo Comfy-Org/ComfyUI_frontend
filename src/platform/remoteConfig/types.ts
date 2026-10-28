@@ -149,4 +149,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   // Always funnel it through normalizeTurnstileMode before trusting it as a
   // TurnstileMode — that resolver is the single narrowing boundary.
   signup_turnstile?: string
+  /** Raw PostHog variant; read it through `usePromptEditorExperimentStore`. */
+  'prompt-editor-surface'?: string
 }
