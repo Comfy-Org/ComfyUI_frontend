@@ -8,14 +8,6 @@
     "classification": "live-defect"
   },
   {
-    "id": "playwright:browser_tests/tests/agent/agentLocalNodeAppearanceSurvivesAgentEdit.spec.ts:recolouring a node mid-turn is not reverted when the agent renames it:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/agent/agentLocalNodeAppearanceSurvivesAgentEdit.spec.ts:reshaping a node mid-turn is not reverted when the agent renames it:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<expression:\"leaves the agent's own graph read disagreeing with the \" + 'still-visible canvas after its write is silently dropped'>:1",
     "classification": "live-defect"
   },
@@ -24,19 +16,15 @@
     "classification": "live-defect"
   },
   {
-    "id": "playwright:browser_tests/tests/agent/agentRateLimitDuplicateSubmit.spec.ts:keeps repeated Enter presses to one rejected send:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/agent/agentReplyDrafts.spec.ts:<expression:`a completed turn keeps its ${selection} approval action live`>:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "playwright:browser_tests/tests/agent/agentTurnProgressIsLegible.spec.ts:names how long the finished turn took:1",
     "classification": "live-defect"
   },
   {
     "id": "playwright:browser_tests/tests/agent/agentTwoSessionCrdtSubscription.spec.ts:returning to the displaced build shows it on the canvas:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/agent/agentUnboundTabLinkSeverance.spec.ts:carries the canvas after the user severs a link:1",
     "classification": "live-defect"
   },
   {
@@ -89,6 +77,10 @@
   },
   {
     "id": "vitest:src/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/workbench/extensions/agent/composables/agent/useAgentSession.test.ts:(h12) a second turn on a still-unbound tab carries the connection the user severed (PM-1410):1",
     "classification": "live-defect"
   },
   {

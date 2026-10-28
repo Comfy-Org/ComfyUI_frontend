@@ -32,8 +32,6 @@ vi.mock(import('@/services/gateway/registrySearchGateway'), () => {
 
 vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/services/comfyManagerService'),
   () => {

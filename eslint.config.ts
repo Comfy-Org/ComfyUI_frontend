@@ -341,6 +341,13 @@ export default defineConfig([
       pluginVue.configs['flat/recommended'],
       ...tailwindConfigs,
       {
+        files: ['**/*.vue'],
+        plugins: { 'template-classes': templateClasses },
+        rules: {
+          'template-classes/icon-element': 'error'
+        }
+      },
+      {
         files: [
           'src/**/*.vue',
           'apps/billing-web/**/*.vue',
