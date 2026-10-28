@@ -42,7 +42,7 @@ const modelSpec = [
         key: MODEL,
         inputs: {
           required: {
-            prompt: ['STRING', { default: '', multiline: true }],
+            prompt: ['STRING', { default: '' }],
             generate_audio: ['BOOLEAN', { default: true }],
             duration: ['INT', { default: 5, min: 4, max: 15 }]
           }
@@ -52,7 +52,7 @@ const modelSpec = [
         key: 'Seedance 2.5 Fast',
         inputs: {
           required: {
-            prompt: ['STRING', { default: '', multiline: true }],
+            prompt: ['STRING', { default: '' }],
             generate_audio: ['BOOLEAN', { default: true }]
           }
         }
@@ -134,7 +134,7 @@ function setWidget(
     node_id: node.id,
     widget,
     value
-  }
+  } as Op
 }
 
 function setup() {
