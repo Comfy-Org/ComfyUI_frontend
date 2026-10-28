@@ -9,7 +9,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Video from '@/components/common/Video.vue'
+import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import Message from '@comfyorg/design-system/message/Message'

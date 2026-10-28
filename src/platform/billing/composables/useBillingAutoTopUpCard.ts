@@ -5,7 +5,7 @@ import {
 } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'

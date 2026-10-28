@@ -5,10 +5,10 @@ import type { ContentEntry, ContentStore } from '@comfyorg/layer-editor/content'
 import type { Document } from '@comfyorg/layer-editor/document'
 import type {
   RasterData,
-  Rect,
   SceneNode,
   Transform
 } from '@comfyorg/layer-editor/node'
+import type { CompactRect as Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import { getNodeKind } from '@comfyorg/layer-editor/nodeKind'
 import type { RenderNodeCtx } from '@comfyorg/layer-editor/nodeKind'
 import { placeBitmap } from '@comfyorg/layer-editor/render/place'

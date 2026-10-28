@@ -1,23 +1,27 @@
+import { until } from '@vueuse/core'
 import { defineAsyncComponent, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentConsentDecision,
   AgentConsentOfferExit,
   AgentConsentTrigger
-} from '@/platform/telemetry/types'
-import { reportError } from '@/platform/telemetry/reportError'
+} from '@comfyorg/telemetry/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
-import { recordConsentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
+import {
+  clearPendingSignInAccept,
+  writePendingSignInAccept
+} from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
@@ -39,7 +43,6 @@ const AgentConsentCard = defineAsyncComponent(
 )
 
 export interface ConsentOfferHooks {
-  onShown?: () => void
   /** Asked right before the card mounts, after every await that precedes it. */
   canShow?: () => boolean
 }
@@ -57,34 +60,12 @@ export function useAgentConsent() {
   const { showSignInDialog } = useAuthDialogs()
   const consentStore = useAgentConsentStore()
   const introductionStore = useAgentConsentIntroductionStore()
-  const agentPanelStore = useAgentPanelStore()
+  const composerStore = useAgentComposerStore()
   const toast = useToast()
   const { isLoggedIn } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
   const { t } = i18n.global
 
-  /**
-   * Names an ending of the consent request that produced neither a card on
-   * screen nor a decision.
-   *
-   * These are the last silent endings on the automatic consent chain.
-   * `agent_consent_not_offered` means a named surface is holding the offer and
-   * will retry it, and `agent_consent_offer_exited`'s other stages all stop
-   * before the consent scope is resolved - so an attempt that got as far as
-   * asking and still ended with nothing was indistinguishable in product
-   * analytics from a user who was never offered. The failing ones do reach
-   * Sentry and RUM through `reportError`, which is why they were easy to
-   * believe were covered; `reportError` has no PostHog sink, so none of them
-   * were in the funnel denominator `agent_consent_not_offered` is read against.
-   *
-   * `retry_armed` is reported false rather than read, and that is a code reading
-   * rather than a tested fact: `offerConsentUnprompted` calls `dropHold()`
-   * immediately before `withConsent`, the only caller that can re-arm is the
-   * `canShow` hook, and `canShow` runs after every exit reported here. A
-   * re-entrant offer cannot re-arm either - it exits on `autoShowInFlight`
-   * before reaching a hold. If that ordering changes, this becomes wrong
-   * silently, so the property's doc says which ordering it depends on.
-   */
   function reportRequestExit(
     exit: AgentConsentOfferExit,
     trigger: AgentConsentTrigger
@@ -101,7 +82,7 @@ export function useAgentConsent() {
     trigger: AgentConsentTrigger,
     persistOnAccept = true,
     expectedIdentity?: string,
-    { onShown, canShow }: ConsentOfferHooks = {},
+    { canShow }: ConsentOfferHooks = {},
     initialError: ConsentCardError | '' = ''
   ): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
@@ -131,6 +112,7 @@ export function useAgentConsent() {
       const closeWith = (result: boolean): void => {
         if (settled) return
         settled = true
+        clearPendingSignInAccept()
         stopScopeWatch()
         dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY })
         resolve(result)
@@ -245,20 +227,12 @@ export function useAgentConsent() {
           onVnodeMounted: () => {
             shown = true
             useTelemetry()?.trackAgentConsentShown({ trigger })
-            if (expectedIdentity && identity.value !== expectedIdentity) return
-            onShown?.()
           },
           onAccept: () => void accept(),
           onReject: () => {
             if (settled) return
             markIntroductionResponded()
             reportOutcome('rejected')
-            if (
-              agentPanelStore.onboarding.persistSkipAsRefusal &&
-              expectedIdentity &&
-              identity.value === expectedIdentity
-            )
-              void recordConsentOfferDeclined()
             closeWith(false)
           }
         },
@@ -270,13 +244,47 @@ export function useAgentConsent() {
             if (settled) return
             settled = true
             stopScopeWatch()
-            if (shown) reportOutcome('dismissed')
-            else reportRequestExit('card_closed_before_mount', trigger)
+            if (shown) {
+              clearPendingSignInAccept()
+              reportOutcome('dismissed')
+            } else reportRequestExit('card_closed_before_mount', trigger)
             resolve(false)
           }
         }
       })
     })
+  }
+
+  async function saveAcceptanceAfterSignIn(): Promise<string | null> {
+    try {
+      const decisionIdentity = await consentStore.ensureScope()
+      if (!decisionIdentity || !(await consentStore.accept(decisionIdentity))) {
+        useTelemetry()?.trackAgentConsentResolved({
+          decision: 'accept_not_persisted',
+          save_error_shown: false
+        })
+        return null
+      }
+      useTelemetry()?.trackAgentConsentResolved({
+        decision: 'accepted',
+        save_error_shown: false
+      })
+      return decisionIdentity
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_consent_setting_write_failure'
+      })
+      toast.error(t('g.error'), {
+        description: t('agent.consent.saveError')
+      })
+      return null
+    }
+  }
+
+  function heldDraftText(): string {
+    const held = composerStore.submission
+    return held?.phase === 'pending' ? held.snapshot.prompt.text.trim() : ''
   }
 
   async function acceptAfterSignIn(
@@ -291,9 +299,12 @@ export function useAgentConsent() {
         return null
       introductionStore.isContinuingSignIn = true
       try {
+        writePendingSignInAccept(heldDraftText())
+        let signedIn: boolean
         try {
-          if (!(await showSignInDialog())) return null
+          signedIn = await showSignInDialog()
         } catch (error) {
+          clearPendingSignInAccept()
           reportError(error, {
             surface: 'agent',
             errorType: 'agent_consent_sign_in_failure'
@@ -301,38 +312,30 @@ export function useAgentConsent() {
           cardError = 'signIn'
           continue
         }
-
-        try {
-          const decisionIdentity = await consentStore.ensureScope()
-          if (
-            !decisionIdentity ||
-            !(await consentStore.accept(decisionIdentity))
-          ) {
-            useTelemetry()?.trackAgentConsentResolved({
-              decision: 'accept_not_persisted',
-              save_error_shown: false
-            })
-            return null
-          }
-          useTelemetry()?.trackAgentConsentResolved({
-            decision: 'accepted',
-            save_error_shown: false
-          })
-          return decisionIdentity
-        } catch (error) {
-          reportError(error, {
-            surface: 'agent',
-            errorType: 'agent_consent_setting_write_failure'
-          })
-          toast.error(t('g.error'), {
-            description: t('agent.consent.saveError')
-          })
-          return null
-        }
+        if (!signedIn) return null
+        clearPendingSignInAccept()
+        return await saveAcceptanceAfterSignIn()
       } finally {
         introductionStore.isContinuingSignIn = false
       }
     }
+  }
+
+  async function resumeAcceptAfterReload(draft: string): Promise<void> {
+    introductionStore.isContinuingSignIn = true
+    try {
+      await saveAcceptanceAfterSignIn()
+    } finally {
+      introductionStore.isContinuingSignIn = false
+    }
+    if (
+      draft &&
+      !composerStore.draft &&
+      composerStore.prompt.references.length === 0 &&
+      composerStore.attachments.length === 0 &&
+      !composerStore.submission
+    )
+      composerStore.restorePrompt({ text: draft, references: [] }, [])
   }
 
   async function requestConsentForCurrentUser(
@@ -391,6 +394,8 @@ export function useAgentConsent() {
     onAccept: () => void,
     hooks: ConsentOfferHooks = {}
   ): Promise<void> {
+    if (introductionStore.isContinuingSignIn)
+      await until(() => introductionStore.isContinuingSignIn).toBe(false)
     const decisionIdentity = isLoggedIn.value
       ? await requestConsentForCurrentUser(trigger, hooks)
       : await acceptAfterSignIn(trigger, hooks)
@@ -403,5 +408,5 @@ export function useAgentConsent() {
     onAccept()
   }
 
-  return { accepted, isChecking, withConsent }
+  return { accepted, isChecking, withConsent, resumeAcceptAfterReload }
 }

@@ -1,10 +1,7 @@
 import type { Component } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 export interface BaseDOMWidget<

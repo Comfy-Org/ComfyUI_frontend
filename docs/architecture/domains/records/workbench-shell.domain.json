@@ -161,7 +161,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["telemetry"],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {

@@ -6,14 +6,14 @@ import type { EffectScope } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { reportError } from '@/platform/telemetry/reportError'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type {

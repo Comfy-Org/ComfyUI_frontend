@@ -37,7 +37,7 @@ const creditsBadges = computed(() => {
       side="top"
       :side-offset="5"
       dismiss-on-viewport-change
-      class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
+      class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
     >
       <section
         class="max-h-(--reka-popover-content-available-height) scroll-shadows-background overflow-y-auto"

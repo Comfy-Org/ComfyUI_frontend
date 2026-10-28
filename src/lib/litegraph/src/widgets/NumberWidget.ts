@@ -1,4 +1,4 @@
-import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
+import type { INumericWidget } from '@comfyorg/graph-model/widgets'
 import {
   evaluateInput,
   formatNumericWidgetValue,

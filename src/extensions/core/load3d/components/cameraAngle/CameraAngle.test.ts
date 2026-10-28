@@ -99,8 +99,8 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: getNodeByLocatorIdMock
 }))
 
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import CameraAngle from './CameraAngle.vue'
 
