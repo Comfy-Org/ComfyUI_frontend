@@ -62,10 +62,7 @@ class TestSeedance extends LGraphNode {
     this.widgets = []
     useLitegraphService().addNodeInput(
       this,
-      transformInputSpecV1ToV2(
-        modelSpec,
-        { name: 'model', isOptional: false }
-      )
+      transformInputSpecV1ToV2(modelSpec, { name: 'model', isOptional: false })
     )
     this.addOutput('VIDEO', 'VIDEO')
     this.serialize_widgets = true
