@@ -4,6 +4,8 @@ import type { EffectScope, Ref } from 'vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
+import { setAgentTabTitlePrefix } from './agentTabTitlePrefix'
+
 /**
  * Keeps workflowTabActivityStore consistent with the tab strip while the
  * agent panel is unmounted: activating a tab clears its unseen dot and
@@ -26,6 +28,7 @@ export function registerWorkflowTabActivityTracker(
         trackerScope = undefined
         if (!isEnabled) {
           tabActivity.clearAgentActivity()
+          setAgentTabTitlePrefix(null)
           return
         }
 
