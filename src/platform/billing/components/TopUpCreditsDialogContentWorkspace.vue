@@ -76,7 +76,7 @@
         role="alert"
         class="m-0 px-8 pt-4 text-sm text-destructive"
       >
-        {{ $t('credits.topUp.checkoutOpenFailed') }}
+        {{ checkoutRefusal ?? $t('credits.topUp.checkoutOpenFailed') }}
       </p>
     </template>
 
@@ -95,7 +95,7 @@
         role="alert"
         class="m-0 text-sm text-destructive"
       >
-        {{ $t('credits.topUp.checkoutOpenFailed') }}
+        {{ checkoutRefusal ?? $t('credits.topUp.checkoutOpenFailed') }}
       </p>
     </div>
 
@@ -434,6 +434,7 @@ import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import {
   getTopupAmountPreset,
+  PURCHASE_REFUSAL_SERVER_CODES,
   TOPUP_AMOUNT_PRESETS_USD
 } from '@comfyorg/account-core/billing'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -630,6 +631,7 @@ watch(suggestedAmount, (amount) => {
 const loading = ref(false)
 const paymentSubmitted = ref(false)
 const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
+const checkoutRefusal = ref<string | null>(null)
 const blockedDefaultCardUrl = ref<string | null>(null)
 const checkoutReopenFailed = ref(false)
 const stepBeforeCheckoutBlocked = ref<'confirm' | 'checkoutOpened'>('confirm')
@@ -1073,6 +1075,7 @@ async function reopenCheckout() {
 async function openCheckoutInReservedTab(): Promise<
   'opened' | 'blocked' | 'failed' | 'abandoned'
 > {
+  checkoutRefusal.value = null
   const returnUrl = topupCheckoutReturnUrl()
   if (!returnUrl) return 'failed'
   const checkoutTab = reserveBillingTab()
@@ -1103,6 +1106,7 @@ async function openCheckoutInReservedTab(): Promise<
   } catch (error) {
     checkoutTab.close()
     console.error('Hosted top-up checkout failed to open', error)
+    checkoutRefusal.value = purchaseRefusalMessage(error)
     return unmounted || scope.signal.aborted ? 'abandoned' : 'failed'
   } finally {
     if (checkoutScope === scope) checkoutScope = null
@@ -1178,7 +1182,17 @@ function reportTerminal(
   })
 }
 
+function purchaseRefusalMessage(error: unknown): string | null {
+  return error instanceof WorkspaceApiError &&
+    error.code !== undefined &&
+    PURCHASE_REFUSAL_SERVER_CODES.includes(error.code)
+    ? error.message
+    : null
+}
+
 function purchaseErrorDetail(error?: unknown): string {
+  const refusal = purchaseRefusalMessage(error)
+  if (refusal !== null) return refusal
   const code = error instanceof WorkspaceApiError ? error.code : undefined
   // Only one billing operation is open at a time, so this refusal means the
   // previous purchase has not settled or expired yet — not that anything failed.
