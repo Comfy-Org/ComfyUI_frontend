@@ -48,7 +48,7 @@ fi
 
 # Configuration
 COMMENT_MARKER="<!-- PLAYWRIGHT_TEST_STATUS -->"
-BROWSERS="chromium chromium-2x chromium-0.5x cloud desktop mobile-chrome mobile-safari"
+BROWSERS="chromium chromium-2x chromium-0.5x cloud desktop mobile-chrome mobile-safari firefox"
 
 # Install wrangler if not available (output to stderr for debugging)
 if ! command -v wrangler > /dev/null 2>&1; then

@@ -13,6 +13,10 @@
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
         'drop-shadow-lg',
+        !hasTranslucentSurface && [
+          'firefox:shadow-node firefox:filter-none',
+          firefoxShadowShapeClass
+        ],
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
@@ -314,7 +318,7 @@ import {
   locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { isTransparent } from '@/utils/colorUtil'
+import { isOpaqueColor, isTransparent } from '@/utils/colorUtil'
 
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
@@ -511,6 +515,20 @@ const shapeClass = computed(() =>
     card: 'rounded-tl-xl rounded-br-xl',
     default: 'rounded-xl'
   })
+)
+
+const firefoxShadowShapeClass = computed(() =>
+  shapeVariantClass(nodeData.shape, {
+    box: '',
+    card: 'firefox:rounded-tl-xl firefox:rounded-br-xl',
+    default: 'firefox:rounded-xl'
+  })
+)
+
+const hasTranslucentSurface = computed(() =>
+  [nodeData.color, nodeData.bgcolor].some(
+    (color) => !!color && !isOpaqueColor(color)
+  )
 )
 
 const isTransparentHeaderless = computed(

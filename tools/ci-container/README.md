@@ -81,17 +81,17 @@ The optimized image measured 1.93 GB of compressed OCI layers, down from
 respectively because it stores both representations. These are local Linux
 amd64 measurements, not registry download measurements.
 
-| Candidate cut                 | Decision and evidence                                                                                                                                                                                 |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Recursive ownership change    | Use `COPY --chown`; avoids copying 2.45 GB into a second layer. Writable-directory checks pass.                                                                                                       |
-| Python bytecode               | Remove before the runtime copy. Saves 260 MB of files; two fresh-container starts took about 22 seconds versus 10–12 seconds with bytecode. Python recreates caches at runtime.                       |
-| Kitchen CUDA and HIP binaries | Remove the two `_C.abi3.so` files, totaling 172 MB. CPU quantization and dequantization pass without them. Python fallback modules remain.                                                            |
-| Backend `.git`                | Remove before the runtime copy. The backend version and all 827 node definitions match the baseline. Backend self-updating is not supported in this pinned image.                                     |
-| Template media                | Keep. Removing even one media bundle makes all `/templates` requests return 404, including workflow JSON.                                                                                             |
-| Embedded docs                 | Keep. Removing the package makes `/docs/KSampler/en.md` return 404.                                                                                                                                   |
-| Bundled frontend              | Keep. Without it, the local E2E launch command exits with code 255 before serving requests.                                                                                                           |
-| WebKit                        | Keep. The `mobile-safari` CI project uses it.                                                                                                                                                         |
-| Firefox                       | Keep the official Playwright base intact. Firefox has no current CI project, but deleting inherited files adds a layer without reducing image size. Omitting it requires rebuilding the browser base. |
+| Candidate cut                 | Decision and evidence                                                                                                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Recursive ownership change    | Use `COPY --chown`; avoids copying 2.45 GB into a second layer. Writable-directory checks pass.                                                                                 |
+| Python bytecode               | Remove before the runtime copy. Saves 260 MB of files; two fresh-container starts took about 22 seconds versus 10–12 seconds with bytecode. Python recreates caches at runtime. |
+| Kitchen CUDA and HIP binaries | Remove the two `_C.abi3.so` files, totaling 172 MB. CPU quantization and dequantization pass without them. Python fallback modules remain.                                      |
+| Backend `.git`                | Remove before the runtime copy. The backend version and all 827 node definitions match the baseline. Backend self-updating is not supported in this pinned image.               |
+| Template media                | Keep. Removing even one media bundle makes all `/templates` requests return 404, including workflow JSON.                                                                       |
+| Embedded docs                 | Keep. Removing the package makes `/docs/KSampler/en.md` return 404.                                                                                                             |
+| Bundled frontend              | Keep. Without it, the local E2E launch command exits with code 255 before serving requests.                                                                                     |
+| WebKit                        | Keep. The `mobile-safari` CI project uses it.                                                                                                                                   |
+| Firefox                       | Keep. The `firefox` CI project uses it.                                                                                                                                         |
 
 Pruning happens in the builder so removed files never enter runtime layers.
 All 40,549 retained regular files in `/ComfyUI` and `/opt/venv` matched the
