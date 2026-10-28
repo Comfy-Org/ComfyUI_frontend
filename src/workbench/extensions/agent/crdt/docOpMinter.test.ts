@@ -448,8 +448,7 @@ describe('attachDocOpMinter', () => {
             op: 'set_widget',
             node_id: source.id,
             widget: 'steps',
-            value: 42,
-            old: 20
+            value: 42
           }
         }
       },
@@ -1365,7 +1364,6 @@ describe('attachDocOpMinter', () => {
         node_id: interior.id,
         widget: 'steps',
         value: 3,
-        old: 20,
         path: [String(host.id), String(interior.id)],
         inner_widget: 'steps'
       }
@@ -1436,7 +1434,6 @@ describe('attachDocOpMinter', () => {
         node_id: host.id,
         widget: 'text',
         value: 'a prompt pasted while the agent panel is open',
-        old: 'an interior default',
         promoted: {
           value_index: 1,
           instance_path: [String(host.id)],
@@ -1591,8 +1588,7 @@ describe('attachDocOpMinter', () => {
         op: 'set_widget',
         node_id: source.id,
         widget: 'steps',
-        value: 42,
-        old: 20
+        value: 42
       }
     ])
     expect(applyMinted(doc, minted)).toEqual(['applied'])
@@ -1614,8 +1610,7 @@ describe('attachDocOpMinter', () => {
         op: 'set_widget',
         node_id: source.id,
         widget: 'steps',
-        value: 42,
-        old: 20
+        value: 42
       }
     ])
     expect(applyMinted(doc, minted)).toEqual(['applied'])
@@ -2409,8 +2404,7 @@ describe('attachDocOpMinter', () => {
         op: 'set_widget',
         node_id: source.id,
         widget: 'steps',
-        value: 42,
-        old: 20
+        value: 42
       }
     ])
     expect(applyMinted(doc, minted)).toEqual(['applied'])
@@ -2539,10 +2533,53 @@ describe('attachDocOpMinter', () => {
         op: 'set_widget',
         node_id: source.id,
         widget: 'steps',
-        value: 21,
-        old: 20
+        value: 21
       }
     ])
+  })
+
+  // A large text widget used to lock ITSELF out. The mint carried the previous
+  // value as `old` beside `value`, and the applier charges one cost-budget unit
+  // per character of every string in the envelope, so a widget holding ~128 KiB
+  // spent the whole 262144-unit budget on two copies of its own text: every
+  // later edit to it, down to one character, was refused `malformed_op` for the
+  // life of the workflow. The second expectation is what makes this a
+  // regression test and not a restatement of the minter — it asserts the real
+  // applier's verdict. The third keeps the fix honest: it fails if `old` stops
+  // being the thing that breaks the budget, so a later reader can tell a
+  // genuine upstream change from a silent re-regression.
+  it('keeps a large widget edit inside the cost budget by leaving the previous value off the wire', async () => {
+    const held = 'c'.repeat(140_000)
+    const node = new TestPrompt()
+    withGraphIntentSource('load', () => {
+      graph.add(node)
+      node.widgets![0].value = held
+    })
+    await afterFlush()
+    const doc = mintDocFrom(graph)
+    const counterfactualDoc = mintDocFrom(graph)
+
+    node.widgets![0].value = `${held}x`
+    await afterFlush()
+
+    // Asserted by key rather than by `toEqual`: a failure here would otherwise
+    // print two 140,000-character strings.
+    expect(minted).toHaveLength(1)
+    const mintedKeys = Object.keys(minted[0])
+    expect(mintedKeys).toHaveLength(4)
+    expect(mintedKeys).toEqual(
+      expect.arrayContaining(['node_id', 'op', 'value', 'widget'])
+    )
+    expect(minted[0]).not.toHaveProperty('old')
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    expect(
+      applyMinted(counterfactualDoc, [
+        { ...minted[0], old: held } as GraphOperation
+      ])
+    ).toEqual(['rejected'])
+
+    doc.destroy()
+    counterfactualDoc.destroy()
   })
 
   it('uses the store serialize flag when a projected widget omits it', async () => {
@@ -2691,8 +2728,7 @@ describe('attachDocOpMinter', () => {
         op: 'set_widget',
         node_id: node.id,
         widget: 'steps',
-        value: 21,
-        old: 20
+        value: 21
       }
     ])
   })
@@ -2793,7 +2829,6 @@ describe('attachDocOpMinter', () => {
         node_id: source.id,
         widget: 'steps',
         value: 3,
-        old: 20,
         path: [String(host.id), String(source.id)],
         inner_widget: 'steps'
       }
@@ -2897,19 +2932,18 @@ describe('attachDocOpMinter', () => {
       widget('loras.$add').callback?.(undefined)
       await afterFlush()
 
-      const setWidget = (name: string, value: unknown, old: unknown) => ({
+      const setWidget = (name: string, value: unknown) => ({
         op: 'set_widget',
         node_id: node.id,
         widget: name,
-        value,
-        old
+        value
       })
       expect(minted).toEqual([
-        setWidget('loras', 1, 2),
-        setWidget('loras', 2, 1),
-        setWidget('loras.1.lora_name', 'A', undefined),
-        setWidget('loras.1.seed', 1, undefined),
-        setWidget('loras.1.seed.0', 'randomize', undefined)
+        setWidget('loras', 1),
+        setWidget('loras', 2),
+        setWidget('loras.1.lora_name', 'A'),
+        setWidget('loras.1.seed', 1),
+        setWidget('loras.1.seed.0', 'randomize')
       ])
     })
 
@@ -2933,18 +2967,17 @@ describe('attachDocOpMinter', () => {
       widget('loras.1').callback?.(undefined)
       await afterFlush()
 
-      const setWidget = (name: string, value: unknown, old: unknown) => ({
+      const setWidget = (name: string, value: unknown) => ({
         op: 'set_widget',
         node_id: node.id,
         widget: name,
-        value,
-        old
+        value
       })
       expect(minted).toEqual([
-        setWidget('loras.1.lora_name', 'A', undefined),
-        setWidget('loras.1.seed', 12, undefined),
-        setWidget('loras.1.seed.0', 'decrement', undefined),
-        setWidget('loras', 2, 3)
+        setWidget('loras.1.lora_name', 'A'),
+        setWidget('loras.1.seed', 12),
+        setWidget('loras.1.seed.0', 'decrement'),
+        setWidget('loras', 2)
       ])
     })
 
@@ -2960,8 +2993,7 @@ describe('attachDocOpMinter', () => {
           op: 'set_widget',
           node_id: node.id,
           widget: 'loras',
-          value: 2,
-          old: 3
+          value: 2
         }
       ])
     })
