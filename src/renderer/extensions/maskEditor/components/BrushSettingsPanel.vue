@@ -66,6 +66,7 @@
       :step="1"
       suffix="px"
       :slider="thicknessSlider"
+      test-id="brush-thickness-input"
       @update:model-value="commitThickness"
       @slider-update="onThicknessSliderPosition"
     />

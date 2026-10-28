@@ -12,6 +12,7 @@
       <div class="flex shrink-0 items-center gap-1">
         <input
           :id="inputId"
+          :data-testid="testId"
           :value="modelValue"
           type="number"
           class="w-16 [appearance:textfield] rounded-md border bg-background px-2 py-1 text-center text-sm text-foreground disabled:opacity-50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
@@ -59,7 +60,8 @@ const {
   step = 1,
   suffix,
   helpText,
-  slider
+  slider,
+  testId
 } = defineProps<{
   label: string
   modelValue: number
@@ -69,6 +71,7 @@ const {
   suffix?: string
   disabled?: boolean
   helpText?: string
+  testId?: string
   slider?: {
     value: number
     min: number
