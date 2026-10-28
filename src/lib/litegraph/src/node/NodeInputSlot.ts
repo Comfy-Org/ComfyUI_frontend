@@ -26,7 +26,7 @@ import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
-  alwaysVisible?: boolean
+  declare alwaysVisible?: boolean
 
   /** @deprecated Read-only compatibility view of the store-derived link id. */
   get link(): LinkId | null {
