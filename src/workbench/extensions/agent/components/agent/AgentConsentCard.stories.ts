@@ -37,6 +37,12 @@ const meta: Meta<typeof AgentConsentCard> = {
     onAccept: fn(),
     onReject: fn()
   },
+  argTypes: {
+    error: {
+      control: 'select',
+      options: ['', 'save', 'load', 'signIn']
+    }
+  },
   decorators: [
     () => ({
       template:

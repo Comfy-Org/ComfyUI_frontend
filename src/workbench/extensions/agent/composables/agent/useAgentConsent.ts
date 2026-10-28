@@ -22,6 +22,7 @@ import {
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
+import type { ConsentCardError } from '@/workbench/extensions/agent/types/consentCardError'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
@@ -47,13 +48,11 @@ export interface ConsentOfferHooks {
   canShow?: () => boolean
 }
 
-type ConsentCardError = 'save' | 'load' | 'signIn'
-
 const CARD_ERROR_TYPE = {
   save: 'agent_consent_setting_write_failure',
   load: 'agent_consent_setting_load_failure',
   signIn: 'agent_consent_sign_in_failure'
-} as const
+} as const satisfies Record<ConsentCardError, string>
 
 export function useAgentConsent() {
   const dialogStore = useDialogStore()
@@ -152,6 +151,7 @@ export function useAgentConsent() {
       }
 
       function unlockCard(): void {
+        if (settled) return
         saving = false
         dialogStore.updateDialog({
           key: CONSENT_DIALOG_KEY,
@@ -170,7 +170,7 @@ export function useAgentConsent() {
           return
         }
         if (accepted.value) {
-          finishAcceptance(true)
+          closeWith(true)
           return
         }
         unlockCard()
@@ -178,9 +178,9 @@ export function useAgentConsent() {
 
       const accept = async (): Promise<void> => {
         if (saving || settled) return
-        markIntroductionResponded()
-        saving = true
         const retrying = cardError
+        if (retrying !== 'load') markIntroductionResponded()
+        saving = true
         cardError = ''
         dialogStore.updateDialog({
           key: CONSENT_DIALOG_KEY,

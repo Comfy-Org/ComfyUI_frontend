@@ -15,6 +15,7 @@ import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import Message from '@comfyorg/design-system/message/Message'
 import { applyDarkPaletteTheme } from '@/utils/colorPaletteTheme'
 import { openFeedbackDialog } from '@/workbench/extensions/agent/feedback'
+import type { ConsentCardError } from '@/workbench/extensions/agent/types/consentCardError'
 
 const {
   title,
@@ -33,7 +34,7 @@ const {
   docsUrl?: string
   requiresSignIn?: boolean
   accepting?: boolean
-  error?: 'save' | 'load' | 'signIn' | ''
+  error?: ConsentCardError | ''
 }>()
 
 const emit = defineEmits<{
@@ -46,7 +47,7 @@ const ERROR_TITLE_KEY = {
   save: 'agent.consent.errorTitle',
   load: 'agent.consent.loadErrorTitle',
   signIn: 'agent.consent.signInErrorTitle'
-} as const
+} as const satisfies Record<ConsentCardError, string>
 const CARD_SHELL =
   'grid max-h-[85dvh] overflow-y-auto overscroll-contain rounded-2xl border bg-background shadow-2xl'
 const MEDIA_SHELL = 'w-full rounded-lg object-cover'

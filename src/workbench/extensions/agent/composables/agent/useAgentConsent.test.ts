@@ -1,5 +1,5 @@
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
-import { render, screen } from '@testing-library/vue'
+import { cleanup, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 vi.mock(import('firebase/auth'))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
@@ -453,6 +453,41 @@ describe('useAgentConsent', () => {
     expect(onOpen).not.toHaveBeenCalled()
   })
 
+  it.for([
+    { stored: false, opens: false },
+    { stored: true, opens: true }
+  ])(
+    'records no answer or decision after a load retry (stored: $stored)',
+    async ({ stored, opens }) => {
+      fetchWithUnifiedRemint
+        .mockRejectedValueOnce(new Error('offline'))
+        .mockResolvedValueOnce(settingResponse(stored))
+      const onOpen = vi.fn()
+      const request = useAgentConsent().withConsent('button_click', onOpen)
+      const dialog = await waitForConsentDialog()
+      await renderConsentCard(dialog)
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.consent.tryAgain')
+        })
+      )
+      await vi.waitFor(() =>
+        expect(fetchWithUnifiedRemint).toHaveBeenCalledTimes(2)
+      )
+      await setImmediate()
+
+      expect(onOpen).toHaveBeenCalledTimes(opens ? 1 : 0)
+      expect(
+        useAgentConsentIntroductionStore().hasResponded('account-a.workspace-a')
+      ).toBe(false)
+      expect(telemetry.trackAgentConsentResolved).not.toHaveBeenCalled()
+
+      if (!opens) dismissConsent(dialog)
+      await request
+    }
+  )
+
   it('separates a failed scope probe from a failed consent read', async () => {
     // Signed in, but the account has not resolved to a user id, so `ensureScope`
     // raises before any read is attempted. The message it raises is the one
@@ -873,7 +908,13 @@ describe('useAgentConsent', () => {
     const onOpen = vi.fn()
 
     const request = useAgentConsent().withConsent('button_click', onOpen)
-    await startConsent()
+    await renderConsentCard(await waitForConsentDialog())
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.consent.agreeAndContinue')
+      })
+    )
+    cleanup()
     const dialog = await vi.waitFor(() => {
       const open = useDialogStore().dialogStack[0]
       expect(open.contentProps.error).toBe('signIn')
@@ -907,6 +948,16 @@ describe('useAgentConsent', () => {
     )
     await request
     expect(onOpen).toHaveBeenCalledOnce()
+    expect(telemetry.trackAgentConsentShown).toHaveBeenCalledTimes(2)
+    expect(
+      telemetry.trackAgentConsentResolved.mock.calls.map(
+        ([event]) => event.decision
+      )
+    ).toEqual([
+      'accepted_pending_sign_in',
+      'accepted_pending_sign_in',
+      'accepted'
+    ])
   })
 
   it('does not let a closed dialog save failure change a replacement dialog', async () => {
