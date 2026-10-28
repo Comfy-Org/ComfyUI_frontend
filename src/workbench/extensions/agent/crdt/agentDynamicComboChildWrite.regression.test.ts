@@ -192,7 +192,6 @@ function setup() {
     projection.destroy()
     follower.destroy()
     host.destroy()
-    LiteGraph.unregisterNodeType(CLASS)
   }
   onTestFinished(destroy)
   return { graph, node, widget, hostApplies, hostPositionalValue, localWrites }
