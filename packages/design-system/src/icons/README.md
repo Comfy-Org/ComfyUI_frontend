@@ -1,40 +1,21 @@
 # ComfyUI Icons Guide
 
-ComfyUI supports three types of icons that can be used throughout the interface. All icons are automatically imported - no manual imports needed!
+ComfyUI supports two types of icons: Iconify icons and custom icons. All icons are automatically imported - no manual imports needed!
 
 ## Quick Start - Code Examples
 
-### 1. PrimeIcons
+Use Lucide icons through Iconify, or custom icons. PrimeIcons and Material Design Icons (`mdi`) are being phased out; don't add new uses, in first-party code or extensions. See [PrimeIcons (deprecated)](#primeicons-deprecated).
 
-```vue
-<template>
-  <!-- Basic usage -->
-  <i class="pi pi-plus" />
-  <i class="pi pi-cog" />
-  <i class="pi pi-check text-green-500" />
-
-  <!-- In a design-system Button -->
-  <Button>
-    <i class="pi pi-save" />
-    Save
-  </Button>
-</template>
-```
-
-[Browse all PrimeIcons →](https://github.com/primefaces/primeicons)
-
-### 2. Iconify Icons (Recommended)
+### 1. Iconify Icons
 
 ```vue
 <template>
   <!-- Primary icon set: Lucide -->
   <i class="icon-[lucide--download]" />
   <i class="icon-[lucide--settings]" />
-  <i class="icon-[lucide--workflow]" class="text-2xl" />
+  <i class="icon-[lucide--workflow] size-6" />
 
   <!-- Other popular icon sets -->
-  <i-mdi:folder-open />
-  <!-- Material Design Icons -->
   <i-heroicons:document-text />
   <!-- Heroicons -->
   <i-tabler:brand-github />
@@ -43,20 +24,20 @@ ComfyUI supports three types of icons that can be used throughout the interface.
   <!-- Carbon Icons -->
 
   <!-- With styling -->
-  <i class="icon-[lucide--save]" class="w-6 h-6 text-blue-500" />
+  <i class="icon-[lucide--save] size-6 text-blue-500" />
 </template>
 ```
 
 [Browse 200,000+ icons →](https://icon-sets.iconify.design/)
 
-### 3. Custom Icons
+### 2. Custom Icons
 
 ```vue
 <template>
   <!-- Your custom SVG icons from packages/design-system/src/icons/ -->
   <i-comfy:workflow />
   <i-comfy:node-tree />
-  <i-comfy:my-custom-icon class="text-xl" />
+  <i-comfy:my-custom-icon class="size-5" />
 
   <!-- In a design-system Button -->
   <Button variant="secondary">
@@ -71,13 +52,6 @@ ComfyUI supports three types of icons that can be used throughout the interface.
 
 ```vue
 <template>
-  <!-- PrimeIcon in button -->
-  <Button>
-    <i class="pi pi-check" />
-    Confirm
-  </Button>
-
-  <!-- Iconify/Custom in button -->
   <Button>
     <i class="icon-[lucide--save]" />
     Save File
@@ -127,7 +101,6 @@ can reach it. See `packages/design-system/src/components/tooltip/README.md` for 
 ### Popular Collections
 
 - **Lucide** (`i-lucide:`) - Our primary icon set, clean and consistent
-- **Material Design Icons** (`i-mdi:`) - Comprehensive Material Design icons
 - **Heroicons** (`i-heroicons:`) - Beautiful hand-crafted SVG icons
 - **Tabler** (`i-tabler:`) - 3000+ free SVG icons
 - **Carbon** (`i-carbon:`) - IBM's design system icons
@@ -208,23 +181,20 @@ claude.svg     fill="#d97757"       -> image (brand color preserved)
 
 ### Size & Styling
 
+`icon-[...]`, `icon-img-[...]`, and `icon-mask-[...]` default to `size-4` (16px). Font size has no effect on them, so don't size them with `text-*`. Override the size with `size-*` on the `<i>` itself:
+
 ```vue
 <template>
-  <!-- Size with Tailwind classes -->
-  <i class="icon-[lucide--plus]" class="w-4 h-4" />
-  <!-- 16px -->
-  <i class="icon-[lucide--plus]" class="w-6 h-6" />
-  <!-- 24px (default) -->
-  <i class="icon-[lucide--plus]" class="w-8 h-8" />
-  <!-- 32px -->
-
-  <!-- Or text size -->
-  <i class="icon-[lucide--plus]" class="text-sm" />
-  <i class="icon-[lucide--plus]" class="text-2xl" />
+  <i class="icon-[lucide--plus]" />
+  <!-- 16px (default) -->
+  <i class="icon-[lucide--plus] size-3" />
+  <!-- 12px -->
+  <i class="icon-[lucide--plus] size-6" />
+  <!-- 24px -->
 
   <!-- Colors -->
-  <i class="icon-[lucide--check]" class="text-green-500" />
-  <i class="icon-[lucide--x]" class="text-red-500" />
+  <i class="icon-[lucide--check] text-green-500" />
+  <i class="icon-[lucide--x] text-red-500" />
 </template>
 ```
 
@@ -262,6 +232,20 @@ Always use `currentColor` in SVGs for automatic theme adaptation:
 </template>
 ```
 
+A `pi` glyph sized with a `text-*` class becomes an explicit `size-*` class. Pick the size by eye rather than converting the font size, because Lucide glyphs fill their viewBox differently from PrimeIcons:
+
+```vue
+<template>
+  <!-- Before -->
+  <i class="pi pi-folder text-lg" />
+
+  <!-- After -->
+  <i class="icon-[lucide--folder] size-5" />
+</template>
+```
+
+Use `scale-*` only when a wrapper hardcodes the icon's size, such as `SidebarIcon`, which sets `size-5` on the `<i>` it renders from an icon class string.
+
 ### From Inline SVG to Custom Icon
 
 ```vue
@@ -275,6 +259,10 @@ Always use `currentColor` in SVGs for automatic theme adaptation:
   <i-comfy:my-icon class="w-6 h-6" />
 </template>
 ```
+
+## PrimeIcons (deprecated)
+
+`primeicons` is still imported in `src/main.ts` only so existing extensions that render `pi pi-*` classes keep working while it is phased out. Don't use PrimeIcons in new code, including extensions.
 
 ## Technical Details
 
@@ -364,7 +352,6 @@ See the [unplugin-icons documentation](https://github.com/unplugin/unplugin-icon
 
 ## Resources
 
-- [PrimeIcons List](https://github.com/primefaces/primeicons)
 - [Iconify Icon Browser](https://icon-sets.iconify.design/)
 - [Lucide Icons](https://lucide.dev/icons/)
 - [unplugin-icons docs](https://github.com/unplugin/unplugin-icons)

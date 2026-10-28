@@ -266,11 +266,12 @@ Changes that materially affect the default UI must be approved or requested by o
 
 ## Icons
 
-The project supports three types of icons, all with automatic imports (no manual imports needed):
+The project uses two types of icons, both with automatic imports (no manual imports needed):
 
-1. **PrimeIcons** - The PrimeIcons icon font, using CSS classes: `<i class="pi pi-plus" />`
-2. **Iconify Icons** - 200,000+ icons from various libraries: `<i class="icon-[lucide--settings]" />`, `<i class="icon-[mdi--folder]" />`
-3. **Custom Icons** - Your own SVG icons: `<i-comfy:workflow />`
+1. **Iconify Icons** - 200,000+ icons from various libraries: `<i class="icon-[lucide--settings]" />`
+2. **Custom Icons** - Your own SVG icons: `<i-comfy:workflow />`
+
+PrimeIcons (`pi pi-*`) and Material Design Icons (`mdi`) are being phased out. Don't add new uses, in first-party code or extensions.
 
 Icons are powered by the unplugin-icons system, which automatically discovers and imports icons as Vue components. Tailwind CSS icon classes (`icon-[comfy--template]`) are provided by `@iconify/tailwind4`, configured in `packages/design-system/src/css/style.css`. Custom icons are stored in `packages/design-system/src/icons/` and loaded via `from-folder` at build time.
 
