@@ -216,9 +216,7 @@ for (const entry of manifestEntries) {
           }
           await comfyPage.nextFrame()
 
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(entry.expectedNodes.length)
+          await comfyPage.expectNodeCount(entry.expectedNodes.length)
           // Vue Nodes 2.0 mounts each node as a [data-node-id] element; assert
           // the pack's own nodes rendered, not just any node count.
           if (vueNodesEnabled)
