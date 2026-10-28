@@ -152,13 +152,13 @@ test.describe(
           const menu = comfyPage.contextMenu.ariaMenu
           await menu
             .getByRole('menuitem', {
-              name: 'Align Selected To',
+              name: 'Arrange',
               exact: true
             })
             .hover()
 
           const topItem = menu
-            .getByRole('menuitem', { name: 'Top', exact: true })
+            .getByRole('menuitem', { name: 'Align top', exact: true })
             .last()
           await expect(topItem).toBeVisible()
           await topItem.click()
@@ -178,7 +178,7 @@ test.describe(
         })
       })
 
-      test('should distribute selected nodes via Distribute Nodes submenu', async ({
+      test('should distribute selected nodes via the Arrange submenu', async ({
         comfyPage
       }) => {
         const threeNodes = ['Load Checkpoint', 'KSampler', 'Empty Latent Image']
@@ -188,14 +188,14 @@ test.describe(
           const menu = comfyPage.contextMenu.ariaMenu
           await menu
             .getByRole('menuitem', {
-              name: 'Distribute Nodes',
+              name: 'Arrange',
               exact: true
             })
             .hover()
 
           const horizontalItem = menu
             .getByRole('menuitem', {
-              name: 'Horizontal',
+              name: 'Distribute horizontally',
               exact: true
             })
             .last()

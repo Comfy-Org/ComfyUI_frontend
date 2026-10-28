@@ -119,7 +119,7 @@ export function useMoreOptionsMenu() {
     getBasicSelectionOptions,
     getMultipleNodesOptions,
     getSubgraphOptions,
-    getAlignmentOptions,
+    getArrangeOption,
     getDeleteOption
   } = useSelectionMenuOptions()
 
@@ -209,7 +209,7 @@ export function useMoreOptionsMenu() {
     )
     if (hasMultipleNodes.value) {
       options.push(...getMultipleNodesOptions())
-      options.push(...getAlignmentOptions(node))
+      options.push(getArrangeOption(invocationContext.value ? node : undefined))
     }
     if (groupContext) {
       options.push(getFitGroupToNodesOption(groupContext))

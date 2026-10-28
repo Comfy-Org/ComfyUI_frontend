@@ -49,7 +49,16 @@
               />
 
               <ColorPickerButton v-if="hasAnySelection" />
-              <TidyUpButton v-if="hasMultipleSelection" v-model:lift="lift" />
+              <TidyUpButton
+                v-if="hasMultipleSelection"
+                v-model:open="tidyOpen"
+                v-model:lift="tidyLift"
+              />
+              <AlignButton
+                v-if="hasMultipleSelection"
+                v-model:open="alignOpen"
+                v-model:lift="alignLift"
+              />
               <ToolboxButton
                 v-if="hasMultipleSelection"
                 :label="$t('g.frameNodes')"
@@ -144,6 +153,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import AlignButton from '@/components/graph/selectionToolbox/AlignButton.vue'
 import TidyUpButton from '@/components/graph/selectionToolbox/TidyUpButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
@@ -178,7 +188,20 @@ const { frameNodes } = useFrameNodes()
 const { isRefreshable, refreshSelected } = useRefreshableSelection()
 
 const toolboxRef = ref<HTMLElement | undefined>()
-const lift = ref(0)
+const openBar = ref<'tidy' | 'align'>()
+const barOpen = (bar: 'tidy' | 'align') =>
+  computed({
+    get: () => openBar.value === bar,
+    set: (open: boolean) => {
+      if (open) openBar.value = bar
+      else if (openBar.value === bar) openBar.value = undefined
+    }
+  })
+const tidyOpen = barOpen('tidy')
+const alignOpen = barOpen('align')
+const tidyLift = ref(0)
+const alignLift = ref(0)
+const lift = computed(() => Math.max(tidyLift.value, alignLift.value))
 const { visible } = useSelectionToolboxPosition(toolboxRef, lift)
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {

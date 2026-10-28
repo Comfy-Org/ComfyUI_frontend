@@ -22,9 +22,7 @@ export const NODE_MENU_SECTIONS = {
     'addSubgraphToLibrary',
     'unpackSubgraph',
     'frameNodes',
-    'align',
-    'distribute',
-    'tidyUp',
+    'arrange',
     'fitGroup',
     'collapse'
   ],
