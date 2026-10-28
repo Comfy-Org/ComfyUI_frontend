@@ -11,7 +11,7 @@
         class="gap-1.5 px-2.5 text-sm"
         @click="onUndo"
       >
-        <i class="icon-[lucide--undo-2] size-4" />
+        <i class="icon-[lucide--undo-2]" />
         {{ t('maskEditor.undo') }}
       </Button>
 
@@ -21,7 +21,7 @@
         class="gap-1.5 px-2.5 text-sm"
         @click="onRedo"
       >
-        <i class="icon-[lucide--redo-2] size-4" />
+        <i class="icon-[lucide--redo-2]" />
         {{ t('maskEditor.redo') }}
       </Button>
 
@@ -46,7 +46,7 @@
         class="gap-1.5 px-2.5 text-sm"
         @click="onInvert"
       >
-        <i class="icon-[lucide--flip-vertical-2] size-4" />
+        <i class="icon-[lucide--flip-vertical-2]" />
         {{ t('maskEditor.invertMask') }}
       </Button>
 
@@ -56,7 +56,7 @@
         class="gap-1.5 px-2.5 text-sm"
         @click="onClear"
       >
-        <i class="icon-[lucide--trash-2] size-4" />
+        <i class="icon-[lucide--trash-2]" />
         {{ t('maskEditor.clear') }}
       </Button>
     </div>
@@ -68,11 +68,11 @@
         :disabled="!saveEnabled"
         @click="handleSave"
       >
-        <i class="icon-[lucide--check] size-4" />
+        <i class="icon-[lucide--check]" />
         {{ saveButtonText }}
       </Button>
       <Button variant="secondary" class="gap-1.5 px-3" @click="handleCancel">
-        <i class="icon-[lucide--x] size-4" />
+        <i class="icon-[lucide--x]" />
         {{ t('g.cancel') }}
       </Button>
     </div>
@@ -84,9 +84,9 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MenuTriggerButton from '@/renderer/extensions/maskEditor/components/controls/MenuTriggerButton.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
-import Button from '@/components/ui/button/Button.vue'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCanvasTools } from '@comfyorg/mask-editor/useCanvasTools'
 import { useCanvasTransform } from '@comfyorg/mask-editor/useCanvasTransform'
 import { useMaskEditorSaver } from '@/renderer/extensions/maskEditor/composables/useMaskEditorSaver'

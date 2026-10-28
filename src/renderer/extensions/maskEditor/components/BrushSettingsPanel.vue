@@ -9,7 +9,7 @@
         :aria-label="t('maskEditor.resetToDefault')"
         @click="resetToDefault"
       >
-        <i class="icon-[lucide--rotate-ccw] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--rotate-ccw]" aria-hidden="true" />
       </Button>
     </template>
 
@@ -107,7 +107,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { BrushShape } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { cn } from '@comfyorg/tailwind-utils'

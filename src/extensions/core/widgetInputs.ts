@@ -12,11 +12,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import type {
-  IBaseWidget,
-  IWidgetLocator
-} from '@/lib/litegraph/src/types/widgets'
-import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/widget'
+import type { IBaseWidget, IWidgetLocator } from '@comfyorg/graph-model/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import {
@@ -29,7 +25,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 import { ComfyWidgets, isValidWidgetType } from '@/scripts/widgets'
-import { CONFIG, GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
+import { CONFIG, GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
@@ -284,14 +280,6 @@ export class PrimitiveNode extends LGraphNode {
 
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
-    const restoredValue = this.graph
-      ? useWidgetValueStore().getRestoredWidgetValue(
-          this.graph.rootGraph.id,
-          this.id,
-          'value',
-          0
-        )
-      : undefined
 
     try {
       if (
@@ -301,7 +289,7 @@ export class PrimitiveNode extends LGraphNode {
         widget = this._createAssetWidget(node, widgetName, inputData)
         const theirWidget = node.widgets?.find((w) => w.name === widgetName)
         if (theirWidget) widget.value = theirWidget.value
-        if (restoredValue) widget.value = restoredValue.value
+        this._restoreSavedValue(widget)
         this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
         return
       }
@@ -325,8 +313,7 @@ export class PrimitiveNode extends LGraphNode {
           widget.value = theirWidget.value
         }
       }
-      if (restoredValue)
-        widget.value = coerceRestoredWidgetValue(widget, restoredValue.value)
+      this._restoreSavedValue(widget)
 
       if (
         !inputData[1]?.control_after_generate &&
@@ -351,6 +338,17 @@ export class PrimitiveNode extends LGraphNode {
     } finally {
       this._clearWidgetRestoration()
     }
+  }
+
+  private _restoreSavedValue(widget: IBaseWidget) {
+    if (!this.graph) return
+    const restored = useWidgetValueStore().getRestoredWidgetValue(
+      this.graph.rootGraph.id,
+      this.id,
+      widget,
+      0
+    )
+    if (restored) widget.value = restored.value
   }
 
   private _createAssetWidget(

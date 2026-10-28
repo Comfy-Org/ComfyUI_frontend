@@ -164,10 +164,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/types/widgets.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/lib/litegraph/src/utils/mathParser.test.ts",
       "role": "domain"
     },
@@ -190,6 +186,14 @@
     {
       "path": "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts",
       "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/restoredWidgetValue.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/restoredWidgetValue.ts",
+      "role": "domain"
     },
     {
       "path": "src/lib/litegraph/src/utils/widget.test.ts",
@@ -233,10 +237,6 @@
     },
     {
       "path": "src/types/widgetId.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/widgetId.ts",
       "role": "domain"
     },
     {

@@ -107,9 +107,9 @@
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
-import Switch from '@/components/ui/switch/Switch.vue'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Switch from '@comfyorg/design-system/switch/Switch'
 import { ColorComparisonMethod } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 

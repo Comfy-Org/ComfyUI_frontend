@@ -22,7 +22,7 @@ vi.mock<unknown>(import('@comfyorg/mask-editor/useCanvasManager'), () => ({
   useCanvasManager: () => ({ updateMaskColor: mockUpdateMaskColor })
 }))
 
-vi.mock<unknown>(import('@/components/ui/slider/Slider.vue'), () => ({
+vi.mock<unknown>(import('@comfyorg/design-system/slider/Slider'), () => ({
   default: {
     name: 'SliderStub',
     props: ['modelValue', 'disabled', 'ariaLabelledby'],

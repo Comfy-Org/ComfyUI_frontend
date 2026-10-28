@@ -9,7 +9,7 @@ import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
-vi.mock<unknown>(import('@/components/ui/slider/Slider.vue'), () => ({
+vi.mock<unknown>(import('@comfyorg/design-system/slider/Slider'), () => ({
   default: {
     name: 'SliderStub',
     props: ['modelValue', 'ariaLabelledby'],

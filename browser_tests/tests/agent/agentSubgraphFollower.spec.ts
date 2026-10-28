@@ -10,7 +10,9 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { pushHostFrames } from '@e2e/tests/agent/agentPanelMocks'
 import {
+  AGENT_INNER_HOST_ID,
   AGENT_NESTED_SUBGRAPH_ID,
   AGENT_SUBGRAPH_DRIFT_WORKFLOW_ID,
   AGENT_SUBGRAPH_EDITED_SEED,
@@ -20,13 +22,17 @@ import {
   AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS,
   AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT,
   AGENT_SUBGRAPH_LINK_ID,
+  AGENT_SUBGRAPH_REUSED_HOST_ID,
   AGENT_SUBGRAPH_WORKFLOW_ID,
+  agentOutOfOrderSubgraphFrames,
   agentSubgraphNodeDefs,
   agentSubgraphFrames,
   agentSubgraphInteriorFrames,
+  agentSubgraphReuseFrames,
   agentSubgraphWidgetDriftFrames
-} from '@e2e/fixtures/data/agentSubgraphFollower'
+} from '@e2e/fixtures/data/agent/agentSubgraphFollower'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import subgraphWorkflow from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
 
 const test = mergeTests(agentTest, webSocketFixture)
@@ -261,6 +267,106 @@ test.describe(
       })
     })
 
+    test.describe('subgraph definition reuse', { tag: '@vue-nodes' }, () => {
+      test.beforeEach(async ({ page }) => {
+        await page.setViewportSize({ width: 1920, height: 1280 })
+        await bootAgentApp(page, true, {
+          onboardingCompleted: true,
+          objectInfo: agentSubgraphNodeDefs,
+          beforeNavigate: async (page) => {
+            await mockAgentTurnApi(page, {
+              message_id: '824a0b17-5bdc-4410-83d0-e630a2639a12',
+              thread_id: 'fe42337e-7510-45ce-be47-cddc1944eb82',
+              workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+            })
+            await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
+          }
+        })
+      })
+
+      test('creates an independent second instance', async ({
+        page,
+        getAgentSocket
+      }) => {
+        const outboundFrames: string[] = []
+        await loadSeedIntoActiveTab(page, subgraphWorkflow)
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.open()
+        const socket = await getAgentSocket()
+        socket.onMessage((message) => outboundFrames.push(String(message)))
+        await agentPanel.selectWorkflow()
+        await agentPanel.composer.fill('Create a second copy of this module')
+        await agentPanel.root.getByRole('button', { name: 'Send' }).click()
+
+        await expect
+          .poll(() => outboundFrames, { timeout: 15_000 })
+          .toContainEqual(
+            expect.stringMatching(
+              new RegExp(
+                `doc_subscribe.*${AGENT_SUBGRAPH_WORKFLOW_ID}|${AGENT_SUBGRAPH_WORKFLOW_ID}.*doc_subscribe`
+              )
+            )
+          )
+
+        const frames = agentSubgraphReuseFrames()
+        pushHostFrames(socket, [...frames.initial, frames.reuse])
+
+        const nodes = new VueNodeHelpers(page)
+        const original = nodes.getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))
+        const reused = nodes.getNodeLocator(
+          String(AGENT_SUBGRAPH_REUSED_HOST_ID)
+        )
+        await expect(reused).toBeAttached()
+
+        await page
+          .getByRole('button', { name: 'Fit View (.)', exact: true })
+          .click()
+        await expect(original).toBeVisible()
+        await expect(reused).toBeVisible()
+        await expect(original.getByRole('textbox')).toHaveValue(
+          AGENT_SUBGRAPH_INITIAL_TEXT
+        )
+        await expect(reused.getByRole('textbox')).toHaveValue(
+          AGENT_SUBGRAPH_INITIAL_TEXT
+        )
+        await expect(
+          reused.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+        ).toHaveValue(String(AGENT_SUBGRAPH_INITIAL_SEED))
+
+        const secondInstanceText = 'a photo of a lighthouse'
+        await reused.getByRole('textbox').fill(secondInstanceText)
+        await reused.getByRole('textbox').blur()
+        await expect(reused.getByRole('textbox')).toHaveValue(
+          secondInstanceText
+        )
+        await expect(original.getByRole('textbox')).toHaveValue(
+          AGENT_SUBGRAPH_INITIAL_TEXT
+        )
+        await expect
+          .poll(() =>
+            page.evaluate(
+              ([originalId, reusedId]) => {
+                const textValue = (id: number) =>
+                  window
+                    .app!.graph.nodes.find(
+                      ({ id: nodeId }) => String(nodeId) === String(id)
+                    )
+                    ?.widgets?.find(({ name }) => name === 'text')?.value
+                return {
+                  original: textValue(originalId),
+                  reused: textValue(reusedId)
+                }
+              },
+              [AGENT_SUBGRAPH_HOST_ID, AGENT_SUBGRAPH_REUSED_HOST_ID]
+            )
+          )
+          .toEqual({
+            original: AGENT_SUBGRAPH_INITIAL_TEXT,
+            reused: secondInstanceText
+          })
+      })
+    })
+
     test('applies interior widget edits to the subgraph and its host', async ({
       page,
       getAgentSocket
@@ -386,6 +492,70 @@ test.describe(
         expect(outboundFrames.some((frame) => frame.includes('doc_ops'))).toBe(
           false
         )
+      })
+    })
+
+    test('keeps dependency-inverted subgraph definitions navigable', async ({
+      page,
+      getAgentSocket
+    }) => {
+      const nodes = new VueNodeHelpers(page)
+      const outerHost = nodes.getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))
+
+      await test.step('open the agent-enabled workflow', async () => {
+        await page.setViewportSize({ width: 1920, height: 1280 })
+        await bootAgentApp(page, true, {
+          onboardingCompleted: true,
+          settings: { 'Comfy.VueNodes.Enabled': true },
+          objectInfo: agentSubgraphNodeDefs,
+          beforeNavigate: async (page) => {
+            await mockAgentTurnApi(page, {
+              message_id: 'fc35d783-3592-447b-ae39-849074a353cf',
+              thread_id: '3aa821e0-933e-45eb-a3b5-63e45b875daa',
+              workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+            })
+            await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
+          }
+        })
+      })
+
+      const outboundFrames: string[] = []
+
+      const socket = await test.step('open the agent panel', async () => {
+        await loadSeedIntoActiveTab(page, { nodes: [], links: [] })
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.open()
+        const opened = await getAgentSocket()
+        opened.onMessage((message) => outboundFrames.push(String(message)))
+        return opened
+      })
+
+      await test.step('select the workflow and subscribe the follower', async () => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.selectWorkflow()
+        await agentPanel.sendMessage('Build the nested subgraph')
+        await expect
+          .poll(() => outboundFrames, { timeout: 15_000 })
+          .toContainEqual(expect.stringContaining(AGENT_SUBGRAPH_WORKFLOW_ID))
+      })
+
+      await test.step('deliver definitions in reverse dependency order', async () => {
+        for (const frame of agentOutOfOrderSubgraphFrames()) {
+          socket.send(JSON.stringify(frame))
+        }
+        await expect(outerHost).toBeVisible()
+        await expect(outerHost).toContainText('Outer Agent Subgraph')
+      })
+
+      await test.step('navigate into the nested definition', async () => {
+        await nodes.enterSubgraph(String(AGENT_SUBGRAPH_HOST_ID))
+        await nextFrame(page)
+
+        const innerHost = nodes.getNodeLocator(String(AGENT_INNER_HOST_ID))
+        await expect(innerHost).toBeVisible()
+        await expect(innerHost).toContainText('New Subgraph')
+        await expect(page.getByText('Outer Agent Subgraph')).toBeVisible()
+        await expect(page.getByText('New Subgraph')).toBeVisible()
       })
     })
 

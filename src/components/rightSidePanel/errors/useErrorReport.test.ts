@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 
 import type { ErrorCardData } from './types'
 import { useErrorReport } from './useErrorReport'

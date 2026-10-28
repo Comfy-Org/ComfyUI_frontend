@@ -1,4 +1,4 @@
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
 export type OutputKeyParts = {
   nodeId?: SerializedNodeId | null

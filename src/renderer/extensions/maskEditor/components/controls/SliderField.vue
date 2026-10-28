@@ -48,7 +48,7 @@
 <script setup lang="ts">
 import { nextTick, useId } from 'vue'
 
-import Slider from '@/components/ui/slider/Slider.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 
 import SettingHelp from './SettingHelp.vue'
 

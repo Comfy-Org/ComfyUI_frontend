@@ -32,8 +32,8 @@
               <i
                 :class="
                   importFailedExpanded
-                    ? 'pi pi-chevron-down text-xs'
-                    : 'pi pi-chevron-right text-xs'
+                    ? 'icon-[lucide--chevron-down] size-3'
+                    : 'icon-[lucide--chevron-right] size-3'
                 "
               />
             </Button>
@@ -54,7 +54,7 @@
             <span class="text-xs text-muted-foreground">
               {{ packageName }}
             </span>
-            <span class="pi pi-info-circle text-sm"></span>
+            <i class="icon-[lucide--info] size-3.5" />
           </div>
         </div>
       </div>
@@ -79,8 +79,8 @@
               <i
                 :class="
                   conflictsExpanded
-                    ? 'pi pi-chevron-down text-xs'
-                    : 'pi pi-chevron-right text-xs'
+                    ? 'icon-[lucide--chevron-down] size-3'
+                    : 'icon-[lucide--chevron-right] size-3'
                 "
               />
             </Button>
@@ -101,7 +101,7 @@
             <span class="text-xs text-muted-foreground">{{
               getConflictMessage(conflict, t)
             }}</span>
-            <span class="pi pi-info-circle text-sm"></span>
+            <i class="icon-[lucide--info] size-3.5" />
           </div>
         </div>
       </div>
@@ -124,8 +124,8 @@
               <i
                 :class="
                   extensionsExpanded
-                    ? 'pi pi-chevron-down text-xs'
-                    : 'pi pi-chevron-right text-xs'
+                    ? 'icon-[lucide--chevron-down] size-3'
+                    : 'icon-[lucide--chevron-right] size-3'
                 "
               />
             </Button>
@@ -145,7 +145,7 @@
             <span class="text-xs text-muted-foreground">
               {{ conflictResult.package_name }}
             </span>
-            <span class="pi pi-info-circle text-sm"></span>
+            <i class="icon-[lucide--info] size-3.5" />
           </div>
         </div>
       </div>
@@ -159,8 +159,8 @@ import { filter, flatMap, map, some } from 'es-toolkit/compat'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ContentDivider from '@/components/common/ContentDivider.vue'
-import Button from '@/components/ui/button/Button.vue'
+import ContentDivider from '@comfyorg/design-system/common/ContentDivider'
+import Button from '@comfyorg/design-system/button/Button'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import type {
   ConflictDetail,

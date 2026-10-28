@@ -8,8 +8,11 @@ import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMed
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
-import { getAncestorExecutionIds } from '@/types/nodeIdentification'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+import { getAncestorExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 

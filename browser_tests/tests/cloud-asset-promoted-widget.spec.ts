@@ -10,7 +10,7 @@ import {
   STABLE_CHECKPOINT_2
 } from '@e2e/fixtures/data/assetFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const WORKFLOW = 'missing/missing_model_promoted_widget'
 const HOST_NODE_ID = toNodeId(2)

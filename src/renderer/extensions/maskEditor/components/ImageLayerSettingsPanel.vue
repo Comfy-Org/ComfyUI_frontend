@@ -144,8 +144,8 @@
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useCanvasManager } from '@comfyorg/mask-editor/useCanvasManager'
 import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 import type { ImageLayer } from '@comfyorg/mask-editor/types'

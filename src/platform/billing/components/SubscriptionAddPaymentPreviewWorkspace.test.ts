@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 import type {
   PreviewSubscribeResponse,
   SubscriptionDuration
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 

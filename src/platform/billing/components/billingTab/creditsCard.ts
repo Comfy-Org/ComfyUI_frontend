@@ -1,5 +1,5 @@
 import type { BalanceInfo } from '@/platform/billing/composables/types'
-import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatus } from '@comfyorg/billing-core'
 import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
 
 export interface CreditsCardFacts {
@@ -7,17 +7,12 @@ export interface CreditsCardFacts {
   planKind: PlanRowState['kind']
   billingStatus: BillingStatus | null
   planPoolCredits: number | null
-  isCloud: boolean
   renewalDate: string | null
 }
 
 export type CreditsCardState =
   | { kind: 'unavailable' }
-  | {
-      kind: 'noPlan'
-      availableCents: number
-      hint: 'subscribe' | 'resubscribe' | null
-    }
+  | { kind: 'noPlan'; availableCents: number }
   | {
       kind: 'plan'
       availableCents: number
@@ -37,8 +32,7 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
   const availableCents = balance.effectiveBalanceMicros ?? balance.amountMicros
 
   if (facts.planKind === 'noPlan' || facts.planKind === 'ended') {
-    const hint = facts.planKind === 'noPlan' ? 'subscribe' : 'resubscribe'
-    return { kind: 'noPlan', availableCents, hint: facts.isCloud ? hint : null }
+    return { kind: 'noPlan', availableCents }
   }
 
   const overdrawn = availableCents < 0

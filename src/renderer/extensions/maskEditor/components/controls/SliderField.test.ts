@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import SliderField from './SliderField.vue'
 
-vi.mock<unknown>(import('@/components/ui/slider/Slider.vue'), () => ({
+vi.mock<unknown>(import('@comfyorg/design-system/slider/Slider'), () => ({
   default: {
     name: 'SliderStub',
     props: ['modelValue', 'min', 'max', 'step', 'disabled', 'ariaLabelledby'],

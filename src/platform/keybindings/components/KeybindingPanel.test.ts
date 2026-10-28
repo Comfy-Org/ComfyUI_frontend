@@ -69,7 +69,9 @@ function renderPanel() {
 
 async function waitForSearchAutofocus() {
   await waitFor(() =>
-    expect(screen.getByPlaceholderText('Search Keybindings...')).toHaveFocus()
+    expect(
+      screen.getByRole('combobox', { name: 'Search Keybindings...' })
+    ).toHaveFocus()
   )
 }
 
