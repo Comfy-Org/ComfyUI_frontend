@@ -604,4 +604,28 @@ describe('createAgentEventSource send', () => {
     expect(sockets()).toHaveLength(1)
     expect(lastSocket().url).toContain('token=current')
   })
+  it('does not open a second socket when a subscribe lands as the auth read settles', async () => {
+    // The window this closes is one microtask wide: with the latch released inside
+    // readAuth, it was already false by the time connect() resumed, so a subscribe()
+    // arriving in between started a second read in the SAME generation. Both reached
+    // open() and the second overwrote `socket`, orphaning the first.
+    const pending: Array<(params: URLSearchParams) => void> = []
+    const source = createSource({
+      getAuthParams: () =>
+        new Promise<URLSearchParams>((resolve) => pending.push(resolve))
+    })
+
+    source.subscribe(() => {})
+    await connected()
+    expect(pending).toHaveLength(1)
+
+    pending[0](tokenParams('first'))
+    await Promise.resolve()
+    source.subscribe(() => {})
+    await connected()
+    pending.at(-1)?.(tokenParams('second'))
+    await connected()
+
+    expect(sockets()).toHaveLength(1)
+  })
 })
