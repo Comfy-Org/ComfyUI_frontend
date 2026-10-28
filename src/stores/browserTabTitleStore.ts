@@ -2,10 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
 /**
- * Prefixes for the browser tab title, keyed by the feature that set them.
- * A feature sets its own already-localized text and clears it with `null`;
- * `useBrowserTabTitle` renders them without knowing which feature asked.
- * Prefixes show in the order their sources first set them.
+ * Prefixes for the browser tab title.
+ * Cleared by setting to `null`;
+ * Prefixes show in the original order in which they were set.
  */
 export const useBrowserTabTitleStore = defineStore('browserTabTitle', () => {
   const prefixes = shallowRef<ReadonlyMap<string, string>>(new Map())
