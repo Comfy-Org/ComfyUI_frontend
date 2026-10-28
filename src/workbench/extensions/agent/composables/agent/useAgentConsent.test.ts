@@ -140,6 +140,12 @@ describe('useAgentConsent', () => {
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
       Authorization: 'Bearer account-a-token'
     })
+    // Consent is written with the workspace credential, not the personal one: the
+    // row is keyed by workspace_id and user_id together.
+    Object.assign(useAuthStore(), { isAuthenticated: true })
+    vi.mocked(useAuthStore().getWorkspaceAuthTokenOrThrow).mockResolvedValue(
+      'workspace-a-token'
+    )
     vi.mocked(api.fetchApi).mockReset()
     fetchWithUnifiedRemint.mockReset()
     fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
@@ -560,7 +566,7 @@ describe('useAgentConsent', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            Authorization: 'Bearer account-a-token'
+            Authorization: 'Bearer workspace-a-token'
           }),
           body: JSON.stringify({ key: stored.key, value: true })
         }),
@@ -621,7 +627,9 @@ describe('useAgentConsent', () => {
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
-    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValueOnce(null)
+    vi.mocked(
+      useAuthStore().getWorkspaceAuthTokenOrThrow
+    ).mockRejectedValueOnce(new Error('token exchange failed'))
 
     ;(dialog.contentProps.onAccept as () => void)()
     await vi.waitFor(() =>
