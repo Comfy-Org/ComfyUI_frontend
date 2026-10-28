@@ -125,8 +125,8 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["account"],
-  "allowedConsumers": ["selection-toolbox"],
+  "allowedDependencies": ["account", "error-reporting", "telemetry"],
+  "allowedConsumers": ["error-reporting", "selection-toolbox"],
   "characterizationScenarios": [
     {
       "name": "Bootstrap loads i18n, waits for cloud auth with a bounded retry, and loads settings and workflows once",
