@@ -15,6 +15,7 @@ import { useSubscriptionDialog } from '@/platform/billing/subscription/composabl
 import type { CancellationFlowDialogOptions } from '@/platform/billing/subscription/launchCancellationFlow'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import InsufficientCreditsMemberDialog from '@/platform/billing/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
@@ -84,42 +85,54 @@ export function useBillingDialogs() {
   ): Promise<boolean> {
     if (!isCloud) return false
 
-    // A caller (e.g. the agent panel's paywall card) can fire this before the
-    // bootstrap /features fetch resolves, most likely right after a fresh
-    // load. window.__CONFIG__ is then still empty and the flag check below
-    // would silently swallow the click. Await one fresh fetch before
-    // deciding, rather than trusting a config snapshot that was never taken.
-    if (!window.__CONFIG__?.subscription_required) {
-      const { remoteConfigState } =
-        await import('@/platform/remoteConfig/remoteConfig')
-      if (remoteConfigState.value === 'unloaded') {
-        const { refreshRemoteConfig } =
-          await import('@/platform/remoteConfig/refreshRemoteConfig')
-        await refreshRemoteConfig()
-      }
-    }
-
-    if (!window.__CONFIG__?.subscription_required) {
-      // This gate closing is never expected to be reachable from a cloud
-      // surface with subscriptions enabled. Report it instead of returning
-      // silently, so a caller's "Subscribe" button failing to do anything
-      // shows up in telemetry rather than only in a user's bug report.
-      const { reportError } = await import('@/platform/telemetry/reportError')
-      reportError(
-        new Error(
-          'showSubscriptionRequiredDialog: subscription_required gate closed'
-        ),
-        {
-          surface: 'billing',
-          errorType: 'error_opening_subscription_dialog_gate_closed'
+    try {
+      // A caller (e.g. the agent panel's paywall card) can fire this before
+      // the bootstrap /features fetch resolves, most likely right after a
+      // fresh load. window.__CONFIG__ is then still empty and the flag check
+      // below would silently swallow the click. Await one fresh fetch before
+      // deciding, rather than trusting a config snapshot that was never taken.
+      if (!window.__CONFIG__?.subscription_required) {
+        const { remoteConfigState } =
+          await import('@/platform/remoteConfig/remoteConfig')
+        if (remoteConfigState.value === 'unloaded') {
+          const { refreshRemoteConfig } =
+            await import('@/platform/remoteConfig/refreshRemoteConfig')
+          await refreshRemoteConfig()
         }
-      )
+      }
+
+      if (!window.__CONFIG__?.subscription_required) {
+        // This gate closing is never expected to be reachable from a cloud
+        // surface with subscriptions enabled. Report it instead of returning
+        // silently, so a caller's "Subscribe" button failing to do anything
+        // shows up in telemetry rather than only in a user's bug report.
+        reportError(
+          new Error(
+            'showSubscriptionRequiredDialog: subscription_required gate closed'
+          ),
+          {
+            surface: 'billing',
+            errorType: 'error_opening_subscription_dialog_gate_closed'
+          }
+        )
+        return false
+      }
+
+      const { show } = useSubscriptionDialog()
+      show(options)
+      return true
+    } catch (error) {
+      // Callers branch on this boolean to decide whether the dialog has taken
+      // over the failure that sent them here — queuePrompt keeps its own 402
+      // in the error panel when it has not. A failed config refresh or chunk
+      // load must therefore resolve `false`, never reject and replace the
+      // caller's original error with this one.
+      reportError(error, {
+        surface: 'billing',
+        errorType: 'error_opening_subscription_dialog'
+      })
       return false
     }
-
-    const { show } = useSubscriptionDialog()
-    show(options)
-    return true
   }
 
   function showBillingComingSoonDialog() {

@@ -93,6 +93,27 @@ describe('showSubscriptionRequiredDialog', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('resolves false instead of rejecting when the config refresh fails', async () => {
+    // queuePrompt awaits this boolean to decide whether the dialog has taken
+    // over its 402. A rejection here would propagate out of queuePrompt and
+    // replace the user's original payment error with a chunk-load failure.
+    remoteConfigState.value = 'unloaded'
+    window.__CONFIG__ = {}
+    refreshRemoteConfig.mockRejectedValueOnce(new Error('offline'))
+
+    const opened = await useBillingDialogs().showSubscriptionRequiredDialog()
+
+    expect(opened).toBe(false)
+    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledOnce()
+    const [cause, options] = reportError.mock.calls[0]
+    expect(cause).toMatchObject({ message: 'offline' })
+    expect(options).toMatchObject({
+      surface: 'billing',
+      errorType: 'error_opening_subscription_dialog'
+    })
+  })
+
   it('reports a closed gate instead of returning silently', async () => {
     remoteConfigState.value = 'authenticated'
     window.__CONFIG__ = { subscription_required: false }
