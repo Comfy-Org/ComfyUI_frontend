@@ -15,7 +15,7 @@ import {
   computeAncestorExecutionIds,
   createVerificationAbortController
 } from '@/platform/missing/missingCandidateHelpers'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 /**
  * Missing model error state and interaction state.

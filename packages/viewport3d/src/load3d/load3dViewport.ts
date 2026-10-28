@@ -1,3 +1,9 @@
+import type {
+  Size2D as Size,
+  Size2D,
+  Bounds as ViewportRect,
+  Point2D
+} from '@comfyorg/shared-frontend-utils/geometry'
 /** Linearly maps `value` from [min, max] to [0, 1]; 0 when min equals max. */
 export function normalize(value: number, min: number, max: number): number {
   return max === min ? 0 : (value - min) / (max - min)
@@ -7,21 +13,11 @@ function denormalize(normalized: number, min: number, max: number): number {
   return min + normalized * (max - min)
 }
 
-type Size = { width: number; height: number }
-
-export type LetterboxedViewport = {
+export type LetterboxedViewport = Size2D & {
   offsetX: number
   offsetY: number
-  width: number
-  height: number
 }
-
-export type ViewportRect = {
-  x: number
-  y: number
-  width: number
-  height: number
-}
+export type { Bounds as ViewportRect } from '@comfyorg/shared-frontend-utils/geometry'
 
 export function computeLetterboxedViewport(
   container: Size,
@@ -50,7 +46,7 @@ export function computeLetterboxedViewport(
   }
 }
 
-export type LetterboxNdc = { x: number; y: number; inside: boolean }
+export type LetterboxNdc = Point2D & { inside: boolean }
 
 export type PointerNdcSource = (
   clientX: number,

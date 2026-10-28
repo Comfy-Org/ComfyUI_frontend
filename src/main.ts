@@ -10,6 +10,7 @@ import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxy
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
+import { provideTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   configValueOrDefault,
@@ -44,9 +45,10 @@ const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
 
 async function loadRemoteConfigBeforeFirebase(): Promise<void> {
   await bootstrapTracer.settle('startup/remote-config', async () => {
-    const { refreshRemoteConfig } =
+    const { loadRemoteConfigUntilReady, refreshRemoteConfig } =
       await import('@/platform/remoteConfig/refreshRemoteConfig')
-    await refreshRemoteConfig({ useAuth: false })
+    if (isCloud) await loadRemoteConfigUntilReady()
+    else await refreshRemoteConfig({ useAuth: false })
   })
 }
 
@@ -146,6 +148,11 @@ async function bootstrap(): Promise<void> {
     installCloudApiAuth()
   }
   installWorkspaceApiAuth()
+  provideTeamWorkspaceDialog(async (onConfirm) => {
+    const { useWorkspaceDialogs } =
+      await import('@/platform/account/composables/useWorkspaceDialogs')
+    return useWorkspaceDialogs().showTeamWorkspacesDialog(onConfirm)
+  })
 
   bootstrapTracer.armWatchdog()
 

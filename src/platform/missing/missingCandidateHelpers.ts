@@ -1,6 +1,6 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { getAncestorExecutionIds } from '@/types/nodeIdentification'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { getAncestorExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 
 export interface VerificationAbortController {

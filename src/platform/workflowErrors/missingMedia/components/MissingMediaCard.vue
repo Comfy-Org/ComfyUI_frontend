@@ -50,7 +50,7 @@
             "
             @click.stop="emit('locateNode', item.nodeId)"
           >
-            <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
+            <i aria-hidden="true" class="icon-[lucide--locate]" />
           </Button>
         </div>
       </li>
@@ -63,7 +63,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import { resolveMissingMediaItemLabel } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
 import { getMissingMediaReferences } from '@/platform/workflowErrors/missingMedia/missingMediaGrouping'

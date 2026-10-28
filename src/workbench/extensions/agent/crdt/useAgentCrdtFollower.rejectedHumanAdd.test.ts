@@ -29,8 +29,6 @@ function sentOp(raw: string): { type: unknown; op_id: string } {
   return { type, op_id: op.op_id }
 }
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const WORKFLOW_ID = 'wf-1'
 
 // The verdict the doc host returns for a frontend-only node (Note, a Get/Set

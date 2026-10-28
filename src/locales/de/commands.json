@@ -35,9 +35,6 @@
   "Comfy-Desktop_Restart": {
     "label": "Neu starten"
   },
-  "Comfy_3DViewer_Open3DViewer": {
-    "label": "3D-Viewer (Beta) für ausgewählten Node öffnen"
-  },
   "Comfy_BrowseModelAssets": {
     "label": "Experimentell: Modellressourcen durchsuchen"
   },

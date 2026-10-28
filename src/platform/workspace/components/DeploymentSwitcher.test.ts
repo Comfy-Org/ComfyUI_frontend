@@ -19,7 +19,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
@@ -52,19 +52,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), async () => {
-  class WorkspaceApiError extends Error {
-    constructor(
-      message: string,
-      public readonly status?: number,
-      public readonly code?: string
-    ) {
-      super(message)
-      this.name = 'WorkspaceApiError'
-    }
-  }
-  return { workspaceApi: mockWorkspaceApi, WorkspaceApiError }
-})
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
+  workspaceApi: mockWorkspaceApi
+}))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/services/dialogService'))
@@ -1146,6 +1136,28 @@ describe('DeploymentSwitcher', () => {
         "This browser now runs on Vinh's R&D/Prod · staging & co. Reload to get its nodes."
       )
     })
+  })
+
+  it('opens its list when the missing-nodes message asks for the switcher', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    renderSwitcher()
+    await screen.findByTestId('deployment-switcher-trigger')
+    expect(screen.queryByRole('menu')).toBeNull()
+
+    useDeploymentPickStore().requestSwitcherOpen()
+
+    expect(await screen.findByRole('menu')).toBeInTheDocument()
+  })
+
+  it('does not open on its own later for an ask made before it could show', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    useDeploymentPickStore().requestSwitcherOpen()
+    renderSwitcher()
+
+    expect(
+      await screen.findByTestId('deployment-switcher-trigger')
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('menu')).toBeNull()
   })
 
   describe('marks which deployments can run the open workflow', () => {

@@ -14,7 +14,10 @@ import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisib
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 
 /**
  * Missing media error state.

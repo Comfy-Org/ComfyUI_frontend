@@ -6,8 +6,8 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Video from '@/components/common/Video.vue'
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { applyDarkPaletteTheme } from '@/utils/colorPaletteTheme'
 
 const {
@@ -160,7 +160,10 @@ onMounted(() => {
             rel="noopener noreferrer"
           >
             {{ $t('agent.consent.readDocs') }}
-            <span class="icon-[lucide--square-arrow-out-up-right] size-3" />
+            <i
+              aria-hidden="true"
+              class="icon-[lucide--square-arrow-out-up-right] size-3"
+            />
           </Button>
           <p
             v-if="requiresSignIn"

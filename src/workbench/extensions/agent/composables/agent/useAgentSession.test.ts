@@ -5,6 +5,7 @@ import type {
   UploadImageResponse
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
@@ -15,10 +16,12 @@ import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 import { reportError } from '@/platform/telemetry/reportError'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { api } from '@/scripts/api'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type {
   AgentAnswerAccepted,
@@ -41,6 +44,7 @@ import {
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AgentRestClient,
+  DraftSnapshot,
   PostMessageInput
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { AskUserResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
@@ -52,7 +56,6 @@ import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
@@ -691,6 +694,113 @@ describe('useAgentSession (v1 composition root)', () => {
       session.stop()
     }
   )
+
+  it.for(['loads', 'fails'])(
+    'keeps the open chat until a kept-open load %s',
+    async (outcome) => {
+      let answer = (_loaded: boolean) => {}
+      const getMessages = vi.fn(
+        (threadId: string): Promise<AgentMessages> =>
+          threadId === 'th-next'
+            ? new Promise((resolve, reject) => {
+                answer = (loaded) =>
+                  loaded ? resolve([]) : reject(new Error('unavailable'))
+              })
+            : Promise.resolve([])
+      )
+      const session = useAgentSession({
+        rest: fakeRest({ getMessages }),
+        events: fakeEvents().source
+      })
+      session.start()
+      await session.sendMessage('First chat')
+
+      const opening = session.loadThread('th-next', () => true, {
+        keepOpenChatUntilLoaded: true
+      })
+      expect(session.threadId.value).toBe('th-1')
+      expect(session.isTranscriptReady.value).toBe(true)
+
+      answer(outcome === 'loads')
+
+      expect(await opening).toBe(outcome === 'loads')
+      expect(session.threadId.value).toBe(
+        outcome === 'loads' ? 'th-next' : 'th-1'
+      )
+      expect(session.notices.value).toEqual([])
+      session.stop()
+    }
+  )
+
+  function keptOpenSession(
+    restored: (isCurrent: () => boolean) => Promise<boolean> | boolean
+  ) {
+    const onThreadActivated = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source,
+      onThreadActivated,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        restored: (_workflowId, isCurrent) => restored(isCurrent)
+      }
+    })
+    session.start()
+    return { session, onThreadActivated }
+  }
+
+  it.for([
+    { restore: 'fails', restored: () => false },
+    {
+      restore: 'throws',
+      restored: (): boolean => {
+        throw new Error('restore failed')
+      }
+    }
+  ])(
+    'reports a kept-open switch whose workflow restore $restore as failed, without activating it',
+    async ({ restored }) => {
+      const { session, onThreadActivated } = keptOpenSession(restored)
+
+      const opened = await session.loadThread('th-next', () => true, {
+        keepOpenChatUntilLoaded: true
+      })
+
+      expect(opened).toBe(false)
+      expect(onThreadActivated).not.toHaveBeenCalledWith('th-next')
+      expect(
+        localStorage.getItem(StorageKeys.agentThread('personal'))
+      ).toBeNull()
+      expect(session.notices.value).toEqual([])
+      session.stop()
+    }
+  )
+
+  it('finishes, but no longer navigates for, a kept-open switch the user moved on from', async () => {
+    let navigationCurrent = true
+    let restoreWasCurrent: boolean | undefined
+    const { session, onThreadActivated } = keptOpenSession((isCurrent) => {
+      navigationCurrent = false
+      restoreWasCurrent = isCurrent()
+      return true
+    })
+
+    const opened = await session.loadThread(
+      'th-next',
+      () => navigationCurrent,
+      { keepOpenChatUntilLoaded: true }
+    )
+
+    expect(restoreWasCurrent).toBe(false)
+    expect(opened).toBe(false)
+    expect(session.threadId.value).toBe('th-next')
+    expect(onThreadActivated).toHaveBeenLastCalledWith('th-next')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-next'
+    )
+    session.stop()
+  })
 
   it('(b) a second send posts to the adopted threadId, not new', async () => {
     const postMessage = vi
@@ -2238,8 +2348,19 @@ describe('useAgentSession (v1 composition root)', () => {
         resolution: { status: 'answered', selected: ['flux'] }
       })
       expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+        expect.objectContaining({
+          message: 'agent ask resolved with a different answer'
+        }),
+        expect.objectContaining({
+          errorType: 'agent_ask_answer_superseded',
+          tags: {
+            selection_changed: true,
+            other_text_changed: false,
+            selection_known: true,
+            committed_selected_count: 1,
+            submitted_selected_count: 1
+          }
+        })
       )
     })
 
@@ -2342,7 +2463,16 @@ describe('useAgentSession (v1 composition root)', () => {
         })
         expect(reportError).toHaveBeenCalledWith(
           expect.any(Error),
-          expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+          expect.objectContaining({
+            errorType: 'agent_ask_answer_superseded',
+            tags: {
+              selection_changed: false,
+              other_text_changed: true,
+              selection_known: false,
+              committed_selected_count: undefined,
+              submitted_selected_count: 1
+            }
+          })
         )
         expect(session.notices.value).toEqual([
           {
@@ -2538,14 +2668,17 @@ describe('useAgentSession (v1 composition root)', () => {
       name: string
       committed: Pick<AgentAskResolvedData, 'selected' | 'other_text'>
       expected: AskUserResolution
+      changes: { selection_changed: boolean; other_text_changed: boolean }
     }>([
       {
         name: 'a different option',
+        changes: { selection_changed: true, other_text_changed: true },
         committed: { selected: ['flux'] },
         expected: { status: 'answered', selected: ['flux'] }
       },
       {
         name: 'a superset of it',
+        changes: { selection_changed: true, other_text_changed: false },
         committed: { selected: ['sdxl', 'flux'], other_text: 'a LoRA' },
         expected: {
           status: 'answered',
@@ -2555,11 +2688,13 @@ describe('useAgentSession (v1 composition root)', () => {
       },
       {
         name: 'a subset of it',
+        changes: { selection_changed: true, other_text_changed: false },
         committed: { selected: [], other_text: 'a LoRA' },
         expected: { status: 'answered', selected: [], otherText: 'a LoRA' }
       },
       {
         name: 'free text alone',
+        changes: { selection_changed: true, other_text_changed: true },
         committed: { selected: [], other_text: 'someone else' },
         expected: {
           status: 'answered',
@@ -2569,12 +2704,13 @@ describe('useAgentSession (v1 composition root)', () => {
       },
       {
         name: 'the same option with other free text',
+        changes: { selection_changed: false, other_text_changed: true },
         committed: { selected: ['sdxl'], other_text: 'a VAE' },
         expected: { status: 'answered', selected: ['sdxl'], otherText: 'a VAE' }
       }
     ])(
       'shows the committed answer when $name won',
-      async ({ committed, expected }) => {
+      async ({ committed, expected, changes }) => {
         const { session, emit } = await parkedOnQuestion()
         await session.answerAsk('turn-1:call-1', {
           selected: ['sdxl'],
@@ -2599,7 +2735,10 @@ describe('useAgentSession (v1 composition root)', () => {
         expect(shown.resolution).toEqual(expected)
         expect(reportError).toHaveBeenCalledWith(
           expect.any(Error),
-          expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+          expect.objectContaining({
+            errorType: 'agent_ask_answer_superseded',
+            tags: expect.objectContaining(changes)
+          })
         )
       }
     )
@@ -2927,7 +3066,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
-        errorType: 'agent_ask_answer_superseded'
+        errorType: 'agent_ask_answer_superseded',
+        tags: {
+          selection_changed: true,
+          other_text_changed: false,
+          selection_known: true,
+          committed_selected_count: 1,
+          submitted_selected_count: 1
+        }
       })
       expect(session.notices.value).toHaveLength(1)
       expect(cardOnScreen()).toBe(false)
@@ -4343,6 +4489,61 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
   })
 
+  it.for([
+    { statuses: ['complete'], completes: true },
+    { statuses: ['error'], completes: false },
+    { statuses: ['interrupted'], completes: false },
+    { statuses: ['interrupted', 'complete'], completes: true },
+    { statuses: ['complete', 'error'], completes: false }
+  ] as const)(
+    'reports a turn recovered with rows $statuses as completed: $completes',
+    async ({ statuses, completes }) => {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            ...statuses.map((rowStatus, index) => ({
+              ...historyRow(
+                2 + index,
+                'assistant',
+                'msg-1',
+                'answer',
+                index === 0 ? 'msg-1' : `msg-1-${index}`
+              ),
+              status: rowStatus
+            }))
+          ]
+        )
+      })
+      useWorkflowStore().attachWorkflow(
+        fromPartial<LoadedComfyWorkflow>({
+          path: 'workflows/a.json',
+          instanceId: 'tab-a'
+        }),
+        0
+      )
+      const conversation = useAgentConversationStore()
+      conversation.setTurnTabResolver(() => ({
+        status: 'known',
+        workflowInstanceId: 'tab-a'
+      }))
+      const completed: string[] = []
+      conversation.onTurnCompleted((path) => completed.push(path))
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+      status(false)
+      status(true)
+
+      await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+      expect(completed).toEqual(completes ? ['workflows/a.json'] : [])
+    }
+  )
+
   it('an empty interrupted row preserves the locally streamed reply', async () => {
     const interruptedWithoutParts = {
       ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
@@ -5268,6 +5469,66 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(postMessage.mock.calls[0][1].currentTabUnbound).toBe(true)
     expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
+  })
+
+  function unboundSecondTurnSession(draft: () => DraftSnapshot) {
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockResolvedValue({
+        thread_id: 'th-9',
+        message_id: 'msg-1',
+        workflow_id: 'wf-fresh'
+      })
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        adopted: vi.fn(),
+        draft
+      }
+    })
+    session.start()
+    return { session, postMessage }
+  }
+
+  const LINKED_DRAFT: DraftSnapshot = {
+    content: {
+      nodes: [
+        { id: 1, type: 'CheckpointLoaderSimple' },
+        { id: 2, type: 'CLIPTextEncode' }
+      ],
+      links: [[1, 1, 1, 2, 1, 'CLIP']]
+    }
+  }
+  const SEVERED_DRAFT: DraftSnapshot = {
+    content: { nodes: LINKED_DRAFT.content.nodes, links: [] }
+  }
+
+  it('(h11) a second turn on a still-unbound tab sends no canvas at all (PM-1410)', async () => {
+    let draft = LINKED_DRAFT
+    const { session, postMessage } = unboundSecondTurnSession(() => draft)
+
+    await session.sendMessage('what is connected here?')
+    expect(postMessage.mock.calls[0][1].draft).toEqual(LINKED_DRAFT)
+
+    draft = SEVERED_DRAFT
+    await session.sendMessage('is it still connected?')
+
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('draft')
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('workflowId')
+  })
+
+  it.fails('(h12) a second turn on a still-unbound tab carries the connection the user severed (PM-1410)', async () => {
+    let draft = LINKED_DRAFT
+    const { session, postMessage } = unboundSecondTurnSession(() => draft)
+
+    await session.sendMessage('what is connected here?')
+    draft = SEVERED_DRAFT
+    await session.sendMessage('is it still connected?')
+
+    expect(postMessage.mock.calls[1][1].draft).toEqual(SEVERED_DRAFT)
   })
 
   it.for(['new-chat', 'history'])(
@@ -7149,7 +7410,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     })
   })
 
-  it('classifies a failure after the ack as post-acceptance and unretryable', async () => {
+  it('keeps an accepted turn live when thread persistence fails', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })
     session.start()
@@ -7161,18 +7422,57 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     try {
       const ok = await session.sendMessage('make me a cat')
-      expect(ok).toBe(false)
+      expect(ok).toBe(true)
     } finally {
       setItem.mockRestore()
     }
 
     expect(rest.postMessage).toHaveBeenCalledTimes(1)
+    expect(session.threadId.value).toBe('th-1')
+    expect(session.entries.value.map(({ role }) => role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    expect(session.isStreaming.value).toBe(true)
+    expect(reportError).toHaveBeenCalledWith(expect.any(DOMException), {
+      surface: 'agent',
+      errorType: 'agent_thread_persistence_failed'
+    })
     expect(telemetry.trackAgentError).toHaveBeenCalledWith({
       error_class: 'request_failed',
       failure_stage: 'post_acceptance',
       retryable: false,
       turn_accepted: true,
-      ui_treatment: 'inline_notice'
+      ui_treatment: 'none'
+    })
+  })
+
+  it('keeps an accepted turn live when workflow adoption fails', async () => {
+    const rest = fakeRest()
+    const adoptionError = new Error('adoption failed')
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {
+          throw adoptionError
+        }
+      }
+    })
+    session.start()
+
+    const ok = await session.sendMessage('make me a cat')
+
+    expect(ok).toBe(true)
+    expect(session.entries.value.map(({ role }) => role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    expect(session.isStreaming.value).toBe(true)
+    expect(reportError).toHaveBeenCalledWith(adoptionError, {
+      surface: 'agent',
+      errorType: 'agent_workflow_adoption_callback_failed'
     })
   })
 
@@ -7490,6 +7790,28 @@ describe('app:agent_error telemetry (TEL-8)', () => {
       turn_accepted: false,
       ui_treatment: 'error_overlay'
     })
+  })
+
+  it('preserves default grouping when a failure bypasses the REST boundary', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new AgentApiError('bad gateway', 502, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_history_load_failed',
+      tags: {},
+      fingerprint: undefined
+    })
+    const reportedError = vi.mocked(reportError).mock.calls[0][0] as Error
+    expect(reportedError.message).not.toContain('th-9')
+    expect(reportedError.stack ?? '').not.toContain('th-9')
   })
 
   it('does not track a 404 thread-not-found history load as an error', async () => {
