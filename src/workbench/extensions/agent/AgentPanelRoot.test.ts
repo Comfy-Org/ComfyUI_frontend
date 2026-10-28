@@ -7575,6 +7575,40 @@ describe('AgentPanelRoot history', () => {
     })
   })
 
+  describe("the local host's loopback-fence refusal (cloud#14874)", () => {
+    const refusal = {
+      error:
+        'The agent only works when ComfyUI is opened on the computer it runs on, by a local address. Open http://127.0.0.1:8188 in a browser on that computer to use the agent.',
+      code: 'agent_loopback_only'
+    }
+
+    it("shows the host's reason in the panel on open, not the run-error overlay", async () => {
+      executionErrors.showErrorOverlay.mockClear()
+      respondToFetch(threadListRoute, () => json(403, refusal))
+
+      renderWithSelectedTarget()
+
+      // The user's first sight of the panel is the only place this can land:
+      // the fence refuses before a turn exists, so a message gated on send is
+      // never reached.
+      expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
+      expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+      expect(executionErrors.recordPromptError).not.toHaveBeenCalled()
+    })
+
+    it('leaves an ordinary auth refusal on the run-error overlay', async () => {
+      executionErrors.showErrorOverlay.mockClear()
+      respondToFetch(threadListRoute, () => json(403, { error: 'no access' }))
+
+      renderWithSelectedTarget()
+
+      await vi.waitFor(() =>
+        expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+      )
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    })
+  })
+
   it('records a thread-list request that never reached the server', async () => {
     telemetry.trackAgentError.mockClear()
     vi.mocked(reportError).mockClear()

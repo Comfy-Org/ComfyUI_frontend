@@ -102,6 +102,7 @@ import {
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
+import AgentHostFenceNotice from './components/agent/AgentHostFenceNotice.vue'
 import RunNoticeBanner from './components/agent/RunNoticeBanner.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
@@ -150,7 +151,10 @@ import {
   agentRequestFailureFingerprint,
   describeAgentRequestFailure
 } from './services/agent/agentRequestFailure'
-import { createAgentRestClient } from './services/agent/agentRestClient'
+import {
+  createAgentRestClient,
+  isLoopbackOnlyRefusal
+} from './services/agent/agentRestClient'
 import { setAgentTabTitlePrefix } from './services/agent/agentTabTitlePrefix'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
@@ -1815,6 +1819,16 @@ function warnIncompleteHistory(reason: string, announce: boolean): void {
   )
 }
 
+/**
+ * The local agent host's loopback-fence refusal, set from the panel's own
+ * opening thread-list load - the first request the fence answers.
+ *
+ * Never cleared, because the fence's verdict cannot change under this page: it
+ * is decided by the address the browser used, and reaching ComfyUI by a
+ * different address is a different page load.
+ */
+const hostFenceMessage = ref<string>()
+
 const { refreshHistory } = useAgentChatHistoryRefresh({
   listThreads: rest.listThreads,
   history,
@@ -1835,7 +1849,11 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
         diagnostics
       )
     })
-    if (uiTreatment === 'error_overlay')
+    // The loopback fence refuses this page outright, so it is not one failed
+    // load to re-run: it gets the in-panel notice instead of the run-error
+    // overlay, which is keyed to a workflow run the user has not started.
+    if (isLoopbackOnlyRefusal(error)) hostFenceMessage.value = error.message
+    else if (uiTreatment === 'error_overlay')
       surfaceAgentError(
         'agent_api_failed',
         error instanceof Error ? error.message : String(error)
@@ -2568,6 +2586,10 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
       <template #composerNotice>
+        <AgentHostFenceNotice
+          v-if="hostFenceMessage"
+          :message="hostFenceMessage"
+        />
         <RunNoticeBanner
           v-if="followFailure"
           context="followFailed"
