@@ -196,7 +196,14 @@ testWithMockedObjectInfo.describe(
 
     testWithMockedObjectInfo(
       'hides and restores the pricing badge on an existing node when the setting is toggled',
-      { tag: '@vue-nodes' },
+      {
+        tag: '@vue-nodes',
+        annotation: {
+          type: 'source',
+          description:
+            'https://github.com/Comfy-Org/ComfyUI_frontend/pull/17551'
+        }
+      },
       async ({ comfyPage }) => {
         await comfyPage.settings.setSetting(
           'Comfy.NodeBadge.ShowApiPricing',
@@ -216,9 +223,6 @@ testWithMockedObjectInfo.describe(
         await expect(header).toBeVisible()
         const badge = priceBadge.required
 
-        // Precondition: there is a badge to hide. Without it, "hidden after
-        // turning the setting off" also holds for a node that never rendered
-        // one, which is the way this test would pass vacuously.
         await expect(badge).toBeVisible()
 
         await comfyPage.settings.setSetting(
@@ -227,7 +231,6 @@ testWithMockedObjectInfo.describe(
         )
         await expect(badge).toBeHidden()
 
-        // Derived badge rows for an existing node must react to live setting changes.
         await comfyPage.settings.setSetting(
           'Comfy.NodeBadge.ShowApiPricing',
           true
