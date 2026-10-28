@@ -1982,6 +1982,30 @@ describe('ComfyApp', () => {
       })
     })
 
+    it('still reports a rejected submission once the dialog takes over', async () => {
+      // Routing more 402s to the dialog must not change what queuePrompt
+      // returns for a rejection it already reported as failed: the dialog
+      // branch breaks past the result assignment the error-panel path makes.
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          error: {
+            type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+            message: 'A cloud subscription is required',
+            details: ''
+          },
+          node_errors: {}
+        })
+      )
+      mockAccountPreconditionOpen.mockResolvedValueOnce(true)
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(mockAccountPreconditionOpen).toHaveBeenCalledExactlyOnceWith(
+        'subscription'
+      )
+    })
+
     it('records a rejected submission on the workflow that queued it', async () => {
       prepareEmptyPromptQueue()
       const executionErrorStore = useExecutionErrorStore()

@@ -1976,9 +1976,19 @@ export class ComfyApp implements IComfyApp {
                 })
               : undefined
             if (promptPrecondition) {
+              // Account preconditions (sign-in, subscription, credits) open
+              // their own modal and must stay out of the error panel and
+              // error count.
               const opened =
                 await useAccountPreconditionDialog().open(promptPrecondition)
               if (opened) {
+                // This break skips the legacy result assignment below, so
+                // take it here too. Classifying more 402s as preconditions
+                // must not change what queuePrompt reports for the same
+                // rejection.
+                if (error instanceof PromptExecutionError) {
+                  queueResultOverride = !error.response.node_errors
+                }
                 console.error(error)
                 break
               }
