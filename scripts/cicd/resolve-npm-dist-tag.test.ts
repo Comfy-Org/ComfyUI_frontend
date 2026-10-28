@@ -135,23 +135,37 @@ it.for(publishers)(
 )
 
 it.for([
-  { name: 'missing', contents: [], files: ['index.d.ts'], accepted: false },
-  { name: 'empty', contents: [''], files: ['index.d.ts'], accepted: false },
+  {
+    name: 'missing',
+    filename: 'unrelated.txt',
+    content: 'unrelated',
+    files: ['index.d.ts'],
+    accepted: false
+  },
+  {
+    name: 'empty',
+    filename: 'index.d.ts',
+    content: '',
+    files: ['index.d.ts'],
+    accepted: false
+  },
   {
     name: 'excluded',
-    contents: ['export type Value = string'],
+    filename: 'index.d.ts',
+    content: 'export type Value = string',
     files: ['other.d.ts'],
     accepted: false
   },
   {
     name: 'valid',
-    contents: ['export type Value = string'],
+    filename: 'index.d.ts',
+    content: 'export type Value = string',
     files: ['index.d.ts'],
     accepted: true
   }
 ])(
   'checks the packed types package: $name',
-  ({ contents, files, accepted }) => {
+  ({ filename, content, files, accepted }) => {
     const root = mkdtempSync(join(tmpdir(), 'types-package-'))
     onTestFinished(() => rmSync(root, { recursive: true, force: true }))
     writeFileSync(
@@ -162,9 +176,7 @@ it.for([
         files
       })
     )
-    contents.forEach((content) =>
-      writeFileSync(join(root, 'index.d.ts'), content)
-    )
+    writeFileSync(join(root, filename), content)
     const workflow = z
       .object({
         jobs: z.record(z.string(), z.object({ steps: stepsSchema }))
