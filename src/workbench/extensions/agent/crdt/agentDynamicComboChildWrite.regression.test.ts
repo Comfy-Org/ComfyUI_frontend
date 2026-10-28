@@ -134,7 +134,7 @@ function setWidget(
     node_id: node.id,
     widget,
     value
-  } as Op
+  }
 }
 
 function setup() {
