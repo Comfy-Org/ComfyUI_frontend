@@ -3689,6 +3689,7 @@
           "line": "Subscribe to run workflows on Cloud.",
           "title": "This workspace has no active plan"
         },
+        "paused": "Paused. The renewal payment didn't go through.",
         "resumeConfirm": {
           "body": "Your plan will renew on {date}. You can cancel again anytime.",
           "title": "Resume your {plan} plan?"

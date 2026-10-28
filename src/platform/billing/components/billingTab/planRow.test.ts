@@ -145,7 +145,7 @@ describe('derivePlanRow', () => {
     {
       case: 'a paused subscription',
       facts: { billingStatus: 'paused' },
-      expected: { kind: 'unknown' }
+      expected: { kind: 'paused', planName: 'Pro' }
     },
     {
       case: 'an active plan without a renewal date',
@@ -195,12 +195,14 @@ describe('planRowAction', () => {
       endedAt: '2026-09-01T00:00:00Z'
     },
     noPlan: { kind: 'noPlan', freeRuns: null },
+    paused: { kind: 'paused', planName: 'Pro' },
     unknown: { kind: 'unknown' }
   }
 
   it.for([
     { state: 'activating', expected: 'manage' },
     { state: 'active', expected: 'manage' },
+    { state: 'paused', expected: 'manage' },
     { state: 'unknown', expected: 'manage' },
     { state: 'noPlan', expected: 'subscribe' },
     { state: 'ended', expected: 'choosePlan' },
