@@ -13,7 +13,6 @@ import type {
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -407,7 +406,6 @@ async function mockAgentBoot(
   const storedSettings: Record<string, unknown> = {
     'Comfy.TutorialCompleted': true,
     'Comfy.RightSidePanel.ShowErrorsTab': false,
-    ...DEPLOY_ACTION_SEEN_SETTINGS,
     ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
     ...initialSettings
   }
