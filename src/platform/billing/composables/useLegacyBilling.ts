@@ -32,13 +32,17 @@ type RuntimeLegacyBalance = Omit<
   effective_balance_micros?: number
 }
 
-function fundsFromStatus(status: BillingStatusResponse | null) {
+function fundsFromStatus(
+  status: BillingStatusResponse | null,
+  statusReadAuthoritative: boolean
+) {
   const hasFunds = status?.has_funds ?? false
   return {
     hasFunds,
     agentHasFunds: status?.scoped_effective_has_funds?.agent ?? hasFunds,
     agentScopedHasFunds: status?.scoped_has_funds?.agent,
-    agentScopedHasFundsAuthoritative: status?.billing_rail !== undefined
+    agentScopedHasFundsAuthoritative:
+      statusReadAuthoritative && status?.billing_rail !== undefined
   }
 }
 
@@ -66,6 +70,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const statusReadAuthoritative = ref(true)
+  let latestStatusReadId = 0
 
   // The backend refuses legacy calls for a workspace that moved to workspace
   // billing. Refresh the status so the next click routes correctly and ask the
@@ -129,7 +135,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
       renewalDate: status?.renewal_date ?? null,
       endDate: status?.cancel_at ?? null,
       isCancelled: isCancelled.value,
-      ...fundsFromStatus(status)
+      ...fundsFromStatus(status, statusReadAuthoritative.value)
     }
   })
 
@@ -197,11 +203,15 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function fetchStatus(): Promise<void> {
+    const requestId = ++latestStatusReadId
     isLoading.value = true
     error.value = null
     try {
       await legacyFetchStatus()
+      if (requestId === latestStatusReadId) statusReadAuthoritative.value = true
     } catch (err) {
+      if (requestId === latestStatusReadId)
+        statusReadAuthoritative.value = false
       error.value =
         err instanceof Error ? err.message : 'Failed to fetch subscription'
       throw err

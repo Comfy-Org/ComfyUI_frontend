@@ -212,6 +212,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const error = ref<string | null>(null)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
+  const statusReadAuthoritative = ref(true)
   let adoption: Promise<boolean> = Promise.resolve(false)
   const seatCapacity = shallowRef<SeatCapacity | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
@@ -242,7 +243,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       agentHasFunds:
         status.scoped_effective_has_funds?.agent ?? status.has_funds,
       agentScopedHasFunds: status.scoped_has_funds?.agent,
-      agentScopedHasFundsAuthoritative: status.billing_rail !== undefined
+      agentScopedHasFundsAuthoritative:
+        statusReadAuthoritative.value && status.billing_rail !== undefined
     }
   })
 
@@ -387,6 +389,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
 
       seatCapacity.value = seatCapacityFrom(status)
       statusData.value = status
+      statusReadAuthoritative.value = true
       if (workspaceId && status.billing_rail) {
         useWorkspaceBillingStateStore().setWorkspaceBillingRail(
           workspaceId,
@@ -396,6 +399,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       adoption = resumePendingOperation(status)
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
+        statusReadAuthoritative.value = false
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch billing status'
       }

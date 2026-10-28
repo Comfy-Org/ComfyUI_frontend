@@ -1288,8 +1288,7 @@ const canvasEmptyAfterTurn = computed(
     boundCanvasNodeCount.value === 0
 )
 
-function refreshBillingAfterTurn(): void {
-  if (billingType.value !== 'workspace') return
+function refreshAgentBillingStatus(): void {
   void refreshBillingStatus().catch((error: unknown) => {
     reportError(error, {
       surface: 'agent',
@@ -1318,7 +1317,7 @@ watch(
     }
     if (completedTurn) {
       graphActivity.finishTurn()
-      refreshBillingAfterTurn()
+      if (billingType.value === 'workspace') refreshAgentBillingStatus()
     }
   },
   { immediate: true, flush: 'sync' }
@@ -1916,6 +1915,7 @@ async function consentAllowsSubmission(
       hasConsent = true
       acceptedIdentity = consentIdentity.value
     })
+    if (hasConsent) refreshAgentBillingStatus()
     if (hasConsent) coachReleased = await waitForCoachCompletion()
   } finally {
     if (consentHeldSubmissionId === submissionId)

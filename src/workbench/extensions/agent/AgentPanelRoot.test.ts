@@ -8680,6 +8680,26 @@ describe('AgentPanelRoot workflow binding', () => {
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
 
+  it.for(['workspace', 'legacy'] as const)(
+    'refreshes $ billing after successful consent before resuming the first send',
+    async (billingType) => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      paywallBilling.type = billingType
+      paywallAgentHasFunds.value = true
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
+        Object.assign(useAgentConsentStore(), { accepted: true })
+        onAccept()
+      })
+      renderWithSelectedTarget()
+
+      await sendFromComposer('build me a workflow')
+
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
+    }
+  )
+
   it.for([
     { host: 'Desktop', desktop: true },
     { host: 'a browser tab on a local Core', desktop: false }

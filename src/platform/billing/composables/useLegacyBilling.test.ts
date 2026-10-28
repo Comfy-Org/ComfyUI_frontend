@@ -181,6 +181,33 @@ describe('useLegacyBilling', () => {
         })
       }
     )
+
+    it('stops treating a cached Agent grant as authoritative after the current read fails', async () => {
+      useSubscription().subscriptionStatus.value = statusWith({
+        billing_rail: 'stripe',
+        scoped_has_funds: { agent: true }
+      })
+      let rejectStatusRead!: (reason: unknown) => void
+      const statusRead = new Promise<BillingStatusResponse | null | undefined>(
+        (_resolve, reject) => {
+          rejectStatusRead = (reason) => reject(reason)
+        }
+      )
+      vi.mocked(useSubscription().fetchStatus).mockReturnValueOnce(statusRead)
+      const billing = useLegacyBilling()
+
+      const refresh = billing.fetchStatus()
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        true
+      )
+
+      rejectStatusRead(new Error('status unavailable'))
+      await expect(refresh).rejects.toThrow('status unavailable')
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        false
+      )
+      expect(billing.subscription.value?.agentScopedHasFunds).toBe(true)
+    })
   })
 
   describe('initialize', () => {
