@@ -9,7 +9,9 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { toRootGraphId } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
 
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
 import { attachDocOpMinter } from './docOpMinter'
@@ -143,6 +145,29 @@ interface ProjectedInput {
   widget?: { name: string }
 }
 
+function freshScenario(workflow: WorkflowJSON) {
+  const doc = mint(workflow, CATALOG)
+  onTestFinished(() => doc.destroy())
+  const rootGraph = liveGraph()
+  const minted: GraphOperation[] = []
+  const port = attachDocOpMinter({
+    isEnabled: () => true,
+    isDocBound: () => true,
+    enqueue: (ops) => minted.push(...ops),
+    getGraph: () => rootGraph,
+    boundRootGraphId: () => ROOT_GRAPH_ID,
+    docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
+    docWidgetValue: (id, widgetName) =>
+      readDocWidgetValue(doc, String(id), widgetName),
+    docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id)),
+    mayWritePromotedHost: () => true,
+    docHasSubgraphDefinition: () => true,
+    onWidgetWriteRefused: () => {}
+  })
+  onTestFinished(() => port.detach())
+  return { doc, rootGraph, minted }
+}
+
 describe('a human link into a widget input the agent-built document lacks', () => {
   it.for([
     { node: 'VHS_LoadVideo', linkId: 501, target: LOAD_VIDEO },
@@ -150,24 +175,7 @@ describe('a human link into a widget input the agent-built document lacks', () =
   ])(
     'reaches the document the agent reads, so $node frame_load_cap shows as linked',
     async ({ linkId, target }) => {
-      const doc = mint(agentBuiltWorkflow(), CATALOG)
-      const rootGraph = liveGraph()
-      const minted: GraphOperation[] = []
-      const port = attachDocOpMinter({
-        isEnabled: () => true,
-        isDocBound: () => true,
-        enqueue: (ops) => minted.push(...ops),
-        getGraph: () => rootGraph,
-        boundRootGraphId: () => ROOT_GRAPH_ID,
-        docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
-        docWidgetValue: (id, widgetName) =>
-          readDocWidgetValue(doc, String(id), widgetName),
-        docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id)),
-        mayWritePromotedHost: () => true,
-        docHasSubgraphDefinition: () => true,
-        onWidgetWriteRefused: () => {}
-      })
-      onTestFinished(() => port.detach())
+      const { doc, rootGraph, minted } = freshScenario(agentBuiltWorkflow())
 
       const liveTarget = rootGraph.getNodeById(toNodeId(target))
       emitGraphIntent({
@@ -218,24 +226,9 @@ describe('a human link into a widget input the agent-built document lacks', () =
   )
 
   it('mints an ordinary connect, not a grow, once the document carries the widget socket', async () => {
-    const doc = mint(socketedAgentBuiltWorkflow(), CATALOG)
-    const rootGraph = liveGraph()
-    const minted: GraphOperation[] = []
-    const port = attachDocOpMinter({
-      isEnabled: () => true,
-      isDocBound: () => true,
-      enqueue: (ops) => minted.push(...ops),
-      getGraph: () => rootGraph,
-      boundRootGraphId: () => ROOT_GRAPH_ID,
-      docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
-      docWidgetValue: (id, widgetName) =>
-        readDocWidgetValue(doc, String(id), widgetName),
-      docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id)),
-      mayWritePromotedHost: () => true,
-      docHasSubgraphDefinition: () => true,
-      onWidgetWriteRefused: () => {}
-    })
-    onTestFinished(() => port.detach())
+    const { doc, rootGraph, minted } = freshScenario(
+      socketedAgentBuiltWorkflow()
+    )
     const docCapIndex = readDocSlotNames(
       doc,
       String(LOAD_VIDEO),
@@ -269,26 +262,9 @@ describe('a human link into a widget input the agent-built document lacks', () =
   })
 
   it('targets the unechoed grown widget socket with a disconnect instead of dropping it', async () => {
-    const doc = mint(agentBuiltWorkflow(), CATALOG)
-    const rootGraph = liveGraph()
-    const minted: GraphOperation[] = []
-    const port = attachDocOpMinter({
-      isEnabled: () => true,
-      isDocBound: () => true,
-      enqueue: (ops) => minted.push(...ops),
-      getGraph: () => rootGraph,
-      boundRootGraphId: () => ROOT_GRAPH_ID,
-      docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
-      docWidgetValue: (id, widgetName) =>
-        readDocWidgetValue(doc, String(id), widgetName),
-      docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id)),
-      mayWritePromotedHost: () => true,
-      docHasSubgraphDefinition: () => true,
-      onWidgetWriteRefused: () => {}
-    })
-    onTestFinished(() => port.detach())
-    const link = fromPartial<LLink>({
-      id: 504,
+    const { doc, rootGraph, minted } = freshScenario(agentBuiltWorkflow())
+    const link = createMockLLink({
+      id: toLinkId(504),
       origin_id: toNodeId(PRIMITIVE_INT),
       origin_slot: 0,
       target_id: toNodeId(LOAD_VIDEO),

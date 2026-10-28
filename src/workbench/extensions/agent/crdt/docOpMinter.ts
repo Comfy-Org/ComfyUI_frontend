@@ -1108,12 +1108,12 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       return undefined
     }
     if (grows.displaced) {
-      const oldestUnechoed = Math.min(
+      const newestUnechoed = Math.max(
         ...grows.names
           .filter((name) => !docNames.includes(name))
           .map((name) => grows.grownAt.get(name) ?? 0)
       )
-      if (performance.now() - oldestUnechoed >= DISPLACED_GROW_EXPIRY_MS)
+      if (performance.now() - newestUnechoed >= DISPLACED_GROW_EXPIRY_MS)
         pendingGrows.delete(key)
       return undefined
     }
