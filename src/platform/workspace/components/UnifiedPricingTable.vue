@@ -203,6 +203,7 @@
                     : 'border-transparent bg-secondary-background hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
                 )
               "
+              :data-dd-action-name="planCtaActionName(tier.key)"
               @click="() => handleSubscribe(tier.key)"
             >
               {{ getButtonLabel(tier) }}
@@ -272,6 +273,7 @@
                 variant="inverted"
                 :disabled="isTeamButtonDisabled"
                 class="mt-auto h-10 w-full font-inter text-sm/normal font-bold"
+                :data-dd-action-name="BILLING_ACTION_NAME.subscribeTeamPlan"
                 @click="handleSubscribeTeam"
               >
                 {{ teamButtonLabel }}
@@ -429,6 +431,10 @@
 </template>
 
 <script setup lang="ts">
+import {
+  BILLING_ACTION_NAME,
+  planCtaActionName
+} from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
