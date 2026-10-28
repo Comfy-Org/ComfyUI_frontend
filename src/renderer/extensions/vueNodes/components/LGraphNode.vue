@@ -314,7 +314,7 @@ import {
   locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { isTransparent } from '@/utils/colorUtil'
+import { isTransparent } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'

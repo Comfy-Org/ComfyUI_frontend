@@ -1,0 +1,73 @@
+<script setup lang="ts">
+import type { HTMLAttributes } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
+
+import TagRemoveButton from '@comfyorg/design-system/chip/TagRemoveButton'
+import { tagVariants } from '@comfyorg/design-system/tag.variants'
+import type { TagVariants } from '@comfyorg/design-system/tag.variants'
+
+const {
+  label,
+  shape = 'square',
+  state = 'default',
+  removable,
+  removeLabel,
+  removeTooltip,
+  interactive = false,
+  class: className
+} = defineProps<
+  {
+    label: string
+    shape?: TagVariants['shape']
+    state?: TagVariants['state']
+    removeTooltip?: string
+    interactive?: boolean
+    class?: HTMLAttributes['class']
+  } & (
+    | { removable: true; removeLabel: string }
+    | { removable?: false; removeLabel?: string }
+  )
+>()
+
+const emit = defineEmits<{
+  remove: [event: Event]
+}>()
+
+function handleKeydown(event: KeyboardEvent): void {
+  if (event.target !== event.currentTarget) return
+  if (!interactive) return
+  if (event.key === 'Enter' || event.key === ' ') event.preventDefault()
+  if (event.key === 'Enter' && event.currentTarget instanceof HTMLElement)
+    event.currentTarget.click()
+}
+
+function handleKeyup(event: KeyboardEvent): void {
+  if (event.target !== event.currentTarget) return
+  if (!interactive || event.key !== ' ') return
+  event.preventDefault()
+  if (event.currentTarget instanceof HTMLElement) event.currentTarget.click()
+}
+</script>
+
+<template>
+  <span
+    :role="interactive ? 'button' : undefined"
+    :tabindex="interactive ? 0 : undefined"
+    :class="
+      cn(tagVariants({ shape, state, removable, interactive }), className)
+    "
+    @keydown="handleKeydown"
+    @keyup="handleKeyup"
+  >
+    <slot name="icon" />
+    <span class="min-w-0 truncate">{{ label }}</span>
+    <slot />
+    <TagRemoveButton
+      v-if="removable"
+      :aria-label="removeLabel"
+      :tooltip="removeTooltip"
+      @click.stop="emit('remove', $event)"
+    />
+  </span>
+</template>
