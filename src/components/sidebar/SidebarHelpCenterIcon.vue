@@ -2,7 +2,7 @@
   <PopoverRoot v-if="linearMode">
     <PopoverTrigger as-child>
       <SidebarIcon
-        icon="pi pi-question-circle"
+        icon="icon-[lucide--circle-question-mark] scale-90"
         class="comfy-help-center-btn"
         data-testid="help-center-button"
         :label="$t('menu.help')"
@@ -14,7 +14,7 @@
       :side="sidebarOnLeft ? 'right' : 'left'"
       :side-offset="8"
       dismiss-on-viewport-change
-      class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
+      class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
     >
       <div
         v-if="typeformError || !isValidTypeformId"
@@ -34,7 +34,7 @@
   </PopoverRoot>
   <SidebarIcon
     v-else
-    icon="pi pi-question-circle"
+    icon="icon-[lucide--circle-question-mark] scale-90"
     class="comfy-help-center-btn"
     data-testid="help-center-button"
     :label="$t('menu.help')"

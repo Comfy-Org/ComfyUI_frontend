@@ -8,7 +8,7 @@ import {
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -22,7 +22,6 @@ type IdentityListener = (user: User | null) => void
 const identityListeners = vi.hoisted(() => new Set<IdentityListener>())
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true

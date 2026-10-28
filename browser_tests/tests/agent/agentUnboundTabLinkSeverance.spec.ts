@@ -2,7 +2,7 @@ import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { expect, mergeTests } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
 import defaultWorkflow from '@e2e/assets/default.json' with { type: 'json' }
 import { webSocketFixture } from '@e2e/fixtures/ws'

@@ -3,10 +3,12 @@
        to it via closest(). Removing it silently widens that boundary. -->
   <BaseModalLayout
     v-model:right-panel-open="isRightPanelOpen"
+    :labels="modalLayoutLabels"
     :content-title="$t('manager.discoverCommunityContent')"
     :right-panel-title="$t('manager.nodePackInfo')"
     size="lg"
     class="manager-dialog"
+    @close="onClose"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--extensions-blocks]" />
@@ -77,7 +79,7 @@
           size="icon"
           @click="dismissWarningBanner"
         >
-          <i class="pi pi-times text-xs text-foreground"></i>
+          <i class="icon-[lucide--x] size-3 text-foreground"></i>
         </Button>
       </div>
 
@@ -181,7 +183,6 @@ import {
   onBeforeUnmount,
   onMounted,
   onUnmounted,
-  provide,
   ref,
   toValue,
   useTemplateRef,
@@ -190,21 +191,24 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import SearchAutocomplete from '@comfyorg/design-system/search-input/SearchAutocomplete'
 import Button from '@comfyorg/design-system/button/Button'
 import Message from '@comfyorg/design-system/message/Message'
-import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
-import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import type { NavGroupData, NavItemData } from '@/types/navTypes'
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
 import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
-import { OnCloseKey } from '@/types/widgetTypes'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackUpdateButton.vue'
 import InfoPanel from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanel.vue'
@@ -231,7 +235,7 @@ const { initialTab, initialPackId, onClose } = defineProps<{
   onClose: () => void
 }>()
 
-provide(OnCloseKey, onClose)
+const modalLayoutLabels = useModalLayoutLabels()
 
 const { t } = useI18n()
 const { buildDocsUrl } = useExternalLink()

@@ -6,7 +6,7 @@ import { computed } from 'vue'
 import type { BillingType } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { BillingRail } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -35,7 +35,6 @@ const mocks = vi.hoisted(
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/i18n'))
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 
 const offer = {

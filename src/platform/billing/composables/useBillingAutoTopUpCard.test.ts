@@ -15,7 +15,6 @@ import { useBillingAutoTopUpCard } from './useBillingAutoTopUpCard'
 
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/billing/api/billingApi'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 async function switchBillingScope(actorId: string, workspaceId: string) {
   stubFirebaseAuthHarness()
@@ -70,6 +69,7 @@ function settingsWith(
     reload_credits: 5275,
     spent_this_cycle_cents: 0,
     status,
+    target_credits: 6275,
     threshold_credits: 1000
   }
 }

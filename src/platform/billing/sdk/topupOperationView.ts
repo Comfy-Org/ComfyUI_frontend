@@ -104,8 +104,10 @@ function topupFailureError(
     )
   }
   const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
+  const serverMessage =
+    'serverMessage' in failure ? failure.serverMessage : undefined
   return new WorkspaceApiError(
-    t('credits.topUp.unknownError'),
+    serverMessage ?? t('credits.topUp.unknownError'),
     'httpStatus' in failure ? failure.httpStatus : undefined,
     serverCode === undefined ? failure.code : unwrapServerCode(serverCode),
     topupFailureCategory(failure)

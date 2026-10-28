@@ -12,7 +12,7 @@ import {
   isFirstRunReplayRequested,
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 
@@ -67,7 +67,6 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
 }))
 
 vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock<unknown>(
   import('@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'),
   () => ({

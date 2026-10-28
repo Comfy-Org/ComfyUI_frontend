@@ -6,7 +6,7 @@ import type { Ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { NavGroupData } from '@/types/navTypes'
+import type { NavGroupData } from '@comfyorg/design-system/lib/navigation/types'
 
 import SettingDialog from './SettingDialog.vue'
 
@@ -175,7 +175,7 @@ it.for([
     state: 'off',
     enabled: false,
     variantClass: 'bg-secondary',
-    iconClass: 'pi pi-times'
+    iconClass: 'icon-[lucide--x]'
   },
   {
     state: 'on',

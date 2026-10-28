@@ -23,8 +23,8 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { Plan } from '@comfyorg/billing-core'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { activateBillingScope } from '@/platform/billing/__tests__/activateBillingScope'
@@ -45,8 +45,7 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string, correlationId?: string) =>
     `https://platform.test${path}?workspace=ws_1&correlation_id=${correlationId}`

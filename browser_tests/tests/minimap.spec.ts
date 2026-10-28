@@ -428,7 +428,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await comfyPage.canvas.press('Delete')
     await comfyPage.nextFrame()
 
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     // Minimap canvas should be empty — no nodes means nothing to render
     await expect
@@ -507,7 +507,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       await comfyPage.contextMenu.clickMenuItemExact('Unpack Subgraph')
       await comfyPage.contextMenu.waitForHidden()
 
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+      await comfyPage.expectNodeCount(2)
       await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
       await expect(
         comfyPage.vueNodes.getNodeLocator(subgraphNodeId)

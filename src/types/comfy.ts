@@ -1,6 +1,6 @@
 import type { ShallowRef } from 'vue'
 
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type {
   LGraph,
@@ -14,7 +14,7 @@ import type { SettingParams } from '@/platform/settings/types'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import type { Keybinding } from '@/platform/keybindings/types'
 import type {
   ExecutionErrorWsMessage,
@@ -25,7 +25,7 @@ import type { NodeError } from '@/platform/remote/comfyui/types'
 import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
@@ -34,10 +34,13 @@ import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyApi } from '@/scripts/api'
 import type { ComfyUI } from '@/scripts/ui'
 import type { ComfyAppMenu } from '@/scripts/ui/menu/index'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { AuthUserInfo } from '@/types/authTypes'
 import type {
   BottomPanelExtension,

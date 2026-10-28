@@ -20,7 +20,7 @@ import { isCloud } from '@/platform/distribution/types'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import SubscribeToRunButton from '@/platform/billing/subscription/components/SubscribeToRun.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErrorWarning.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
@@ -280,7 +280,7 @@ function replayAppModeTour() {
                 side="top"
                 :side-offset="5"
                 dismiss-on-viewport-change
-                class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
+                class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
                 @open-auto-focus.prevent
               >
                 <div

@@ -30,7 +30,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": ["workflow-errors"],
-  "allowedConsumers": [],
+  "allowedConsumers": ["telemetry"],
   "characterizationScenarios": [
     {
       "name": "Missing nodes are scanned, recorded, and matched to available replacements",

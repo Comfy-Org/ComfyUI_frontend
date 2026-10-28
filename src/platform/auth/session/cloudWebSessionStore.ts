@@ -47,6 +47,7 @@ import {
   trackSsoSignInCompleted
 } from '@/platform/auth/sso/ssoTelemetry'
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
+import { getDesktopInstallId } from '@/platform/auth/session/desktopInstallId'
 import {
   clearInteractiveSignIn,
   markInteractiveSignIn,
@@ -63,8 +64,8 @@ import {
   provideWebSessionRequests,
   WebSessionTokenError
 } from '@/platform/auth/session/webSessionFetch'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -317,7 +318,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       getSession: currentSession
     })
     const authorize = createRequestAuthorizer({
-      getWorkspaceToken: mint.getWorkspaceToken
+      getWorkspaceToken: mint.getWorkspaceToken,
+      getInstallId: getDesktopInstallId
     })
     releaseRequests = provideWebSessionRequests({
       refreshSession: async () => {
