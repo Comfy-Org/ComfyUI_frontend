@@ -17,7 +17,12 @@ export type {
   BillingSession,
   BillingTransport
 } from './billingContracts.js'
-export { matchesServerCode, unwrapServerCode } from './billingContracts.js'
+export {
+  isPurchaseRefusal,
+  matchesServerCode,
+  PURCHASE_REFUSAL_SERVER_CODES,
+  unwrapServerCode
+} from './billingContracts.js'
 export type { SessionBillingTransportOptions } from './transport.js'
 export { createSessionBillingTransport } from './transport.js'
 export type {
