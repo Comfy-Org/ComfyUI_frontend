@@ -16,8 +16,6 @@ defineEmits<{ inspect: [] }>()
 
 const { t } = useI18n()
 
-/* PM-1895: the play badge promises a frame that is not moving yet, so it has to
-   come down for exactly as long as this tile is actually playing. */
 const previewing = ref(false)
 
 const name = computed(() => asset.label ?? asset.filename)
@@ -42,8 +40,6 @@ function stopPreview(event: Event): void {
   if (video instanceof HTMLVideoElement) video.pause()
 }
 
-/* A looping preview fires `waiting` as it seeks back to the start. That is not
-   a stall, so it must not flash the badge back on. */
 function clearPreviewingUnlessLooping(event: Event): void {
   if (event.target instanceof HTMLVideoElement && event.target.seeking) return
   previewing.value = false
