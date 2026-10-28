@@ -9,7 +9,7 @@ import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMed
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { AppMode } from '@/utils/appMode'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { generateUUID } from '@/utils/formatUtil'
 
