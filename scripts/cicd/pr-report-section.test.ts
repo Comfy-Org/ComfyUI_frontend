@@ -92,4 +92,48 @@ describe('renderPrReportSection', () => {
       })
     ).toContain('\n\nNo new findings.\n\n</details>')
   })
+
+  // A failure call to action has to be readable without expanding anything:
+  // the heading says what is wrong, the notice says what to do about it.
+  it('keeps the notice visible between the heading and the collapsed box', () => {
+    const rendered = renderPrReportSection({
+      icon: '⚡',
+      title: 'Performance',
+      status: '❌ 1 below 52 FPS target',
+      notice: '> ❌ **1 scenario below the target.** Profile it.',
+      body: '| Metric | Value |'
+    })
+
+    expect(rendered.split('<details>')[0]).toBe(
+      '## ⚡ Performance: ❌ 1 below 52 FPS target\n\n> ❌ **1 scenario below the target.** Profile it.\n\n'
+    )
+    expect(rendered).toContain('<summary>Details</summary>\n\n| Metric')
+  })
+
+  it('renders a notice without a box when there is no body', () => {
+    expect(
+      renderPrReportSection({
+        icon: '🔬',
+        title: 'E2E Coverage',
+        status: '⚠️ No line coverage recorded',
+        notice: '\n> [!NOTE]\n> Check the logs.\n'
+      })
+    ).toBe(
+      '## 🔬 E2E Coverage: ⚠️ No line coverage recorded\n\n> [!NOTE]\n> Check the logs.'
+    )
+  })
+
+  it('names the collapsed box when a summary is given', () => {
+    expect(
+      renderPrReportSection({
+        icon: '🔬',
+        title: 'E2E Coverage',
+        status: '🟢 90.0% of lines',
+        summary: 'Coverage totals',
+        body: '| Metric |'
+      })
+    ).toContain(
+      '<summary>Coverage totals</summary>\n\n| Metric |\n\n</details>'
+    )
+  })
 })

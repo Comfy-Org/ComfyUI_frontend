@@ -219,25 +219,56 @@ function frameTimeToFps(ms: number): number {
   return ms > 0 ? 1000 / ms : 0
 }
 
-function countBelowFpsTarget(prGroups: Map<string, PerfMeasurement[]>): number {
-  let below = 0
-  for (const prSamples of prGroups.values()) {
-    const p95Frame = medianMetric(prSamples, 'p95FrameDurationMs')
-    if (p95Frame !== null && frameTimeToFps(p95Frame) < TARGET_P5_FPS) below++
-  }
-  return below
+/**
+ * PerformanceHelper records a frame duration of 0 when sampling times out or
+ * collects fewer than two timestamps. That is missing data, not a scenario
+ * running at 0 FPS, so it must never count as a target miss.
+ */
+function sampledFrameMetric(
+  samples: PerfMeasurement[],
+  key: 'frameDurationMs' | 'p95FrameDurationMs'
+): number | null {
+  const value = medianMetric(samples, key)
+  return value !== null && value > 0 ? value : null
 }
 
-function renderHeadlineSummary(
+interface FpsTargetTally {
+  below: number
+  unsampled: number
+}
+
+function tallyFpsTarget(
   prGroups: Map<string, PerfMeasurement[]>
-): string[] {
+): FpsTargetTally {
+  const tally: FpsTargetTally = { below: 0, unsampled: 0 }
+  for (const prSamples of prGroups.values()) {
+    const p95Frame = sampledFrameMetric(prSamples, 'p95FrameDurationMs')
+    if (p95Frame === null) {
+      if (medianMetric(prSamples, 'p95FrameDurationMs') !== null)
+        tally.unsampled++
+      continue
+    }
+    if (frameTimeToFps(p95Frame) < TARGET_P5_FPS) tally.below++
+  }
+  return tally
+}
+
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`
+}
+
+function renderHeadlineSummary(prGroups: Map<string, PerfMeasurement[]>): {
+  notice: string[]
+  lines: string[]
+} {
+  const notice: string[] = []
   const lines: string[] = []
   const summaries: string[] = []
-  let belowTarget = 0
+  const { below: belowTarget, unsampled } = tallyFpsTarget(prGroups)
 
   for (const [testName, prSamples] of prGroups) {
-    const avgFrame = medianMetric(prSamples, 'frameDurationMs')
-    const p95Frame = medianMetric(prSamples, 'p95FrameDurationMs')
+    const avgFrame = sampledFrameMetric(prSamples, 'frameDurationMs')
+    const p95Frame = sampledFrameMetric(prSamples, 'p95FrameDurationMs')
     const tbt = medianMetric(prSamples, 'totalBlockingTimeMs')
     const heap = medianMetric(prSamples, 'heapUsedBytes')
 
@@ -248,7 +279,6 @@ function renderHeadlineSummary(
     if (avgFps !== null) parts.push(`${avgFps.toFixed(1)} avg FPS`)
     if (p5Fps !== null) {
       const pass = p5Fps >= TARGET_P5_FPS
-      if (!pass) belowTarget++
       parts.push(
         `${p5Fps.toFixed(1)} P5 FPS ${pass ? '✅' : '❌'} (target: ≥${TARGET_P5_FPS})`
       )
@@ -260,8 +290,15 @@ function renderHeadlineSummary(
   }
 
   if (belowTarget > 0) {
-    lines.push(
-      `> ❌ **${belowTarget} scenario${belowTarget === 1 ? '' : 's'} below the ≥${TARGET_P5_FPS} P5 FPS target.** Expand the scenario timings below and profile the affected scenarios before merging.`,
+    notice.push(
+      `> ❌ **${plural(belowTarget, 'scenario')} below the ≥${TARGET_P5_FPS} P5 FPS target.** Expand the scenario timings below and profile the affected scenarios before merging.`,
+      ''
+    )
+  }
+
+  if (unsampled > 0) {
+    notice.push(
+      `> ⚠️ ${plural(unsampled, 'scenario')} recorded no frame samples, so ${unsampled === 1 ? 'its' : 'their'} FPS could not be checked against the target. Check the perf test logs for a frame sampling timeout.`,
       ''
     )
   }
@@ -277,11 +314,12 @@ function renderHeadlineSummary(
     )
   }
 
-  return lines
+  return { notice, lines }
 }
 
 interface RenderedReport {
   status: string
+  notice?: string[]
   lines: string[]
 }
 
@@ -346,10 +384,13 @@ function renderFullReport(
       ? `⚠️ ${flaggedRows.length} regression${flaggedRows.length > 1 ? 's' : ''} detected`
       : '✅ No regressions detected'
 
+  const notice: string[] = []
   if (flaggedRows.length > 0) {
-    lines.push(
+    notice.push(
       `⚠️ **${flaggedRows.length} regression${flaggedRows.length > 1 ? 's' : ''} detected**. Review the regressions below and profile the affected scenarios before merging.`,
-      '',
+      ''
+    )
+    lines.push(
       '<details><summary>Show regressions</summary>',
       '',
       ...tableHeader,
@@ -416,7 +457,7 @@ function renderFullReport(
     )
   }
 
-  return { status, lines }
+  return { status, notice, lines }
 }
 
 function renderColdStartReport(
@@ -531,8 +572,9 @@ function main() {
     )
   }
 
+  const headline = renderHeadlineSummary(prGroups)
   const body = [
-    ...renderHeadlineSummary(prGroups),
+    ...headline.lines,
     ...report.lines,
     '',
     '<details><summary>Raw data</summary>',
@@ -547,18 +589,22 @@ function main() {
   // The per-test target verdict lives in the collapsed summary, so without
   // this the heading can read ✅ over a hidden ❌. It leads, because a reader
   // scanning the comment takes the verdict from the first glyph and a target
-  // miss outranks "nothing moved since the baseline".
-  const belowTarget = countBelowFpsTarget(prGroups)
+  // miss outranks "nothing moved since the baseline". A run that measured
+  // nothing has no verdict at all, and must not read as a clean one.
+  const { below: belowTarget } = tallyFpsTarget(prGroups)
   const status =
-    belowTarget > 0
-      ? `❌ ${belowTarget} below ${TARGET_P5_FPS} FPS target · ${report.status}`
-      : report.status
+    current.measurements.length === 0
+      ? '⚠️ No measurements recorded — check the perf test logs'
+      : belowTarget > 0
+        ? `❌ ${belowTarget} below ${TARGET_P5_FPS} FPS target · ${report.status}`
+        : report.status
 
   process.stdout.write(
     renderPrReportSection({
       icon: '⚡',
       title: 'Performance',
       status,
+      notice: [...headline.notice, ...(report.notice ?? [])].join('\n'),
       body: body.join('\n')
     }) + '\n'
   )

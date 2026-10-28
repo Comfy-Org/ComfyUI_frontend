@@ -128,9 +128,9 @@ jobs:
           # version already on npm is skipped and still lands here.
           PACKAGE_COUNT=$(jq -r '.include | length' <<<"$MATRIX")
           {
-            printf '## 🚀 Release: ✅ %s package' "$PACKAGE_COUNT"
+            # Resolved, not pushed: say what finished, not what landed on npm.
+            printf '## 🚀 Release: ✅ Publish jobs finished for %s package' "$PACKAGE_COUNT"
             [ "$PACKAGE_COUNT" = 1 ] || printf 's'
-            printf ' on npm'
             echo ''
             echo ''
             echo '<details>'

@@ -124,24 +124,21 @@ function bar(covered: number, total: number): string {
 }
 
 const lines: string[] = []
-// GitHub alerts (`> [!NOTE]`) do not render inside the collapsed box, so the
-// shard-completeness caveat is plain bold text in the body and a short
-// qualifier on the heading, where a reader sees it without expanding.
+// The shard caveat qualifies the verdict, so it stays visible under the
+// heading rather than folded into the box with the totals.
+const notice: string[] = []
 const metadata = readCoverageMetadata(
   join(dirname(lcovPath), COVERAGE_METADATA_FILE)
 )
-let completenessQualifier = ''
 if (!metadata) {
-  completenessQualifier = ' (shards unverified)'
-  lines.push(
-    '**Note:** Shard completeness could not be verified for this run, so these totals may not be comparable with a whole merge. Check the coverage workflow logs and re-run collection before using these totals for comparison.',
-    ''
+  notice.push(
+    '> [!NOTE]',
+    '> Shard completeness could not be verified for this run, so these totals may not be comparable with a whole merge. Check the coverage workflow logs and re-run collection before using these totals for comparison.'
   )
 } else if (!metadata.complete) {
-  completenessQualifier = ' (incomplete shards)'
-  lines.push(
-    '**Note:** The shard matrix did not pass, so these totals cannot be confirmed comparable with a whole merge. Fix the failing shards and re-run coverage before using these totals for comparison.',
-    ''
+  notice.push(
+    '> [!NOTE]',
+    '> The shard matrix did not pass, so these totals cannot be confirmed comparable with a whole merge. Fix the failing shards and re-run coverage before using these totals for comparison.'
   )
 }
 
@@ -185,13 +182,15 @@ if (uncovered.length > 0) {
 const linesStatus =
   totalLines === 0
     ? '⚠️ No line coverage recorded'
-    : `${bar(coveredLines, totalLines)} ${pct(coveredLines, totalLines)} of lines${completenessQualifier}`
+    : `${bar(coveredLines, totalLines)} ${pct(coveredLines, totalLines)} of lines`
 
 process.stdout.write(
   renderPrReportSection({
     icon: '🔬',
     title: 'E2E Coverage',
     status: linesStatus,
+    notice: notice.join('\n'),
+    summary: 'Coverage totals',
     body: lines.join('\n')
   }) + '\n'
 )

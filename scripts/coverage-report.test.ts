@@ -49,7 +49,7 @@ describe('coverage-report shard banner', () => {
     expect(output).not.toContain('[!WARNING]')
     expect(output).not.toContain('[!NOTE]')
     expect(output).toContain('| Lines | 3 | 6 | 50.0%')
-    expect(output.split('<details>')[0]).toContain('Line coverage: **50.0%**')
+    expect(output.split('\n')[0]).toBe('## 🔬 E2E Coverage: 🟡 50.0% of lines')
     expect(output.split('<details>')[0]).not.toContain('| Metric |')
     expect(output).toMatch(
       /<summary>Coverage totals<\/summary>\n\n\| Metric[\s\S]*\| Lines \| 3 \| 6 \| 50.0%[\s\S]*\n\n<\/details>/
