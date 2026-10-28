@@ -30,13 +30,13 @@
 </template>
 
 <script setup lang="ts">
-import Switch from '@/components/ui/switch/Switch.vue'
-import Table from '@/components/ui/table/Table.vue'
-import TableBody from '@/components/ui/table/TableBody.vue'
-import TableCell from '@/components/ui/table/TableCell.vue'
-import TableHead from '@/components/ui/table/TableHead.vue'
-import TableHeader from '@/components/ui/table/TableHeader.vue'
-import TableRow from '@/components/ui/table/TableRow.vue'
+import Switch from '@comfyorg/design-system/switch/Switch'
+import Table from '@comfyorg/design-system/table/Table'
+import TableBody from '@comfyorg/design-system/table/TableBody'
+import TableCell from '@comfyorg/design-system/table/TableCell'
+import TableHead from '@comfyorg/design-system/table/TableHead'
+import TableHeader from '@comfyorg/design-system/table/TableHeader'
+import TableRow from '@comfyorg/design-system/table/TableRow'
 import { extensionPackName } from '@/stores/extensionStore'
 
 const { packs, enabledByPath, saving } = defineProps<{

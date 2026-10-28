@@ -36,7 +36,6 @@ const lazyModules = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/scripts/app'), () => ({
   app: fromAny({ __mockApp: true })
 }))

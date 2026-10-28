@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-pnpm exec lint-staged
+pnpm exec lint-staged --diff origin/main --diff-filter=ACMR --concurrent 1
 pnpm exec tsx scripts/check-unused-i18n-keys.ts
 pnpm exec tsx scripts/check-frozen-dirs.ts

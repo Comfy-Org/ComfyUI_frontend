@@ -69,14 +69,18 @@ import type { CheckboxCheckedState } from 'reka-ui'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
-import Message from '@/components/ui/message/Message.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Message from '@comfyorg/design-system/message/Message'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import {
+  filterByQuery,
+  sortByText
+} from '@comfyorg/design-system/lib/table/tableUtils'
+import type { TableSortDirection } from '@comfyorg/design-system/lib/table/tableUtils'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
-import type { TableSortDirection } from '@/components/ui/table/tableUtils'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import ExtensionListTable from '@/platform/settings/components/ExtensionListTable.vue'
 import ExtensionPackTable from '@/platform/settings/components/ExtensionPackTable.vue'
 import {

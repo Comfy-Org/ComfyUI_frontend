@@ -52,6 +52,14 @@ describe('useSettingStore', () => {
       expect(api.getSettings).toHaveBeenCalled()
     })
 
+    it('loads settings without the shared status retry stacking on its own backoff', async () => {
+      vi.mocked(api.getSettings).mockResolvedValue({} as Settings)
+
+      await store.load()
+
+      expect(api.getSettings).toHaveBeenCalledWith({ skipStatusRetry: true })
+    })
+
     describe('Canvas Navigation override migration', () => {
       const NAV = 'Comfy.Canvas.NavigationMode'
       const LEFT = 'Comfy.Canvas.LeftMouseClickBehavior'

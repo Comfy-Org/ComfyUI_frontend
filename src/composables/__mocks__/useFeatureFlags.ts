@@ -16,7 +16,6 @@ const defaultFlags: FeatureFlags = {
   assetDeletionEnabled: false,
   privateModelsEnabled: false,
   onboardingSurveyEnabled: false,
-  linearToggleEnabled: false,
   partnerNodeGovernanceEnabled: false,
   partnerRunGateEnabled: false,
   partnerNodeTokenEnabled: false,
@@ -46,7 +45,6 @@ const defaultFlags: FeatureFlags = {
   v1PaymentRecovery: false,
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
-  onboardingTourEnabled: false,
   assetsEnabled: false,
   agentInAppExperienceEnabled: false
 }

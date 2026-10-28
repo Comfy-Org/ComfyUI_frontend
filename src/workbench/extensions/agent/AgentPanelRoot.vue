@@ -1239,6 +1239,11 @@ watch(
   (tabs) => tabActivity.setAgentTurnTabs(tabs),
   { immediate: true, flush: 'sync' }
 )
+watch(
+  () => conversationStore.awaitingApproval,
+  (awaiting) => tabActivity.setAgentAwaitingApproval(awaiting),
+  { immediate: true, flush: 'sync' }
+)
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {
@@ -1618,6 +1623,7 @@ onBeforeUnmount(() => {
     },
     clearAgentTurnTabs: () => {
       tabActivity.setAgentTurnTabs([])
+      tabActivity.setAgentAwaitingApproval(false)
     },
     resetTurnTabResolver: () => {
       conversationStore.setTurnTabResolver(() => ({ status: 'unknown' }))
@@ -1678,33 +1684,46 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   })
 }
 
+const warnedIncompleteReasons = new Set<string>()
+
+function warnIncompleteHistory(reason: string, announce: boolean): void {
+  if (warnedIncompleteReasons.has(reason)) return
+  reportError(new Error('Agent thread list ended before its last page'), {
+    surface: 'agent',
+    errorType: 'agent_thread_list_load_failed',
+    tags: { reason }
+  })
+  if (announce) {
+    warnedIncompleteReasons.add(reason)
+    toast.warning(t('agent.historyIncomplete'), { duration: 5000 })
+  }
+  trackAgentError(
+    'thread_list_load_failed',
+    'pre_acceptance',
+    announce ? 'toast' : 'none',
+    { retryable: false }
+  )
+}
+
 const { refreshHistory } = useAgentChatHistoryRefresh({
   listThreads: rest.listThreads,
   history,
   untitledChat: () => t('agent.untitledChat'),
   onFailure: (failure, uiTreatment) => {
-    const error =
-      failure.status === 'failed'
-        ? failure.cause
-        : new Error('Agent thread list ended before its last page')
-    const diagnostics =
-      failure.status === 'failed'
-        ? describeAgentRequestFailure(error)
-        : undefined
+    if (failure.status === 'incomplete') {
+      warnIncompleteHistory(failure.reason, uiTreatment === 'error_overlay')
+      return
+    }
+    const error = failure.cause
+    const diagnostics = describeAgentRequestFailure(error)
     reportError(error, {
       surface: 'agent',
       errorType: 'agent_thread_list_load_failed',
-      tags:
-        diagnostics ??
-        (failure.status === 'incomplete'
-          ? { reason: failure.reason }
-          : undefined),
-      fingerprint: diagnostics
-        ? agentRequestFailureFingerprint(
-            'agent_thread_list_load_failed',
-            diagnostics
-          )
-        : undefined
+      tags: diagnostics,
+      fingerprint: agentRequestFailureFingerprint(
+        'agent_thread_list_load_failed',
+        diagnostics
+      )
     })
     if (uiTreatment === 'error_overlay')
       surfaceAgentError(
@@ -1712,8 +1731,7 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
         error instanceof Error ? error.message : String(error)
       )
     trackAgentError('thread_list_load_failed', 'pre_acceptance', uiTreatment, {
-      retryable:
-        failure.status === 'failed' && isRetryableRequestFailure(error, false),
+      retryable: isRetryableRequestFailure(error, false),
       diagnostics
     })
   }
@@ -1927,12 +1945,6 @@ const { submit: onSend } = useAgentDraftSubmission({
   },
   // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
-    if (
-      !agentPanelStore.onboarding.introduceBeforeSignIn &&
-      !hasAgentCredential() &&
-      !(await ensureSignedIn())
-    )
-      return false
     const submissionId = composerStore.submission?.id
     if (
       !consentAccepted.value &&
@@ -1979,10 +1991,6 @@ const { submit: onSend } = useAgentDraftSubmission({
           nodes,
           references,
           () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
-          // The same id reported on app:agent_message_sent just above. Sent to
-          // the server so it can echo it onto agent_turn_started, which is what
-          // makes the message -> turn step attributable instead of only
-          // countable.
           meta.clientMessageId,
           onAccepted
         )
@@ -2444,9 +2452,9 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       role="status"
       class="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed bg-secondary/90 p-4 font-inter text-sm/5 text-foreground"
     >
-      <span
+      <i
         aria-hidden="true"
-        class="icon-[lucide--upload] size-8 shrink-0 text-muted-foreground"
+        class="icon-[lucide--upload] size-8 text-muted-foreground"
       />
       <span>{{ t('agent.dragAndDropAssets') }}</span>
     </div>

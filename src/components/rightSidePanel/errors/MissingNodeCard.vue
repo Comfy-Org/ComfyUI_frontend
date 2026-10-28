@@ -9,7 +9,7 @@
     >
       <i
         aria-hidden="true"
-        class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0 text-warning"
+        class="mt-0.5 icon-[lucide--triangle-alert] text-warning"
       />
       <div class="flex flex-col gap-1.5 text-xs/relaxed text-muted-foreground">
         <p class="m-0">
@@ -83,11 +83,7 @@
       @click="applyChanges()"
     >
       <DotSpinner v-if="isRestarting" duration="1s" :size="12" />
-      <i
-        v-else
-        aria-hidden="true"
-        class="icon-[lucide--refresh-cw] size-4 shrink-0"
-      />
+      <i v-else aria-hidden="true" class="icon-[lucide--refresh-cw]" />
       <span class="min-w-0 truncate">{{
         t('rightSidePanel.missingNodePacks.applyChanges')
       }}</span>
@@ -99,8 +95,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { compare, valid } from 'semver'
-import Button from '@/components/ui/button/Button.vue'
-import DotSpinner from '@/components/common/DotSpinner.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import { useApplyChanges } from '@/workbench/extensions/manager/composables/useApplyChanges'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { isCloud } from '@/platform/distribution/types'

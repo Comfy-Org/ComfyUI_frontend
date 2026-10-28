@@ -27,7 +27,7 @@
         class="shrink-0 no-underline"
       >
         {{ $t('workspacePanel.billingTab.plan.actions.contactSales') }}
-        <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--external-link]" aria-hidden="true" />
       </Button>
       <Button
         v-else-if="action"
@@ -46,7 +46,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import BillingPlanLifecycle from '@/platform/billing/components/billingTab/BillingPlanLifecycle.vue'
 import {
   CONTACT_SALES_URL,

@@ -325,7 +325,7 @@ test.describe('Node Interaction', () => {
       )
       const clipOutput = await checkpoint.getOutput(1)
       const targetNode = await comfyPage.nodeOps.getNodeRefById(6)
-      const targetInput = await targetNode.getInput(0)
+      const targetInput = await targetNode.getInputByName('clip')
       const targetLink = await targetInput.getLink()
       if (!targetLink) throw new Error('Default workflow link not found')
 
@@ -1230,7 +1230,7 @@ test.describe('Load duplicate workflow', () => {
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
   })
 })
 

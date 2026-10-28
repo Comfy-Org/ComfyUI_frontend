@@ -19,6 +19,7 @@
         <div class="sidebar-icon-wrapper relative">
           <i
             v-if="typeof icon === 'string'"
+            class="size-5"
             :class="icon + ' side-bar-button-icon'"
           />
           <component
@@ -54,7 +55,7 @@
 import { computed } from 'vue'
 import type { Component } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { st } from '@/i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 

@@ -130,6 +130,17 @@ describe('requestSignIn', () => {
     )
   })
 
+  it('never settles once it has navigated away, so callers keep what they saved for the redirect', async () => {
+    const { bridge, env } = setup()
+    const settled = vi.fn()
+
+    void bridge.requestSignIn().then(settled, settled)
+    await vi.waitFor(() => expect(env.navigate).toHaveBeenCalledOnce())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(settled).not.toHaveBeenCalled()
+  })
+
   it('stays signed out without navigating when the verifier cannot be kept', async () => {
     const { bridge, env } = setup()
     env.sessionStorage.setItem = () => {

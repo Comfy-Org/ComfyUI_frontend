@@ -184,10 +184,13 @@ export const useSettingStore = defineStore('setting', () => {
           'Setting values must be loaded before any setting is registered.'
         )
       }
-      settingValues.value = await retry(() => api.getSettings(), {
-        retries: 3,
-        delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000)
-      })
+      settingValues.value = await retry(
+        () => api.getSettings({ skipStatusRetry: true }),
+        {
+          retries: 3,
+          delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000)
+        }
+      )
       await migrateZoomThresholdToFontSize()
       await migrateCanvasNavigationOverrides()
     },
