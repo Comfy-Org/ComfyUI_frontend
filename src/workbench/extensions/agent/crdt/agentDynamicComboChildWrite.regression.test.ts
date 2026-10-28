@@ -26,6 +26,8 @@ import { FollowerDoc } from './followerDoc'
  * the `model` dynamic combo. These cases pin that an Agent write to such a
  * child survives the edits a person makes on the same node afterwards.
  */
+type LocalWidgetWrite = Extract<GraphIntentEvent, { type: 'set_widget' }>
+
 const MODEL = 'Seedance 2.5'
 const CLASS = 'TestSeedance'
 const WORKFLOW_ID = 'wf-seedance'
@@ -75,6 +77,12 @@ class TestSeedance extends LGraphNode {
   }
 }
 
+const SELECTED_LAYOUT = [
+  'model.prompt',
+  'model.generate_audio',
+  'model.duration'
+]
+
 const CATALOG: WidgetCatalog = {
   types: {
     [CLASS]: {
@@ -84,7 +92,7 @@ const CATALOG: WidgetCatalog = {
           default: MODEL,
           options: {
             [MODEL]: {
-              widgets: ['model.prompt', 'model.generate_audio', 'model.duration'],
+              widgets: SELECTED_LAYOUT,
               defaults: {
                 'model.prompt': '',
                 'model.generate_audio': true,
@@ -172,18 +180,18 @@ function setup() {
     )
     deliver(Y.encodeStateAsUpdate(host, before))
   }
+  /** The host's projected value, positional in the selected layout. */
   const hostValue = (name: string) => {
-    const projected = project(host).nodes.find(
+    const projected = project(host, CATALOG).nodes.find(
       (candidate) => String(candidate.id) === String(node.id)
     )
-    const named = projected?.widgets_values_named as
-      | Record<string, unknown>
-      | undefined
-    if (named) return named[name]
-    return undefined
+    const order = ['model', ...SELECTED_LAYOUT]
+    const values = projected?.widgets_values
+    if (!Array.isArray(values)) return undefined
+    return values[order.indexOf(name)]
   }
 
-  const localWrites: GraphIntentEvent[] = []
+  const localWrites: LocalWidgetWrite[] = []
   const stop = onGraphIntent((event) => {
     if (event.source === 'local' && event.type === 'set_widget')
       localWrites.push(event)
