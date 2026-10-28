@@ -31,6 +31,8 @@ interface WorkflowRestoration {
   committedWorkflowId: string | null
 }
 
+const STARTUP_TAB_RESTORE_TIMEOUT_MS = 15_000
+
 const NOT_RESTORED: WorkflowRestoration = {
   ready: true,
   committedWorkflowId: null
@@ -258,14 +260,15 @@ export function useAgentWorkflowSelection({
   ): Promise<RestorationOutcome> {
     const listed = await refreshCloudWorkflowIds()
     if (!isCurrent()) return { outcome: 'superseded' }
-    const target = localOwnerFor(workflowId)
-    if (!listed || !cloudListingOmits(workflowId))
-      return { outcome: 'open', target }
+    let target = localOwnerFor(workflowId)
     if (target === null) {
       if (!(await startupTabsRestored(isCurrent)))
         return { outcome: 'superseded' }
-      if (localOwnerFor(workflowId) === null) return { outcome: 'deleted' }
+      target = localOwnerFor(workflowId)
     }
+    if (!listed || !cloudListingOmits(workflowId))
+      return { outcome: 'open', target }
+    if (target === null) return { outcome: 'deleted' }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
     return restorationOutcomeFor(lifecycle, localOwnerFor(workflowId))
@@ -278,9 +281,13 @@ export function useAgentWorkflowSelection({
   async function startupTabsRestored(
     isCurrent: () => boolean
   ): Promise<boolean> {
-    if (workflowStore.tabsRestored) return true
-    await until(() => workflowStore.tabsRestored).toBe(true)
-    await nextTick()
+    if (!workflowStore.tabsRestored) {
+      await until(() => workflowStore.tabsRestored).toBe(true, {
+        timeout: STARTUP_TAB_RESTORE_TIMEOUT_MS,
+        throwOnTimeout: false
+      })
+      await nextTick()
+    }
     return isCurrent()
   }
 
