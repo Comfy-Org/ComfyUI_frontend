@@ -123,6 +123,7 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('music.ogg')).toBe('audio')
         expect(getMediaTypeFromFilename('audio.flac')).toBe('audio')
         expect(getMediaTypeFromFilename('music.opus')).toBe('audio')
+        expect(getMediaTypeFromFilename('voice.m4a')).toBe('audio')
       })
     })
 

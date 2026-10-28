@@ -51,13 +51,14 @@ test.describe('Workflow sidebar - search', () => {
   })
 
   test.describe('deletion', () => {
+    test.use({ initialSettings: { 'Comfy.Workflow.ConfirmDelete': false } })
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({
         'alpha-workflow.json': 'default.json',
         'beta-workflow.json': 'default.json',
         'gamma-workflow.json': 'default.json'
       })
-      await comfyPage.settings.setSetting('Comfy.Workflow.ConfirmDelete', false)
       await comfyPage.menu.workflowsTab.open()
     })
 

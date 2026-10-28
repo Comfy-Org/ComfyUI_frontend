@@ -1,14 +1,11 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
-import { toGroupId } from '@/types/groupId'
-import { toNodeId } from '@/types/nodeId'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 import { describe, expect, it, beforeEach } from 'vitest'
 import {
   computedSectionDataList,
@@ -86,6 +83,13 @@ describe('searchWidgets', () => {
     const result = searchWidgets(widgets, 'IMAGE width')
     expect(result).toHaveLength(1)
   })
+
+  it('searches a legacy widget with no type by name', () => {
+    const widget = createWidget('width', 'number')
+    Reflect.deleteProperty(widget.widget, 'type')
+
+    expect(searchWidgets([widget], 'width')).toEqual([widget])
+  })
 })
 
 describe('searchWidgetsAndNodes', () => {
@@ -137,15 +141,11 @@ describe('searchWidgetsAndNodes', () => {
 })
 
 describe('computedSectionDataList', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia())
-  })
-
   function createWidget(
     name: string,
     options: IWidgetOptions = {}
   ): IBaseWidget {
-    return { name, type: 'number', options, y: 0 } as IBaseWidget
+    return { name, type: 'number', options, y: 0 }
   }
 
   it('omits hideInPanel widgets while keeping the rest on the node', () => {
@@ -178,6 +178,35 @@ describe('computedSectionDataList', () => {
     )
 
     expect(shownNames).toEqual(['seed'])
+  })
+
+  it('uses panel visibility tiers and suppression', () => {
+    const node = new LGraphNode('Visibility')
+    const connected = createWidget('connected')
+    node.widgets = [
+      createWidget('shown'),
+      createWidget('hidden', { hidden: true }),
+      createWidget('panel-hidden', { hideInPanel: true }),
+      createWidget('canvas-only', { canvasOnly: true }),
+      createWidget('advanced', { advanced: true }),
+      connected
+    ]
+    const connectedVisibility = deriveWidgetVisibility(connected)
+    connectedVisibility.suppression.byConnection = true
+    const registeredConnected = node.widgets.at(-1)
+    if (!registeredConnected) throw new Error('Missing connected widget')
+    Object.defineProperty(registeredConnected, 'visibility', {
+      value: connectedVisibility
+    })
+
+    const { widgetsSectionDataList } = computedSectionDataList([node])
+    const shownNames = () =>
+      widgetsSectionDataList.value[0].widgets.map(({ widget }) => widget.name)
+
+    expect(shownNames()).toEqual(['shown'])
+    useSettingStore().settingValues['Comfy.Node.AlwaysShowAdvancedWidgets'] =
+      true
+    expect(shownNames()).toEqual(['shown', 'advanced'])
   })
 })
 

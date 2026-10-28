@@ -1,26 +1,37 @@
+import type { LGraph, LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { setGroupBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { GroupId } from '@/types/groupId'
-import { toGroupId } from '@/types/groupId'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { hexToRgb, luminance, readableTextColor } from '@/utils/colorUtil'
 
-import type { LGraph } from './LGraph'
-import { LGraphCanvas } from './LGraphCanvas'
+import { canvasClass } from './canvas/canvasClassAccess'
 import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
 import { createMutationView } from './infrastructure/createMutationView'
+import {
+  defineAbsorbingBuffer,
+  defineGuardedCollection
+} from './infrastructure/externalWriteGuards'
 import type {
   ColorOption,
   IColorable,
-  IContextMenuValue,
   IPinnable,
-  Point,
-  Positionable,
+  Positionable
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
   Rect,
-  Size
-} from './interfaces'
-import { LiteGraph, Rectangle } from './litegraph'
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { IContextMenuValue } from './types/contextMenu'
+import { LiteGraph } from './litegraphInstance'
+import { Rectangle } from './infrastructure/Rectangle'
 import {
   containsCentre,
   containsRect,
@@ -31,7 +42,7 @@ import {
   isPointInRect,
   snapPoint
 } from './measure'
-import type { ISerialisedGroup } from './types/serialisation'
+import type { ISerialisedGroup } from '@comfyorg/graph-model/serialisation'
 
 export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
@@ -67,7 +78,28 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   _children: Set<Positionable> = new Set()
   graph?: LGraph
   flags: IGraphGroupFlags = {}
-  selected?: boolean
+  private detachedSelected = false
+
+  get selected(): boolean {
+    const scope = this.selectionScope
+    return scope
+      ? isSelectedIn(scope, toSelectableKey('group', this.id))
+      : this.detachedSelected
+  }
+
+  set selected(value: boolean | undefined) {
+    const scope = this.selectionScope
+    if (!scope) {
+      this.detachedSelected = !!value
+      return
+    }
+    this.detachedSelected = false
+    setSelectedIn(scope, toSelectableKey('group', this.id), !!value)
+  }
+
+  private get selectionScope(): GraphScope | undefined {
+    return this.graph ? graphScopeOf(this.graph) : undefined
+  }
 
   /** Background colour last used to compute {@link _titleTextColor} */
   _lastTitleBgColor?: string
@@ -95,18 +127,67 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   })
 
   constructor(title?: string, id?: GroupId) {
-    // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
     this.id = toGroupId(id ?? -1)
     this.title = title || 'Group'
+    const { pale_blue } = canvasClass.node_colors
+    this.color = pale_blue.groupcolor
 
-    const { pale_blue } = LGraphCanvas.node_colors
-    this.color = pale_blue ? pale_blue.groupcolor : '#AAA'
+    let reported = false
+    function onRefused(key: string, value: unknown) {
+      if (reported) return
+      reported = true
+      console.warn(
+        `[LGraphGroup] rejected ${key} assignment (${typeof value}); kept the existing value`
+      )
+    }
+
+    const writeRect = (coords: number[]) =>
+      this.setBounds(coords[0], coords[1], coords[2], coords[3])
+    defineAbsorbingBuffer(this, 'bounds', 4, writeRect, onRefused)
+    defineAbsorbingBuffer(this, '_bounding', 4, writeRect, onRefused)
+    defineAbsorbingBuffer(
+      this,
+      '_pos',
+      2,
+      (coords) => {
+        this.pos = [coords[0], coords[1]]
+      },
+      onRefused
+    )
+    defineAbsorbingBuffer(
+      this,
+      '_size',
+      2,
+      (coords) => {
+        this.setBounds(this._pos[0], this._pos[1], coords[0], coords[1])
+      },
+      onRefused
+    )
+
+    defineGuardedCollection(
+      this,
+      '_nodes',
+      (value): value is LGraphNode[] =>
+        Array.isArray(value) && value.every((n) => n instanceof LGraphNode),
+      onRefused
+    )
+    defineGuardedCollection(
+      this,
+      '_children',
+      (value): value is Set<Positionable> =>
+        value instanceof Set &&
+        [...value].every(
+          (item: unknown) =>
+            typeof (item as Positionable | undefined)?.move === 'function'
+        ),
+      onRefused
+    )
   }
 
   /** @inheritdoc {@link IColorable.setColorOption} */
   setColorOption(colorOption: ColorOption | null): void {
     if (colorOption == null) {
-      delete this.color
+      this.color = undefined
     } else {
       this.color = colorOption.groupcolor
     }
@@ -115,7 +196,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   /** @inheritdoc {@link IColorable.getColorOption} */
   getColorOption(): ColorOption | null {
     return (
-      Object.values(LGraphCanvas.node_colors).find(
+      Object.values(canvasClass.node_colors).find(
         (colorOption) => colorOption.groupcolor === this.color
       ) ?? null
     )
@@ -127,8 +208,6 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   }
 
   set pos(v) {
-    if (!v || v.length < 2) return
-
     this.setBounds(v[0], v[1], this._size[0], this._size[1])
   }
 
@@ -138,8 +217,6 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   }
 
   set size(v) {
-    if (!v || v.length < 2) return
-
     this.setBounds(
       this._pos[0],
       this._pos[1],
@@ -310,7 +387,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     if (this.pinned) return
 
     this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
-    if (skipChildren === true) return
+    if (skipChildren) return
 
     for (const item of this._children) {
       item.move(deltaX, deltaY)
@@ -420,7 +497,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
    * @param padding The padding around the group
    */
   addNodes(nodes: LGraphNode[], padding: number = 10): void {
-    if (!this._nodes && nodes.length === 0) return
+    if (nodes.length === 0) return
     this.resizeTo([...this.children, ...this._nodes, ...nodes], padding)
   }
 
@@ -439,20 +516,19 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
         }
       },
       null,
-      { content: 'Title', callback: LGraphCanvas.onShowPropertyEditor },
+      { content: 'Title', callback: canvasClass.onShowPropertyEditor },
       {
         content: 'Color',
         has_submenu: true,
-        callback: LGraphCanvas.onMenuNodeColors
+        callback: canvasClass.onMenuNodeColors
       },
       {
         content: 'Font size',
         property: 'font_size',
-        type: 'Number',
-        callback: LGraphCanvas.onShowPropertyEditor
+        callback: canvasClass.onShowPropertyEditor
       },
       null,
-      { content: 'Remove', callback: LGraphCanvas.onMenuNodeRemove }
+      { content: 'Remove', callback: canvasClass.onMenuNodeRemove }
     ]
   }
 
@@ -477,4 +553,12 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     return isInRect(x, y, this.boundingRect)
   }
   setDirtyCanvas = LGraphNode.prototype.setDirtyCanvas
+}
+
+type RegisteredLGraphGroup = LGraphGroup
+type RegisteredIGraphGroupFlags = IGraphGroupFlags
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface LGraphGroup extends RegisteredLGraphGroup {}
+  interface IGraphGroupFlags extends RegisteredIGraphGroupFlags {}
 }

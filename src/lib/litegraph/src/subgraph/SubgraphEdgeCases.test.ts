@@ -82,10 +82,10 @@ describe('SubgraphEdgeCases - Invalid States', () => {
       typeof subgraph.removeInput
     >[0]
 
-    // Should throw appropriate error for non-existent input
-    expect(() => {
-      subgraph.removeInput(fakeInput)
-    }).toThrow(/Input not found/) // Expected error
+    subgraph.removeInput(fakeInput)
+
+    expect(console.error).toHaveBeenCalledWith('Input not found')
+    expect(subgraph.inputs).toHaveLength(0)
   })
 
   it('should handle removing non-existent outputs gracefully', () => {
@@ -98,9 +98,10 @@ describe('SubgraphEdgeCases - Invalid States', () => {
       typeof subgraph.removeOutput
     >[0]
 
-    expect(() => {
-      subgraph.removeOutput(fakeOutput)
-    }).toThrow(/Output not found/) // Expected error
+    subgraph.removeOutput(fakeOutput)
+
+    expect(console.error).toHaveBeenCalledWith('Output not found')
+    expect(subgraph.outputs).toHaveLength(0)
   })
 
   it('should throw error for null/undefined input names', () => {

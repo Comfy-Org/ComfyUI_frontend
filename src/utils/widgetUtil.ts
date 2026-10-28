@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDialogService } from '@/services/dialogService'
@@ -49,13 +49,13 @@ export function renameWidget(
   const label = newLabel || undefined
   // TODO(ecs-widget-label-identity): the `input.label` write below is the interim
   // on-ramp. End-state is an ECS WidgetIdentity.label serialized field (name =
-  // identity, label = display per ADR-0009) written via WidgetHandle.setLabel — the
+  // identity, label = display per ADR-SUBGRAPH-PROMOTION-0009) written via WidgetHandle.setLabel — the
   // widget entity owns its label, so the socketless/DOM-widget case (no input slot
   // to carry input.label, e.g. CLIPTextEncode `text`) is fixed by construction.
   const input =
     (widget.widgetId &&
-      node.inputs?.find((inp) => inp.widgetId === widget.widgetId)) ||
-    node.inputs?.find((inp) => inp.widget?.name === widget.name)
+      node.inputs.find((inp) => inp.widgetId === widget.widgetId)) ||
+    node.inputs.find((inp) => inp.widget?.name === widget.name)
   const widgetState = widget.widgetId
     ? useWidgetValueStore().getWidget(widget.widgetId)
     : undefined

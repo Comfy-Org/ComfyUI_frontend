@@ -1,24 +1,29 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type {
+  LGraphNode,
+  LLink,
+  Reroute,
+  SubgraphInput,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
+
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotIndex } from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork,
-  Point,
-  SlotIndex
-} from '@/lib/litegraph/src/interfaces'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
+
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 
 import type { RenderLink } from './RenderLink'
 
@@ -73,7 +78,7 @@ export class FloatingRenderLink implements RenderLink {
           `Creating DraggingRenderLink for link [${link.id}] failed: Output node [${outputNodeId}] not found.`
         )
 
-      const outputSlot = outputNode?.outputs.at(outputIndex)
+      const outputSlot = outputNode.outputs.at(outputIndex)
       if (!outputSlot)
         throw new Error(
           `Creating DraggingRenderLink for link [${link.id}] failed: Output slot [${outputIndex}] not found.`
@@ -88,7 +93,7 @@ export class FloatingRenderLink implements RenderLink {
       // RenderLink props
       this.node = outputNode
       this.fromSlot = outputSlot
-      this.fromPos = fromReroute?.pos ?? this.outputPos
+      this.fromPos = fromReroute.pos
       this.fromDirection = LinkDirection.LEFT
       this.dragDirection = LinkDirection.RIGHT
       this.fromSlotIndex = outputIndex
@@ -100,7 +105,7 @@ export class FloatingRenderLink implements RenderLink {
           `Creating DraggingRenderLink for link [${link.id}] failed: Input node [${inputNodeId}] not found.`
         )
 
-      const inputSlot = inputNode?.inputs.at(inputIndex)
+      const inputSlot = inputNode.inputs.at(inputIndex)
       if (!inputSlot)
         throw new Error(
           `Creating DraggingRenderLink for link [${link.id}] failed: Input slot [${inputIndex}] not found.`
@@ -152,8 +157,10 @@ export class FloatingRenderLink implements RenderLink {
     node.disconnectInput(node.inputs.indexOf(input))
 
     const floatingLink = this.link
-    floatingLink.target_id = node.id
-    floatingLink.target_slot = node.inputs.indexOf(input)
+    floatingLink.updateEndpoints({
+      targetNodeId: node.id,
+      targetSlot: node.inputs.indexOf(input)
+    })
   }
 
   connectToOutput(
@@ -162,8 +169,10 @@ export class FloatingRenderLink implements RenderLink {
     _events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
     const floatingLink = this.link
-    floatingLink.origin_id = node.id
-    floatingLink.origin_slot = node.outputs.indexOf(output)
+    floatingLink.updateEndpoints({
+      originNodeId: node.id,
+      originSlot: node.outputs.indexOf(output)
+    })
   }
 
   connectToSubgraphInput(
@@ -171,8 +180,10 @@ export class FloatingRenderLink implements RenderLink {
     _events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
     const floatingLink = this.link
-    floatingLink.origin_id = SUBGRAPH_INPUT_ID
-    floatingLink.origin_slot = input.parent.slots.indexOf(input)
+    floatingLink.updateEndpoints({
+      originNodeId: SUBGRAPH_INPUT_ID,
+      originSlot: input.parent.slots.indexOf(input)
+    })
   }
 
   connectToSubgraphOutput(
@@ -180,34 +191,44 @@ export class FloatingRenderLink implements RenderLink {
     _events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
     const floatingLink = this.link
-    floatingLink.target_id = SUBGRAPH_OUTPUT_ID
-    floatingLink.target_slot = output.parent.slots.indexOf(output)
+    floatingLink.updateEndpoints({
+      targetNodeId: SUBGRAPH_OUTPUT_ID,
+      targetSlot: output.parent.slots.indexOf(output)
+    })
   }
 
   connectToRerouteInput(
-    // @ts-expect-error - Reroute type needs fixing
-    reroute: Reroute,
+    _reroute: Reroute,
     { node: inputNode, input }: { node: LGraphNode; input: INodeInputSlot },
     events: CustomEventTarget<LinkConnectorEventMap>
   ) {
     const floatingLink = this.link
-    floatingLink.target_id = inputNode.id
-    floatingLink.target_slot = inputNode.inputs.indexOf(input)
+    floatingLink.updateEndpoints({
+      targetNodeId: inputNode.id,
+      targetSlot: inputNode.inputs.indexOf(input)
+    })
 
     events.dispatch('input-moved', this)
   }
 
   connectToRerouteOutput(
-    // @ts-expect-error - Reroute type needs fixing
-    reroute: Reroute,
+    _reroute: Reroute,
     outputNode: LGraphNode,
     output: INodeOutputSlot,
     events: CustomEventTarget<LinkConnectorEventMap>
   ) {
     const floatingLink = this.link
-    floatingLink.origin_id = outputNode.id
-    floatingLink.origin_slot = outputNode.outputs.indexOf(output)
+    floatingLink.updateEndpoints({
+      originNodeId: outputNode.id,
+      originSlot: outputNode.outputs.indexOf(output)
+    })
 
     events.dispatch('output-moved', this)
   }
+}
+
+type RegisteredFloatingRenderLink = FloatingRenderLink
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface FloatingRenderLink extends RegisteredFloatingRenderLink {}
 }

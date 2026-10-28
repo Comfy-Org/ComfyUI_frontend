@@ -1,22 +1,22 @@
 import { computed } from 'vue'
 import { describe, expect, it } from 'vitest'
 
-import type { CurveData } from '@/components/curve/types'
+import type { CurveData } from '@comfyorg/graph-model/curve'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import type { extractUniformSources } from '@/renderer/glsl/useGLSLUniforms'
 import { useGLSLUniforms } from '@/renderer/glsl/useGLSLUniforms'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { UUID } from '@/utils/uuid'
 
 /**
  * Regression guard for the GLSL live preview breaking on *promoted* subgraph
  * widget edits (QA 2026-07-20, Terry Jia; fixed by #13875).
  *
- * Under ADR 0009 link-only promotion, a promoted proxy widget's live value is
+ * Under ADR-SUBGRAPH-PROMOTION-0009 link-only promotion, a promoted proxy widget's live value is
  * stored at the host widget key (`hostWidgetId`), while the uniform source is
  * still discovered from the interior source node. `useGLSLUniforms` must read
  * the host key so edits to the promoted curve/range proxy reach the renderer.

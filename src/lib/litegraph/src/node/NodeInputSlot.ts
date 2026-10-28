@@ -1,30 +1,34 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LinkId } from '@/lib/litegraph/src/LLink'
+import type {
+  LGraphNode,
+  LLink,
+  SubgraphInput,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
+
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { LabelPosition } from '@/lib/litegraph/src/draw'
+import type { OptionalProps } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  OptionalProps,
-  Point
-} from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
-import { inputHasLink, inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import {
+  NodeSlot,
+  provideNodeInputSlotGuard
+} from '@/lib/litegraph/src/node/NodeSlot'
+import { inputHasLink, inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+
+import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   alwaysVisible?: boolean
 
-  /**
-   * @deprecated Reads return the store-derived link id. Assigning null
-   * disconnects through the store; assigning an id is ignored. First-party
-   * code uses the slotLinks helpers and node topology methods.
-   */
+  /** @deprecated Read-only compatibility view of the store-derived link id. */
   get link(): LinkId | null {
     warnDeprecated(
       'input.link is deprecated. Read connectivity via node.isInputConnected(slot) / node.getInputLink(slot); mutate via node.connect() / node.disconnectInput().'
@@ -34,10 +38,14 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
 
   set link(value: LinkId | null) {
     warnDeprecated(
-      'Assignment to input.link is deprecated; null disconnects through the link store. Mutate via node.connect() / node.disconnectInput().'
+      'Assignment to input.link is deprecated. Use node.connect() / node.disconnectInput().'
     )
+    if (value !== null) return
+
     const slot = indexOf(this)
-    if (value === null && slot !== -1) this._node.disconnectInput(slot)
+    const { graph } = this._node
+    if (!graph || slot === -1) return
+    this._node.disconnectInput(slot)
   }
 
   get isWidgetInputSlot(): boolean {
@@ -124,7 +132,12 @@ function indexOf(slot: NodeInputSlot): number {
 }
 
 function linkIdOf(slot: NodeInputSlot): LinkId | null {
-  const { graph } = slot.node
-  if (!graph) return null
-  return inputLinkId(graph, slot.node.id, indexOf(slot)) ?? null
+  return linkOf(slot)?.id ?? null
 }
+
+function linkOf(slot: NodeInputSlot): LLink | undefined {
+  const { graph } = slot.node
+  return graph ? inputLink(graph, slot.node.id, indexOf(slot)) : undefined
+}
+
+provideNodeInputSlotGuard((slot) => slot instanceof NodeInputSlot)

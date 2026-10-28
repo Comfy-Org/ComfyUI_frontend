@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { FillSpec } from '@/renderer/extensions/layerEditor/engine/fill'
-import { defaultMode } from '@/renderer/extensions/layerEditor/engine/mode'
-import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
+import type { FillSpec } from '@comfyorg/layer-editor/fill'
+import { defaultMode } from '@comfyorg/layer-editor/mode'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
 import type {
   FillData,
   RasterData,
   Transform
-} from '@/renderer/extensions/layerEditor/engine/node'
+} from '@comfyorg/layer-editor/node'
 
 import {
   applyLayerState,
@@ -472,6 +472,27 @@ describe('resolveInitialLayerState', () => {
       name: 'Subject',
       transform: { x: 10, y: 20, w: 30, h: 40, rotation: 0 }
     })
+  })
+
+  it('carries the document canvas into the synthesized bbox layout', () => {
+    const resolved = resolveInitialLayerState(null, ['hash-a'], bboxes, {
+      w: 1280,
+      h: 1280
+    })
+    expect(resolved?.canvas).toEqual({ w: 1280, h: 1280 })
+  })
+
+  it('omits the canvas when the backend reports none', () => {
+    const resolved = resolveInitialLayerState(null, ['hash-a'], bboxes)
+    expect(resolved?.canvas).toBeUndefined()
+  })
+
+  it('ignores a malformed canvas', () => {
+    const resolved = resolveInitialLayerState(null, ['hash-a'], bboxes, {
+      w: Number.NaN,
+      h: 1280
+    })
+    expect(resolved?.canvas).toBeUndefined()
   })
 
   it('returns null without a saved state or usable bboxes', () => {

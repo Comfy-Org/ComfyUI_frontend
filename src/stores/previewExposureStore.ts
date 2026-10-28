@@ -1,3 +1,4 @@
+import type { SubgraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -8,9 +9,12 @@ import type {
 import { resolvePreviewExposureChain } from '@/core/graph/subgraph/preview/previewExposureChain'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
+
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
-import { toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
@@ -30,6 +34,24 @@ function normalizePreviewExposure(
     ...exposure,
     sourceNodeId: toNodeId(exposure.sourceNodeId)
   }
+}
+
+export function getPreviewExposureHostLocator(
+  host: SubgraphNode
+): NodeLocatorId | null {
+  const locator = tryGetPreviewExposureHostLocator(host)
+  if (locator) return locator
+  console.error(
+    `Cannot create preview exposure host locator for node ${String(host.id)}`
+  )
+  return null
+}
+
+export function tryGetPreviewExposureHostLocator(
+  host: SubgraphNode
+): NodeLocatorId | null {
+  const graphId = host.graph?.isRootGraph ? null : (host.graph?.id ?? null)
+  return createNodeLocatorId(graphId, host.id)
 }
 
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
@@ -104,6 +126,13 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     setExposures(rootGraphId, hostNodeLocator, next)
   }
 
+  function clearHost(rootGraphId: UUID, hostNodeLocator: string): void {
+    const hosts = exposures.value.get(rootGraphId)
+    if (!hosts) return
+    hosts.delete(hostNodeLocator)
+    if (hosts.size === 0) exposures.value.delete(rootGraphId)
+  }
+
   function clearGraph(rootGraphId: UUID): void {
     exposures.value.delete(rootGraphId)
   }
@@ -141,6 +170,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     setExposures,
     addExposure,
     removeExposure,
+    clearHost,
     clearGraph,
     resolveChain
   }

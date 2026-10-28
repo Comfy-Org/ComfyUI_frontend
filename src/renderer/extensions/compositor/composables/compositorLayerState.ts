@@ -1,28 +1,22 @@
-import { LAYER_MODES } from '@/renderer/extensions/layerEditor/engine/mode'
-import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
+import type {
+  Bounds,
+  CompactSize
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  CompositorLayerEntry,
+  CompositorBackgroundEntry,
+  CompositorLayerState
+} from '@comfyorg/graph-model/compositor'
+export type { CompositorLayerState } from '@comfyorg/graph-model/compositor'
+import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
 import type {
   FillData,
   SceneNode,
   Transform
-} from '@/renderer/extensions/layerEditor/engine/node'
+} from '@comfyorg/layer-editor/node'
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
-
-interface CompositorLayerEntry {
-  name: string
-  visible: boolean
-  opacity: number
-  blend: BlendFn
-  transform: Transform
-  flipH: boolean
-  flipV: boolean
-}
-
-interface CompositorBackgroundEntry {
-  color: string
-  opacity: number
-  visible: boolean
-}
 
 const DEFAULT_BACKGROUND_ENTRY: CompositorBackgroundEntry = {
   color: '#ffffff',
@@ -32,20 +26,7 @@ const DEFAULT_BACKGROUND_ENTRY: CompositorBackgroundEntry = {
 
 const LAYER_STATE_VERSION = 1
 
-export interface CompositorLayerState {
-  version?: typeof LAYER_STATE_VERSION
-  canvas?: { w: number; h: number }
-  inputs?: string[]
-  background?: CompositorBackgroundEntry
-  order?: number[]
-  layers: Array<CompositorLayerEntry | null>
-}
-
-export interface CompositorBBox {
-  x: number
-  y: number
-  width: number
-  height: number
+export interface CompositorBBox extends Bounds {
   name?: string | null
   rotation?: number
   visible?: boolean
@@ -56,7 +37,7 @@ export interface CompositorBBox {
 }
 
 interface CompositorLayerStateInit {
-  canvas?: { w: number; h: number }
+  canvas?: CompactSize
   background?: CompositorBackgroundEntry
   order?: number[]
   layers: Array<Partial<CompositorLayerEntry> | null>
@@ -145,7 +126,7 @@ function backgroundEntry(node: FillData): CompositorBackgroundEntry {
 }
 
 export function extractLayerState(
-  canvas: { w: number; h: number },
+  canvas: CompactSize,
   layers: readonly SceneNode[],
   layerFlips: (id: string) => { h: boolean; v: boolean },
   inputs?: string[],
@@ -187,7 +168,7 @@ export function extractLayerState(
   }
 }
 
-function parseCanvasSize(value: unknown): { w: number; h: number } | undefined {
+function parseCanvasSize(value: unknown): CompactSize | undefined {
   if (typeof value !== 'object' || value === null) return undefined
   const { w, h } = value as Record<string, unknown>
   return isFiniteNumber(w) && isFiniteNumber(h) ? { w, h } : undefined
@@ -282,10 +263,13 @@ export function layerStateInputsMatch(
 }
 
 function bboxLayerState(
-  bboxes: ReadonlyArray<CompositorBBox | null> | undefined
+  bboxes: ReadonlyArray<CompositorBBox | null> | undefined,
+  canvas?: CompactSize
 ): CompositorLayerStateInit | null {
   if (!bboxes?.some((bbox) => bbox !== null)) return null
+  const canvasSize = parseCanvasSize(canvas)
   return {
+    ...(canvasSize ? { canvas: canvasSize } : {}),
     layers: bboxes.map((bbox) =>
       bbox
         ? {
@@ -315,11 +299,12 @@ function bboxLayerState(
 export function resolveInitialLayerState(
   savedState: CompositorLayerState | null,
   currentInputs: readonly string[] | undefined,
-  bboxes: ReadonlyArray<CompositorBBox | null> | undefined
+  bboxes: ReadonlyArray<CompositorBBox | null> | undefined,
+  canvas?: CompactSize
 ): CompositorLayerStateInit | null {
   if (savedState && layerStateInputsMatch(savedState.inputs, currentInputs))
     return savedState
-  return bboxLayerState(bboxes)
+  return bboxLayerState(bboxes, canvas)
 }
 
 export function applyLayerState(
@@ -356,7 +341,7 @@ export function applyLayerState(
 
   if (state.order) {
     const ids = state.order
-      .map((index) => layers[index]?.id)
+      .map((index) => layers.at(index)?.id)
       .filter((id): id is string => id !== undefined)
     if (ids.length > 0) ops.setLayerOrder(ids)
   }

@@ -1,14 +1,19 @@
+import { computed } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ExecutionContext, ShellLayoutMetadata } from '../../types'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type {
+  ExecutionContext,
+  ShellLayoutMetadata
+} from '@/platform/telemetry/types'
 import { SentryTelemetryProvider } from './SentryTelemetryProvider'
 
 const mocks = vi.hoisted(() => ({
   addBreadcrumb: vi.fn(),
   setContext: vi.fn(),
   setUser: vi.fn(),
-  onUserLogout: vi.fn(),
-  resolvedUserId: 'existing-user' as string | undefined,
   workflowIsModified: true,
   executionContext: {
     is_template: false,
@@ -25,34 +30,15 @@ const mocks = vi.hoisted(() => ({
   } satisfies ExecutionContext
 }))
 
-vi.mock('@sentry/vue', () => ({
+vi.mock(import('@sentry/vue'), () => ({
   addBreadcrumb: mocks.addBreadcrumb,
   setContext: mocks.setContext,
   setUser: mocks.setUser
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    onUserLogout: mocks.onUserLogout,
-    resolvedUserInfo: {
-      value: mocks.resolvedUserId
-        ? {
-            id: mocks.resolvedUserId
-          }
-        : null
-    }
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    activeWorkflow: {
-      isModified: mocks.workflowIsModified
-    }
-  })
-}))
-
-vi.mock('../../utils/getExecutionContext', () => ({
+vi.mock(import('@/platform/telemetry/utils/getExecutionContext'), () => ({
   getExecutionContext: () => mocks.executionContext
 }))
 
@@ -67,9 +53,17 @@ const shellLayout: ShellLayoutMetadata = {
   open_workflow_tabs: 2
 }
 
+beforeEach(() => {
+  useCurrentUser().resolvedUserInfo = computed(() => ({
+    id: 'existing-user'
+  }))
+  useWorkflowStore().activeWorkflow = fromPartial({
+    isModified: mocks.workflowIsModified
+  })
+})
+
 describe('SentryTelemetryProvider', () => {
   beforeEach(() => {
-    mocks.resolvedUserId = 'existing-user'
     mocks.workflowIsModified = true
   })
 
@@ -81,9 +75,9 @@ describe('SentryTelemetryProvider', () => {
 
     expect(mocks.setUser).toHaveBeenNthCalledWith(1, { id: 'existing-user' })
     expect(mocks.setUser).toHaveBeenNthCalledWith(2, { id: 'new-user' })
-    expect(mocks.onUserLogout).toHaveBeenCalledOnce()
+    expect(useCurrentUser().onUserLogout).toHaveBeenCalledOnce()
 
-    const onLogout = mocks.onUserLogout.mock.calls[0][0]
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     onLogout()
 
     expect(mocks.setUser).toHaveBeenLastCalledWith(null)

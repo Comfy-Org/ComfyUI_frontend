@@ -7,7 +7,7 @@
   >
     <i
       v-if="hasConflict && !isInstalling && !isLoading"
-      class="icon-[lucide--triangle-alert] text-warning-background"
+      class="icon-[lucide--triangle-alert] text-warning"
     />
     <DotSpinner
       v-else-if="isLoading || isInstalling"
@@ -23,9 +23,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DotSpinner from '@/components/common/DotSpinner.vue'
-import Button from '@/components/ui/button/Button.vue'
-import type { ButtonVariants } from '@/components/ui/button/button.variants'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
+import Button from '@comfyorg/design-system/button/Button'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'

@@ -1,6 +1,16 @@
 name: Validate Action SHA Pins
 
 on:
+  # pull_request builds against the base at event time, so a stale base can merge
+  # green; push re-validates the merged tip. Not a required check, so a
+  # merge_group run could never block a candidate and only cost a runner.
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.pinact.yaml'
   pull_request:
     paths:
       - '.github/workflows/**'

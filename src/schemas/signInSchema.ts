@@ -1,55 +1,19 @@
-import { z } from 'zod'
+import { createAuthSchemas } from '@comfyorg/account-core/signInSchemas'
+import { computed } from 'vue'
 
 import { t } from '@/i18n'
+import { toTypedSchema } from '@/utils/zodTypedSchema'
 
-export const apiKeySchema = z.object({
-  apiKey: z
-    .string()
-    .trim()
-    .startsWith('comfyui-', t('validation.prefix', { prefix: 'comfyui-' }))
-    .length(72, t('validation.length', { length: 72 }))
-})
+export type {
+  SignInData,
+  SignUpData
+} from '@comfyorg/account-core/signInSchemas'
 
-export const signInSchema = z.object({
-  email: z
-    .string()
-    .email(t('validation.invalidEmail'))
-    .min(1, t('validation.required')),
-  password: z.string().min(1, t('validation.required'))
-})
+const authSchemas = computed(() => createAuthSchemas(t))
 
-export type SignInData = z.infer<typeof signInSchema>
-
-const passwordSchema = z.object({
-  password: z
-    .string()
-    .min(8, t('validation.minLength', { length: 8 }))
-    .max(32, t('validation.maxLength', { length: 32 }))
-    .regex(/[A-Z]/, t('validation.password.uppercase'))
-    .regex(/[a-z]/, t('validation.password.lowercase'))
-    .regex(/\d/, t('validation.password.number'))
-    .regex(/[^A-Za-z0-9]/, t('validation.password.special')),
-  confirmPassword: z.string().min(1, t('validation.required'))
-})
-
-export const updatePasswordSchema = passwordSchema.refine(
-  (data) => data.password === data.confirmPassword,
-  {
-    message: t('validation.password.match'),
-    path: ['confirmPassword']
-  }
+export const apiKeySchema = toTypedSchema(() => authSchemas.value.apiKeySchema)
+export const signInSchema = toTypedSchema(() => authSchemas.value.signInSchema)
+export const updatePasswordSchema = toTypedSchema(
+  () => authSchemas.value.updatePasswordSchema
 )
-
-export const signUpSchema = passwordSchema
-  .extend({
-    email: z
-      .string()
-      .email(t('validation.invalidEmail'))
-      .min(1, t('validation.required'))
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: t('validation.password.match'),
-    path: ['confirmPassword']
-  })
-
-export type SignUpData = z.infer<typeof signUpSchema>
+export const signUpSchema = toTypedSchema(() => authSchemas.value.signUpSchema)

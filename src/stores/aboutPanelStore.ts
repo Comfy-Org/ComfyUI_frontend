@@ -16,15 +16,13 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
   const systemStatsStore = useSystemStatsStore()
   const { staticUrls } = useExternalLink()
   const coreVersion = computed(
-    () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
+    () => systemStatsStore.systemStats?.system.comfyui_version ?? ''
   )
   const templatesVersion = computed(
-    () =>
-      systemStatsStore?.systemStats?.system?.installed_templates_version ?? ''
+    () => systemStatsStore.systemStats?.system.installed_templates_version ?? ''
   )
   const requiredTemplatesVersion = computed(
-    () =>
-      systemStatsStore?.systemStats?.system?.required_templates_version ?? ''
+    () => systemStatsStore.systemStats?.system.required_templates_version ?? ''
   )
   const isTemplatesOutdated = computed(
     () =>
@@ -34,8 +32,6 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
   )
 
   const coreBadges = computed<AboutPageBadge[]>(() => [
-    // In electron, the ComfyUI is packaged without the git repo,
-    // so the python server's API doesn't have the version info.
     {
       label: `ComfyUI ${
         isDesktop
@@ -43,19 +39,19 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
           : formatCommitHash(coreVersion.value)
       }`,
       url: isCloud ? staticUrls.comfyOrg : staticUrls.github,
-      icon: isCloud ? 'pi pi-cloud' : 'pi pi-github'
+      icon: isCloud ? 'icon-[lucide--cloud]' : 'icon-[lucide--github]'
     },
     {
       label: `ComfyUI_frontend v${frontendVersion}`,
       url: staticUrls.githubFrontend,
-      icon: 'pi pi-github'
+      icon: 'icon-[lucide--github]'
     },
     ...(templatesVersion.value
       ? [
           {
             label: `Templates v${templatesVersion.value}`,
             url: 'https://pypi.org/project/comfyui-workflow-templates/',
-            icon: 'pi pi-book',
+            icon: 'icon-[lucide--book]',
             ...(isTemplatesOutdated.value
               ? { severity: 'danger' as const }
               : {})
@@ -67,7 +63,11 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
       url: staticUrls.discord,
       icon: 'pi pi-discord'
     },
-    { label: 'ComfyOrg', url: staticUrls.comfyOrg, icon: 'pi pi-globe' }
+    {
+      label: 'ComfyOrg',
+      url: staticUrls.comfyOrg,
+      icon: 'icon-[lucide--globe]'
+    }
   ])
 
   const allBadges = computed<AboutPageBadge[]>(() => [

@@ -1,4 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+
+import {
+  COVERAGE_METADATA_FILE,
+  readCoverageMetadata
+} from './coverage-metadata'
 
 interface FileStats {
   lines: number
@@ -114,6 +120,26 @@ function bar(covered: number, total: number): string {
 const lines: string[] = []
 lines.push('## 🔬 E2E Coverage')
 lines.push('')
+
+const metadata = readCoverageMetadata(
+  join(dirname(lcovPath), COVERAGE_METADATA_FILE)
+)
+if (!metadata) {
+  lines.push(
+    '> [!NOTE]',
+    '> Shard completeness could not be verified for this run, so these totals may not be comparable with a whole merge. Check the coverage workflow logs and re-run collection before using these totals for comparison.',
+    ''
+  )
+} else if (!metadata.complete) {
+  lines.push(
+    '> [!NOTE]',
+    '> The shard matrix did not pass, so these totals cannot be confirmed comparable with a whole merge. Fix the failing shards and re-run coverage before using these totals for comparison.',
+    ''
+  )
+}
+
+lines.push(`Line coverage: **${pct(coveredLines, totalLines)}**`, '')
+lines.push('<details>', '<summary>Coverage totals</summary>', '')
 lines.push('| Metric | Covered | Total | Pct | |')
 lines.push('|---|--:|--:|--:|---|')
 lines.push(
@@ -125,6 +151,7 @@ lines.push(
 lines.push(
   `| Branches | ${coveredBranches} | ${totalBranches} | ${pct(coveredBranches, totalBranches)} | ${bar(coveredBranches, totalBranches)} |`
 )
+lines.push('', '</details>')
 
 const uncovered: UncoveredFile[] = [...fileStats.entries()]
   .filter(([, s]) => s.lines > 0)

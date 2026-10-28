@@ -1,7 +1,16 @@
 # Registry corpus & ecosystem matrix
 
-A PR advisory that executes the frontend JS of every registry pack (~5,100
-packs) against the commit under review and reports a population verdict.
+A required PR and merge-queue gate that mirrors every registry pack (~5,100)
+and executes the frontend JS of the ~1,900 that ship any against relevant
+commits under review, then reports a population verdict. The aggregate check
+still appears on docs- and site-only pull requests after verifying that every
+expensive matrix dependency was skipped.
+
+**The corpus size and the executed count are different numbers, and the verdict
+is against the executed count.** Roughly 3,100 packs ship no extension-shaped JS
+and are skipped by `build_matrix.py`, so quoting the corpus size as the number of
+packs tested overstates the evidence by about 2.6x. `matrix-verdict` prints both:
+`packs with extension JS executed: 1945 (no-JS packs ignored: 3098)`.
 
 Vendored from `Comfy-Org/ComfyUI_ECS_Compat_Check` (`compat/paths.py`,
 `fetch_corpus.py`, `refresh_registry.py`), a private migration-phase
@@ -44,10 +53,10 @@ change through a reviewed bump.
   pack, opens a PR, and summarizes what moved.
 - Locally: `python3 scripts/registry-census/fetch_corpus.py --write-pins`
 
-**A red `CI: Ecosystem Matrix` on a pin-bump PR means the ecosystem moved, not
-that the diff broke something.** That is what the bump PR is for. Outside a
-pin bump or a cold rebuild of the unpinned tail, a red means the diff. Keeping
-those causes apart is the whole point.
+**A red `Custom Nodes Ecosystem Matrix test` on a pin-bump PR means the
+ecosystem moved, not that the diff broke something.** That is what the bump PR
+is for. Outside a pin bump or a cold rebuild of the unpinned tail, a red means
+the diff. Keeping those causes apart is the whole point.
 
 Every matrix run opens with a `pin-status` job printing the pin date, the age,
 and the bump URL, and raises a `::warning::` annotation once the pins are more
@@ -107,8 +116,10 @@ agree. A cache without its provenance cannot produce a verdict.
 `build_matrix.py` + `matrix_runner.ts` generate one vitest spec per
 JS-shipping pack and execute its real extension code against the real
 frontend runtime (registration lifecycle, a user-operation battery,
-serialize/reload), one JSON row per pack, sharded 4 ways. Packs with no
-extension JS are skipped and reported only as a count.
+serialize/reload), one JSON row per pack. The workflow runs four shards under
+the legacy renderer and four under Nodes 2.0, with independent artifacts,
+baselines, and verdicts. Packs with no extension JS are skipped and reported
+only as a count.
 
 ### What the harness drives, and what it does not
 
@@ -137,8 +148,9 @@ row. A green matrix did not catch a `setup`-dispatch regression, and cannot.
 
 ### PASS criteria
 
-Applied once by the `matrix-verdict` job over all four shards combined
-(`summarize_matrix.py`; exit 0 PASS, 1 FAIL, 2 harness/withheld):
+Applied independently by the legacy and Vue `matrix-verdict` jobs over each
+renderer arm's four shards (`summarize_matrix.py`; exit 0 PASS, 1 FAIL, 2
+harness/withheld):
 
 | criterion                                 | floor     | measured baseline |
 | ----------------------------------------- | --------- | ----------------- |
@@ -175,9 +187,21 @@ Only a strict majority withholds it as a harness failure. Shard jobs check
 harness integrity only (every built spec wrote its row; vitest's own exit
 code is ignored because pack code leaks unhandled rejections).
 
-**Telemetry, recorded but never gating:** `newTypes`, `driveTypes`, per-op
-`sig` / `depr`, extension counts, no-JS skip counts. The report labels these
-explicitly. A number that is printed is not thereby a number that gates.
+**Telemetry, recorded but never gating:** `newTypes`, `driveTypes`,
+`driveTypesOmitted`, per-op `sig` / `depr`, extension counts, no-JS skip
+counts. The runner exercises up to 64 frontend-registered types per pack and
+the form report states how many discovered types were driven or omitted, so
+the safety cap cannot silently shrink the measured population. The report
+labels these explicitly. A number that is printed is not thereby a number
+that gates.
+
+A pack can register an unbounded number of types, so `MAX_DRIVEN_TYPES_PER_PACK`
+exists to cover real multi-node packs without letting one pathological pack
+monopolise its shard. The cap is a measurement bound, not a correctness one:
+the type-coverage line is summed over **every complete row**, including rows
+whose serialization failed before the form channel fired, so an omission
+recorded by a row that carries no `formNodes` still reaches the report rather
+than reading as zero omissions.
 
 Packs execute under real timers: the matrix config assigns `setupFiles`
 explicitly, keeping `vitest.setup.ts` (environment globals) and dropping
@@ -195,6 +219,61 @@ array-concatenation would otherwise smuggle in.
 | `MATRIX_RUN_ID`        | summarizer         | skips the delta when the baseline is this same run |
 | `MATRIX_EXPECT_SHARDS` | summarizer         | required manifest count; unset disables the check  |
 | `MATRIX_STALE_MARKER`  | summarizer         | path to `registry-stale.json`, if present          |
+| `MATRIX_RENDERER`      | summarizer         | expected `legacy` or `vue` renderer arm            |
+| `MATRIX_VUE`           | runner             | enables Nodes 2.0 when set to `1`                  |
+
+## Widget form/values agreement — a measurement, not a gate
+
+The runner records one extra thing at the `serialize` op: for every node, which
+outcome the widget-form producer reaches. It rides on the serialisation
+`graph.serialize()` already produced, so it adds no second `onSerialize`
+dispatch — a second dispatch would change what every other channel in the row
+observes.
+
+The producer is `classifyWidgetValuesForm` in
+`src/workbench/extensions/agent/crdt/widgetValuesForm.ts`, and the runner calls
+it directly rather than keeping its own copy, so the census always measures the
+code that ships. It declares `widgets_values_form.order` only when it can prove
+the order against the post-hook serialisation (see
+`docs/adr/WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md`),
+and otherwise returns a suppression reason. A node that carries a form consults
+no catalogue on any leg, so a wrong form is authoritative and strictly worse
+than no form. **That asymmetry is why this is a breakdown and not a pass rate**:
+declining is a correct outcome, and the only defect is a form that is emitted
+and disagrees.
+
+| verdict family                            | meaning                                                                                                   |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `emitAgree*`                              | a form is emitted and agrees — the wanted outcome                                                         |
+| `decline:<reason>`                        | the producer declined, with its own `WidgetFormSuppression` reason (or `virtual_node`) — safe, the gap    |
+| `emitDisagree:*`                          | a form would be emitted and would be **wrong**                                                            |
+| `absent` / `noNamed` / `noSerialisedNode` | the node declares no widget values, or an older shape the producer cannot consume — unmeasured, not clean |
+| `decline:no_value_widgets`                | the node has no value widget for a form to order — counted with the unmeasured rows, not as a gap         |
+
+The reporter test reads the `WidgetFormSuppression` union out of the producer,
+so a reason added there without a row in `summarize_form_agreement.py` fails.
+
+`emitAgree:positionalSkew` is telemetry rather than a defect: the positional
+array disagreeing with the live value-widget count is exactly the post-hook
+drift the named projection exists to survive, and an agent op sends the named
+object.
+
+Reported by `summarize_form_agreement.py`, which prints a count, the grouped
+shares, a per-verdict table with pack and node-class attribution, and every
+disagreeing node by name. `summarize_matrix.py` does **not** read these fields
+and there is no floor on them, so nothing here can turn the required gate red.
+A run whose rows carry no form telemetry reports `UNMEASURED` rather than zero
+violations: a channel that stopped firing must not read as agreement.
+
+```bash
+MATRIX_OUT=matrix-rows python3 scripts/registry-census/summarize_form_agreement.py
+```
+
+In CI it is [`ci-widget-form-census.yaml`](../../.github/workflows/ci-widget-form-census.yaml),
+`workflow_dispatch` only and deliberately not wired to `push`: it reuses this
+corpus, cache key, pins and runner so the population matches the matrix's, and
+anyone can re-run it to reproduce a published figure. Cite it with the pin age
+the run's `pin-status` job printed.
 
 ## Security posture
 
@@ -202,7 +281,10 @@ array-concatenation would otherwise smuggle in.
 The rules are load-bearing, not incidental:
 
 - **No secret may ever be added to a pack-executing job.** `ecosystem-matrix`
-  and `matrix-detection-proof` run unreviewed code from ~5,100 repositories.
+  and `matrix-detection-proof` run unreviewed code from ~1,900 repositories,
+  selected from a corpus of ~5,100 by a rule any pack author can satisfy at
+  will — shipping one JS file moves a pack into the executing set, so treat the
+  blast radius as the whole registry.
   Adding a Slack webhook, a token, or `id-token: write` to either job hands
   that credential to every pack author in the registry. If you need to
   notify on failure, do it from a separate `workflow_run` job.
@@ -230,7 +312,7 @@ the runner is ephemeral and tokenless.
 
 ## Runbook
 
-The advisory is red. In order:
+The required gate is red. In order:
 
 1. **Exit 2 — verdict withheld.** This is a harness failure, not an ecosystem
    result. Read the banner: short population (a shard died — check the
@@ -253,16 +335,16 @@ The advisory is red. In order:
    matrix run since the change is worth less than it appeared. Do not
    silence it.
 
-**Blast radius:** the matrix is an advisory PR check, not a required check.
-`ProtectMain` requires `test`, `lint-and-format`, `e2e-status` and
-`website-e2e`, so a red matrix informs but does not block. Promotion requires
-both adding `matrix-verdict` to required checks and adding a `merge_group`
-trigger; doing only the first leaves merge groups waiting for a check this
-workflow never reports.
+**Blast radius:** the workflow reports one aggregate check named
+`Custom Nodes Ecosystem Matrix test` for every pull request and merge-queue
+candidate. Branch protection should require that aggregate, not the internal
+legacy and Vue `matrix-verdict` jobs. On a relevant change, a red, skipped, or
+cancelled dependency makes the aggregate red. On an irrelevant pull request,
+the aggregate passes only after all expensive dependencies report skipped.
 
 ## Detection proof (counter-evidence)
 
-`detection-proof/corpus/` is a synthetic corpus of seven poison packs, each
+`detection-proof/corpus/` is a synthetic corpus of eight poison packs, each
 broken in exactly one measured way, plus three clean controls. The
 `matrix-detection-proof` job runs the real matrix over it and passes only if
 `verify_detection.py` sees every channel fire with its exact poison message
@@ -275,18 +357,19 @@ have poison counter-evidence or an explicit exemption explaining why it
 cannot be driven safely end to end. The service-status, timeout, and baseline
 delta criteria are exempted there and covered by verdict unit tests.
 
-| pack                     | breaks                         | detected as                      |
-| ------------------------ | ------------------------------ | -------------------------------- |
-| poison-load-throw        | throws at import               | pack + entry load gates breach   |
-| poison-regdef-throw      | `beforeRegisterNodeDef` throws | `hookErrors` (app containment)   |
-| poison-customnodes-throw | `registerCustomNodes` throws   | `hookErrors` (app containment)   |
-| poison-op-break          | `onNodeCreated` throws         | `load`/`addNode` op errs (gated) |
-| poison-serialize-throw   | `onSerialize` throws           | `serialize` op err (gated)       |
-| poison-desync            | pushes an unregistered widget  | signature drift (`wn`, counts)   |
-| poison-store-read-throw  | widget-store read throws       | operation desync (gated)         |
-| clean-control            | nothing                        | fully clean row (specificity)    |
-| clean-mjs-control        | nothing                        | `.mjs` entry loads (glob cover)  |
-| clean-asset-control      | nothing                        | css/json import resolves         |
+| pack                     | breaks                          | detected as                      |
+| ------------------------ | ------------------------------- | -------------------------------- |
+| poison-load-throw        | throws at import                | pack + entry load gates breach   |
+| poison-regdef-throw      | `beforeRegisterNodeDef` throws  | `hookErrors` (app containment)   |
+| poison-customnodes-throw | `registerCustomNodes` throws    | `hookErrors` (app containment)   |
+| poison-op-break          | `onNodeCreated` throws          | `load`/`addNode` op errs (gated) |
+| poison-serialize-throw   | `onSerialize` throws            | `serialize` op err (gated)       |
+| poison-desync            | drops a live widget's store row | signature drift (`wn`, counts)   |
+| poison-foreign-widget    | erases prototype methods        | operation error (gated)          |
+| poison-store-read-throw  | widget-store read throws        | operation desync (gated)         |
+| clean-control            | nothing                         | fully clean row (specificity)    |
+| clean-mjs-control        | nothing                         | `.mjs` entry loads (glob cover)  |
+| clean-asset-control      | nothing                         | css/json import resolves         |
 
 Insensitivity kept honest here: throwing extension hooks are CONTAINED by the
 app (`extensionService` catches and logs), so they can never fail

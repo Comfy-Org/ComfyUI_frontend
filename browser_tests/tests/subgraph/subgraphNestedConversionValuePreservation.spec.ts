@@ -63,7 +63,6 @@ test.describe(
       // selection into a nested subgraph.
       await comfyPage.vueNodes.enterSubgraph(hostId)
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
-      await comfyPage.vueNodes.waitForNodes()
 
       const interiorFixture =
         await comfyPage.vueNodes.getFixtureByTitle(CLIP_TITLE)

@@ -1,63 +1,47 @@
+import type { AxiosRequestConfig } from 'axios'
+
 import type {
   AcceptInviteResponse,
-  BillingBalanceResponse,
-  BillingEventsResponse,
-  BillingOpStatusResponse,
-  BillingPlansResponse,
-  BillingStatus,
-  BillingStatusResponse,
-  CancelSubscriptionRequest,
-  CancelSubscriptionResponse,
-  ChurnkeyAuthResponse,
   CreateInviteRequest,
-  CreateTopupRequest,
-  CreateTopupResponse,
   CreateWorkspaceRequest,
+  CurrentWorkspaceResponse,
+  DeploymentCompatibility,
+  DeploymentCompatibilityRequest,
   ListInvitesResponse,
   ListMembersResponse,
   ListWorkspacesResponse,
   Member as GeneratedMember,
-  PaymentPortalRequest,
-  PaymentPortalResponse,
   PendingInvite,
-  Plan,
-  PreviewSubscribeRequest,
-  PreviewSubscribeResponse,
-  ResubscribeRequest,
-  ResubscribeResponse,
-  SubscribeRequest,
-  SubscribeResponse,
-  SubscriptionDuration,
-  SubscriptionTier,
-  TeamCreditStops,
-  TeamCreditStopSummary,
+  PickWorkspaceDeploymentRequest,
+  ReleaseUnsupportedPacks,
   UpdateWorkspaceRequest,
+  WorkspaceDeployment,
+  WorkspaceDeploymentCpuServer,
+  WorkspaceDeploymentList,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
-import axios from 'axios'
-
-import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
-import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import {
-  UNKNOWN_ERROR_CODE,
-  errorResponseFromBody
-} from '@/platform/remote/comfyui/errors'
+  zDeploymentCompatibility,
+  zReleaseUnsupportedPacks,
+  zWorkspaceDeploymentCpuServer
+} from '@comfyorg/ingest-types/zod'
+import { DEPLOYMENT_LISTING_TIMEOUT_MS } from './deploymentListingTimeouts'
 import type {
   WorkspaceId,
   WorkspaceInviteId
 } from '@/platform/workspace/workspaceTypes'
-import { useAuthStore } from '@/stores/authStore'
 import type { UserId } from '@/types/authTypes'
-
-import { workspaceApiUrl } from './workspaceApiUrl'
-
+import {
+  ingestApiClient as workspaceApiClient,
+  requestAuth,
+  requireIngestApiAuth as requireWorkspaceApiAuth,
+  handleAxiosError
+} from '@/platform/remote/ingest/ingestApi'
+import { ingestApiUrl as ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
-export type BillingRail = NonNullable<BillingStatusResponse['billing_rail']>
 
 export type Member = GeneratedMember & {
-  // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
-  // neither usage nor limit yet; persistence and real usage land in FE-1278.
   credits_used_this_month?: number
   monthly_credit_limit?: number | null
 }
@@ -69,554 +53,328 @@ export interface ListMembersParams {
 
 export type { PendingInvite }
 
-export type { SubscriptionTier }
-export type { SubscriptionDuration }
 export type { WorkspaceWithRole }
 export type { ListWorkspacesResponse }
-export type { Plan }
-export type { BillingPlansResponse }
-export type { TeamCreditStops }
-export type { TeamCreditStopSummary }
+export type { CurrentWorkspaceResponse }
 
-type SubscribeBillingCycle = 'monthly' | 'yearly'
+export type { WorkspaceDeployment }
+export type { WorkspaceDeploymentList }
 
-export interface SubscribeOptions {
-  returnUrl?: string
-  cancelUrl?: string
-  teamCreditStopId?: string
-  billingCycle?: SubscribeBillingCycle
-  confirmReactivation?: boolean
-  prorationAt?: string
+export type { DeploymentCompatibility }
+
+export type { WorkspaceDeploymentCpuServer }
+
+const CPU_SERVER_READ_TIMEOUT_MS = 15_000
+
+/** For callers that already retry on their own schedule. */
+interface ReadOptions {
+  skipStatusRetry?: boolean
 }
 
-export interface PreviewSubscribeOptions {
-  teamCreditStopId?: string
-}
-
-export type { SubscribeResponse }
-
-export type { PreviewSubscribeResponse }
-
-export type BillingSubscriptionStatus = NonNullable<
-  BillingStatusResponse['subscription_status']
->
-
-export type { BillingStatus }
-export type { BillingStatusResponse }
-
-export type { BillingBalanceResponse }
-export type { CreateTopupResponse }
-export type { BillingOpStatusResponse }
-
-interface GetBillingEventsParams {
-  page?: number
-  limit?: number
-}
-
-export class WorkspaceApiError extends Error {
-  constructor(
-    message: string,
-    public readonly status?: number,
-    public readonly code?: string
-  ) {
-    super(message)
-    this.name = 'WorkspaceApiError'
-  }
-}
-
-const workspaceApiClient = axios.create({
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
-
-// acceptInvite opts out via __skipUnifiedRemint (it is deliberately Firebase-authed).
-attachUnifiedRemintInterceptor(workspaceApiClient)
-
-async function getAuthHeaderOrThrow() {
-  return useAuthStore().getWorkspaceAuthHeaderOrThrow()
-}
-
-function handleAxiosError(err: unknown): never {
-  if (axios.isAxiosError(err)) {
-    const status = err.response?.status
-    const { code, message } = errorResponseFromBody(
-      err.response?.data,
-      err.message
-    )
-    // Callers compare `code` against server-defined values, so the parser's
-    // "no code reported" sentinel must stay out of that contract.
-    throw new WorkspaceApiError(
-      message,
-      status,
-      code === UNKNOWN_ERROR_CODE ? undefined : code
-    )
-  }
-  throw err
+function withReadOptions(
+  auth: AxiosRequestConfig,
+  { skipStatusRetry }: ReadOptions
+): AxiosRequestConfig {
+  return skipStatusRetry ? { ...auth, __skipStatusRetry: true } : auth
 }
 
 export const workspaceApi = {
-  /**
-   * List all workspaces the user has access to
-   * GET /api/workspaces
-   */
-  async list(): Promise<ListWorkspacesResponse> {
-    const headers = await getAuthHeaderOrThrow()
+  async list(options: ReadOptions = {}): Promise<ListWorkspacesResponse> {
+    const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.get<ListWorkspacesResponse>(
-        workspaceApiUrl('/workspaces'),
-        { headers }
+        ingestApiUrl('/workspaces'),
+        withReadOptions(auth, options)
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'list')
     }
   },
-
-  /**
-   * Create a new workspace
-   * POST /api/workspaces
-   */
+  async getCurrentWorkspace(
+    options: ReadOptions = {}
+  ): Promise<CurrentWorkspaceResponse> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<CurrentWorkspaceResponse>(
+        ingestApiUrl('/workspaces/current'),
+        withReadOptions(auth, options)
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'getCurrentWorkspace')
+    }
+  },
   async create(payload: CreateWorkspaceRequest): Promise<WorkspaceWithRole> {
-    const headers = await getAuthHeaderOrThrow()
+    const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.post<WorkspaceWithRole>(
-        workspaceApiUrl('/workspaces'),
+        ingestApiUrl('/workspaces'),
         payload,
-        { headers }
+        auth
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'create')
     }
   },
-
-  /**
-   * Update workspace name
-   * PATCH /api/workspaces/:id
-   */
   async update(
     workspaceId: WorkspaceId,
     payload: UpdateWorkspaceRequest
   ): Promise<WorkspaceWithRole> {
-    const headers = await getAuthHeaderOrThrow()
+    const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.patch<WorkspaceWithRole>(
-        workspaceApiUrl(`/workspaces/${workspaceId}`),
+        ingestApiUrl(`/workspaces/${workspaceId}`),
         payload,
-        { headers }
+        auth
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'update')
     }
   },
-
-  /**
-   * Delete a workspace (owner only)
-   * DELETE /api/workspaces/:id
-   */
-  async delete(workspaceId: WorkspaceId): Promise<void> {
-    const headers = await getAuthHeaderOrThrow()
+  async listDeployments(
+    workspaceId: WorkspaceId
+  ): Promise<WorkspaceDeploymentList> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<WorkspaceDeploymentList>(
+        ingestApiUrl(`/workspaces/${workspaceId}/deployments`),
+        {
+          ...auth,
+          timeout: DEPLOYMENT_LISTING_TIMEOUT_MS,
+          __skipStatusRetry: true
+        }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'listDeployments')
+    }
+  },
+  async pickDeployment(
+    workspaceId: WorkspaceId,
+    payload: PickWorkspaceDeploymentRequest,
+    signal?: AbortSignal
+  ): Promise<void> {
+    const auth = await requestAuth()
+    signal?.throwIfAborted()
+    try {
+      await workspaceApiClient.put(
+        ingestApiUrl(`/workspaces/${workspaceId}/deployment`),
+        payload,
+        { ...auth, ...(signal ? { signal } : {}) }
+      )
+    } catch (err) {
+      handleAxiosError(err, 'pickDeployment')
+    }
+  },
+  async clearDeployment(
+    workspaceId: WorkspaceId,
+    options: { follow?: 'workspace' } = {}
+  ): Promise<void> {
+    const auth = await requestAuth()
     try {
       await workspaceApiClient.delete(
-        workspaceApiUrl(`/workspaces/${workspaceId}`),
+        ingestApiUrl(`/workspaces/${workspaceId}/deployment`),
         {
-          headers
+          ...auth,
+          params: options.follow ? { follow: options.follow } : undefined
         }
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'clearDeployment')
     }
   },
-
-  /**
-   * Leave the current workspace.
-   * POST /api/workspace/leave
-   */
-  async leave(): Promise<void> {
-    const headers = await getAuthHeaderOrThrow()
+  async setDefaultDeployment(
+    workspaceId: WorkspaceId,
+    payload: PickWorkspaceDeploymentRequest
+  ): Promise<void> {
+    const auth = await requestAuth()
     try {
-      await workspaceApiClient.post(workspaceApiUrl('/workspace/leave'), null, {
-        headers
-      })
+      await workspaceApiClient.put(
+        ingestApiUrl(`/workspaces/${workspaceId}/default-deployment`),
+        payload,
+        auth
+      )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'setDefaultDeployment')
     }
   },
-
-  /**
-   * List workspace members (paginated).
-   * GET /api/workspace/members
-   */
+  async clearDefaultDeployment(workspaceId: WorkspaceId): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.delete(
+        ingestApiUrl(`/workspaces/${workspaceId}/default-deployment`),
+        auth
+      )
+    } catch (err) {
+      handleAxiosError(err, 'clearDefaultDeployment')
+    }
+  },
+  async getDeploymentCpuServer(
+    workspaceId: WorkspaceId
+  ): Promise<WorkspaceDeploymentCpuServer> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        ingestApiUrl(`/workspaces/${workspaceId}/deployment/cpu-server`),
+        { ...auth, timeout: CPU_SERVER_READ_TIMEOUT_MS }
+      )
+      return zWorkspaceDeploymentCpuServer.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'getDeploymentCpuServer')
+    }
+  },
+  async getReleaseUnsupportedPacks(): Promise<ReleaseUnsupportedPacks> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        ingestApiUrl('/release/unsupported-packs'),
+        auth
+      )
+      return zReleaseUnsupportedPacks.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'getReleaseUnsupportedPacks')
+    }
+  },
+  async checkDeploymentCompatibility(
+    workspaceId: WorkspaceId,
+    nodeTypes: string[]
+  ): Promise<DeploymentCompatibility> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        ingestApiUrl(`/workspaces/${workspaceId}/deployments/compatibility`),
+        { node_types: nodeTypes } satisfies DeploymentCompatibilityRequest,
+        auth
+      )
+      return zDeploymentCompatibility.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'checkDeploymentCompatibility')
+    }
+  },
+  async delete(workspaceId: WorkspaceId): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.delete(
+        ingestApiUrl(`/workspaces/${workspaceId}`),
+        auth
+      )
+    } catch (err) {
+      handleAxiosError(err, 'delete')
+    }
+  },
+  async leave(): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.post(
+        ingestApiUrl('/workspace/leave'),
+        null,
+        auth
+      )
+    } catch (err) {
+      handleAxiosError(err, 'leave')
+    }
+  },
   async listMembers(params?: ListMembersParams): Promise<ListMembersResponse> {
-    const headers = await getAuthHeaderOrThrow()
+    const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.get<ListMembersResponse>(
-        workspaceApiUrl('/workspace/members'),
-        { headers, params }
+        ingestApiUrl('/workspace/members'),
+        { ...auth, params }
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'listMembers')
     }
   },
-
-  /**
-   * Remove a member from the workspace.
-   * DELETE /api/workspace/members/:userId
-   */
   async removeMember(userId: UserId): Promise<void> {
-    const headers = await getAuthHeaderOrThrow()
+    const auth = await requestAuth()
     try {
       await workspaceApiClient.delete(
-        workspaceApiUrl(`/workspace/members/${userId}`),
-        { headers }
+        ingestApiUrl(`/workspace/members/${userId}`),
+        auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'removeMember')
     }
   },
-
-  /**
-   * Change a member's role (member ↔ owner).
-   * PATCH /api/workspace/members/:userId
-   */
   async updateMemberRole(userId: UserId, role: WorkspaceRole): Promise<Member> {
-    const headers = await getAuthHeaderOrThrow()
+    const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.patch<Member>(
-        workspaceApiUrl(`/workspace/members/${userId}`),
+        ingestApiUrl(`/workspace/members/${userId}`),
         { role },
-        { headers }
+        auth
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'updateMemberRole')
     }
   },
-
-  /**
-   * List pending invites for the workspace.
-   * GET /api/workspace/invites
-   */
   async listInvites(): Promise<ListInvitesResponse> {
-    const headers = await getAuthHeaderOrThrow()
+    const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.get<ListInvitesResponse>(
-        workspaceApiUrl('/workspace/invites'),
-        { headers }
+        ingestApiUrl('/workspace/invites'),
+        auth
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'listInvites')
     }
   },
-
-  /**
-   * Create an invite for the workspace.
-   * POST /api/workspace/invites
-   */
   async createInvite(payload: CreateInviteRequest): Promise<PendingInvite> {
-    const headers = await getAuthHeaderOrThrow()
+    const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.post<PendingInvite>(
-        workspaceApiUrl('/workspace/invites'),
+        ingestApiUrl('/workspace/invites'),
         payload,
-        { headers }
+        auth
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'createInvite')
     }
   },
-
-  /**
-   * Revoke a pending invite.
-   * DELETE /api/workspace/invites/:inviteId
-   */
   async revokeInvite(inviteId: WorkspaceInviteId): Promise<void> {
-    const headers = await getAuthHeaderOrThrow()
+    const auth = await requestAuth()
     try {
       await workspaceApiClient.delete(
-        workspaceApiUrl(`/workspace/invites/${inviteId}`),
-        { headers }
+        ingestApiUrl(`/workspace/invites/${inviteId}`),
+        auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'revokeInvite')
     }
   },
-
   async resendInvite(inviteId: WorkspaceInviteId): Promise<PendingInvite> {
-    const headers = await getAuthHeaderOrThrow()
+    const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.post<PendingInvite>(
-        workspaceApiUrl(
+        ingestApiUrl(
           `/workspace/invites/${encodeURIComponent(inviteId)}/resend`
         ),
         null,
-        { headers }
+        auth
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'resendInvite')
     }
   },
-
-  /**
-   * Accept a workspace invite.
-   * POST /api/invites/:token/accept
-   * Uses Firebase auth (user identity) since the user isn't yet a workspace member.
-   */
   async acceptInvite(token: string): Promise<AcceptInviteResponse> {
-    const headers = await useAuthStore().getFirebaseAuthHeaderOrThrow()
+    const headers = await requireWorkspaceApiAuth().getFirebaseAuthHeader()
     try {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
-        workspaceApiUrl(`/invites/${token}/accept`),
+        ingestApiUrl(`/invites/${token}/accept`),
         null,
         { headers, __skipUnifiedRemint: true }
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  /**
-   * Get billing status for the current workspace
-   * GET /api/billing/status
-   */
-  async getBillingStatus(): Promise<BillingStatusResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.get<BillingStatusResponse>(
-        workspaceApiUrl('/billing/status'),
-        { headers }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  /**
-   * Get credit balance for the current workspace
-   * GET /api/billing/balance
-   */
-  async getBillingBalance(): Promise<BillingBalanceResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.get<BillingBalanceResponse>(
-        workspaceApiUrl('/billing/balance'),
-        { headers }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  /**
-   * Get available subscription plans
-   * GET /api/billing/plans
-   */
-  async getBillingPlans(): Promise<BillingPlansResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.get<BillingPlansResponse>(
-        workspaceApiUrl('/billing/plans'),
-        { headers }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  /**
-   * Preview subscription change
-   * POST /api/billing/preview-subscribe
-   */
-  async previewSubscribe(
-    planSlug: string,
-    options: PreviewSubscribeOptions = {}
-  ): Promise<PreviewSubscribeResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.post<PreviewSubscribeResponse>(
-        workspaceApiUrl('/billing/preview-subscribe'),
-        {
-          plan_slug: planSlug,
-          team_credit_stop_id: options.teamCreditStopId
-        } satisfies PreviewSubscribeRequest,
-        { headers }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  /**
-   * Subscribe to a billing plan
-   * POST /api/billing/subscribe
-   */
-  async subscribe(
-    planSlug: string,
-    options: SubscribeOptions = {}
-  ): Promise<SubscribeResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.post<SubscribeResponse>(
-        workspaceApiUrl('/billing/subscribe'),
-        {
-          plan_slug: planSlug,
-          return_url: options.returnUrl,
-          cancel_url: options.cancelUrl,
-          team_credit_stop_id: options.teamCreditStopId,
-          billing_cycle: options.billingCycle,
-          confirm_reactivation: options.confirmReactivation,
-          proration_at: options.prorationAt
-        } satisfies SubscribeRequest,
-        { headers }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  /**
-   * Cancel current subscription
-   * POST /api/billing/subscription/cancel
-   */
-  async cancelSubscription(
-    idempotencyKey?: string
-  ): Promise<CancelSubscriptionResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response =
-        await workspaceApiClient.post<CancelSubscriptionResponse>(
-          workspaceApiUrl('/billing/subscription/cancel'),
-          {
-            idempotency_key: idempotencyKey
-          } satisfies CancelSubscriptionRequest,
-          { headers }
-        )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.get<unknown>(
-        workspaceApiUrl('/billing/churnkey/auth'),
-        { headers }
-      )
-      return churnkeyAuthResponseSchema.parse(response.data)
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  /**
-   * Resubscribe (undo cancel) before period ends
-   * POST /api/billing/subscription/resubscribe
-   */
-  async resubscribe(idempotencyKey?: string): Promise<ResubscribeResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.post<ResubscribeResponse>(
-        workspaceApiUrl('/billing/subscription/resubscribe'),
-        { idempotency_key: idempotencyKey } satisfies ResubscribeRequest,
-        { headers }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  /**
-   * Get Stripe payment portal URL for managing payment methods
-   * POST /api/billing/payment-portal
-   */
-  async getPaymentPortalUrl(
-    returnUrl?: string
-  ): Promise<PaymentPortalResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.post<PaymentPortalResponse>(
-        workspaceApiUrl('/billing/payment-portal'),
-        { return_url: returnUrl } satisfies PaymentPortalRequest,
-        { headers }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  /**
-   * Create a credit top-up
-   * POST /api/billing/topup
-   */
-  async createTopup(
-    amountCents: number,
-    idempotencyKey?: string
-  ): Promise<CreateTopupResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.post<CreateTopupResponse>(
-        workspaceApiUrl('/billing/topup'),
-        {
-          amount_cents: amountCents,
-          idempotency_key: idempotencyKey
-        } satisfies CreateTopupRequest,
-        { headers }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  /**
-   * Get billing events
-   * GET /api/billing/events
-   */
-  async getBillingEvents(
-    params?: GetBillingEventsParams
-  ): Promise<BillingEventsResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.get<BillingEventsResponse>(
-        workspaceApiUrl('/billing/events'),
-        { headers, params }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  /**
-   * Get billing operation status
-   * GET /api/billing/ops/:id
-   */
-  async getBillingOpStatus(opId: string): Promise<BillingOpStatusResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.get<BillingOpStatusResponse>(
-        workspaceApiUrl(`/billing/ops/${opId}`),
-        { headers, timeout: 30_000 }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'acceptInvite')
     }
   }
 }

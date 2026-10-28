@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
@@ -15,8 +15,6 @@ test.describe('Template Fit View', { tag: ['@canvas', '@workflow'] }, () => {
   test('should automatically fit view when loading a template with off-screen saved position', async ({
     comfyPage
   }) => {
-    await comfyPage.settings.setSetting('Comfy.EnableWorkflowViewRestore', true)
-
     // Serialize the current default graph, inject an extreme off-screen
     // viewport position, then reload it as a template. Without the fix,
     // the saved offset [-5000, -5000] would be restored and nodes would

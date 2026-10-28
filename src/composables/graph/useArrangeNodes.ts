@@ -1,14 +1,14 @@
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { Point } from '@/renderer/core/layout/types'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { app } from '@/scripts/app'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export type ArrangeLayout = 'vertical' | 'horizontal' | 'grid'
 
@@ -40,12 +40,13 @@ const titleHeightOf = (node: LGraphNode): number => {
 
 const toBox = (node: LGraphNode): NodeBox => {
   const titleHeight = titleHeightOf(node)
+  const [width, height] = node.renderingSize
   return {
     id: node.id,
     posX: node.pos[0],
     posY: node.pos[1],
-    visualWidth: node.size[0],
-    visualHeight: node.size[1] + titleHeight,
+    visualWidth: width,
+    visualHeight: height + titleHeight,
     titleHeight
   }
 }
@@ -116,8 +117,8 @@ const arrangeGrid = (
   const cols = Math.ceil(Math.sqrt(sorted.length))
   const rows = Math.ceil(sorted.length / cols)
 
-  const colWidths = new Array<number>(cols).fill(0)
-  const rowHeights = new Array<number>(rows).fill(0)
+  const colWidths = Array.from({ length: cols }, () => 0)
+  const rowHeights = Array.from({ length: rows }, () => 0)
   sorted.forEach((box, i) => {
     const col = i % cols
     const row = Math.floor(i / cols)
@@ -181,9 +182,9 @@ export function useArrangeNodes() {
     if (updates.length === 0) return
 
     mutations.batchMoveNodes(rootGraphId, updates)
-    app.canvas?.setDirty(true, true)
+    app.canvas.setDirty(true, true)
     if (captureUndo) {
-      workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
     }
   }
 

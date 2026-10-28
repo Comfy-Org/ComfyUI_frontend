@@ -8,7 +8,14 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import { getCurrentInstance, onMounted, onUnmounted, watch } from 'vue'
+import type { EffectScope, Ref } from 'vue'
+import {
+  effectScope,
+  getCurrentInstance,
+  onMounted,
+  onUnmounted,
+  watch
+} from 'vue'
 
 import { useDocumentVisibility } from '@vueuse/core'
 
@@ -16,18 +23,16 @@ import { useSharedCanvasPositionConversion } from '@/composables/element/useCanv
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Bounds, NodeId } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
-import {
-  isBoundsEqual,
-  isSizeEqual
-} from '@/renderer/core/layout/utils/geometry'
+import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
+import type {
+  Bounds,
+  Size2D as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@/renderer/core/layout/types'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { isSizeEqual } from '@/renderer/core/layout/utils/geometry'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
-
-import {
-  scheduleSlotLayoutSync,
-  syncNodeSlotLayoutsFromDOM
-} from './useSlotElementTracking'
+import type { UUID } from '@/utils/uuid'
 
 /**
  * Generic update item for element bounds tracking
@@ -39,8 +44,9 @@ interface ElementBoundsUpdate {
 }
 
 interface CachedNodeMeasurement {
+  rootGraphId: UUID
   nodeId: NodeId
-  bounds: Bounds
+  size: Size
 }
 
 /**
@@ -49,6 +55,7 @@ interface CachedNodeMeasurement {
 interface ElementTrackingConfig {
   /** Data attribute name (e.g., 'nodeId') */
   dataAttribute: string
+  syncSlots?: boolean
   /** Handler for processing bounds updates. Omit for signal-only entries. */
   updateHandler?: (updates: ElementBoundsUpdate[]) => void
 }
@@ -74,72 +81,51 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
       }
     }
   ],
-  // Signal-only: outer node stays at its persisted min-h floor during
-  // widget hydration, so the inner grid's RO is the only slot-drift signal.
-  ['widgets-grid', { dataAttribute: 'widgetsGridNodeId' }]
+  ['widgets-grid', { dataAttribute: 'widgetsGridNodeId', syncSlots: true }]
 ])
 
-// Elements whose ResizeObserver fired while the tab was hidden
 const deferredElements = new Set<HTMLElement>()
 const elementsNeedingFreshMeasurement = new WeakSet<HTMLElement>()
 const cachedNodeMeasurements = new WeakMap<HTMLElement, CachedNodeMeasurement>()
-const visibility = useDocumentVisibility()
+const trackedElements = new Set<HTMLElement>()
+
+interface ResizeTracking {
+  scope: EffectScope
+  observer: ResizeObserver
+  visibility: Ref<DocumentVisibilityState>
+}
+
+let resizeTracking: ResizeTracking | undefined
 
 function markElementForFreshMeasurement(element: HTMLElement) {
   elementsNeedingFreshMeasurement.add(element)
   cachedNodeMeasurements.delete(element)
 }
 
-watch(visibility, (state) => {
-  if (state !== 'visible' || deferredElements.size === 0) return
-
-  // Re-observe deferred elements to trigger fresh measurements
-  for (const element of deferredElements) {
-    if (element.isConnected) {
-      markElementForFreshMeasurement(element)
-      resizeObserver.observe(element)
-    }
-  }
-  deferredElements.clear()
-})
-
-// Single ResizeObserver instance for all Vue elements
-const resizeObserver = new ResizeObserver((entries) => {
+function measureEntries(
+  entries: ResizeObserverEntry[],
+  { observer, visibility }: ResizeTracking
+) {
   const { linearMode, rootGraphId } = useCanvasStore()
   if (linearMode) return
 
-  // Skip measurements when tab is hidden — bounding rects are unreliable
   if (visibility.value === 'hidden') {
     for (const entry of entries) {
       if (entry.target instanceof HTMLElement) {
         deferredElements.add(entry.target)
-        markElementForFreshMeasurement(entry.target)
-        resizeObserver.unobserve(entry.target)
+        observer.unobserve(entry.target)
       }
     }
     return
   }
 
-  // Canvas is ready when this code runs; no defensive guards needed.
   const conv = useSharedCanvasPositionConversion()
-  // Group updates by type, then flush via each config's handler
   const updatesByType = new Map<string, ElementBoundsUpdate[]>()
-  // Track nodes whose slots should be resynced after node size changes
-  const nodesNeedingSlotResync = new Set<NodeId>()
-
+  const slotSyncElements = new Map<NodeId, HTMLElement>()
   for (const entry of entries) {
     if (!(entry.target instanceof HTMLElement)) continue
     const element = entry.target
 
-    // Signal-only widgets-grid resize - route the parent node through the
-    // slot-layout pipeline and skip bounds processing entirely.
-    const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId
-    if (widgetsGridParentNodeId) {
-      scheduleSlotLayoutSync(toNodeId(widgetsGridParentNodeId))
-      continue
-    }
-
-    // Find which type this element belongs to
     let elementType: string | undefined
     let elementId: string | undefined
 
@@ -153,11 +139,13 @@ const resizeObserver = new ResizeObserver((entries) => {
     }
 
     if (!elementType || !elementId) continue
-    const nodeId: NodeId | undefined =
-      elementType === 'node' ? toNodeId(elementId) : undefined
+    const config = trackingConfigs.get(elementType)
+    const nodeId = toNodeId(elementId)
+    if (config?.syncSlots) {
+      slotSyncElements.set(nodeId, element)
+      continue
+    }
 
-    // Use borderBoxSize when available; fall back to contentRect for older engines/tests
-    // Border box is the border included FULL wxh DOM value.
     const borderBox = Array.isArray(entry.borderBoxSize)
       ? entry.borderBoxSize[0]
       : {
@@ -172,35 +160,29 @@ const resizeObserver = new ResizeObserver((entries) => {
         ? layoutStore.getNodeLayout(rootGraphId, nodeId)
         : null
     const normalizedHeight = removeNodeTitleHeight(height)
+    const measuredSize = { width, height: normalizedHeight }
     const previousMeasurement = cachedNodeMeasurements.get(element)
+    const reportedContentSize =
+      nodeId && rootGraphId
+        ? layoutStore.contentSizeOf(rootGraphId, nodeId)
+        : undefined
     const hasFreshMeasurementPending =
       elementsNeedingFreshMeasurement.has(element)
     const hasMatchingCachedNodeMeasurement =
       previousMeasurement != null &&
+      previousMeasurement.rootGraphId === rootGraphId &&
       previousMeasurement.nodeId === nodeId &&
-      nodeLayout != null &&
-      isBoundsEqual(previousMeasurement.bounds, nodeLayout.bounds)
+      isSizeEqual(previousMeasurement.size, measuredSize) &&
+      reportedContentSize != null &&
+      isSizeEqual(reportedContentSize, measuredSize)
 
-    // ResizeObserver emits entries where nothing changed (e.g. initial observe).
-    // Skip expensive DOM reads when this exact element/node already measured at
-    // the same normalized bounds and size.
-    if (
-      nodeLayout &&
-      !hasFreshMeasurementPending &&
-      isSizeEqual(nodeLayout.size, {
-        width,
-        height: normalizedHeight
-      }) &&
-      hasMatchingCachedNodeMeasurement
-    ) {
+    if (!hasFreshMeasurementPending && hasMatchingCachedNodeMeasurement) {
       continue
     }
+    if (rootGraphId) {
+      slotSyncElements.set(nodeId, element)
+    }
 
-    // Use existing position from layout store (source of truth) rather than
-    // converting screen-space getBoundingClientRect() back to canvas coords.
-    // The DOM→canvas conversion depends on the current canvas scale/offset,
-    // which can be stale during graph transitions (e.g. entering a subgraph
-    // before fitView runs), producing corrupted positions.
     const existingPos = nodeLayout?.position
     let posX: number
     let posY: number
@@ -219,16 +201,12 @@ const resizeObserver = new ResizeObserver((entries) => {
       width,
       height
     }
-    const normalizedBounds: Bounds = {
-      ...bounds,
-      height: normalizedHeight
-    }
-
     elementsNeedingFreshMeasurement.delete(element)
-    if (nodeId) {
+    if (nodeId && rootGraphId) {
       cachedNodeMeasurements.set(element, {
+        rootGraphId,
         nodeId,
-        bounds: normalizedBounds
+        size: measuredSize
       })
     }
 
@@ -237,27 +215,65 @@ const resizeObserver = new ResizeObserver((entries) => {
       updates = []
       updatesByType.set(elementType, updates)
     }
-    if (!nodeId) continue
     updates.push({ id: nodeId, bounds })
-
-    // If this entry is a node, mark it for slot layout resync
-    nodesNeedingSlotResync.add(nodeId)
   }
-
-  if (updatesByType.size === 0 && nodesNeedingSlotResync.size === 0) return
 
   for (const [type, updates] of updatesByType) {
     const config = trackingConfigs.get(type)
     if (config?.updateHandler && updates.length) config.updateHandler(updates)
   }
-
-  // After node bounds are updated, refresh slot cached offsets and layouts
-  if (nodesNeedingSlotResync.size > 0) {
-    for (const nodeId of nodesNeedingSlotResync) {
-      syncNodeSlotLayoutsFromDOM(nodeId)
+  if (rootGraphId) {
+    for (const [nodeId, element] of slotSyncElements) {
+      syncSlotOffsets(element, rootGraphId, nodeId)
     }
   }
-})
+}
+
+function createResizeTracking(scope: EffectScope): ResizeTracking {
+  const tracking: ResizeTracking = {
+    scope,
+    visibility: useDocumentVisibility(),
+    observer: new ResizeObserver((entries) => measureEntries(entries, tracking))
+  }
+  watch(tracking.visibility, (state) => {
+    if (state !== 'visible' || deferredElements.size === 0) return
+
+    for (const element of deferredElements) {
+      if (element.isConnected) {
+        tracking.observer.observe(element)
+      }
+    }
+    deferredElements.clear()
+  })
+  return tracking
+}
+
+function startResizeTracking() {
+  const scope = effectScope(true)
+  return scope.run(() => createResizeTracking(scope))
+}
+
+function stopResizeTracking() {
+  resizeTracking?.scope.stop()
+  resizeTracking?.observer.disconnect()
+  resizeTracking = undefined
+  trackedElements.clear()
+  deferredElements.clear()
+}
+
+function trackElement(element: HTMLElement) {
+  trackedElements.add(element)
+  resizeTracking ??= startResizeTracking()
+  resizeTracking?.observer.observe(element)
+}
+
+function untrackElement(element: HTMLElement) {
+  if (!trackedElements.delete(element)) return
+  resizeTracking?.observer.unobserve(element)
+  if (trackedElements.size === 0) stopResizeTracking()
+}
+
+import.meta.hot?.dispose(stopResizeTracking)
 
 /**
  * Tracks DOM element size/position changes for a Vue component and syncs to layout store
@@ -291,10 +307,9 @@ export function useVueElementTracking(
     const config = trackingConfigs.get(trackingType)
     if (!config) return
 
-    // Set the data attribute expected by the RO pipeline for this type
     element.dataset[config.dataAttribute] = appIdentifier
     markElementForFreshMeasurement(element)
-    resizeObserver.observe(element)
+    trackElement(element)
   })
 
   onUnmounted(() => {
@@ -304,11 +319,10 @@ export function useVueElementTracking(
     const config = trackingConfigs.get(trackingType)
     if (!config) return
 
-    // Remove the data attribute and observer
     delete element.dataset[config.dataAttribute]
     cachedNodeMeasurements.delete(element)
     elementsNeedingFreshMeasurement.delete(element)
     deferredElements.delete(element)
-    resizeObserver.unobserve(element)
+    untrackElement(element)
   })
 }

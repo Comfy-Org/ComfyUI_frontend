@@ -14,24 +14,31 @@ This guide covers patterns and examples for testing Pinia stores in the ComfyUI 
 
 ## Setting Up Store Tests
 
-Basic setup for testing Pinia stores:
+For sequential frontend tests, `vitest.setup.ts` installs a fresh testing Pinia
+(`createTestingPinia({ stubActions: false })`) before every test and disposes it
+afterwards. Do **not** create your own. The `comfy/use-global-pinia` oxlint
+rule fails any test file that imports `createPinia`/`createTestingPinia` or
+mocks `pinia`/`@pinia/testing`.
+
+Audited concurrent store tests use the per-test `pinia` fixture from
+`@/testing/pinia` in the `isolated-stores` project. See
+[selective concurrency](../guidance/vitest.md#own-setup-resources-and-test-teardown)
+for eligibility and migration instructions. That fixture uses real actions,
+without the automatic spies provided by frontend setup.
+
+In sequential frontend tests, call the store composable:
 
 ```typescript
 // Example from a colocated store unit test
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { useWorkflowStore } from '@/domains/workflow/ui/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
 
   beforeEach(() => {
-    // Create a fresh testing pinia and activate it for each test
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
-    // Initialize the store
+    // The global testing Pinia is already active; just resolve the store
     store = useWorkflowStore()
   })
 
@@ -115,7 +122,6 @@ Testing store getters:
 // Example from a colocated store unit test
 describe('getters', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     store = useModelStore()
 
     // Set up test data
@@ -161,7 +167,7 @@ Mocking API and other dependencies:
 ```typescript
 // Example from a colocated store unit test
 // Add mock for api at the top of the file
-vi.mock('@/scripts/api', () => ({
+vi.mock(import('@/scripts/api'), () => ({
   api: {
     getUserData: vi.fn(),
     storeUserData: vi.fn(),
@@ -172,7 +178,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock comfyApp globally for the store setup
-vi.mock('@/scripts/app', () => ({
+vi.mock(import('@/scripts/app'), () => ({
   app: {
     canvas: null // Start with canvas potentially undefined or null
   }

@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator } from '@playwright/test'
 
 import type {
@@ -5,9 +6,9 @@ import type {
   LGraph,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position, Size } from '@e2e/fixtures/types'
@@ -27,25 +28,26 @@ export class NodeOperationsHelper {
 
   async getGraphNodesCount(): Promise<number> {
     return await this.page.evaluate(() => {
-      return window.app?.graph?.nodes?.length || 0
+      return window.app?.graph.nodes.length || 0
     })
   }
 
   async getSelectedGraphNodesCount(): Promise<number> {
     return await this.page.evaluate(() => {
       return (
-        window.app?.graph?.nodes?.filter(
-          (node: LGraphNode) => node.is_selected === true
-        ).length || 0
+        window.app?.graph.nodes.filter((node: LGraphNode) => node.is_selected)
+          .length || 0
       )
     })
   }
 
   async getSelectedNodeIds(): Promise<NodeId[]> {
     const selectedNodeIds = await this.page.evaluate(() => {
-      const selected = window.app?.canvas?.selected_nodes
-      if (!selected) return []
-      return Object.keys(selected)
+      const canvas = window.app?.canvas
+      if (!canvas?.graph) return []
+      return canvas.graph.nodes
+        .filter((node) => canvas.selectedItems.has(node))
+        .map((node) => String(node.id))
     })
     return selectedNodeIds.map(toNodeId)
   }
@@ -68,7 +70,7 @@ export class NodeOperationsHelper {
       ([nodeType, opts, pos]) => {
         const node = window.LiteGraph!.createNode(nodeType)!
         const addOpts: Record<string, unknown> = { ...opts }
-        if (opts?.ghost && pos) {
+        if (opts.ghost && pos) {
           addOpts.dragEvent = new MouseEvent('click', {
             clientX: pos.x,
             clientY: pos.y
@@ -97,7 +99,7 @@ export class NodeOperationsHelper {
 
   async waitForGraphNodes(count: number): Promise<void> {
     await this.page.waitForFunction((count) => {
-      return window.app?.canvas.graph?.nodes?.length === count
+      return window.app?.canvas.graph?.nodes.length === count
     }, count)
   }
 
@@ -107,6 +109,14 @@ export class NodeOperationsHelper {
     })
     if (!id) return null
     return this.getNodeRefById(id)
+  }
+
+  /** Every node in the graph currently shown on the canvas. */
+  async getAllNodeRefs(): Promise<NodeReference[]> {
+    const ids = await this.page.evaluate(() =>
+      window.app!.canvas.graph!.nodes.map((n: LGraphNode) => n.id)
+    )
+    return ids.map((id) => new NodeReference(id, this.comfyPage))
   }
 
   async getNodeRefById(id: SerializedNodeId): Promise<NodeReference> {
@@ -135,6 +145,15 @@ export class NodeOperationsHelper {
     )
   }
 
+  async getNodeRefByType(
+    type: string,
+    includeSubgraph: boolean = false
+  ): Promise<NodeReference> {
+    const node = (await this.getNodeRefsByType(type, includeSubgraph)).at(0)
+    if (!node) throw new Error(`Node of type "${type}" not found`)
+    return node
+  }
+
   async getNodeRefsByTitle(title: string): Promise<NodeReference[]> {
     return Promise.all(
       (
@@ -145,6 +164,12 @@ export class NodeOperationsHelper {
         }, title)
       ).map((id: SerializedNodeId) => this.getNodeRefById(id))
     )
+  }
+
+  async getNodeRefByTitle(title: string): Promise<NodeReference> {
+    const node = (await this.getNodeRefsByTitle(title)).at(0)
+    if (!node) throw new Error(`Node titled "${title}" not found`)
+    return node
   }
 
   async selectNodes(nodeTitles: string[]): Promise<void> {
@@ -166,6 +191,15 @@ export class NodeOperationsHelper {
     return this.page.evaluate(
       () => window.app!.graph.serialize() as ComfyWorkflowJSON
     )
+  }
+
+  async getSerializedGraphWithoutViewport() {
+    return this.page.evaluate(() => {
+      const data = window.app!.graph.serialize()
+      const extra = { ...data.extra }
+      delete extra.ds
+      return { ...data, extra }
+    })
   }
 
   async loadGraph(data: ComfyWorkflowJSON): Promise<void> {
@@ -218,10 +252,13 @@ export class NodeOperationsHelper {
    */
   async growNodeByDrag(
     title: string,
-    delta: { x: number; y: number }
+    delta: Point2D
   ): Promise<{ nodeRef: NodeReference; node: VueNodeFixture; size: Size }> {
-    const [nodeRef] = await this.getNodeRefsByTitle(title)
-    if (!nodeRef) throw new Error(`No node titled "${title}" on the canvas`)
+    const nodeRefs = await this.getNodeRefsByTitle(title)
+    if (nodeRefs.length === 0) {
+      throw new Error(`No node titled "${title}" on the canvas`)
+    }
+    const nodeRef = nodeRefs[0]
 
     // Saved pans can leave the node too low for a downward drag to stay onscreen.
     await nodeRef.centerOnNode()
@@ -295,7 +332,7 @@ function applyNodePositions(
   positions: Record<string, [number, number]>
 ): void {
   for (const node of data.nodes) {
-    const pos = positions[String(node.id)]
-    if (pos) node.pos = pos
+    const id = String(node.id)
+    if (Object.hasOwn(positions, id)) node.pos = positions[id]
   }
 }

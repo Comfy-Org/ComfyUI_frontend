@@ -1,10 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick, ref } from 'vue'
+
+import { render, screen } from '@testing-library/vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeLayout } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
+import type { ComfyApp } from '@/scripts/app'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 type ResizeEntryLike = Pick<
@@ -19,18 +24,22 @@ type ResizeEntryLike = Pick<
 const resizeObserverState = vi.hoisted(() => {
   const state = {
     callback: null as ResizeObserverCallback | null,
+    liveObservers: new Set<ResizeObserver>(),
     observe: vi.fn<(element: Element) => void>(),
-    unobserve: vi.fn<(element: Element) => void>(),
-    disconnect: vi.fn<() => void>()
+    unobserve: vi.fn<(element: Element) => void>()
   }
 
   const MockResizeObserver: typeof ResizeObserver = class MockResizeObserver implements ResizeObserver {
     observe = state.observe
     unobserve = state.unobserve
-    disconnect = state.disconnect
 
     constructor(callback: ResizeObserverCallback) {
       state.callback = callback
+      state.liveObservers.add(this)
+    }
+
+    disconnect() {
+      state.liveObservers.delete(this)
     }
   }
 
@@ -40,49 +49,64 @@ const resizeObserverState = vi.hoisted(() => {
 })
 
 const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
+const SECOND_GRAPH_ID = vi.hoisted<UUID>(() => 'second-graph')
 
-const testState = vi.hoisted(() => ({
-  linearMode: false,
-  nodeLayouts: new Map<NodeId, NodeLayout>(),
-  reportContentSize: vi.fn(),
-  syncNodeSlotLayoutsFromDOM: vi.fn(),
-  scheduleSlotLayoutSync: vi.fn()
-}))
+const testState = vi.hoisted(() => {
+  const contentSizes = new Map<string, { width: number; height: number }>()
 
-vi.mock('@vueuse/core', () => ({
-  useDocumentVisibility: () => ref<'visible' | 'hidden'>('visible'),
-  createSharedComposable: <T>(fn: T) => fn
-}))
+  return {
+    nodeLayouts: new Map<NodeId, NodeLayout>(),
+    contentSizes,
+    reportContentSize: vi.fn(
+      (
+        rootGraphId: UUID,
+        nodeId: NodeId,
+        size: { width: number; height: number }
+      ) => {
+        contentSizes.set(`${rootGraphId}:${nodeId}`, size)
+      }
+    ),
+    syncSlotOffsets: vi.fn(),
+    setDirty: vi.fn()
+  }
+})
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    linearMode: testState.linearMode,
-    rootGraphId: ROOT_GRAPH_ID
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({ canvas: {}, nodePreviewImages: {} }) }
+})
+
+vi.mock<unknown>(
+  import('@/composables/element/useCanvasPositionConversion'),
+  () => ({
+    useSharedCanvasPositionConversion: () => ({
+      clientPosToCanvasPos: ([x, y]: [number, number]) => [x, y]
+    })
   })
-}))
+)
 
-vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
-  useSharedCanvasPositionConversion: () => ({
-    clientPosToCanvasPos: ([x, y]: [number, number]) => [x, y]
-  })
-}))
-
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
   layoutStore: {
     reportContentSize: testState.reportContentSize,
+    contentSizeOf: (rootGraphId: UUID, nodeId: NodeId) =>
+      testState.contentSizes.get(`${rootGraphId}:${nodeId}`),
     getNodeLayout: (_rootGraphId: UUID, rawNodeId: NodeId): NodeLayout | null =>
       testState.nodeLayouts.get(rawNodeId) ?? null
   }
 }))
 
-vi.mock('./useSlotElementTracking', () => ({
-  scheduleSlotLayoutSync: testState.scheduleSlotLayoutSync,
-  syncNodeSlotLayoutsFromDOM: testState.syncNodeSlotLayoutsFromDOM
+vi.mock(import('@/renderer/core/layout/slots/syncSlotOffsets'), () => ({
+  syncSlotOffsets: (
+    _element: HTMLElement,
+    _rootGraphId: UUID,
+    nodeId: NodeId
+  ) => testState.syncSlotOffsets(nodeId)
 }))
 
-import './useVueNodeResizeTracking'
+import { useVueElementTracking } from './useVueNodeResizeTracking'
 
 function createResizeEntry(options?: {
+  element?: HTMLElement
   nodeId?: NodeId
   width?: number
   height?: number
@@ -91,6 +115,7 @@ function createResizeEntry(options?: {
   collapsed?: boolean
 }) {
   const {
+    element = document.createElement('div'),
     nodeId = toNodeId('test-node'),
     width = 240,
     height = 180,
@@ -99,7 +124,6 @@ function createResizeEntry(options?: {
     collapsed = false
   } = options ?? {}
 
-  const element = document.createElement('div')
   element.dataset.nodeId = String(nodeId)
   if (collapsed) {
     element.dataset.collapsed = ''
@@ -156,10 +180,381 @@ function seedNodeLayout(options: {
   })
 }
 
-describe('useVueNodeResizeTracking', () => {
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({ setDirty: testState.setDirty })
+})
+
+const TrackedNode = defineComponent({
+  props: { nodeId: { type: String, required: true } },
+  setup(props) {
+    useVueElementTracking(props.nodeId, 'node')
+    return () => h('div', { 'data-testid': `tracked-${props.nodeId}` })
+  }
+})
+
+function visibilityChangeCalls(method: typeof document.addEventListener) {
+  return vi
+    .mocked(method)
+    .mock.calls.filter(([type]) => type === 'visibilitychange').length
+}
+
+function trackedResources() {
+  return {
+    observers: resizeObserverState.liveObservers.size,
+    visibilityListeners:
+      visibilityChangeCalls(document.addEventListener) -
+      visibilityChangeCalls(document.removeEventListener)
+  }
+}
+
+describe('useVueNodeResizeTracking resource ownership', () => {
+  const none = { observers: 0, visibilityListeners: 0 }
+  const one = { observers: 1, visibilityListeners: 1 }
+
   beforeEach(() => {
-    testState.linearMode = false
+    vi.spyOn(document, 'addEventListener')
+    vi.spyOn(document, 'removeEventListener')
+  })
+
+  it('allocates nothing when the module is imported', async () => {
+    vi.resetModules()
+    await import('./useVueNodeResizeTracking')
+
+    expect(trackedResources()).toEqual(none)
+  })
+
+  it('shares one observer and listener across tracked elements until the last is released', () => {
+    const first = render(TrackedNode, { props: { nodeId: 'first' } })
+    expect(trackedResources()).toEqual(one)
+
+    const second = render(TrackedNode, { props: { nodeId: 'second' } })
+    expect(trackedResources()).toEqual(one)
+
+    first.unmount()
+    expect(trackedResources()).toEqual(one)
+
+    second.unmount()
+    expect(trackedResources()).toEqual(none)
+  })
+
+  it('reacquires exactly one observer and listener after release', () => {
+    render(TrackedNode, { props: { nodeId: 'released' } }).unmount()
+    expect(trackedResources()).toEqual(none)
+
+    const view = render(TrackedNode, { props: { nodeId: 'reacquired' } })
+
+    expect(trackedResources()).toEqual(one)
+    expect(resizeObserverState.observe).toHaveBeenCalledWith(
+      screen.getByTestId('tracked-reacquired')
+    )
+    view.unmount()
+    expect(trackedResources()).toEqual(none)
+  })
+})
+
+describe('useVueNodeResizeTracking', () => {
+  let anchor: ReturnType<typeof render>
+
+  beforeEach(() => {
+    useCanvasStore().linearMode = false
+    Object.assign(useCanvasStore(), { rootGraphId: ROOT_GRAPH_ID })
     testState.nodeLayouts.clear()
+    testState.contentSizes.clear()
+    anchor = render(TrackedNode, { props: { nodeId: 'anchor' } })
+  })
+
+  afterEach(() => {
+    anchor.unmount()
+  })
+
+  it('skips repeated changed-size deliveries after reporting the change', () => {
+    const nodeId = toNodeId('changed-size-node')
+    const element = document.createElement('div')
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+
+    const initial = createResizeEntry({ element, nodeId }).entry
+    resizeObserverState.callback?.([initial], createObserverMock())
+
+    const changed = createResizeEntry({
+      element,
+      nodeId,
+      width: 241,
+      height: 181
+    }).entry
+    resizeObserverState.callback?.([changed], createObserverMock())
+    vi.clearAllMocks()
+
+    resizeObserverState.callback?.([changed], createObserverMock())
+
+    expect(testState.reportContentSize).not.toHaveBeenCalled()
+    expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
+  })
+
+  it('reports a fresh measurement after root workflow replacement', () => {
+    const nodeId = toNodeId('same-local-node-id')
+    const { entry } = createResizeEntry({ nodeId })
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+    vi.clearAllMocks()
+    Object.assign(useCanvasStore(), { rootGraphId: SECOND_GRAPH_ID })
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(testState.reportContentSize).toHaveBeenCalledWith(
+      SECOND_GRAPH_ID,
+      nodeId,
+      {
+        width: 240,
+        height: 180 - LiteGraph.NODE_TITLE_HEIGHT
+      }
+    )
+    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
+  })
+
+  it('remounts root-flat node identities during same-root subgraph navigation', async () => {
+    const rootNodeId = toNodeId('root-node')
+    const subgraphNodeId = toNodeId('subgraph-node')
+    const activeNodeId = ref(rootNodeId)
+    const GraphView = defineComponent({
+      setup() {
+        return () =>
+          h(TrackedNode, {
+            key: activeNodeId.value,
+            nodeId: activeNodeId.value
+          })
+      }
+    })
+    const view = render(GraphView)
+    const rootElement = screen.getByTestId(`tracked-${rootNodeId}`)
+
+    vi.clearAllMocks()
+    testState.contentSizes.clear()
+    activeNodeId.value = subgraphNodeId
+    await nextTick()
+
+    const subgraphElement = screen.getByTestId(`tracked-${subgraphNodeId}`)
+    expect(subgraphElement).not.toBe(rootElement)
+    expect(resizeObserverState.unobserve).toHaveBeenCalledWith(rootElement)
+    expect(resizeObserverState.observe).toHaveBeenCalledWith(subgraphElement)
+
+    seedNodeLayout({
+      nodeId: subgraphNodeId,
+      left: 100,
+      top: 200,
+      width: 240,
+      height: 180
+    })
+    const { entry } = createResizeEntry({
+      element: subgraphElement,
+      nodeId: subgraphNodeId
+    })
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(useCanvasStore().rootGraphId).toBe(ROOT_GRAPH_ID)
+    expect(testState.reportContentSize).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      subgraphNodeId,
+      {
+        width: 240,
+        height: 180 - LiteGraph.NODE_TITLE_HEIGHT
+      }
+    )
+    view.unmount()
+  })
+
+  it('reports a fresh measurement after same-root graph reconfiguration', () => {
+    const nodeId = toNodeId('undo-redo-node')
+    const { entry } = createResizeEntry({ nodeId })
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+    vi.clearAllMocks()
+    testState.contentSizes.clear()
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(testState.reportContentSize).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      nodeId,
+      {
+        width: 240,
+        height: 180 - LiteGraph.NODE_TITLE_HEIGHT
+      }
+    )
+    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
+  })
+
+  it('re-observes hidden elements without re-reporting an unchanged size', async () => {
+    const nodeId = toNodeId('hidden-node')
+    const { entry } = createResizeEntry({ nodeId })
+    document.body.append(entry.target)
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+    resizeObserverState.callback?.([entry], createObserverMock())
+    expect(testState.reportContentSize).toHaveBeenCalledTimes(1)
+    vi.clearAllMocks()
+
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await nextTick()
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(resizeObserverState.unobserve).toHaveBeenCalledWith(entry.target)
+    expect(testState.reportContentSize).not.toHaveBeenCalled()
+    expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
+
+    vi.clearAllMocks()
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await nextTick()
+
+    expect(resizeObserverState.observe).toHaveBeenCalledWith(entry.target)
+
+    vi.clearAllMocks()
+    resizeObserverState.callback?.([entry], createObserverMock())
+    expect(testState.reportContentSize).not.toHaveBeenCalled()
+    expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
+    entry.target.remove()
+  })
+
+  // PM-1304 / PM-1312: switching tabs away and back re-triggers this shared
+  // measurement pipeline for every deferred node in one batch, not just the
+  // node whose content actually grew. This spreads the "can't shrink"
+  // ratchet from `refreshNodeGeometry` to nodes the user never touched.
+  it(
+    "does not re-report an untouched node's unchanged content size after a " +
+      'tab-visibility cycle triggered by a different node',
+    async () => {
+      const touchedNodeId = toNodeId('touched-node')
+      const untouchedNodeId = toNodeId('untouched-node')
+
+      const touched = createResizeEntry({
+        nodeId: touchedNodeId,
+        width: 240,
+        height: 180
+      })
+      const untouched = createResizeEntry({
+        nodeId: untouchedNodeId,
+        width: 240,
+        height: 180
+      })
+      document.body.append(touched.entry.target, untouched.entry.target)
+      seedNodeLayout({
+        nodeId: touchedNodeId,
+        left: 100,
+        top: 200,
+        width: 240,
+        height: 180
+      })
+      seedNodeLayout({
+        nodeId: untouchedNodeId,
+        left: 400,
+        top: 200,
+        width: 240,
+        height: 180
+      })
+
+      // Establish a baseline measurement for both nodes.
+      resizeObserverState.callback?.(
+        [touched.entry, untouched.entry],
+        createObserverMock()
+      )
+      vi.clearAllMocks()
+
+      // Tab goes hidden. Both nodes happen to receive a resize-observer
+      // entry while hidden (e.g. a layout pass unrelated to either node's
+      // own content), even though only the touched node's autogrow widget
+      // is actually mid-resize.
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+      document.dispatchEvent(new Event('visibilitychange'))
+      await nextTick()
+
+      const grownTouched = createResizeEntry({
+        element: touched.entry.target,
+        nodeId: touchedNodeId,
+        width: 240,
+        height: 500
+      }).entry
+      const unchangedUntouched = createResizeEntry({
+        element: untouched.entry.target,
+        nodeId: untouchedNodeId,
+        width: 240,
+        height: 180
+      }).entry
+      resizeObserverState.callback?.(
+        [grownTouched, unchangedUntouched],
+        createObserverMock()
+      )
+      expect(testState.reportContentSize).not.toHaveBeenCalled()
+      vi.clearAllMocks()
+
+      // Tab becomes visible again.
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+      document.dispatchEvent(new Event('visibilitychange'))
+      await nextTick()
+      vi.clearAllMocks()
+
+      // The browser redelivers each node's real, current measurement: the
+      // touched node genuinely grew; the untouched node's DOM size never
+      // changed from the baseline measured above.
+      resizeObserverState.callback?.(
+        [grownTouched, unchangedUntouched],
+        createObserverMock()
+      )
+
+      expect(testState.reportContentSize).toHaveBeenCalledWith(
+        ROOT_GRAPH_ID,
+        touchedNodeId,
+        { width: 240, height: 500 - LiteGraph.NODE_TITLE_HEIGHT }
+      )
+
+      // Bug: the untouched node's identical, already-known measurement is
+      // re-reported too. The tab-visibility batch cleared its measurement
+      // cache along with the touched node's, forcing it back through the
+      // pipeline as if it were a fresh, changed measurement.
+      expect(testState.reportContentSize).not.toHaveBeenCalledWith(
+        ROOT_GRAPH_ID,
+        untouchedNodeId,
+        expect.anything()
+      )
+    }
+  )
+
+  it('observes on mount and removes identity before unobserving on unmount', () => {
+    const nodeId = toNodeId('mounted-node')
+    const Component = defineComponent({
+      setup() {
+        useVueElementTracking(nodeId, 'node')
+        return () => h('div', { 'data-testid': 'tracked-node' })
+      }
+    })
+
+    const view = render(Component)
+    const element = screen.getByTestId('tracked-node')
+
+    expect(element.dataset.nodeId).toBe(nodeId)
+    expect(resizeObserverState.observe).toHaveBeenCalledWith(element)
+
+    view.unmount()
+
+    expect(element.dataset.nodeId).toBeUndefined()
+    expect(resizeObserverState.unobserve).toHaveBeenCalledWith(element)
+
+    vi.clearAllMocks()
+    const boxSizes = [{ inlineSize: 240, blockSize: 180 }]
+    resizeObserverState.callback?.(
+      [
+        {
+          target: element,
+          borderBoxSize: boxSizes,
+          contentBoxSize: boxSizes,
+          devicePixelContentBoxSize: boxSizes,
+          contentRect: new DOMRect(0, 0, 240, 180)
+        }
+      ],
+      createObserverMock()
+    )
+    expect(testState.reportContentSize).not.toHaveBeenCalled()
   })
 
   it('reports the first measurement and skips repeated entries', () => {
@@ -191,16 +586,12 @@ describe('useVueNodeResizeTracking', () => {
         height: height - LiteGraph.NODE_TITLE_HEIGHT
       }
     )
-    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
-
     testState.reportContentSize.mockReset()
-    testState.syncNodeSlotLayoutsFromDOM.mockReset()
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
     expect(rectSpy).not.toHaveBeenCalled()
     expect(testState.reportContentSize).not.toHaveBeenCalled()
-    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
   })
 
   it('reports size without replacing the stored position', () => {
@@ -237,7 +628,7 @@ describe('useVueNodeResizeTracking', () => {
     )
   })
 
-  it('updates node bounds + slot layouts when size changes', () => {
+  it('updates node bounds when size changes', () => {
     const nodeId = toNodeId('test-node')
     const { entry } = createResizeEntry({
       nodeId,
@@ -266,7 +657,6 @@ describe('useVueNodeResizeTracking', () => {
         height: 180 - titleHeight
       }
     )
-    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 
   it('writes collapsed dimensions through the normal bounds path', () => {
@@ -296,7 +686,6 @@ describe('useVueNodeResizeTracking', () => {
         height: Math.max(0, collapsedHeight - titleHeight)
       }
     )
-    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 
   it('updates bounds with expanded dimensions on collapse-to-expand transition', () => {
@@ -317,23 +706,17 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.reportContentSize).toHaveBeenCalled()
   })
 
-  it('widgets-grid resize schedules a slot resync without writing node bounds', () => {
-    const parentNodeId = toNodeId('parent-node')
-    const element = document.createElement('div')
-    element.dataset.widgetsGridNodeId = parentNodeId
-    const boxSizes = [{ inlineSize: 200, blockSize: 80 }]
-    const entry = {
-      target: element,
-      borderBoxSize: boxSizes,
-      contentBoxSize: boxSizes,
-      devicePixelContentBoxSize: boxSizes,
-      contentRect: new DOMRect(0, 0, 200, 80)
-    } satisfies ResizeEntryLike
+  it('refreshes slot offsets when the widget grid resizes', () => {
+    const nodeId = toNodeId('test-node')
+    const { entry } = createResizeEntry({ nodeId })
+    entry.target.removeAttribute('data-node-id')
+    if (entry.target instanceof HTMLElement) {
+      entry.target.dataset.widgetsGridNodeId = String(nodeId)
+    }
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(testState.scheduleSlotLayoutSync).toHaveBeenCalledWith(parentNodeId)
+    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
     expect(testState.reportContentSize).not.toHaveBeenCalled()
-    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
   })
 })

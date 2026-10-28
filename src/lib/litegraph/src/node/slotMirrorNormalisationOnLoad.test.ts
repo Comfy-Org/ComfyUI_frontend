@@ -1,15 +1,13 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedGraph,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/serialisation'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 /**
  * A saved workflow carries two views of every connection: the link records in
@@ -121,7 +119,6 @@ function mirrors(graph: LGraph) {
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('source', SourceNode)
   LiteGraph.registerNodeType('sink', SinkNode)
 })

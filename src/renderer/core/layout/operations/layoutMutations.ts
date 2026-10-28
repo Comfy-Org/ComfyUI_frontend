@@ -1,7 +1,10 @@
-import type { NodeId } from '@/types/nodeId'
+import type { LGraph } from '@comfyorg/graph-model/entityRegistry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
+
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { LayoutSource, Point } from '@/renderer/core/layout/types'
+import type { LayoutSource } from '@/renderer/core/layout/types'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 
 export function useLayoutMutations(source: LayoutSource) {
   const moveNode = (
@@ -73,10 +76,34 @@ export function useLayoutMutations(source: LayoutSource) {
     setNodeZIndex(rootGraphId, nodeId, layoutStore.allocateZIndex())
   }
 
+  const setNodeOrder = (
+    graph: LGraph,
+    nodeId: NodeId,
+    order: 'front' | 'back'
+  ): void => {
+    const rootGraphId = graph.rootGraph.id
+    if (!graph._nodes.some((node) => node.id === nodeId)) return
+    if (!layoutStore.getNodeLayout(rootGraphId, nodeId)) return
+
+    const zIndex =
+      order === 'front'
+        ? layoutStore.allocateZIndex()
+        : graph._nodes.reduce(
+            (lowest, node) =>
+              Math.min(
+                lowest,
+                layoutStore.getNodeLayout(rootGraphId, node.id)?.zIndex ?? 0
+              ),
+            0
+          ) - 1
+    setNodeZIndex(rootGraphId, nodeId, zIndex)
+  }
+
   return {
     moveNode,
     batchMoveNodes,
     setNodeZIndex,
-    bringNodeToFront
+    bringNodeToFront,
+    setNodeOrder
   }
 }

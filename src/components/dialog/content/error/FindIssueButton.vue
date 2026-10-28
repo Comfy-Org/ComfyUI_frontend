@@ -4,7 +4,7 @@
     variant="secondary"
     @click="openGitHubIssues"
   >
-    <i class="pi pi-github" />
+    <i class="icon-[lucide--github]" />
     {{ $t('g.findIssues') }}
   </Button>
 </template>
@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useTelemetry } from '@/platform/telemetry'
 
 const props = defineProps<{

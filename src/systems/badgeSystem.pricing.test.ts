@@ -1,12 +1,14 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 import { nodeBadges } from './badgeSystem'
@@ -14,7 +16,7 @@ import { nodeBadges } from './badgeSystem'
 let displayPrice = '$disconnected'
 const getNodeDisplayPrice = vi.fn(() => displayPrice)
 
-vi.mock('@/composables/node/useNodePricing', () => {
+vi.mock<unknown>(import('@/composables/node/useNodePricing'), () => {
   return {
     useNodePricing: () => ({
       getNodeDisplayPrice,
@@ -26,13 +28,6 @@ vi.mock('@/composables/node/useNodePricing', () => {
     })
   }
 })
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) =>
-      key === 'Comfy.NodeBadge.ShowApiPricing' ? true : undefined
-  })
-}))
 
 class ApiNode extends LGraphNode {
   static override nodeData = { name: 'ApiNode', api_node: true }
@@ -46,7 +41,7 @@ function scopeOf(id: string) {
 
 describe('badge derivation pricing input connectivity', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
+    useSettingStore().settingValues['Comfy.NodeBadge.ShowApiPricing'] = true
     displayPrice = '$disconnected'
     getNodeDisplayPrice.mockClear()
   })

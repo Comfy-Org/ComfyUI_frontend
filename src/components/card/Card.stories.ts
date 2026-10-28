@@ -1,13 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Tag from '@/components/chip/Tag.vue'
-import CardBottom from './CardBottom.vue'
-import CardContainer from './CardContainer.vue'
-import CardDescription from './CardDescription.vue'
-import CardTitle from './CardTitle.vue'
-import CardTop from './CardTop.vue'
+import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
+import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
+import CardTop from '@comfyorg/design-system/content-card/CardTop'
 
 interface CardStoryArgs {
   // CardContainer props
@@ -171,8 +169,6 @@ const createCardTemplate = (args: CardStoryArgs) => ({
     CardContainer,
     CardTop,
     CardBottom,
-    CardTitle,
-    CardDescription,
     Button,
     Tag
   },
@@ -226,14 +222,14 @@ const createCardTemplate = (args: CardStoryArgs) => ({
                 class="!bg-white/90 !text-neutral-900"
                 @click="() => console.log('Info clicked')"
               >
-                <i class="icon-[lucide--info] size-4" />
+                <i class="icon-[lucide--info]" />
               </Button>
               <Button
                 class="!bg-white/90"
                 :class="favorited ? '!text-red-500' : '!text-neutral-900'"
                 @click="toggleFavorite"
               >
-                <i class="icon-[lucide--heart] size-4" :class="favorited ? 'fill-current' : ''" />
+                <i class="icon-[lucide--heart]" :class="favorited ? 'fill-current' : ''" />
               </Button>
             </template>
             
@@ -255,8 +251,8 @@ const createCardTemplate = (args: CardStoryArgs) => ({
         
         <template #bottom>
           <CardBottom>
-            <CardTitle v-if="args.showTitle">{{ args.title }}</CardTitle>
-            <CardDescription v-if="args.showDescription">{{ args.description }}</CardDescription>
+            <div v-if="args.showTitle" class="text-sm text-foreground">{{ args.title }}</div>
+            <div v-if="args.showDescription" class="line-clamp-2 h-7 text-xs text-muted-foreground">{{ args.description }}</div>
           </CardBottom>
         </template>
       </CardContainer>

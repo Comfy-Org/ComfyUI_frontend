@@ -13,10 +13,7 @@ test.describe(
   'Vue Node Resizing',
   { tag: ['@vue-nodes', '@canvas', '@node'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
-      await comfyPage.canvasOps.resetView()
-    })
+    test.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
 
     test('Resizing', async ({ comfyPage }) => {
       const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')

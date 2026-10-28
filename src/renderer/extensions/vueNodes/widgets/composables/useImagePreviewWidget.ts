@@ -1,16 +1,13 @@
 import { BaseWidget, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { DrawWidgetOptions } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 
 /**
@@ -82,8 +79,6 @@ const renderPreview = (
   imgs: HTMLImageElement[],
   width: number
 ) => {
-  if (!node.size) return
-
   if (node.isUploading) {
     renderUploadSpinner(ctx, node, shiftY, computedHeight)
     return
@@ -207,6 +202,8 @@ const renderPreview = (
         h: imgHeight - cell_padding * 2
       }
       deferredImageRenders.push(() => {
+        if (!drawParams.img.naturalWidth || !drawParams.img.naturalHeight)
+          return
         ctx.save()
         ctx.setTransform(transform)
         ctx.filter = filter
@@ -244,7 +241,7 @@ const renderPreview = (
     return
   }
   // Draw individual
-  const img = imgs[imageIndex]
+  const img = imgs.at(imageIndex)
   if (!img) return
   let w = img.naturalWidth
   let h = img.naturalHeight
@@ -262,6 +259,7 @@ const renderPreview = (
   // Defer image rendering to work around Chrome GPU bug
   const transform = ctx.getTransform()
   deferredImageRenders.push(() => {
+    if (!img.naturalWidth || !img.naturalHeight) return
     ctx.save()
     ctx.setTransform(transform)
     ctx.drawImage(img, x, y, w, h)
@@ -388,7 +386,7 @@ class ImagePreviewWidget extends BaseWidget {
 
   override onPointerDown(pointer: CanvasPointer, node: LGraphNode): boolean {
     pointer.onDragStart = () => {
-      const { canvas } = app
+      const { canvas } = useApp()
       const { graph } = canvas
       canvas.emitBeforeChange()
       graph?.beforeChange()
@@ -404,7 +402,7 @@ class ImagePreviewWidget extends BaseWidget {
     }
 
     pointer.onDragEnd = (e) => {
-      const { canvas } = app
+      const { canvas } = useApp()
       if (e.shiftKey || LiteGraph.alwaysSnapToGrid)
         canvas.graph?.snapToGrid(canvas.selectedItems)
 
@@ -432,7 +430,7 @@ export const useImagePreviewWidget = () => {
     return node.addCustomWidget(
       new ImagePreviewWidget(node, inputSpec.name, {
         serialize: false,
-        canvasOnly: true
+        surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
       })
     )
   }

@@ -5,12 +5,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 test.describe('Errors tab - common', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-  })
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
   test.describe('Tab visibility', () => {
     test('Should show Errors tab when errors exist', async ({ comfyPage }) => {
@@ -19,6 +14,8 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
 
       const panel = new PropertiesPanelHelper(comfyPage.page)
       await expect(panel.errorsTabIcon).toBeVisible()
+      // Missing resources alone are setup warnings, not blocking errors.
+      await expect(panel.errorsTabIcon).toHaveAccessibleName('Setup required')
     })
 
     test('Should not show Errors tab when setting is disabled', async ({
@@ -37,10 +34,6 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
   })
 
   test.describe('Search and filter', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setup()
-    })
-
     test('Should keep execution errors matching the search query', async ({
       comfyPage
     }) => {

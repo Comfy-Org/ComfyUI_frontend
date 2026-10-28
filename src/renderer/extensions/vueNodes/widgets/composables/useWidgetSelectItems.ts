@@ -5,7 +5,7 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
@@ -15,7 +15,8 @@ import {
   getAssetDisplayFilename,
   getAssetDisplayName,
   getAssetFilename,
-  getAssetUrlFilename
+  getAssetUrlFilename,
+  getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type {
   FilterOption,
@@ -23,16 +24,17 @@ import type {
 } from '@/platform/assets/types/filterTypes'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
+import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
-import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
 import type { AssetKind } from '@/types/widgetTypes'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
   value: string,
-  getOptionLabel?: ((value?: string | null) => string) | undefined
+  getOptionLabel?: (value?: string | null) => string
 ): string {
   if (!getOptionLabel) return value
 
@@ -59,14 +61,14 @@ function getMediaUrl(
   return `/api/view?${params}`
 }
 
-interface UseWidgetSelectItemsOptions {
+export interface UseWidgetSelectItemsOptions {
   values: MaybeRefOrGetter<unknown[] | undefined>
   getOptionLabel: MaybeRefOrGetter<
     ((value?: string | null) => string) | undefined
   >
   modelValue: Ref<string | undefined>
   assetKind: MaybeRefOrGetter<AssetKind | undefined>
-  outputMediaAssets: IAssetsProvider
+  outputMediaAssets: MaybeRefOrGetter<PagedList<AssetItem>>
   assetData: ReturnType<typeof useAssetWidgetData> | null
   isAssetMode: MaybeRefOrGetter<boolean | undefined>
 }
@@ -113,7 +115,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
 
   watch(
-    () => outputMediaAssets.media.value,
+    () => toValue(toValue(outputMediaAssets).items),
     (assets, _, onCleanup) => {
       let cancelled = false
       onCleanup(() => {
@@ -206,11 +208,15 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     const items: FormDropdownItem[] = []
     const labelFn = toValue(options.getOptionLabel)
 
-    const assets = outputMediaAssets.media.value.flatMap((asset) => {
-      const meta = getOutputAssetMetadata(asset.user_metadata)
-      const resolved = meta ? resolvedByJobId.value.get(meta.jobId) : undefined
-      return resolved ?? [asset]
-    })
+    const assets = toValue(toValue(outputMediaAssets).items).flatMap(
+      (asset) => {
+        const meta = getOutputAssetMetadata(asset.user_metadata)
+        const resolved = meta
+          ? resolvedByJobId.value.get(meta.jobId)
+          : undefined
+        return resolved ?? [asset]
+      }
+    )
 
     const missing = missingMediaValues.value
     for (const asset of assets) {
@@ -218,16 +224,14 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const filenameForUrl = getAssetUrlFilename(asset)
-      const subfolder =
-        kind === 'mesh'
-          ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
-          : undefined
+      const subfolder = getOutputSubfolder(asset.user_metadata)
       const pathWithSubfolder = subfolder
         ? `${subfolder}/${filenameForUrl}`
         : filenameForUrl
-      const annotatedPath = `${pathWithSubfolder} [output]`
+      const rootFolder = isGeneratedTempOutput(asset) ? 'temp' : 'output'
+      const annotatedPath = `${pathWithSubfolder} [${rootFolder}]`
       if (missing.has(annotatedPath)) continue
-      const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
+      const displayLabel = `${getAssetDisplayFilename(asset)} [${rootFolder}]`
       items.push({
         id: `output-${asset.id}`,
         preview_url:

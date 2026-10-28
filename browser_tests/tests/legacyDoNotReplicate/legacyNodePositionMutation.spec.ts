@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { BAD_DO_NOT_DO_THIS_LegacyApiHelper } from '@e2e/fixtures/helpers/BAD_DO_NOT_DO_THIS_LegacyApiHelper'
 import type { WorkspaceStore } from '@e2e/types/globals'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 test(
   'Can display workflow name with unsaved legacy position changes',
@@ -21,7 +21,7 @@ test(
     await comfyPage.page.evaluate(async () => {
       ;(
         window.app!.extensionManager as WorkspaceStore
-      ).workflow.activeWorkflow?.changeTracker?.captureCanvasState()
+      ).workflow.activeWorkflow?.changeTracker.captureCanvasState()
     })
     await expect
       .poll(() => comfyPage.page.title())

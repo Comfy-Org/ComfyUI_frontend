@@ -1,0 +1,78 @@
+import { promiseTimeout } from '@vueuse/core'
+
+import type {
+  ComfyDesktop2Bridge,
+  ComfyTemplateInputAsset
+} from '@comfyorg/comfyui-desktop-bridge-types'
+
+type BridgeProvider = () => ComfyDesktop2Bridge | undefined
+
+/**
+ * The detail view waits on this lookup before it can open, so a host that
+ * never answers would leave the user with no way to reach Open now. Every
+ * other failure here already degrades to "no assets"; this makes silence do
+ * the same.
+ */
+const LOOKUP_TIMEOUT_MS = 10_000
+const NO_ASSETS: readonly ComfyTemplateInputAsset[] = []
+
+export async function resolveTemplateInputAssets(
+  templateId: string,
+  getBridge: BridgeProvider
+): Promise<readonly ComfyTemplateInputAsset[]> {
+  const bridge = getBridge()
+  if (!bridge?.getTemplateInputAssets || bridge.isRemote?.()) return []
+
+  try {
+    return (
+      (await Promise.race([
+        bridge.getTemplateInputAssets(templateId),
+        promiseTimeout(LOOKUP_TIMEOUT_MS).then(() => NO_ASSETS)
+      ])) ?? NO_ASSETS
+    )
+  } catch {
+    return []
+  }
+}
+
+export function startMissingTemplateInputDownloads(
+  templateId: string,
+  assets: readonly ComfyTemplateInputAsset[],
+  {
+    getBridge,
+    reportError
+  }: {
+    getBridge: BridgeProvider
+    reportError: (error: unknown) => void
+  }
+): void {
+  const missingAssets = assets.filter(
+    ({ availability }) => availability === 'missing'
+  )
+  if (!missingAssets.length) return
+
+  const bridge = getBridge()
+  const downloadInput = bridge?.downloadTemplateInputAsset
+  if (!downloadInput || bridge.isRemote?.()) {
+    reportError(new Error('Template input download bridge unavailable'))
+    return
+  }
+
+  let firstError: unknown
+  const attempts = missingAssets.map(async ({ assetId }) => {
+    try {
+      const result = await downloadInput(templateId, assetId)
+      if (result.status === 'not-started' && !firstError) {
+        firstError = new Error(
+          `Template input download not started: ${result.reason}`
+        )
+      }
+    } catch (error) {
+      firstError ??= error
+    }
+  })
+
+  void Promise.all(attempts).then(() => {
+    if (firstError) reportError(firstError)
+  })
+}

@@ -12,6 +12,9 @@ inputs:
     description: Status to output when no run exists
     required: false
     default: pending
+  artifact-name:
+    description: When set, a completed run is ready only when this artifact exists
+    required: false
   token:
     description: GitHub token for API access
     required: true
@@ -34,6 +37,7 @@ runs:
         WORKFLOW_ID: ${{ inputs.workflow-id }}
         HEAD_SHA: ${{ inputs.head-sha }}
         NOT_FOUND_STATUS: ${{ inputs.not-found-status }}
+        ARTIFACT_NAME: ${{ inputs.artifact-name }}
       with:
         github-token: ${{ inputs.token }}
         script: |
@@ -53,6 +57,35 @@ runs:
 
           if (run.status !== 'completed') {
             core.setOutput('status', 'pending');
+            return;
+          }
+
+          if (process.env.ARTIFACT_NAME) {
+            const artifacts = await github.paginate(
+              github.rest.actions.listWorkflowRunArtifacts,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: run.id,
+                per_page: 100,
+              }
+            );
+            const artifact = artifacts.find(
+              candidate =>
+                candidate.name === process.env.ARTIFACT_NAME &&
+                !candidate.expired
+            );
+            if (!artifact) {
+              core.setOutput(
+                'status',
+                run.conclusion === 'success'
+                  ? process.env.NOT_FOUND_STATUS
+                  : 'failed'
+              );
+              return;
+            }
+            core.setOutput('status', 'ready');
+            core.setOutput('run-id', String(run.id));
             return;
           }
 

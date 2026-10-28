@@ -1,50 +1,42 @@
+import type {
+  CompactSize,
+  Point2D,
+  CompactRect as Rect,
+  Point2D as Vec2
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { clamp } from 'es-toolkit'
 import { computed, reactive, ref } from 'vue'
 
 import {
   BakeRasterCommand,
   snapshotRaster
-} from '@/renderer/extensions/layerEditor/engine/commands/bakeContent'
-import { PropCommand } from '@/renderer/extensions/layerEditor/engine/commands/prop'
-import { SetTransformCommand } from '@/renderer/extensions/layerEditor/engine/commands/setTransform'
-import type { Compositor } from '@/renderer/extensions/layerEditor/engine/compositor'
-import { createWebGLCompositor } from '@/renderer/extensions/layerEditor/engine/compositor/webglCompositor'
-import {
-  filterTopmost,
-  findNode
-} from '@/renderer/extensions/layerEditor/engine/document'
-import { createEditor } from '@/renderer/extensions/layerEditor/engine/editor/editor'
-import { pickLayerAt } from '@/renderer/extensions/layerEditor/engine/editor/pickOps'
-import { Dirty } from '@/renderer/extensions/layerEditor/engine/history'
-import type { FillSpec } from '@/renderer/extensions/layerEditor/engine/fill'
-import {
-  fillKind,
-  rasterKind,
-  registerBuiltinKinds
-} from '@/renderer/extensions/layerEditor/engine/kinds'
-import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
-import {
-  LAYER_MODES,
-  defaultMode
-} from '@/renderer/extensions/layerEditor/engine/mode'
+} from '@comfyorg/layer-editor/commands/bakeContent'
+import { PropCommand } from '@comfyorg/layer-editor/commands/prop'
+import { SetTransformCommand } from '@comfyorg/layer-editor/commands/setTransform'
+import type { Compositor } from '@comfyorg/layer-editor/compositor'
+import { filterTopmost, findNode } from '@comfyorg/layer-editor/document'
+import type { AlphaSampler } from '@comfyorg/layer-editor/editor/pickOps'
+import { pickLayerAt } from '@comfyorg/layer-editor/editor/pickOps'
+import { Dirty } from '@comfyorg/layer-editor/history'
+import type { FillSpec } from '@comfyorg/layer-editor/fill'
+import { fillKind, rasterKind } from '@comfyorg/layer-editor/kinds'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
+import { LAYER_MODES, defaultMode } from '@comfyorg/layer-editor/mode'
 import type {
   FillData,
-  Rect,
   SceneNode,
-  Transform,
-  Vec2
-} from '@/renderer/extensions/layerEditor/engine/node'
-import { placedBounds } from '@/renderer/extensions/layerEditor/engine/render/bake'
-import type { OutsideCanvasPreviewLayer } from '@/renderer/extensions/layerEditor/engine/render/outsideCanvasPreview'
-import { drawOutsideCanvasPreview } from '@/renderer/extensions/layerEditor/engine/render/outsideCanvasPreview'
-import type { CanvasItem } from '@/renderer/extensions/layerEditor/engine/tool'
-import { registerBuiltinTools } from '@/renderer/extensions/layerEditor/engine/tools'
-import { canTransformNode } from '@/renderer/extensions/layerEditor/engine/tools/transformTool'
+  Transform
+} from '@comfyorg/layer-editor/node'
+import { placedBounds } from '@comfyorg/layer-editor/render/bake'
+import type { OutsideCanvasPreviewLayer } from '@comfyorg/layer-editor/render/outsideCanvasPreview'
+import { drawOutsideCanvasPreview } from '@comfyorg/layer-editor/render/outsideCanvasPreview'
+import { createSession } from '@comfyorg/layer-editor/session'
+import type { CanvasItem } from '@comfyorg/layer-editor/tool'
+import { canTransformNode } from '@comfyorg/layer-editor/tools/transformTool'
 import {
   hitHandle,
-  insideBox,
   unionBounds
-} from '@/renderer/extensions/layerEditor/engine/tools/transformMath'
+} from '@comfyorg/layer-editor/tools/transformMath'
 import { createPanZoom } from '@/renderer/extensions/layerEditor/panZoom'
 
 export type LayerEditorPointerMode = 'pointer' | 'hand'
@@ -66,6 +58,7 @@ const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
 export interface LayerEditorSessionOptions {
   createCompositor?: () => Compositor
   loadImage?: (url: string) => Promise<HTMLCanvasElement>
+  alphaSampler?: AlphaSampler
 }
 
 export interface LayerEditorElements {
@@ -137,9 +130,6 @@ function flipCanvasAxis(
 export type LayerEditorSession = ReturnType<typeof useLayerEditorSession>
 
 export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
-  registerBuiltinKinds()
-  registerBuiltinTools()
-
   const loadImage = opts.loadImage ?? defaultLoadImage
   const version = ref(0)
   const activeNodeId = ref<string | null>(null)
@@ -153,15 +143,12 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   const flipParity = reactive(new Map<string, { h: boolean; v: boolean }>())
   const inputOrderIds: string[] = []
 
-  const compositor = (opts.createCompositor ?? createWebGLCompositor)()
-  let onContextRestored: (() => void) | null = null
-  glOk.value = compositor.init({
-    width: 1024,
-    height: 1024,
-    onContextRestored: () => onContextRestored?.()
+  const session = createSession({
+    createCompositor: opts.createCompositor,
+    onChange
   })
-  const editor = createEditor({ compositor, onChange })
-  onContextRestored = () => editor.invalidate()
+  const { editor, compositor } = session
+  glOk.value = session.glOk
   const content = editor.content
 
   let mainCanvas: HTMLCanvasElement | null = null
@@ -183,7 +170,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   })
   const backgroundLayer = computed<FillData | null>(() => {
     const first = layers.value[0]
-    return first?.kind === 'fill' ? { ...first } : null
+    return first.kind === 'fill' ? { ...first } : null
   })
   const imageLayers = computed<SceneNode[]>(() =>
     layers.value.filter((n) => n.kind !== 'fill')
@@ -204,7 +191,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     const node = activeNodeId.value ? engineNode(activeNodeId.value) : null
     return node && node.kind !== 'fill' ? 'layer' : 'background'
   })
-  const canvasSize = computed<{ w: number; h: number }>(() => {
+  const canvasSize = computed<CompactSize>(() => {
     void version.value
     const doc = editor.document()
     return { w: doc.width, h: doc.height }
@@ -216,7 +203,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
 
   function backgroundNode(): FillData | null {
     const first = editor.document().root.children[0]
-    return first?.kind === 'fill' ? first : null
+    return first.kind === 'fill' ? first : null
   }
 
   function onChange(): void {
@@ -416,8 +403,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     requestRender()
   }
 
-  function ensureBackgroundLayer(): void {
-    if (editor.document().root.children[0]?.kind === 'fill') return
+  function addBackgroundLayer(): void {
     editor.addNode(
       fillKind.create({
         name: 'Background',
@@ -433,7 +419,6 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   async function loadImages(urls: string[], names: string[]): Promise<number> {
     flipParity.clear()
     inputOrderIds.length = 0
-    ensureBackgroundLayer()
     let failed = 0
     let docWidth = 0
     let docHeight = 0
@@ -578,6 +563,12 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     })
   }
 
+  function moveLayerTo(id: string, toIndex: number): void {
+    const bg = backgroundLayer.value
+    if (bg && (id === bg.id || toIndex < 1)) return
+    editor.moveNodeTo(id, undefined, toIndex)
+  }
+
   function moveLayer(id: string, dir: 1 | -1): void {
     const bg = backgroundLayer.value
     if (bg) {
@@ -666,7 +657,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     const height = clamp(Math.round(h), CANVAS_SIZE_MIN, CANVAS_SIZE_MAX)
     const before = { w: doc.width, h: doc.height }
     if (before.w === width && before.h === height) return
-    const apply = (v: { w: number; h: number }): void => {
+    const apply = (v: CompactSize): void => {
       const dx = Math.trunc((v.w - doc.width) / 2)
       const dy = Math.trunc((v.h - doc.height) / 2)
       doc.width = v.w
@@ -823,7 +814,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     editor.redo()
   }
 
-  function artboardPt(e: PointerEvent): { x: number; y: number } {
+  function artboardPt(e: PointerEvent): Point2D {
     return panZoom.screenToArtboard(e.clientX, e.clientY)
   }
 
@@ -840,11 +831,15 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     }
   }
 
-  function selectionGizmo(): Transform | null {
+  function selectedTransformTargets(): SceneNode[] {
     const root = editor.document().root
-    const targets = filterTopmost(root, editor.selectedNodeIds())
+    return filterTopmost(root, editor.selectedNodeIds())
       .map((id) => findNode(root, id)?.node ?? null)
       .filter((n): n is SceneNode => canTransformNode(n))
+  }
+
+  function selectionGizmo(): Transform | null {
+    const targets = selectedTransformTargets()
     if (!targets.length) return null
     return targets.length === 1
       ? { ...targets[0].transform }
@@ -857,10 +852,14 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     if (!additive) {
       const gizmo = selectionGizmo()
       const tol = 8 / Math.max(1e-3, panZoom.zoom())
-      if (gizmo && (hitHandle(gizmo, pt, tol) || insideBox(gizmo, pt)))
-        return true
+      if (gizmo && hitHandle(gizmo, pt, tol)) return true
     }
-    const picked = pickLayerAt(editor.document().root.children, pt, content)
+    const picked = pickLayerAt(
+      editor.document().root.children,
+      pt,
+      content,
+      opts.alphaSampler
+    )
     if (!picked) {
       if (!additive) editor.setSelectedNodes([])
       return false
@@ -881,7 +880,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   function onPointerDown(e: PointerEvent): void {
     const zone = viewportEl
     if (!zone) return
-    zone.focus?.()
+    zone.focus()
     pendingMoves = []
     if (
       e.button === 1 ||
@@ -904,7 +903,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     moveRaf = null
     const events = pendingMoves
     pendingMoves = []
-    const e = events[events.length - 1]
+    const e = events.at(-1)
     if (!e) return
     if (panning.value) {
       panZoom.panBy(e.offsetX - panLast.x, e.offsetY - panLast.y)
@@ -1016,8 +1015,11 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     rafId = null
     overlayRafId = null
     moveRaf = null
-    compositor.dispose()
+    session.dispose()
   }
+
+  addBackgroundLayer()
+  editor.history.clear()
 
   return {
     editor,
@@ -1049,6 +1051,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     toggleVisible,
     renameLayer,
     moveLayer,
+    moveLayerTo,
     setLayerOrder,
     inputLayerIds,
     setActiveNode,

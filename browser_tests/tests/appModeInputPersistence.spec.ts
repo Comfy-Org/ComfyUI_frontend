@@ -13,12 +13,8 @@ test.describe(
   'App builder input persistence after reload',
   { tag: '@ui' },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.appMode.enableLinearMode()
-      await comfyPage.settings.setSetting(
-        'Comfy.AppBuilder.VueNodeSwitchDismissed',
-        true
-      )
+    test.use({
+      initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
     })
 
     test('persists selected inputs after save and reopen without visibility errors', async ({

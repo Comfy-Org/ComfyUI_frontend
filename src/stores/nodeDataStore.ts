@@ -1,14 +1,17 @@
 import { defineStore } from 'pinia'
 import { reactive, toRaw } from 'vue'
 
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
 import type {
   GraphScope,
   OwningGraphId,
   RootGraphId
-} from '@/types/graphScopeId'
-import type { NodeState } from '@/types/nodeState'
-import type { NodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/graphScopeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 /**
@@ -41,6 +44,11 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     }
   }
 
+  /**
+   * @returns The registered state. Re-registering the same raw state under the
+   * same owner returns the incumbent; `undefined` means a distinct state
+   * occupies the node ID.
+   */
   function registerNode(
     graphScope: GraphScope,
     state: NodeState

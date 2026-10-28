@@ -137,7 +137,7 @@ When a PR's _mechanism_ relies on changes upstream that aren't on the older bran
 - `node.onXxx` callback assignments
 - Methods on `LGraphNode`, `LGraphCanvas`, `LGraph`, `Subgraph`
 - Public exports from `src/lib/litegraph/`
-- Type changes affecting `litegraph-augmentation.d.ts`
+- Types published from `src/types/index.ts`
 
 **Fix:** Add a backport-only compatibility shim that preserves the old contract while keeping the new fix. Document it explicitly in the commit body under a `## Backport-only compatibility fix` heading. Consult oracle for review before pushing — a bad shim is worse than no fix.
 
@@ -188,7 +188,6 @@ For 50+ candidate PRs, classify by changed paths first to skip the unproductive 
 | Path prefix                                    | Bucket                 | Reason                                           |
 | ---------------------------------------------- | ---------------------- | ------------------------------------------------ |
 | `apps/website/`                                | SKIP                   | Marketing/platform site, not core ComfyUI bundle |
-| `apps/desktop-ui/`                             | SKIP for `core/*`      | Desktop app, separate release cadence            |
 | `browser_tests/` only (no `src/`)              | SKIP                   | Test-only                                        |
 | `.github/workflows/` only                      | SKIP                   | CI/release infra                                 |
 | `packages/design-system/` only                 | SKIP                   | Design tokens, not core                          |

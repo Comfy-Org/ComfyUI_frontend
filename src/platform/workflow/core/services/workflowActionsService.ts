@@ -5,7 +5,7 @@
  */
 
 import { downloadBlob } from '@/scripts/utils'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -34,7 +34,7 @@ export function useWorkflowActionsService() {
    * @example
    * const result = await exportWorkflowAction(workflow, 'MyWorkflow.json')
    * if (result.success) {
-   *   toast.add({ severity: 'success', detail: 'Exported!' })
+   *   toast.success('Exported!')
    * }
    */
   const exportWorkflowAction = async (
@@ -90,7 +90,7 @@ export function useWorkflowActionsService() {
    * @example
    * const result = await openWorkflowAction(workflow, 'Job 123.json')
    * if (!result.success) {
-   *   toast.add({ severity: 'error', detail: result.error })
+   *   toast.error(result.error)
    * }
    */
   const openWorkflowAction = async (

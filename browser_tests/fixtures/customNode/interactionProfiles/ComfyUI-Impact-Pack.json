@@ -3,7 +3,11 @@
     "core": "b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2",
     "pin": "429d0159ad429e64d2b3916e6e7be9c22d025c3c"
   },
-  "schema": 1,
+  "schema": 3,
+  "corpus": {
+    "count": 197,
+    "nodeTypesSha256": "286697b13e27feab594d492e18f9da801c2b92617a1f46463d6924f1186e9ba7"
+  },
   "nodes": {
     "AddMask": {
       "connectFirst": [],
@@ -16,24 +20,24 @@
       "disconnect": []
     },
     "BasicPipeToDetailerPipe": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "BasicPipeToDetailerPipeSDXL": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "BboxDetectorCombined_v2": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "BboxDetectorSEGS": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "BitwiseAndMask": {
       "connectFirst": [],
@@ -41,9 +45,9 @@
       "disconnect": []
     },
     "BitwiseAndMaskForEach": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "BlackPatchRetryHookProvider": {
       "connectFirst": [],
@@ -51,7 +55,7 @@
       "disconnect": []
     },
     "CfgScheduleHookProvider": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -61,27 +65,27 @@
       "disconnect": []
     },
     "CombineRegionalPrompts": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "CoreMLDetailerHookProvider": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "CustomSamplerDetailerHookProvider": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "DenoiseScheduleHookProvider": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "DenoiseSchedulerDetailerHookProvider": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -112,33 +116,33 @@
     },
     "DetailerForEachPipeForAnimateDiff": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "DetailerHookCombine": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "DetailerPipeToBasicPipe": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "EditBasicPipe": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "EditDetailerPipe": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "EditDetailerPipeSDXL": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "EmptySegs": {
       "connectFirst": "NO_INPUTS",
@@ -156,29 +160,29 @@
       "disconnect": []
     },
     "FromBasicPipe": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "FromBasicPipe_v2": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "FromDetailerPipe": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "FromDetailerPipe_v2": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "FromDetailerPipeSDXL": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "GITSSchedulerFuncProvider": {
       "connectFirst": [],
@@ -196,7 +200,7 @@
       "disconnect": []
     },
     "ImageReceiver": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -206,9 +210,9 @@
       "disconnect": []
     },
     "ImpactAssembleSEGS": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactBoolean": {
       "connectFirst": [],
@@ -216,12 +220,12 @@
       "disconnect": []
     },
     "ImpactCombineConditionings": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactCompare": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [
         "+input:a:INT",
         "+input:b:INT",
@@ -231,9 +235,9 @@
       "disconnect": []
     },
     "ImpactConcatConditionings": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactConditionalBranch": {
       "connectFirst": [],
@@ -271,28 +275,23 @@
         "-input:value:*",
         "-output:value:*"
       ],
-      "connectLast": [
-        "+input:value:INT",
-        "+output:value:INT",
-        "-input:value:*",
-        "-output:value:*"
-      ],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ImpactControlNetApplyAdvancedSEGS": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactControlNetApplySEGS": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImpactControlNetClearSEGS": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactConvertDataType": {
       "connectFirst": [],
@@ -300,17 +299,17 @@
       "disconnect": []
     },
     "ImpactCount_Elts_in_SEGS": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactDecomposeSEGS": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactDilate_Mask_SEG_ELT": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -320,7 +319,7 @@
       "disconnect": []
     },
     "ImpactDilateMaskInSEGS": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -330,7 +329,7 @@
       "disconnect": "NO_INPUTS"
     },
     "ImpactEdit_SEG_ELT": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -350,19 +349,19 @@
       "disconnect": []
     },
     "ImpactFrom_SEG_ELT": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactFrom_SEG_ELT_bbox": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactFrom_SEG_ELT_crop_region": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactGaussianBlurMask": {
       "connectFirst": [],
@@ -370,14 +369,14 @@
       "disconnect": []
     },
     "ImpactGaussianBlurMaskInSEGS": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImpactHFTransformersClassifierProvider": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactIfNone": {
       "connectFirst": [],
@@ -409,34 +408,32 @@
         "-output:output1:*"
       ],
       "connectLast": [
-        "+input:input:INT",
-        "+input:sel_mode:INT",
-        "+output:output1:INT",
+        "+input:input:BOOLEAN",
+        "+output:output1:BOOLEAN",
         "-input:input:*",
-        "-input:sel_mode:BOOLEAN",
         "-output:output1:*"
       ],
       "disconnect": []
     },
     "ImpactIPAdapterApplySEGS": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImpactIsNotEmptySEGS": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactKSamplerAdvancedBasicPipe": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactKSamplerBasicPipe": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactLatentInfo": {
       "connectFirst": [],
@@ -454,7 +451,7 @@
       "disconnect": []
     },
     "ImpactLogicalOperators": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -491,7 +488,7 @@
     },
     "ImpactMakeTileSEGS": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ImpactMinMax": {
@@ -540,62 +537,62 @@
       "disconnect": []
     },
     "ImpactScaleBy_BBOX_SEG_ELT": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImpactSchedulerAdapter": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactSegsAndMask": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImpactSegsAndMaskForEach": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImpactSEGSClassify": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImpactSEGSConcat": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactSEGSIntersectionFilter": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImpactSEGSLabelAssign": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImpactSEGSLabelFilter": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImpactSEGSMerge": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactSEGSNMSFilter": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImpactSEGSOrderedFilter": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -605,19 +602,19 @@
       "disconnect": []
     },
     "ImpactSEGSRangeFilter": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImpactSEGSToMaskBatch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactSEGSToMaskList": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactSelectNthItemOfAnyList": {
       "connectFirst": [
@@ -640,17 +637,17 @@
       "disconnect": []
     },
     "ImpactSimpleDetectorSEGS": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactSimpleDetectorSEGS_for_AD": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ImpactSimpleDetectorSEGSPipe": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -676,7 +673,7 @@
       "disconnect": ["-input:input2:INT"]
     },
     "ImpactValueReceiver": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -686,13 +683,13 @@
       "disconnect": []
     },
     "ImpactWildcardEncode": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImpactWildcardProcessor": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "IterativeImageUpscale": {
@@ -707,12 +704,12 @@
     },
     "KSamplerAdvancedProvider": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "KSamplerProvider": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "LamaRemoverDetailerHookProvider": {
@@ -722,17 +719,17 @@
     },
     "LatentPixelScale": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "LatentReceiver": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "LatentSender": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "LatentSwitch": {
@@ -748,7 +745,7 @@
     },
     "MaskDetailerPipe": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "MaskListToMaskBatch": {
@@ -787,58 +784,58 @@
       "disconnect": []
     },
     "NoiseInjectionDetailerHookProvider": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "NoiseInjectionHookProvider": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ONNXDetectorProvider": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ONNXDetectorSEGS": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "PixelKSampleHookCombine": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "PixelKSampleUpscalerProvider": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "PixelKSampleUpscalerProviderPipe": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "PixelTiledKSampleUpscalerProvider": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "PixelTiledKSampleUpscalerProviderPipe": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "PreviewBridge": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "PreviewBridgeLatent": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "PreviewDetailerHookProvider": {
@@ -853,12 +850,12 @@
     },
     "ReencodeLatentPipe": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "RegionalPrompt": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "RegionalSampler": {
@@ -872,9 +869,9 @@
       "disconnect": []
     },
     "RemoveImageFromSEGS": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "RemoveNoiseMask": {
       "connectFirst": [],
@@ -882,47 +879,47 @@
       "disconnect": []
     },
     "SAMDetectorCombined": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "SAMDetectorSegmented": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "SAMLoader": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "SegmDetectorCombined_v2": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "SegmDetectorSEGS": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "SEGSDetailer": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "SEGSDetailerForAnimateDiff": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "SEGSLabelFilterDetailerHookProvider": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "SEGSOrderedFilterDetailerHookProvider": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -932,17 +929,17 @@
       "disconnect": []
     },
     "SEGSPreview": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "SEGSPreviewCNet": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "SEGSRangeFilterDetailerHookProvider": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -958,32 +955,32 @@
       "disconnect": ["-input:input2:INT"]
     },
     "SegsToCombinedMask": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "SEGSToImageList": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "SEGSUpscaler": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "SEGSUpscalerPipe": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "SetDefaultImageForSEGS": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "StepsScheduleHookProvider": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -998,19 +995,19 @@
       "disconnect": []
     },
     "SubtractMaskForEach": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "TiledKSamplerProvider": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ToBasicPipe": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ToBinaryMask": {
       "connectFirst": [],
@@ -1018,14 +1015,14 @@
       "disconnect": []
     },
     "ToDetailerPipe": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ToDetailerPipeSDXL": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "TwoAdvancedSamplersForMask": {
       "connectFirst": [],
@@ -1038,24 +1035,24 @@
       "disconnect": []
     },
     "TwoSamplersForMaskUpscalerProvider": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "TwoSamplersForMaskUpscalerProviderPipe": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "UnsamplerDetailerHookProvider": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "UnsamplerHookProvider": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "VariationNoiseDetailerHookProvider": {
       "connectFirst": [],

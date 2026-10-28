@@ -1,5 +1,5 @@
 import { api } from '@/scripts/api'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
 import { extractCustomNodeName } from '@/workbench/utils/nodeHelpUtil'
 
@@ -69,7 +69,7 @@ class NodeHelpService {
       return { text: null, errorText: res.statusText }
     }
 
-    const contentType = res.headers?.get?.('content-type') ?? ''
+    const contentType = res.headers.get('content-type') ?? ''
     const text = await res.text()
 
     const isHtmlContentType = contentType.includes('text/html')

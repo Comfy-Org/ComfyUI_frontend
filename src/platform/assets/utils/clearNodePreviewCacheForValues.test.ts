@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
 import {
   clearNodePreviewCacheForValues,
+  createDeletedValueMatcher,
   findNodesReferencingValues
 } from './clearNodePreviewCacheForValues'
 
@@ -36,7 +37,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([node]),
       new Set(['foo.png']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(node.imgs).toBeUndefined()
@@ -57,7 +58,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([node]),
       new Set(['foo.png']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(node.imgs).toEqual([{ src: 'blob:keep' }])
@@ -75,11 +76,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
       graph: { setDirtyCanvas: setDirty }
     }
 
-    clearNodePreviewCacheForValues(
-      makeGraph([node]),
-      new Set(),
-      remove as unknown as (node: LGraphNode) => void
-    )
+    clearNodePreviewCacheForValues(makeGraph([node]), new Set(), remove)
 
     expect(node.imgs).toEqual([{ src: 'blob:keep' }])
     expect(remove).not.toHaveBeenCalled()
@@ -98,7 +95,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([node]),
       new Set(['foo.png [output]']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(node.imgs).toBeUndefined()
@@ -117,7 +114,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([node]),
       new Set(['sub/foo.png [output]']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(node.imgs).toBeUndefined()
@@ -142,7 +139,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([inputNode, outputNode]),
       new Set(['foo.png']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(inputNode.imgs).toBeUndefined()
@@ -163,7 +160,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([node]),
       new Set(['clip.mp4']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(node.videoContainer).toBeUndefined()
@@ -185,7 +182,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([node]),
       new Set(['clip.mp4']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(node.imgs).toBeUndefined()
@@ -210,7 +207,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([wrapper]),
       new Set(['nested.png [output]']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(inner.imgs).toBeUndefined()
@@ -237,5 +234,41 @@ describe('FE-230 findNodesReferencingValues', () => {
     )
 
     expect(matches).toEqual([inner])
+  })
+})
+
+describe('createDeletedValueMatcher', () => {
+  it.for([
+    ['foo.png', 'foo.png', true],
+    ['foo.png', 'foo.png [input]', true],
+    ['foo.png', 'foo.png[INPUT]', true],
+    ['foo.png', 'foo.png [input] ', true],
+    ['foo.png', 'foo.png ', false],
+    ['foo.png', 'foo.png [output]', false],
+    ['foo.png', 'foo.png [inputs]', false],
+    ['foo.png', 'foo.png.bak', false],
+    ['sub/foo.png [temp]', 'sub/foo.png[temp]', true],
+    ['sub/foo.png [temp]', 'sub/foo.png  [TEMP]  ', true],
+    ['sub/foo.png [temp]', 'sub/foo.png', false],
+    ['sub/foo.png [temp]', 'foo.png [temp]', false],
+    ['foo.png ', 'foo.png ', true],
+    ['foo.png ', 'foo.png  [input]', false],
+    ['a.png [temp] [temp]', 'a.png [temp]', false],
+    ['a.png [temp] [temp]', 'a.png [temp][TEMP]', true],
+    ['[input]', '', false],
+    ['[temp]', '', false]
+  ] as const)(
+    'deleting %j matches %j: %s',
+    ([deletedValue, widgetValue, expected]) => {
+      const isDeleted = createDeletedValueMatcher(new Set([deletedValue]))
+
+      expect(isDeleted(widgetValue)).toBe(expected)
+    }
+  )
+
+  it('rejects a deleted name followed by a long whitespace run', () => {
+    const isDeleted = createDeletedValueMatcher(new Set(['image.png']))
+
+    expect(isDeleted(`image.png${' '.repeat(300_000)}`)).toBe(false)
   })
 })

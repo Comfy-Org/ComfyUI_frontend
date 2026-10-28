@@ -1245,6 +1245,7 @@
       "expectedNodes": ["VHS_LoadVideo", "VHS_VideoInfo"],
       "expectedNodeCount": 32,
       "expectedRunnableCount": 31,
+      "expectedRunnableNodeTypesSha256": "7820efe8612a72f5e7aacc5b1f1737817b2dc5cebb339981074c00e79df808b1",
       "expectedExtensions": ["VideoHelperSuite.Core"],
       "disabledNodes": {
         "VHS_BatchManager": ["DisabledOnCloud"],

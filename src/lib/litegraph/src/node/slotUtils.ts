@@ -1,22 +1,32 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { SharedIntersection } from '@comfyorg/graph-model/interfaces'
 import type {
   IWidgetInputSlot,
-  SharedIntersection
-} from '@/lib/litegraph/src/interfaces'
-import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/graph-model/slots'
 import { inputLinkId, outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 type CommonIoSlotProps = SharedIntersection<
   ISerialisableNodeInput,
   ISerialisableNodeOutput
 >
+
+function serialisesLegacyLinkPresence(
+  slot: INodeOutputSlot
+): slot is INodeOutputSlot & {
+  _serialiseLinkIds(ids: LinkId[]): LinkId[] | null
+} {
+  return (
+    '_serialiseLinkIds' in slot && typeof slot._serialiseLinkIds === 'function'
+  )
+}
 
 function shallowCloneCommonProps(slot: CommonIoSlotProps): CommonIoSlotProps {
   const {
@@ -75,13 +85,22 @@ export function outputAsSerialisable(
   // Output widgets do not exist in Litegraph; this is a temporary downstream workaround.
   const outputWidget = widget ? { widget: { name: widget.name } } : null
   const ids = node.graph ? outputLinkIds(node.graph, node.id, slotIndex) : []
+  const links = node.graph
+    ? serialisesLegacyLinkPresence(slot)
+      ? slot._serialiseLinkIds(ids)
+      : ids.length
+        ? ids
+        : null
+    : serialisesLegacyLinkPresence(slot)
+      ? slot._serialiseLinkIds([])
+      : null
 
   return {
     ...shallowCloneCommonProps(slot),
     ...outputWidget,
     pos,
     slot_index,
-    links: ids.length ? ids : null
+    links
   }
 }
 

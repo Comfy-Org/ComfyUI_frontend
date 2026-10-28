@@ -56,23 +56,25 @@ export async function checkBackend(port = 8188): Promise<CheckResult> {
         installInstructions: instructions
       }
     }
-    throw new Error(`Status ${res.status}`)
+    console.error(`Status ${res.status}`)
   } catch {
-    fail('ComfyUI backend', `not running on :${port}`)
-    const instructions = [
-      'ComfyUI backend must be running for browser tests.',
-      '',
-      'In a separate terminal, navigate to your ComfyUI folder and run:',
-      '',
-      '  python main.py --multi-user',
-      '',
-      '⚠️  The --multi-user flag is REQUIRED for parallel test support.'
-    ]
-    info(instructions)
-    return {
-      name: 'ComfyUI backend',
-      ok: false,
-      installInstructions: instructions
-    }
+    console.error(`ComfyUI backend not running on :${port}`)
+  }
+
+  fail('ComfyUI backend', `not running on :${port}`)
+  const instructions = [
+    'ComfyUI backend must be running for browser tests.',
+    '',
+    'In a separate terminal, navigate to your ComfyUI folder and run:',
+    '',
+    '  python main.py --multi-user',
+    '',
+    '⚠️  The --multi-user flag is REQUIRED for parallel test support.'
+  ]
+  info(instructions)
+  return {
+    name: 'ComfyUI backend',
+    ok: false,
+    installInstructions: instructions
   }
 }

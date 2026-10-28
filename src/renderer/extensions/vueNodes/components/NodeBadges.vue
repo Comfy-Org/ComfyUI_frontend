@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 
 defineProps<{
   hasComfyBadge: boolean
+  hasComfyCloudBadge?: boolean
   core: NodeBadgeProps[]
   extension: NodeBadgeProps[]
 }>()
@@ -14,14 +17,8 @@ defineProps<{
     class="flex h-5 w-full gap-2 px-2 text-muted-foreground"
   >
     <div
-      v-if="hasComfyBadge"
-      class="flex size-6 items-center justify-center rounded-full bg-component-node-widget-background"
-    >
-      <i class="icon-[comfy--comfy-c] size-3" />
-    </div>
-    <div
       v-if="core.length"
-      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-component-node-widget-background"
+      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-input"
     >
       <template v-for="(badge, index) of core" :key="badge.text">
         <div
@@ -36,8 +33,22 @@ defineProps<{
       </template>
     </div>
     <div
+      v-if="hasComfyBadge"
+      data-testid="comfy-badge"
+      class="flex size-6 items-center justify-center rounded-full bg-input"
+    >
+      <i
+        :class="
+          cn(
+            'icon-[comfy--comfy-c] size-3',
+            hasComfyCloudBadge && 'text-brand-yellow'
+          )
+        "
+      />
+    </div>
+    <div
       v-if="extension.length"
-      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-component-node-widget-background"
+      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-input"
     >
       <template v-for="(badge, index) of extension" :key="badge.text">
         <div

@@ -10,7 +10,8 @@
     </template>
     <template #tool-buttons>
       <Button
-        v-tooltip.bottom="$t('g.refresh')"
+        :tooltip="$t('g.refresh')"
+        tooltip-side="bottom"
         data-testid="workflows-refresh-button"
         variant="muted-textonly"
         size="icon"
@@ -24,7 +25,7 @@
           data-testid="workflows-refresh-icon"
           :class="
             cn(
-              'icon-[lucide--refresh-cw] size-4',
+              'icon-[lucide--refresh-cw]',
               workflowStore.isSyncLoading && 'animate-spin'
             )
           "
@@ -40,6 +41,8 @@
         <SearchInput
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="$t('g.search')"
           :placeholder="$t('g.searchPlaceholder', { subject: searchSubject })"
           @search="handleSearch"
         />
@@ -66,8 +69,7 @@
                 <template #before-label="{ node: treeNode }">
                   <span
                     v-if="
-                      (treeNode.data as ComfyWorkflow)?.isModified ||
-                      !(treeNode.data as ComfyWorkflow)?.isPersisted
+                      treeNode.data?.isModified || !treeNode.data?.isPersisted
                     "
                     >*</span
                   >
@@ -80,9 +82,7 @@
                     "
                     size="icon-sm"
                     :aria-label="$t('g.close')"
-                    @click.stop="
-                      handleCloseWorkflow(treeNode.data as ComfyWorkflow)
-                    "
+                    @click.stop="handleCloseWorkflow(treeNode.data)"
                   >
                     <i class="icon-[lucide--x] size-3" />
                   </Button>
@@ -133,7 +133,7 @@
           </TreeExplorer>
           <slot v-else name="empty-state">
             <NoResultsPlaceholder
-              icon="pi pi-folder"
+              icon="icon-[lucide--folder]"
               :title="$t('g.empty')"
               :message="$t('g.noWorkflowsFound')"
             />
@@ -159,14 +159,15 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
-import TextDivider from '@/components/common/TextDivider.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
+import TextDivider from '@comfyorg/design-system/common/TextDivider'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -218,8 +219,8 @@ const filteredWorkflows = computed(() => {
   )
 })
 useSearchQueryTracking('apps', searchQuery, filteredWorkflows)
-const filteredRoot = computed<TreeNode>(() => {
-  return buildWorkflowTree(filteredWorkflows.value as ComfyWorkflow[])
+const filteredRoot = computed<TreeNode<ComfyWorkflow>>(() => {
+  return buildWorkflowTree(filteredWorkflows.value)
 })
 const handleSearch = async (query: string) => {
   if (query.length === 0) {
@@ -239,8 +240,9 @@ const dummyExpandedKeys = ref<Record<string, boolean>>({})
 
 const handleCloseWorkflow = async (workflow?: ComfyWorkflow) => {
   if (workflow) {
-    await workflowService.closeWorkflow(workflow, {
-      warnIfUnsaved: !workspaceStore.shiftDown
+    await workflowService.closeWorkflows([workflow], {
+      warnIfUnsaved: !workspaceStore.shiftDown,
+      initiator: 'user'
     })
   }
 }
@@ -280,80 +282,84 @@ const openWorkflowsTree = computed(() =>
   ])
 )
 
+function renamedWorkflowPath(
+  workflow: ComfyWorkflow,
+  type: WorkflowTreeType,
+  newName: string
+) {
+  const fileName = ensureWorkflowSuffix(
+    newName,
+    getWorkflowSuffix(workflow.suffix)
+  )
+  if (type === WorkflowTreeType.Browse) {
+    return `${workflow.directory}/${fileName}`
+  }
+  return ComfyWorkflow.basePath + fileName
+}
+
+function workflowContextMenuItems(workflow: ComfyWorkflow): MenuItem[] {
+  const duplicate: MenuItem = {
+    label: t('g.duplicate'),
+    icon: 'icon-[lucide--file-output]',
+    command: () => workflowService.duplicateWorkflow(workflow)
+  }
+  if (isAppMode.value) return [duplicate]
+
+  const insert: MenuItem = {
+    label: t('g.insert'),
+    icon: 'icon-[lucide--file-output]',
+    command: () => workflowService.insertWorkflow(workflow)
+  }
+  return [insert, duplicate]
+}
+
+function workflowLeafActions(
+  workflow: ComfyWorkflow,
+  type: WorkflowTreeType
+): Partial<TreeExplorerNode<ComfyWorkflow>> {
+  const actions: Partial<TreeExplorerNode<ComfyWorkflow>> = {
+    contextMenuItems: () => workflowContextMenuItems(workflow),
+    draggable: true,
+    handleRename: (newName: string) =>
+      workflowService.renameWorkflow(
+        workflow,
+        renamedWorkflowPath(workflow, type, newName)
+      )
+  }
+  if (!workflow.isTemporary) {
+    actions.handleDelete = async () => {
+      await workflowService.deleteWorkflow(workflow)
+    }
+  }
+  return actions
+}
+
 const renderTreeNode = (
-  node: TreeNode,
+  node: TreeNode<ComfyWorkflow>,
   type: WorkflowTreeType
 ): TreeExplorerNode<ComfyWorkflow> => {
-  const children = node.children?.map((child) => renderTreeNode(child, type))
-
-  const workflow: ComfyWorkflow = node.data
+  const workflow = node.data
 
   async function handleClick(
     this: TreeExplorerNode<ComfyWorkflow>,
     e: MouseEvent
   ) {
-    if (this.leaf) {
-      await workflowService.openWorkflow(workflow)
+    if (this.leaf && workflow) {
+      await workflowService.openWorkflow(workflow, { initiator: 'user' })
     } else {
       toggleNodeOnEvent(e, this)
     }
   }
 
-  const actions = node.leaf
-    ? {
-        handleClick,
-        async handleRename(newName: string) {
-          const suffix = getWorkflowSuffix(workflow.suffix)
-          const newPath =
-            type === WorkflowTreeType.Browse
-              ? workflow.directory + '/' + ensureWorkflowSuffix(newName, suffix)
-              : ComfyWorkflow.basePath + ensureWorkflowSuffix(newName, suffix)
-
-          await workflowService.renameWorkflow(workflow, newPath)
-        },
-        handleDelete: workflow.isTemporary
-          ? undefined
-          : async function () {
-              await workflowService.deleteWorkflow(workflow)
-            },
-        contextMenuItems() {
-          return [
-            ...(isAppMode.value
-              ? []
-              : [
-                  {
-                    label: t('g.insert'),
-                    icon: 'pi pi-file-export',
-                    command: async () => {
-                      const workflow = node.data
-                      await workflowService.insertWorkflow(workflow)
-                    }
-                  }
-                ]),
-            {
-              label: t('g.duplicate'),
-              icon: 'pi pi-file-export',
-              command: async () => {
-                const workflow = node.data
-                await workflowService.duplicateWorkflow(workflow)
-              }
-            }
-          ]
-        },
-        draggable: true
-      }
-    : { handleClick }
-
-  const label = node.leaf ? getFilenameDetails(node.label).filename : node.label
-
   return {
     key: node.key,
-    label,
-    leaf: node.leaf,
+    label: node.leaf ? getFilenameDetails(node.label).filename : node.label,
+    children: node.children?.map((child) => renderTreeNode(child, type)),
+    data: workflow,
+    handleClick,
     icon: node.leaf && hideLeafIcon ? 'hidden' : undefined,
-    data: node.data,
-    children,
-    ...actions
+    leaf: node.leaf,
+    ...(node.leaf && workflow ? workflowLeafActions(workflow, type) : {})
   }
 }
 

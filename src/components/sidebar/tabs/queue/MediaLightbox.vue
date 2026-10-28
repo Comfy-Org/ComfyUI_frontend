@@ -1,13 +1,12 @@
 <template>
-  <Teleport to="body">
+  <Teleport v-if="galleryVisible" to="body">
     <div
-      v-if="galleryVisible"
       ref="dialogRef"
       role="dialog"
       aria-modal="true"
       :aria-label="$t('g.gallery')"
       tabindex="-1"
-      class="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 outline-none"
+      class="fixed inset-0 z-overlay flex items-center justify-center bg-black/90 outline-none"
       data-mask
       @mousedown="onMaskMouseDown"
       @mouseup="onMaskMouseUp"
@@ -39,17 +38,29 @@
       <!-- Content -->
       <div class="flex max-h-full max-w-full items-center justify-center">
         <template v-if="activeItem">
-          <ComfyImage
-            v-if="activeItem.isImage"
-            :key="activeItem.url"
-            :src="activeItem.url"
-            :contain="false"
-            :alt="activeItem.filename"
-            class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
-          />
-          <ResultVideo v-else-if="activeItem.isVideo" :result="activeItem" />
-          <ResultAudio v-else-if="activeItem.isAudio" :result="activeItem" />
-          <ResultText v-else-if="activeItem.isText" :result="activeItem" />
+          <KeepAlive :max="RETAINED_VIDEO_COUNT" include="ResultVideo">
+            <ComfyImage
+              v-if="isImageResult(activeItem)"
+              :key="resultItemUrl(activeItem)"
+              :src="resultItemUrl(activeItem)"
+              :contain="false"
+              :alt="activeItem.filename"
+              class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
+            />
+            <ResultVideo
+              v-else-if="isVideoResult(activeItem)"
+              :key="resultItemUrl(activeItem)"
+              :result="activeItem"
+            />
+            <ResultAudio
+              v-else-if="isAudioResult(activeItem)"
+              :result="activeItem"
+            />
+            <ResultText
+              v-else-if="isTextResult(activeItem)"
+              :result="activeItem"
+            />
+          </KeepAlive>
         </template>
       </div>
 
@@ -72,8 +83,15 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
-import Button from '@/components/ui/button/Button.vue'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import Button from '@comfyorg/design-system/button/Button'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
+import {
+  isAudioResult,
+  isImageResult,
+  isTextResult,
+  isVideoResult
+} from '@/utils/resultItem'
 
 import ResultAudio from './ResultAudio.vue'
 import ResultText from './ResultText.vue'
@@ -84,9 +102,12 @@ const emit = defineEmits<{
 }>()
 
 const props = defineProps<{
-  allGalleryItems: ResultItemImpl[]
+  allGalleryItems: AugmentedResultItem[]
   activeIndex: number
 }>()
+
+/* Keeps the active video plus its neighbors buffered across gallery moves. */
+const RETAINED_VIDEO_COUNT = 3
 
 const galleryVisible = ref(false)
 const dialogRef = ref<HTMLElement>()

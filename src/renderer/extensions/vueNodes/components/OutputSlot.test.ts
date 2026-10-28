@@ -6,40 +6,29 @@ import { render, screen } from '@testing-library/vue'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import OutputSlot from './OutputSlot.vue'
 
-vi.mock('@/composables/useErrorHandling', () => ({
-  useErrorHandling: () => ({ toastErrorHandler: vi.fn() })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
-vi.mock('@/renderer/core/canvas/links/slotLinkDragUIState', () => ({
-  useSlotLinkDragUIState: () => ({
-    state: { active: false, compatible: new Map() }
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/links/slotLinkDragUIState'),
+  () => ({
+    useSlotLinkDragUIState: () => ({
+      state: { active: false, compatible: new Map() }
+    })
   })
-}))
-
-vi.mock('@/renderer/extensions/vueNodes/composables/useNodeTooltips', () => ({
-  useNodeTooltips: () => ({
-    getOutputSlotTooltip: () => '',
-    createTooltipConfig: (text: string) => ({ value: text })
-  })
-}))
-
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
-  () => ({ useSlotElementTracking: vi.fn() })
 )
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'),
   () => ({
     useSlotLinkInteraction: () => ({ onPointerDown: vi.fn() })
   })
 )
 
-vi.mock('@/renderer/core/layout/slots/slotIdentifier', () => ({
+vi.mock<unknown>(import('@/renderer/core/layout/slots/slotIdentifier'), () => ({
   getSlotKey: () => 'mock-key'
 }))
 
@@ -63,7 +52,6 @@ function renderOutputSlot(slotData: Partial<INodeSlot>, index = 0) {
     },
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: { SlotConnectionDot: SlotConnectionDotStub }
     }
   })

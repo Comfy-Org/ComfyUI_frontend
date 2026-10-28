@@ -3,16 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 import { UserFile, useUserFileStore } from '@/stores/userFileStore'
 
-// Mock the api
-vi.mock('@/scripts/api', () => ({
-  api: {
-    listUserDataFullInfo: vi.fn(),
-    getUserData: vi.fn(),
-    storeUserData: vi.fn(),
-    deleteUserData: vi.fn(),
-    moveUserData: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useUserFileStore', () => {
   let store: ReturnType<typeof useUserFileStore>

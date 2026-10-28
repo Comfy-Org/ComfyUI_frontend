@@ -1,53 +1,86 @@
+import type {
+  SubgraphInput,
+  SubgraphOutput,
+  LGraph,
+  LGraphNode,
+  Reroute
+} from '@comfyorg/graph-model/entityRegistry'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
-import type { GraphScope } from '@/types/graphScopeId'
+import {
+  graphScopeOf,
+  toOwningGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import { zeroUuid } from '@/utils/uuid'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import {
+  UNASSIGNED_NODE_ID,
+  toNodeId,
+  serializeNodeId
+} from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 import type { EndpointPatch } from '@/stores/linkStore'
-import type { LinkId } from '@/types/linkId'
-import type { LinkTopology } from '@/types/linkTopology'
-import type { RerouteId } from '@/types/rerouteId'
-import type { LGraph } from './LGraph'
-import type { LGraphNode } from './LGraphNode'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import type { Reroute } from './Reroute'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+
 import type {
   CanvasColour,
-  INodeInputSlot,
-  INodeOutputSlot,
   ISlotType,
+  LinkSegment
+} from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type {
   LinkNetwork,
-  LinkSegment,
-  Point,
   ReadonlyLinkNetwork
-} from './interfaces'
-import type { Serialisable, SerialisableLLink } from './types/serialisation'
+} from '@comfyorg/graph-model/linkNetwork'
+import type {
+  Serialisable,
+  SerialisableLLink,
+  SerialisedLLinkArray
+} from '@comfyorg/graph-model/serialisation'
 import { toRaw } from 'vue'
 
-export type { LinkId } from '@/types/linkId'
-export type SerialisedLLinkArray = [
-  id: number,
-  origin_id: SerializedNodeId,
-  origin_slot: number,
-  target_id: SerializedNodeId,
-  target_slot: number,
-  type: ISlotType
-]
+export type { LinkId } from '@comfyorg/graph-model/linkId'
+export type { SerialisedLLinkArray } from '@comfyorg/graph-model/serialisation'
 
 const linkByTopology = new WeakMap<LinkTopology, LLink>()
 
+let topologyFacadeDescriptors: PropertyDescriptorMap | undefined
+
 export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
   return linkByTopology.get(toRaw(topology))
+}
+
+function defineEnumerableTopologyFacade(link: LLink): void {
+  topologyFacadeDescriptors ??= [
+    'id',
+    'type',
+    'origin_id',
+    'origin_slot',
+    'target_id',
+    'target_slot',
+    'parentId'
+  ].reduce<PropertyDescriptorMap>((descriptors, key) => {
+    const descriptor = Object.getOwnPropertyDescriptor(LLink.prototype, key)
+    if (descriptor) descriptors[key] = { ...descriptor, enumerable: true }
+    return descriptors
+  }, {})
+  Object.defineProperties(link, topologyFacadeDescriptors)
 }
 
 // Resolved connection union; eliminates subgraph in/out as a possibility
@@ -104,22 +137,6 @@ type BasicReadonlyNetwork = Pick<
   'getNodeById' | 'links' | 'getLink' | 'inputNode' | 'outputNode'
 >
 
-/** Routes an endpoint patch through {@link useLinkStore} if the link is registered, otherwise writes {@link LLink._state} directly. */
-function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
-  if (link._graphScope) {
-    const result = useLinkStore().updateEndpoint(
-      link._graphScope,
-      link._state,
-      patch
-    )
-    if (!result.ok) {
-      console.error('Failed to update link endpoints', result.error)
-    }
-  } else {
-    Object.assign(link._state, patch)
-  }
-}
-
 // this is the class in charge of storing link information
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   static _drawDebug = false
@@ -162,7 +179,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set origin_id(value: NodeId) {
-    applyEndpointPatch(this, { originNodeId: value })
+    this.updateEndpoints({ originNodeId: value })
   }
 
   /** Output slot index */
@@ -171,7 +188,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set origin_slot(value: number) {
-    applyEndpointPatch(this, { originSlot: value })
+    this.updateEndpoints({ originSlot: value })
   }
 
   /** Input node ID */
@@ -180,7 +197,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set target_id(value: NodeId) {
-    applyEndpointPatch(this, { targetNodeId: value })
+    this.updateEndpoints({ targetNodeId: value })
   }
 
   /** Input slot index */
@@ -189,7 +206,22 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set target_slot(value: number) {
-    applyEndpointPatch(this, { targetSlot: value })
+    this.updateEndpoints({ targetSlot: value })
+  }
+
+  updateEndpoints(patch: EndpointPatch): void {
+    if (!this._graphScope) {
+      Object.assign(this._state, patch)
+      return
+    }
+
+    const result = useLinkStore().updateEndpoint(
+      this._graphScope,
+      this._state,
+      patch
+    )
+    if (!result.ok)
+      console.error('Failed to update link endpoints', result.error)
   }
 
   get parentId() {
@@ -265,10 +297,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       targetSlot: target_slot,
       parentId
     }
-
     this._data = null
-    // center
     this._pos = [0, 0]
+    defineEnumerableTopologyFacade(this)
   }
 
   /** @deprecated Use {@link LLink.create} */
@@ -456,18 +487,22 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   configure(o: LLink | SerialisedLLinkArray) {
     if (Array.isArray(o)) {
       this.id = toLinkId(o[0])
-      this.origin_id = toNodeId(o[1])
-      this.origin_slot = o[2]
-      this.target_id = toNodeId(o[3])
-      this.target_slot = o[4]
+      this.updateEndpoints({
+        originNodeId: toNodeId(o[1]),
+        originSlot: o[2],
+        targetNodeId: toNodeId(o[3]),
+        targetSlot: o[4]
+      })
       this.type = o[5]
     } else {
       this.id = o.id
       this.type = o.type
-      this.origin_id = o.origin_id
-      this.origin_slot = o.origin_slot
-      this.target_id = o.target_id
-      this.target_slot = o.target_slot
+      this.updateEndpoints({
+        originNodeId: o.origin_id,
+        originSlot: o.origin_slot,
+        targetNodeId: o.target_id,
+        targetSlot: o.target_slot
+      })
       this.parentId = o.parentId
     }
   }
@@ -661,6 +696,9 @@ export function replaceLinkTopology(
   )
   if (!registered) return false
   if (incumbent) {
+    if (incumbent._graphScope) {
+      useLinkPresentationStore().take(incumbent._graphScope, incumbent.id)
+    }
     linkByTopology.delete(toRaw(incumbent._state))
     incumbent._graphScope = undefined
   }
@@ -686,7 +724,9 @@ function adoptLinkTopology(
  */
 export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
-  useLinkStore().deleteLink(link._graphScope, link._state)
+  if (useLinkStore().deleteLink(link._graphScope, link._state)) {
+    useLinkPresentationStore().take(link._graphScope, link.id)
+  }
   linkByTopology.delete(toRaw(link._state))
   link._graphScope = undefined
 }
@@ -706,4 +746,16 @@ export function unregisterAllLinkTopologies(
   ]) {
     unregisterLinkTopology(link)
   }
+}
+
+type RegisteredLLink = LLink
+type RegisteredSerialisedLLinkArray = SerialisedLLinkArray
+type RegisteredResolvedConnection = ResolvedConnection
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface LitegraphEntityRegistry {
+    SerialisedLLinkArray: RegisteredSerialisedLLinkArray
+    ResolvedConnection: RegisteredResolvedConnection
+  }
+  interface LLink extends RegisteredLLink {}
 }

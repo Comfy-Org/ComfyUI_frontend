@@ -1,9 +1,9 @@
 import { groupBy, partition } from 'es-toolkit'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeError } from '@/schemas/apiSchema'
-import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeError } from '@/platform/remote/comfyui/types'
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { isNodeLevelValidationError } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
@@ -69,12 +69,10 @@ export function resolveLiftChain(
     const graph = node?.graph
     if (!node || !graph || !isSubgraph(graph)) break
 
-    const slot = node.inputs?.find((input) => input.name === currentInputName)
+    const slot = node.inputs.find((input) => input.name === currentInputName)
     if (slot?.link == null) break
 
-    const subgraphInput = graph
-      .getLink(slot.link)
-      ?.resolve(graph)?.subgraphInput
+    const subgraphInput = graph.getLink(slot.link)?.resolve(graph).subgraphInput
     if (!subgraphInput) break
 
     const hostExecId = getHostExecutionId(currentExecId)
@@ -172,8 +170,11 @@ export function liftNodeErrorsToBoundary(
   for (const [targetExecId, targetPlacements] of Object.entries(
     placementsByTarget
   )) {
-    const baseEntry = nodeErrors[targetExecId]
-      ? createEmptyNodeError(nodeErrors[targetExecId])
+    const existingEntry = Object.hasOwn(nodeErrors, targetExecId)
+      ? nodeErrors[targetExecId]
+      : undefined
+    const baseEntry = existingEntry
+      ? createEmptyNodeError(existingEntry)
       : createLiftedHostEntry(rootGraph, targetExecId)
 
     const [ownErrors, liftedErrors] = partition(

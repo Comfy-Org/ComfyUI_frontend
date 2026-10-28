@@ -1,7 +1,7 @@
-import type { MenuItem } from 'primevue/menuitem'
 import { shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 /**
@@ -28,7 +28,7 @@ export function useTreeFolderOperations<T>(
 
     try {
       // Call the handleAddFolder method with the new folder name
-      await addFolderTargetNode.value?.handleAddFolder?.(newName)
+      await addFolderTargetNode.value.handleAddFolder?.(newName)
     } finally {
       newFolderNode.value = null
       addFolderTargetNode.value = null
@@ -46,12 +46,12 @@ export function useTreeFolderOperations<T>(
       label: '',
       leaf: false,
       children: [],
-      icon: 'pi pi-folder',
+      icon: 'icon-[lucide--folder]',
       type: 'folder',
       totalLeaves: 0,
       badgeText: '',
       isEditingLabel: true
-    } as RenderedTreeExplorerNode<T>
+    }
     addFolderTargetNode.value = targetNode
   }
 
@@ -61,12 +61,11 @@ export function useTreeFolderOperations<T>(
   ): MenuItem => {
     return {
       label: t('g.newFolder'),
-      icon: 'pi pi-folder-plus',
+      icon: 'icon-[lucide--folder-plus]',
       command: () => {
         if (targetNode) addFolderCommand(targetNode)
       },
-      visible: !!targetNode && !targetNode.leaf && !!targetNode.handleAddFolder,
-      isAsync: false
+      visible: !!targetNode && !targetNode.leaf && !!targetNode.handleAddFolder
     }
   }
 

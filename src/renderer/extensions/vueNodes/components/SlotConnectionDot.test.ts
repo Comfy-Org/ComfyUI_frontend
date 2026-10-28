@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/vue'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { slotId } from '@comfyorg/graph-model/slotId'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
@@ -38,5 +40,17 @@ describe('SlotConnectionDot', () => {
     expect(dot).toHaveClass('rounded-[1px]')
     expect(dot).not.toHaveClass('rounded-full')
     expect(dot.tagName).toBe('DIV')
+  })
+
+  it('identifies the visual dot as the measured slot element', () => {
+    const slotKey = slotId(toNodeId('node-with-hyphen'), 'input', 2)
+    render(SlotConnectionDot, {
+      props: { slotData: defaultSlot, slotKey }
+    })
+
+    expect(screen.getByTestId('slot-dot')).toHaveAttribute(
+      'data-slot-key',
+      slotKey
+    )
   })
 })

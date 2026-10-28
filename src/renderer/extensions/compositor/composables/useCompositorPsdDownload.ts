@@ -10,13 +10,13 @@ import {
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import { useLayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 export function useCompositorPsdDownload(
   createSession: () => LayerEditorSession = () => useLayerEditorSession()
 ) {
   const { t } = useI18n()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const exporting = ref(false)
 
   async function downloadPsd(node: LGraphNode): Promise<void> {
@@ -25,19 +25,29 @@ export function useCompositorPsdDownload(
     let session: LayerEditorSession | null = null
     try {
       session = createSession()
-      if (!session.glOk.value) throw new Error('WebGL compositor unavailable')
+      if (!session.glOk.value) {
+        console.error('[Compositor] WebGL compositor unavailable')
+        toast.error(t('g.error'), {
+          description: t('layerEditor.webglUnavailable')
+        })
+        return
+      }
       const failed = await loadCompositorSession(session, node, (i) =>
         t('layerEditor.layerN', { n: i + 1 })
       )
-      if (failed > 0) throw new Error(`${failed} layer(s) failed to load`)
+      if (failed > 0) {
+        console.error(`[Compositor] ${failed} layer(s) failed to load`)
+        toast.error(t('g.error'), {
+          description: t('layerEditor.exportPsdFailed')
+        })
+        return
+      }
       const blob = await buildSessionPsdBlob(session)
       downloadBlob(psdExportFilename(new Date()), blob)
     } catch (err) {
       console.warn('[Compositor] PSD export failed', err)
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail:
+      toast.error(t('g.error'), {
+        description:
           session && !session.glOk.value
             ? t('layerEditor.webglUnavailable')
             : t('layerEditor.exportPsdFailed')

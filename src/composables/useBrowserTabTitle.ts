@@ -5,16 +5,24 @@ import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
-const DEFAULT_TITLE = 'ComfyUI'
 const TITLE_SUFFIX = ' - ComfyUI'
 
 export const useBrowserTabTitle = () => {
+  const defaultTitle = document.title || 'ComfyUI'
   const executionStore = useExecutionStore()
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
   const workspaceStore = useWorkspaceStore()
+  const tabActivity = useWorkflowTabActivityStore()
+
+  const approvalText = computed(() =>
+    tabActivity.agentAwaitingApproval
+      ? `[${t('g.agentInputNeededShort', 'Input needed')}] `
+      : ''
+  )
 
   const executionText = computed(() =>
     executionStore.isIdle
@@ -52,11 +60,10 @@ export const useBrowserTabTitle = () => {
     const workflowName = workflowStore.activeWorkflow?.filename
     return workflowName
       ? isUnsavedText.value + workflowName + TITLE_SUFFIX
-      : DEFAULT_TITLE
+      : defaultTitle
   })
 
   const nodeExecutionTitle = computed(() => {
-    // Check if any nodes are in progress
     const nodeProgressEntries = Object.entries(
       executionStore.nodeProgressStates
     )
@@ -68,12 +75,10 @@ export const useBrowserTabTitle = () => {
       return ''
     }
 
-    // If multiple nodes are running
     if (runningNodes.length > 1) {
       return `${executionText.value}[${runningNodes.length} ${t('g.nodesRunning', 'nodes running')}]`
     }
 
-    // If only one node is running
     const [, state] = runningNodes[0]
     const progress = Math.round((state.value / state.max) * 100)
     const nodeLabel =
@@ -87,9 +92,11 @@ export const useBrowserTabTitle = () => {
   const workflowTitle = computed(
     () =>
       executionText.value +
-      (newMenuEnabled.value ? workflowNameText.value : DEFAULT_TITLE)
+      (newMenuEnabled.value ? workflowNameText.value : defaultTitle)
   )
 
-  const title = computed(() => nodeExecutionTitle.value || workflowTitle.value)
+  const title = computed(
+    () => approvalText.value + (nodeExecutionTitle.value || workflowTitle.value)
+  )
   useTitle(title)
 }
