@@ -89,6 +89,10 @@ async function startLocalAuthSession(): Promise<boolean> {
   })
 }
 
+function showLocalSignInFailure(pinia: Pinia, failed: boolean): void {
+  if (failed) useToast(pinia).error(t('auth.desktopHost.signInFailed'))
+}
+
 function initFirebaseIdentity(): void {
   const phaseFirebase = bootstrapTracer.startPhase('startup/firebase-init')
   try {
@@ -174,9 +178,7 @@ async function bootstrap(): Promise<void> {
 
   markStoresReady()
 
-  if (localSignInFailed) {
-    useToast(pinia).error(t('auth.desktopHost.signInFailed'))
-  }
+  showLocalSignInFailure(pinia, localSignInFailed)
 
   if (isCloud && hasHostTelemetryBridge) {
     syncHostUserIdWithFirebaseAuth()
