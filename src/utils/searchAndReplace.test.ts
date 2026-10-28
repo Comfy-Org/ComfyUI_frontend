@@ -14,6 +14,25 @@ function graphWithWidgetValue(value: string): LGraph {
 describe('applyTextReplacements', () => {
   describe('date replacements', () => {
     it.for([
+      { source: 'title', title: 'date:portrait', alias: 'PortraitNode' },
+      { source: 'alias', title: 'PortraitNode', alias: 'date:portrait' }
+    ])(
+      'preserves node references with a date-prefixed $source',
+      ({ title, alias }) => {
+        vi.setSystemTime(new Date(2026, 9, 28, 14, 5, 9))
+        const graph = new LGraph()
+        const node = new LGraphNode(title)
+        node.properties['Node name for S&R'] = alias
+        node.addWidget('string', 'testWidget', 'portrait', () => undefined, {})
+        graph.add(node)
+
+        expect(applyTextReplacements(graph, '%date:portrait.testWidget%')).toBe(
+          'portrait'
+        )
+      }
+    )
+
+    it.for([
       ['yyyy-MM-dd', '2026-10-28'],
       ['yyyy.MM', '2026.10'],
       ['yyyy.MM.dd', '2026.10.28'],
