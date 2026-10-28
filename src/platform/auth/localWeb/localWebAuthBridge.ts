@@ -134,6 +134,17 @@ export function createLocalWebAuthBridge(
     listeners.forEach((listener) => listener(state))
   }
 
+  function isDefaultForNewTabs(workspaceId: string | undefined): boolean {
+    const sharedWorkspace = workspaceOf(env.tokens.read())
+    return !sharedWorkspace || sharedWorkspace === workspaceId
+  }
+
+  function keepForTab(workspaceId: string, tokens: OAuthTokens): boolean {
+    if (!env.tokens.writeWorkspace(workspaceId, tokens)) return false
+    pinTab(workspaceId)
+    return true
+  }
+
   function adopt(
     tokens: OAuthTokens,
     { forNewTabs }: { forNewTabs: boolean }
@@ -141,15 +152,10 @@ export function createLocalWebAuthBridge(
     const identity = readAccessTokenIdentity(tokens.accessToken)
     if (!identity) return 'invalid-token'
     const { workspaceId } = identity
-    const sharedWorkspace = workspaceOf(env.tokens.read())
-    const writesShared =
-      forNewTabs || !sharedWorkspace || sharedWorkspace === workspaceId
+    const writesShared = forNewTabs || isDefaultForNewTabs(workspaceId)
     if (writesShared && !env.tokens.write(tokens)) return 'storage-unavailable'
-    const tabWritten =
-      !workspaceId || env.tokens.writeWorkspace(workspaceId, tokens)
-    if (!writesShared && !tabWritten) return 'storage-unavailable'
-    if (workspaceId) pinTab(workspaceId)
-    return 'adopted'
+    const kept = workspaceId ? keepForTab(workspaceId, tokens) : writesShared
+    return kept || writesShared ? 'adopted' : 'storage-unavailable'
   }
 
   function forgetOtherAccount(tokens: OAuthTokens): void {
