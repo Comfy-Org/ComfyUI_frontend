@@ -63,6 +63,7 @@ const CRITICAL_COVERAGE_DIRS = [
   'src/platform/assets/schemas',
   'src/platform/assets/services',
   'src/platform/assets/utils',
+  'src/platform/extensions',
   'src/platform/billing/api',
   'src/platform/billing/composables',
   'src/platform/billing/stores',
