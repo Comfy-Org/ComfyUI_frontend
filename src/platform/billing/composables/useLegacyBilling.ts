@@ -37,7 +37,8 @@ function fundsFromStatus(status: BillingStatusResponse | null) {
   return {
     hasFunds,
     agentHasFunds: status?.scoped_effective_has_funds?.agent ?? hasFunds,
-    agentScopedHasFunds: status?.scoped_has_funds?.agent
+    agentScopedHasFunds: status?.scoped_has_funds?.agent,
+    agentScopedHasFundsAuthoritative: status?.billing_rail !== undefined
   }
 }
 

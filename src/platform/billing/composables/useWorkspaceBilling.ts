@@ -241,7 +241,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       hasFunds: status.has_funds,
       agentHasFunds:
         status.scoped_effective_has_funds?.agent ?? status.has_funds,
-      agentScopedHasFunds: status.scoped_has_funds?.agent
+      agentScopedHasFunds: status.scoped_has_funds?.agent,
+      agentScopedHasFundsAuthoritative: status.billing_rail !== undefined
     }
   })
 

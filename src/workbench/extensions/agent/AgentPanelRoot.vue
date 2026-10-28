@@ -1654,12 +1654,14 @@ const {
 
 /**
  * `Try your first chat for free!` is a claim about the Agent's own granted
- * allowance, so it renders on `scoped_has_funds.agent` as received. `=== true`
- * is the whole gate: an absent field, an unsettled read and a rail that reports
- * no scoped balance all fail closed without a separate branch.
+ * allowance, so it renders only when `scoped_has_funds.agent` is true and the
+ * response names the billing rail that supplied it. Billing-disabled fallback
+ * responses report true without a rail; that is not an authoritative grant.
  */
 const freeUseGrantActive = computed(
-  () => subscription.value?.agentScopedHasFunds === true
+  () =>
+    subscription.value?.agentScopedHasFundsAuthoritative === true &&
+    subscription.value.agentScopedHasFunds === true
 )
 
 const freeUsePlacement = computed(() =>

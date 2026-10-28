@@ -65,7 +65,7 @@ describe('useFreeUsePlacement', () => {
     })
   })
 
-  it('uses the local product default without reporting a Cloud experiment exposure', () => {
+  it('uses the local product default without reporting Cloud experiment telemetry', () => {
     distribution.isCloud = false
     const telemetry = useTelemetry()!
     const { variant, reportNotice } = useFreeUsePlacement()
@@ -74,10 +74,7 @@ describe('useFreeUsePlacement', () => {
     expect(telemetry.trackAgentFreeUseExposure).not.toHaveBeenCalled()
 
     reportNotice({ action: 'shown', placement: LOCAL_FREE_USE_PLACEMENT })
-    expect(telemetry.trackAgentFreeUseNotice).toHaveBeenCalledWith({
-      action: 'shown',
-      placement: LOCAL_FREE_USE_PLACEMENT
-    })
+    expect(telemetry.trackAgentFreeUseNotice).not.toHaveBeenCalled()
   })
 
   it('reports a served control arm, which is an arm like any other', () => {

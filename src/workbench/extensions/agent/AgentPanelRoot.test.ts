@@ -269,6 +269,7 @@ const paywallBilling = vi.hoisted(() => ({
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
 const paywallAgentScopedHasFunds = ref<boolean | undefined>()
+const paywallAgentScopedHasFundsAuthoritative = ref(false)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -392,7 +393,9 @@ beforeEach(() => {
               hasFunds: paywallHasFunds.value,
               agentHasFunds:
                 paywallAgentHasFunds.value ?? paywallHasFunds.value,
-              agentScopedHasFunds: paywallAgentScopedHasFunds.value
+              agentScopedHasFunds: paywallAgentScopedHasFunds.value,
+              agentScopedHasFundsAuthoritative:
+                paywallAgentScopedHasFundsAuthoritative.value
             })
       ),
       tier: computed(() => paywallBilling.tier),
@@ -520,6 +523,7 @@ beforeEach(() => {
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
   paywallAgentScopedHasFunds.value = undefined
+  paywallAgentScopedHasFundsAuthoritative.value = false
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -712,6 +716,7 @@ describe('AgentPanelRoot first-use experience', () => {
   function placeFundedFreeUseNotice() {
     paywallHasFunds.value = true
     paywallAgentScopedHasFunds.value = true
+    paywallAgentScopedHasFundsAuthoritative.value = true
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
       fromPartial({
         variant: ref('top-banner'),
@@ -744,6 +749,17 @@ describe('AgentPanelRoot first-use experience', () => {
   ])('says nothing about free turns when $label', async ({ scoped }) => {
     placeFundedFreeUseNotice()
     paywallAgentScopedHasFunds.value = scoped
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    expect(reportFreeUseNotice).not.toHaveBeenCalled()
+  })
+
+  it('rejects a billing-disabled fallback that reports a grant without a rail', async () => {
+    placeFundedFreeUseNotice()
+    paywallAgentScopedHasFundsAuthoritative.value = false
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')

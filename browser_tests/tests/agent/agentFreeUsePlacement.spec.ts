@@ -18,6 +18,7 @@ function billingStatus({
 }): BillingStatusResponse {
   return {
     ...DEFAULT_BILLING_STATUS,
+    billing_rail: 'metronome',
     scoped_effective_has_funds: { agent: true },
     scoped_has_funds: { agent: grantHeld }
   }
@@ -146,22 +147,29 @@ test.describe(
       await expect(notice).toHaveAttribute('data-placement', 'near-composer')
     })
 
-    test('makes no free-use claim when the local account has no Agent grant', async ({
+    test('removes the free-use claim after the local Agent grant is spent', async ({
       page
     }) => {
-      const billingRead = page.waitForResponse('**/api/billing/status')
       await bootAgentApp(page, true, {
         features: { enable_telemetry: true },
-        billingStatus: billingStatus({ grantHeld: false })
+        billingStatus: billingStatus({ grantHeld: true })
       })
       const agentPanel = new AgentPanel(page)
 
       await agentPanel.open()
+      const notice = agentPanel.root.getByRole('note', {
+        name: 'Free use notice'
+      })
+      await expect(notice).toBeVisible()
+
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill({ json: billingStatus({ grantHeld: false }) })
+      )
+      const billingRead = page.waitForResponse('**/api/billing/status')
+      await agentPanel.sendMessage('Use the current workflow')
       await billingRead
 
-      await expect(
-        agentPanel.root.getByRole('note', { name: 'Free use notice' })
-      ).toBeHidden()
+      await expect(notice).toBeHidden()
     })
   }
 )
