@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -13,7 +13,7 @@ import type { BillingReadRail } from './useBillingReadRail'
 import { useBillingCapabilities } from './useBillingCapabilities'
 
 vi.mock(import('firebase/auth'), { spy: true })
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
@@ -103,7 +103,7 @@ function heldCapabilityReads(rail: 'legacy' | 'sdk') {
     })
 
   if (rail === 'legacy') {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockImplementation(() =>
+    vi.mocked(billingApi.getBillingCapabilities).mockImplementation(() =>
       nextRead().catch(() => {
         throw new Error('capabilities outage')
       })

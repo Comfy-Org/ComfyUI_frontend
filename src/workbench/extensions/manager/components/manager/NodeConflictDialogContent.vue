@@ -32,8 +32,8 @@
               <i
                 :class="
                   importFailedExpanded
-                    ? 'pi pi-chevron-down text-xs'
-                    : 'pi pi-chevron-right text-xs'
+                    ? 'icon-[lucide--chevron-down] size-3'
+                    : 'icon-[lucide--chevron-right] size-3'
                 "
               />
             </Button>
@@ -54,7 +54,7 @@
             <span class="text-xs text-muted-foreground">
               {{ packageName }}
             </span>
-            <span class="pi pi-info-circle text-sm"></span>
+            <i class="icon-[lucide--info] size-3.5" />
           </div>
         </div>
       </div>
@@ -79,8 +79,8 @@
               <i
                 :class="
                   conflictsExpanded
-                    ? 'pi pi-chevron-down text-xs'
-                    : 'pi pi-chevron-right text-xs'
+                    ? 'icon-[lucide--chevron-down] size-3'
+                    : 'icon-[lucide--chevron-right] size-3'
                 "
               />
             </Button>
@@ -101,7 +101,7 @@
             <span class="text-xs text-muted-foreground">{{
               getConflictMessage(conflict, t)
             }}</span>
-            <span class="pi pi-info-circle text-sm"></span>
+            <i class="icon-[lucide--info] size-3.5" />
           </div>
         </div>
       </div>
@@ -124,8 +124,8 @@
               <i
                 :class="
                   extensionsExpanded
-                    ? 'pi pi-chevron-down text-xs'
-                    : 'pi pi-chevron-right text-xs'
+                    ? 'icon-[lucide--chevron-down] size-3'
+                    : 'icon-[lucide--chevron-right] size-3'
                 "
               />
             </Button>
@@ -145,7 +145,7 @@
             <span class="text-xs text-muted-foreground">
               {{ conflictResult.package_name }}
             </span>
-            <span class="pi pi-info-circle text-sm"></span>
+            <i class="icon-[lucide--info] size-3.5" />
           </div>
         </div>
       </div>

@@ -10,7 +10,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 
 const REMOTE_WIDGET_PLACEHOLDER = 'Loading...'

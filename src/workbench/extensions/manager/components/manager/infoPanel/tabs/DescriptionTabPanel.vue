@@ -19,10 +19,10 @@
       >
         <i
           v-if="isGitHubLink(safeRepositoryHref)"
-          class="pi pi-github text-base"
+          class="icon-[lucide--github]"
         />
         <span class="break-all">{{ safeRepositoryHref }}</span>
-        <i class="icon-[lucide--external-link] size-4 shrink-0" />
+        <i class="icon-[lucide--external-link]" />
       </a>
     </ModelInfoField>
     <ModelInfoField v-if="licenseInfo" :label="t('manager.license')">
@@ -34,7 +34,7 @@
         class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
       >
         <span class="break-all">{{ licenseInfo.text }}</span>
-        <i class="icon-[lucide--external-link] size-4 shrink-0" />
+        <i class="icon-[lucide--external-link]" />
       </a>
       <span v-else class="break-all text-muted-foreground">
         {{ licenseInfo.text }}

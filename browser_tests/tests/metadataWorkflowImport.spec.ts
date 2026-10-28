@@ -46,7 +46,7 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.nodeOps.clearGraph()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
     })
 
     for (const { fileName, parser } of FIXTURES) {
@@ -60,9 +60,7 @@ test.describe(
         })
 
         await test.step('graph contains only the embedded KSampler', async () => {
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(1)
+          await comfyPage.expectNodeCount(1)
 
           const ksamplers =
             await comfyPage.nodeOps.getNodeRefsByType('KSampler')
@@ -85,9 +83,7 @@ test.describe(
         })
 
         await test.step('graph contains only the embedded KSampler', async () => {
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(1)
+          await comfyPage.expectNodeCount(1)
 
           const ksamplers =
             await comfyPage.nodeOps.getNodeRefsByType('KSampler')

@@ -22,7 +22,7 @@
       :aria-label="$t('actionbar.feedback')"
       @click="openFeedback"
     >
-      <i class="icon-[lucide--megaphone] size-4" />
+      <i class="icon-[lucide--megaphone]" />
     </Button>
     <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
     <LoginButton v-else class="p-1" />
@@ -94,12 +94,9 @@ async function onAgentEntryClick(): Promise<void> {
   isOpeningAgent.value = true
 
   try {
-    if (
-      agentPanelStore.onboarding.agentButton === 'togglePanel' ||
-      agentPanelStore.isVisible
-    ) {
+    if (agentPanelStore.isVisible) {
       useTelemetry()?.trackAgentEntryButtonClicked({
-        resulting_state: agentPanelStore.isVisible ? 'closed' : 'opened'
+        resulting_state: 'closed'
       })
       agentPanelStore.toggle()
       return

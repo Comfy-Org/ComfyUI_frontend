@@ -29,8 +29,6 @@ vi.mock(import('@/composables/bottomPanelTabs/useTerminalTabs'), () => ({
   useCommandTerminalTab: () => stubTab('command', 'terminal')
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const distribution = vi.hoisted(() => ({ isDesktop: false }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 

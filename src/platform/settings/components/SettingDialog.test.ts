@@ -90,9 +90,6 @@ beforeEach(() => {
         role: 'owner',
         created_at: '2026-01-01T00:00:00Z',
         joined_at: '2026-01-01T00:00:00Z',
-        isSubscribed: true,
-        subscriptionPlan: null,
-        subscriptionTier: null,
         members: [],
         pendingInvites: [],
         membersLoaded: true,
@@ -178,13 +175,13 @@ it.for([
     state: 'off',
     enabled: false,
     variantClass: 'bg-secondary',
-    iconClass: 'pi pi-times'
+    iconClass: 'icon-[lucide--x]'
   },
   {
     state: 'on',
     enabled: true,
     variantClass: 'bg-transparent',
-    iconClass: 'icon-[lucide--x] size-4 shrink-0'
+    iconClass: 'icon-[lucide--x]'
   }
 ])(
   'passes the $state close control through the settings modal',

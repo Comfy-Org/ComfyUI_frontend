@@ -1,4 +1,4 @@
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { ResolvedRoles } from './resolveTourRoles'
 import type { TourMediaKind } from './tourRolePins'

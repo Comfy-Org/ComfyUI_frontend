@@ -25,11 +25,11 @@ import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { PriceBadge } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const getNodeConstructorData = (node: LGraphNode) => node.constructor.nodeData
 
