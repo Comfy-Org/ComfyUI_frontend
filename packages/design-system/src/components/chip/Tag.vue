@@ -11,19 +11,24 @@ const {
   label,
   shape = 'square',
   state = 'default',
+  removable,
   removeLabel,
   removeTooltip,
   interactive = false,
   class: className
-} = defineProps<{
-  label: string
-  shape?: TagVariants['shape']
-  state?: TagVariants['state']
-  removeLabel?: string
-  removeTooltip?: string
-  interactive?: boolean
-  class?: HTMLAttributes['class']
-}>()
+} = defineProps<
+  {
+    label: string
+    shape?: TagVariants['shape']
+    state?: TagVariants['state']
+    removeTooltip?: string
+    interactive?: boolean
+    class?: HTMLAttributes['class']
+  } & (
+    | { removable: true; removeLabel: string }
+    | { removable?: false; removeLabel?: string }
+  )
+>()
 
 const emit = defineEmits<{
   remove: [event: Event]
@@ -50,10 +55,7 @@ function handleKeyup(event: KeyboardEvent): void {
     :role="interactive ? 'button' : undefined"
     :tabindex="interactive ? 0 : undefined"
     :class="
-      cn(
-        tagVariants({ shape, state, removable: !!removeLabel, interactive }),
-        className
-      )
+      cn(tagVariants({ shape, state, removable, interactive }), className)
     "
     @keydown="handleKeydown"
     @keyup="handleKeyup"
@@ -62,7 +64,7 @@ function handleKeyup(event: KeyboardEvent): void {
     <span class="min-w-0 truncate">{{ label }}</span>
     <slot />
     <TagRemoveButton
-      v-if="removeLabel"
+      v-if="removable"
       :aria-label="removeLabel"
       :tooltip="removeTooltip"
       @click.stop="emit('remove', $event)"

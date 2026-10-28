@@ -1,17 +1,13 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
+
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import Tag from './Tag.vue'
 
 function renderTag(
-  props: {
-    label: string
-    shape?: 'square' | 'rounded'
-    removeLabel?: string
-    interactive?: boolean
-    onRemove?: (...args: unknown[]) => void
-  },
+  props: ComponentProps<typeof Tag>,
   options?: { slots?: Record<string, string> }
 ) {
   return render(Tag, {
@@ -26,13 +22,32 @@ describe('Tag', () => {
     expect(screen.getByText('JavaScript')).toBeInTheDocument()
   })
 
-  it('does not show remove button by default', () => {
-    renderTag({ label: 'Test' })
+  it('requires a remove label only when removable', () => {
+    type Props = InstanceType<typeof Tag>['$props']
+
+    expectTypeOf<{ label: string }>().toExtend<Props>()
+    expectTypeOf<{ label: string; removeLabel: string }>().toExtend<Props>()
+    expectTypeOf<{
+      label: string
+      removable: true
+      removeLabel: string
+    }>().toExtend<Props>()
+    expectTypeOf<{ label: string; removable: true }>().not.toExtend<Props>()
+  })
+
+  it.for([
+    { name: 'by default', props: { label: 'Test' } },
+    {
+      name: 'when only removeLabel is set',
+      props: { label: 'Test', removeLabel: 'Remove' }
+    }
+  ])('does not show a remove button $name', ({ props }) => {
+    renderTag(props)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('shows a remove button named by removeLabel', () => {
-    renderTag({ label: 'Test', removeLabel: 'Remove' })
+  it('shows a remove button named by removeLabel when removable', () => {
+    renderTag({ label: 'Test', removable: true, removeLabel: 'Remove' })
     expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument()
   })
 
@@ -47,7 +62,12 @@ describe('Tag', () => {
   it('emits remove event when remove button is clicked', async () => {
     const user = userEvent.setup()
     const onRemove = vi.fn()
-    renderTag({ label: 'Test', removeLabel: 'Remove', onRemove })
+    renderTag({
+      label: 'Test',
+      removable: true,
+      removeLabel: 'Remove',
+      onRemove
+    })
 
     await user.click(screen.getByRole('button', { name: 'Remove' }))
     expect(onRemove).toHaveBeenCalledOnce()
@@ -63,6 +83,7 @@ describe('Tag', () => {
         props: {
           label: 'Test',
           interactive: true,
+          removable: true,
           removeLabel: 'Remove',
           onRemove
         },
