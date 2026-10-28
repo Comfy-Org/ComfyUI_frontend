@@ -174,6 +174,28 @@ describe('lintSnapshot', () => {
     })
     expect(existsSync(path.join(dir, 'escaped.ts'))).toBe(false)
   })
+
+  it('reports a fact minted inside a Vue single-file component', () => {
+    const component = [
+      '<template><div /></template>',
+      '<script setup lang="ts">',
+      "import { receiveServerFact } from '@/platform/serverFacts/serverFact'",
+      "const canInvite = receiveServerFact('can_invite_members', true)",
+      '</script>'
+    ].join('\n')
+
+    const outcome = lintSnapshot(
+      new Map([['src/components/InviteButton.vue', component]])
+    )
+
+    expect(outcome.ok && outcome.diagnostics).toEqual([
+      expect.objectContaining({
+        filename: 'src/components/InviteButton.vue',
+        message: expect.stringContaining('`receiveServerFact` is used outside'),
+        labels: [{ span: expect.objectContaining({ line: 3 }) }]
+      })
+    ])
+  })
 })
 
 describe('server-fact gate on a real diff', () => {
