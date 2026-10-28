@@ -1716,6 +1716,7 @@ describe('LiveGraphApplier', () => {
   describe('subgraph definition registration', () => {
     const OUTER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
     const INNER = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+    const UNRELATED = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
     const interior = (type: string): ISerialisedNode => ({
       id: 1,
       type,
@@ -1771,31 +1772,40 @@ describe('LiveGraphApplier', () => {
         }),
         expect.objectContaining({
           errorType: 'agent_subgraph_definitions_failed',
-          context: expect.objectContaining({ definitionIds: [OUTER] })
+          context: expect.objectContaining({ definitionId: OUTER })
         })
       )
     })
 
-    it('registers none of a frame whose definitions fail to configure', () => {
+    it('registers a valid sibling when another definition fails to configure', () => {
+      const unrelated = createTestSubgraphData({
+        id: UNRELATED,
+        nodes: [interior('TestSink')]
+      })
       const { graph, applyCollected } = setup({
         nodes: [],
         links: [],
         definitions: {
-          subgraphs: [outer(), inner('TestThrowingConfigure')]
+          subgraphs: [outer(), inner('TestThrowingConfigure'), unrelated]
         }
       })
 
       const result = applyCollected()
 
-      expect(result.failureCount).toBe(1)
-      expect(graph.subgraphs.size).toBe(0)
+      expect(result.failureCount).toBe(2)
+      expect([...graph.subgraphs.keys()]).toEqual([UNRELATED])
       expect(reportError).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'configure exploded' }),
         expect.objectContaining({
           errorType: 'agent_subgraph_definitions_failed',
-          context: expect.objectContaining({
-            definitionIds: expect.arrayContaining([OUTER, INNER])
-          })
+          context: expect.objectContaining({ definitionId: INNER })
+        })
+      )
+      expect(reportError).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorType: 'agent_subgraph_definitions_failed',
+          context: expect.objectContaining({ definitionId: OUTER })
         })
       )
     })

@@ -23,6 +23,7 @@ import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraph,
@@ -914,7 +915,7 @@ export class LiveGraphApplier {
     for (const { id, issues } of malformed) {
       this.reportDefinitionFailure(
         graph,
-        [String(id)],
+        String(id),
         new Error(
           `Agent subgraph definition ${String(id)} is malformed: ${issues}`
         )
@@ -924,37 +925,50 @@ export class LiveGraphApplier {
       .map((definition) => ({ ...definition, definitions: undefined }))
       .filter((definition) => !rootGraph.subgraphs.has(definition.id))
     if (missing.length === 0) return
-    const failure = tryCreateSubgraphs(rootGraph, missing, docRootIds(doc))
-    if (failure !== undefined) {
-      this.reportDefinitionFailure(
-        graph,
-        missing.map((definition) => definition.id),
-        failure
-      )
+    const reserved = docRootIds(doc)
+    if (tryCreateSubgraphs(rootGraph, missing, reserved) === undefined) {
+      for (const definition of missing) {
+        this.recordRegisteredDefinition(rootGraph, definition)
+      }
       return
     }
-    for (const definition of missing) {
-      this.reported.delete(`definition:${definition.id}`)
-      this.recordInteriorIds(rootGraph, definition)
+    const failed = new Set<string>()
+    for (const definition of topologicalSortSubgraphs(missing)) {
+      const failure = definition.nodes?.some(({ type }) => failed.has(type))
+        ? new Error(
+            `Agent subgraph definition ${definition.id} nests a definition that failed to register`
+          )
+        : tryCreateSubgraphs(rootGraph, [definition], reserved)
+      if (failure === undefined) {
+        this.recordRegisteredDefinition(rootGraph, definition)
+        continue
+      }
+      failed.add(definition.id)
+      this.reportDefinitionFailure(graph, definition.id, failure)
     }
+  }
+
+  private recordRegisteredDefinition(
+    rootGraph: LGraph,
+    definition: ExportedSubgraph
+  ): void {
+    this.reported.delete(`definition:${definition.id}`)
+    this.recordInteriorIds(rootGraph, definition)
   }
 
   private reportDefinitionFailure(
     graph: LGraph,
-    definitionIds: string[],
+    definitionId: string,
     failure: unknown
   ): void {
     this.incrementFailureCount()
-    const unreported = definitionIds.filter(
-      (id) => !this.reported.has(`definition:${id}`)
-    )
-    if (unreported.length === 0) return
-    for (const id of unreported) this.reported.add(`definition:${id}`)
+    if (this.reported.has(`definition:${definitionId}`)) return
+    this.reported.add(`definition:${definitionId}`)
     reportError(failure, {
       surface: 'agent',
       errorType: 'agent_subgraph_definitions_failed',
       tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-      context: { graphId: graph.id, definitionIds }
+      context: { graphId: graph.id, definitionId }
     })
   }
 
