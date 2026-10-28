@@ -137,7 +137,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["keybindings"],
   "allowedConsumers": ["agent", "execution"],
   "characterizationScenarios": [
     {

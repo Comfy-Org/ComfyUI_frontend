@@ -177,7 +177,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["webcam-capture"],
+  "allowedDependencies": ["keybindings", "webcam-capture"],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {

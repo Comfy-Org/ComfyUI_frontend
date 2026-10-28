@@ -41,7 +41,7 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 const commandStore = useCommandStore()
 

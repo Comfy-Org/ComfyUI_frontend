@@ -125,7 +125,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["account"],
+  "allowedDependencies": ["account", "keybindings"],
   "allowedConsumers": ["selection-toolbox"],
   "characterizationScenarios": [
     {
