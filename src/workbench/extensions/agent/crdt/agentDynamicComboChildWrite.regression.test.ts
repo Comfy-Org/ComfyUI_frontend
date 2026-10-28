@@ -28,6 +28,7 @@ const CLASS = 'TestSeedance'
 const WORKFLOW_ID = 'wf-seedance'
 const HOST_ACTOR = 'agent:comfy:host'
 const AGENT_ACTOR = 'agent:test'
+const PERSON_ACTOR = 'user:person'
 
 const modelSpec: InputSpec = [
   'COMFY_DYNAMICCOMBO_V3',
@@ -232,6 +233,26 @@ describe('an Agent write to a dynamic-combo child (PM-2326)', () => {
     expect(
       s.localWrites.filter((write) => write.name === 'model.generate_audio')
     ).toEqual([])
+  })
+
+  it('keeps the Agent value when the person edit round-trips through the host', () => {
+    const s = setup()
+    s.hostApplies([setWidget(s.node, 'model.generate_audio', false)])
+
+    s.widget('model.prompt').value = 'typed by the person'
+    const edit = s.localWrites.find((write) => write.name === 'model.prompt')
+    if (!edit) throw new Error('the person edit emitted no local set_widget')
+    expect(edit.nodeId).toBe(s.node.id)
+    s.hostApplies([setWidget(s.node, edit.name, edit.value, PERSON_ACTOR)])
+
+    expect(s.hostPositionalValue('model.prompt')).toBe('typed by the person')
+    expect(s.hostPositionalValue('model.generate_audio')).toBe(false)
+    expect(s.widget('model.generate_audio').value).toBe(false)
+    expect(
+      s.localWrites
+        .filter((write) => write.name === 'model.generate_audio')
+        .map((write) => write.value)
+    ).not.toContain(true)
   })
 
   it('survives the person re-selecting the same model', () => {
