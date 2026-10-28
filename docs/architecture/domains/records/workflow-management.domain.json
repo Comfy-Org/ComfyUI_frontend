@@ -137,7 +137,12 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["extension-runtime", "graph-model"],
+  "allowedDependencies": [
+    "error-reporting",
+    "extension-runtime",
+    "graph-model",
+    "telemetry"
+  ],
   "allowedConsumers": ["agent", "execution"],
   "characterizationScenarios": [
     {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import type { Keybinding } from '@/platform/keybindings/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { NodeBadgeMode } from '@/types/nodeSource'
 import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
@@ -12,7 +12,7 @@ import {
 import type { SettingParams, Settings } from '@/platform/settings/types'
 import { api } from '@/scripts/api'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/scripts/api'))
 

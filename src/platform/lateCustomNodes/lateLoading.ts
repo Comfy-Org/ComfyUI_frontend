@@ -3,7 +3,7 @@ import { delay } from 'es-toolkit'
 import { computed, effectScope, ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { couldBootOnDeployment } from '@/platform/workspace/composables/waitForDeploymentPick'

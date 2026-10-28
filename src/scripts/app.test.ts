@@ -95,8 +95,8 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
 
@@ -118,7 +118,7 @@ import {
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { zeroUuid } from '@/utils/uuid'
 import { graphsAwaitingNodeTypes } from '@/platform/lateCustomNodes/lateNodeTypes'
@@ -178,7 +178,7 @@ vi.mock(import('@/scripts/metadata/parser'), () => ({
 
 vi.mock(import('@/utils/eventUtils'), { spy: true })
 
-vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
 vi.mock(import('./pnginfo'), () => ({
   importA1111: mockImportA1111

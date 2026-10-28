@@ -14,8 +14,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-import { reportError } from '@/platform/telemetry/reportError'
 import * as workflowService from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -42,7 +42,7 @@ import {
 import { nodeTypesMayStillArrive } from './lateNodeTypes'
 
 vi.mock(import('firebase/auth'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
