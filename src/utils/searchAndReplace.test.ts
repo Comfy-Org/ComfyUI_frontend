@@ -13,6 +13,25 @@ function graphWithWidgetValue(value: string): LGraph {
 
 describe('applyTextReplacements', () => {
   describe('date replacements', () => {
+    it('preserves a date-prefixed node reference when its widget is missing', () => {
+      vi.setSystemTime(new Date(2026, 9, 28, 14, 5, 9))
+      const graph = new LGraph()
+      const node = new LGraphNode('date:portrait')
+      node.addWidget('string', 'renamedWidget', 'portrait', () => undefined, {})
+      graph.add(node)
+
+      expect(applyTextReplacements(graph, '%date:portrait.testWidget%')).toBe(
+        '%date:portrait.testWidget%'
+      )
+      expect(console.warn).toHaveBeenCalledWith(
+        'Unable to find widget',
+        'testWidget',
+        'on node',
+        'date:portrait',
+        node
+      )
+    })
+
     it.for([
       { source: 'title', title: 'date:portrait', alias: 'PortraitNode' },
       { source: 'alias', title: 'PortraitNode', alias: 'date:portrait' }

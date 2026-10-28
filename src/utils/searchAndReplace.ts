@@ -41,15 +41,8 @@ export function applyTextReplacements(
 
     const widget = node.widgets?.find((w) => w.name === split[1])
     if (!widget) {
-      if (!isDate)
-        console.warn(
-          'Unable to find widget',
-          split[1],
-          'on node',
-          split[0],
-          node
-        )
-      return fallbackReplacement
+      console.warn('Unable to find widget', split[1], 'on node', split[0], node)
+      return match
     }
 
     return ((widget.value ?? '') + '').replaceAll(
