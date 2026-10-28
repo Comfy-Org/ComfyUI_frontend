@@ -16052,6 +16052,54 @@ describe('AgentPanelRoot agent socket', () => {
     expect(reset).toHaveBeenCalledOnce()
   })
 
+  // Three paths clear the workspace before setting the next one: the desktop host
+  // follow, the lazy first read of the store off-cloud, and sign-out. Handshaking on
+  // the null leg mints against a workspace that is not settled, so the socket fails
+  // auth and backs off, and it discards an identity lookup still in flight.
+  it('handshakes once for a workspace switch that passes through null', async () => {
+    const reset = vi.fn()
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset,
+      stop: () => {}
+    })
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    agentSocket.reconnect.mockClear()
+
+    Object.assign(workspaces, { activeWorkspaceId: null })
+    await nextTick()
+    expect(agentSocket.reconnect).not.toHaveBeenCalled()
+    expect(reset).not.toHaveBeenCalled()
+
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-b' })
+    await nextTick()
+
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+    expect(reset).toHaveBeenCalledOnce()
+  })
+
+  // Sign-out clears the account and the workspace separately, and the socket has to
+  // drop regardless of which half the watcher sees first.
+  it('still drops the socket when a sign-out clears the workspace too', async () => {
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    agentSocket.reconnect.mockClear()
+
+    signInAs({ firebase: null, apiKeyUser: null })
+    Object.assign(workspaces, { activeWorkspaceId: null })
+    await nextTick()
+
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+  })
+
   it('leaves the socket alone when neither the account nor the workspace moves', async () => {
     signInAs({ firebase: 'account-a', apiKeyUser: null })
     const workspaces = useTeamWorkspaceStore()

@@ -279,11 +279,23 @@ const agentSocketIdentity = computed(() => [
   authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
   teamWorkspaceStore.activeWorkspaceId ?? null
 ])
-watch(agentSocketIdentity, (next, previous) => {
-  if (next[0] === previous[0] && next[1] === previous[1]) return
-  events.reconnect()
-  agentIdentity.reset()
-})
+watch(
+  agentSocketIdentity,
+  ([account, workspace], [wasAccount, wasWorkspace]) => {
+    if (account === wasAccount && workspace === wasWorkspace) return
+    // A workspace change arrives as A -> null -> B on three paths: the desktop host
+    // follow, the lazy first read of the workspace store off-cloud, and sign-out
+    // clearing the workspace separately from the account. Handshaking on the null leg
+    // would mint against a workspace that is not settled yet -- off-cloud the token can
+    // be undefined there, so the socket fails auth and backs off -- and it would discard
+    // an identity lookup still in flight. Waiting for the workspace costs nothing: the
+    // credential in use is still the previous workspace's, and B reconnects on arrival.
+    // An account change is never skipped, so sign-out still drops the socket.
+    if (workspace === null && account === wasAccount && account !== null) return
+    events.reconnect()
+    agentIdentity.reset()
+  }
+)
 
 function onPaywallAction(
   action: AgentPaywallAction,
