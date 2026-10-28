@@ -11,8 +11,8 @@ import {
 import { containsRect } from '@/lib/litegraph/src/measure'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { GroupId } from '@/types/groupId'
-import { toGroupId } from '@/types/groupId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import * as colorUtil from '@comfyorg/design-system/lib/color-picker/colorUtil'
 import { createUuidv4 } from '@/utils/uuid'
 

@@ -133,7 +133,7 @@
           </TreeExplorer>
           <slot v-else name="empty-state">
             <NoResultsPlaceholder
-              icon="pi pi-folder"
+              icon="icon-[lucide--folder]"
               :title="$t('g.empty')"
               :message="$t('g.noWorkflowsFound')"
             />
@@ -300,14 +300,14 @@ function renamedWorkflowPath(
 function workflowContextMenuItems(workflow: ComfyWorkflow): MenuItem[] {
   const duplicate: MenuItem = {
     label: t('g.duplicate'),
-    icon: 'pi pi-file-export',
+    icon: 'icon-[lucide--file-output]',
     command: () => workflowService.duplicateWorkflow(workflow)
   }
   if (isAppMode.value) return [duplicate]
 
   const insert: MenuItem = {
     label: t('g.insert'),
-    icon: 'pi pi-file-export',
+    icon: 'icon-[lucide--file-output]',
     command: () => workflowService.insertWorkflow(workflow)
   }
   return [insert, duplicate]

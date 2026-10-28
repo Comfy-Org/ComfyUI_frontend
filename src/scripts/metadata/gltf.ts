@@ -1,7 +1,7 @@
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import { ASCII, ComfyMetadataTags, GltfSizeBytes } from '@/types/metadataTypes'
 import type {
   ComfyMetadata,

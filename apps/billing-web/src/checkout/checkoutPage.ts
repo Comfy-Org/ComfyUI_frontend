@@ -1104,12 +1104,14 @@ function waitingInCapture(
   operation: BillingOperationState,
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
+  if (outcome !== undefined && operation.awaitedHere)
+    return { kind: 'resolving', outcome }
   if (!isInFlight(operation) || outcome !== undefined)
     return nothingPending(page)
   return {
     kind: 'waiting',
     operation,
-    sibling: true,
+    ...(operation.awaitedHere ? {} : { sibling: true }),
     ...(awaitsUnansweredPay(page) ? { unanswered: true } : {}),
     rail: page.rail
   }

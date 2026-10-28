@@ -1,3 +1,4 @@
+export type ColorFormat = 'hex' | 'rgb' | 'hsb'
 import { memoize } from 'es-toolkit/compat'
 
 type RGB = { r: number; g: number; b: number }
@@ -15,7 +16,6 @@ export interface HSVA {
 type HSL = { h: number; s: number; l: number }
 type HSLA = { h: number; s: number; l: number; a: number }
 type ColorFormatInternal = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
-export type ColorFormat = 'hex' | 'rgb' | 'hsb'
 interface HSV {
   h: number
   s: number

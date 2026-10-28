@@ -79,7 +79,7 @@
           size="icon"
           @click="dismissWarningBanner"
         >
-          <i class="pi pi-times text-xs text-foreground"></i>
+          <i class="icon-[lucide--x] size-3 text-foreground"></i>
         </Button>
       </div>
 

@@ -1,4 +1,4 @@
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import { reportError } from '@/platform/telemetry/reportError'
 import { resolveTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import { ResourceState, useModelStore } from '@/stores/modelStore'
