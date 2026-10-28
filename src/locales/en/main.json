@@ -6158,7 +6158,6 @@
       "body2BeforeSignIn": "To build your workflows, Comfy Agent processes some of your data. Please rest assured, your data is never used for AI model training. By clicking Agree and continue, you agree to its usage.",
       "videoPlaceholder": "Video unavailable",
       "loadError": "Could not load your Agent preference. Try again.",
-      "signInError": "Could not open sign-in. Please try again.",
       "saveError": "Could not save your preference. Try again.",
       "errorTitle": "Couldn't start Comfy Agent",
       "loadErrorTitle": "Couldn't load your Agent settings",

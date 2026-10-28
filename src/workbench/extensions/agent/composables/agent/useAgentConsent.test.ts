@@ -457,37 +457,60 @@ describe('useAgentConsent', () => {
     await Promise.resolve(request)
   })
 
-  it('reports an account-setting load failure without opening the card or panel', async () => {
+  it('shows a load failure on the card with the load title', async () => {
     fetchWithUnifiedRemint.mockRejectedValueOnce(new Error('offline'))
     const onOpen = vi.fn()
 
     const request = useAgentConsent().withConsent('button_click', onOpen)
-    await vi.waitFor(() => {
-      expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
-    })
-    await request
+    const dialog = await waitForConsentDialog()
 
-    expect(useDialogStore().dialogStack).toHaveLength(0)
+    expect(dialog.contentProps.error).toBe('load')
+    await renderConsentCard(dialog)
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      i18n.global.t('agent.consent.loadErrorTitle')
+    )
+    expect(useToast().toasts).toEqual([])
     expect(onOpen).not.toHaveBeenCalled()
-    expect(reportError).toHaveBeenCalledOnce()
-    expect(useToast().error).toHaveBeenCalledWith(
-      i18n.global.t('g.error'),
-      expect.objectContaining({
-        description: i18n.global.t('agent.consent.loadError')
+    expect(telemetry.trackAgentConsentOfferExited).not.toHaveBeenCalled()
+
+    dismissConsent(dialog)
+    await request
+  })
+
+  it('clears a load error on retry and shows the toast again after another failure', async () => {
+    const secondLoad = deferred<Response>()
+    fetchWithUnifiedRemint
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockReturnValueOnce(secondLoad.promise)
+    const onOpen = vi.fn()
+    void useAgentConsent().withConsent('button_click', onOpen)
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('g.close') })
+    )
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.consent.tryAgain')
       })
     )
-    // `reportError` has no product-analytics sink, so before this the funnel saw
-    // a first-run user who was simply never offered.
-    expect(telemetry.trackAgentConsentOfferExited.mock.calls).toEqual([
-      [
-        {
-          exit: 'consent_read_failed',
-          stage: 'request',
-          retry_armed: false,
-          trigger: 'button_click'
-        }
-      ]
-    ])
+    await vi.waitFor(() => {
+      expect(dialog.contentProps.error).toBe('')
+      expect(dialog.contentProps.accepting).toBe(true)
+    })
+
+    secondLoad.reject(new Error('still offline'))
+    await vi.waitFor(() => {
+      expect(dialog.contentProps.error).toBe('load')
+    })
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      i18n.global.t('agent.consent.loadErrorTitle')
+    )
+    expect(useToast().toasts).toEqual([])
+    expect(onOpen).not.toHaveBeenCalled()
   })
 
   it('separates a failed scope probe from a failed consent read', async () => {
@@ -580,15 +603,11 @@ describe('useAgentConsent', () => {
   })
 
   it('reports a repeated attempt each time rather than once per page load', async () => {
-    fetchWithUnifiedRemint.mockRejectedValue(new Error('offline'))
+    useCurrentUser().resolvedUserInfo = computed(() => null)
 
     await useAgentConsent().withConsent('button_click', vi.fn())
     await useAgentConsent().withConsent('button_click', vi.fn())
 
-    // Not deduplicated, deliberately: the `request` stage is only reachable once
-    // per consent scope per page load automatically, and once per click from the
-    // button, so a repeat is a repeated attempt rather than a measure of how
-    // long the tab was open.
     expect(telemetry.trackAgentConsentOfferExited).toHaveBeenCalledTimes(2)
   })
 
@@ -984,7 +1003,7 @@ describe('useAgentConsent', () => {
     ])
   })
 
-  it('reports sign-in loading failure without saving or opening and allows another attempt', async () => {
+  it('shows a sign-in failure on the card with the sign-in title', async () => {
     const authState = reactive<{ loggedIn: boolean; identity: string | null }>({
       loggedIn: false,
       identity: null
@@ -998,23 +1017,24 @@ describe('useAgentConsent', () => {
     const onOpen = vi.fn()
 
     const request = useAgentConsent().withConsent('button_click', onOpen)
-    const outcome = request.catch((error: unknown) => error)
     await startConsent()
-    expect(await outcome).toBeUndefined()
+    const dialog = await vi.waitFor(() => {
+      const open = useDialogStore().dialogStack[0]
+      expect(open.contentProps.error).toBe('signIn')
+      return open
+    })
 
+    await renderConsentCard(dialog)
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      i18n.global.t('agent.consent.signInErrorTitle')
+    )
+    expect(useToast().toasts).toEqual([])
     expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
     expect(onOpen).not.toHaveBeenCalled()
-    expect(useDialogStore().dialogStack).toHaveLength(0)
     expect(reportError).toHaveBeenCalledWith(error, {
       surface: 'agent',
       errorType: 'agent_consent_sign_in_failure'
     })
-    expect(useToast().error).toHaveBeenCalledWith(
-      i18n.global.t('g.error'),
-      expect.objectContaining({
-        description: i18n.global.t('agent.consent.signInError')
-      })
-    )
 
     vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
       async () => {
@@ -1024,9 +1044,12 @@ describe('useAgentConsent', () => {
       }
     )
     fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
-    const retry = useAgentConsent().withConsent('button_click', onOpen)
-    await startConsent()
-    await retry
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.consent.tryAgain')
+      })
+    )
+    await request
     expect(onOpen).toHaveBeenCalledOnce()
   })
 

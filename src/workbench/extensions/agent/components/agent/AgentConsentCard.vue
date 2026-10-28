@@ -158,6 +158,7 @@ const acceptLabelKey = computed(() => {
     ? 'agent.consent.agreeAndContinue'
     : 'agent.consent.accept'
 })
+const errorTitleKey = computed(() => (error ? ERROR_TITLE_KEY[error] : ''))
 const errorVisible = ref(Boolean(error))
 
 watch(
@@ -249,7 +250,7 @@ onMounted(() => {
             </template>
             <div class="flex min-w-0 flex-col gap-0.5">
               <p class="my-0 font-medium">
-                {{ $t(ERROR_TITLE_KEY[error || 'save']) }}
+                {{ $t(errorTitleKey) }}
               </p>
               <p class="my-0 text-muted-foreground">
                 <i18n-t keypath="agent.consent.errorContact" tag="span">

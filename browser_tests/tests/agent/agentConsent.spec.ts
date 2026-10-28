@@ -171,16 +171,22 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         await accept.click()
 
         await expect.poll(() => agentConsentWrites).toEqual([true])
-        await expect(dialog.getByRole('alert')).toHaveText(
-          enMessages.agent.consent.saveError
+        await expect(dialog.getByRole('alert')).toContainText(
+          enMessages.agent.consent.errorTitle
         )
-        await expect(accept).toBeEnabled()
+        await expect(
+          dialog.getByRole('button', {
+            name: enMessages.agent.consent.tryAgain
+          })
+        ).toBeEnabled()
         await expect(panel).toHaveCount(0)
       })
 
       await test.step('Retry sends another save and opens the panel after recovery', async () => {
         agentConsentSave.status = 200
-        await accept.click()
+        await dialog
+          .getByRole('button', { name: enMessages.agent.consent.tryAgain })
+          .click()
         await expect.poll(() => agentConsentWrites).toEqual([true, true])
         await expect(dialog).toHaveCount(0)
         await expect(panel).toBeVisible()
