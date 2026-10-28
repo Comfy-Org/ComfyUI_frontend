@@ -790,42 +790,6 @@
     {
       "path": "src/workbench/extensions/agent/crdt/agentCrdtTransport.test.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/workbench/extensions/agent/composables/agent/useAttachment.validation.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/workbench/extensions/agent/crdt/agentBuiltWidgetInputLink.regression.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/workbench/extensions/agent/crdt/agentCrdtStatus.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/workbench/extensions/agent/crdt/agentDisplayIntAdd.regression.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/workbench/extensions/agent/crdt/agentInsertWorkflowOutputs.integration.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/workbench/extensions/agent/crdt/agentSubgraphInteriorFollower.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/workbench/extensions/agent/services/agent/agentMessageParts.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/workbench/extensions/agent/utils/attachmentMessages.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/workbench/extensions/agent/utils/attachmentMessages.ts",
-      "role": "application"
     }
   ],
   "publicEntryPoints": [],

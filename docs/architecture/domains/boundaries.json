@@ -162,9 +162,7 @@
           "src/workbench/extensions/agent/utils/workflowReferenceParts.test.ts",
           "src/workbench/extensions/agent/utils/workflowReferenceParts.ts",
           "src/workbench/extensions/agent/utils/workflowReferenceText.test.ts",
-          "src/workbench/extensions/agent/utils/workflowReferenceText.ts",
-          "src/workbench/extensions/agent/crdt/agentCrdtStatus.ts",
-          "src/workbench/extensions/agent/services/agent/agentMessageParts.test.ts"
+          "src/workbench/extensions/agent/utils/workflowReferenceText.ts"
         ]
       },
       {
@@ -205,10 +203,7 @@
           "src/workbench/extensions/agent/utils/getPageVisibilityMetadata.test.ts",
           "src/workbench/extensions/agent/utils/getPageVisibilityMetadata.ts",
           "src/workbench/extensions/agent/services/agent/agentIdentity.ts",
-          "src/workbench/extensions/agent/services/agent/agentIdentity.test.ts",
-          "src/workbench/extensions/agent/composables/agent/useAttachment.validation.test.ts",
-          "src/workbench/extensions/agent/utils/attachmentMessages.test.ts",
-          "src/workbench/extensions/agent/utils/attachmentMessages.ts"
+          "src/workbench/extensions/agent/services/agent/agentIdentity.test.ts"
         ]
       },
       {
@@ -326,11 +321,7 @@
           "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.test.ts",
           "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts",
           "src/workbench/extensions/agent/services/agent/workflowTabActivityTracker.test.ts",
-          "src/workbench/extensions/agent/services/agent/workflowTabActivityTracker.ts",
-          "src/workbench/extensions/agent/crdt/agentBuiltWidgetInputLink.regression.test.ts",
-          "src/workbench/extensions/agent/crdt/agentDisplayIntAdd.regression.test.ts",
-          "src/workbench/extensions/agent/crdt/agentInsertWorkflowOutputs.integration.test.ts",
-          "src/workbench/extensions/agent/crdt/agentSubgraphInteriorFollower.test.ts"
+          "src/workbench/extensions/agent/services/agent/workflowTabActivityTracker.ts"
         ]
       },
       {
