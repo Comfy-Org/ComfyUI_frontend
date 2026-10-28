@@ -13,7 +13,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -92,7 +92,7 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 function renderComponent(
   props: {

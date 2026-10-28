@@ -1,6 +1,6 @@
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
 import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'

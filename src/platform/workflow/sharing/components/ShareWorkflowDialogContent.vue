@@ -213,9 +213,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { onClose } = defineProps<{

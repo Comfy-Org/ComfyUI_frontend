@@ -97,7 +97,7 @@ import { useWorkflowShareService } from '@/platform/workflow/sharing/services/wo
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 

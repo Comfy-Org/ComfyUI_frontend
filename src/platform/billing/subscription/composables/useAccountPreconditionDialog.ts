@@ -1,6 +1,6 @@
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { AccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
