@@ -1,34 +1,25 @@
 # ComfyUI Icons Guide
 
-ComfyUI supports two types of icons: Iconify icons and custom icons. All icons are automatically imported - no manual imports needed!
+ComfyUI supports two types of icons: Lucide icons and custom icons. All icons are automatically imported - no manual imports needed!
 
 ## Quick Start - Code Examples
 
-Use Lucide icons through Iconify, or custom icons. PrimeIcons and Material Design Icons (`mdi`) are being phased out; don't add new uses, in first-party code or extensions. See [PrimeIcons (deprecated)](#primeicons-deprecated).
+Lucide is the only third-party icon set. Don't add icons from other sets such as Heroicons, Tabler, or Carbon. PrimeIcons and Material Design Icons (`mdi`) are being phased out; don't add new uses, in first-party code or extensions. See [PrimeIcons (deprecated)](#primeicons-deprecated).
 
-### 1. Iconify Icons
+### 1. Lucide Icons
 
 ```vue
 <template>
-  <!-- Primary icon set: Lucide -->
   <i class="icon-[lucide--download]" />
   <i class="icon-[lucide--settings]" />
   <i class="icon-[lucide--workflow] size-6" />
-
-  <!-- Other popular icon sets -->
-  <i-heroicons:document-text />
-  <!-- Heroicons -->
-  <i-tabler:brand-github />
-  <!-- Tabler Icons -->
-  <i-carbon:cloud-upload />
-  <!-- Carbon Icons -->
 
   <!-- With styling -->
   <i class="icon-[lucide--save] size-6 text-blue-500" />
 </template>
 ```
 
-[Browse 200,000+ icons →](https://icon-sets.iconify.design/)
+[Browse Lucide icons →](https://lucide.dev/icons/)
 
 ### 2. Custom Icons
 
@@ -89,21 +80,11 @@ can reach it. See `packages/design-system/src/components/tooltip/README.md` for 
 </template>
 ```
 
-## Using Iconify Icons
+## Finding Lucide Icons
 
-### Finding Icons
-
-1. Visit [Iconify Icon Sets](https://icon-sets.iconify.design/)
-2. Search or browse collections
-3. Click on any icon to get its name
-4. Use with `i-[collection]:[icon-name]` format
-
-### Popular Collections
-
-- **Lucide** (`i-lucide:`) - Our primary icon set, clean and consistent
-- **Heroicons** (`i-heroicons:`) - Beautiful hand-crafted SVG icons
-- **Tabler** (`i-tabler:`) - 3000+ free SVG icons
-- **Carbon** (`i-carbon:`) - IBM's design system icons
+1. Search [Lucide Icons](https://lucide.dev/icons/)
+2. Copy the icon's name, such as `folder-open`
+3. Use it as `icon-[lucide--folder-open]`
 
 ## Adding Custom Icons
 
@@ -340,18 +321,7 @@ Icons are fully typed. If TypeScript doesn't recognize a new custom icon:
 4. **Theme support**: Always use `currentColor` for adaptable icons
 5. **Test both themes**: Verify icons look good in light and dark modes
 
-## Adding Icon Collections
-
-To add an entire icon set from npm:
-
-1. Install the icon package
-2. Configure in `vite.config.mts`
-3. Use with the appropriate prefix
-
-See the [unplugin-icons documentation](https://github.com/unplugin/unplugin-icons) for details.
-
 ## Resources
 
-- [Iconify Icon Browser](https://icon-sets.iconify.design/)
 - [Lucide Icons](https://lucide.dev/icons/)
 - [unplugin-icons docs](https://github.com/unplugin/unplugin-icons)
