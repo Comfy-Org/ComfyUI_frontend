@@ -1,4 +1,3 @@
-import type { LocationQuery } from 'vue-router'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
@@ -15,15 +14,15 @@ export function usePreservedQueryDeepLink(param: string) {
   const route = useRoute()
   const router = useRouter()
 
-  const hydrateAndRead = async (): Promise<
-    LocationQuery[string] | undefined
-  > => {
+  const hydrateAndRead = async (): Promise<string | null | undefined> => {
     hydratePreservedQuery(param)
     const merged = mergePreservedQueryIntoQuery(param, route.query)
     if (merged) {
       await router.replace({ query: merged })
     }
-    return (merged ?? route.query)[param] as LocationQuery[string] | undefined
+    const value = (merged ?? route.query)[param]
+    if (typeof value === 'string') return value
+    return value == null ? undefined : null
   }
 
   const strip = () => {

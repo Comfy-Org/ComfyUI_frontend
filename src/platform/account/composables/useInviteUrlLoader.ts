@@ -37,9 +37,9 @@ function isDirectoryManagedRefusal(error: unknown): boolean {
  * as the template URL loader.
  */
 export function useInviteUrlLoader() {
-  const { t } = useI18n()
   const route = useRoute()
   const router = useRouter()
+  const { t } = useI18n()
   const toast = useToast()
   const { switchWorkspace } = useWorkspaceSwitch()
   const { showInviteLinkInvalidDialog, showInviteWrongAccountDialog } =
@@ -68,7 +68,7 @@ export function useInviteUrlLoader() {
 
   const loadInviteFromUrl = async () => {
     const inviteParam = await deepLink.hydrateAndRead()
-    if (!inviteParam || typeof inviteParam !== 'string') {
+    if (!inviteParam) {
       return
     }
 

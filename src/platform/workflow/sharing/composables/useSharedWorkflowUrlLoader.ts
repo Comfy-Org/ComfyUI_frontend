@@ -88,11 +88,11 @@ export function useSharedWorkflowUrlLoader() {
   async function loadSharedWorkflowFromUrl(): Promise<SharedWorkflowUrlLoadStatus> {
     const shareParam = await deepLink.hydrateAndRead()
 
-    if (shareParam == null) {
+    if (shareParam === undefined) {
       return 'not-present'
     }
 
-    if (typeof shareParam !== 'string') {
+    if (shareParam === null) {
       clearShareIntent()
       return 'not-present'
     }

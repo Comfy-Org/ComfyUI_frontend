@@ -81,6 +81,16 @@ describe('usePreservedQueryDeepLink', () => {
       expect(router.currentRoute.value.fullPath).toBe('/?invite=from-url')
       expect(value).toBe('from-url')
     })
+
+    it.for([
+      { url: '/?other=keep', expected: undefined },
+      { url: '/?invite', expected: undefined },
+      { url: '/?invite=a&invite=b', expected: null }
+    ])('returns $expected for $url', async ({ url, expected }) => {
+      const { hydrateAndRead } = await mountDeepLink(url)
+
+      expect(await hydrateAndRead()).toBe(expected)
+    })
   })
 
   describe('strip', () => {

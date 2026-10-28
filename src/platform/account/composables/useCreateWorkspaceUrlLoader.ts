@@ -29,7 +29,7 @@ export function useCreateWorkspaceUrlLoader() {
    */
   async function loadCreateWorkspaceFromUrl() {
     const param = await deepLink.hydrateAndRead()
-    if (!param || typeof param !== 'string') return
+    if (!param) return
 
     deepLink.strip()
 
