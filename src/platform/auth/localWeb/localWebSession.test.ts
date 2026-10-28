@@ -14,7 +14,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 vi.mock(import('@/composables/useFeatureFlags'))
 
 const ACCESS_TOKEN = `e30.${btoa(
-  JSON.stringify({ sub: 'user-1', workspace_id: 'ws-1' })
+  JSON.stringify({ sub: 'user-1', name: 'Ada Lovelace', workspace_id: 'ws-1' })
 )
   .replace(/\+/g, '-')
   .replace(/\//g, '_')
@@ -101,6 +101,7 @@ describe('startLocalWebSession', () => {
     expect(desktopHostUser.value).toEqual({
       id: 'user-1',
       email: undefined,
+      name: 'Ada Lovelace',
       workspaceId: 'ws-1'
     })
     expect(page.url).toBe('http://localhost:8188/')

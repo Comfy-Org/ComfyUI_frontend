@@ -18,7 +18,7 @@
             borderRadius: '50%'
           }"
         />
-        <i v-else class="pi pi-palette text-lg" />
+        <i v-else class="icon-[lucide--palette] size-4.5" />
       </ToggleGroupItem>
     </ToggleGroup>
     <AppColorPicker

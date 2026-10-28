@@ -2,7 +2,7 @@ import { createSharedComposable, useEventListener } from '@vueuse/core'
 import { computed, onUnmounted, ref } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { app } from '@/scripts/app'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

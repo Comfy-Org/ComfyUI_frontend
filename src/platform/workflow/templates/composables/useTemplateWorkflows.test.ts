@@ -12,7 +12,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
 function deferred<T>() {

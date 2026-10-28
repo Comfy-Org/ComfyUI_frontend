@@ -2,7 +2,16 @@ import { readFileSync } from 'node:fs'
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { z } from 'zod'
 
 import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
@@ -16,7 +25,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -27,10 +36,10 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toRootGraphId } from '@/types/graphScopeId'
-import type { RootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createUuidv4 } from '@/utils/uuid'
 
 import {
@@ -870,6 +879,7 @@ describe('attachDocOpMinter', () => {
           sources[0].connect(0, sink, 0)
         })
         const doc = mintDocFrom(graph)
+        onTestFinished(() => doc.destroy())
         docInputNames = (nodeId) =>
           readDocSlotNames(doc, String(nodeId), 'inputs')
         sources[1].connect(0, sink, 1)
@@ -896,13 +906,17 @@ describe('attachDocOpMinter', () => {
             graph = new LGraph()
             rootGraphId = toRootGraphId(graph.id)
           }
+        },
+        {
+          lifecycle: 'removing and recreating the same node identity',
+          reset: (sink: LGraphNode) => graph.remove(sink)
         }
       ])(
         'grows afresh after $lifecycle with reused node IDs',
         async ({ reset }) => {
-          const { sink, doc } = await mintUnechoedGrow()
+          const { sink } = await mintUnechoedGrow()
           const previousSinkId = sink.id
-          reset()
+          reset(sink)
           await afterFlush()
           const source = new TestSource()
           const freshSink = new TestAutogrowSink()
@@ -929,7 +943,6 @@ describe('attachDocOpMinter', () => {
               grow: expect.objectContaining({ name: freshSink.inputs[2].name })
             })
           ])
-          doc.destroy()
         }
       )
 
@@ -955,7 +968,6 @@ describe('attachDocOpMinter', () => {
           { name: `${IMAGES_GROUP}.image_3`, link: null }
         ])
         expect(reportError).not.toHaveBeenCalled()
-        doc.destroy()
       })
 
       it('wires a replacing link into the pending slot instead of growing another', async () => {
@@ -982,11 +994,10 @@ describe('attachDocOpMinter', () => {
           { name: `${IMAGES_GROUP}.image_3`, link: replacement }
         ])
         expect(reportError).not.toHaveBeenCalled()
-        doc.destroy()
       })
 
       it('resolves by name again once the echo lands', async () => {
-        const { sources, sink, doc } = await mintUnechoedGrow()
+        const { sources, sink } = await mintUnechoedGrow()
         docInputNames = (nodeId) =>
           nodeId === sink.id
             ? ['image_1', 'image_3', 'image_2'].map(
@@ -1001,7 +1012,6 @@ describe('attachDocOpMinter', () => {
         expect(minted.at(-1)).toEqual(
           expect.objectContaining({ op: 'connect', to_slot: 1 })
         )
-        doc.destroy()
       })
 
       it('grows again once a grow is cancelled with its unsent source', async () => {
@@ -1015,6 +1025,7 @@ describe('attachDocOpMinter', () => {
           sources[0].connect(0, sink, 0)
         })
         const doc = mintDocFrom(graph)
+        onTestFinished(() => doc.destroy())
         docInputNames = (nodeId) =>
           readDocSlotNames(doc, String(nodeId), 'inputs')
         sources[1].connect(0, sink, 1)
@@ -1039,7 +1050,6 @@ describe('attachDocOpMinter', () => {
             grow: expect.objectContaining({ name: sink.inputs[2].name })
           })
         ])
-        doc.destroy()
       })
 
       it('retargets a queued disconnect when an earlier grow is cancelled', async () => {
@@ -1051,6 +1061,7 @@ describe('attachDocOpMinter', () => {
           graph.add(sink)
         })
         const doc = mintDocFrom(graph)
+        onTestFinished(() => doc.destroy())
         docInputNames = (nodeId) =>
           readDocSlotNames(doc, String(nodeId), 'inputs')
         sources[0].connect(0, sink, 0)
@@ -1086,7 +1097,6 @@ describe('attachDocOpMinter', () => {
           { name: laterGrow.name, link: null }
         ])
         expect(reportError).not.toHaveBeenCalled()
-        doc.destroy()
       })
 
       it('hands a cancelled grow to the link that replaced it', async () => {
@@ -1099,6 +1109,7 @@ describe('attachDocOpMinter', () => {
           graph.add(sink)
         })
         const doc = mintDocFrom(graph)
+        onTestFinished(() => doc.destroy())
         docInputNames = (nodeId) =>
           readDocSlotNames(doc, String(nodeId), 'inputs')
         source.connect(0, sink, 0)
@@ -1127,7 +1138,6 @@ describe('attachDocOpMinter', () => {
           { name: grown.name, link: grown.link }
         ])
         expect(reportError).not.toHaveBeenCalled()
-        doc.destroy()
       })
 
       it('predicts no slot until the grows a foreign append displaced echo', async () => {
@@ -1349,6 +1359,7 @@ describe('attachDocOpMinter', () => {
             graph.add(sink)
           })
           const doc = mintDocFrom(graph)
+          onTestFinished(() => doc.destroy())
           docInputNames = (nodeId) =>
             readDocSlotNames(doc, String(nodeId), 'inputs')
           sources.forEach((source, slot) => source.connect(0, sink, slot))
@@ -1360,7 +1371,7 @@ describe('attachDocOpMinter', () => {
         it.for([{ echoed: [1] }, { echoed: [1, 2] }])(
           'targets the later grow with echoed inputs $echoed',
           async ({ echoed }) => {
-            const { sink, doc } = await mintTwoUnechoedGrows()
+            const { sink } = await mintTwoUnechoedGrows()
             const grownLink = sink.inputs[2].link
             const names = echoed.map(
               (index) => `${IMAGES_GROUP}.image_${index}`
@@ -1378,12 +1389,11 @@ describe('attachDocOpMinter', () => {
                 to_slot: 2
               }
             ])
-            doc.destroy()
           }
         )
 
         it('drops the predictions once another actor appends a slot first', async () => {
-          const { sink, doc } = await mintTwoUnechoedGrows()
+          const { sink } = await mintTwoUnechoedGrows()
           const foreign = ['image_1', 'other'].map(
             (name) => `${IMAGES_GROUP}.${name}`
           )
@@ -1396,7 +1406,6 @@ describe('attachDocOpMinter', () => {
           expect(
             vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
           ).toEqual(['agent_crdt_link_slot_not_in_doc'])
-          doc.destroy()
         })
       })
     })

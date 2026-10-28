@@ -17,7 +17,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type {
   ComfyApiWorkflow,
   WorkflowId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import type {
   ExecutedWsMessage,
   ExecutionCachedWsMessage,
@@ -36,8 +36,8 @@ import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { AppMode } from '@/utils/appMode'
 import { isAppModeValue } from '@/utils/appMode'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'

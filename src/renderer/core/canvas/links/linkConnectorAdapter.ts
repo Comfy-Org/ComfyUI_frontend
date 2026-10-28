@@ -1,12 +1,12 @@
-import type { SlotLayout } from '@/renderer/core/layout/types'
-import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { SlotLayout } from '@comfyorg/graph-model/layout'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 // Keep one adapter per graph so rendering and interaction share state.
