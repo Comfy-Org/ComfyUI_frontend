@@ -2,7 +2,12 @@ import { codeChallengeS256 } from '@comfyorg/account-core/oauthPkce'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
-import type { LocalWebAuthEnvironment } from '@/platform/auth/localWeb/localWebAuthBridge'
+import type {
+  FailedSignIn,
+  LocalWebAuthEnvironment,
+  LocalWebMessage,
+  LocalWebPopup
+} from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createLocalWebAuthBridge } from '@/platform/auth/localWeb/localWebAuthBridge'
 import type { LocalWebTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
 import {
@@ -72,10 +77,19 @@ function setup(
   const page = { url: pageUrl }
   const storage = memoryStorage()
   const clock = { now: NOW }
+  const popup = { closed: false }
+  const messages = new Set<(message: LocalWebMessage) => void>()
+  const post = (message: LocalWebMessage) =>
+    messages.forEach((listener) => listener(message))
   const env = {
     issuer: ISSUER,
     pageUrl: () => page.url,
-    navigate: vi.fn<(url: string) => void>(),
+    openPopup: vi.fn<(url: string) => LocalWebPopup | null>(() => popup),
+    onMessage(listener: (message: LocalWebMessage) => void) {
+      messages.add(listener)
+      return () => messages.delete(listener)
+    },
+    reportSignInFailure: vi.fn<(failure: FailedSignIn) => void>(),
     replaceUrl: vi.fn((url: string) => {
       page.url = url
     }),
@@ -90,7 +104,11 @@ function setup(
   const bridge = createLocalWebAuthBridge(env)
   const states: DesktopHostAuthState[] = []
   bridge.onChanged((state) => states.push(state))
-  return { bridge, env, page, storage, tokens, clock, states }
+  return { bridge, env, page, storage, tokens, clock, states, popup, post }
+}
+
+function authorizeRequest(env: { openPopup: { mock: { calls: string[][] } } }) {
+  return new URL(env.openPopup.mock.calls[0][0])
 }
 
 function formOf(init: RequestInit | undefined): Record<string, string> {
@@ -112,36 +130,129 @@ async function signedIn(expiresIn = 3600) {
   return harness
 }
 
+const CALLBACK_URI = `${ISSUER}/oauth/local-callback.html`
+
 describe('requestSignIn', () => {
-  it('keeps the verifier for the redirect and navigates to authorize with its challenge', async () => {
+  it('opens authorize in a popup with its challenge, the Cloud callback and this page in the state', async () => {
     const { bridge, env, storage } = setup()
 
     void bridge.requestSignIn()
-    await vi.waitFor(() => expect(env.navigate).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
 
     const pending = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
-    const url = new URL(env.navigate.mock.calls[0][0])
+    const url = authorizeRequest(env)
     expect(url.origin + url.pathname).toBe(`${ISSUER}/oauth/authorize`)
     expect(url.searchParams.get('client_id')).toBe('comfy-local-web')
-    expect(url.searchParams.get('redirect_uri')).toBe('http://127.0.0.1:8188/')
+    expect(url.searchParams.get('redirect_uri')).toBe(CALLBACK_URI)
     expect(url.searchParams.get('state')).toBe(pending.state)
+    expect(pending.state).toMatch(/~http%3A%2F%2F127\.0\.0\.1%3A8188$/)
     expect(url.searchParams.get('code_challenge')).toBe(
       await codeChallengeS256(pending.verifier)
     )
   })
 
-  it('never settles once it has navigated away, so callers keep what they saved for the redirect', async () => {
-    const { bridge, env } = setup()
-    const settled = vi.fn()
+  it('signs in with the code the Cloud callback posts back', async () => {
+    const { bridge, env, storage, popup, post } = setup()
+    const signingIn = bridge.requestSignIn()
+    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
 
-    void bridge.requestSignIn().then(settled, settled)
-    await vi.waitFor(() => expect(env.navigate).toHaveBeenCalledOnce())
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    post({
+      origin: ISSUER,
+      source: popup,
+      data: {
+        type: 'comfy-local-web-sign-in',
+        search: `?code=code-1&state=${encodeURIComponent(state)}`
+      }
+    })
 
-    expect(settled).not.toHaveBeenCalled()
+    await expect(signingIn).resolves.toMatchObject({
+      status: 'signed_in',
+      workspaceId: 'ws-1'
+    })
+    expect(formOf(env.fetchImpl.mock.calls[0][1])).toMatchObject({
+      grant_type: 'authorization_code',
+      code: 'code-1',
+      redirect_uri: CALLBACK_URI
+    })
   })
 
-  it('stays signed out without navigating when the verifier cannot be kept', async () => {
+  it.for([
+    { case: 'another origin', origin: 'https://evil.example.test', own: true },
+    { case: 'another window', origin: ISSUER, own: false }
+  ])('ignores a callback message from $case', async ({ origin, own }) => {
+    vi.useFakeTimers()
+    const { bridge, env, storage, popup, post } = setup()
+    const signingIn = bridge.requestSignIn()
+    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
+
+    post({
+      origin,
+      source: own ? popup : {},
+      data: {
+        type: 'comfy-local-web-sign-in',
+        search: `?code=x&state=${state}`
+      }
+    })
+    popup.closed = true
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    await expect(signingIn).resolves.toEqual({ status: 'signed_out' })
+    expect(env.fetchImpl).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('stays signed out without a message when the person closes the popup', async () => {
+    vi.useFakeTimers()
+    const { bridge, env, popup } = setup()
+    const signingIn = bridge.requestSignIn()
+    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+
+    popup.closed = true
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    await expect(signingIn).resolves.toEqual({ status: 'signed_out' })
+    expect(env.reportSignInFailure).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('says so when the browser blocks the popup', async () => {
+    const { bridge, env } = setup()
+    env.openPopup.mockReturnValueOnce(null)
+
+    await expect(bridge.requestSignIn()).resolves.toEqual({
+      status: 'signed_out'
+    })
+    expect(env.reportSignInFailure).toHaveBeenCalledWith({
+      kind: 'failed',
+      reason: 'popup-blocked'
+    })
+  })
+
+  it('reports a code the token endpoint refuses', async () => {
+    const { bridge, env, storage, popup, post } = setup()
+    env.fetchImpl.mockResolvedValueOnce(oauthError('invalid_grant'))
+    const signingIn = bridge.requestSignIn()
+    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
+
+    post({
+      origin: ISSUER,
+      source: popup,
+      data: {
+        type: 'comfy-local-web-sign-in',
+        search: `?code=code-1&state=${encodeURIComponent(state)}`
+      }
+    })
+
+    await expect(signingIn).resolves.toEqual({ status: 'signed_out' })
+    expect(env.reportSignInFailure).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'failed' })
+    )
+  })
+
+  it('stays signed out without opening anything when the verifier cannot be kept', async () => {
     const { bridge, env } = setup()
     env.sessionStorage.setItem = () => {
       throw new DOMException('blocked', 'SecurityError')
@@ -150,7 +261,7 @@ describe('requestSignIn', () => {
     await expect(bridge.requestSignIn()).resolves.toEqual({
       status: 'signed_out'
     })
-    expect(env.navigate).not.toHaveBeenCalled()
+    expect(env.openPopup).not.toHaveBeenCalled()
   })
 })
 
@@ -428,7 +539,7 @@ describe('switchWorkspace', () => {
       status: 'signed_in',
       workspaceId: 'ws-1'
     })
-    expect(env.navigate).not.toHaveBeenCalled()
+    expect(env.openPopup).not.toHaveBeenCalled()
   })
 
   it('goes to consent for a workspace this page never signed in to', async () => {
@@ -436,10 +547,8 @@ describe('switchWorkspace', () => {
 
     void bridge.switchWorkspace?.('ws-2')
 
-    await vi.waitFor(() => expect(env.navigate).toHaveBeenCalledOnce())
-    expect(new URL(env.navigate.mock.calls[0][0]).pathname).toBe(
-      '/oauth/authorize'
-    )
+    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
+    expect(authorizeRequest(env).pathname).toBe('/oauth/authorize')
   })
 
   it('switches straight back to a workspace it signed in to before', async () => {
@@ -451,7 +560,7 @@ describe('switchWorkspace', () => {
     })
     expect(states.at(-1)).toMatchObject({ workspaceId: 'ws-1' })
     await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBe(WS1_TOKEN)
-    expect(env.navigate).not.toHaveBeenCalled()
+    expect(env.openPopup).not.toHaveBeenCalled()
     expect(env.fetchImpl).not.toHaveBeenCalled()
   })
 
@@ -467,7 +576,7 @@ describe('switchWorkspace', () => {
       grant_type: 'refresh_token',
       refresh_token: 'refresh-1'
     })
-    expect(env.navigate).not.toHaveBeenCalled()
+    expect(env.openPopup).not.toHaveBeenCalled()
   })
 
   it('keeps the workspace it leaves, even one signed in to before workspaces were kept', async () => {
@@ -481,7 +590,7 @@ describe('switchWorkspace', () => {
 
     void bridge.switchWorkspace?.('ws-2')
 
-    await vi.waitFor(() => expect(env.navigate).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
     expect(tokens.readWorkspace('ws-1')?.accessToken).toBe(WS1_TOKEN)
   })
 
@@ -531,7 +640,7 @@ describe('switchWorkspace', () => {
       status: 'signed_in',
       workspaceId: 'ws-2'
     })
-    expect(env.navigate).not.toHaveBeenCalled()
+    expect(env.openPopup).not.toHaveBeenCalled()
   })
 
   it('never switches into tokens another account left behind', async () => {
@@ -545,7 +654,7 @@ describe('switchWorkspace', () => {
 
     void bridge.switchWorkspace?.('ws-2')
 
-    await vi.waitFor(() => expect(env.navigate).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
     await expect(bridge.getState()).resolves.toMatchObject({ userId: 'user-1' })
   })
 
@@ -582,7 +691,7 @@ describe('switchWorkspace', () => {
 
     void bridge.switchWorkspace?.('ws-1')
 
-    await vi.waitFor(() => expect(env.navigate).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(env.openPopup).toHaveBeenCalledOnce())
   })
 })
 

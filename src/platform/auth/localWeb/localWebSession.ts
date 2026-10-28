@@ -1,10 +1,15 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { startDesktopHostSession } from '@/platform/auth/desktopHost/desktopHostSession'
-import type { LocalWebAuthEnvironment } from '@/platform/auth/localWeb/localWebAuthBridge'
+import type {
+  FailedSignIn,
+  LocalWebAuthEnvironment
+} from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createLocalWebAuthBridge } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createStorageTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 
 /**
  * Hosts whose origin Cloud allows to read `/oauth/token` responses. `[::1]` is
@@ -16,6 +21,26 @@ const LOOPBACK_HOSTNAMES: ReadonlySet<string> = new Set([
 ])
 
 const REFRESH_LOCK_NAME = 'Comfy.LocalWebSignIn.Refresh'
+const POPUP_FEATURES = 'popup,width=520,height=720'
+
+function reportSignInFailure(failure: FailedSignIn): void {
+  reportError(new Error(`local web sign-in failed: ${failure.reason}`), {
+    errorType: 'local_web_sign_in_failed',
+    surface: 'auth',
+    context: { reason: failure.reason, oauthError: failure.error }
+  })
+}
+
+function showSignInFailure(failure: FailedSignIn): void {
+  reportSignInFailure(failure)
+  useToast().error(
+    t(
+      failure.reason === 'popup-blocked'
+        ? 'auth.desktopHost.popupBlocked'
+        : 'auth.desktopHost.signInFailed'
+    )
+  )
+}
 
 function withOriginLock<T>(task: () => Promise<T>): Promise<T> {
   return navigator.locks.request(REFRESH_LOCK_NAME, task)
@@ -25,7 +50,6 @@ function browserEnvironment(): LocalWebAuthEnvironment {
   return {
     issuer: getComfyCloudBaseUrl(),
     pageUrl: () => window.location.href,
-    navigate: (url) => window.location.assign(url),
     replaceUrl: (url) =>
       window.history.replaceState(window.history.state, '', url),
     sessionStorage: {
@@ -43,7 +67,15 @@ function browserEnvironment(): LocalWebAuthEnvironment {
     ),
     withRefreshLock: withOriginLock,
     fetchImpl: (input, init) => fetch(input, init),
-    now: () => Date.now()
+    now: () => Date.now(),
+    openPopup: (url) =>
+      window.open(url, 'comfy-local-web-sign-in', POPUP_FEATURES),
+    onMessage(listener) {
+      const onMessage = (event: MessageEvent) => listener(event)
+      window.addEventListener('message', onMessage)
+      return () => window.removeEventListener('message', onMessage)
+    },
+    reportSignInFailure: showSignInFailure
   }
 }
 
@@ -66,13 +98,7 @@ export async function startLocalWebSession(
   const bridge = createLocalWebAuthBridge(env)
   const outcome = await bridge.completeSignIn()
   const failed = outcome.kind === 'failed' && outcome.reason !== 'denied'
-  if (failed) {
-    reportError(new Error(`local web sign-in failed: ${outcome.reason}`), {
-      errorType: 'local_web_sign_in_failed',
-      surface: 'auth',
-      context: { reason: outcome.reason, oauthError: outcome.error }
-    })
-  }
+  if (failed) reportSignInFailure(outcome)
   await startDesktopHostSession(bridge)
   return failed ? 'sign-in-failed' : 'started'
 }

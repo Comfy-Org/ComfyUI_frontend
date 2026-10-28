@@ -24,6 +24,9 @@ import {
 } from '@/platform/auth/localWeb/pendingSignIn'
 
 const REFRESH_MARGIN_MS = 60_000
+const CALLBACK_PATH = '/oauth/local-callback.html'
+const CALLBACK_MESSAGE_TYPE = 'comfy-local-web-sign-in'
+const POPUP_POLL_MS = 500
 const TAB_WORKSPACE_KEY = 'Comfy.LocalWebSignIn.TabWorkspace'
 const CALLBACK_PARAMS = [
   'code',
@@ -34,26 +37,39 @@ const CALLBACK_PARAMS = [
   'iss'
 ]
 
+export interface FailedSignIn {
+  kind: 'failed'
+  reason:
+    | 'state-mismatch'
+    | 'denied'
+    | 'invalid-token'
+    | 'storage-unavailable'
+    | 'popup-blocked'
+    | TokenFailureReason
+  error?: string
+}
+
 type SignInCallbackOutcome =
   | { kind: 'none' }
   | { kind: 'signed_in' }
-  | {
-      kind: 'failed'
-      reason:
-        | 'state-mismatch'
-        | 'denied'
-        | 'invalid-token'
-        | 'storage-unavailable'
-        | TokenFailureReason
-      error?: string
-    }
+  | FailedSignIn
+
+/** The window the authorize page opened in; only its closing is observed. */
+export interface LocalWebPopup {
+  readonly closed: boolean
+}
+
+export interface LocalWebMessage {
+  readonly origin: string
+  readonly source: unknown
+  readonly data: unknown
+}
 
 export interface LocalWebAuthEnvironment {
   /** Cloud origin that runs the OAuth server. */
   issuer: string
   /** The page URL, which carries the authorize redirect on return. */
   pageUrl: () => string
-  navigate: (url: string) => void
   replaceUrl: (url: string) => void
   sessionStorage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
   tokens: LocalWebTokenStore
@@ -61,6 +77,12 @@ export interface LocalWebAuthEnvironment {
   withRefreshLock: <T>(task: () => Promise<T>) => Promise<T>
   fetchImpl: typeof fetch
   now: () => number
+  /** Opens the authorize page in a popup; null when the browser blocked it. */
+  openPopup: (url: string) => LocalWebPopup | null
+  /** Subscribes to messages posted to this page. */
+  onMessage: (listener: (message: LocalWebMessage) => void) => () => void
+  /** Tells the person a popup sign-in did not finish. */
+  reportSignInFailure: (failure: FailedSignIn) => void
 }
 
 export interface LocalWebAuthBridge extends DesktopHostAuthBridge {
@@ -219,27 +241,92 @@ export function createLocalWebAuthBridge(
 
   env.tokens.subscribe(emit)
 
+  const callbackUri = new URL(CALLBACK_PATH, env.issuer).href
+  const issuerOrigin = new URL(env.issuer).origin
+
+  function readCallbackSearch(data: unknown): string | undefined {
+    if (typeof data !== 'object' || data === null) return undefined
+    const { type, search } = data as { type?: unknown; search?: unknown }
+    return type === CALLBACK_MESSAGE_TYPE && typeof search === 'string'
+      ? search
+      : undefined
+  }
+
+  function callbackFrom(popup: LocalWebPopup): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const finish = (search: string | undefined) => {
+        stopListening()
+        clearInterval(closedPoll)
+        resolve(search)
+      }
+      const stopListening = env.onMessage((message) => {
+        if (message.origin !== issuerOrigin || message.source !== popup) return
+        const search = readCallbackSearch(message.data)
+        if (search !== undefined) finish(search)
+      })
+      const closedPoll = setInterval(() => {
+        if (popup.closed) finish(undefined)
+      }, POPUP_POLL_MS)
+    })
+  }
+
+  async function finishSignIn(
+    params: URLSearchParams,
+    redirectUri: string
+  ): Promise<SignInCallbackOutcome> {
+    const pending = takePendingSignIn(env.sessionStorage)
+    const response = readAuthorizationResponse(params, pending?.state)
+    if (response.kind === 'denied') {
+      return { kind: 'failed', reason: 'denied', error: response.error }
+    }
+    if (response.kind !== 'code' || !pending) {
+      return { kind: 'failed', reason: 'state-mismatch' }
+    }
+    const result = await exchangeAuthorizationCode(
+      { code: response.code, verifier: pending.verifier, redirectUri },
+      tokenOptions()
+    )
+    if (!result.ok) {
+      return { kind: 'failed', reason: result.reason, error: result.error }
+    }
+    forgetOtherAccount(result.tokens)
+    const adopted = adopt(result.tokens, { forNewTabs: true })
+    if (adopted !== 'adopted') return { kind: 'failed', reason: adopted }
+    emit()
+    return { kind: 'signed_in' }
+  }
+
   async function requestSignIn(): Promise<DesktopHostAuthState> {
     const pkce = await createPkceRequest().catch(() => undefined)
+    const pageOrigin = new URL(env.pageUrl()).origin
+    const state = pkce && `${pkce.state}~${encodeURIComponent(pageOrigin)}`
     if (
       !pkce ||
-      !savePendingSignIn(env.sessionStorage, {
-        verifier: pkce.verifier,
-        state: pkce.state
-      })
+      !state ||
+      !savePendingSignIn(env.sessionStorage, { verifier: pkce.verifier, state })
     ) {
       return currentState()
     }
-    env.navigate(
+    const popup = env.openPopup(
       authorizeUrl({
         issuer: env.issuer,
         clientId: LOCAL_WEB_CLIENT_ID,
-        redirectUri: localRedirectUri(new URL(env.pageUrl()).origin),
+        redirectUri: callbackUri,
         challenge: pkce.challenge,
-        state: pkce.state
+        state
       })
     )
-    return new Promise<DesktopHostAuthState>(() => {})
+    if (!popup) {
+      env.reportSignInFailure({ kind: 'failed', reason: 'popup-blocked' })
+      return currentState()
+    }
+    const search = await callbackFrom(popup)
+    if (search === undefined) return currentState()
+    const outcome = await finishSignIn(new URLSearchParams(search), callbackUri)
+    if (outcome.kind === 'failed' && outcome.reason !== 'denied') {
+      env.reportSignInFailure(outcome)
+    }
+    return currentState()
   }
 
   return {
@@ -283,38 +370,10 @@ export function createLocalWebAuthBridge(
       const isRedirect =
         url.searchParams.has('code') || url.searchParams.has('error')
       if (!isRedirect) return { kind: 'none' }
-
-      const pending = takePendingSignIn(env.sessionStorage)
-      const response = readAuthorizationResponse(
-        url.searchParams,
-        pending?.state
-      )
-
+      const params = new URLSearchParams(url.searchParams)
       CALLBACK_PARAMS.forEach((param) => url.searchParams.delete(param))
       env.replaceUrl(url.href)
-
-      if (response.kind === 'denied') {
-        return { kind: 'failed', reason: 'denied', error: response.error }
-      }
-      if (response.kind !== 'code' || !pending) {
-        return { kind: 'failed', reason: 'state-mismatch' }
-      }
-      const result = await exchangeAuthorizationCode(
-        {
-          code: response.code,
-          verifier: pending.verifier,
-          redirectUri: localRedirectUri(url.origin)
-        },
-        tokenOptions()
-      )
-      if (!result.ok) {
-        return { kind: 'failed', reason: result.reason, error: result.error }
-      }
-      forgetOtherAccount(result.tokens)
-      const adopted = adopt(result.tokens, { forNewTabs: true })
-      if (adopted !== 'adopted') return { kind: 'failed', reason: adopted }
-      emit()
-      return { kind: 'signed_in' }
+      return finishSignIn(params, localRedirectUri(url.origin))
     }
   }
 }

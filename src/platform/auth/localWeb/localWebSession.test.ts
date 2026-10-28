@@ -31,7 +31,9 @@ function environment(pageUrl: string) {
   const env = {
     issuer: 'https://cloud.example.test',
     pageUrl: () => page.url,
-    navigate: vi.fn<(url: string) => void>(),
+    openPopup: () => null,
+    onMessage: () => () => {},
+    reportSignInFailure: () => {},
     replaceUrl: vi.fn((url: string) => {
       page.url = url
     }),
