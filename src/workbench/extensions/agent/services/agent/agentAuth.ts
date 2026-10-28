@@ -34,6 +34,21 @@ async function agentAuthHeader(): Promise<AuthHeader | null> {
   }
 }
 
+/**
+ * Credential for the agent's Global Settings rows, which today means consent.
+ *
+ * The row (`Comfy.AgentPanel.ConsentAccepted`) is keyed by BOTH `workspace_id` and
+ * `user_id`, and cloud's grant check reads it with `WorkspaceIDEQ` plus `UserIDEQ`, so
+ * the credential has to pin the workspace as well as identify the user. Off-cloud this
+ * is the same workspace bearer every other agent request carries: a personal session
+ * header would leave the workspace to resolve on its own and write the row under the
+ * wrong one. It lives here because this file owns the one distribution branch.
+ */
+export async function agentSettingsAuthHeader(): Promise<AuthHeader | null> {
+  if (isCloud) return useAuthStore().getWorkspaceAuthHeader()
+  return agentAuthHeader()
+}
+
 export async function withAgentAuth(
   init: AgentRequestInit
 ): Promise<AgentRequestInit> {

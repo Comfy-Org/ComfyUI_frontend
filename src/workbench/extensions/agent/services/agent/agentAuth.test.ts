@@ -17,6 +17,7 @@ import type { AuthCredential, AuthHeader, AuthScheme } from '@/types/authTypes'
 import {
   agentSocketAuthParams,
   ensureSignedIn,
+  agentSettingsAuthHeader,
   withAgentAuth
 } from './agentAuth'
 
@@ -67,6 +68,39 @@ function signInWithout(token: undefined | Error, apiKey: boolean) {
   if (apiKey) storedApiKey('comfyui-key')
   workspaceToken(token)
 }
+
+describe('agentSettingsAuthHeader', () => {
+  // The consent row is keyed by workspace_id AND user_id, so the credential has to
+  // pin the workspace. Off-cloud this used to fall back to the personal header, which
+  // left the workspace to resolve on its own.
+  it('carries the workspace bearer off-cloud, not the personal header', async () => {
+    signInPersonal()
+    workspaceToken('workspace-token')
+
+    await expect(agentSettingsAuthHeader()).resolves.toEqual({
+      Authorization: 'Bearer workspace-token'
+    })
+  })
+
+  it('sends a stored API key as itself off-cloud', async () => {
+    storedApiKey('comfyui-key')
+
+    await expect(agentSettingsAuthHeader()).resolves.toEqual({
+      'X-API-KEY': 'comfyui-key'
+    })
+  })
+
+  it('uses the workspace header on cloud', async () => {
+    distribution.isCloud = true
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeader').mockResolvedValue({
+      Authorization: 'Bearer cloud-workspace'
+    })
+
+    await expect(agentSettingsAuthHeader()).resolves.toEqual({
+      Authorization: 'Bearer cloud-workspace'
+    })
+  })
+})
 
 describe('withAgentAuth', () => {
   it.for<{
