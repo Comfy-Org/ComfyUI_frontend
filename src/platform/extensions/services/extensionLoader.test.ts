@@ -62,9 +62,10 @@ describe('extension loading', () => {
 
       await loadExtensions()
 
-      const [cause] = vi.mocked(reportError).mock.calls[0]
+      const [cause, options] = vi.mocked(reportError).mock.calls[0]
       assert(cause instanceof AggregateError)
       expect(cause.message).toBe('Error loading extensions')
+      expect(options.tags).toEqual({ failed_extension_count: 1 })
     })
 
     it('installs the node and canvas prototype patches before core extensions register', async () => {
