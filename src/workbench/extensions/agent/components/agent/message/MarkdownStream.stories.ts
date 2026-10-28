@@ -6,23 +6,21 @@ const meta: Meta<typeof MarkdownStream> = {
   title: 'Workbench/Agent/MarkdownStream',
   component: MarkdownStream,
   parameters: { layout: 'centered' },
-  globals: { theme: 'dark' }
+  globals: { theme: 'dark' },
+  render: (args) => ({
+    components: { MarkdownStream },
+    setup: () => ({ args }),
+    template: '<div class="w-[372px]"><MarkdownStream v-bind="args" /></div>'
+  })
 }
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-const renderAtPanelWidth: Story['render'] = (args) => ({
-  components: { MarkdownStream },
-  setup: () => ({ args }),
-  template: '<div class="w-[372px]"><MarkdownStream v-bind="args" /></div>'
-})
-
 export const KeyboardShortcut: Story = {
   args: {
     text: 'Both upscalers are wired. Select the second one and press Ctrl+B to bypass it, then run again.'
-  },
-  render: renderAtPanelWidth
+  }
 }
 
 export const SeveralShortcuts: Story = {
@@ -35,13 +33,11 @@ export const SeveralShortcuts: Story = {
       '- Ctrl+Shift+E turns the selection into a subgraph',
       '- Ctrl+Enter runs the graph'
     ].join('\n')
-  },
-  render: renderAtPanelWidth
+  }
 }
 
 export const ShortcutBesideCode: Story = {
   args: {
     text: 'The prompt lives on `6.text`. Press Ctrl+Enter when you are happy with it.'
-  },
-  render: renderAtPanelWidth
+  }
 }

@@ -65,6 +65,17 @@ describe('renderShortcutKeycaps', () => {
     expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>M</kbd>')
   })
 
+  it('leaves every combo as written when one sentence holds several', () => {
+    const out = renderShortcutKeycaps(
+      '<p>Press Ctrl+C and Ctrl+V to copy and paste, then Ctrl+X to bypass it</p>',
+      resolveDefaults
+    )
+    expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>C</kbd>')
+    expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>V</kbd>')
+    expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>X</kbd>')
+    expect(out).not.toContain('<kbd>B</kbd>')
+  })
+
   it('pairs each sentence with its own action', () => {
     const out = renderShortcutKeycaps(
       '<p>Press Ctrl+X to bypass it. Then press Ctrl+Y to mute it.</p>',

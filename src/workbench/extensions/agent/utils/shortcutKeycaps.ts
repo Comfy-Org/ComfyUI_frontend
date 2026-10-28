@@ -57,12 +57,15 @@ function keysAsWritten(combo: string): string[] {
     .filter(Boolean)
 }
 
+const COMMAND_ID_BY_ACTION_PHRASE = new Map<string, string>(
+  Object.entries(CANVAS_ACTION_COMMAND_IDS)
+)
+
 function soleActionCommandId(sentence: string): string | undefined {
   const commandIds = new Set<string>()
   for (const match of sentence.matchAll(new RegExp(ACTION_SOURCE, 'gi'))) {
-    const phrase =
-      match[1].toLowerCase() as keyof typeof CANVAS_ACTION_COMMAND_IDS
-    commandIds.add(CANVAS_ACTION_COMMAND_IDS[phrase])
+    const commandId = COMMAND_ID_BY_ACTION_PHRASE.get(match[1].toLowerCase())
+    if (commandId) commandIds.add(commandId)
   }
   return commandIds.size === 1 ? [...commandIds][0] : undefined
 }
@@ -72,14 +75,14 @@ function appendSentenceWithKeycaps(
   sentence: string,
   resolve: KeySequenceResolver
 ): void {
-  const commandId = soleActionCommandId(sentence)
+  const combos = [...sentence.matchAll(new RegExp(MODIFIER_BEARING_COMBO, 'g'))]
+  const commandId =
+    combos.length === 1 ? soleActionCommandId(sentence) : undefined
   const bound = commandId ? resolve(commandId) : undefined
   const unambiguousLiveKeys = bound && bound.length > 0 ? bound : undefined
 
   let cursor = 0
-  for (const match of sentence.matchAll(
-    new RegExp(MODIFIER_BEARING_COMBO, 'g')
-  )) {
+  for (const match of combos) {
     const start = match.index
     if (start > cursor) fragment.append(sentence.slice(cursor, start))
     fragment.append(keycaps(unambiguousLiveKeys ?? keysAsWritten(match[0])))
