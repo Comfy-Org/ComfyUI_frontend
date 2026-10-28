@@ -81,8 +81,8 @@ export function useBillingDialogs() {
 
   async function showSubscriptionRequiredDialog(
     options?: SubscriptionDialogOptions
-  ) {
-    if (!isCloud) return
+  ): Promise<boolean> {
+    if (!isCloud) return false
 
     // A caller (e.g. the agent panel's paywall card) can fire this before the
     // bootstrap /features fetch resolves, most likely right after a fresh
@@ -114,11 +114,12 @@ export function useBillingDialogs() {
           errorType: 'error_opening_subscription_dialog_gate_closed'
         }
       )
-      return
+      return false
     }
 
     const { show } = useSubscriptionDialog()
     show(options)
+    return true
   }
 
   function showBillingComingSoonDialog() {

@@ -1949,6 +1949,7 @@ describe('ComfyApp', () => {
           }
         })
       )
+      mockAccountPreconditionOpen.mockResolvedValueOnce(true)
 
       await app.queuePrompt(0)
 
@@ -1956,6 +1957,29 @@ describe('ComfyApp', () => {
         'subscription'
       )
       expect(useExecutionErrorStore().lastPromptError).toBeNull()
+    })
+
+    it('falls back to the error panel when the subscription dialog cannot open', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          error: {
+            type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+            message: 'A cloud subscription is required',
+            details: ''
+          }
+        })
+      )
+      mockAccountPreconditionOpen.mockResolvedValueOnce(false)
+
+      await app.queuePrompt(0)
+
+      expect(mockAccountPreconditionOpen).toHaveBeenCalledExactlyOnceWith(
+        'subscription'
+      )
+      expect(useExecutionErrorStore().lastPromptError).toMatchObject({
+        type: 'CLOUD_SUBSCRIPTION_REQUIRED'
+      })
     })
 
     it('records a rejected submission on the workflow that queued it', async () => {

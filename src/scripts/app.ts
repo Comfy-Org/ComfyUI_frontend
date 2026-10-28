@@ -815,7 +815,7 @@ export class ComfyApp implements IComfyApp {
         exceptionMessage: detail.exception_message
       })
       if (precondition) {
-        useAccountPreconditionDialog().open(precondition, {
+        void useAccountPreconditionDialog().open(precondition, {
           nodeType: detail.node_type
         })
       }
@@ -1975,12 +1975,13 @@ export class ComfyApp implements IComfyApp {
                   exceptionMessage: promptError.message
                 })
               : undefined
-            // Account preconditions (sign-in, subscription, credits) open their
-            // own modal and must stay out of the error panel and error count.
             if (promptPrecondition) {
-              useAccountPreconditionDialog().open(promptPrecondition)
-              console.error(error)
-              break
+              const opened =
+                await useAccountPreconditionDialog().open(promptPrecondition)
+              if (opened) {
+                console.error(error)
+                break
+              }
             }
             if (
               error instanceof PromptExecutionError &&

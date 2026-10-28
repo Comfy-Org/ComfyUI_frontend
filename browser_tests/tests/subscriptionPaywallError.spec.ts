@@ -28,7 +28,7 @@ test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
     })
   }
 
-  test('keeps the subscription paywall out of the error panel', async ({
+  test('falls back when the subscription dialog is unavailable', async ({
     comfyPage
   }) => {
     await mockQueueError(comfyPage.page, {
@@ -44,7 +44,7 @@ test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
 
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-    ).toBeHidden()
+    ).toBeVisible()
   })
 
   test.describe('cloud-subscription 402', () => {
@@ -65,7 +65,7 @@ test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
       })
     })
 
-    test('keeps the cloud-subscription 402 out of the error panel', async ({
+    test('falls back when the cloud subscription dialog is unavailable', async ({
       comfyPage
     }) => {
       const refused = comfyPage.page.waitForResponse(
@@ -79,7 +79,7 @@ test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
 
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-      ).toBeHidden()
+      ).toBeVisible()
     })
   })
 

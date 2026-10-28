@@ -106,7 +106,7 @@ export interface ExtensionDialogService extends CoreDialogService {
   ): Promise<DialogInstance | undefined>
   showSubscriptionRequiredDialog(
     options?: SubscriptionDialogOptions
-  ): Promise<void>
+  ): Promise<boolean>
   showBillingComingSoonDialog(): DialogInstance
   showCancelSubscriptionDialog(
     cancelAt?: string,
