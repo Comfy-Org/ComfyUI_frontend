@@ -629,7 +629,7 @@ describe('useAgentConsent', () => {
   // and user_id together, so the user would appear not to have consented.
   it('writes no consent when the account has no workspace token', async () => {
     const onOpen = vi.fn()
-    void useAgentConsent().withConsent('button_click', onOpen)
+    const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
     vi.mocked(useAuthStore().getWorkspaceAuthTokenOrThrow).mockRejectedValue(
       new Error('token exchange failed')
@@ -650,6 +650,11 @@ describe('useAgentConsent', () => {
     )
     expect(useAuthStore().getUserAuthHeader).not.toHaveBeenCalled()
     expect(onOpen).not.toHaveBeenCalled()
+
+    // A failed save leaves the card open, so settle the request rather than letting
+    // it and its scope watcher outlive the test.
+    useDialogStore().closeDialog({ key: 'agent-consent' })
+    await request
   })
 
   it('keeps a missing-auth save retryable in the same account', async () => {
