@@ -532,7 +532,7 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(log).toContain('canvas.onNodeMoved')
     })
 
-    it.fails('releases a hovered node with the pointerup event', () => {
+    it('releases a hovered node with the pointerup event', () => {
       canvas.visible_nodes = [...graph.nodes]
       gesture.move(A_BODY)
       gesture.press(A_BODY)
