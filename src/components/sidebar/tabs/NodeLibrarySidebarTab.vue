@@ -29,7 +29,7 @@
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            class="max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+            class="w-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
             dismiss-on-viewport-change
           >
             <div class="flex flex-col gap-1 p-2">
@@ -66,7 +66,7 @@
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            class="max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+            class="w-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
             dismiss-on-viewport-change
           >
             <div class="flex flex-col gap-1 p-2">
@@ -136,7 +136,7 @@
                 </Button>
               </PopoverTrigger>
               <PopoverContent
-                class="ml-[-13px] max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
+                class="ml-[-13px] w-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=open]:animate-none"
                 dismiss-on-viewport-change
               >
                 <NodeSearchFilter @add-filter="onAddFilter" />
