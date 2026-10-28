@@ -40,11 +40,11 @@ interface ScriptLoader {
   reportFailures: (failures: LateScriptFailure[]) => void
 }
 
-const LATE_EXTENSION_WAIT_MS = 2000
-const LATE_EXTENSION_RETRY_MS = 5000
+const LATE_CUSTOM_NODE_WAIT_MS = 2000
+const LATE_CUSTOM_NODE_RETRY_MS = 5000
 const CPU_SERVER_FIRST_ANSWER_WAIT_MS = 1000
 const ARTIST_PAUSE_TIMEOUT_MS = 30_000
-const LATE_EXTENSION_ERROR_TYPE = 'late_extension_failed'
+const LATE_CUSTOM_NODE_ERROR_TYPE = 'late_extension_failed'
 
 const MODULE_FETCH_FAILURES = [
   'Failed to fetch dynamically imported module',
@@ -186,13 +186,13 @@ async function rebuildOpenWorkflow() {
   workflow.isModified = wasModified
 }
 
-function reportLateExtensionFailure(
+function reportLateCustomNodeFailure(
   extension: ComfyExtension,
   step: string,
   error: unknown
 ) {
   reportError(error, {
-    errorType: LATE_EXTENSION_ERROR_TYPE,
+    errorType: LATE_CUSTOM_NODE_ERROR_TYPE,
     surface: 'platform',
     level: 'warning',
     tags: { extension: extension.name, step }
@@ -201,35 +201,35 @@ function reportLateExtensionFailure(
 
 function reportStartupHookFailures(failures: StartupHookFailure[]) {
   for (const { extension, method, error } of failures)
-    reportLateExtensionFailure(extension, method, error)
+    reportLateCustomNodeFailure(extension, method, error)
 }
 
-function registerHeldExtensions(last: boolean) {
+function registerHeldCustomNodes(last: boolean) {
   const service = useExtensionService()
   const extensionStore = useExtensionStore()
   const held = last
-    ? extensionStore.stopHoldingExtensions()
-    : extensionStore.takeHeldExtensions()
+    ? extensionStore.stopHoldingCustomNodes()
+    : extensionStore.takeHeldCustomNodes()
   const registered = held.filter((extension) => {
     try {
       service.registerExtensionNow(extension)
       return true
     } catch (error) {
-      reportLateExtensionFailure(extension, 'register', error)
+      reportLateCustomNodeFailure(extension, 'register', error)
       return false
     }
   })
   return { registered, allRegistered: registered.length === held.length }
 }
 
-function keepHeldExtensionsForNextEditor() {
-  registerHeldExtensions(true)
-  useExtensionStore().finishLateExtensions()
+function keepHeldCustomNodesForNextEditor() {
+  registerHeldCustomNodes(true)
+  useExtensionStore().finishLateCustomNodes()
 }
 
 function reportNodeDefsFailure(error: unknown) {
   reportError(error, {
-    errorType: LATE_EXTENSION_ERROR_TYPE,
+    errorType: LATE_CUSTOM_NODE_ERROR_TYPE,
     surface: 'platform',
     level: 'warning',
     tags: { step: 'getNodeDefs' }
@@ -249,7 +249,7 @@ async function fetchNodeDefs() {
   return undefined
 }
 
-async function startLateExtensions(
+async function startLateCustomNodes(
   extensions: ComfyExtension[]
 ): Promise<boolean> {
   const service = useExtensionService()
@@ -291,11 +291,11 @@ async function runLateBatch(
   })
   if (work.isAborted()) return { turnedOn: false, allStarted: false }
 
-  const { registered, allRegistered } = registerHeldExtensions(last)
+  const { registered, allRegistered } = registerHeldCustomNodes(last)
   const allHooksRan =
-    registered.length === 0 || (await startLateExtensions(registered))
+    registered.length === 0 || (await startLateCustomNodes(registered))
   if (work.isAborted()) return { turnedOn: false, allStarted: false }
-  if (last) useExtensionStore().finishLateExtensions()
+  if (last) useExtensionStore().finishLateCustomNodes()
   if (last || registered.length > 0) await rebuildOpenWorkflow()
   return {
     turnedOn: registered.length > 0,
@@ -324,7 +324,7 @@ async function retryFetchFailures(
   failures: LateScriptFailure[],
   { loader, waiting, signal, server }: LateRun
 ): Promise<LateScriptFailure[]> {
-  const waited = await delay(LATE_EXTENSION_RETRY_MS, { signal }).then(
+  const waited = await delay(LATE_CUSTOM_NODE_RETRY_MS, { signal }).then(
     () => true,
     () => false
   )
@@ -382,11 +382,11 @@ function showOutcome({ turnedOn, allStarted, failedAgain }: LateOutcome) {
   else if (turnedOn && allStarted) showReadyToast()
 }
 
-async function turnOnLateExtensions(run: LateRun, startedAt: number) {
+async function turnOnLateCustomNodes(run: LateRun, startedAt: number) {
   const starting = showStartingToast(startedAt, run.waiting, run.server.step)
   const work = watchLateWork(run.signal, () => {
     starting.dismiss()
-    keepHeldExtensionsForNextEditor()
+    keepHeldCustomNodesForNextEditor()
   })
   try {
     const outcome = await turnOnInBatches(run, work, starting.refresh)
@@ -395,7 +395,7 @@ async function turnOnLateExtensions(run: LateRun, startedAt: number) {
   } catch (error) {
     if (!run.signal.aborted)
       reportError(error, {
-        errorType: LATE_EXTENSION_ERROR_TYPE,
+        errorType: LATE_CUSTOM_NODE_ERROR_TYPE,
         surface: 'platform',
         level: 'warning'
       })
@@ -403,7 +403,7 @@ async function turnOnLateExtensions(run: LateRun, startedAt: number) {
     run.stopWatchingServer()
     starting.dismiss()
     work.stop()
-    if (!work.isAborted()) useExtensionStore().finishLateExtensions()
+    if (!work.isAborted()) useExtensionStore().finishLateCustomNodes()
   }
 }
 
@@ -418,8 +418,8 @@ function startLateRun(
     firstReading,
     AbortSignal.any([run.signal, watching.signal])
   )
-  useExtensionStore().holdNewExtensions()
-  void turnOnLateExtensions(
+  useExtensionStore().holdNewCustomNodes()
+  void turnOnLateCustomNodes(
     {
       ...run,
       firstTries: firstTries(server),
@@ -431,17 +431,17 @@ function startLateRun(
 }
 
 /** Loads custom scripts with a two-second wait; later arrivals are turned on until `signal` aborts. */
-export async function loadCustomExtensionsWithDeadline(
-  extensions: string[],
+export async function loadCustomNodesWithDeadline(
+  scripts: string[],
   loader: ScriptLoader,
   signal: AbortSignal,
   firstReading: Promise<CpuServerReading>
 ) {
   const startedAt = Date.now()
-  const waiting = new Set(extensions)
+  const waiting = new Set(scripts)
   const importAll = () =>
     Promise.all(
-      extensions.map((ext) =>
+      scripts.map((ext) =>
         loader.importScript(ext).finally(() => waiting.delete(ext))
       )
     )
@@ -466,7 +466,7 @@ export async function loadCustomExtensionsWithDeadline(
   const firstTries = importAll()
   const settledInTime = await Promise.race([
     firstTries.then(() => true),
-    delay(Math.max(0, startedAt + LATE_EXTENSION_WAIT_MS - Date.now())).then(
+    delay(Math.max(0, startedAt + LATE_CUSTOM_NODE_WAIT_MS - Date.now())).then(
       () => false
     )
   ])

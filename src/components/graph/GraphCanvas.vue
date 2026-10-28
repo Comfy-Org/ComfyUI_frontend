@@ -542,7 +542,7 @@ useEventListener(
 )
 
 let disposed = false
-const lateExtensionWork = new AbortController()
+const lateCustomNodeWork = new AbortController()
 const startupOwner = Symbol()
 
 function finishStartup(outcome: 'completed' | 'failed') {
@@ -604,7 +604,7 @@ onMounted(async () => {
     }
 
     await bootstrapTracer.settle('bootstrap/extensions-load', () =>
-      loadExtensions(lateExtensionWork.signal)
+      loadExtensions(lateCustomNodeWork.signal)
     )
 
     const canvas = canvasRef.value
@@ -678,7 +678,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   disposed = true
-  lateExtensionWork.abort()
+  lateCustomNodeWork.abort()
   void nextTick(() => {
     if (activeStartup !== startupOwner) return
     activeStartup = undefined

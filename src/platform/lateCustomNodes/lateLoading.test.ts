@@ -27,7 +27,7 @@ import {
 
 import {
   importNoticingFetchFailure,
-  loadCustomExtensionsWithDeadline
+  loadCustomNodesWithDeadline
 } from './lateLoading'
 import { nodeTypesMayStillArrive } from './lateNodeTypes'
 
@@ -897,7 +897,7 @@ describe('late custom node loading', () => {
   ])('$name', async ({ attempts, runs: expectedRuns }) => {
     const { runs, loader } = preloadHelperLoader(attempts)
 
-    void loadCustomExtensionsWithDeadline(
+    void loadCustomNodesWithDeadline(
       Object.keys(attempts),
       loader,
       new AbortController().signal,
@@ -921,7 +921,7 @@ describe('late custom node loading', () => {
       ]
     })
 
-    void loadCustomExtensionsWithDeadline(
+    void loadCustomNodesWithDeadline(
       [main, backup],
       loader,
       new AbortController().signal,

@@ -91,9 +91,9 @@ export const useExtensionService = () => {
    * @returns A disposer that stops the extension's auth hooks and unregisters it.
    */
   const registerExtension = (extension: ComfyExtension) => {
-    if (extensionStore.isHoldingExtensions) {
-      extensionStore.holdExtension(extension)
-      return once(() => extensionStore.releaseHeldExtension(extension))
+    if (extensionStore.isHoldingCustomNodes) {
+      extensionStore.holdCustomNode(extension)
+      return once(() => extensionStore.releaseHeldCustomNode(extension))
     }
     return registerExtensionNow(extension)
   }

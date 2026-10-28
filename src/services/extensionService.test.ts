@@ -412,63 +412,63 @@ describe('invokeExtensionsAsync', () => {
 describe('holding new extensions', () => {
   it('keeps extensions registered while holding aside, in order, without calling them', () => {
     const init = vi.fn()
-    useExtensionStore().holdNewExtensions()
+    useExtensionStore().holdNewCustomNodes()
 
     useExtensionService().registerExtension({ name: 'a', init })
     useExtensionService().registerExtension({ name: 'b' })
 
-    expect(useExtensionStore().isHoldingExtensions).toBe(true)
+    expect(useExtensionStore().isHoldingCustomNodes).toBe(true)
     expect(useExtensionStore().isExtensionInstalled('a')).toBe(false)
     expect(
       useExtensionStore()
-        .stopHoldingExtensions()
+        .stopHoldingCustomNodes()
         .map(({ name }) => name)
     ).toEqual(['a', 'b'])
     expect(init).not.toHaveBeenCalled()
   })
 
   it('hands over what was held so far and goes on holding', () => {
-    useExtensionStore().holdNewExtensions()
+    useExtensionStore().holdNewCustomNodes()
     useExtensionService().registerExtension({ name: 'first' })
 
-    const taken = useExtensionStore().takeHeldExtensions()
+    const taken = useExtensionStore().takeHeldCustomNodes()
     useExtensionService().registerExtension({ name: 'second' })
 
     expect(taken.map(({ name }) => name)).toEqual(['first'])
     expect(useExtensionStore().isExtensionInstalled('second')).toBe(false)
     expect(
       useExtensionStore()
-        .stopHoldingExtensions()
+        .stopHoldingCustomNodes()
         .map(({ name }) => name)
     ).toEqual(['second'])
   })
 
   it('drops a held extension whose disposer runs before holding stops', () => {
-    useExtensionStore().holdNewExtensions()
+    useExtensionStore().holdNewCustomNodes()
     const dispose = useExtensionService().registerExtension({ name: 'gone' })
 
     dispose()
 
-    expect(useExtensionStore().stopHoldingExtensions()).toEqual([])
+    expect(useExtensionStore().stopHoldingCustomNodes()).toEqual([])
   })
 
   it('registers as always once holding stops', () => {
-    useExtensionStore().holdNewExtensions()
-    useExtensionStore().stopHoldingExtensions()
+    useExtensionStore().holdNewCustomNodes()
+    useExtensionStore().stopHoldingCustomNodes()
 
     useExtensionService().registerExtension({ name: 'after' })
 
-    expect(useExtensionStore().isHoldingExtensions).toBe(false)
+    expect(useExtensionStore().isHoldingCustomNodes).toBe(false)
     expect(useExtensionStore().isExtensionInstalled('after')).toBe(true)
   })
 
   it('registers an extension on demand while holding goes on', () => {
-    useExtensionStore().holdNewExtensions()
+    useExtensionStore().holdNewCustomNodes()
 
     useExtensionService().registerExtensionNow({ name: 'now' })
 
     expect(useExtensionStore().isExtensionInstalled('now')).toBe(true)
-    expect(useExtensionStore().isHoldingExtensions).toBe(true)
+    expect(useExtensionStore().isHoldingCustomNodes).toBe(true)
   })
 })
 

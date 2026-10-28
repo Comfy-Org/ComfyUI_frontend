@@ -1,15 +1,15 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { EXTENSION_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/extensionLoadTelemetry'
+import { CUSTOM_NODE_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/customNodeLoadTelemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
-import type { ExtensionLoadFailure } from './extensionLoader'
+import type { CustomNodeLoadFailure } from './extensionLoader'
 import {
   loadExtensions,
-  reportExtensionLoadFailures,
-  shouldLoadExtension
+  reportCustomNodeLoadFailures,
+  shouldLoadCustomNodeScript
 } from './extensionLoader'
 
 const coreLoad = vi.hoisted(() => ({
@@ -34,43 +34,45 @@ const beforeLoad = {
   processMouseMove: LGraphCanvas.prototype.processMouseMove
 }
 
-describe('shouldLoadExtension', () => {
+describe('shouldLoadCustomNodeScript', () => {
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'skips the inlined Cloud extension %s in cloud builds',
     (extension) => {
-      expect(shouldLoadExtension(extension, true)).toBe(false)
+      expect(shouldLoadCustomNodeScript(extension, true)).toBe(false)
     }
   )
 
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'keeps the legacy path %s available outside cloud builds',
     (extension) => {
-      expect(shouldLoadExtension(extension, false)).toBe(true)
+      expect(shouldLoadCustomNodeScript(extension, false)).toBe(true)
     }
   )
 
   it('skips core extensions that load through the core entry point', () => {
-    expect(shouldLoadExtension('/extensions/core/foo.js', false)).toBe(false)
+    expect(shouldLoadCustomNodeScript('/extensions/core/foo.js', false)).toBe(
+      false
+    )
   })
 
   it('loads other extensions', () => {
-    expect(shouldLoadExtension('/extensions/comfyui-foo/main.js', true)).toBe(
-      true
-    )
+    expect(
+      shouldLoadCustomNodeScript('/extensions/comfyui-foo/main.js', true)
+    ).toBe(true)
   })
 })
 
 const BROKEN = '/extensions/comfyui-broken/main.js'
 
 describe('extension loading', () => {
-  const failureFor = (ext: string): ExtensionLoadFailure => ({
+  const failureFor = (ext: string): CustomNodeLoadFailure => ({
     ext,
     error: new Error(`Cannot find module '${ext}'`)
   })
 
-  describe('reportExtensionLoadFailures', () => {
+  describe('reportCustomNodeLoadFailures', () => {
     it('stays silent when nothing failed', () => {
-      reportExtensionLoadFailures([])
+      reportCustomNodeLoadFailures([])
 
       expect(reportError).not.toHaveBeenCalled()
     })
@@ -83,7 +85,7 @@ describe('extension loading', () => {
         { ext: '/extensions/b/b.js', error: secondError }
       ]
 
-      reportExtensionLoadFailures(failures)
+      reportCustomNodeLoadFailures(failures)
 
       expect(reportError).toHaveBeenCalledOnce()
       const [cause, options] = vi.mocked(reportError).mock.calls[0]
@@ -117,7 +119,7 @@ describe('extension loading', () => {
     })
 
     it('keeps a batch at the cap untruncated', () => {
-      reportExtensionLoadFailures(
+      reportCustomNodeLoadFailures(
         Array.from({ length: 10 }, (_, i) =>
           failureFor(`/extensions/pack-${i}/main.js`)
         )
@@ -125,7 +127,7 @@ describe('extension loading', () => {
 
       expect(
         vi.mocked(reportError).mock.calls[0][1].context
-      ).not.toHaveProperty(EXTENSION_FAILURES_TRUNCATED_FIELD)
+      ).not.toHaveProperty(CUSTOM_NODE_FAILURES_TRUNCATED_FIELD)
     })
 
     it('elides the tail once past the naming cap', () => {
@@ -133,7 +135,7 @@ describe('extension loading', () => {
         failureFor(`/extensions/pack-${i}/main.js`)
       )
 
-      reportExtensionLoadFailures(failures)
+      reportCustomNodeLoadFailures(failures)
 
       const [cause, options] = vi.mocked(reportError).mock.calls[0]
       assert(cause instanceof AggregateError)
@@ -142,14 +144,14 @@ describe('extension loading', () => {
       expect(cause.stack).not.toContain('/extensions/pack-10/main.js')
       expect(options.tags).toMatchObject({ failed_extension_count: 13 })
       expect(options.context?.failures).toHaveLength(10)
-      expect(options.context?.[EXTENSION_FAILURES_TRUNCATED_FIELD]).toBe(true)
+      expect(options.context?.[CUSTOM_NODE_FAILURES_TRUNCATED_FIELD]).toBe(true)
     })
 
     it('caps each failure path, message, and stack', () => {
       const error = new Error('m'.repeat(5000))
       error.stack = 's'.repeat(5000)
 
-      reportExtensionLoadFailures([
+      reportCustomNodeLoadFailures([
         { ext: `/extensions/comfyui-foo/${'a'.repeat(600)}.js`, error }
       ])
 
@@ -199,7 +201,7 @@ describe('extension loading', () => {
         })()
       }
     ])('reports $name as an unknown load failure', ({ error }) => {
-      reportExtensionLoadFailures([{ ext: BROKEN, error }])
+      reportCustomNodeLoadFailures([{ ext: BROKEN, error }])
 
       expect(vi.mocked(reportError).mock.calls[0][1].context?.failures).toEqual(
         [
@@ -213,7 +215,7 @@ describe('extension loading', () => {
     })
 
     it('records a stack only when the rejection is an Error', () => {
-      reportExtensionLoadFailures([
+      reportCustomNodeLoadFailures([
         {
           ext: BROKEN,
           error: {
@@ -229,7 +231,7 @@ describe('extension loading', () => {
     })
 
     it('does not pair its own console line with the report', () => {
-      reportExtensionLoadFailures([failureFor(BROKEN)])
+      reportCustomNodeLoadFailures([failureFor(BROKEN)])
 
       expect(console.error).not.toHaveBeenCalled()
       expect(console.warn).not.toHaveBeenCalled()

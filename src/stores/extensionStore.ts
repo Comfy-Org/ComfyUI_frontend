@@ -84,20 +84,20 @@ export const useExtensionStore = defineStore('extension', () => {
   }
 
   const registration = shallowRef<Registration>({ mode: 'immediate' })
-  const isHoldingExtensions = computed(
+  const isHoldingCustomNodes = computed(
     () => registration.value.mode === 'holding'
   )
-  const areLateExtensionsPending = computed(
+  const areLateCustomNodesPending = computed(
     () => registration.value.mode !== 'immediate'
   )
 
   /** From now on the extension service holds new extensions instead of registering them. */
-  function holdNewExtensions() {
+  function holdNewCustomNodes() {
     if (registration.value.mode === 'immediate')
       registration.value = { mode: 'holding', held: [] }
   }
 
-  function holdExtension(extension: ComfyExtension) {
+  function holdCustomNode(extension: ComfyExtension) {
     const current = registration.value
     if (current.mode === 'holding')
       registration.value = {
@@ -106,7 +106,7 @@ export const useExtensionStore = defineStore('extension', () => {
       }
   }
 
-  function releaseHeldExtension(extension: ComfyExtension) {
+  function releaseHeldCustomNode(extension: ComfyExtension) {
     const current = registration.value
     if (current.mode === 'holding')
       registration.value = {
@@ -116,22 +116,22 @@ export const useExtensionStore = defineStore('extension', () => {
   }
 
   /** Returns the extensions held so far, in registration order; holding goes on. */
-  function takeHeldExtensions(): ComfyExtension[] {
+  function takeHeldCustomNodes(): ComfyExtension[] {
     const current = registration.value
     if (current.mode !== 'holding') return []
     registration.value = { mode: 'holding', held: [] }
     return [...current.held]
   }
 
-  /** Ends holding and returns the extensions still held; they stay pending until `finishLateExtensions`. */
-  function stopHoldingExtensions(): ComfyExtension[] {
+  /** Ends holding and returns the extensions still held; they stay pending until `finishLateCustomNodes`. */
+  function stopHoldingCustomNodes(): ComfyExtension[] {
     const current = registration.value
     if (current.mode !== 'holding') return []
     registration.value = { mode: 'starting' }
     return [...current.held]
   }
 
-  function finishLateExtensions() {
+  function finishLateCustomNodes() {
     registration.value = { mode: 'immediate' }
   }
 
@@ -196,14 +196,14 @@ export const useExtensionStore = defineStore('extension', () => {
     isExtensionReadOnly,
     registerExtension,
     unregisterExtension,
-    isHoldingExtensions,
-    areLateExtensionsPending,
-    holdNewExtensions,
-    holdExtension,
-    releaseHeldExtension,
-    takeHeldExtensions,
-    stopHoldingExtensions,
-    finishLateExtensions,
+    isHoldingCustomNodes,
+    areLateCustomNodesPending,
+    holdNewCustomNodes,
+    holdCustomNode,
+    releaseHeldCustomNode,
+    takeHeldCustomNodes,
+    stopHoldingCustomNodes,
+    finishLateCustomNodes,
     oweNodeDefHooks,
     areNodeDefHooksOwed,
     takeOwedNodeDefHooks,
