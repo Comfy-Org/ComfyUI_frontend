@@ -40,12 +40,13 @@ const titleHeightOf = (node: LGraphNode): number => {
 
 const toBox = (node: LGraphNode): NodeBox => {
   const titleHeight = titleHeightOf(node)
+  const [width, height] = node.renderingSize
   return {
     id: node.id,
     posX: node.pos[0],
     posY: node.pos[1],
-    visualWidth: node.size[0],
-    visualHeight: node.size[1] + titleHeight,
+    visualWidth: width,
+    visualHeight: height + titleHeight,
     titleHeight
   }
 }
@@ -116,8 +117,8 @@ const arrangeGrid = (
   const cols = Math.ceil(Math.sqrt(sorted.length))
   const rows = Math.ceil(sorted.length / cols)
 
-  const colWidths = new Array<number>(cols).fill(0)
-  const rowHeights = new Array<number>(rows).fill(0)
+  const colWidths = Array.from({ length: cols }, () => 0)
+  const rowHeights = Array.from({ length: rows }, () => 0)
   sorted.forEach((box, i) => {
     const col = i % cols
     const row = Math.floor(i / cols)

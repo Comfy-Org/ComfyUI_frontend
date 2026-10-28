@@ -8,7 +8,6 @@ import {
 import type { SupportedLocale } from '@/locales/localeConfig'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-// Import only English locale eagerly as the default/fallback
 import enCommands from './locales/en/commands.json' with { type: 'json' }
 import en from './locales/en/main.json' with { type: 'json' }
 import enNodes from './locales/en/nodeDefs.json' with { type: 'json' }
@@ -284,35 +283,57 @@ export function resolveNodeDefSlotText(
   )
 }
 
-// Only include English in the initial bundle; other locales lazy-load.
-const enMessages = buildLocale(en, enNodes, enCommands, enSettings)
-type LocaleMessages = typeof enMessages
-
-const messages: Partial<Record<SupportedLocale, LocaleMessages>> = {
-  en: enMessages
+type LocaleMessages = typeof en & {
+  nodeDefs: typeof enNodes
+  commands: typeof enCommands
+  settings: typeof enSettings
 }
 
-export const i18n = createI18n({
-  // Must set `false`, as Vue I18n Legacy API is for Vue 2
-  legacy: false,
-  locale: getDefaultLocale(),
-  fallbackLocale: 'en',
-  escapeParameter: true,
-  messages,
-  // Ignore warnings for locale options as each option is in its own language.
-  // e.g. "English", "中文", "Русский", "日本語", "한국어", "Français", "Español"
-  missingWarn: /^(?!settings\.Comfy_Locale\.options\.).+/,
-  fallbackWarn: /^(?!settings\.Comfy_Locale\.options\.).+/
-})
+export const FALLBACK_LOCALE = 'en'
 
-/** Convenience shorthand: i18n.global */
-export const t: (typeof i18n.global)['t'] = i18n.global.t
-// vue-i18n 11's te() consults the fallback locale; default to the active
-// locale to preserve the v9 behavior our fallback paths rely on.
-export const te: (typeof i18n.global)['te'] = (key, locale) =>
+function createAppI18n() {
+  const messages: Partial<Record<SupportedLocale, LocaleMessages>> = {
+    en: buildLocale(en, enNodes, enCommands, enSettings)
+  }
+  return createI18n({
+    legacy: false,
+    locale: getDefaultLocale(),
+    fallbackLocale: FALLBACK_LOCALE,
+    escapeParameter: true,
+    messages,
+    missingWarn: /^(?!settings\.Comfy_Locale\.options\.).+/,
+    fallbackWarn: /^(?!settings\.Comfy_Locale\.options\.).+/
+  })
+}
+
+type AppI18n = ReturnType<typeof createAppI18n>
+type AppComposer = AppI18n['global']
+
+let appI18n: AppI18n | undefined
+
+function appI18nInstance(): AppI18n {
+  return (appI18n ??= createAppI18n())
+}
+
+/** The app's i18n plugin, created on first use rather than at import. */
+export const i18n: AppI18n = {
+  get mode() {
+    return appI18nInstance().mode
+  },
+  get global() {
+    return appI18nInstance().global
+  },
+  install: (app, ...options) => appI18nInstance().install(app, ...options),
+  dispose: () => appI18nInstance().dispose()
+}
+
+export const t: AppComposer['t'] = (...args: unknown[]): string =>
+  Reflect.apply(i18n.global.t, undefined, args)
+export const te: AppComposer['te'] = (key, locale) =>
   i18n.global.te(key, locale ?? i18n.global.locale.value)
-export const d: (typeof i18n.global)['d'] = i18n.global.d
-const tm = i18n.global.tm
+export const d: AppComposer['d'] = (...args: unknown[]): string =>
+  Reflect.apply(i18n.global.d, undefined, args)
+const tm: AppComposer['tm'] = (key) => i18n.global.tm(key)
 
 function rawTranslationOrFallback(key: string, fallbackMessage: string) {
   const message = tm(key)

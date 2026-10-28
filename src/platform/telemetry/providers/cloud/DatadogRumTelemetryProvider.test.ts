@@ -1,10 +1,17 @@
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
+import type { SsoTelemetryEvent } from '@comfyorg/account-core/telemetry'
 import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { DEFAULT_LIGHT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-import type { BillingTelemetryEvent } from '../../types'
-import { TelemetryEvents } from '../../types'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { TelemetryEvents } from '@/platform/telemetry/types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
 const {
@@ -48,6 +55,67 @@ const workflowExecutionIntent = {
 } as const
 
 describe('DatadogRumTelemetryProvider', () => {
+  it.for([
+    { paletteId: 'dark', expectedScheme: 'dark' },
+    { paletteId: 'light', expectedScheme: 'light' },
+    { paletteId: 'nord', expectedScheme: 'dark' }
+  ])(
+    'reports the active $paletteId theme after startup',
+    ({ paletteId, expectedScheme }) => {
+      useColorPaletteStore().activePaletteId = paletteId
+      const registry = new TelemetryRegistry()
+      registry.registerProvider(new DatadogRumTelemetryProvider())
+
+      registry.trackBootstrapComplete({
+        outcome: 'completed',
+        total_ms: 123,
+        phase_count: 0,
+        untraced_ms: 123,
+        phases: {}
+      })
+
+      expect(addAction).toHaveBeenCalledExactlyOnceWith('app:theme_loaded', {
+        theme: paletteId,
+        color_scheme: expectedScheme
+      })
+    }
+  )
+
+  it('reports custom themes without sending their user-defined IDs', () => {
+    useColorPaletteStore().addCustomPalette({
+      ...DEFAULT_LIGHT_COLOR_PALETTE,
+      id: 'private-palette-name'
+    })
+
+    new DatadogRumTelemetryProvider().trackBootstrapComplete({
+      outcome: 'completed',
+      total_ms: 123,
+      phase_count: 0,
+      untraced_ms: 123,
+      phases: {}
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith('app:theme_loaded', {
+      theme: 'custom',
+      color_scheme: 'light'
+    })
+  })
+
+  it.for(['failed', 'timed_out'] as const)(
+    'does not report a loaded theme for %s startup',
+    (outcome) => {
+      new DatadogRumTelemetryProvider().trackBootstrapComplete({
+        outcome,
+        total_ms: 123,
+        phase_count: 0,
+        untraced_ms: 123,
+        phases: {}
+      })
+
+      expect(addAction).not.toHaveBeenCalled()
+    }
+  )
+
   it('identifies restored sessions and replaces identity on account changes', () => {
     const provider = new DatadogRumTelemetryProvider()
     provider.trackUserLoggedIn()
@@ -77,6 +145,72 @@ describe('DatadogRumTelemetryProvider', () => {
 
     expect(setUser).not.toHaveBeenCalled()
     expect(useCurrentUser().onUserLogout).not.toHaveBeenCalled()
+  })
+  it.for(['subscription_checkout', 'topup'] as const)(
+    'emits %s phase and terminal events as RUM actions',
+    (operation) => {
+      const provider = new DatadogRumTelemetryProvider()
+      const events: BillingTelemetryEvent[] = [
+        { operation, stage: 'intent', outcome: 'pending' },
+        { operation, stage: 'request_sent', outcome: 'pending' },
+        operation === 'topup'
+          ? {
+              operation,
+              stage: 'checkout_received',
+              outcome: 'pending',
+              billing_op_id: 'op-1',
+              checkout_status: 'pending'
+            }
+          : {
+              operation,
+              stage: 'checkout_received',
+              outcome: 'pending',
+              billing_op_id: 'op-1',
+              checkout_status: 'pending_payment'
+            },
+        {
+          operation,
+          stage: 'succeeded',
+          outcome: 'success',
+          billing_op_id: 'op-1'
+        },
+        {
+          operation,
+          stage: 'failed',
+          outcome: 'failure',
+          billing_op_id: 'op-2',
+          failure_category: 'provider_decline'
+        }
+      ]
+      for (const event of events) provider.trackBillingEvent(event)
+      expect(addAction.mock.calls).toEqual(
+        events.map((event) => [
+          `billing.${event.operation}.${event.stage}`,
+          { ...event, billing_surface: 'cloud_app' }
+        ])
+      )
+    }
+  )
+
+  it('stamps the cloud app surface on checkout journey actions', () => {
+    const event = {
+      checkout_journey_id: 'journey-1',
+      checkout_entered_at: '2026-10-01T00:00:00.000Z',
+      assignment_status: 'unavailable',
+      entry_flow: 'initial_subscription',
+      entry_source: 'other',
+      ui_mode: 'full_page',
+      phase: 'entered',
+      payment_intent_source: 'subscribe_to_run'
+    } satisfies CheckoutJourneyTelemetryEvent
+
+    new DatadogRumTelemetryProvider().trackCheckoutJourneyEvent(event)
+
+    expect(addAction).toHaveBeenCalledWith('billing.checkout.entered', {
+      ...event,
+      schema_version: 1,
+      billing_surface: 'cloud_app'
+    })
   })
 
   it('records fetch timeouts as RUM actions', () => {
@@ -127,6 +261,51 @@ describe('DatadogRumTelemetryProvider', () => {
     )
   })
 
+  it.for([
+    {
+      name: 'session_bootstrap',
+      properties: { outcome: 'restored', origin: 'https://cloud.comfy.org' }
+    },
+    {
+      name: 'session_signed_out_remotely',
+      properties: { origin: 'https://cloud.comfy.org' }
+    }
+  ] as const)('records the web session event $name as is', (event) => {
+    new DatadogRumTelemetryProvider().trackWebSessionEvent(event)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+  })
+
+  it.for<SsoTelemetryEvent>([
+    {
+      name: 'app:sso_required_shown',
+      properties: {
+        surface: 'cloud_login',
+        trigger: 'firebase_sign_in',
+        presentation: 'notice',
+        flow_id: 'flow-1'
+      }
+    },
+    {
+      name: 'app:sso_sign_in_failed',
+      properties: {
+        surface: 'cloud_app',
+        reason: 'state_mismatch',
+        flow_id: 'flow-1'
+      }
+    }
+  ])('records the SSO event $name as a custom action', (event) => {
+    new DatadogRumTelemetryProvider().trackSsoEvent(event)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+  })
+
   it('records image load failures by source', () => {
     new DatadogRumTelemetryProvider().trackImageLoadFailed({
       source: 'node_image_preview'
@@ -173,7 +352,7 @@ describe('DatadogRumTelemetryProvider', () => {
 
     expect(addAction).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.BILLING_OPERATION_FAILED,
-      event
+      { ...event, billing_surface: 'cloud_app' }
     )
   })
 
@@ -200,7 +379,8 @@ describe('DatadogRumTelemetryProvider', () => {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: 'opaque-op-id',
-        failure_category: 'unknown'
+        failure_category: 'unknown',
+        billing_surface: 'cloud_app'
       }
     )
   })

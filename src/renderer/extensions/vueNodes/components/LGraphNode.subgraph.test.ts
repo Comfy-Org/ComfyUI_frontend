@@ -33,11 +33,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    toastErrorHandler: vi.fn()
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock<unknown>(import('@/i18n'), () => ({
   st: vi.fn((key) => key),
@@ -93,10 +89,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     return render(LGraphNode, {
       props,
       global: {
-        plugins: [pinia, i18n],
-        mocks: {
-          $primevue: { config: {} }
-        }
+        plugins: [pinia, i18n]
       }
     })
   }
@@ -137,7 +130,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     await nextTick()
 
     // Should call getNodeByLocatorId with correct locator ID
-    expect(vi.mocked(getNodeByLocatorId)).toHaveBeenCalledWith(
+    expect(getNodeByLocatorId).toHaveBeenCalledWith(
       expect.anything(),
       `${SUBGRAPH_ID}:test-node-1`
     )
@@ -155,12 +148,12 @@ describe('Vue Node - Subgraph Functionality', () => {
     await nextTick()
 
     const parentListener = vi.fn()
-    // eslint-disable-next-line testing-library/no-container
+    // oxlint-disable-next-line testing-library/no-container
     container.addEventListener('click', parentListener)
 
     const subgraphButton = screen.getByTestId('subgraph-enter-button')
 
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.click(subgraphButton)
 
     expect(parentListener).not.toHaveBeenCalled()

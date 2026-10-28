@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { credential, deferred } from './__fixtures__/sessionFakes.js'
-import type { InFlightMint } from './mintCoordinator.js'
-import { canJoin, createMintCoordinator } from './mintCoordinator.js'
-import type { AccountCredential, SessionResult } from './sessionContracts.js'
+import { credential, deferred } from './__fixtures__/sessionFakes'
+import type { InFlightMint } from './mintCoordinator'
+import { canJoin, createMintCoordinator } from './mintCoordinator'
+import type { AccountCredential, SessionResult } from './sessionContracts'
 
 const ok = (session: AccountCredential): SessionResult => ({
   status: 'ok',

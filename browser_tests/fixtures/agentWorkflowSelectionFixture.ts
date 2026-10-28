@@ -5,6 +5,7 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 type WorkflowSelection = {
@@ -14,6 +15,28 @@ type WorkflowSelection = {
   pauseWorkflowLookups: () => void
   resumeWorkflowLookups: () => void
   workflowLookups: () => number
+}
+
+function moveSavedWorkflow(
+  source: string,
+  destination: string,
+  savedContent: Map<string, string>,
+  savedFiles: UserDataFullInfo[],
+  workflows: CloudWorkflowEntry[]
+): UserDataFullInfo | undefined {
+  const content = savedContent.get(source)
+  const file = savedFiles.find((item) => item.path === source)
+  const workflow = workflows.find(
+    (item) => item.name === source.slice('workflows/'.length, -'.json'.length)
+  )
+  if (content === undefined || !file || !workflow) return
+
+  savedContent.delete(source)
+  savedContent.set(destination, content)
+  file.path = destination
+  file.modified = Date.now()
+  workflow.name = destination.slice('workflows/'.length, -'.json'.length)
+  return file
 }
 
 export const workflowSelectionTest = base.extend<{
@@ -38,6 +61,16 @@ export const workflowSelectionTest = base.extend<{
     let pendingLookup: Promise<void> | undefined
     let resumeWorkflowLookups = () => {}
     let lookupCount = 0
+    function forgetSavedWorkflow(path: string): void {
+      const name = path.slice('workflows/'.length, -'.json'.length)
+      savedContent.delete(path)
+      const fileIndex = savedFiles.findIndex((file) => file.path === path)
+      if (fileIndex !== -1) savedFiles.splice(fileIndex, 1)
+      const workflowIndex = workflows.findIndex(
+        (workflow) => workflow.name === name
+      )
+      if (workflowIndex !== -1) workflows.splice(workflowIndex, 1)
+    }
     await page.route('**/api/workflows?*', async (route) => {
       lookupCount++
       await pendingLookup
@@ -56,12 +89,7 @@ export const workflowSelectionTest = base.extend<{
     await page.route('**/api/agent/threads**', (route) => {
       if (route.request().method() === 'POST')
         postedMessages.push(route.request().postData() ?? '')
-      return route.fulfill(
-        jsonRoute({
-          threads: [],
-          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-        })
-      )
+      return route.fulfill(jsonRoute(emptyAgentThreadList()))
     })
     await page.route('**/api/userdata?*', (route) => {
       const dir = new URL(route.request().url()).searchParams.get('dir')
@@ -105,6 +133,36 @@ export const workflowSelectionTest = base.extend<{
       savedFiles.push(file)
       savedContent.set(path, route.request().postData() ?? '{}')
       return route.fulfill(jsonRoute(file))
+    })
+    await page.route('**/api/userdata/*/move/*', (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      const path = decodeURIComponent(
+        new URL(route.request().url()).pathname.split('/userdata/')[1]
+      )
+      const moveSeparator = '/move/'
+      const moveIndex = path.indexOf(moveSeparator)
+      const movedFile = moveSavedWorkflow(
+        path.slice(0, moveIndex),
+        path.slice(moveIndex + moveSeparator.length),
+        savedContent,
+        savedFiles,
+        workflows
+      )
+      return movedFile
+        ? route.fulfill(jsonRoute(movedFile))
+        : route.fulfill({ status: 404 })
+    })
+    await page.route('**/api/userdata/*', (route) => {
+      const path = decodeURIComponent(
+        new URL(route.request().url()).pathname.split('/userdata/')[1]
+      )
+      if (
+        route.request().method() !== 'DELETE' ||
+        !path.startsWith('workflows/')
+      )
+        return route.fallback()
+      forgetSavedWorkflow(path)
+      return route.fulfill({ status: 204 })
     })
     await use({
       savedPaths,

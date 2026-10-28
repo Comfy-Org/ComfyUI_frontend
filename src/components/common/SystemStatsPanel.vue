@@ -12,10 +12,12 @@
       </div>
       <div class="grid grid-cols-2 gap-2">
         <template v-for="col in systemStatsColumns" :key="col.field">
-          <div :class="cn('font-medium', isOutdated(col) && 'text-danger-100')">
+          <div
+            :class="cn('font-medium', isOutdated(col) && 'text-destructive')"
+          >
             {{ $t(col.headerKey) }}
           </div>
-          <div :class="cn(isOutdated(col) && 'text-danger-100')">
+          <div :class="cn(isOutdated(col) && 'text-destructive')">
             {{ getColumnDisplayValue(stats, col) }}
           </div>
         </template>
@@ -23,22 +25,33 @@
     </div>
 
     <template v-if="hasDevices">
-      <div class="my-4 border-t border-interface-stroke" />
+      <div class="my-4 border-t" />
 
       <div>
         <h2 class="mb-4 text-2xl font-semibold">
           {{ $t('g.devices') }}
         </h2>
-        <TabView v-if="stats.devices.length > 1">
-          <TabPanel
+        <Tabs
+          v-if="stats.devices.length > 1"
+          :default-value="String(stats.devices[0].index)"
+        >
+          <TabsList variant="bordered" class="mb-4">
+            <TabsTrigger
+              v-for="device in stats.devices"
+              :key="device.index"
+              :value="String(device.index)"
+            >
+              {{ device.name }}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent
             v-for="device in stats.devices"
             :key="device.index"
-            :header="device.name"
-            :value="device.index"
+            :value="String(device.index)"
           >
-            <DeviceInfo :device />
-          </TabPanel>
-        </TabView>
+            <DeviceInfo :device="device" />
+          </TabsContent>
+        </Tabs>
         <DeviceInfo v-else :device="stats.devices[0]" />
       </div>
     </template>
@@ -46,8 +59,6 @@
 </template>
 
 <script setup lang="ts">
-import TabPanel from 'primevue/tabpanel'
-import TabView from 'primevue/tabview'
 import { computed } from 'vue'
 
 import DeviceInfo from '@/components/common/DeviceInfo.vue'
@@ -56,7 +67,11 @@ import {
   getColumnDisplayValue,
   systemStatsColumns
 } from '@/components/common/systemStatsColumns'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Tabs from '@comfyorg/design-system/tabs/Tabs'
+import TabsContent from '@comfyorg/design-system/tabs/TabsContent'
+import TabsList from '@comfyorg/design-system/tabs/TabsList'
+import TabsTrigger from '@comfyorg/design-system/tabs/TabsTrigger'
 import { useCopySystemInfo } from '@/composables/useCopySystemInfo'
 import type { SystemStats } from '@/platform/remote/comfyui/types'
 import { cn } from '@comfyorg/tailwind-utils'

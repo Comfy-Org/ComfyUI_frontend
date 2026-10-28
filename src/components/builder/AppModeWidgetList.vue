@@ -6,22 +6,24 @@ import WidgetDescription from '@/components/builder/WidgetDescription.vue'
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
 import { getLoaderDropIndicator } from '@/components/builder/useLoaderDropIndicator'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
-import Popover from '@/components/ui/Popover.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import type { WidgetId } from '@/types/widgetId'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { app } from '@/scripts/app'
+import { draggableItemClass } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -44,6 +46,7 @@ const { mobile = false, builderMode = false } = defineProps<{
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
+const templateInputDownloadStore = useTemplateInputDownloadStore()
 const widgetValueStore = useWidgetValueStore()
 const linkStore = useLinkStore()
 const maskEditor = useMaskEditor()
@@ -119,7 +122,8 @@ function getDropIndicator(node: LGraphNode, id: WidgetId) {
     mobile,
     label: t,
     onMaskEdit: maskEditor.openMaskEditor,
-    widgetValueStore
+    widgetValueStore,
+    previewRevision: templateInputDownloadStore.previewRevision
   })
 }
 
@@ -159,12 +163,7 @@ defineExpose({ handleDragDrop })
       description
     } in mappedSelections"
     :key
-    :class="
-      cn(
-        builderMode &&
-          'draggable-item drag-handle pointer-events-auto relative cursor-grab [&.is-draggable]:cursor-grabbing'
-      )
-    "
+    :class="cn(builderMode && ['pointer-events-auto', draggableItemClass])"
     :aria-label="
       builderMode
         ? `${action.widget.label ?? action.widget.name} — ${action.node.title}`
@@ -194,9 +193,9 @@ defineExpose({ handleDragDrop })
         {{ action.node.title }}
       </span>
       <div v-else class="flex-1" />
-      <Popover
+      <Menu
         :class="cn('shrink-0', builderMode && 'pointer-events-auto')"
-        :entries="[
+        :items="[
           {
             label: t('g.rename'),
             // fallow-ignore-next-line css-token-drift
@@ -210,7 +209,7 @@ defineExpose({ handleDragDrop })
           }
         ]"
       >
-        <template #button>
+        <template #trigger>
           <Button
             variant="textonly"
             size="icon"
@@ -220,17 +219,12 @@ defineExpose({ handleDragDrop })
             <i class="icon-[lucide--ellipsis]" />
           </Button>
         </template>
-      </Popover>
+      </Menu>
     </div>
     <div
       v-if="description || builderMode"
       data-testid="app-mode-widget-description"
-      :class="
-        cn(
-          'h-5 px-5',
-          description ? 'text-muted-foreground' : 'text-muted-background'
-        )
-      "
+      class="h-5 px-5 text-muted-foreground"
     >
       <WidgetDescription
         :description
@@ -268,7 +262,7 @@ defineExpose({ handleDragDrop })
           :class="
             cn(
               'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
-              nodeData.hasErrors && 'ring-2 ring-node-stroke-error ring-inset'
+              nodeData.hasErrors && 'ring-2 ring-destructive ring-inset'
             )
           "
         />

@@ -1,5 +1,7 @@
-import { app, ComfyApp } from '../../scripts/app'
-import { $el, ComfyDialog } from '../../scripts/ui'
+import { app, ComfyApp } from '@/scripts/app'
+import { ComfyDialog } from '@/scripts/ui'
+import { $el } from '@/scripts/ui/utils'
+import type { ComfyExtension } from '@/types/comfy'
 
 class ClipspaceDialog extends ComfyDialog {
   static items: Array<
@@ -71,10 +73,8 @@ class ClipspaceDialog extends ComfyDialog {
   override createButtons() {
     const buttons = []
 
-    for (const idx in ClipspaceDialog.items) {
-      const item = ClipspaceDialog.items[idx]
-      if (!item.contextPredicate || item.contextPredicate())
-        buttons.push(ClipspaceDialog.items[idx])
+    for (const item of ClipspaceDialog.items) {
+      if (!item.contextPredicate || item.contextPredicate()) buttons.push(item)
     }
 
     buttons.push(
@@ -171,7 +171,7 @@ class ClipspaceDialog extends ComfyDialog {
   }
 }
 
-app.registerExtension({
+export const clipspaceExtension: ComfyExtension = {
   name: 'Comfy.Clipspace',
   init() {
     app.openClipspace = function () {
@@ -185,4 +185,4 @@ app.registerExtension({
       } else app.ui.dialog.show('Clipspace is Empty!')
     }
   }
-})
+}

@@ -1,4 +1,4 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -16,51 +16,29 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import type { ComfyApp } from '@/scripts/app'
-import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import { app } from '@/scripts/app'
+import { CONFIG, GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { serializeNodeId, toNodeId } from '@/types/nodeId'
 
-const extensions = await vi.hoisted(async () => {
-  const { createExtensionCapture } =
-    await import('@/utils/__tests__/extensionTestUtils')
-  return createExtensionCapture()
-})
+vi.mock(import('@/scripts/app'))
 
-/** `app.configuringGraph` is a getter on the real app, so route it via a ref. */
-const appState = vi.hoisted(() => ({ configuringGraph: false }))
-
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({
-    canvas: { graph_mouse: [0, 0], graph: null },
-    get configuringGraph() {
-      return appState.configuringGraph
-    },
-    registerExtension: extensions.registerExtension
-  })
-}))
-
-import { app } from '@/scripts/app'
-
-import {
+const {
   PrimitiveNode,
   convertToInput,
   getWidgetConfig,
   mergeIfValid,
-  setWidgetConfig
-} from './widgetInputs'
+  setWidgetConfig,
+  widgetInputsExtension
+} = await import('./widgetInputs')
 
 beforeEach(() => {
-  appState.configuringGraph = false
   app.canvas.graph = null
 })
 
-const widgetInputsExtension = extensions.getExtension('Comfy.WidgetInputs')
-
-await import('./rerouteNode')
-const rerouteNodeExtension = extensions.getExtension('Comfy.RerouteNode')
+const { rerouteNodeExtension } = await import('./rerouteNode')
 
 /**
  * Applies the extension's `beforeRegisterNodeDef` to a throwaway node class.
@@ -113,12 +91,12 @@ describe('PrimitiveNode', () => {
   }
 
   function restoreIntPrimitive(
-    primitive: PrimitiveNode,
+    primitive: InstanceType<typeof PrimitiveNode>,
     target: LGraphNode,
     values: ISerialisedNode['widgets_values'],
     named?: ISerialisedNode['widgets_values_named']
   ) {
-    appState.configuringGraph = true
+    vi.mocked(app).configuringGraph = true
     primitive.connect(0, target, 0)
     primitive.configure(
       fromPartial({
@@ -127,7 +105,7 @@ describe('PrimitiveNode', () => {
         outputs: [{ type: 'INT' }]
       })
     )
-    appState.configuringGraph = false
+    vi.mocked(app).configuringGraph = false
     primitive.onAfterGraphConfigured()
   }
 
@@ -146,6 +124,30 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(333)
   })
 
+  it('restores a boolean string saved for a BOOLEAN target as a boolean', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('enabled', 'BOOLEAN')
+    target.inputs[0].widget = {
+      name: 'enabled',
+      [GET_CONFIG]: () => ['BOOLEAN', {}]
+    }
+    target.addWidget('toggle', 'enabled', true, () => {})
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    vi.mocked(app).configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({ widgets_values: ['false'], outputs: [{ type: 'BOOLEAN' }] })
+    )
+    vi.mocked(app).configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.[0].value).toBe(false)
+  })
+
   it.for([
     { label: 'null', value: null },
     { label: 'undefined', value: undefined }
@@ -161,12 +163,12 @@ describe('PrimitiveNode', () => {
     target.addWidget('text', 'value', 'stale', () => {})
     const primitive = new PrimitiveNode('Primitive')
     graph.add(primitive)
-    appState.configuringGraph = true
+    vi.mocked(app).configuringGraph = true
     primitive.connect(0, target, 0)
     primitive.configure(
       fromPartial({ widgets_values: [value], outputs: [{ type: 'STRING' }] })
     )
-    appState.configuringGraph = false
+    vi.mocked(app).configuringGraph = false
 
     primitive.onAfterGraphConfigured()
 
@@ -229,7 +231,7 @@ describe('PrimitiveNode', () => {
 
     const primitive = new PrimitiveNode('Primitive')
     graph.add(primitive)
-    appState.configuringGraph = true
+    vi.mocked(app).configuringGraph = true
     primitive.connect(0, target, 0)
     primitive.configure(
       fromPartial({
@@ -237,7 +239,7 @@ describe('PrimitiveNode', () => {
         outputs: [{ type: 'COMBO' }]
       })
     )
-    appState.configuringGraph = false
+    vi.mocked(app).configuringGraph = false
 
     primitive.onAfterGraphConfigured()
 
@@ -263,6 +265,16 @@ describe('PrimitiveNode', () => {
 
     expect(primitive.widgets?.[0]).toBeInstanceOf(LegacyWidget)
     expect(primitive.widgets?.[0].type).toBe('custom_widget')
+  })
+
+  it('rejects an array slot type when no widget describes its construction', () => {
+    const primitive = new PrimitiveNode('Primitive')
+    const target = new LGraphNode('Target')
+    target.addInput('seed', ['INT'])
+
+    expect(primitive.onConnectOutput(0, '*', target.inputs[0], target, 0)).toBe(
+      false
+    )
   })
 
   it('restores its serialized value through the reroute lifecycle', async () => {
@@ -291,7 +303,7 @@ describe('PrimitiveNode', () => {
     if (!(primitive instanceof PrimitiveNode))
       throw new Error('PrimitiveNode was not registered')
     graph.add(primitive)
-    appState.configuringGraph = true
+    vi.mocked(app).configuringGraph = true
     const primitiveLinkId = toLinkId(1)
     graph._addLink(
       new LLink(
@@ -319,7 +331,7 @@ describe('PrimitiveNode', () => {
         outputs: [{ type: 'INT', links: [primitiveLinkId] }]
       })
     )
-    appState.configuringGraph = false
+    vi.mocked(app).configuringGraph = false
 
     for (const node of graph.nodes) node.onAfterGraphConfigured?.()
     expect(primitive.widgets).toBeUndefined()
@@ -405,16 +417,16 @@ describe('getWidgetConfig', () => {
     const declared: InputSpec = ['FLOAT', { step: 0.1 }]
 
     expect(getWidgetConfig(widgetSlot(declared))).toEqual(declared)
-    expect(getWidgetConfig(fromPartial({ name: 'image' }))).toEqual(['*', {}])
+    expect(
+      getWidgetConfig(fromPartial<INodeInputSlot>({ name: 'image' }))
+    ).toEqual(['*', {}])
   })
 })
 
 describe('mergeIfValid', () => {
   it('narrows a numeric range to the intersection and records it on the slot', () => {
-    // The call shape used by groupNode.ts: `config1` is supplied explicitly and
-    // the "slot" is a bare object whose `widget` is the spec itself.
     const spec: InputSpec = ['INT', { min: 0, max: 100 }]
-    const output: Parameters<typeof mergeIfValid>[0] = fromAny({ widget: spec })
+    const output = widgetSlot(spec)
 
     const { customConfig } = mergeIfValid(
       output,
@@ -479,7 +491,6 @@ describe('mergeIfValid', () => {
 
 describe('convertToInput', () => {
   it('warns and resolves the input slot hosting the widget', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const node = new LGraphNode('Target')
     node.addInput('seed', 'INT')
     node.addInput('steps', 'INT')
@@ -489,7 +500,7 @@ describe('convertToInput', () => {
       'steps'
     )
     expect(convertToInput(node, fromPartial({ name: 'seed' }))).toBeUndefined()
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('remove call to convertToInput')
     )
   })
@@ -557,7 +568,7 @@ describe('setWidgetConfig', () => {
 
   it('leaves the upstream primitive connected while the graph is configuring', () => {
     const { primitive, slot } = connectedPrimitive()
-    appState.configuringGraph = true
+    vi.mocked(app).configuringGraph = true
 
     setWidgetConfig(slot, undefined)
 
@@ -619,7 +630,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
     it('defers to onGraphConfigured while a whole graph is loading', async () => {
       const TestNodeType = await applyNodeDefHooks()
-      appState.configuringGraph = true
+      vi.mocked(app).configuringGraph = true
       const node = new TestNodeType('Test')
       node.addInput('steps', 'INT')
       node.inputs[0].widget = { name: 'steps' }

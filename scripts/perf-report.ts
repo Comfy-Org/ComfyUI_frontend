@@ -233,6 +233,7 @@ function renderHeadlineSummary(
 ): string[] {
   const lines: string[] = []
   const summaries: string[] = []
+  let belowTarget = 0
 
   for (const [testName, prSamples] of prGroups) {
     const avgFrame = medianMetric(prSamples, 'frameDurationMs')
@@ -247,6 +248,7 @@ function renderHeadlineSummary(
     if (avgFps !== null) parts.push(`${avgFps.toFixed(1)} avg FPS`)
     if (p5Fps !== null) {
       const pass = p5Fps >= TARGET_P5_FPS
+      if (!pass) belowTarget++
       parts.push(
         `${p5Fps.toFixed(1)} P5 FPS ${pass ? '✅' : '❌'} (target: ≥${TARGET_P5_FPS})`
       )
@@ -257,8 +259,22 @@ function renderHeadlineSummary(
     if (parts.length > 1) summaries.push(parts.join(' · '))
   }
 
+  if (belowTarget > 0) {
+    lines.push(
+      `> ❌ **${belowTarget} scenario${belowTarget === 1 ? '' : 's'} below the ≥${TARGET_P5_FPS} P5 FPS target.** Expand the scenario timings below and profile the affected scenarios before merging.`,
+      ''
+    )
+  }
+
   if (summaries.length > 0) {
-    lines.push('> ' + summaries.join('\n> '), '')
+    lines.push(
+      '<details><summary>Scenario timings</summary>',
+      '',
+      '> ' + summaries.join('\n> '),
+      '',
+      '</details>',
+      ''
+    )
   }
 
   return lines
@@ -288,7 +304,6 @@ function renderFullReport(
     const baseSamples = baselineGroups.get(testName)
 
     for (const { key, label, unit, minAbsDelta } of REPORTED_METRICS) {
-      // Use median for PR values — robust to outlier runs in CI
       const prVal = medianMetric(prSamples, key)
       if (prVal === null) continue
       const histStats = getHistoricalStats(historical, testName, key)
@@ -333,6 +348,8 @@ function renderFullReport(
 
   if (flaggedRows.length > 0) {
     lines.push(
+      `⚠️ **${flaggedRows.length} regression${flaggedRows.length > 1 ? 's' : ''} detected**. Review the regressions below and profile the affected scenarios before merging.`,
+      '',
       '<details><summary>Show regressions</summary>',
       '',
       ...tableHeader,

@@ -1,0 +1,44 @@
+diff --git a/dist/index.d.mts b/dist/index.d.mts
+index 24bc1ebc815f71b2a88c1b1b0fe9fe6a2ccd3e49..fb355dd91e1547866ab7abf7574a663d65c040c7 100644
+--- a/dist/index.d.mts
++++ b/dist/index.d.mts
+@@ -4,7 +4,7 @@ type NoInfer<T> = [T][T extends any ? 0 : never];
+  */
+ type PartialDeep<T> = T extends (...args: any[]) => any ? PartialDeepObject<T> | undefined : T extends object ? T extends ReadonlyArray<infer ItemType> ? ItemType[] extends T ? readonly ItemType[] extends T ? ReadonlyArray<PartialDeep<ItemType | undefined>> : Array<PartialDeep<ItemType | undefined>> : PartialDeepObject<T> : PartialDeepObject<T> : T;
+ type PartialDeepObject<ObjectType extends object> = {
+-    [KeyType in keyof ObjectType]?: PartialDeep<ObjectType[KeyType]>;
++    [KeyType in keyof ObjectType]?: ObjectType[KeyType] | PartialDeep<ObjectType[KeyType]>;
+ };
+ 
+ /**
+@@ -12,7 +12,7 @@ type PartialDeepObject<ObjectType extends object> = {
+  *
+  * @returns whatever you pass in
+  */
+-declare const fromPartial: <T>(mock: PartialDeep<NoInfer<T>>) => T;
++declare const fromPartial: <T>(mock: NoInfer<T> | PartialDeep<NoInfer<T>>) => T;
+ /**
+  * Lets you pass anything to a mock function, while also retaining
+  * autocomplete for when you _do_ want to pass the exact thing.
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index 24bc1ebc815f71b2a88c1b1b0fe9fe6a2ccd3e49..fb355dd91e1547866ab7abf7574a663d65c040c7 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -4,7 +4,7 @@ type NoInfer<T> = [T][T extends any ? 0 : never];
+  */
+ type PartialDeep<T> = T extends (...args: any[]) => any ? PartialDeepObject<T> | undefined : T extends object ? T extends ReadonlyArray<infer ItemType> ? ItemType[] extends T ? readonly ItemType[] extends T ? ReadonlyArray<PartialDeep<ItemType | undefined>> : Array<PartialDeep<ItemType | undefined>> : PartialDeepObject<T> : PartialDeepObject<T> : T;
+ type PartialDeepObject<ObjectType extends object> = {
+-    [KeyType in keyof ObjectType]?: PartialDeep<ObjectType[KeyType]>;
++    [KeyType in keyof ObjectType]?: ObjectType[KeyType] | PartialDeep<ObjectType[KeyType]>;
+ };
+ 
+ /**
+@@ -12,7 +12,7 @@ type PartialDeepObject<ObjectType extends object> = {
+  *
+  * @returns whatever you pass in
+  */
+-declare const fromPartial: <T>(mock: PartialDeep<NoInfer<T>>) => T;
++declare const fromPartial: <T>(mock: NoInfer<T> | PartialDeep<NoInfer<T>>) => T;
+ /**
+  * Lets you pass anything to a mock function, while also retaining
+  * autocomplete for when you _do_ want to pass the exact thing.

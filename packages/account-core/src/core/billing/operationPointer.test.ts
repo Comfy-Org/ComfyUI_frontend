@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BillingOperationPointerStorage } from './operationPointer.js'
+import type { BillingOperationPointerStorage } from './operationPointer'
 import {
   OPERATION_POINTER_MAX_AGE_MS,
   createOperationPointerStore,
   operationPointerKey
-} from './operationPointer.js'
-import type { BillingOperationState } from './operationState.js'
+} from './operationPointer'
+import type { BillingOperationState } from './operationState'
 
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
 const OTHER_WORKSPACE = { ...SCOPE, workspaceId: 'ws-2' } as const
@@ -108,7 +108,7 @@ describe('createOperationPointerStore', () => {
 
     for (const phase of ['pending', 'timed_out', 'superseded'] as const) {
       store.write(SCOPE, POINTER)
-      store.clearIfTerminal(terminal(phase))
+      store.settle(terminal(phase))
       expect(store.read(SCOPE)).toEqual(POINTER)
     }
 
@@ -118,13 +118,39 @@ describe('createOperationPointerStore', () => {
       'reconciliation_needed'
     ] as const) {
       store.write(SCOPE, POINTER)
-      store.clearIfTerminal(terminal(phase))
+      store.settle(terminal(phase))
       expect(store.read(SCOPE)).toBeUndefined()
     }
 
     store.write(SCOPE, POINTER)
-    store.clearIfTerminal(terminal('succeeded', 'op-2'))
+    store.settle(terminal('succeeded', 'op-2'))
     expect(store.read(SCOPE)).toEqual(POINTER)
+  })
+
+  it('keeps a settled pointer, marked, when the host retains them', () => {
+    const store = createOperationPointerStore(memoryStorage(), () => 20_000, {
+      retainSettled: true
+    })
+    const awaited = { ...POINTER, awaited: true } as const
+
+    store.write(SCOPE, awaited)
+    store.settle(terminal('reconciliation_needed'))
+    expect(store.read(SCOPE)).toEqual({
+      ...awaited,
+      settled: 'reconciliation_needed'
+    })
+
+    store.write(SCOPE, awaited)
+    store.settle(terminal('succeeded'))
+    expect(store.read(SCOPE)).toEqual({ ...POINTER, settled: 'succeeded' })
+
+    store.write(SCOPE, awaited)
+    store.settle(terminal('failed'))
+    expect(store.read(SCOPE)).toBeUndefined()
+
+    store.write(SCOPE, awaited)
+    store.settle(terminal('succeeded', 'op-2'))
+    expect(store.read(SCOPE)).toEqual(awaited)
   })
 
   it('treats storage that throws as empty and writes as no-ops', () => {

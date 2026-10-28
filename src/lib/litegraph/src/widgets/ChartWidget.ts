@@ -1,4 +1,4 @@
-import type { IChartWidget } from '../types/widgets'
+import type { IChartWidget } from '@/lib/litegraph/src/types/widgets'
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

@@ -14,7 +14,7 @@
     </div>
   </div>
   <div v-else class="flex items-center justify-center">
-    <Spinner class="size-8" />
+    <AppSpinner class="size-8" />
   </div>
 </template>
 
@@ -23,14 +23,15 @@ import { useAsyncState } from '@vueuse/core'
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import Button from '@/components/ui/button/Button.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getSurveyCompletedStatus,
   getUserCloudStatus
 } from '@/platform/cloud/onboarding/auth'
+import { useAuthStore } from '@/stores/authStore'
 
 import CloudLoginViewSkeleton from './skeletons/CloudLoginViewSkeleton.vue'
 import CloudSurveyViewSkeleton from './skeletons/CloudSurveyViewSkeleton.vue'
@@ -59,7 +60,7 @@ const {
 
     const [cloudUserStats, surveyStatus] = await Promise.all([
       getUserCloudStatus(),
-      getSurveyCompletedStatus()
+      getSurveyCompletedStatus(useAuthStore().userId)
     ])
 
     // Navigate based on user status

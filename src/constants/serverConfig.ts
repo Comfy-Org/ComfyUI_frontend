@@ -1,4 +1,4 @@
-import type { FormItem } from '@/platform/settings/types'
+import type { FormItem, ServerConfigValue } from '@/platform/settings/types'
 import {
   CrossAttentionMethod,
   CudaMalloc,
@@ -8,8 +8,6 @@ import {
   LogLevel,
   VramManagement
 } from '@/types/serverArgs'
-
-export type ServerConfigValue = string | number | boolean | null | undefined
 
 export interface ServerConfig<T> extends FormItem {
   id: string

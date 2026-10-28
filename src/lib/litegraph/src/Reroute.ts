@@ -1,5 +1,11 @@
+import type {
+  LGraph,
+  LGraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import { toSelectableKey } from '@/core/selection/selectionState'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -27,23 +33,20 @@ function hasPointLength(value: unknown): boolean {
 }
 
 import { LGraphBadge } from './LGraphBadge'
-import type { LGraph } from './LGraph'
-import type { LGraphNode } from './LGraphNode'
+
 import { LLink } from './LLink'
-import type { LinkId } from './LLink'
+import type { LinkId } from '@/types/linkId'
 import { createMutationView } from './infrastructure/createMutationView'
 import type {
   CanvasColour,
-  INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork,
   LinkSegment,
   Point,
   Positionable,
-  ReadOnlyRect,
-  ReadonlyLinkNetwork
+  ReadOnlyRect
 } from './interfaces'
-import { LiteGraph } from './litegraph'
+import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
+import type { LinkNetwork, ReadonlyLinkNetwork } from './types/linkNetwork'
+import { litegraph } from './litegraphInstance'
 import { distance, isPointInRect } from './measure'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'
 
@@ -197,7 +200,17 @@ export class Reroute
   }
 
   /** @inheritdoc */
-  selected?: boolean
+  get selected(): boolean {
+    return isSelectedIn(this._graphScope, toSelectableKey('reroute', this.id))
+  }
+
+  set selected(value: boolean | undefined) {
+    setSelectedIn(
+      this._graphScope,
+      toSelectableKey('reroute', this.id),
+      !!value
+    )
+  }
 
   private get membership(): RerouteMembership {
     return this._graphScope
@@ -462,7 +475,7 @@ export class Reroute
   snapToGrid(snapTo: number): boolean {
     if (!snapTo) return false
 
-    const offsetY = LiteGraph.NODE_SLOT_HEIGHT * 0.7
+    const offsetY = litegraph().NODE_SLOT_HEIGHT * 0.7
     const { x, y } = this.storedPosition
     const snappedX = snapTo * Math.round(x / snapTo)
     const snappedY = snapTo * Math.round((y - offsetY) / snapTo) + offsetY
@@ -476,7 +489,7 @@ export class Reroute
     const network = this.network.deref()
     if (!network) return
 
-    for (const linkId of [...this.floatingLinkIds]) {
+    for (const linkId of Array.from(this.floatingLinkIds)) {
       const floatingLink = network.floatingLinks.get(linkId)
       if (floatingLink) network.removeFloatingLink(floatingLink)
     }
@@ -888,4 +901,10 @@ export function unregisterAllRerouteChains(
   graph: Pick<LGraph, 'reroutes'>
 ): void {
   for (const reroute of graph.reroutes.values()) unregisterRerouteChain(reroute)
+}
+
+type RegisteredReroute = Reroute
+
+declare module './types/entityRegistry' {
+  interface Reroute extends RegisteredReroute {}
 }

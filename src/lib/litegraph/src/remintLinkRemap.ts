@@ -1,6 +1,6 @@
+import type { LLink } from '@/lib/litegraph/src/types/entityRegistry'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 
-import type { LLink } from './LLink'
 import type { ISerialisedNode } from './types/serialisation'
 import type { EndpointPatch } from '@/stores/linkStore'
 import type { NodeId } from '@/types/nodeId'

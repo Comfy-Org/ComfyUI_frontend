@@ -5,12 +5,12 @@ import type {
   BillingEventsResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  Plan,
   SavedPaymentMethod
 } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
@@ -68,20 +68,13 @@ const ACTIVE_STATUS: BillingStatusResponse = {
   renewal_date: '2099-02-20T10:00:00Z'
 }
 
-const PRO_MONTHLY_PLAN = {
+const PRO_MONTHLY_PLAN = createPlan({
   slug: 'pro-monthly',
   tier: 'PRO',
   duration: 'MONTHLY',
-  price_cents: 2_000,
-  credits_cents: 2_110,
-  max_seats: 1,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 2_000,
-    total_credits_cents: 2_110
-  }
-} satisfies Plan
+  priceCents: 2_000,
+  monthlyCredits: 2_110
+})
 
 const PLANS = {
   current_plan_slug: 'pro-monthly',
@@ -89,7 +82,7 @@ const PLANS = {
 } satisfies BillingPlansResponse
 
 const SAVED_CARD = {
-  id: 'pm-1',
+  id: 'pm_e2e_visa',
   type: 'card',
   brand: 'visa',
   last4: '4242',
@@ -429,7 +422,7 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     const content = await openActivity(await openPlanAndCredits(page))
     await expect(content.getByText('node-on-page-1')).toBeVisible()
 
-    await content.getByRole('button', { name: 'Next Page' }).click()
+    await content.getByRole('button', { name: 'Next', exact: true }).click()
 
     // The reader is scoped and paged: page 2 must not be served page 1's
     // in-flight answer.

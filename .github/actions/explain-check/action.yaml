@@ -10,7 +10,7 @@ description: >
 
   The convention: any required check that can fail for a reason not obvious
   from its name should call this. The checks nobody has to ask about
-  (Playwright, Storybook, website E2E, the Vercel preview) are the ones that
+  (Playwright, Storybook, the Vercel preview) are the ones that
   already put a section in the PR comment; the ones people get stuck on are the
   ones whose docs live in a workflow header, a scripts/ README, or Notion.
 
@@ -34,8 +34,9 @@ inputs:
     description: >
       One sentence, in plain English, saying what this verdict means for the
       person reading it. Not a restatement of the status — the thing they would
-      otherwise have to read the workflow source to learn.
-    required: true
+      otherwise have to read the workflow source to learn. Omit when the
+      title and findings already say it.
+    required: false
   details-file:
     description: Path to a Markdown file with the findings themselves
     required: false
@@ -84,9 +85,30 @@ runs:
             ;;
         esac
 
-        body="${RUNNER_TEMP:-/tmp}/explain-check-${INPUT_SLUG}-body.md"
+        # The slug is the upsert key and part of a file path below; refuse
+        # anything that could escape the workspace. Same rule as
+        # upsert-comment-section.
+        if ! [[ "$INPUT_SLUG" =~ ^[a-z0-9-]+$ ]]; then
+          echo "::error::explain-check: slug '$INPUT_SLUG' must match ^[a-z0-9-]+$"
+          exit 1
+        fi
+
+        body=$(mktemp)
+        trap 'rm -f "$body"' EXIT
         {
-          printf '%s\n' "$INPUT_HEADLINE"
+          if [ -n "$INPUT_HEADLINE" ]; then
+            printf '%s\n' "$INPUT_HEADLINE"
+          fi
+
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          case "$INPUT_STATUS" in
+            fail|warn)
+              printf '\n> Review the findings below and [open the workflow run](%s) to fix the reported issues before merging.\n' "$run_url"
+              ;;
+            withheld)
+              printf '\n> No verdict is available. [Open the workflow run](%s) to confirm the check was intentionally skipped, or fix the collection failure and re-run it.\n' "$run_url"
+              ;;
+          esac
 
           if [ -n "$INPUT_DETAILS_FILE" ] && [ -s "$INPUT_DETAILS_FILE" ]; then
             printf '\n'
@@ -108,7 +130,6 @@ runs:
         # so a check that supplies nothing but a verdict renders as a bare
         # heading rather than an empty box. Mirrors renderPrReportSection.
         body_text=$(sed -e '/[^[:space:]]/,$!d' "$body")
-        rm -f "$body"
 
         # Must live inside the workspace: read-and-upsert-comment-section guards
         # on hashFiles(), which only resolves paths under GITHUB_WORKSPACE and

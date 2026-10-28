@@ -543,7 +543,7 @@ export function shardOf<T>(
   const shard = manifestShard()
   if (!shard) return [...entries]
   const bins: T[][] = Array.from({ length: shard.total }, () => [])
-  const load = new Array<number>(shard.total).fill(0)
+  const load = Array.from({ length: shard.total }, () => 0)
   const ordered = [...entries]
     .map((entry, index) => ({ entry, index }))
     .sort((a, b) => weightOf(b.entry) - weightOf(a.entry) || a.index - b.index)

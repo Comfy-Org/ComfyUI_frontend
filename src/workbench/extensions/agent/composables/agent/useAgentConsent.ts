@@ -1,55 +1,115 @@
-import { defineAsyncComponent } from 'vue'
+import { defineAsyncComponent, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
+import type {
+  AgentConsentDecision,
+  AgentConsentOfferExit,
+  AgentConsentTrigger
+} from '@/platform/telemetry/types'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useDialogService } from '@/services/dialogService'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
+import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 
-const CONSENT_DIALOG_KEY = 'agent-consent'
-const DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
+export const CONSENT_DIALOG_KEY = 'agent-consent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
-const CONSENT_VIDEO_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-1280.webm`
-const CONSENT_VIDEO_SRC_MP4 = `${CONSENT_MEDIA_BASE}/agent-consent-1280.mp4`
-const CONSENT_POSTER_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-poster.jpg`
+const CONSENT_VIDEO_SOURCES = [
+  {
+    src: `${CONSENT_MEDIA_BASE}/agent-consent-v2-1280.webm`,
+    type: 'video/webm'
+  },
+  {
+    src: `${CONSENT_MEDIA_BASE}/agent-consent-v2-1280.mp4`,
+    type: 'video/mp4'
+  }
+]
+const CONSENT_POSTER_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-v2-poster.jpg`
 
 const AgentConsentCard = defineAsyncComponent(
   () =>
     import('@/workbench/extensions/agent/components/agent/AgentConsentCard.vue')
 )
 
+export interface ConsentOfferHooks {
+  /** Asked right before the card mounts, after every await that precedes it. */
+  canShow?: () => boolean
+}
+
 export function useAgentConsent() {
   const dialogStore = useDialogStore()
-  const dialogService = useDialogService()
+  const { showSignInDialog } = useAuthDialogs()
   const consentStore = useAgentConsentStore()
-  const toastStore = useToastStore()
+  const introductionStore = useAgentConsentIntroductionStore()
+  const toast = useToast()
   const { isLoggedIn } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
   const { t } = i18n.global
 
+  function reportRequestExit(
+    exit: AgentConsentOfferExit,
+    trigger: AgentConsentTrigger
+  ): void {
+    useTelemetry()?.trackAgentConsentOfferExited({
+      exit,
+      stage: 'request',
+      retry_armed: false,
+      trigger
+    })
+  }
+
   function showConsentDialog(
+    trigger: AgentConsentTrigger,
     persistOnAccept = true,
     expectedIdentity?: string,
-    onShown?: () => void
+    { canShow }: ConsentOfferHooks = {}
   ): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
+      if (canShow && !canShow()) {
+        resolve(false)
+        return
+      }
       let settled = false
       let saving = false
+      let shown = false
+      let saveErrorShown = false
+
+      const reportOutcome = (decision: AgentConsentDecision): void => {
+        useTelemetry()?.trackAgentConsentResolved({
+          decision,
+          save_error_shown: saveErrorShown
+        })
+      }
+
+      const stopScopeWatch = watch(
+        [identity, isLoggedIn],
+        () => dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY }),
+        { flush: 'sync' }
+      )
 
       const closeWith = (result: boolean): void => {
         if (settled) return
         settled = true
+        stopScopeWatch()
         dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY })
         resolve(result)
+      }
+
+      function markIntroductionResponded(): void {
+        if (shown) introductionStore.markResponded()
       }
 
       function handleSaveFailure(error: unknown): void {
         if (settled) return
         saving = false
+        saveErrorShown = true
         reportError(error, {
+          surface: 'agent',
           errorType: 'agent_consent_setting_write_failure'
         })
         dialogStore.updateDialog({
@@ -60,20 +120,28 @@ export function useAgentConsent() {
           },
           dialogComponentProps: {
             closable: true,
-            dismissableMask: true
+            dismissOnPointerDownOutside: true
           }
         })
       }
 
+      function finishAcceptance(saved: boolean): void {
+        if (settled) return
+        if (!persistOnAccept) reportOutcome('accepted_pending_sign_in')
+        else reportOutcome(saved ? 'accepted' : 'accept_not_persisted')
+        closeWith(saved)
+      }
+
       const accept = async (): Promise<void> => {
         if (saving || settled) return
+        markIntroductionResponded()
         saving = true
         dialogStore.updateDialog({
           key: CONSENT_DIALOG_KEY,
           contentProps: { accepting: true, error: '' },
           dialogComponentProps: {
             closable: false,
-            dismissableMask: false
+            dismissOnPointerDownOutside: false
           }
         })
 
@@ -81,7 +149,7 @@ export function useAgentConsent() {
           const saved = persistOnAccept
             ? await consentStore.accept(expectedIdentity)
             : true
-          closeWith(saved)
+          finishAcceptance(saved)
         } catch (error) {
           handleSaveFailure(error)
         }
@@ -92,33 +160,41 @@ export function useAgentConsent() {
         component: AgentConsentCard,
         props: {
           title: t('agent.consent.title'),
-          titleId: CONSENT_DIALOG_KEY,
-          paragraphs: [t('agent.consent.body1'), t('agent.consent.body2')],
-          videoSrc: CONSENT_VIDEO_SRC,
-          videoSrcMp4: CONSENT_VIDEO_SRC_MP4,
+          paragraphs: [
+            t('agent.consent.body1'),
+            t(
+              persistOnAccept
+                ? 'agent.consent.body2'
+                : 'agent.consent.body2BeforeSignIn'
+            )
+          ],
+          videoSources: CONSENT_VIDEO_SOURCES,
           posterSrc: CONSENT_POSTER_SRC,
-          docsUrl: DOCS_URL,
+          docsUrl: AGENT_DOCS_URL,
+          requiresSignIn: !persistOnAccept,
           accepting: false,
           error: '',
           onVnodeMounted: () => {
-            if (expectedIdentity && identity.value !== expectedIdentity) return
-            onShown?.()
+            shown = true
+            useTelemetry()?.trackAgentConsentShown({ trigger })
           },
           onAccept: () => void accept(),
-          onReject: () => closeWith(false)
+          onReject: () => {
+            if (settled) return
+            markIntroductionResponded()
+            reportOutcome('rejected')
+            closeWith(false)
+          }
         },
         dialogComponentProps: {
-          renderer: 'reka',
-          dismissableMask: true,
-          closeOnEscape: true,
-          modal: true,
+          dismissOnPointerDownOutside: true,
           headless: true,
-          overlayClass: 'bg-black/55',
-          contentClass:
-            'w-[min(640px,calc(100vw-2rem))] border-none bg-transparent shadow-none sm:max-w-[640px]',
           onClose: () => {
             if (settled) return
             settled = true
+            stopScopeWatch()
+            if (shown) reportOutcome('dismissed')
+            else reportRequestExit('card_closed_before_mount', trigger)
             resolve(false)
           }
         }
@@ -127,77 +203,107 @@ export function useAgentConsent() {
   }
 
   async function acceptAfterSignIn(
-    onShown?: () => void
+    trigger: AgentConsentTrigger,
+    hooks: ConsentOfferHooks
   ): Promise<string | null> {
-    if (!(await showConsentDialog(false, undefined, onShown))) return null
-    try {
-      if (!(await dialogService.showSignInDialog())) return null
-    } catch (error) {
-      reportError(error, {
-        errorType: 'agent_consent_sign_in_failure'
-      })
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('agent.consent.signInError')
-      })
+    if (!(await showConsentDialog(trigger, false, undefined, hooks)))
       return null
-    }
-
+    introductionStore.isContinuingSignIn = true
     try {
-      const decisionIdentity = await consentStore.ensureScope()
-      if (!decisionIdentity || !(await consentStore.accept(decisionIdentity)))
+      try {
+        if (!(await showSignInDialog())) return null
+      } catch (error) {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_consent_sign_in_failure'
+        })
+        toast.error(t('g.error'), {
+          description: t('agent.consent.signInError')
+        })
         return null
-      return decisionIdentity
-    } catch (error) {
-      reportError(error, {
-        errorType: 'agent_consent_setting_write_failure'
-      })
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('agent.consent.saveError')
-      })
-      return null
+      }
+
+      try {
+        const decisionIdentity = await consentStore.ensureScope()
+        if (
+          !decisionIdentity ||
+          !(await consentStore.accept(decisionIdentity))
+        ) {
+          useTelemetry()?.trackAgentConsentResolved({
+            decision: 'accept_not_persisted',
+            save_error_shown: false
+          })
+          return null
+        }
+        useTelemetry()?.trackAgentConsentResolved({
+          decision: 'accepted',
+          save_error_shown: false
+        })
+        return decisionIdentity
+      } catch (error) {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_consent_setting_write_failure'
+        })
+        toast.error(t('g.error'), {
+          description: t('agent.consent.saveError')
+        })
+        return null
+      }
+    } finally {
+      introductionStore.isContinuingSignIn = false
     }
   }
 
   async function requestConsentForCurrentUser(
-    onShown?: () => void
+    trigger: AgentConsentTrigger,
+    hooks: ConsentOfferHooks
   ): Promise<string | null> {
     let decisionIdentity: string | null
+    let reading = false
     try {
       decisionIdentity = await consentStore.ensureScope()
-      if (!decisionIdentity) return null
+      if (!decisionIdentity) {
+        reportRequestExit('scope_changed_before_read', trigger)
+        return null
+      }
+      reading = true
       await consentStore.load()
     } catch (error) {
+      reportRequestExit(
+        reading ? 'consent_read_failed' : 'scope_probe_failed',
+        trigger
+      )
       reportError(error, {
+        surface: 'agent',
         errorType: 'agent_consent_setting_load_failure'
       })
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('agent.consent.loadError')
+      toast.error(t('g.error'), {
+        description: t('agent.consent.loadError')
       })
       return null
     }
 
-    if (identity.value !== decisionIdentity) return null
+    if (identity.value !== decisionIdentity) {
+      reportRequestExit('scope_changed_after_read', trigger)
+      return null
+    }
     if (
       !accepted.value &&
-      !(await showConsentDialog(true, decisionIdentity, onShown))
+      !(await showConsentDialog(trigger, true, decisionIdentity, hooks))
     )
       return null
     return decisionIdentity
   }
 
   async function withConsent(
+    trigger: AgentConsentTrigger,
     onAccept: () => void,
-    onShown?: () => void
+    hooks: ConsentOfferHooks = {}
   ): Promise<void> {
     const decisionIdentity = isLoggedIn.value
-      ? await requestConsentForCurrentUser(onShown)
-      : await acceptAfterSignIn(onShown)
+      ? await requestConsentForCurrentUser(trigger, hooks)
+      : await acceptAfterSignIn(trigger, hooks)
     if (
       !decisionIdentity ||
       identity.value !== decisionIdentity ||

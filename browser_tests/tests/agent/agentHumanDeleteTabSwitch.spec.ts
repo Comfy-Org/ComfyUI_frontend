@@ -11,7 +11,7 @@ const UNAFFECTED_NODE_IDS = ['4', '6', '9']
 
 test.describe(
   'Human-deleted nodes across a workflow tab switch with Agent bound',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: CASE, humanOpsHost: 'hold' })
 

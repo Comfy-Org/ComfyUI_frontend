@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { Rect } from '@/lib/litegraph/src/interfaces'
 import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/types/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -187,21 +188,29 @@ class NodeWidgetReference {
    * @returns The position of the widget's center
    */
   async getPosition(): Promise<Position> {
-    const pos: [number, number] = await this.node.comfyPage.page.evaluate(
+    const position = await this.node.comfyPage.page.waitForFunction(
       ([id, index]) => {
         const node = window.app!.canvas.graph!.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
         const widget = node.widgets?.at(index)
         if (!widget) throw new Error(`Widget ${index} not found.`)
+        if (widget.last_y === undefined) {
+          window.app!.canvas.setDirty(true, true)
+          return null
+        }
 
         const [x, y, w, _h] = node.getBounding()
-        return window.app!.canvasPosToClientPos([
+        const pos = window.app!.canvasPosToClientPos([
           x + w / 2,
-          y + window.LiteGraph!['NODE_TITLE_HEIGHT'] + widget.last_y! + 1
+          y + window.LiteGraph!['NODE_TITLE_HEIGHT'] + widget.last_y + 1
         ])
+        return pos.every(Number.isFinite) ? pos : null
       },
       [this.node.id, this.index] as const
     )
+    const pos = await position.jsonValue()
+    await position.dispose()
+    if (!pos) throw new Error('Widget position is unavailable')
     return {
       x: pos[0],
       y: pos[1]
@@ -309,6 +318,24 @@ export class NodeReference {
       height
     }
   }
+  /** Page-space bounds of the node's current pos and size, title bar included. */
+  async getClientBounding(): Promise<Position & Size> {
+    return this.comfyPage.page.evaluate((id) => {
+      const app = window.app!
+      const node = app.canvas.graph!.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+
+      const bounds: Rect = [0, 0, 0, 0]
+      if (node.flags.collapsed) node.getBounding(bounds)
+      else node.measure(bounds)
+
+      const [x, y, width, height] = bounds
+      const [left, top] = app.canvasPosToClientPos([x, y])
+      const [right, bottom] = app.canvasPosToClientPos([x + width, y + height])
+
+      return { x: left, y: top, width: right - left, height: bottom - top }
+    }, this.id)
+  }
   async getSize(): Promise<Size> {
     const size = await this.getProperty<[number, number]>('size')
     return {
@@ -382,6 +409,26 @@ export class NodeReference {
     return new NodeSlotReference('output', index, this)
   }
   async getInput(index: number) {
+    return new NodeSlotReference('input', index, this)
+  }
+  async getInputByName(name: string) {
+    const index = await this.comfyPage.page.evaluate(
+      ([id, inputName]) => {
+        const node = window.app!.canvas.graph!.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+
+        const inputIndex = node.inputs.findIndex(
+          (input) => input.name === inputName
+        )
+        if (inputIndex < 0) {
+          throw new Error(`Input "${inputName}" not found on node ${id}`)
+        }
+
+        return inputIndex
+      },
+      [this.id, name] as const
+    )
+
     return new NodeSlotReference('input', index, this)
   }
   async getWidget(index: number) {

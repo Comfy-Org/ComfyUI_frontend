@@ -1,8 +1,11 @@
 import {
+  OPAQUE_WIDGETS_KEY,
+  SCHEMA_VERSION,
   applyOps,
   hasAppliedOp,
   linksMap,
   mint,
+  nodesMap,
   project,
   readGraph
 } from '@comfyorg/comfy-multi-player'
@@ -13,8 +16,10 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
 import * as Y from 'yjs'
 
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -80,7 +85,8 @@ export class HostDoc {
   constructor(
     private readonly workflowId: string,
     seed: WorkflowJSON,
-    private readonly catalog: WidgetCatalog
+    private readonly catalog: WidgetCatalog,
+    private readonly lineageSeq = 1
   ) {
     this.doc = mint(seed, catalog)
   }
@@ -95,6 +101,34 @@ export class HostDoc {
     return project(this.doc, this.catalog)
   }
 
+  // Test-only: removes meta.schema_version after mint() wrote it, so the next
+  // frame this host produces carries the exact "unreadable schema" shape
+  // KA-11's read gate (schemaGuard.ts) refuses — an absent version, not a
+  // merely different one.
+  corruptSchemaVersion(): void {
+    this.doc.getMap('meta').delete('schema_version')
+  }
+
+  advanceSchemaVersionBeyondReader(): void {
+    this.doc.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
+  }
+
+  // Test-only: restores meta.schema_version and returns the frame carrying
+  // just that repair, mirroring apply()'s before/after delta shape so the
+  // caller can transmit the repair as its own frame -- separately from, and
+  // before, whatever mutation comes next -- instead of folding it silently
+  // into a later apply()'s delta.
+  repairSchemaVersion(): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    this.doc.getMap('meta').set('schema_version', SCHEMA_VERSION)
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
   subscribed(): HostFrame {
     return {
       type: 'doc_subscribed',
@@ -102,8 +136,9 @@ export class HostDoc {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: this.workflowId,
         ok: true,
-        seq: this.seq
-      }
+        seq: this.seq,
+        ...(this.lineageSeq !== 0 && { lineage_seq: this.lineageSeq })
+      } satisfies DocSubscribedData
     }
   }
 
@@ -160,6 +195,26 @@ export class HostDoc {
     )
   }
 
+  seedDefinition(definition: ExportedSubgraph): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const minted = mint(
+      { nodes: [], links: [], definitions: { subgraphs: [definition] } },
+      this.catalog
+    )
+      .getMap<unknown>('definitions')
+      .get(definition.id)
+    if (!(minted instanceof Y.Map)) {
+      throw new Error('the definition did not mint')
+    }
+    this.doc.getMap<unknown>('definitions').set(definition.id, minted.clone())
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
   replaceLink(link: HostLinkTuple): HostFrame {
     const before = Y.encodeStateVector(this.doc)
     const replacement = new Y.Array<unknown>()
@@ -176,6 +231,64 @@ export class HostDoc {
   link(id: number): unknown {
     const link = linksMap(this.doc).get(String(id))
     return link instanceof Y.Array ? link.toJSON() : link
+  }
+
+  /** Test-only frame for widget keys `set_widget` rejects, such as `_extra_N`. */
+  setDocumentWidget(nodeId: number, name: string, value: unknown): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const widgets = nodesMap(this.doc).get(String(nodeId))?.get('widgets')
+    if (!(widgets instanceof Y.Map)) {
+      throw new Error(`Host node ${String(nodeId)} has no named widget map`)
+    }
+    widgets.set(name, value)
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
+  /** Test-only replacement preserving the caller's named-widget key order. */
+  replaceDocumentWidgets(
+    nodeId: number,
+    entries: readonly (readonly [string, unknown])[]
+  ): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const node = nodesMap(this.doc).get(String(nodeId))
+    if (!(node instanceof Y.Map)) {
+      throw new Error(`Host node ${String(nodeId)} does not exist`)
+    }
+    const widgets = new Y.Map<unknown>()
+    for (const [name, value] of entries) widgets.set(name, value)
+    node.set('widgets', widgets)
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
+  replaceOpaqueWidgetValues(
+    nodeId: number,
+    values: readonly unknown[]
+  ): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const node = nodesMap(this.doc).get(String(nodeId))
+    if (!(node instanceof Y.Map)) {
+      throw new Error(`Host node ${String(nodeId)} does not exist`)
+    }
+    if (!Array.isArray(node.get(OPAQUE_WIDGETS_KEY))) {
+      throw new Error(`Host node ${String(nodeId)} has no opaque widget values`)
+    }
+    node.set(OPAQUE_WIDGETS_KEY, [...values])
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
   }
 
   // A batch the client minted itself (envelope included), answered the way
@@ -228,6 +341,7 @@ export class HostDoc {
         workflow_id: this.workflowId,
         ok: rejected === undefined,
         seq: this.seq,
+        lineage_seq: this.lineageSeq,
         applied,
         skipped,
         ...(rejected && {
@@ -262,10 +376,11 @@ export class HostDoc {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: this.workflowId,
         seq: this.seq,
+        lineage_seq: this.lineageSeq,
         update_b64: toBase64(update),
         actor,
         op_ids: opIds
-      }
+      } satisfies DocUpdateData
     }
   }
 }

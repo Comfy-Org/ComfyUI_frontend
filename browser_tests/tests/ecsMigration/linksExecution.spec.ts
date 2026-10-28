@@ -30,10 +30,6 @@ test.describe(
       }
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test('muting a middle node excludes it from the API prompt before queueing', async ({
       comfyPage
     }) => {
@@ -93,13 +89,13 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
       const clickPosition = { x: 200, y: 200 }
       await comfyPage.searchBoxV2.addNode('KSampler', {
         position: clickPosition
       })
 
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+      await comfyPage.expectNodeCount(1)
       const placement = await comfyPage.page.evaluate(() => {
         const node = window.app!.graph.nodes.find(
           ({ type }) => type === 'KSampler'
@@ -138,7 +134,6 @@ test.describe(
         .poll(() => comfyPage.canvasOps.getScale())
         .not.toBe(scaleBefore)
 
-      await comfyPage.canvasOps.resetView()
       const position = await checkpoint.getPosition()
       const from = await comfyPage.canvasOps.toAbsolute({
         x: position.x - 20,

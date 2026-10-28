@@ -84,6 +84,24 @@ describe('GtmTelemetryProvider', () => {
       expect(lastDataLayerEntry()).toMatchObject({ event: 'view_promotion' })
     })
 
+    it('keeps the selected workspace out of the subscription modal push', () => {
+      const provider = createInitializedProvider()
+      provider.trackSubscription('modal_opened', {
+        current_tier: 'free',
+        reason: 'subscribe_to_run',
+        workspace_id: 'owner-personal-team-plan',
+        workspace_type: 'personal',
+        workspace_role: 'member',
+        workspace_tier: 'TEAM',
+        auth_rail: 'web_session'
+      })
+      expect(lastDataLayerEntry()).toEqual({
+        event: 'view_promotion',
+        current_tier: 'free',
+        reason: 'subscribe_to_run'
+      })
+    })
+
     it('pushes subscribe click as select_promotion', () => {
       const provider = createInitializedProvider()
       provider.trackSubscription('subscribe_clicked')
@@ -198,7 +216,8 @@ describe('GtmTelemetryProvider', () => {
         trigger_source: 'button',
         view_mode: 'app',
         is_app_mode: true,
-        dock_state: 'floating'
+        dock_state: 'floating',
+        agent_panel_open: true
       })
       expect(lastDataLayerEntry()).toMatchObject({
         event: 'run_workflow',
@@ -206,7 +225,8 @@ describe('GtmTelemetryProvider', () => {
         subscribe_to_run: false,
         view_mode: 'app',
         is_app_mode: true,
-        dock_state: 'floating'
+        dock_state: 'floating',
+        agent_panel_open: true
       })
     })
 
@@ -353,6 +373,19 @@ describe('GtmTelemetryProvider', () => {
         is_app_mode: true
       })
       expect(lastDataLayerEntry()).not.toHaveProperty('share_id')
+    })
+
+    it('pushes page_visibility with the agent panel state', () => {
+      const provider = createInitializedProvider()
+      provider.trackPageVisibilityChanged({
+        visibility_state: 'hidden',
+        agent_panel_open: true
+      })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'page_visibility',
+        visibility_state: 'hidden',
+        agent_panel_open: true
+      })
     })
 
     it('pushes ui_button_click with element_group', () => {
