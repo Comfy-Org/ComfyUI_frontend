@@ -101,7 +101,7 @@ const isInSubgraph = computed(() => navigationStore.navigationStack.length > 0)
 
 const home = computed(() => ({
   label: workflowName.value,
-  icon: 'pi pi-home',
+  icon: 'icon-[lucide--house]',
   key: 'root',
   isBlueprint: isBlueprint.value,
   command: () => {

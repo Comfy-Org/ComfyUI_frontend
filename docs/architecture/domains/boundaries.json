@@ -1759,6 +1759,7 @@
           "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
           "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
           "src/renderer/extensions/layerEditor/components/**",
+          "src/renderer/extensions/layerEditor/composables/layerEditorDialog.test.ts",
           "src/renderer/extensions/layerEditor/composables/layerEditorDialog.ts"
         ]
       },
@@ -3377,8 +3378,6 @@
       {
         "name": "workflow-management/application",
         "patterns": [
-          "src/composables/useNewMenuItemIndicator.test.ts",
-          "src/composables/useNewMenuItemIndicator.ts",
           "src/composables/useWorkflowActionsMenu.test.ts",
           "src/composables/useWorkflowActionsMenu.ts",
           "src/platform/workflow/core/services/**",
@@ -5011,7 +5010,11 @@
       },
       {
         "from": "execution/domain",
-        "allow": ["execution/domain", "unclassified"]
+        "allow": [
+          "execution/domain",
+          "workflow-management/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "execution/application",
@@ -5019,6 +5022,9 @@
           "execution/domain",
           "execution/application",
           "execution/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
           "unclassified"
         ]
       },
@@ -5028,6 +5034,9 @@
           "execution/domain",
           "execution/application",
           "execution/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
           "unclassified"
         ]
       },
@@ -5037,6 +5046,10 @@
           "execution/domain",
           "execution/application",
           "execution/presentation",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/presentation",
+          "workflow-management/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -5048,6 +5061,12 @@
           "execution/infrastructure",
           "execution/presentation",
           "execution/integration",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "workflow-management/presentation",
+          "workflow-management/integration",
+          "workflow-management/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -5442,6 +5461,7 @@
       {
         "from": "image-compositor/domain",
         "allow": [
+          "dialog-host/domain",
           "image-compositor/domain",
           "image-compositor/domain/outer-2",
           "unclassified"
@@ -5450,6 +5470,8 @@
       {
         "from": "image-compositor/infrastructure",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
           "image-compositor/domain",
           "image-compositor/infrastructure",
           "image-compositor/application/outer-1",
@@ -5460,8 +5482,11 @@
       {
         "from": "image-compositor/presentation",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
           "image-compositor/domain",
           "image-compositor/presentation",
+          "dialog-host/presentation/outer-1",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",
           "unclassified"
@@ -5470,10 +5495,14 @@
       {
         "from": "image-compositor/integration",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/integration",
           "image-compositor/domain",
           "image-compositor/infrastructure",
           "image-compositor/presentation",
           "image-compositor/integration",
+          "dialog-host/presentation/outer-1",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",
           "unclassified"
@@ -7465,6 +7494,8 @@
       {
         "from": "image-compositor/application/outer-1",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
           "image-compositor/domain",
           "image-compositor/infrastructure",
           "image-compositor/application/outer-1",
@@ -7950,6 +7981,7 @@
       {
         "from": "image-compositor/domain/outer-2",
         "allow": [
+          "dialog-host/domain",
           "image-compositor/domain",
           "image-compositor/domain/outer-2",
           "unclassified"

@@ -171,13 +171,6 @@ export function useFeatureFlags() {
         false
       )
     },
-    get linearToggleEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
-        remoteConfig.value.linear_toggle_enabled,
-        isNightly
-      )
-    },
     get partnerNodeGovernanceEnabled() {
       return resolveFlag(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
@@ -400,7 +393,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.PRIVATE_MODELS_ENABLED]: flags.privateModelsEnabled,
       [ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED]:
         flags.onboardingSurveyEnabled,
-      [ServerFeatureFlag.LINEAR_TOGGLE_ENABLED]: flags.linearToggleEnabled,
       [ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED]:
         flags.partnerNodeGovernanceEnabled,
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,

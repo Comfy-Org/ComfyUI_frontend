@@ -19,7 +19,7 @@
       class="filter-button z-10"
       @click="filterVisible = true"
     >
-      <i class="pi pi-filter" />
+      <i class="icon-[lucide--funnel]" />
     </Button>
     <Dialog :open="filterVisible" @update:open="onFilterDialogOpenChange">
       <DialogPortal>

@@ -5,7 +5,7 @@
   >
     <NoResultsPlaceholder
       class="pb-0"
-      icon="pi pi-exclamation-circle"
+      icon="icon-[lucide--circle-alert]"
       :message="message"
       text-class="break-words max-w-[60vw]"
     >
@@ -59,7 +59,7 @@
         data-testid="error-dialog-copy-report"
         @click="copyReportToClipboard"
       >
-        <i class="pi pi-copy" />
+        <i class="icon-[lucide--copy]" />
         {{ $t('g.copyToClipboard') }}
       </Button>
     </div>

@@ -68,7 +68,7 @@
                 size="icon-sm"
                 :aria-label="$t('credits.additionalInfo')"
               >
-                <i class="pi pi-info-circle" />
+                <i class="icon-[lucide--info]" />
               </Button>
             </TableCell>
           </TableRow>

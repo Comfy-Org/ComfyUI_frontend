@@ -15,7 +15,7 @@
       :aria-label="$t('g.close')"
       @click="onClose"
     >
-      <i class="pi pi-times text-xl" />
+      <i class="icon-[lucide--x] size-5" />
     </Button>
 
     <!-- The confirm and success steps title themselves. -->
