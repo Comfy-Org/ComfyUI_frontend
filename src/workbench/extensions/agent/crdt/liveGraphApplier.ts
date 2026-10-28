@@ -2041,7 +2041,8 @@ function tryCreateSubgraphs(
     } catch (rollbackCause) {
       return new AggregateError(
         [cause, rollbackCause],
-        'Agent subgraph definitions failed to register and roll back'
+        'Agent subgraph definitions failed to register and roll back',
+        { cause }
       )
     }
     return cause
