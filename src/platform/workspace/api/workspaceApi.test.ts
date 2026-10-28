@@ -15,7 +15,7 @@ const { mockAxiosInstance } = vi.hoisted(() => ({
     put: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
-    interceptors: { response: { use: vi.fn() } }
+    interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } }
   }
 }))
 
@@ -364,7 +364,7 @@ describe('workspaceApi', () => {
   })
 
   describe('deployment picking', () => {
-    it('listDeployments() sends GET /workspaces/:id/deployments with a 30 second timeout', async () => {
+    it('listDeployments() sends GET /workspaces/:id/deployments with a 30 second timeout and no status retry', async () => {
       const data = { items: [], builds_visible: true }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
@@ -372,7 +372,7 @@ describe('workspaceApi', () => {
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/workspaces/ws-1/deployments',
-        { headers: AUTH_HEADER, timeout: 30_000 }
+        { headers: AUTH_HEADER, timeout: 30_000, __skipStatusRetry: true }
       )
       expect(result).toEqual(data)
     })
