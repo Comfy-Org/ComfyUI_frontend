@@ -60,6 +60,14 @@
       "role": "integration"
     },
     {
+      "path": "src/components/graph/selectionToolbox/AlignButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/AlignButton.vue",
+      "role": "presentation"
+    },
+    {
       "path": "src/components/graph/selectionToolbox/BypassButton.test.ts",
       "role": "presentation"
     },
@@ -133,6 +141,14 @@
     },
     {
       "path": "src/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/SelectionToolboxBar.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/selectionToolboxBar.ts",
       "role": "presentation"
     },
     {
@@ -286,6 +302,7 @@
         "src/components/graph/selectionToolbox/InfoButton.test.ts",
         "src/components/graph/selectionToolbox/MaskEditorButton.test.ts",
         "src/components/graph/selectionToolbox/TidyUpButton.test.ts",
+        "src/components/graph/selectionToolbox/AlignButton.test.ts",
         "src/components/graph/selectionGrid/SelectionGapHandles.test.ts"
       ]
     },

@@ -47,6 +47,7 @@ import {
   registerNodeOptionsInstance,
   useMoreOptionsMenu
 } from '@/composables/graph/useMoreOptionsMenu'
+import { isSubMenuOption } from '@/composables/graph/menuOption'
 import type { MenuOption } from '@/composables/graph/menuOption'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -104,7 +105,7 @@ function convertToMenuItem(option: MenuOption): NodeMenuItem {
       icon: option.icon,
       radioGroup: {
         value: getCurrentShape()?.localizedName ?? '',
-        options: option.submenu.map((sub) => ({
+        options: option.submenu.filter(isSubMenuOption).map((sub) => ({
           value: sub.label,
           label: sub.label,
           command: sub.action
@@ -119,13 +120,18 @@ function convertToMenuItem(option: MenuOption): NodeMenuItem {
       icon: option.icon,
       disabled: option.disabled,
       shortcut: option.shortcut,
-      items: option.submenu.map((sub) => ({
-        label: sub.label,
-        icon: sub.icon,
-        color: sub.color,
-        disabled: sub.disabled,
-        command: sub.action
-      }))
+      items: option.submenu.map(
+        (sub): NodeMenuItem =>
+          isSubMenuOption(sub)
+            ? {
+                label: sub.label,
+                icon: sub.icon,
+                color: sub.color,
+                disabled: sub.disabled,
+                command: sub.action
+              }
+            : { separator: true }
+      )
     }
   }
 

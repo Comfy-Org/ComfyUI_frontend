@@ -3,6 +3,7 @@ import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
+import { isSubMenuOption } from '@/composables/graph/menuOption'
 import { useSelectionMenuOptions } from '@/composables/graph/useSelectionMenuOptions'
 
 const mocks = vi.hoisted(() => ({
@@ -30,6 +31,7 @@ vi.mock<unknown>(import('@/composables/graph/useSelectionOperations'), () => ({
 }))
 
 vi.mock<unknown>(import('@/composables/graph/useNodeArrangement'), () => ({
+  ARRANGE_ICON: 'arrange',
   useNodeArrangement: () => ({
     alignOptions: [{ localizedName: 'align-left', icon: 'align-left' }],
     distributeOptions: [{ localizedName: 'distribute', icon: 'distribute' }],
@@ -132,5 +134,19 @@ describe('useSelectionMenuOptions - subgraph options', () => {
       (option) => option.label === 'contextMenu.Add Subgraph to Library'
     )
     expect(addToLibraryOption?.action).toBe(mocks.addSubgraphToLibrary)
+  })
+})
+
+describe('useSelectionMenuOptions - arrange option', () => {
+  it('puts Tidy up, the align options and the distribute options in one submenu', () => {
+    const { getArrangeOption } = setupComposable()
+    const option = getArrangeOption()
+
+    expect(option.label).toBe('contextMenu.Arrange')
+    expect(
+      option.submenu?.map((item) =>
+        isSubMenuOption(item) ? item.label : 'divider'
+      )
+    ).toEqual(['g.tidyUp', 'divider', 'align-left', 'divider', 'distribute'])
   })
 })

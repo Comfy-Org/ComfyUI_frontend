@@ -8,6 +8,8 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 
 import { useCanvasRefresh } from './useCanvasRefresh'
 
+export const ARRANGE_ICON = 'icon-[lucide--align-start-vertical]'
+
 interface AlignOption {
   name: string
   localizedName: string
@@ -32,25 +34,25 @@ export function useNodeArrangement() {
   const alignOptions: AlignOption[] = [
     {
       name: 'top',
-      localizedName: t('contextMenu.Top'),
+      localizedName: t('contextMenu.Align top'),
       value: 'top',
       icon: 'icon-[lucide--align-start-horizontal]'
     },
     {
       name: 'bottom',
-      localizedName: t('contextMenu.Bottom'),
+      localizedName: t('contextMenu.Align bottom'),
       value: 'bottom',
       icon: 'icon-[lucide--align-end-horizontal]'
     },
     {
       name: 'left',
-      localizedName: t('contextMenu.Left'),
+      localizedName: t('contextMenu.Align left'),
       value: 'left',
       icon: 'icon-[lucide--align-start-vertical]'
     },
     {
       name: 'right',
-      localizedName: t('contextMenu.Right'),
+      localizedName: t('contextMenu.Align right'),
       value: 'right',
       icon: 'icon-[lucide--align-end-vertical]'
     }
@@ -59,13 +61,13 @@ export function useNodeArrangement() {
   const distributeOptions: DistributeOption[] = [
     {
       name: 'horizontal',
-      localizedName: t('contextMenu.Horizontal'),
+      localizedName: t('contextMenu.Distribute horizontally'),
       value: true,
       icon: 'icon-[lucide--align-center-horizontal]'
     },
     {
       name: 'vertical',
-      localizedName: t('contextMenu.Vertical'),
+      localizedName: t('contextMenu.Distribute vertically'),
       value: false,
       icon: 'icon-[lucide--align-center-vertical]'
     }

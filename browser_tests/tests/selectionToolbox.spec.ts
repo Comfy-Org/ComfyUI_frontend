@@ -96,6 +96,47 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     })
   })
 
+  test('aligns the selection to its top edge from the align bar and from More Options', async ({
+    comfyPage
+  }) => {
+    const { page } = comfyPage
+    await comfyPage.canvasOps.pan({ x: -300, y: 0 }, { x: 600, y: 60 })
+    const titles = ['Empty Latent Image', 'KSampler']
+    const nodes = await Promise.all(
+      titles.map((title) => comfyPage.nodeOps.getNodeRefByTitle(title))
+    )
+    const tops = () =>
+      Promise.all(
+        nodes.map(async (node) => (await node.getProperty<number[]>('pos'))[1])
+      )
+    const before = await tops()
+    const selectionTop = Math.min(...before)
+    await comfyPage.nodeOps.selectNodes(titles)
+
+    await test.step('align from the align bar', async () => {
+      await page.getByRole('button', { name: 'Align and distribute' }).click()
+      await page.getByRole('button', { name: 'Align top', exact: true }).click()
+      await expect.poll(tops).toEqual([selectionTop, selectionTop])
+    })
+
+    await test.step('undo restores the original rows', async () => {
+      await comfyPage.keyboard.undo()
+      await expect.poll(tops).toEqual(before)
+    })
+
+    await test.step('align from the More Options menu', async () => {
+      await comfyPage.canvasOps.clickEmptySpace()
+      await comfyPage.nodeOps.selectNodes(titles)
+      await page.getByTestId('more-options-button').click()
+      await comfyPage.contextMenu.menuItem('Arrange').click()
+      const arrange = page.getByRole('menu', { name: 'Arrange', exact: true })
+      await arrange
+        .getByRole('menuitem', { name: 'Align top', exact: true })
+        .click()
+      await expect.poll(tops).toEqual([selectionTop, selectionTop])
+    })
+  })
+
   test('shows selection toolbox', async ({ comfyPage }) => {
     const selectedTitles = ['KSampler', 'CLIP Text Encode (Prompt)']
     await expect(comfyPage.selectionToolbox).toBeHidden()

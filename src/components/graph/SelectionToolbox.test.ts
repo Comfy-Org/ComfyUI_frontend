@@ -2,10 +2,12 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, h, watch } from 'vue'
+import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
+import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -114,6 +116,7 @@ describe('SelectionToolbox', () => {
           info: 'Node Info',
           bookmark: 'Save to Library',
           frameNodes: 'Frame Nodes',
+          alignAndDistribute: 'Align and distribute',
           moreOptions: 'More Options',
           refreshNode: 'Refresh Node'
         }
@@ -136,7 +139,10 @@ describe('SelectionToolbox', () => {
     mockSettingValues()
   })
 
-  function renderComponent(props = {}): { container: Element } {
+  function renderComponent(
+    props = {},
+    barStubs: Record<string, Component> = {}
+  ): { container: Element } {
     const { container } = render(SelectionToolbox, {
       props,
       global: {
@@ -185,7 +191,8 @@ describe('SelectionToolbox', () => {
           MoreOptions: {
             template:
               '<button data-testid="more-options-button" class="more-options" />'
-          }
+          },
+          ...barStubs
         }
       }
     })
@@ -289,6 +296,23 @@ describe('SelectionToolbox', () => {
       const { container: container2 } = renderComponent()
       expect(container2.querySelector('.frame-nodes')).toBeTruthy()
     })
+
+    it.for([
+      { nodes: 1, shown: false },
+      { nodes: 2, shown: true }
+    ])(
+      'shows the align button: $shown, for $nodes selected nodes',
+      ({ nodes, shown }) => {
+        setCanvasSelection(
+          Array.from({ length: nodes }, () => new LGraphNode('Test Node'))
+        )
+        renderComponent()
+        expect(
+          screen.queryByRole('button', { name: 'Align and distribute' }) !==
+            null
+        ).toBe(shown)
+      }
+    )
 
     it('should show bypass button for appropriate selections', () => {
       // Single node selection
@@ -480,6 +504,63 @@ describe('SelectionToolbox', () => {
       expect(container.querySelector('.color-picker-button')).toBeFalsy()
       expect(container.querySelector('.frame-nodes')).toBeFalsy()
       expect(container.querySelector('.bookmark-button')).toBeFalsy()
+    })
+  })
+
+  describe('Selection bars', () => {
+    const BAR_LIFT = 48
+    const barButton = (name: string) =>
+      defineComponent({
+        props: { open: Boolean, lift: Number },
+        emits: ['update:open', 'update:lift'],
+        setup(props, { emit }) {
+          watch(
+            () => props.open,
+            (open) => emit('update:lift', open ? BAR_LIFT : 0)
+          )
+          return () =>
+            h(
+              'button',
+              {
+                'aria-expanded': String(props.open),
+                onClick: () => emit('update:open', true)
+              },
+              name
+            )
+        }
+      })
+
+    beforeEach(() => {
+      vi.mocked(useExtensionService).mockReturnValue(
+        createMockExtensionService()
+      )
+    })
+
+    it('opens one bar at a time and stays lifted while switching between them', async () => {
+      const user = userEvent.setup()
+      setCanvasSelection([
+        new LGraphNode('Test Node'),
+        new LGraphNode('Test Node')
+      ])
+      renderComponent(
+        {},
+        {
+          TidyUpButton: barButton('Tidy up'),
+          AlignButton: barButton('Align and distribute')
+        }
+      )
+      const lift = vi.mocked(useSelectionToolboxPosition).mock.lastCall![1]
+      const tidyUp = screen.getByRole('button', { name: 'Tidy up' })
+      const align = screen.getByRole('button', { name: 'Align and distribute' })
+
+      await user.click(tidyUp)
+      expect(tidyUp).toHaveAttribute('aria-expanded', 'true')
+      expect(lift.value).toBe(BAR_LIFT)
+
+      await user.click(align)
+      expect(tidyUp).toHaveAttribute('aria-expanded', 'false')
+      expect(align).toHaveAttribute('aria-expanded', 'true')
+      expect(lift.value).toBe(BAR_LIFT)
     })
   })
 

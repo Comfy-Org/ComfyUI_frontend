@@ -133,7 +133,7 @@ export function useMoreOptionsMenu() {
     getBasicSelectionOptions,
     getMultipleNodesOptions,
     getSubgraphOptions,
-    getAlignmentOptions,
+    getArrangeOption,
     getDeleteOption
   } = useSelectionMenuOptions()
 
@@ -147,11 +147,9 @@ export function useMoreOptionsMenu() {
   }
 
   const menuOptions = computed((): MenuOption[] => {
-    // Reference selection flags to ensure re-computation when they change
     void optionsVersion.value
     const states = computeSelectionFlags()
 
-    // Detect single group selection context (and no nodes explicitly selected)
     const selectedGroups = selectedItems.value.filter(isLGraphGroup)
     const groupContext: LGraphGroup | null =
       selectedGroups.length === 1 && selectedNodes.value.length === 0
@@ -159,14 +157,15 @@ export function useMoreOptionsMenu() {
         : null
     const hasSubgraphsSelected = hasSubgraphs.value
 
-    // For single node selection, also get LiteGraph menu items to merge
     const litegraphOptions: MenuOption[] = []
-    const node: LGraphNode | undefined =
-      (invocationContext.value === undefined
+    const invokedNode =
+      invocationContext.value === undefined
         ? undefined
-        : canvasStore.currentGraph?.getNodeById(
+        : (canvasStore.currentGraph?.getNodeById(
             invocationContext.value.nodeId
-          )) ?? selectedNodes.value.at(0)
+          ) ?? undefined)
+    const node: LGraphNode | undefined =
+      invokedNode ?? selectedNodes.value.at(0)
     const hideLinkedInputActions = node
       ? shouldHideLinkedCoreMediaInputActions(node)
       : false
@@ -187,7 +186,6 @@ export function useMoreOptionsMenu() {
     ) {
       try {
         const rawItems = canvasStore.canvas.getNodeMenuOptions(node)
-        // Don't apply structuring yet - we'll do it after merging with Vue options
         litegraphOptions.push(
           ...convertContextMenuToOptions(
             filterUnavailableCoreMediaMenuActions(
@@ -205,12 +203,10 @@ export function useMoreOptionsMenu() {
 
     const options: MenuOption[] = []
 
-    // Section 1: Basic selection operations (Rename, Copy, Duplicate)
     const basicOps = getBasicSelectionOptions()
     options.push(...basicOps)
     options.push({ type: 'divider' })
 
-    // Section 2: Node actions (Run Branch, Pin, Bypass, Mute)
     if (hasOutputNodesSelected.value) {
       const runBranch = getRunBranchOption()
       options.push(runBranch)
@@ -227,7 +223,6 @@ export function useMoreOptionsMenu() {
     }
     options.push({ type: 'divider' })
 
-    // Section 3: Structure operations (Convert to Subgraph, Frame selection, Minimize Node)
     options.push(
       ...getSubgraphOptions({
         hasSubgraphs: hasSubgraphsSelected,
@@ -236,38 +231,34 @@ export function useMoreOptionsMenu() {
     )
     if (hasMultipleNodes.value) {
       options.push(...getMultipleNodesOptions())
-      options.push(...getAlignmentOptions(node))
+      options.push(getArrangeOption(invokedNode))
     }
     if (groupContext) {
       options.push(getFitGroupToNodesOption(groupContext))
     } else {
-      // Node context: Expand/Minimize
       const visualOptions = getNodeVisualOptions(states, bump)
       if (visualOptions.length > 0) {
-        options.push(visualOptions[0]) // Expand/Minimize (index 0)
+        options.push(visualOptions[0])
       }
     }
     options.push({ type: 'divider' })
 
-    // Section 4: Node properties (Node Info, Shape, Color)
     if (canOpenNodeInfo.value) {
       options.push(getNodeInfoOption(openNodeInfo))
     }
     if (groupContext) {
       options.push(getGroupColorOptions(groupContext, bump))
     } else {
-      // Add shape and color options
       const visualOptions = getNodeVisualOptions(states, bump)
       if (visualOptions.length > 1) {
-        options.push(visualOptions[1]) // Shape (index 1)
+        options.push(visualOptions[1])
       }
       if (visualOptions.length > 2) {
-        options.push(visualOptions[2]) // Color (index 2)
+        options.push(visualOptions[2])
       }
     }
     options.push({ type: 'divider' })
 
-    // Section 5: Image operations (image nodes, or a node with several outputs)
     if (
       (hasImageNode.value && selectedNodes.value.length > 0) ||
       (isSingleNode.value && hasMultipleOutputs(selectedNodes.value[0]))
@@ -300,17 +291,12 @@ export function useMoreOptionsMenu() {
       )
     )
 
-    // Section 6 & 7: Extensions and Delete are handled by buildStructuredMenu
-
-    // Mark all Vue options with source
     const markedVueOptions = markAsVueOptions(options)
 
     if (litegraphOptions.length > 0) {
-      // Merge: LiteGraph options first, then Vue options (Vue will win in dedup)
       const merged = [...litegraphOptions, ...markedVueOptions]
       return buildStructuredMenu(merged)
     }
-    // For other cases, structure the Vue options
     const result = buildStructuredMenu(markedVueOptions)
     return result
   })
