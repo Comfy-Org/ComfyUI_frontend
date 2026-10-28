@@ -10,8 +10,6 @@ import { createI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import { useSettingUI as useSettingUIComposable } from './useSettingUI'
@@ -20,6 +18,7 @@ const env = vi.hoisted(() => {
   const state = {
     isCloud: false,
     isDesktop: false,
+    canViewMembers: false,
     workspaceRole: 'owner' as 'owner' | 'member',
     partnerNodeGovernanceStatus: 'inactive' as
       | 'inactive'
@@ -51,7 +50,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
-vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+
+vi.mock(
+  import('@/platform/account/composables/useWorkspaceMembersVisibility'),
+  () => ({
+    useWorkspaceMembersVisibility: () => ({
+      canViewMembers: computed(() => env.state.canViewMembers)
+    })
+  })
+)
 
 interface MockSettingParams {
   id: string
@@ -127,6 +134,7 @@ describe('useSettingUI', () => {
     Object.assign(env.state, {
       isCloud: false,
       isDesktop: false,
+      canViewMembers: false,
       workspaceRole: 'owner',
       partnerNodeGovernanceStatus: 'inactive',
       partnerNodeGovernanceProviders: []
@@ -207,6 +215,7 @@ describe('useSettingUI', () => {
 
     it('shows Plan & Credits and Members on cloud', () => {
       env.state.isCloud = true
+      env.state.canViewMembers = true
       const { defaultCategory, findPanelByKey, navGroups } =
         useSettingUI('workspace')
       const workspaceItems = navGroups.value
@@ -230,6 +239,7 @@ describe('useSettingUI', () => {
 
     it('swaps Plan & Credits for Billing on cloud when unified billing settings is on', () => {
       env.state.isCloud = true
+      env.state.canViewMembers = true
       const flags = vi.mocked(useFeatureFlags().flags)
       flags.unifiedBillingSettingsEnabled = true
       onTestFinished(() => {
@@ -274,11 +284,9 @@ describe('useSettingUI', () => {
       expect(findPanelByKey('workspace-allowlist')).toBeNull()
     })
 
-    it('shows Members off Cloud when the server says the actor can manage them', () => {
+    it('shows Members off Cloud when account admits the actor', () => {
       env.state.isCloud = false
-      vi.mocked(useBillingCapabilities()).canManageMembers = computed(() =>
-        receiveServerFact('can_manage_members', true)
-      )
+      env.state.canViewMembers = true
 
       const { navGroups } = useSettingUI()
       const workspaceItems = navGroups.value
@@ -354,6 +362,7 @@ describe('useSettingUI', () => {
     beforeEach(() => {
       useCurrentUser().isLoggedIn = computed(() => true)
       env.state.isCloud = true
+      env.state.canViewMembers = true
       vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = true
     })
 
@@ -412,6 +421,7 @@ describe('useSettingUI', () => {
 
     it('uses Plan & Credits for logged-in local users', () => {
       env.state.isCloud = false
+      env.state.canViewMembers = false
       const { navGroups } = useSettingUI()
 
       expect(navKeys(navGroups.value)).toContain('workspace')
