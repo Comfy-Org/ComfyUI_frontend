@@ -145,7 +145,8 @@
     "account",
     "authentication",
     "dialog-host",
-    "keybindings"
+    "keybindings",
+    "telemetry"
   ],
   "allowedConsumers": [],
   "characterizationScenarios": [

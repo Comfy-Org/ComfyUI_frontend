@@ -597,7 +597,8 @@
     "design-system",
     "ingest-api",
     "keybindings",
-    "server-facts"
+    "server-facts",
+    "telemetry"
   ],
   "allowedConsumers": ["account"],
   "characterizationScenarios": [

@@ -8820,7 +8820,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.paste('continue this submission')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     const agree = await screen.findByRole('button', {
-      name: 'Agree and continue'
+      name: 'Agree and continue with sign in'
     })
     expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
     expect(fetchRequests(consentPost)).toHaveLength(0)

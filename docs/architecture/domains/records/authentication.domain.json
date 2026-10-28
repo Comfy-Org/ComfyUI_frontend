@@ -349,7 +349,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["account", "ingest-api", "keybindings"],
+  "allowedDependencies": ["account", "ingest-api", "keybindings", "telemetry"],
   "allowedConsumers": ["agent", "settings"],
   "characterizationScenarios": [
     {

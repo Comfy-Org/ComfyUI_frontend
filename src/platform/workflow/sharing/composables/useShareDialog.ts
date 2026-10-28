@@ -39,6 +39,7 @@ export function useShareDialog() {
           preserveNewlines: true
         },
         footerProps: {
+          cancelText: t('g.cancel'),
           confirmText: t('shareNoOutputs.shareAnyway'),
           confirmVariant: 'secondary',
           onCancel: () => dialogStore.closeDialog(dialog),

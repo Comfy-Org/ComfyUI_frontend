@@ -51,7 +51,7 @@ import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NotificationPopup from '@/components/common/NotificationPopup.vue'
+import NotificationPopup from '@comfyorg/design-system/common/NotificationPopup'
 import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import Button from '@comfyorg/design-system/button/Button'
 import { useErrorHandling } from '@/composables/useErrorHandling'

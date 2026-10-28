@@ -38,7 +38,8 @@ const { tone, iconClass, ringClass } = defineProps<{
 
 const TONE_CLASS: Record<DeploymentStatusTone, string> = {
   ready: 'bg-success',
-  stopped: 'bg-muted-foreground',
-  pending: 'bg-primary'
+  pending: 'bg-primary',
+  failed: 'bg-warning',
+  stopped: 'bg-muted-foreground'
 }
 </script>
