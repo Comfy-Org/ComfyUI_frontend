@@ -5,7 +5,7 @@ import type {
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 
@@ -36,7 +36,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: mockWorkspaceApi
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
+vi.mock(import('@comfyorg/telemetry-contract/reportError'), { spy: true })
 
 const listing: WorkspaceDeploymentList = {
   builds_visible: true,

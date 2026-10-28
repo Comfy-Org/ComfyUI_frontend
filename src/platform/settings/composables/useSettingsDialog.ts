@@ -1,6 +1,6 @@
 import type { Component } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import type {

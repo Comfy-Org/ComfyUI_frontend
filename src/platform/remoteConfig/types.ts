@@ -1,7 +1,7 @@
 import type { GetFeaturesResponses } from '@comfyorg/ingest-types'
 import type { PostHogConfig } from 'posthog-js'
 
-import type { TelemetryEventName } from '@/platform/telemetry/types'
+import type { TelemetryEventName } from '@comfyorg/telemetry-contract/types'
 
 export type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 

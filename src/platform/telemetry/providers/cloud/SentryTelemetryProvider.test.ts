@@ -7,7 +7,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type {
   ExecutionContext,
   ShellLayoutMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry-contract/types'
 import { SentryTelemetryProvider } from './SentryTelemetryProvider'
 
 const mocks = vi.hoisted(() => ({

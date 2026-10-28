@@ -16,10 +16,10 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
-import type { ViewMode } from '@/utils/appMode'
+import type { ViewMode } from '@comfyorg/graph-model/appMode'
 
 interface ViewModeSegment {
   mode: ViewMode

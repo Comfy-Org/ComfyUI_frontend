@@ -10,7 +10,7 @@ import { useDialogService } from '@/services/dialogService'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
 import { isDesktop } from '@/platform/distribution/types'
 import { electronAPI as getElectronAPI } from '@/utils/envUtil'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 
 export async function registerElectronAdapterExtension(): Promise<boolean> {
   if (!isDesktop) return false

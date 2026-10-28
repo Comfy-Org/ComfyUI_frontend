@@ -7,7 +7,7 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget, IStringWidget } from '@comfyorg/graph-model/widgets'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   getResourceURL,
@@ -19,7 +19,7 @@ import type { DOMWidget } from '@/types/domWidget'
 import { useAudioService } from '@/services/audioService'
 import type { NodeLocatorId } from '@/types'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '@/scripts/api'

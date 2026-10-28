@@ -79,7 +79,7 @@ vi.mock(import('@/base/credits/comfyCredits'), () => ({
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry-contract'))
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {

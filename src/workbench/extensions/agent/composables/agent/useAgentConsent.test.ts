@@ -48,7 +48,7 @@ vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 
 const reportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
   reportError
 }))
 
@@ -65,7 +65,7 @@ const telemetry = vi.hoisted(() => ({
   trackAgentConsentResolved: vi.fn(),
   trackAgentConsentOfferExited: vi.fn()
 }))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry-contract'), () => ({
   useTelemetry: () => telemetry
 }))
 

@@ -88,7 +88,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(import('@/platform/account/composables/useWorkspaceDialogs'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry-contract'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 

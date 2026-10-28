@@ -8,11 +8,11 @@ import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { TelemetryRegistry } from '@comfyorg/telemetry-contract/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry-contract/types'
 
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -85,7 +85,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry-contract'))
 
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
 

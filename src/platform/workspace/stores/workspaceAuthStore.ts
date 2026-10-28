@@ -26,9 +26,9 @@ import {
   webSessionRequests
 } from '@/platform/auth/session/webSessionFetch'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import type { UnifiedAuthRefreshOutcome } from '@comfyorg/telemetry-contract/types'
 import { prepareWorkflowWorkspaceTransition } from '@/platform/workflow/persistence/base/storageIO'
 import {
   MAX_SCHEDULED_REFRESH_RETRIES,

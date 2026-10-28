@@ -1,5 +1,5 @@
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { setTelemetryRegistry } from '@comfyorg/telemetry-contract'
+import { TelemetryRegistry } from '@comfyorg/telemetry-contract/TelemetryRegistry'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {

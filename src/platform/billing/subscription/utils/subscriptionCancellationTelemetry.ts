@@ -7,7 +7,7 @@ import {
 import type {
   SubscriptionCancellationMetadata,
   TelemetryDispatcher
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry-contract/types'
 import type {
   SubscriptionDuration,
   SubscriptionTier

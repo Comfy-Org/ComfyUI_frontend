@@ -13,7 +13,7 @@ import type {
  * marks itself `load`, the CRDT applier marks its writes `agent-remote`, and
  * every other caller is `local` by default.
  */
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 

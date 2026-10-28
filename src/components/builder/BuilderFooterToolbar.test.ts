@@ -11,7 +11,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { AppMode } from '@/utils/appMode'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 
 const mockSave = vi.hoisted(() => vi.fn())
 const mockSaveAs = vi.hoisted(() => vi.fn())
@@ -22,7 +22,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { extra: {} } }
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry-contract'))
 
 vi.mock<unknown>(import('./useBuilderSave'), () => ({
   useBuilderSave: () => ({

@@ -1,4 +1,4 @@
-import type { ImageLoadFailureMetadata } from '@/platform/telemetry/types'
+import type { ImageLoadFailureMetadata } from '@comfyorg/telemetry-contract/types'
 
 /**
  * An `<img>` `error` event carries no status, no headers and no body — the

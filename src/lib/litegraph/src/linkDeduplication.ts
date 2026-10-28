@@ -4,7 +4,7 @@ import type {
   LLink,
   SerialisedLLinkArray
 } from '@comfyorg/graph-model/entityRegistry'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { EndpointUpdate } from '@/stores/linkStore'

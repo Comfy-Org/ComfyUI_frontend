@@ -13,7 +13,7 @@
 import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 
 const props = defineProps<{
   errorMessage: string

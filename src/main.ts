@@ -23,7 +23,8 @@ import {
   markStoresReady
 } from '@/platform/telemetry/storeReadiness'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
-import { flushErrorReports } from '@/platform/telemetry/reportError'
+import '@/platform/telemetry/initErrorReporter'
+import { flushErrorReports } from '@comfyorg/telemetry-contract/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import '@/lib/litegraph/public/css/litegraph.css'
 import { createAppRouter } from '@/router'

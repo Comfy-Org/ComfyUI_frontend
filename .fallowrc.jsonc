@@ -38,7 +38,7 @@
         "browser_tests/global{Setup,Teardown}.ts",
         "packages/design-system/tests/consumer/{main,runtime,verifyStyles}.ts",
         "playwright.session.config.ts",
-        "src/**/__mocks__/**/*.ts"
+        "{src,packages}/**/__mocks__/**/*.ts"
       ],
       "entryPointRole": "test"
     }

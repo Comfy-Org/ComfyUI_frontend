@@ -12,7 +12,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { followedDoc } from './__fixtures__/followedDoc'

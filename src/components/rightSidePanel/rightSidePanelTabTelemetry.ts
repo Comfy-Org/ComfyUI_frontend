@@ -1,4 +1,4 @@
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 
 /**

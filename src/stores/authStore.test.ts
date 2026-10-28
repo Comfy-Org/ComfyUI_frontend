@@ -18,7 +18,7 @@ import {
 } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 
 import { i18n } from '@/i18n'
 import {
@@ -59,7 +59,7 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 
 const mockReportError = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -128,7 +128,7 @@ function pendingJsonResponse() {
 
 vi.mock(import('firebase/auth'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry-contract'))
 
 let mockResetSocket: Mock
 

@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
 import type { BillingOpStatusResponse } from '@comfyorg/billing-core'
@@ -25,7 +25,7 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 const mockReportError = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -35,7 +35,7 @@ vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry-contract'))
 
 import { billingApi } from '@/platform/billing/api/billingApi'
 

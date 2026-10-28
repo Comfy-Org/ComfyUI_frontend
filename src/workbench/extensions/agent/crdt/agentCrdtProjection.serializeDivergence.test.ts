@@ -5,7 +5,7 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
   reportError: mockReportError
 }))
 vi.mock(import('@/services/litegraphService'))

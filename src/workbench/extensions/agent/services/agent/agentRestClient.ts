@@ -22,7 +22,7 @@ import {
 import {
   markErrorReported,
   reportError
-} from '@/platform/telemetry/reportError'
+} from '@comfyorg/telemetry-contract/reportError'
 import { api } from '@/scripts/api'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 

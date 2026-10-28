@@ -10,8 +10,8 @@ import {
   installDatadogRum,
   resolveDeployEnv,
   setFrontendBucket
-} from './rumContext'
-import type { FrontendBucket } from './rumContext'
+} from '@comfyorg/telemetry-contract/rumContext'
+import type { FrontendBucket } from '@comfyorg/telemetry-contract/rumContext'
 
 const FRONTEND_CONTEXT_FETCH_TIMEOUT_MS = 1_000
 const FRONTEND_BUCKETS: readonly FrontendBucket[] = ['canary', 'stable']

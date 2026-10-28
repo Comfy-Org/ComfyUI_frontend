@@ -58,7 +58,7 @@ import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {

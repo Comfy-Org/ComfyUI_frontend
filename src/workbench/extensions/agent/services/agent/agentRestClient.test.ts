@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   markErrorReported,
   reportError
-} from '@/platform/telemetry/reportError'
+} from '@comfyorg/telemetry-contract/reportError'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'

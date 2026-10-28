@@ -14,7 +14,7 @@ import { useBillingCapabilities } from './useBillingCapabilities'
 
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/billing/api/billingApi'))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
   reportError: vi.fn()
 }))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))

@@ -44,7 +44,7 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
   reportError: hoisted.reportError
 }))
 

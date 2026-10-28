@@ -15,7 +15,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { DeploymentCompatibility } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'

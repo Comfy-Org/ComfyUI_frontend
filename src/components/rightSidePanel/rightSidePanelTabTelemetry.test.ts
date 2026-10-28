@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry-contract'))
 
 import { trackRightSidePanelTabOpened } from './rightSidePanelTabTelemetry'
 

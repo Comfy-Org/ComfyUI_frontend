@@ -28,7 +28,7 @@ const mockDistributionTypes = vi.hoisted(() => ({
 }))
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry-contract'))
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/services/dialogService'))

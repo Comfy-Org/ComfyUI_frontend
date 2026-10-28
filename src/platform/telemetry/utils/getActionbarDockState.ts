@@ -1,4 +1,4 @@
-import type { ActionbarDockState } from '@/platform/telemetry/types'
+import type { ActionbarDockState } from '@comfyorg/telemetry-contract/types'
 
 export function getActionbarDockState(): ActionbarDockState {
   try {

@@ -16,7 +16,7 @@ Object.defineProperty(window, 'localStorage', {
 })
 
 import { useNewUserService } from '@/services/useNewUserService'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 
 describe('useNewUserService', () => {
   let service: ReturnType<typeof useNewUserService>

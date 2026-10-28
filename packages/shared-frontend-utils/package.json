@@ -6,6 +6,10 @@
   "keywords": [],
   "type": "module",
   "exports": {
+    "./errorUtil": {
+      "types": "./dist-types/errorUtil.d.ts",
+      "default": "./src/errorUtil.ts"
+    },
     "./creditsUtil": {
       "types": "./dist-types/creditsUtil.d.ts",
       "default": "./src/creditsUtil.ts"

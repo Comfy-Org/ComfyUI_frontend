@@ -67,7 +67,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import CreditsTile from '@/platform/billing/subscription/components/CreditsTile.vue'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 import { useCommandStore } from '@/stores/commandStore'
 
 const { embedded = false } = defineProps<{

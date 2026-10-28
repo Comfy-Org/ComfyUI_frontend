@@ -11,7 +11,7 @@ import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import {
   isDownloadCancelled,

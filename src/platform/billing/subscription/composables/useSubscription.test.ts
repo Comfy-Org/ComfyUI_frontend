@@ -10,7 +10,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import type { BillingStatusResponse } from '@comfyorg/billing-core'
 import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
@@ -118,11 +118,11 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: vi.fn(() => mockCurrentUser)
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry-contract'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry-contract/reportError'), () => ({
   reportError: mockReportTelemetryError
 }))
 

@@ -479,8 +479,8 @@ import {
   isModelDownloadable,
   modelDownloadNeedsFolderPaths
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
 import { useTemplateModelAvailability } from '@/platform/workflow/templates/composables/useTemplateModelAvailability'
 import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'

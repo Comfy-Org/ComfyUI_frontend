@@ -6,7 +6,7 @@ import { nextTick } from 'vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useToast } from '@/components/ui/toast/toastStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 
 import ModelImportProgressDialog from './ModelImportProgressDialog.vue'

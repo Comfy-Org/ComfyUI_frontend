@@ -12,12 +12,12 @@ import {
 } from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry-contract/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
   BillingFailureError,

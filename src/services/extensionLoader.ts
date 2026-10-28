@@ -12,11 +12,14 @@ import {
 } from '@/platform/telemetry/extensionLoadTelemetry'
 import type { ExtensionFailureDiagnostic } from '@/platform/telemetry/extensionLoadTelemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 import { api } from '@/scripts/api'
 import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { getErrorMessage, toError } from '@/utils/errorUtil'
+import {
+  getErrorMessage,
+  toError
+} from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/rum.js',

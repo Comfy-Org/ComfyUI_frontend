@@ -1,7 +1,7 @@
 import type {
   AgentStarterPromptAssignment,
   AgentStarterPromptId
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry-contract/types'
 import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 
 /**

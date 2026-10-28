@@ -10,7 +10,7 @@ import {
 
 const mocks = vi.hoisted(() => ({ reportError: vi.fn() }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
   reportError: mocks.reportError
 }))
 

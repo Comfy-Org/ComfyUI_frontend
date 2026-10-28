@@ -1,4 +1,4 @@
-import type { PageVisibilityMetadata } from '@/platform/telemetry/types'
+import type { PageVisibilityMetadata } from '@comfyorg/telemetry-contract/types'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 

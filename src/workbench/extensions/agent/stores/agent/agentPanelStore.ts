@@ -19,11 +19,11 @@ import {
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import type { ServerFact } from '@/platform/serverFacts/serverFact'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 import type {
   AgentPanelCloseSource,
   AgentPanelOpenedMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry-contract/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'

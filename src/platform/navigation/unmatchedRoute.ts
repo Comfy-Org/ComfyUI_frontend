@@ -1,6 +1,6 @@
 import type { RouteLocation, RouteLocationRaw } from 'vue-router'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 
 /**
  * An unmatched path is attacker-supplied and unbounded, so it is truncated

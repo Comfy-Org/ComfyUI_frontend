@@ -27,7 +27,7 @@ beforeEach(() => {
   useExtensionStore().registerExtension({ name: 'Comfy.TestExtension' })
 })
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
   reportError
 }))
 

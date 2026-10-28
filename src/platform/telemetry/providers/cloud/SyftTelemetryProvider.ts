@@ -8,7 +8,7 @@ import type {
   AuthMetadata,
   AuthMethod,
   TelemetryProvider
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry-contract/types'
 
 const SYFT_SRC = 'https://cdn.sy-d.io/syftnext/syft.umd.js'
 

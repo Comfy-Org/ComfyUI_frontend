@@ -10,8 +10,8 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { DEFAULT_LIGHT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+import { TelemetryRegistry } from '@comfyorg/telemetry-contract/TelemetryRegistry'
+import { TelemetryEvents } from '@comfyorg/telemetry-contract/types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
 const {

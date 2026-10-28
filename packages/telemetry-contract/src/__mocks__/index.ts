@@ -3,8 +3,8 @@ import { vi } from 'vitest'
 import type {
   setTelemetryRegistry as realSetTelemetryRegistry,
   useTelemetry as realUseTelemetry
-} from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+} from '@comfyorg/telemetry-contract'
+import { TelemetryRegistry } from '@comfyorg/telemetry-contract/TelemetryRegistry'
 
 const telemetryMock = vi.mockObject(new TelemetryRegistry())
 export const useTelemetry = vi.fn<typeof realUseTelemetry>(() => telemetryMock)

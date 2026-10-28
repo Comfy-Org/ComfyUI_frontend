@@ -3,8 +3,8 @@ import type {
   SubscriptionCheckoutType
 } from '@comfyorg/account-core/billing'
 
-import { useTelemetry } from '@/platform/telemetry'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
+import type { PaymentIntentSource } from '@comfyorg/telemetry-contract/types'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { useAuthStore } from '@/stores/authStore'
 

@@ -7,7 +7,7 @@ import type {
   SubscriptionDialogOptions,
   TopUpCreditsDialogOptions
 } from '@/platform/billing/composables/types'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry-contract/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import type {
   DialogComponentProps,

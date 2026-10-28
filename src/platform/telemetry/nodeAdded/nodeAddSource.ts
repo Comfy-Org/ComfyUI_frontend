@@ -1,4 +1,4 @@
-import type { NodeAddSource } from '@/platform/telemetry/types'
+import type { NodeAddSource } from '@comfyorg/telemetry-contract/types'
 
 let currentSource: NodeAddSource = 'unknown'
 

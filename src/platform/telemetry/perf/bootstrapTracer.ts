@@ -57,10 +57,10 @@
  *
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
-import { useTelemetry } from '@/platform/telemetry'
-import { getDatadogRum } from '@/platform/telemetry/rumContext'
-import { TelemetryEvents } from '@/platform/telemetry/types'
-import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { getDatadogRum } from '@comfyorg/telemetry-contract/rumContext'
+import { TelemetryEvents } from '@comfyorg/telemetry-contract/types'
+import type { BootstrapCompleteMetadata } from '@comfyorg/telemetry-contract/types'
 
 import { perfMark, perfMeasureSinceOrigin, perfPoint } from './perfMark'
 import type { PerfSpan } from './perfMark'

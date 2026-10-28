@@ -1,7 +1,7 @@
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry-contract/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'

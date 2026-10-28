@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
 
-vi.unmock(import('@/platform/telemetry/reportError'))
+import type { configureErrorReporter } from './reportError'
+
+vi.unmock(import('@comfyorg/telemetry-contract/reportError'))
 
 const captureException = vi.fn()
 const isEnabled = vi.fn()
@@ -16,14 +18,9 @@ const mockFrontendBucket = {
 }
 const captureDesktopException = vi.fn()
 const hostTelemetryEnabled = vi.fn(() => true)
+let desktopTelemetry: unknown
 
-vi.mock(import('@/platform/distribution/types'), () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  }
-}))
-
-vi.mock(import('@/platform/telemetry/rumContext'), () => ({
+vi.mock(import('@comfyorg/telemetry-contract/rumContext'), () => ({
   getFrontendBucket: () => mockFrontendBucket.value,
   getDatadogRum: () =>
     fromPartial<DatadogRum>({
@@ -32,18 +29,21 @@ vi.mock(import('@/platform/telemetry/rumContext'), () => ({
     })
 }))
 
-vi.mock(import('@/platform/telemetry/hostTelemetryEnabled'), () => ({
-  isHostTelemetryEnabled: () => hostTelemetryEnabled()
-}))
-
-vi.mock(import('@sentry/vue'), () => ({
-  captureException: (...args: unknown[]) => captureException(...args),
-  isEnabled: () => isEnabled()
-}))
-
 async function loadReportError() {
   vi.resetModules()
-  return import('./reportError')
+  const reporter = await import('./reportError')
+  configureReporter(reporter.configureErrorReporter)
+  return reporter
+}
+
+function configureReporter(configure: typeof configureErrorReporter) {
+  configure({
+    captureException,
+    isSentryEnabled: isEnabled,
+    isCloud: () => mockIsCloud.value,
+    isHostTelemetryEnabled: hostTelemetryEnabled,
+    getDesktopTelemetry: () => desktopTelemetry
+  })
 }
 
 const sentryLive = (live: boolean) => isEnabled.mockReturnValue(live)
@@ -53,17 +53,46 @@ const datadogLive = (live: boolean) =>
 function installDesktopBridge(capture: unknown = captureDesktopException) {
   const telemetry = { capture: vi.fn() }
   Object.defineProperty(telemetry, 'captureException', { value: capture })
-  window.__comfyDesktop2 = { Telemetry: telemetry }
+  desktopTelemetry = telemetry
 }
 
 describe('reportError', () => {
   beforeEach(() => {
     mockIsCloud.value = false
     mockFrontendBucket.value = undefined
-    delete window.__comfyDesktop2
+    desktopTelemetry = undefined
     hostTelemetryEnabled.mockReturnValue(true)
     sentryLive(true)
     datadogLive(true)
+  })
+
+  it('retains early reports until the app configures its sinks', async () => {
+    vi.resetModules()
+    datadogLive(false)
+    const { reportError, flushErrorReports, configureErrorReporter } =
+      await import('@comfyorg/telemetry-contract/reportError')
+    const error = new Error('before telemetry setup')
+
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'failure_initializing_workspace_auth_gate'
+    })
+
+    expect(captureException).not.toHaveBeenCalled()
+
+    configureReporter(configureErrorReporter)
+    flushErrorReports()
+    flushErrorReports()
+
+    expect(captureException).toHaveBeenCalledExactlyOnceWith(
+      error,
+      expect.objectContaining({
+        tags: {
+          error_type: 'failure_initializing_workspace_auth_gate',
+          surface: 'platform'
+        }
+      })
+    )
   })
 
   it('tags Sentry and Datadog with the resolved canary bucket', async () => {
@@ -333,7 +362,7 @@ describe('reportError', () => {
   it('buffers for another sink when an older Desktop bridge omits captureException', async () => {
     sentryLive(false)
     datadogLive(false)
-    window.__comfyDesktop2 = { Telemetry: { capture: vi.fn() } }
+    desktopTelemetry = { capture: vi.fn() }
     const { reportError, flushErrorReports } = await loadReportError()
 
     reportError(new Error('early'), {
@@ -392,10 +421,7 @@ describe('reportError', () => {
       errorType: 'resource_load_error'
     })
 
-    Object.defineProperty(window, '__comfyDesktop2', {
-      value: { Telemetry: 'invalid' },
-      configurable: true
-    })
+    desktopTelemetry = 'invalid'
     expect(() => flushErrorReports()).not.toThrow()
 
     datadogLive(true)

@@ -3,12 +3,12 @@ import { computed, readonly, shallowRef, watch } from 'vue'
 
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 import type {
   OnboardingTourNotStartedReason,
   OnboardingTourSkipReason,
   OnboardingTourStepStage
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry-contract/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 

@@ -19,7 +19,7 @@ import {
   registerTour
 } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry-contract'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -74,7 +74,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry-contract'))
 
 const i18n = createI18n({
   legacy: false,
