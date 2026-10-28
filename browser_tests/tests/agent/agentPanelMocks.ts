@@ -96,6 +96,7 @@ const FUNDED_BILLING_STATUS = {
   subscription_duration: 'MONTHLY',
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
+  ended_at: null,
   team_credit_stop: null
 } satisfies BillingStatusResponse
 

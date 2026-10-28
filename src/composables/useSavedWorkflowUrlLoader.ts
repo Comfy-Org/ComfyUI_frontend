@@ -1,3 +1,5 @@
+import { tryOnScopeDispose } from '@vueuse/core'
+import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { isEqual } from 'es-toolkit'
@@ -244,5 +246,3 @@ export function useSavedWorkflowUrlLoader() {
   watch(readyContext, resumeDeferred, { flush: 'post' })
   return { openSavedWorkflowFromUrl }
 }
-import { tryOnScopeDispose } from '@vueuse/core'
-import { watch } from 'vue'

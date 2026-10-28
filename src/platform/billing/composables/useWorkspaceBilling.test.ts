@@ -116,6 +116,7 @@ function createDeferred<T>() {
 }
 
 const activeStatus = {
+  ended_at: null,
   is_active: true,
   max_seats: 73,
   occupied_seats: 72,

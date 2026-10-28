@@ -99,6 +99,7 @@ function setSwitchTarget(workspaceId: string | null): boolean {
   }
 }
 
+/** Resolves workspace and browser environment links before reloading. */
 export function useDeploymentUrlLoader() {
   const route = useRoute()
   const router = useRouter()

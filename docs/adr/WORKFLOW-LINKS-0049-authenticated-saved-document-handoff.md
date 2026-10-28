@@ -23,6 +23,23 @@ existing `deployment=<id>` contract; `environment=standard` explicitly selects
 standard Cloud for this browser. The two environment selectors are mutually
 exclusive. Changing the browser selection never stops or deletes a deployment.
 
+Link producers require the literal `private_workflow_links_enabled: true` from
+`/api/features` before emitting a private link. Operators advertise it after the
+matching frontend release and disable advertisement before rolling that release
+back, as specified by the [merged Cloud integration contract](https://github.com/Comfy-Org/cloud/blob/89174e97cec8a1d09687224e38d3cd58f296f783/docs/systems/06-frontend-cloud-integration.md).
+The browser loader verifies identity, workspace, environment and saved-document
+access when a link is opened.
+
+Deployment links switch to the named workspace once, preserving the target for
+the reload; the switch marker prevents another reload when that switch did not
+land. In the named workspace, consumed parameters are stripped before selecting
+the browser environment and reloading. Signed-out redirects preserve the intent,
+while API-key sessions cannot select a browser environment. Link selection waits
+for bounded boot deployment discovery so an existing selection can be retained;
+a listing refusal still lets the selection API return its authoritative answer.
+An explicit standard link records the browser's own selection, including when the
+workspace currently has no default.
+
 Preserve the workflow and its complete target together through authentication,
 workspace switches and deployment reloads. Resolve workspace/environment first,
 then fetch through the authenticated API. A late response cannot open after the
@@ -50,6 +67,12 @@ it does not silently create a copy or choose a same-named file.
   service, which already supports selecting standard Cloud.
 
 ## Consequences
+
+The ingest TypeScript types and Zod schemas are generated from the merged Cloud
+OpenAPI at `89174e97cec8a1d09687224e38d3cd58f296f783`, using the Cloud workflow's
+`openapi-project -fe` projection, pinned `@hey-api/openapi-ts` 0.97.3 and the
+repository formatter. The generated package is kept reproducible as a whole,
+including its public index.
 
 Record-only historical saves need to be saved into the Workflows sidebar before
 they can open as normal editable documents. This conservative fallback can also
