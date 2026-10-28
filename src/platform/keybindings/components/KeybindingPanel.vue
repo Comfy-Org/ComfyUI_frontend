@@ -4,7 +4,9 @@
       <SearchInput
         v-model="searchQuery"
         :clear-label="$t('g.clear')"
-        :accessible-label="$t('g.search')"
+        :accessible-label="
+          $t('g.searchPlaceholder', { subject: $t('g.keybindings') })
+        "
         class="max-w-96"
         size="lg"
         autofocus
