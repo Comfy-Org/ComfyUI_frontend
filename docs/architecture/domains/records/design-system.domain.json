@@ -178,7 +178,12 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": ["agent", "billing", "bounding-boxes"],
+  "allowedConsumers": [
+    "agent",
+    "billing",
+    "bounding-boxes",
+    "extension-manager"
+  ],
   "characterizationScenarios": [
     {
       "name": "Form controls preserve value binding, validation state, and accessible semantics",

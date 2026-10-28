@@ -53,6 +53,7 @@
   "allowedConsumers": [
     "agent",
     "bounding-boxes",
+    "extension-manager",
     "image-compositor",
     "settings"
   ],

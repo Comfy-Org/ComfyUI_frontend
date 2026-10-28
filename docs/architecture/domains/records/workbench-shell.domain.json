@@ -161,7 +161,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["extension-manager"],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {

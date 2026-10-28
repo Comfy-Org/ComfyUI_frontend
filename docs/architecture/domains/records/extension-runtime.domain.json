@@ -189,8 +189,8 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["webcam-capture"],
-  "allowedConsumers": ["agent"],
+  "allowedDependencies": ["extension-manager", "webcam-capture"],
+  "allowedConsumers": ["agent", "extension-manager"],
   "characterizationScenarios": [
     {
       "name": "Extension loader fetches, filters, imports, and reports failing extensions",
