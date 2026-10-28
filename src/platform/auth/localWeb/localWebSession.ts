@@ -33,13 +33,9 @@ function reportSignInFailure(failure: FailedSignIn): void {
 
 function showSignInFailure(failure: FailedSignIn): void {
   reportSignInFailure(failure)
-  useToast().error(
-    t(
-      failure.reason === 'popup-blocked'
-        ? 'auth.desktopHost.popupBlocked'
-        : 'auth.desktopHost.signInFailed'
-    )
-  )
+  if (failure.reason === 'popup-blocked') {
+    useToast().error(t('auth.desktopHost.popupBlocked'))
+  }
 }
 
 function withOriginLock<T>(task: () => Promise<T>): Promise<T> {
