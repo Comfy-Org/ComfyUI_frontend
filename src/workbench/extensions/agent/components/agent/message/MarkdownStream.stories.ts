@@ -40,3 +40,15 @@ export const ShortcutBesideCode: Story = {
     text: 'The prompt lives on `6.text`. Press Ctrl+Enter when you are happy with it.'
   }
 }
+
+export const ShortcutInAnotherLanguage: Story = {
+  args: {
+    text: '选中第二个放大节点后按 Ctrl+B 旁路它，然后重新运行。'
+  }
+}
+
+export const ShortcutSplitByEmphasis: Story = {
+  args: {
+    text: 'Press **Ctrl**+**B** to bypass the node.'
+  }
+}

@@ -196,6 +196,39 @@ describe('MarkdownStream', () => {
     expect(screen.queryByText('Ctrl', { selector: 'kbd' })).toBeNull()
   })
 
+  it('keeps a kbd the model wrote itself so the keycap styling applies', () => {
+    render(MarkdownStream, {
+      props: { text: 'Press <kbd>Ctrl</kbd>+<kbd>B</kbd> to bypass.' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByText('Ctrl', { selector: 'kbd' })).toBeInTheDocument()
+    expect(screen.getByText('B', { selector: 'kbd' })).toBeInTheDocument()
+  })
+
+  it('resolves a shortcut named in a reply that is not in English', () => {
+    const keybindingStore = useKeybindingStore()
+    keybindingStore.addDefaultKeybinding(
+      new KeybindingImpl({
+        combo: { key: 'b', ctrl: true },
+        commandId: 'Comfy.Canvas.ToggleSelectedNodes.Bypass'
+      })
+    )
+    keybindingStore.updateKeybindingOnCommand(
+      new KeybindingImpl({
+        combo: { key: 'q', alt: true },
+        commandId: 'Comfy.Canvas.ToggleSelectedNodes.Bypass'
+      })
+    )
+
+    render(MarkdownStream, {
+      props: { text: '选中节点后按 Ctrl+B 可以旁路它。' },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Alt', { selector: 'kbd' })).toBeInTheDocument()
+    expect(screen.getByText('Q', { selector: 'kbd' })).toBeInTheDocument()
+  })
+
   it('opens links in a new tab with rel=noopener', () => {
     render(MarkdownStream, { props: { text: '[docs](https://example.com)' } })
     const link = screen.getByRole('link', { name: 'docs' })

@@ -135,6 +135,7 @@ const proseClass = cn(
   '[&_ol]:my-0 [&_ol]:list-decimal [&_ol]:pt-1 [&_ol]:pb-2 [&_ol]:pl-5',
   '[&_ul]:my-0 [&_ul]:list-disc [&_ul]:pt-1 [&_ul]:pb-2 [&_ul]:pl-5',
   '[&_:not(pre)>code]:rounded-sm [&_:not(pre)>code]:border [&_:not(pre)>code]:border-border [&_:not(pre)>code]:bg-accent [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-[0.875em]',
+  '[&_kbd]:rounded-sm [&_kbd]:border [&_kbd]:border-border [&_kbd]:bg-accent [&_kbd]:px-1.5 [&_kbd]:py-0.5 [&_kbd]:font-mono [&_kbd]:text-[0.875em] [&_kbd]:font-medium [&_kbd]:whitespace-nowrap',
   '[&_blockquote]:my-2 [&_blockquote]:border-l-[3px] [&_blockquote]:border-border [&_blockquote]:py-1.5 [&_blockquote]:pl-3.5 [&_blockquote]:text-muted-foreground',
   '[&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_table]:overflow-hidden [&_table]:rounded-lg [&_table]:bg-secondary',
   '[&_th]:border-b [&_th]:border-border [&_th]:bg-accent [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:font-semibold',
