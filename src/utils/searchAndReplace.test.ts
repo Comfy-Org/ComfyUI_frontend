@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
@@ -12,6 +12,33 @@ function graphWithWidgetValue(value: string): LGraph {
 }
 
 describe('applyTextReplacements', () => {
+  describe('date replacements', () => {
+    it.for([
+      ['yyyy-MM-dd', '2026-10-28'],
+      ['yyyy.MM', '2026.10'],
+      ['yyyy.MM.dd', '2026.10.28'],
+      ['hh.mm.ss', '14.05.09']
+    ])('preserves separators in the date format %s', ([format, expected]) => {
+      vi.setSystemTime(new Date(2026, 9, 28, 14, 5, 9))
+
+      expect(applyTextReplacements(new LGraph(), `%date:${format}%`)).toBe(
+        expected
+      )
+    })
+
+    it('combines dated folders and filenames with node widget values', () => {
+      vi.setSystemTime(new Date(2026, 9, 28, 14, 5, 9))
+      const graph = graphWithWidgetValue('portrait')
+
+      expect(
+        applyTextReplacements(
+          graph,
+          'outputs/%date:yyyy.MM.dd%/%TestNode.testWidget%_%date:hh.mm.ss%'
+        )
+      ).toBe('outputs/2026.10.28/portrait_14.05.09')
+    })
+  })
+
   // Test specifically the filename sanitization part
   describe('filename sanitization', () => {
     it('should replace invalid filename characters with underscores', () => {

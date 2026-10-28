@@ -9,25 +9,21 @@ export function applyTextReplacements(
   const allNodes = collectAllNodes(graph)
 
   return value.replace(/%([^%]+)%/g, function (match, text) {
+    if (text.startsWith('date:')) {
+      return formatDate(text.substring(5), new Date())
+    }
+
     const split = text.split('.')
     if (split.length !== 2) {
-      // Special handling for dates
-      if (split[0].startsWith('date:')) {
-        return formatDate(split[0].substring(5), new Date())
-      }
-
       if (text !== 'width' && text !== 'height') {
-        // Dont warn on standard replacements
         console.warn('Invalid replacement pattern', text)
       }
       return match
     }
 
-    // Find node with matching S&R property name
     let nodes = allNodes.filter(
       (n) => n.properties['Node name for S&R'] === split[0]
     )
-    // If we can't, see if there is a node with that title
     if (!nodes.length) {
       nodes = allNodes.filter((n) => n.title === split[0])
     }
