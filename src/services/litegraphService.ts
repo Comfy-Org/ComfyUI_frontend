@@ -11,10 +11,8 @@ import {
   addWidgetPromotionOptions,
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
-import {
-  applyDynamicInputs,
-  ensureWidgetForInput
-} from '@/core/graph/widgets/dynamicWidgets'
+import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
+import { addShimWidget } from '@/core/graph/widgets/inputWidgetStub'
 import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
   LGraphCanvas,
@@ -258,8 +256,7 @@ export const useLitegraphService = () => {
         inputName
       )
     })
-    if (inputSpec.advanced)
-      ensureWidgetForInput(node, input, { advanced: true })
+    if (inputSpec.advanced) addShimWidget(node, input, { advanced: true })
   }
   /**
    * @internal Setup stroke styles for the node under various conditions.
