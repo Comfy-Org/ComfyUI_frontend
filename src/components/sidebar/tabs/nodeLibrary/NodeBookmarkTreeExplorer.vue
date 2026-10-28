@@ -24,7 +24,7 @@
               :aria-label="$t('g.delete')"
               @click.stop="void subgraphStore.deleteBlueprint(node.data.name)"
             >
-              <i class="icon-[lucide--trash-2] size-4" />
+              <i class="icon-[lucide--trash-2]" />
             </Button>
             <Button
               variant="muted-textonly"
@@ -32,7 +32,7 @@
               :aria-label="$t('g.edit')"
               @click.stop="void subgraphStore.editBlueprint(node.data.name)"
             >
-              <i class="icon-[lucide--square-pen] size-4" />
+              <i class="icon-[lucide--square-pen]" />
             </Button>
           </template>
           <template v-else>
@@ -168,7 +168,7 @@ const extraMenuItems = (
 ) => [
   {
     label: t('g.customize'),
-    icon: 'pi pi-palette',
+    icon: 'icon-[lucide--palette]',
     command: () => {
       if (!menuTargetNode.data) return
 

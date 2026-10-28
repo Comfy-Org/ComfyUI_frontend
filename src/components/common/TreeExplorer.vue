@@ -31,7 +31,7 @@
               :class="
                 cn(
                   item.value.icon,
-                  'tree-explorer-node-icon size-4 text-muted-foreground'
+                  'tree-explorer-node-icon text-muted-foreground'
                 )
               "
               :style="{ color: item.value.iconColor }"
@@ -170,12 +170,12 @@ const getTreeNodeIcon = (node: TreeExplorerNode<T>) => {
   } else if (node.icon) {
     return node.icon
   }
-  // node.icon is undefined
+
   if (node.leaf) {
-    return 'pi pi-file'
+    return 'icon-[lucide--file]'
   }
   const isExpanded = expandedKeys.value?.[node.key] ?? false
-  return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
+  return isExpanded ? 'icon-[lucide--folder-open]' : 'icon-[lucide--folder]'
 }
 const fillNodeInfo = (
   node: TreeExplorerNode<T>
@@ -250,7 +250,7 @@ const menuItems = computed<MenuItem[]>(() => {
     getAddFolderMenuItem(node),
     {
       label: t('g.rename'),
-      icon: 'pi pi-file-edit',
+      icon: 'icon-[lucide--file-pen-line]',
       command: () => {
         if (node) {
           renameCommand(node)
@@ -260,7 +260,7 @@ const menuItems = computed<MenuItem[]>(() => {
     },
     {
       label: t('g.delete'),
-      icon: 'pi pi-trash',
+      icon: 'icon-[lucide--trash-2]',
       command: async () => {
         if (node) {
           await deleteCommand(node)

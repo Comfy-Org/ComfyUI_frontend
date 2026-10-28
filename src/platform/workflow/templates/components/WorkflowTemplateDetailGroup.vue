@@ -63,8 +63,8 @@ const emit = defineEmits<{ 'download-model': [rowId: string] }>()
             aria-hidden="true"
             :class="
               row.kind === 'input'
-                ? 'icon-[lucide--file-input] size-4'
-                : 'icon-[comfy--ai-model] size-4'
+                ? 'icon-[lucide--file-input]'
+                : 'icon-[comfy--ai-model]'
             "
           />
         </span>

@@ -124,7 +124,7 @@ test.describe(
       await comfyPage.dragDrop.dragAndDropFile('default.json', {
         waitForUpload: false
       })
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
+      await comfyPage.expectNodeCount(7)
 
       // An ordinary canvas gesture: mouseup captures the canvas state.
       const canvas = page.locator('#graph-canvas')
@@ -138,7 +138,7 @@ test.describe(
       // Loading another graph deactivates the current workflow and fires
       // the graph's `configured` event.
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
 
       expect(pageErrors).toEqual([])
 
