@@ -120,7 +120,15 @@ const { renewalDate, subscription } = useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useBillingUI()
 const { canTopUp, topUpDenial, canManageBilling, runDeniedPaymentPastDue } =
   useBillingCapabilities()
-const { kind, audience, dismiss } = useBillingBanner()
+const {
+  kind: overallKind,
+  lifecycleKind,
+  audience,
+  dismiss
+} = useBillingBanner()
+const kind = computed(() =>
+  section === 'billing' ? lifecycleKind.value : overallKind.value
+)
 const { formatTierName } = useWorkspaceTierLabel()
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const {
@@ -364,7 +372,9 @@ const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
 const banner = computed<BannerView | null>(() => {
   if (!kind.value || isHiddenOnSection.value) return null
   const view = bannerViews[kind.value]()
-  return view && section === 'billing' ? { ...view, action: null } : view
+  return view && section === 'billing'
+    ? { ...view, action: null, dismissible: false }
+    : view
 })
 
 function handleAddCredits() {

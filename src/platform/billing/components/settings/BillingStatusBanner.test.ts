@@ -6,7 +6,7 @@ import {
   runDeniedPaymentPastDueFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -303,6 +303,18 @@ describe('BillingStatusBanner', () => {
         text: 'Your Team plan ends on'
       },
       {
+        name: 'plan ending while out of credits',
+        enter: () => {
+          state.subscription = {
+            ...state.subscription!,
+            hasFunds: false,
+            isCancelled: true,
+            endDate: '2026-10-28T00:00:00Z'
+          }
+        },
+        text: 'Your Team plan ends on'
+      },
+      {
         name: 'plan ended',
         enter: () => {
           state.subscriptionStatus = 'ended'
@@ -318,18 +330,14 @@ describe('BillingStatusBanner', () => {
         },
         text: 'Your Team plan ended on September 12, 2026'
       }
-    ])(
-      'shows $name without the actions the plan row owns',
-      ({ enter, text }) => {
-        enter()
-        renderBanner('billing')
+    ])('shows $name with no buttons', ({ enter, text }) => {
+      enter()
+      renderBanner('billing')
 
-        expect(screen.getByRole('status')).toHaveTextContent(text)
-        expect(
-          screen.queryByRole('button', { name: /Resume|Resubscribe/ })
-        ).not.toBeInTheDocument()
-      }
-    )
+      const banner = screen.getByRole('status')
+      expect(banner).toHaveTextContent(text)
+      expect(within(banner).queryAllByRole('button')).toEqual([])
+    })
 
     it.for([
       { name: 'out of credits', enter: exhausted },
