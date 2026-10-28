@@ -1177,6 +1177,7 @@
         "patterns": [
           "src/platform/telemetry/imageFailureDiagnostics.test.ts",
           "src/platform/telemetry/imageFailureDiagnostics.ts",
+          "src/platform/telemetry/initErrorReporter.ts",
           "src/platform/telemetry/initDatadogRum.test.ts",
           "src/platform/telemetry/initDatadogRum.ts",
           "src/platform/telemetry/initSentry.test.ts",
@@ -2939,19 +2940,12 @@
         "patterns": ["src/platform/tasks/**"]
       },
       {
-        "name": "telemetry/domain",
-        "patterns": ["src/platform/telemetry/types.ts"]
-      },
-      {
         "name": "telemetry/application",
         "patterns": [
           "src/composables/useRunButtonTelemetry.test.ts",
           "src/composables/useRunButtonTelemetry.ts",
           "src/platform/telemetry/TelemetryRegistry.test.ts",
-          "src/platform/telemetry/TelemetryRegistry.ts",
-          "src/platform/telemetry/__mocks__/index.ts",
           "src/platform/telemetry/hostTelemetryEnabled.ts",
-          "src/platform/telemetry/index.ts",
           "src/platform/telemetry/nodeAdded/nodeAddSource.ts",
           "src/platform/telemetry/searchQuery/**",
           "src/platform/telemetry/storeReadiness.test.ts",
@@ -6232,7 +6226,6 @@
           "app-host/domain",
           "canvas-renderer/domain",
           "selection-toolbox/domain",
-          "telemetry/domain",
           "app-host/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
@@ -6251,7 +6244,6 @@
           "properties-panel/presentation",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
-          "telemetry/domain",
           "telemetry/application",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
@@ -6279,7 +6271,6 @@
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "selection-toolbox/integration",
-          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -6529,20 +6520,10 @@
         "allow": ["tasks/infrastructure", "unclassified"]
       },
       {
-        "from": "telemetry/domain",
-        "allow": [
-          "ingest-api/domain/public",
-          "telemetry/domain",
-          "telemetry/domain/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "telemetry/application",
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
-          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/domain/outer-1",
@@ -6554,7 +6535,6 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
-          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/domain/outer-1",
@@ -6566,7 +6546,6 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
-          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -7647,7 +7626,6 @@
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "selection-toolbox/integration",
-          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -7734,7 +7712,6 @@
         "from": "telemetry/domain/outer-1",
         "allow": [
           "ingest-api/domain/public",
-          "telemetry/domain",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -7744,7 +7721,6 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
-          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -8265,7 +8241,6 @@
           "system-info/application",
           "system-info/presentation",
           "tasks/infrastructure",
-          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",

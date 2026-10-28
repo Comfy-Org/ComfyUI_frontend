@@ -16,14 +16,6 @@
       "role": "application"
     },
     {
-      "path": "src/platform/telemetry/TelemetryRegistry.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/__mocks__/index.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/telemetry/hostTelemetryEnabled.ts",
       "role": "application"
     },
@@ -34,10 +26,6 @@
     {
       "path": "src/platform/telemetry/hostUserIdSync.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/platform/telemetry/index.ts",
-      "role": "application"
     },
     {
       "path": "src/platform/telemetry/initHostTelemetry.test.ts",
@@ -70,10 +58,6 @@
     {
       "path": "src/platform/telemetry/storeReadiness.ts",
       "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/types.ts",
-      "role": "domain"
     },
     {
       "path": "src/platform/telemetry/useTelemetry.test.ts",

@@ -44,6 +44,10 @@
       "role": "infrastructure"
     },
     {
+      "path": "src/platform/telemetry/initErrorReporter.ts",
+      "role": "infrastructure"
+    },
+    {
       "path": "src/platform/telemetry/initDatadogRum.test.ts",
       "role": "infrastructure"
     },
