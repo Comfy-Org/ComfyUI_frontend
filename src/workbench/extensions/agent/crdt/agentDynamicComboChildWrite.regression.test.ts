@@ -4,7 +4,7 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import * as Y from 'yjs'
 
 import {
@@ -15,17 +15,12 @@ import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
 
-/**
- * PM-2326: a user reported that the Agent "had trouble making" Seedance's
- * no-audio setting stick. The setting is `model.generate_audio`, a child of
- * the `model` dynamic combo. These cases pin that an Agent write to such a
- * child survives the edits a person makes on the same node afterwards.
- */
 type LocalWidgetWrite = Extract<GraphIntentEvent, { type: 'set_widget' }>
 
 const MODEL = 'Seedance 2.5'
@@ -34,7 +29,7 @@ const WORKFLOW_ID = 'wf-seedance'
 const HOST_ACTOR = 'agent:comfy:host'
 const AGENT_ACTOR = 'agent:test'
 
-const modelSpec = [
+const modelSpec: InputSpec = [
   'COMFY_DYNAMICCOMBO_V3',
   {
     options: [
@@ -59,7 +54,7 @@ const modelSpec = [
       }
     ]
   }
-] as const
+]
 
 class TestSeedance extends LGraphNode {
   constructor() {
@@ -68,7 +63,7 @@ class TestSeedance extends LGraphNode {
     useLitegraphService().addNodeInput(
       this,
       transformInputSpecV1ToV2(
-        modelSpec as unknown as Parameters<typeof transformInputSpecV1ToV2>[0],
+        modelSpec,
         { name: 'model', isOptional: false }
       )
     )
@@ -180,8 +175,7 @@ function setup() {
     )
     deliver(Y.encodeStateAsUpdate(host, before))
   }
-  /** The host's projected value, positional in the selected layout. */
-  const hostValue = (name: string) => {
+  const hostPositionalValue = (name: string) => {
     const projected = project(host, CATALOG).nodes.find(
       (candidate) => String(candidate.id) === String(node.id)
     )
@@ -201,23 +195,19 @@ function setup() {
     projection.destroy()
     follower.destroy()
     host.destroy()
+    LiteGraph.unregisterNodeType(CLASS)
   }
-  return { graph, node, widget, hostApplies, hostValue, localWrites, destroy }
+  onTestFinished(destroy)
+  return { graph, node, widget, hostApplies, hostPositionalValue, localWrites }
 }
 
-let cleanup: (() => void) | undefined
 beforeEach(() => {
   LiteGraph.registerNodeType(CLASS, TestSeedance)
-})
-afterEach(() => {
-  cleanup?.()
-  cleanup = undefined
 })
 
 describe('an Agent write to a dynamic-combo child (PM-2326)', () => {
   it('lands on the live child widget', () => {
     const s = setup()
-    cleanup = s.destroy
     expect(s.widget('model.generate_audio').value).toBe(true)
 
     s.hostApplies([setWidget(s.node, 'model.generate_audio', false)])
@@ -228,18 +218,16 @@ describe('an Agent write to a dynamic-combo child (PM-2326)', () => {
 
   it('survives a later Agent write to a sibling child', () => {
     const s = setup()
-    cleanup = s.destroy
     s.hostApplies([setWidget(s.node, 'model.generate_audio', false)])
 
     s.hostApplies([setWidget(s.node, 'model.prompt', 'a new prompt')])
 
     expect(s.widget('model.generate_audio').value).toBe(false)
-    expect(s.hostValue('model.generate_audio')).toBe(false)
+    expect(s.hostPositionalValue('model.generate_audio')).toBe(false)
   })
 
   it('survives the person editing a sibling child', () => {
     const s = setup()
-    cleanup = s.destroy
     s.hostApplies([setWidget(s.node, 'model.generate_audio', false)])
 
     s.widget('model.prompt').value = 'typed by the person'
@@ -252,7 +240,6 @@ describe('an Agent write to a dynamic-combo child (PM-2326)', () => {
 
   it('survives the person re-selecting the same model', () => {
     const s = setup()
-    cleanup = s.destroy
     s.hostApplies([setWidget(s.node, 'model.generate_audio', false)])
 
     s.widget('model').value = MODEL
@@ -267,7 +254,6 @@ describe('an Agent write to a dynamic-combo child (PM-2326)', () => {
 
   it('survives the person switching the model away and back', () => {
     const s = setup()
-    cleanup = s.destroy
     s.hostApplies([setWidget(s.node, 'model.generate_audio', false)])
 
     s.widget('model').value = 'Seedance 2.5 Fast'
@@ -283,19 +269,17 @@ describe('an Agent write to a dynamic-combo child (PM-2326)', () => {
 
   it('survives an Agent write that re-selects the same model', () => {
     const s = setup()
-    cleanup = s.destroy
     s.hostApplies([setWidget(s.node, 'model.generate_audio', false)])
 
     s.hostApplies([setWidget(s.node, 'model', MODEL)])
 
     expect(s.widget('model.generate_audio').value).toBe(false)
-    expect(s.hostValue('model.generate_audio')).toBe(false)
+    expect(s.hostPositionalValue('model.generate_audio')).toBe(false)
     expect(s.localWrites).toEqual([])
   })
 
   it('serializes the Agent value for the next queued run', () => {
     const s = setup()
-    cleanup = s.destroy
     s.hostApplies([setWidget(s.node, 'model.generate_audio', false)])
     s.widget('model.prompt').value = 'typed by the person'
 
@@ -303,7 +287,8 @@ describe('an Agent write to a dynamic-combo child (PM-2326)', () => {
     const names = (s.node.widgets ?? [])
       .filter((widget) => widget.serialize !== false)
       .map((widget) => widget.name)
-    const values = saved.widgets_values as unknown[]
+    const values = saved.widgets_values
+    if (!Array.isArray(values)) throw new Error('positional widgets_values')
     expect(values[names.indexOf('model.generate_audio')]).toBe(false)
   })
 })
