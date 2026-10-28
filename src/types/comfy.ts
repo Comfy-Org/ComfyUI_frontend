@@ -150,7 +150,7 @@ export interface ComfyApp {
   readonly storageLocation: string
   /** @deprecated storage migration is no longer needed. */
   readonly isNewUserSession: boolean
-  /** @deprecated Use useExtensionStore().extensions instead */
+  /** @deprecated Use useCustomNodeStore().extensions instead */
   readonly extensions: ComfyExtension[]
   /** @deprecated Use useExecutionStore().executingNodeProgress instead */
   readonly progress: ProgressWsMessage | null

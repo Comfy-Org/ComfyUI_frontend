@@ -55,7 +55,7 @@ will drift as they land; decisions 1–6 are the rules.
 | `provideSubgraphInputGuard`        | `SubgraphInputNode`                                 | `NodeInputSlot`, `SubgraphOutput`, `subgraphUtils` (re-export)                      | `SubgraphInputNode → SubgraphIONodeBase ⇢ EmptySubgraphOutput → SubgraphOutput`                                            | Delete after follow-up 5        |
 | `provideSubgraphOutputGuard`       | `SubgraphOutputNode`                                | `NodeOutputSlot`, `SubgraphInput`, `subgraphUtils` (re-export)                      | `SubgraphOutputNode → SubgraphIONodeBase ⇢ EmptySubgraphInput → SubgraphInput`                                             | Delete after follow-up 5        |
 | `provideChangeTracker`             | `changeTracker`                                     | `workflowStore`, `executionErrorStore`                                              | `changeTracker → workflowStore`                                                                                            | Keep, register in bootstrap     |
-| `provideExtensionService`          | `extensionService`                                  | `queueStore`                                                                        | `extensionService → widgetStore → widgets → useComboWidget → assetsStore → queueStore`                                     | Keep, register a listener       |
+| `provideCustomNodeService`         | `customNodeService`                                 | `queueStore`                                                                        | `customNodeService → widgetStore → widgets → useComboWidget → assetsStore → queueStore`                                    | Keep, register a listener       |
 | `provideLitegraphService`          | `litegraphService` (and its `__mocks__`)            | `promotionUtils`, `dynamicWidgets`, `dynamicGroupWidget`, `subgraphNavigationStore` | `litegraphService → promotionUtils`, `litegraphService → dynamicWidgets`                                                   | Keep, register in bootstrap     |
 | `provideWorkflowService`           | `workflowService`                                   | `subgraphNavigationStore`                                                           | `workflowService → subgraphNavigationStore`                                                                                | Keep, register in bootstrap     |
 | `providePromoteRecommendedWidgets` | `promotionUtils`                                    | `canvasStore`                                                                       | `promotionUtils → canvasStore`                                                                                             | Keep, register a listener       |
@@ -138,7 +138,7 @@ outside this inventory but follow the same rules.
 2. Add the bootstrap registration step and remove the top-level `provide*`
    calls from app-level providers (decision 2). This edits `main.ts`, so it
    waits for the concurrent bootstrap work there to land.
-3. Turn `provideExtensionService` and `providePromoteRecommendedWidgets` into
+3. Turn `provideCustomNodeService` and `providePromoteRecommendedWidgets` into
    listeners that the provider registers (decision 3).
 4. Move `useBillingDialogs` and `useSubscriptionDialog` to app-level
    `provide`/`inject` (decision 4).

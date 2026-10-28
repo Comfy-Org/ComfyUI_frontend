@@ -7,19 +7,19 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
-import { provideExtensionService } from '@/services/extensionServiceAccess'
+import { provideCustomNodeService } from '@/services/customNodeServiceAccess'
 import * as jobOutputCache from '@/services/jobOutputCache'
 import { TaskItemImpl } from '@/stores/queueStore'
 
-vi.mock<unknown>(import('@/services/extensionService'), () => ({
-  useExtensionService: vi.fn(() => ({
+vi.mock<unknown>(import('@/services/customNodeService'), () => ({
+  useCustomNodeService: vi.fn(() => ({
     invokeExtensions: vi.fn()
   }))
 }))
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
-provideExtensionService(() => ({ invokeExtensions: vi.fn() }))
+provideCustomNodeService(() => ({ invokeExtensions: vi.fn() }))
 
 const mockWorkflow: ComfyWorkflowJSON = {
   last_node_id: 5,

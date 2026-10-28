@@ -48,8 +48,8 @@ vi.mock(
   () => ({ registerWorkflowTabActivityTracker: vi.fn(() => () => {}) })
 )
 const mocks = vi.hoisted(() => ({ capturedExtensions: [] as ComfyExtension[] }))
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: () =>
+vi.mock(import('@/services/customNodeService'), () => ({
+  useCustomNodeService: () =>
     fromPartial({
       registerExtension: (extension: ComfyExtension) => {
         mocks.capturedExtensions.push(extension)

@@ -29,7 +29,7 @@ import {
 import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
-import type { useExtensionService } from '@/services/extensionService'
+import type { useCustomNodeService } from '@/services/customNodeService'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -133,9 +133,9 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: () =>
-    fromPartial<ReturnType<typeof useExtensionService>>({
+vi.mock(import('@/services/customNodeService'), () => ({
+  useCustomNodeService: () =>
+    fromPartial<ReturnType<typeof useCustomNodeService>>({
       registerExtension: (ext: ComfyExtension) => {
         if (mocks.failNextRegistration) {
           mocks.failNextRegistration = false

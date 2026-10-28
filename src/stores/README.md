@@ -117,7 +117,7 @@ The following table lists ALL 46 store instances in the system as of 2026-01-29:
 | domWidgetStore.ts            | useDomWidgetStore             | Manages DOM widget state                                | Widgets    |
 | electronDownloadStore.ts     | useElectronDownloadStore      | Handles Electron-specific download operations           | Platform   |
 | executionStore.ts            | useExecutionStore             | Tracks workflow execution state                         | Execution  |
-| extensionStore.ts            | useExtensionStore             | Manages extension registration and state                | Extensions |
+| customNodeStore.ts           | useCustomNodeStore            | Manages extension registration and state                | Extensions |
 | firebaseAuthStore.ts         | useFirebaseAuthStore          | Handles Firebase authentication                         | Auth       |
 | graphStore.ts                | useTitleEditorStore           | Manages title editing for nodes and groups              | UI         |
 | graphStore.ts                | useCanvasStore                | Manages the graph canvas state and interactions         | Core       |

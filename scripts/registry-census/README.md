@@ -372,7 +372,7 @@ delta criteria are exempted there and covered by verdict unit tests.
 | clean-asset-control      | nothing                         | css/json import resolves         |
 
 Insensitivity kept honest here: throwing extension hooks are CONTAINED by the
-app (`extensionService` catches and logs), so they can never fail
+app (`customNodeService` catches and logs), so they can never fail
 registration — the runner records the containment signature as `hookErrors`
 row data instead, and that is now gated.
 

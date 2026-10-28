@@ -5,7 +5,7 @@ import { load3dLazyExtension } from '@/extensions/core/load3d/load3dLazy'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { reportError } from '@/platform/telemetry/reportError'
 import { app } from '@/scripts/app'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useCustomNodeStore } from '@/stores/customNodeStore'
 
 const { lazyModules, lightInfoImport } = vi.hoisted(() => {
   const defineExtension = (name: string) => ({
@@ -89,9 +89,9 @@ const replayedNodes = () =>
 
 describe('load3dLazy after a failed lazy import', () => {
   it('registers nothing, reports the failure once, and retries the import on the next 3D node', async () => {
-    const extensionStore = useExtensionStore()
+    const customNodeStore = useCustomNodeStore()
     const registeredNames = () =>
-      extensionStore.extensions.map(({ name }) => name)
+      customNodeStore.extensions.map(({ name }) => name)
     lightInfoImport.failuresRemaining = 1
 
     await expect(createNode(1, 'Load3D')).resolves.toBeUndefined()

@@ -3,7 +3,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useCustomNodeStore } from '@/stores/customNodeStore'
 import { api } from '@/scripts/api'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -24,7 +24,7 @@ beforeEach(() => {
   vi.spyOn(api, 'getLogs')
   vi.spyOn(api, 'getSettings')
   vi.spyOn(api, 'apiURL').mockImplementation((path) => `http://backend${path}`)
-  useExtensionStore().registerExtension({ name: 'Comfy.TestExtension' })
+  useCustomNodeStore().registerExtension({ name: 'Comfy.TestExtension' })
 })
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({

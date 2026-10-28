@@ -81,7 +81,7 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type { ComfyApp } from '@/scripts/app'
-import { useExtensionService } from '@/services/extensionService'
+import { useCustomNodeService } from '@/services/customNodeService'
 import { createDisposablePinia } from '@/testing/pinia'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -158,9 +158,9 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: () =>
-    fromPartial<ReturnType<typeof useExtensionService>>({
+vi.mock(import('@/services/customNodeService'), () => ({
+  useCustomNodeService: () =>
+    fromPartial<ReturnType<typeof useCustomNodeService>>({
       registerExtension: (extension: ComfyExtension) => {
         registeredExtensions.push(extension)
       }
@@ -179,7 +179,7 @@ vi.mock(import('@/platform/telemetry'))
 
 const { cloudSessionCookieExtension } =
   await import('@/extensions/core/cloudSessionCookie')
-useExtensionService().registerExtension(cloudSessionCookieExtension)
+useCustomNodeService().registerExtension(cloudSessionCookieExtension)
 const { createAppRouter } = await import('@/router')
 const router = await createAppRouter()
 

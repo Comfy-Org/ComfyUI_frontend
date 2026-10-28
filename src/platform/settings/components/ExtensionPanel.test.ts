@@ -4,13 +4,13 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useCustomNodeStore } from '@/stores/customNodeStore'
 
 import ExtensionPanel from './ExtensionPanel.vue'
 
 function registerExtensions(...names: string[]) {
-  const extensionStore = useExtensionStore()
-  for (const name of names) extensionStore.registerExtension({ name })
+  const customNodeStore = useCustomNodeStore()
+  for (const name of names) customNodeStore.registerExtension({ name })
 }
 
 function renderPanel() {
@@ -169,11 +169,11 @@ describe('ExtensionPanel', () => {
 
   it('filters, describes, and disables agent-created extensions', async () => {
     const user = userEvent.setup()
-    const extensionStore = useExtensionStore()
-    extensionStore.registerExtension({ name: 'Manual.Toolbar' })
-    extensionStore.registerExtension({ name: 'agentic.toolbar' })
-    extensionStore.registerExtension({ name: 'agent.cushions.toolbar' })
-    extensionStore.registerExtension({
+    const customNodeStore = useCustomNodeStore()
+    customNodeStore.registerExtension({ name: 'Manual.Toolbar' })
+    customNodeStore.registerExtension({ name: 'agentic.toolbar' })
+    customNodeStore.registerExtension({ name: 'agent.cushions.toolbar' })
+    customNodeStore.registerExtension({
       name: 'agent-made.standalone',
       provenance: {
         createdBy: 'comfy-agent',
@@ -217,9 +217,9 @@ describe('ExtensionPanel', () => {
   })
 
   it('labels a core extension created by Agent as created by Agent', () => {
-    const extensionStore = useExtensionStore()
-    extensionStore.registerExtension({ name: 'agent.cushions.toolbar' })
-    extensionStore.captureCoreExtensions()
+    const customNodeStore = useCustomNodeStore()
+    customNodeStore.registerExtension({ name: 'agent.cushions.toolbar' })
+    customNodeStore.captureCoreExtensions()
 
     renderPanel()
 
@@ -232,8 +232,8 @@ describe('ExtensionPanel', () => {
 
   it('disables the bulk action when all Agent extensions are read-only', async () => {
     const user = userEvent.setup()
-    const extensionStore = useExtensionStore()
-    extensionStore.registerExtension({
+    const customNodeStore = useCustomNodeStore()
+    customNodeStore.registerExtension({
       name: 'pysssss.Locking',
       provenance: { createdBy: 'comfy-agent' }
     })

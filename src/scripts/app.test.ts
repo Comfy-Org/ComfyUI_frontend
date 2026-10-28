@@ -32,7 +32,7 @@ vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@comfyorg/graph-model/curve'
-import type { useExtensionService } from '@/services/extensionService'
+import type { useCustomNodeService } from '@/services/customNodeService'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -103,7 +103,7 @@ import { PromptExecutionError, api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useCustomNodeStore } from '@/stores/customNodeStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
@@ -127,13 +127,13 @@ type WorkflowValidation = ReturnType<typeof useWorkflowValidation>
 vi.mock(import('firebase/auth'))
 
 const {
-  mockExtensionService,
+  mockCustomNodeService,
   mockRefreshMissingModelPipeline,
   mockImportA1111,
   mockWorkflowService,
   mockValidateWorkflow
 } = vi.hoisted(() => ({
-  mockExtensionService: {
+  mockCustomNodeService: {
     invokeExtensions: vi.fn(),
     invokeExtensionsAsync: vi.fn()
   },
@@ -191,9 +191,9 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: vi.fn(() =>
-    fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
+vi.mock(import('@/services/customNodeService'), () => ({
+  useCustomNodeService: vi.fn(() =>
+    fromPartial<ReturnType<typeof useCustomNodeService>>(mockCustomNodeService)
   )
 }))
 
@@ -336,8 +336,8 @@ describe('ComfyApp', () => {
     vi.mocked(
       useTeamWorkspaceStore().waitForWorkspaceSwitch
     ).mockResolvedValue()
-    mockExtensionService.invokeExtensions.mockReturnValue([])
-    mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
+    mockCustomNodeService.invokeExtensions.mockReturnValue([])
+    mockCustomNodeService.invokeExtensionsAsync.mockResolvedValue(undefined)
     vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
     mockImportA1111.mockResolvedValue('imported')
     mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
@@ -584,7 +584,7 @@ describe('ComfyApp', () => {
         'workflow-load',
         7
       )
-      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+      expect(mockCustomNodeService.invokeExtensionsAsync).toHaveBeenCalledWith(
         'onGraphLoadError',
         expect.objectContaining({ message: 'bad workflow json' })
       )
@@ -604,14 +604,14 @@ describe('ComfyApp', () => {
       const errorHandling = new Promise<void>((resolve) => {
         releaseErrorHandling = resolve
       })
-      vi.when(mockExtensionService.invokeExtensionsAsync)
+      vi.when(mockCustomNodeService.invokeExtensionsAsync)
         .calledWith(
           'beforeConfigureGraph',
           expect.anything(),
           expect.anything()
         )
         .thenRejectOnce(error)
-      vi.when(mockExtensionService.invokeExtensionsAsync)
+      vi.when(mockCustomNodeService.invokeExtensionsAsync)
         .calledWith('onGraphLoadError', error)
         .thenReturnOnce(errorHandling)
       const load = app.loadGraphData(
@@ -624,7 +624,7 @@ describe('ComfyApp', () => {
       try {
         await vi.waitFor(() =>
           expect(
-            mockExtensionService.invokeExtensionsAsync
+            mockCustomNodeService.invokeExtensionsAsync
           ).toHaveBeenCalledWith('onGraphLoadError', error)
         )
         expect(ChangeTracker.isLoadingGraph).toBe(true)
@@ -640,12 +640,12 @@ describe('ComfyApp', () => {
         'workflow-load',
         9
       )
-      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+      expect(mockCustomNodeService.invokeExtensionsAsync).toHaveBeenCalledWith(
         'onGraphLoadError',
         expect.objectContaining({ message: 'bad extension' })
       )
       expect(
-        mockExtensionService.invokeExtensionsAsync
+        mockCustomNodeService.invokeExtensionsAsync
       ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
     })
 
@@ -676,12 +676,12 @@ describe('ComfyApp', () => {
         'workflow-load',
         13
       )
-      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+      expect(mockCustomNodeService.invokeExtensionsAsync).toHaveBeenCalledWith(
         'onGraphLoadError',
         expect.objectContaining({ message: 'workflow validation blew up' })
       )
       expect(
-        mockExtensionService.invokeExtensionsAsync
+        mockCustomNodeService.invokeExtensionsAsync
       ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
 
       // A second, successful load proves the depth counter this rejection
@@ -692,7 +692,7 @@ describe('ComfyApp', () => {
           workflowNavigationId: 14
         })
       ).resolves.toBe(true)
-      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+      expect(mockCustomNodeService.invokeExtensionsAsync).toHaveBeenCalledWith(
         'afterConfigureGraph',
         expect.anything()
       )
@@ -763,7 +763,7 @@ describe('ComfyApp', () => {
       await app.loadGraphData(createWorkflowGraphData(), false)
 
       const loadHookCalls =
-        mockExtensionService.invokeExtensionsAsync.mock.calls
+        mockCustomNodeService.invokeExtensionsAsync.mock.calls
           .map(([hook]) => hook)
           .filter((hook) =>
             [
@@ -793,13 +793,13 @@ describe('ComfyApp', () => {
       ).resolves.toBeUndefined()
 
       const terminalHooks =
-        mockExtensionService.invokeExtensionsAsync.mock.calls
+        mockCustomNodeService.invokeExtensionsAsync.mock.calls
           .map(([hook]) => hook)
           .filter(
             (hook) => hook === 'afterLoadGraph' || hook === 'onGraphLoadError'
           )
       expect(terminalHooks).toEqual(['onGraphLoadError'])
-      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+      expect(mockCustomNodeService.invokeExtensionsAsync).toHaveBeenCalledWith(
         'onGraphLoadError',
         expect.objectContaining({ name: 'AbortError' })
       )
@@ -843,7 +843,7 @@ describe('ComfyApp', () => {
       const pending = new Promise<void>((resolve) => {
         releasePending = resolve
       })
-      vi.when(mockExtensionService.invokeExtensionsAsync)
+      vi.when(mockCustomNodeService.invokeExtensionsAsync)
         .calledWith('afterConfigureGraph', expect.anything())
         .thenReturnOnce(pending)
 
@@ -851,10 +851,9 @@ describe('ComfyApp', () => {
         skipAssetScans: true
       })
       await vi.waitFor(() =>
-        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
-          'afterConfigureGraph',
-          expect.anything()
-        )
+        expect(
+          mockCustomNodeService.invokeExtensionsAsync
+        ).toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
       )
       const newerLoad = app.loadGraphData(other, false, false, secondWorkflow, {
         skipAssetScans: true
@@ -942,7 +941,7 @@ describe('ComfyApp', () => {
             }
           )
         } else {
-          mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          mockCustomNodeService.invokeExtensionsAsync.mockImplementation(
             async (hook) => {
               if (hook === 'afterLoadGraph' && !reachedPause) {
                 reachedPause = true
@@ -1014,7 +1013,7 @@ describe('ComfyApp', () => {
       const loadedOutgoing = markLoaded(outgoing)
       loadedOutgoing.changeTracker = tracker
       useWorkflowStore().activeWorkflow = loadedOutgoing
-      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+      mockCustomNodeService.invokeExtensionsAsync.mockImplementation(
         async (hook) => {
           if (hook === 'beforeConfigureGraph') tracker.captureCanvasState()
         }
@@ -1059,17 +1058,16 @@ describe('ComfyApp', () => {
       const firstPending = new Promise<void>((resolve) => {
         releaseFirst = resolve
       })
-      vi.when(mockExtensionService.invokeExtensionsAsync)
+      vi.when(mockCustomNodeService.invokeExtensionsAsync)
         .calledWith('afterConfigureGraph', expect.anything())
         .thenReturnOnce(firstPending)
       const firstLoad = app.loadGraphData(graph, false, false, null, {
         skipAssetScans: true
       })
       await vi.waitFor(() =>
-        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
-          'afterConfigureGraph',
-          expect.anything()
-        )
+        expect(
+          mockCustomNodeService.invokeExtensionsAsync
+        ).toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
       )
       vi.spyOn(app.rootGraph, 'configure').mockImplementationOnce(() => {
         throw new Error('Configuration failed before clearing')
@@ -1095,14 +1093,14 @@ describe('ComfyApp', () => {
       const olderLoadBlocked = new Promise<void>((resolve) => {
         releaseOlderLoad = resolve
       })
-      vi.when(mockExtensionService.invokeExtensionsAsync)
+      vi.when(mockCustomNodeService.invokeExtensionsAsync)
         .calledWith('beforeLoadGraph')
         .thenReturnOnce(olderLoadBlocked)
       const older = createWorkflowGraphData()
       older.extra = { marker: 'older' }
       const newer = createWorkflowGraphData()
       newer.extra = { marker: 'newer' }
-      vi.when(mockExtensionService.invokeExtensionsAsync)
+      vi.when(mockCustomNodeService.invokeExtensionsAsync)
         .calledWith(
           'beforeConfigureGraph',
           expect.objectContaining({ extra: { marker: 'newer' } }),
@@ -1175,7 +1173,7 @@ describe('ComfyApp', () => {
 
       expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
       expect(
-        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+        mockCustomNodeService.invokeExtensionsAsync.mock.calls.map(
           ([hook]) => hook
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
@@ -3348,15 +3346,15 @@ describe('ComfyApp', () => {
       const workflowBlocked = new Promise<void>((resolve) => {
         releaseWorkflow = resolve
       })
-      vi.when(mockExtensionService.invokeExtensionsAsync)
+      vi.when(mockCustomNodeService.invokeExtensionsAsync)
         .calledWith('beforeLoadGraph')
         .thenReturnOnce(workflowBlocked)
 
       const workflow = app.loadGraphData(createWorkflowGraphData(), true)
       await vi.waitFor(() =>
-        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
-          'beforeLoadGraph'
-        )
+        expect(
+          mockCustomNodeService.invokeExtensionsAsync
+        ).toHaveBeenCalledWith('beforeLoadGraph')
       )
       const apiImport = app.loadApiJson(
         { '1': { class_type: 'KSampler', inputs: {} } },
@@ -3372,7 +3370,7 @@ describe('ComfyApp', () => {
 
     it('starts an A1111 import only after the in-flight workflow load finishes', async () => {
       let releaseWorkflow!: () => void
-      vi.when(mockExtensionService.invokeExtensionsAsync)
+      vi.when(mockCustomNodeService.invokeExtensionsAsync)
         .calledWith('beforeLoadGraph')
         .thenReturnOnce(
           new Promise<void>((resolve) => {
@@ -3386,7 +3384,7 @@ describe('ComfyApp', () => {
       let workflowFinishedBeforeImport: boolean | undefined
       mockImportA1111.mockImplementation(async () => {
         workflowFinishedBeforeImport =
-          mockExtensionService.invokeExtensionsAsync.mock.calls.some(
+          mockCustomNodeService.invokeExtensionsAsync.mock.calls.some(
             ([hook]) => hook === 'afterLoadGraph'
           )
         return 'imported'
@@ -3394,9 +3392,9 @@ describe('ComfyApp', () => {
 
       const workflow = app.loadGraphData(createWorkflowGraphData(), true)
       await vi.waitFor(() =>
-        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
-          'beforeLoadGraph'
-        )
+        expect(
+          mockCustomNodeService.invokeExtensionsAsync
+        ).toHaveBeenCalledWith('beforeLoadGraph')
       )
       await app.handleFile(createTestFile('queued-a1111.png', 'image/png'))
       await workflow
@@ -3407,7 +3405,7 @@ describe('ComfyApp', () => {
     it('cleans before extensions prepare the incoming workflow', async () => {
       app.rootGraph.add(new LGraphNode('outgoing'))
       let nodesDuringPreparation: number | undefined
-      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+      mockCustomNodeService.invokeExtensionsAsync.mockImplementation(
         async (hook) => {
           if (hook === 'beforeConfigureGraph')
             nodesDuringPreparation = app.rootGraph.nodes.length
@@ -3841,7 +3839,7 @@ describe('ComfyApp', () => {
       expect(widgetValueStore.getWidget(hostWidgetId)?.options.values).toEqual(
         refreshedOptions
       )
-      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+      expect(mockCustomNodeService.invokeExtensionsAsync).toHaveBeenCalledWith(
         'refreshComboInNodes',
         defs
       )
@@ -3894,19 +3892,19 @@ describe('ComfyApp', () => {
       const registerNodeDef = vi
         .spyOn(app, 'registerNodeDef')
         .mockResolvedValue(undefined)
-      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+      mockCustomNodeService.invokeExtensionsAsync.mockImplementation(
         async (method: string, defs: Record<string, ComfyNodeDef>) => {
           if (method === 'addCustomNodeDefs') defs.Custom = custom
         }
       )
-      useExtensionStore().oweNodeDefHooks()
+      useCustomNodeStore().oweNodeDefHooks()
 
       await app.reloadNodeDefs()
       await app.reloadNodeDefs()
 
       expect(registerNodeDef).toHaveBeenCalledWith('Custom', custom)
       expect(
-        mockExtensionService.invokeExtensionsAsync.mock.calls.filter(
+        mockCustomNodeService.invokeExtensionsAsync.mock.calls.filter(
           ([method]) => method === 'addCustomNodeDefs'
         )
       ).toHaveLength(1)
@@ -3920,13 +3918,13 @@ describe('ComfyApp', () => {
           Response.json({ code: 'unavailable' }, { status: 502 })
         )
         .mockResolvedValueOnce(Response.json({ Server: { name: 'Server' } }))
-      useExtensionStore().oweNodeDefHooks()
+      useCustomNodeStore().oweNodeDefHooks()
 
       await app.reloadNodeDefs()
       await app.reloadNodeDefs()
 
       expect(
-        mockExtensionService.invokeExtensionsAsync.mock.calls.filter(
+        mockCustomNodeService.invokeExtensionsAsync.mock.calls.filter(
           ([method]) => method === 'addCustomNodeDefs'
         )
       ).toEqual([
@@ -3935,7 +3933,7 @@ describe('ComfyApp', () => {
           { Server: expect.objectContaining({ name: 'Server' }) }
         ]
       ])
-      expect(useExtensionStore().takeOwedNodeDefHooks()).toBe(false)
+      expect(useCustomNodeStore().takeOwedNodeDefHooks()).toBe(false)
     })
 
     it('refuses each refused refresh while definitions are owed, reports it, keeps them owed, and registers nothing', async () => {
@@ -3951,7 +3949,7 @@ describe('ComfyApp', () => {
           Response.json({ code: 'unauthorized' }, { status: 401 })
         )
         .mockResolvedValueOnce(Response.json({ Server: { name: 'Server' } }))
-      useExtensionStore().oweNodeDefHooks()
+      useCustomNodeStore().oweNodeDefHooks()
 
       await expect(app.reloadNodeDefs()).resolves.toBe(false)
       await expect(app.reloadNodeDefs()).resolves.toBe(false)
@@ -3970,7 +3968,7 @@ describe('ComfyApp', () => {
       await expect(app.reloadNodeDefs()).resolves.toBe(true)
 
       expect(
-        mockExtensionService.invokeExtensionsAsync.mock.calls.filter(
+        mockCustomNodeService.invokeExtensionsAsync.mock.calls.filter(
           ([method]) => method === 'addCustomNodeDefs'
         )
       ).toEqual([
@@ -4497,7 +4495,7 @@ describe('ComfyApp', () => {
         mockWorkflowService.beforeLoadNewGraph.mock.invocationCallOrder[0]
       ).toBeLessThan(vi.mocked(mockCanvas.setGraph).mock.invocationCallOrder[0])
       expect(
-        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+        mockCustomNodeService.invokeExtensionsAsync.mock.calls.map(
           ([hook]) => hook
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph'])
@@ -4506,7 +4504,7 @@ describe('ComfyApp', () => {
       resolveAfterLoad?.()
       await handleFile
       expect(
-        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+        mockCustomNodeService.invokeExtensionsAsync.mock.calls.map(
           ([hook]) => hook
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])

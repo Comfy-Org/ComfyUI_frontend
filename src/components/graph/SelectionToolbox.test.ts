@@ -13,7 +13,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useExtensionService } from '@/services/extensionService'
+import { useCustomNodeService } from '@/services/customNodeService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -22,15 +22,15 @@ import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/services/extensionService'), () => {
-  const service: ReturnType<typeof useExtensionService> = {
+vi.mock(import('@/services/customNodeService'), () => {
+  const service: ReturnType<typeof useCustomNodeService> = {
     registerExtension: vi.fn(),
     registerExtensionNow: vi.fn(),
     invokeExtensions: vi.fn(() => []),
     invokeExtensionsAsync: vi.fn(async () => []),
     invokeStartupHook: vi.fn(async () => [])
   }
-  return { useExtensionService: () => service }
+  return { useCustomNodeService: () => service }
 })
 vi.mock(import('@/utils/litegraphUtil'))
 vi.mock(import('@/composables/canvas/useSelectionToolboxPosition'), () => ({
@@ -79,7 +79,7 @@ describe('SelectionToolbox', () => {
     useCanvasStore().canvas = createMockCanvas()
     vi.spyOn(useRightSidePanelStore(), 'openPanel').mockImplementation(() => {})
     vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(nodeDef)
-    vi.mocked(useExtensionService().invokeExtensions).mockReturnValue([])
+    vi.mocked(useCustomNodeService().invokeExtensions).mockReturnValue([])
     useSettingStore().$patch({
       settingValues: {
         'Comfy.UseNewMenu': 'Top',
@@ -280,7 +280,7 @@ describe('SelectionToolbox', () => {
         function: action,
         icon: () => 'icon-[lucide--star]'
       })
-      vi.mocked(useExtensionService().invokeExtensions).mockReturnValue([
+      vi.mocked(useCustomNodeService().invokeExtensions).mockReturnValue([
         id,
         id,
         'Unknown.Command'

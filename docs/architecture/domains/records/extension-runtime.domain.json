@@ -152,19 +152,19 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/services/extensionService.test.ts",
+      "path": "src/services/customNodeService.test.ts",
       "role": "application"
     },
     {
-      "path": "src/services/extensionService.ts",
+      "path": "src/services/customNodeService.ts",
       "role": "application"
     },
     {
-      "path": "src/stores/extensionStore.test.ts",
+      "path": "src/stores/customNodeStore.test.ts",
       "role": "application"
     },
     {
-      "path": "src/stores/extensionStore.ts",
+      "path": "src/stores/customNodeStore.ts",
       "role": "application"
     },
     {
@@ -186,12 +186,12 @@
     },
     {
       "name": "Extension store registers extensions and honors disabled settings and always-on core extensions",
-      "checks": ["src/stores/extensionStore.test.ts"]
+      "checks": ["src/stores/customNodeStore.test.ts"]
     },
     {
       "name": "Extension service registers extension contributions and invokes lifecycle hooks",
       "checks": [
-        "src/services/extensionService.test.ts",
+        "src/services/customNodeService.test.ts",
         "browser_tests/tests/extensionAPI.spec.ts"
       ]
     },

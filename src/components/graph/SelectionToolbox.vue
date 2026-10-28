@@ -162,7 +162,7 @@ import { areSelectedLinksHidden } from '@/lib/litegraph/src/canvas/linkSelection
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useExtensionService } from '@/services/extensionService'
+import { useCustomNodeService } from '@/services/customNodeService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
@@ -173,7 +173,7 @@ import VerticalDivider from '@comfyorg/design-system/common/VerticalDivider'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
-const extensionService = useExtensionService()
+const customNodeService = useCustomNodeService()
 const canvasInteractions = useCanvasInteractions()
 const linkSelectionStore = useLinkSelectionStore()
 const rightSidePanelStore = useRightSidePanelStore()
@@ -188,7 +188,7 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
     canvasStore.selectedItems
       .map(
         (item) =>
-          extensionService
+          customNodeService
             .invokeExtensions('getSelectionToolboxCommands', item)
             .flat() as string[]
       )

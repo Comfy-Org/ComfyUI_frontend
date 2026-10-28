@@ -1287,10 +1287,10 @@
           "src/scripts/appInstance.ts",
           "src/scripts/appRegistry.test.ts",
           "src/scripts/appRegistry.ts",
-          "src/services/extensionService.test.ts",
-          "src/services/extensionService.ts",
-          "src/stores/extensionStore.test.ts",
-          "src/stores/extensionStore.ts"
+          "src/services/customNodeService.test.ts",
+          "src/services/customNodeService.ts",
+          "src/stores/customNodeStore.test.ts",
+          "src/stores/customNodeStore.ts"
         ]
       },
       {

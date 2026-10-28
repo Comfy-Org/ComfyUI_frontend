@@ -15,7 +15,7 @@ import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useCustomNodeStore } from '@/stores/customNodeStore'
 import { getErrorMessage, toError } from '@/utils/errorUtil'
 
 const INLINED_CLOUD_EXTENSIONS = new Set([
@@ -117,8 +117,8 @@ export function reportCustomNodeLoadFailures(
 export async function loadExtensions(
   signal: AbortSignal = new AbortController().signal
 ) {
-  const extensionStore = useExtensionStore()
-  extensionStore.loadDisabledExtensionNames(
+  const customNodeStore = useCustomNodeStore()
+  customNodeStore.loadDisabledExtensionNames(
     useSettingStore().get('Comfy.Extension.Disabled')
   )
 
@@ -133,7 +133,7 @@ export async function loadExtensions(
     const { registerCoreExtensions } = await import('@/extensions/core/index')
     await registerCoreExtensions()
   })
-  extensionStore.captureCoreExtensions()
+  customNodeStore.captureCoreExtensions()
   const customNodeScripts = extensions.filter((script) =>
     shouldLoadCustomNodeScript(script, __DISTRIBUTION__ === 'cloud')
   )

@@ -1,6 +1,6 @@
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useCustomNodeStore } from '@/stores/customNodeStore'
 
 /** Whether late custom node packs may still register node types, so a type missing now is not missing yet. */
 export function nodeTypesMayStillArrive(): boolean {
-  return useExtensionStore().areLateCustomNodesPending
+  return useCustomNodeStore().areLateCustomNodesPending
 }

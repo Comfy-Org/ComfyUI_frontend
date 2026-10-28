@@ -16,8 +16,8 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { loadExtensions } from '@/services/extensionLoader'
-import { useExtensionService } from '@/services/extensionService'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useCustomNodeService } from '@/services/customNodeService'
+import { useCustomNodeStore } from '@/stores/customNodeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 import {
@@ -113,7 +113,7 @@ function cpuServerUnknown() {
 }
 
 const isRegistered = (name: string) =>
-  useExtensionStore().isExtensionInstalled(name)
+  useCustomNodeStore().isExtensionInstalled(name)
 
 type Attempt = 'evaluates' | 'throws' | { fetchFails: string }
 
@@ -187,7 +187,7 @@ describe('late custom node loading', () => {
     vi.mocked(useFeatureFlags().flags).lateCustomNodesEnabled = true
     vi.stubGlobal('fetchTestPack', fetchTestPack)
     vi.stubGlobal('registerTestPack', (name: string) =>
-      useExtensionService().registerExtension(recording(name))
+      useCustomNodeService().registerExtension(recording(name))
     )
     vi.mocked(app.getNodeDefs).mockImplementation(async () => ({
       Server: nodeDef('Server')
@@ -361,7 +361,7 @@ describe('late custom node loading', () => {
 
   it('reports a late extension whose startup step throws, and still runs the others', async () => {
     vi.stubGlobal('registerTestPack', (name: string) =>
-      useExtensionService().registerExtension({
+      useCustomNodeService().registerExtension({
         ...recording(name),
         init: () => {
           if (name === 'A') throw new Error('init failed')
@@ -412,7 +412,7 @@ describe('late custom node loading', () => {
 
     await startEditor()
     await vi.advanceTimersByTimeAsync(1_000)
-    useExtensionService().registerExtension(recording('AfterBatch'))
+    useCustomNodeService().registerExtension(recording('AfterBatch'))
 
     expect(isRegistered('AfterBatch')).toBe(true)
     expect(log).not.toContain('AfterBatch:init')
@@ -420,7 +420,7 @@ describe('late custom node loading', () => {
 
   it('lets late extensions add node definitions before their custom nodes, and registers them with the server ones', async () => {
     vi.stubGlobal('registerTestPack', (name: string) =>
-      useExtensionService().registerExtension({
+      useCustomNodeService().registerExtension({
         ...recording(name),
         addCustomNodeDefs: (defs) => {
           log.push(`${name}:addCustomNodeDefs`)
@@ -450,7 +450,7 @@ describe('late custom node loading', () => {
   it('gives the late node definitions to every extension that reads them, early ones too', async () => {
     let earlyDefs: Record<string, ComfyNodeDef> = {}
     vi.stubGlobal('registerTestPack', (name: string) =>
-      useExtensionService().registerExtension({
+      useCustomNodeService().registerExtension({
         ...recording(name),
         addCustomNodeDefs: (defs) => {
           log.push(`${name}:addCustomNodeDefs`)
@@ -515,7 +515,7 @@ describe('late custom node loading', () => {
     await vi.advanceTimersByTimeAsync(1_000)
 
     expect(log).not.toContain('reloadNodeDefs')
-    expect(useExtensionStore().takeOwedNodeDefHooks()).toBe(true)
+    expect(useCustomNodeStore().takeOwedNodeDefHooks()).toBe(true)
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'GET /object_info answered 401' }),
       expect.objectContaining({ tags: { step: 'getNodeDefs' } })
@@ -531,7 +531,7 @@ describe('late custom node loading', () => {
     await startEditor()
     await vi.advanceTimersByTimeAsync(1_000)
 
-    expect(useExtensionStore().takeOwedNodeDefHooks()).toBe(true)
+    expect(useCustomNodeStore().takeOwedNodeDefHooks()).toBe(true)
   })
 
   it('owes no extension node definitions when the late ones were fetched', async () => {
@@ -541,7 +541,7 @@ describe('late custom node loading', () => {
     await vi.advanceTimersByTimeAsync(1_000)
 
     expect(log).toContain('reloadNodeDefs')
-    expect(useExtensionStore().takeOwedNodeDefHooks()).toBe(false)
+    expect(useCustomNodeStore().takeOwedNodeDefHooks()).toBe(false)
   })
 
   it('counts node types as still arriving until the late extensions have finished starting', async () => {
@@ -550,7 +550,7 @@ describe('late custom node loading', () => {
       finishInit = resolve
     })
     vi.stubGlobal('registerTestPack', (name: string) =>
-      useExtensionService().registerExtension({
+      useCustomNodeService().registerExtension({
         ...recording(name),
         init: () => initDone
       })
@@ -593,7 +593,7 @@ describe('late custom node loading', () => {
       finishInit = resolve
     })
     vi.stubGlobal('registerTestPack', (name: string) =>
-      useExtensionService().registerExtension({
+      useCustomNodeService().registerExtension({
         ...recording(name),
         init: () => initDone
       })
@@ -657,7 +657,7 @@ describe('late custom node loading', () => {
 
   it('leaves the next editor holding its late extensions when a gone editor finishes turning its own on', async () => {
     vi.stubGlobal('registerTestPack', (name: string) =>
-      useExtensionService().registerExtension({
+      useCustomNodeService().registerExtension({
         ...recording(name),
         init: async () => {
           if (name === 'A') await new Promise((done) => setTimeout(done, 4_000))
@@ -752,7 +752,7 @@ describe('late custom node loading', () => {
 
   it('takes the starting toast down without saying ready when the only late extension fails to set up', async () => {
     vi.stubGlobal('registerTestPack', (name: string) =>
-      useExtensionService().registerExtension({
+      useCustomNodeService().registerExtension({
         ...recording(name),
         setup: () => {
           throw new Error('setup failed')
@@ -1002,7 +1002,7 @@ describe('late custom node loading', () => {
       finishInit = resolve
     })
     vi.stubGlobal('registerTestPack', (name: string) =>
-      useExtensionService().registerExtension({
+      useCustomNodeService().registerExtension({
         ...recording(name),
         init: () => initDone
       })
@@ -1093,7 +1093,7 @@ describe('naming the CPU server step', () => {
     vi.mocked(useFeatureFlags().flags).lateCustomNodesEnabled = true
     vi.stubGlobal('fetchTestPack', fetchTestPack)
     vi.stubGlobal('registerTestPack', (name: string) =>
-      useExtensionService().registerExtension(recording(name))
+      useCustomNodeService().registerExtension(recording(name))
     )
     provideCurrentUser(() => ({
       userEmail: computed(() => null),

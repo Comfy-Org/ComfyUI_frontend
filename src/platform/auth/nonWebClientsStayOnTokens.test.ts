@@ -27,7 +27,7 @@ import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSession
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { useDialogService } from '@/services/dialogService'
-import { useExtensionService } from '@/services/extensionService'
+import { useCustomNodeService } from '@/services/customNodeService'
 import type { ComfyExtension } from '@/types/comfy'
 
 type IdentityObserver = (user: User | null) => void
@@ -83,9 +83,9 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: () =>
-    fromPartial<ReturnType<typeof useExtensionService>>({
+vi.mock(import('@/services/customNodeService'), () => ({
+  useCustomNodeService: () =>
+    fromPartial<ReturnType<typeof useCustomNodeService>>({
       registerExtension: (extension: ComfyExtension) => {
         registeredExtensions.push(extension)
       }
@@ -104,7 +104,7 @@ vi.mock(import('@/platform/telemetry'))
 
 const { cloudSessionCookieExtension } =
   await import('@/extensions/core/cloudSessionCookie')
-useExtensionService().registerExtension(cloudSessionCookieExtension)
+useCustomNodeService().registerExtension(cloudSessionCookieExtension)
 
 const ONE_HOUR_MS = 60 * 60 * 1000
 const API_KEY = 'comfyui-test-api-key'

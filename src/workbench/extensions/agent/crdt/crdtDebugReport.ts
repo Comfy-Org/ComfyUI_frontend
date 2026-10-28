@@ -21,7 +21,7 @@
 import { DISTRIBUTION } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useCustomNodeStore } from '@/stores/customNodeStore'
 
 import type {
   AssistantMessage,
@@ -597,7 +597,7 @@ export async function collectCrdtDebugReport(
 ): Promise<string> {
   const extensionNames = (() => {
     try {
-      return useExtensionStore().extensions.map((extension) => extension.name)
+      return useCustomNodeStore().extensions.map((extension) => extension.name)
     } catch (error) {
       return [`<unavailable: ${String(error)}>`]
     }

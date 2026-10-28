@@ -97,7 +97,7 @@ import {
 } from '@/utils/litegraphUtil'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
-import { useExtensionService } from './extensionService'
+import { useCustomNodeService } from './customNodeService'
 
 async function reencodeAsPngBlob(
   blob: Blob,
@@ -194,7 +194,7 @@ function getMinSize(node: LGraphNode) {
  * Service that augments litegraph with ComfyUI specific functionality.
  */
 export const useLitegraphService = () => {
-  const extensionService = useExtensionService()
+  const customNodeService = useCustomNodeService()
   const toast = useToast()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
@@ -456,7 +456,7 @@ export const useLitegraphService = () => {
         addOutputs(this, ComfyNode.nodeData.outputs)
         setInitialSize(this)
         this.serialize_widgets = true
-        void extensionService.invokeExtensionsAsync('nodeCreated', this)
+        void customNodeService.invokeExtensionsAsync('nodeCreated', this)
       }
 
       protected override createPromotedHostWidget(
@@ -572,7 +572,7 @@ export const useLitegraphService = () => {
           this.bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
         }
 
-        void extensionService.invokeExtensionsAsync('nodeCreated', this)
+        void customNodeService.invokeExtensionsAsync('nodeCreated', this)
       }
 
       /**
@@ -643,7 +643,7 @@ export const useLitegraphService = () => {
     // `beforeRegisterNodeDef`.
     node.prototype.comfyClass = nodeDefV1.name
     node.comfyClass = nodeDefV1.name
-    await extensionService.invokeExtensionsAsync(
+    await customNodeService.invokeExtensionsAsync(
       'beforeRegisterNodeDef',
       node,
       nodeDefV1 // Receives V1 NodeDef, and potentially make modifications to it

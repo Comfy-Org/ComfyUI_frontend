@@ -12,7 +12,7 @@
       <ul>
         <li v-for="ext in changedExtensions" :key="ext.name">
           <span>
-            {{ extensionStore.isExtensionEnabled(ext.name) ? '[-]' : '[+]' }}
+            {{ customNodeStore.isExtensionEnabled(ext.name) ? '[-]' : '[+]' }}
           </span>
           {{ ext.name }}
         </li>
@@ -102,7 +102,7 @@
           <TableCell class="text-right">
             <Switch
               :model-value="editingEnabledExtensions[extension.name]"
-              :disabled="extensionStore.isExtensionReadOnly(extension.name)"
+              :disabled="customNodeStore.isExtensionReadOnly(extension.name)"
               :aria-label="extension.name"
               @click.stop
               @update:model-value="
@@ -144,7 +144,7 @@ import type { TableSortDirection } from '@comfyorg/design-system/lib/table/table
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useCustomNodeStore } from '@/stores/customNodeStore'
 
 const { t } = useI18n()
 
@@ -161,16 +161,18 @@ const selectedExtensionNames = ref(new Set<string>())
 const searchQuery = ref('')
 const nameSortDirection = ref<TableSortDirection | null>(null)
 
-const extensionStore = useExtensionStore()
+const customNodeStore = useCustomNodeStore()
 const settingStore = useSettingStore()
 
 const editingEnabledExtensions = ref<Record<string, boolean>>({})
 
-function extensionBadge(extension: (typeof extensionStore.extensions)[number]) {
-  if (extensionStore.isAgentCreatedExtension(extension)) {
+function extensionBadge(
+  extension: (typeof customNodeStore.extensions)[number]
+) {
+  if (customNodeStore.isAgentCreatedExtension(extension)) {
     return { label: t('g.createdByAgent'), severity: 'info' as const }
   }
-  if (extensionStore.isCoreExtension(extension.name)) {
+  if (customNodeStore.isCoreExtension(extension.name)) {
     return { label: t('g.core'), severity: undefined }
   }
   return {
@@ -180,18 +182,18 @@ function extensionBadge(extension: (typeof extensionStore.extensions)[number]) {
 }
 
 const filteredExtensions = computed(() => {
-  const extensions = extensionStore.extensions
+  const extensions = customNodeStore.extensions
   switch (filterType.value) {
     case 'core':
       return extensions.filter((ext) =>
-        extensionStore.isCoreExtension(ext.name)
+        customNodeStore.isCoreExtension(ext.name)
       )
     case 'custom':
       return extensions.filter(
-        (ext) => !extensionStore.isCoreExtension(ext.name)
+        (ext) => !customNodeStore.isCoreExtension(ext.name)
       )
     case 'agentCreated':
-      return extensionStore.agentExtensions
+      return customNodeStore.agentExtensions
     default:
       return extensions
   }
@@ -236,17 +238,17 @@ function toggleAllVisible(selected: CheckboxCheckedState) {
 }
 
 onMounted(() => {
-  extensionStore.extensions.forEach((ext) => {
+  customNodeStore.extensions.forEach((ext) => {
     editingEnabledExtensions.value[ext.name] =
-      extensionStore.isExtensionEnabled(ext.name)
+      customNodeStore.isExtensionEnabled(ext.name)
   })
 })
 
 const changedExtensions = computed(() => {
-  return extensionStore.extensions.filter(
+  return customNodeStore.extensions.filter(
     (ext) =>
       editingEnabledExtensions.value[ext.name] !==
-      extensionStore.isExtensionEnabled(ext.name)
+      customNodeStore.isExtensionEnabled(ext.name)
   )
 })
 
@@ -262,7 +264,7 @@ const updateExtensionStatus = async () => {
     .map(([name]) => name)
 
   await settingStore.set('Comfy.Extension.Disabled', [
-    ...extensionStore.inactiveDisabledExtensionNames,
+    ...customNodeStore.inactiveDisabledExtensionNames,
     ...editingDisabledExtensionNames
   ])
 }
@@ -273,8 +275,8 @@ async function setExtensionEnabled(name: string, enabled: boolean) {
 }
 
 const enableAllExtensions = async () => {
-  extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isExtensionReadOnly(ext.name)) return
+  customNodeStore.extensions.forEach((ext) => {
+    if (customNodeStore.isExtensionReadOnly(ext.name)) return
 
     editingEnabledExtensions.value[ext.name] = true
   })
@@ -282,8 +284,8 @@ const enableAllExtensions = async () => {
 }
 
 const disableAllExtensions = async () => {
-  extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isExtensionReadOnly(ext.name)) return
+  customNodeStore.extensions.forEach((ext) => {
+    if (customNodeStore.isExtensionReadOnly(ext.name)) return
 
     editingEnabledExtensions.value[ext.name] = false
   })
@@ -291,8 +293,8 @@ const disableAllExtensions = async () => {
 }
 
 const disableThirdPartyExtensions = async () => {
-  extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isCoreExtension(ext.name)) return
+  customNodeStore.extensions.forEach((ext) => {
+    if (customNodeStore.isCoreExtension(ext.name)) return
 
     editingEnabledExtensions.value[ext.name] = false
   })
@@ -300,8 +302,8 @@ const disableThirdPartyExtensions = async () => {
 }
 
 async function disableAgentExtensions() {
-  extensionStore.agentExtensions.forEach((ext) => {
-    if (extensionStore.isExtensionReadOnly(ext.name)) return
+  customNodeStore.agentExtensions.forEach((ext) => {
+    if (customNodeStore.isExtensionReadOnly(ext.name)) return
 
     editingEnabledExtensions.value[ext.name] = false
   })
@@ -319,7 +321,7 @@ const extensionActions = computed<MenuItem[]>(() => [
     icon: 'icon-[lucide--check]',
     command: async () => {
       selectedExtensionNames.value.forEach((name) => {
-        if (!extensionStore.isExtensionReadOnly(name)) {
+        if (!customNodeStore.isExtensionReadOnly(name)) {
           editingEnabledExtensions.value[name] = true
         }
       })
@@ -331,7 +333,7 @@ const extensionActions = computed<MenuItem[]>(() => [
     icon: 'icon-[lucide--x]',
     command: async () => {
       selectedExtensionNames.value.forEach((name) => {
-        if (!extensionStore.isExtensionReadOnly(name)) {
+        if (!customNodeStore.isExtensionReadOnly(name)) {
           editingEnabledExtensions.value[name] = false
         }
       })
@@ -355,14 +357,14 @@ const extensionActions = computed<MenuItem[]>(() => [
     label: t('g.disableThirdParty'),
     icon: 'icon-[lucide--x]',
     command: disableThirdPartyExtensions,
-    disabled: !extensionStore.hasThirdPartyExtensions
+    disabled: !customNodeStore.hasThirdPartyExtensions
   },
   {
     label: t('g.disableAgentCreated'),
     icon: 'icon-[lucide--x]',
     command: disableAgentExtensions,
-    disabled: !extensionStore.agentExtensions.some(
-      (extension) => !extensionStore.isExtensionReadOnly(extension.name)
+    disabled: !customNodeStore.agentExtensions.some(
+      (extension) => !customNodeStore.isExtensionReadOnly(extension.name)
     )
   }
 ])

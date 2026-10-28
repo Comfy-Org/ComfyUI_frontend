@@ -365,7 +365,7 @@ export async function runPack(
   fs.mkdirSync(dir, { recursive: true })
   const rowPath = `${dir}/${safe}.json`
   fs.writeFileSync(rowPath, JSON.stringify({ pack, safe, incomplete: true }))
-  // The app CONTAINS throwing extension hooks (extensionService catches and
+  // The app CONTAINS throwing extension hooks (customNodeService catches and
   // console.errors them), so a pack whose hook throws would otherwise read
   // clean. Capture the containment signature as row data.
   const hookErrors: string[] = []
@@ -433,8 +433,9 @@ export async function runPack(
 
   // ---- registerCustomNodes (frontend-only pack node types) --------------
   try {
-    const { useExtensionService } = await import('@/services/extensionService')
-    await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
+    const { useCustomNodeService } =
+      await import('@/services/customNodeService')
+    await useCustomNodeService().invokeExtensionsAsync('registerCustomNodes')
     row.registerCustomNodes = 'OK'
   } catch (e) {
     row.registerCustomNodes = errMsg(e)
@@ -444,8 +445,8 @@ export async function runPack(
     .sort()
   row.newTypes = newTypes
   try {
-    const { useExtensionStore } = await import('@/stores/extensionStore')
-    const st = useExtensionStore()
+    const { useCustomNodeStore } = await import('@/stores/customNodeStore')
+    const st = useCustomNodeStore()
     row.extTotal = st.extensions.length
     row.extEnabled = st.enabledExtensions.length
     row.typesTotal = Object.keys(LiteGraph.registered_node_types).length

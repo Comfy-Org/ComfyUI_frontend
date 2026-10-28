@@ -30,7 +30,7 @@ import {
   resultItemUrl,
   resultItemVhsAdvancedPreviewUrl
 } from '@/utils/resultItemUrl'
-import { useExtensionService } from '@/services/extensionService'
+import { useCustomNodeService } from '@/services/customNodeService'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -96,9 +96,9 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: () =>
-    fromPartial<ReturnType<typeof useExtensionService>>({
+vi.mock(import('@/services/customNodeService'), () => ({
+  useCustomNodeService: () =>
+    fromPartial<ReturnType<typeof useCustomNodeService>>({
       registerExtension: (extension: ComfyExtension) => {
         registeredExtensions.push(extension)
       }
@@ -109,7 +109,7 @@ vi.mock(import('@/platform/telemetry'))
 
 const { cloudSessionCookieExtension } =
   await import('@/extensions/core/cloudSessionCookie')
-useExtensionService().registerExtension(cloudSessionCookieExtension)
+useCustomNodeService().registerExtension(cloudSessionCookieExtension)
 
 const ONE_HOUR_MS = 60 * 60 * 1000
 

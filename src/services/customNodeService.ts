@@ -6,7 +6,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useCustomNodeStore } from '@/stores/customNodeStore'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -15,7 +15,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { useApp } from '@/scripts/appInstance'
-import { provideExtensionService } from '@/services/extensionServiceAccess'
+import { provideCustomNodeService } from '@/services/customNodeServiceAccess'
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   return (
@@ -76,8 +76,8 @@ export interface StartupHookFailure {
   error: unknown
 }
 
-export const useExtensionService = () => {
-  const extensionStore = useExtensionStore()
+export const useCustomNodeService = () => {
+  const customNodeStore = useCustomNodeStore()
   const settingStore = useSettingStore()
   const keybindingStore = useKeybindingStore()
   const {
@@ -91,16 +91,16 @@ export const useExtensionService = () => {
    * @returns A disposer that stops the extension's auth hooks and unregisters it.
    */
   const registerExtension = (extension: ComfyExtension) => {
-    if (extensionStore.isHoldingCustomNodes) {
-      extensionStore.holdCustomNode(extension)
-      return once(() => extensionStore.releaseHeldCustomNode(extension))
+    if (customNodeStore.isHoldingCustomNodes) {
+      customNodeStore.holdCustomNode(extension)
+      return once(() => customNodeStore.releaseHeldCustomNode(extension))
     }
     return registerExtensionNow(extension)
   }
 
   /** Registers an extension even while new ones are held. */
   const registerExtensionNow = (extension: ComfyExtension) => {
-    extensionStore.registerExtension(extension)
+    customNodeStore.registerExtension(extension)
 
     const addKeybinding = wrapWithErrorHandling(
       keybindingStore.addDefaultKeybinding
@@ -187,7 +187,7 @@ export const useExtensionService = () => {
 
     return once(() => {
       authHookHandles.forEach((stop) => stop())
-      extensionStore.unregisterExtension(extension.name)
+      customNodeStore.unregisterExtension(extension.name)
     })
   }
 
@@ -217,7 +217,7 @@ export const useExtensionService = () => {
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
     const results: ReturnType<ComfyExtensionMethod<T>>[] = []
-    for (const ext of extensionStore.enabledExtensions) {
+    for (const ext of customNodeStore.enabledExtensions) {
       if (method in ext) {
         try {
           const fn = ext[method]
@@ -268,7 +268,7 @@ export const useExtensionService = () => {
     // This runs once per node def per extension, so avoid allocating promises
     // or closures for extensions that do not define the hook.
     const pending: unknown[] = []
-    for (const ext of extensionStore.enabledExtensions) {
+    for (const ext of customNodeStore.enabledExtensions) {
       // The property read is inside the try so a throwing getter or Proxy trap
       // only affects its own extension.
       try {
@@ -315,7 +315,7 @@ export const useExtensionService = () => {
   ): Promise<StartupHookFailure[]> => {
     const failures: StartupHookFailure[] = []
     for (const extension of extensions) {
-      if (!extensionStore.isExtensionEnabled(extension.name)) continue
+      if (!customNodeStore.isExtensionEnabled(extension.name)) continue
       try {
         const fn: unknown = extension[method]
         if (typeof fn !== 'function') continue
@@ -340,4 +340,4 @@ export const useExtensionService = () => {
   }
 }
 
-provideExtensionService(useExtensionService)
+provideCustomNodeService(useCustomNodeService)

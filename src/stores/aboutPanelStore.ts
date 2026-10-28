@@ -7,12 +7,12 @@ import type { AboutPageBadge } from '@/types/comfy'
 import { electronAPI } from '@/utils/envUtil'
 import { formatCommitHash } from '@/utils/formatUtil'
 
-import { useExtensionStore } from './extensionStore'
+import { useCustomNodeStore } from './customNodeStore'
 import { useSystemStatsStore } from './systemStatsStore'
 
 export const useAboutPanelStore = defineStore('aboutPanel', () => {
   const frontendVersion = __COMFYUI_FRONTEND_VERSION__
-  const extensionStore = useExtensionStore()
+  const customNodeStore = useCustomNodeStore()
   const systemStatsStore = useSystemStatsStore()
   const { staticUrls } = useExternalLink()
   const coreVersion = computed(
@@ -72,7 +72,7 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
 
   const allBadges = computed<AboutPageBadge[]>(() => [
     ...coreBadges.value,
-    ...extensionStore.extensions.flatMap((e) => e.aboutPageBadges ?? [])
+    ...customNodeStore.extensions.flatMap((e) => e.aboutPageBadges ?? [])
   ])
 
   return {

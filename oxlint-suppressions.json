@@ -1097,7 +1097,7 @@
       "count": 1
     }
   },
-  "src/stores/extensionStore.ts": {
+  "src/stores/customNodeStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 2
     }
