@@ -4,7 +4,7 @@
     variant="secondary"
     @click="openGitHubIssues"
   >
-    <i class="pi pi-github" />
+    <i class="icon-[lucide--github]" />
     {{ $t('g.findIssues') }}
   </Button>
 </template>
