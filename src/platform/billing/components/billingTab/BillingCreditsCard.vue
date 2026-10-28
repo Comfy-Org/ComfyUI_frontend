@@ -94,12 +94,63 @@
               <i class="icon-[lucide--info] size-3.5" aria-hidden="true" />
             </Button>
           </span>
+          <i18n-t
+            v-if="planTotal"
+            keypath="workspacePanel.billingTab.credits.planOfPool"
+            tag="span"
+            class="text-sm text-muted-foreground"
+            data-testid="billing-credits-plan"
+          >
+            <template #remaining>
+              <span class="font-semibold text-foreground">
+                {{ credits(state.planCents) }}
+              </span>
+            </template>
+            <template #total>{{ planTotal }}</template>
+          </i18n-t>
           <span
+            v-else
             class="text-sm font-semibold text-foreground"
             data-testid="billing-credits-plan"
           >
-            {{ planLine() }}
+            {{ credits(state.planCents) }}
           </span>
+          <div
+            v-if="planDateLine || planUsedPercent !== null"
+            class="flex flex-col gap-2 pt-2"
+          >
+            <div
+              class="flex items-center justify-between gap-2 text-sm text-muted-foreground"
+            >
+              <span data-testid="billing-credits-plan-date">
+                {{ planDateLine }}
+              </span>
+              <span
+                v-if="planUsedPercent !== null"
+                data-testid="billing-credits-plan-used"
+              >
+                {{
+                  $t('workspacePanel.billingTab.credits.planUsed', {
+                    percent: planUsedPercent
+                  })
+                }}
+              </span>
+            </div>
+            <div
+              v-if="planUsedPercent !== null"
+              role="meter"
+              :aria-label="$t('workspacePanel.billingTab.credits.plan')"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              :aria-valuenow="planUsedPercent"
+              class="h-1 overflow-hidden rounded-full bg-accent"
+            >
+              <div
+                class="h-full rounded-full bg-foreground"
+                :style="{ width: `${planUsedPercent}%` }"
+              />
+            </div>
+          </div>
         </div>
         <div class="flex flex-1 items-start justify-between gap-4 px-5 py-4">
           <div class="flex flex-col gap-2">
@@ -143,6 +194,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { clamp } from 'es-toolkit'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -184,31 +236,38 @@ function credits(cents: number) {
   })
 }
 
-function planAmount(cents: number, poolCredits: number | null) {
-  if (poolCredits === null) return credits(cents)
-  return t('workspacePanel.billingTab.credits.planOfPool', {
-    remaining: credits(cents),
-    total: formatCredits({
-      value: poolCredits,
-      locale: locale.value,
-      numberOptions: WHOLE
-    })
-  })
-}
-
 function longDate(raw: string | null): string {
   const date = raw ? new Date(raw) : null
   if (!date || Number.isNaN(date.getTime())) return ''
   return d(date, { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function planLine() {
+const PLAN_DATE_KEY = {
+  refills: 'subscription.refillsDate',
+  availableUntil: 'workspacePanel.billingTab.credits.availableUntil'
+} as const
+
+const planTotal = computed(() =>
+  state.kind === 'plan' && state.planPoolCredits
+    ? formatCredits({
+        value: state.planPoolCredits,
+        locale: locale.value,
+        numberOptions: WHOLE
+      })
+    : null
+)
+
+const planUsedPercent = computed(() => {
+  if (state.kind !== 'plan' || !state.planPoolCredits) return null
+  const remaining = centsToCredits(state.planCents) / state.planPoolCredits
+  return Math.round(clamp(1 - remaining, 0, 1) * 100)
+})
+
+const planDateLine = computed(() => {
   if (state.kind !== 'plan') return ''
-  const amount = planAmount(state.planCents, state.planPoolCredits)
-  const date = longDate(state.renewalDate)
-  if (!date) return amount
-  return `${amount} ${t('subscription.refillsDate', { date })}`
-}
+  const date = longDate(state.planDate.date)
+  return date ? t(PLAN_DATE_KEY[state.planDate.kind], { date }) : ''
+})
 
 const overdrawnCredits = computed(() =>
   state.kind === 'unavailable' ? 0 : centsToCredits(-state.availableCents)

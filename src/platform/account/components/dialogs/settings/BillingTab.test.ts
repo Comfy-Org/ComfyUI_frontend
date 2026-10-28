@@ -46,6 +46,19 @@ vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@comfyorg/telemetry'))
+const handleMessageSupport = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(
+  import('@/platform/billing/subscription/composables/useSubscriptionActions'),
+  async () => {
+    const { ref } = await import('vue')
+    return {
+      useSubscriptionActions: () => ({
+        isLoadingSupport: ref(false),
+        handleMessageSupport
+      })
+    }
+  }
+)
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string, correlationId?: string) =>
     `https://platform.test${path}?workspace=ws_1&correlation_id=${correlationId}`
@@ -552,6 +565,45 @@ describe('BillingTab', () => {
       )
     }
   )
+
+  it.for([
+    { canManageBilling: true, line: true },
+    { canManageBilling: false, line: false }
+  ])(
+    'says where the rest of billing lives when can_manage_billing is $canManageBilling',
+    ({ canManageBilling, line }) => {
+      arrange({ canManageBilling })
+
+      const card = screen.getByTestId('billing-handoff-card')
+      expect(
+        within(card).queryByText(/Manage everything else about billing on/) !==
+          null
+      ).toBe(line)
+      if (!line) return
+      expect(
+        within(card).getByRole('link', { name: 'platform.comfy.org' })
+      ).toHaveAttribute(
+        'href',
+        expect.stringContaining('https://platform.test/profile/billing?')
+      )
+    }
+  )
+
+  it('links Partner Nodes pricing to the docs and messages support from the footer', async () => {
+    arrange()
+    const footer = screen.getByTestId('billing-footer')
+
+    expect(
+      within(footer).getByRole('link', { name: 'Partner Nodes pricing' })
+    ).toHaveAttribute(
+      'href',
+      'https://docs.comfy.org/tutorials/partner-nodes/pricing'
+    )
+    await userEvent.click(
+      within(footer).getByRole('button', { name: 'Message support' })
+    )
+    expect(handleMessageSupport).toHaveBeenCalledOnce()
+  })
 
   it.for([
     {

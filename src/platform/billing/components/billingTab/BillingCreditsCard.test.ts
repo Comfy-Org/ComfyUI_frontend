@@ -30,7 +30,8 @@ const activeFacts: CreditsCardFacts = {
   planKind: 'active',
   billingStatus: 'paid',
   planPoolCredits: 1000,
-  renewalDate: null
+  renewalDate: null,
+  endDate: null
 }
 
 const SUBSCRIBE_NOTE =
@@ -223,15 +224,74 @@ describe('BillingCreditsCard', () => {
     )
   })
 
-  it('ends the plan line with the renewal date', () => {
-    renderCard({
-      ...activeFacts,
-      renewalDate: '2026-10-01T00:00:00Z'
-    })
+  it.for<{
+    case: string
+    facts: Partial<CreditsCardFacts>
+    amount: string
+    date: string
+    used: string | null
+    meter: string | null
+  }>([
+    {
+      case: 'an active plan refills on its renewal date',
+      facts: { renewalDate: '2026-10-01T00:00:00Z' },
+      amount: '844 of 1,000',
+      date: 'Refills October 1, 2026',
+      used: '16% used',
+      meter: '16'
+    },
+    {
+      case: 'an ending plan is available until its end date',
+      facts: {
+        planKind: 'ending',
+        renewalDate: '2026-10-01T00:00:00Z',
+        endDate: '2026-12-31T12:00:00Z'
+      },
+      amount: '844 of 1,000',
+      date: 'Available until December 31, 2026',
+      used: '16% used',
+      meter: '16'
+    },
+    {
+      case: 'a plan with no known total shows no meter',
+      facts: { planPoolCredits: null, renewalDate: '2026-10-01T00:00:00Z' },
+      amount: '844',
+      date: 'Refills October 1, 2026',
+      used: null,
+      meter: null
+    },
+    {
+      case: 'used-up plan credits fill the meter',
+      facts: { balance: balanceOf({ effective: 300, plan: 0, topUp: 300 }) },
+      amount: '0 of 1,000',
+      date: '',
+      used: '100% used',
+      meter: '100'
+    }
+  ])('splits the plan cell for $case', (row) => {
+    renderCard({ ...activeFacts, ...row.facts })
 
     expect(screen.getByTestId('billing-credits-plan').textContent.trim()).toBe(
-      '844 of 1,000 Refills October 1, 2026'
+      row.amount
     )
+    expect(
+      screen.queryByTestId('billing-credits-plan-date')?.textContent.trim() ??
+        ''
+    ).toBe(row.date)
+    expect(
+      screen.queryByTestId('billing-credits-plan-used')?.textContent.trim() ??
+        null
+    ).toBe(row.used)
+    expect(
+      screen.queryByRole('meter')?.getAttribute('aria-valuenow') ?? null
+    ).toBe(row.meter)
+  })
+
+  it('shows nothing under the amount without a date or a total', () => {
+    renderCard({ ...activeFacts, planPoolCredits: null })
+
+    expect(screen.queryByTestId('billing-credits-plan-date')).toBeNull()
+    expect(screen.queryByRole('meter')).toBeNull()
   })
 
   it('puts the credits title above a 12px card', () => {
@@ -250,9 +310,7 @@ describe('BillingCreditsCard', () => {
       'text-2xl',
       'font-medium'
     )
-    expect(screen.getByTestId('billing-credits-plan')).toHaveClass(
-      'font-semibold'
-    )
+    expect(screen.getByText('844')).toHaveClass('font-semibold')
   })
 
   it('asks for the balance again from Try again', async () => {

@@ -3642,10 +3642,12 @@
       "credits": {
         "addCredits": "Add credits",
         "available": "Available",
+        "availableUntil": "Available until {date}",
         "inUse": "In use now",
         "overdrawn": "Your runs used {count} more credit than you had. | Your runs used {count} more credits than you had.",
         "plan": "Plan",
         "planOfPool": "{remaining} of {total}",
+        "planUsed": "{percent}% used",
         "planTooltip": "Credits included with your plan. They refill each billing period.",
         "rateInfo": "About credits",
         "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
@@ -3654,6 +3656,10 @@
         "topUpTooltip": "Credits you added. They're used once plan credits run out.",
         "unavailable": "Couldn't load your balance."
       },
+      "footer": {
+        "messageSupport": "Message support",
+        "partnerNodesPricing": "Partner Nodes pricing"
+      },
       "handoff": {
         "member": {
           "action": "View usage",
@@ -3661,7 +3667,9 @@
         },
         "owner": {
           "action": "Open billing",
-          "label": "Payment methods, invoices, and usage"
+          "label": "Payment methods, invoices, and usage",
+          "line": "Manage everything else about billing on {platform}",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "We couldn't load your plan.",
