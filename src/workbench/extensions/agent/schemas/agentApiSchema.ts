@@ -148,12 +148,9 @@ export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
  * One persisted `content.thinking` entry: a model round's thinking text,
  * anchored to that round's first tool call when it made one.
  */
-export const zPersistedThinkingEntry = zAgentThinkingEntry.extend({
-  // `.nullish()`, matching `zPersistedToolCallSummary` above: a Go pointer
-  // field serialized without `omitempty` sends an explicit `null`, which the
-  // generated `.optional()` rejects, dropping that round's thinking.
-  tool_call_id: z.string().nullish()
-})
+export const zPersistedThinkingEntry = zAgentThinkingEntry
+  .pick({ text: true })
+  .extend({ tool_call_id: z.string().nullish() })
 
 /**
  * The message-parse boundary's `content.tool_calls` field is deliberately
