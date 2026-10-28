@@ -23,6 +23,7 @@ import SessionReconnecting from '@/platform/auth/session/components/SessionRecon
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   reportPreloadError,
+  reportPreloadErrorUnlessExtensionImport,
   reportResourceLoadError
 } from '@/platform/telemetry/assetLoadErrorReporting'
 import { app } from '@/scripts/app'
@@ -71,10 +72,10 @@ onMounted(() => {
   // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
   // See: https://vite.dev/guide/build#load-error-handling
   useEventListener(window, 'vite:preloadError', (event) => {
-    // Vite rethrows the failure to the importer unless the event is
-    // prevented. A failure with no URL (e.g. a custom extension that does not
-    // parse) is left to propagate so the extension loader can attribute it.
-    if (parsePreloadError(event.payload).url === null) return
+    if (parsePreloadError(event.payload).url === null) {
+      reportPreloadErrorUnlessExtensionImport(event.payload)
+      return
+    }
     event.preventDefault()
     reportPreloadError(event.payload)
     // No toast: third-party custom node extensions frequently trigger this

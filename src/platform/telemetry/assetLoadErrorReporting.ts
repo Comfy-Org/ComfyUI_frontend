@@ -1,5 +1,6 @@
 import { parsePreloadError } from '@/utils/preloadErrorUtil'
 
+import { isExtensionImportError } from './extensionLoadTelemetry'
 import { reportError } from './reportError'
 
 /**
@@ -80,5 +81,16 @@ export function reportPreloadError(error: Error): void {
       fileType: info.fileType,
       chunkName: info.chunkName
     }
+  })
+}
+
+/**
+ * Reports a preload failure that was left to reject at its importer, unless
+ * the extension loader caught it, since that loader reports it with the
+ * extension's path as `error_loading_extension`.
+ */
+export function reportPreloadErrorUnlessExtensionImport(error: Error): void {
+  setTimeout(() => {
+    if (!isExtensionImportError(error)) reportPreloadError(error)
   })
 }

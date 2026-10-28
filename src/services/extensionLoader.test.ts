@@ -90,7 +90,7 @@ describe('extension loading', () => {
       assert(cause instanceof AggregateError)
       expect(cause.message).toBe('Error loading extensions')
       expect(cause.stack).toContain(
-        `Failed extensions: ${BROKEN}, /extensions/b/b.js`
+        `Failed extensions: ${BROKEN}, /extensions/b/b.js\nFailed extension: ${BROKEN}: Cannot find module '${BROKEN}'\nFailed extension: /extensions/b/b.js: Cannot find module '/extensions/b/b.js'`
       )
       expect(options).toMatchObject({
         errorType: 'error_loading_extension',

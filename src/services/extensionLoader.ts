@@ -7,6 +7,7 @@ import {
 } from '@/platform/lateCustomNodes/lateLoading'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
+  claimExtensionImportError,
   EXTENSION_FAILURES_TRUNCATED_FIELD,
   EXTENSION_LOAD_ERROR_TYPE
 } from '@/platform/telemetry/extensionLoadTelemetry'
@@ -62,8 +63,13 @@ function toFailureDiagnostic({
   }
 }
 
-function importModule(url: string): Promise<unknown> {
-  return import(/* @vite-ignore */ url)
+async function importModule(url: string): Promise<unknown> {
+  try {
+    return await import(/* @vite-ignore */ url)
+  } catch (error) {
+    claimExtensionImportError(error)
+    throw error
+  }
 }
 
 async function importCustomExtension(
@@ -93,7 +99,11 @@ export function reportExtensionLoadFailures(
     Object.assign(new Error(message), stack ? { stack } : {})
   )
   const aggregate = new AggregateError(errors, 'Error loading extensions')
-  aggregate.stack = `${aggregate.stack ?? aggregate.message}\nFailed extensions: ${reportedFailures.map(({ ext }) => ext).join(', ')}`
+  const failureLines = reportedFailures.map(
+    ({ ext, message }) =>
+      `\nFailed extension: ${ext}: ${message.split('\n')[0]}`
+  )
+  aggregate.stack = `${aggregate.stack ?? aggregate.message}\nFailed extensions: ${reportedFailures.map(({ ext }) => ext).join(', ')}${failureLines.join('')}`
 
   reportError(aggregate, {
     errorType: EXTENSION_LOAD_ERROR_TYPE,

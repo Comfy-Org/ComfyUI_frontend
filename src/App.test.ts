@@ -2,7 +2,10 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { reportPreloadError } from '@/platform/telemetry/assetLoadErrorReporting'
+import {
+  reportPreloadError,
+  reportPreloadErrorUnlessExtensionImport
+} from '@/platform/telemetry/assetLoadErrorReporting'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import App from './App.vue'
@@ -70,16 +73,21 @@ describe('App', () => {
     'Unexpected end of input',
     'Importing a module script failed.'
   ])(
-    'lets a preload failure without a URL (%s) propagate to the importer',
+    'lets a preload failure without a URL (%s) reject at its importer and reports it unless an extension import claims it',
     (message) => {
       const { unmount } = render(App, {
         global: { stubs: { RouterView: true } }
       })
 
-      const event = dispatchPreloadError(new SyntaxError(message))
+      const payload = new SyntaxError(message)
+
+      const event = dispatchPreloadError(payload)
 
       expect(event.defaultPrevented).toBe(false)
       expect(reportPreloadError).not.toHaveBeenCalled()
+      expect(
+        reportPreloadErrorUnlessExtensionImport
+      ).toHaveBeenCalledExactlyOnceWith(payload)
       unmount()
     }
   )

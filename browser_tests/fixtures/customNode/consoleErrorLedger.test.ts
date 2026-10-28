@@ -34,20 +34,11 @@ describe('consoleErrorLedger', () => {
     ])
   })
 
-  it('splits the aggregate extension load report into one error per extension', () => {
-    expect(
-      customExtensionStartupErrors([
-        '[Reported error]: error_loading_extension AggregateError: Error loading extensions\n    at reportExtensionLoadFailures (http://localhost:8188/assets/main-abc.js:1:1)\nFailed extensions: /extensions/WhatDreamsCost-ComfyUI/ltx_director_guide.js, /extensions/Pack/widget.js [http://localhost:8188/assets/main-abc.js]'
-      ])
-    ).toEqual([
-      '[Reported error]: error_loading_extension /extensions/WhatDreamsCost-ComfyUI/ltx_director_guide.js',
-      '[Reported error]: error_loading_extension /extensions/Pack/widget.js'
-    ])
-  })
-
   it('required startup errors fail stale and filter only their exact signatures', () => {
     const error =
-      '[Reported error]: error_loading_extension /extensions/WhatDreamsCost-ComfyUI/ltx_director_guide.js'
+      "[Reported error]: error_loading_extension /extensions/WhatDreamsCost-ComfyUI/js/ltx_director_guide.js: Unexpected token '}'"
+    const otherCause =
+      "[Reported error]: error_loading_extension /extensions/WhatDreamsCost-ComfyUI/js/ltx_director_guide.js: The requested module '/scripts/app.js' does not provide an export named 'app'"
     expect(
       staleRequiredStartupErrorRulesForPacks(['WhatDreamsCost-ComfyUI'], [])
     ).toEqual(['WhatDreamsCost-ComfyUI/ltx-director-guide-syntax'])
@@ -60,9 +51,9 @@ describe('consoleErrorLedger', () => {
     expect(
       unallowlistedGlobalExtensionErrorsForPacks(
         ['WhatDreamsCost-ComfyUI'],
-        [error, 'different failure']
+        [error, otherCause, 'different failure']
       )
-    ).toEqual(['different failure'])
+    ).toEqual([otherCause, 'different failure'])
   })
 
   it('reports every console acceptance with unique removal metadata', () => {
