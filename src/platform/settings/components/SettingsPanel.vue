@@ -9,7 +9,7 @@
   </div>
   <NoResultsPlaceholder
     v-else
-    icon="pi pi-search"
+    icon="icon-[lucide--search]"
     :title="$t('g.noResultsFound')"
     :message="$t('g.searchFailedMessage')"
   />

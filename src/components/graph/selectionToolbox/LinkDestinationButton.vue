@@ -46,7 +46,7 @@ import { getSelectedLinkDestinations } from '@/lib/litegraph/src/canvas/linkSele
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLinkDestinationNavigation } from '@/renderer/core/canvas/useLinkDestinationNavigation'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const { t } = useI18n()
 const linkSelectionStore = useLinkSelectionStore()

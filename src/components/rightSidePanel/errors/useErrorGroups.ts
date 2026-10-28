@@ -26,7 +26,7 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import { shouldRenderExecutionItemList } from './executionItemList'
 import { someNodeTypeInSelection } from './selectionEmphasis'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import type { ResolvedCatalogErrorMessage } from '@/platform/workflowErrors/errorCatalog/types'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
@@ -43,7 +43,7 @@ import {
 import {
   compareExecutionId,
   tryNormalizeNodeExecutionId
-} from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 
 import type { MissingResourceAbsorption } from '@/utils/missingResourceAbsorption'
 import { useErrorClassification } from './useErrorClassification'

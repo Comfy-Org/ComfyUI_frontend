@@ -5,10 +5,10 @@ import type {
   ResolvedConnection,
   SubgraphInputNode,
   SubgraphOutputNode
-} from '@/lib/litegraph/src/types/entityRegistry'
-import type { SlotDirection } from '@/types/slotId'
+} from '@comfyorg/graph-model/entityRegistry'
+import type { SlotDirection } from '@comfyorg/graph-model/slotId'
 
-import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'

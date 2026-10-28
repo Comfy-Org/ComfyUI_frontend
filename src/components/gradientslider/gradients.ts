@@ -1,4 +1,4 @@
-import type { ColorStop } from '@/lib/litegraph/src/interfaces'
+import type { ColorStop } from '@comfyorg/graph-model/interfaces'
 
 export function stopsToGradient(stops: ColorStop[]): string {
   if (!stops.length) return 'transparent'

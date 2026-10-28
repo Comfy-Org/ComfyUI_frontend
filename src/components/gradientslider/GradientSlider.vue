@@ -2,7 +2,7 @@
 import { SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
 import { computed, ref } from 'vue'
 
-import type { ColorStop } from '@/lib/litegraph/src/interfaces'
+import type { ColorStop } from '@comfyorg/graph-model/interfaces'
 import {
   interpolateStops,
   stopsToGradient

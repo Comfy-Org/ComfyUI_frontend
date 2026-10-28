@@ -13,7 +13,7 @@ import {
 } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import enMain from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

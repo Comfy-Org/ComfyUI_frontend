@@ -34,7 +34,7 @@
     <div v-if="!embedded" class="flex items-center justify-between">
       <h3 class="m-0">{{ $t('credits.activity') }}</h3>
       <Button variant="muted-textonly" @click="handleCreditsHistoryClick">
-        <i class="pi pi-arrow-up-right" />
+        <i class="icon-[lucide--arrow-up-right]" />
         {{ $t('credits.invoiceHistory') }}
       </Button>
     </div>
@@ -43,15 +43,15 @@
 
     <div v-if="!embedded" class="flex gap-2">
       <Button variant="muted-textonly" @click="handleFaqClick">
-        <i class="pi pi-question-circle" />
+        <i class="icon-[lucide--circle-question-mark]" />
         {{ $t('credits.faqs') }}
       </Button>
       <Button variant="muted-textonly" @click="handleOpenPartnerNodesInfo">
-        <i class="pi pi-question-circle" />
+        <i class="icon-[lucide--circle-question-mark]" />
         {{ $t('subscription.partnerNodesCredits') }}
       </Button>
       <Button variant="muted-textonly" @click="handleMessageSupport">
-        <i class="pi pi-comments" />
+        <i class="icon-[lucide--messages-square]" />
         {{ $t('credits.messageSupport') }}
       </Button>
     </div>

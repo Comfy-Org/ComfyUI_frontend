@@ -22,10 +22,10 @@
         >
           <i
             v-if="isUpdateAvailable"
-            class="pi pi-arrow-circle-up text-xs text-blue-600"
+            class="icon-[lucide--circle-arrow-up] size-3 text-blue-600"
           />
           <span>{{ installedVersion }}</span>
-          <i v-if="!isDisabled" class="pi pi-chevron-right text-2xs" />
+          <i v-if="!isDisabled" class="icon-[lucide--chevron-right] size-2.5" />
         </Button>
       </PopoverTrigger>
       <PopoverContent

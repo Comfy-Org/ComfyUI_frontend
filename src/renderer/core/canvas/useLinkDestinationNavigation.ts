@@ -3,11 +3,11 @@ import { usePreferredReducedMotion } from '@vueuse/core'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { selectLinkDestination } from '@/lib/litegraph/src/canvas/linkSelection'
 import type { LinkArrival } from '@/lib/litegraph/src/canvas/linkSelection'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import type { LGraphCanvas } from '@/lib/litegraph/src/types/entityRegistry'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
+import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const ARRIVAL_TOOLBOX_CLEARANCE = 64
 
