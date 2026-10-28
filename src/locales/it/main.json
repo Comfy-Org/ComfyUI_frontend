@@ -5863,7 +5863,6 @@
         "onHold": "Nessun metodo di pagamento predefinito. Impostane uno per riprendere la ricarica automatica.",
         "paused": "Limite mensile raggiunto. Riprende il {date}.",
         "pausedNoDate": "Limite mensile raggiunto.",
-        "rule": "Aggiunge {amount} ({credits} crediti) quando i crediti scendono sotto {threshold}.",
         "status": {
           "failed": "Non riuscito",
           "off": "Disattivata",
