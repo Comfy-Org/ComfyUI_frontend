@@ -26,6 +26,7 @@ import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/lit
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
@@ -143,6 +144,30 @@ describe('LGraphNode', () => {
     node.configure(configureData)
     expect(Array.from(node.pos)).toEqual([50, 60])
     expect(Array.from(node.size)).toEqual([70, 80])
+  })
+
+  test.fails('does not add a reroute when a floating chain has no link', () => {
+    const graph = new LGraph()
+    node.addOutput('output', '*')
+    graph.add(node)
+    const parentId = toRerouteId(1)
+    const parent = graph.setReroute({
+      id: parentId,
+      pos: [0, 0],
+      linkIds: [],
+      floating: { slotType: 'output' }
+    })
+    expect(parent).toBeDefined()
+    const parentBefore = parent?.asSerialisable()
+
+    expect(
+      node.connectFloatingReroute([10, 10], node.outputs[0], parentId)
+    ).toBeUndefined()
+
+    expect(graph.reroutes.size).toBe(1)
+    expect(graph.getReroute(parentId)?.asSerialisable()).toEqual(parentBefore)
+    expect(graph.floatingLinks.size).toBe(0)
+    expect(console.error).toHaveBeenCalledWith(expect.any(Error))
   })
 
   test('should configure inputs correctly', () => {

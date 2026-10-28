@@ -436,6 +436,39 @@ describe('useWorkflowStore', () => {
       expect(workflow.isModified).toBe(false)
     })
 
+    it.fails('does not open a workflow when loading fails', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      vi.mocked(api.getUserData).mockResolvedValue(
+        new Response(null, { status: 404, statusText: 'Not Found' })
+      )
+
+      await expect(store.openWorkflow(workflow)).resolves.toBeUndefined()
+
+      expect(store.activeWorkflow).toBeNull()
+      expect(store.isOpen(workflow)).toBe(false)
+      expect(console.error).toHaveBeenCalledOnce()
+    })
+
+    it.fails('preserves the loaded workflow when a forced refresh is invalid', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
+        new Response(defaultGraphJSON, { status: 200 })
+      )
+      await workflow.load()
+      const initialState = workflow.initialState
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
+        new Response('{invalid', { status: 200 })
+      )
+
+      await expect(workflow.load({ force: true })).resolves.toBeUndefined()
+
+      expect(workflow.initialState).toBe(initialState)
+      expect(workflow.originalContent).toBe(defaultGraphJSON)
+      expect(console.error).toHaveBeenCalledOnce()
+    })
+
     it('should prefer a persisted V2 draft when loading a remote workflow', async () => {
       enableWorkflowPersistence()
 
@@ -687,6 +720,25 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
       expect(bookmarkStore.isBookmarked('test.json')).toBe(false)
     })
+
+    it.fails('does not update related state when renaming fails', async () => {
+      const workflow = store.createTemporary('test.json')
+      const oldPath = workflow.path
+      await bookmarkStore.setBookmarked(oldPath, true)
+      Object.defineProperty(workflow, 'rename', {
+        configurable: true,
+        value: vi.fn().mockResolvedValue(false)
+      })
+
+      const result = await store.renameWorkflow(
+        workflow,
+        'workflows/renamed.json'
+      )
+
+      expect(result).toBe(false)
+      expect(store.getWorkflowByPath(oldPath)?.path).toBe(oldPath)
+      expect(bookmarkStore.isBookmarked(oldPath)).toBe(true)
+    })
   })
 
   describe('closeWorkflow', () => {
@@ -699,6 +751,22 @@ describe('useWorkflowStore', () => {
       expect(store.isOpen(workflow)).toBe(false)
       expect(store.getWorkflowByPath(workflow.path)).toBeNull()
     })
+
+    it.fails('reattaches a temporary workflow when it is reopened', async () => {
+      const workflow = store.createTemporary('test.json')
+      const otherWorkflow = store.createTemporary('other.json')
+      await store.openWorkflow(workflow)
+      await store.openWorkflow(otherWorkflow)
+      await store.closeWorkflow(workflow)
+
+      await store.openWorkflow(workflow)
+
+      expect(store.getWorkflowByPath(workflow.path)?.path).toBe(workflow.path)
+      expect(store.openWorkflows.map(({ path }) => path)).toContain(
+        workflow.path
+      )
+    })
+
     it('forgets the node histories of the closed workflow only', async () => {
       const workflow = store.createTemporary('test.json')
       await store.openWorkflow(workflow)
@@ -755,6 +823,21 @@ describe('useWorkflowStore', () => {
 
       // Verify bookmark was removed
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
+    })
+
+    it.fails('does not remove related state when deleting fails', async () => {
+      const workflow = store.createTemporary('test.json')
+      await bookmarkStore.setBookmarked(workflow.path, true)
+      Object.defineProperty(workflow, 'delete', {
+        configurable: true,
+        value: vi.fn().mockResolvedValue(false)
+      })
+
+      const result = await store.deleteWorkflow(workflow)
+
+      expect(result).toBe(false)
+      expect(store.getWorkflowByPath(workflow.path)?.path).toBe(workflow.path)
+      expect(bookmarkStore.isBookmarked(workflow.path)).toBe(true)
     })
 
     it('should remove a deleted workflow without closing other tabs', async () => {

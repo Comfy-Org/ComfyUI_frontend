@@ -347,6 +347,29 @@ describe('useWorkflowPersistenceV2', () => {
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
     })
 
+    it.fails('falls back to the latest draft when the saved workflow fails to open', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const savedWorkflow = workflowStore.createTemporary('SavedWorkflow.json')
+      writeActivePath(savedWorkflow.path)
+      useWorkflowDraftStoreV2().saveDraft(
+        'workflows/Other.json',
+        JSON.stringify({ nodes: [] }),
+        { name: 'Other.json', isTemporary: true }
+      )
+      openWorkflowMock.mockResolvedValueOnce(false)
+
+      await mountWorkflowPersistence().initializeWorkflow()
+
+      expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow)
+      expect(mocks.loadGraphDataMock).toHaveBeenCalledWith(
+        { nodes: [] },
+        true,
+        true,
+        'Other.json'
+      )
+    })
+
     it('prefers draft over saved workflow when draft exists', async () => {
       const workflowStore = useWorkflowStore()
       vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()

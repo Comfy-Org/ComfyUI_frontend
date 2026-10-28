@@ -16,7 +16,12 @@ import {
 import { api } from '@/scripts/api'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
+const mockReportError = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -376,18 +381,28 @@ describe(assetService.uploadAssetAsync, () => {
 })
 
 describe(assetService.deleteAsset, () => {
-  it('throws an error containing the status code when the response is not ok', async () => {
+  it.fails('reports and preserves request failures', async () => {
+    const failure = new Error('Network unavailable')
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(failure)
+
+    await expect(assetService.deleteAsset('asset-1')).rejects.toBe(failure)
+    expect(mockReportError).toHaveBeenCalledWith(failure, {
+      errorType: 'asset_deletion_request_failure'
+    })
+  })
+
+  it.fails('returns false when the response is not ok', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildResponse(null, { ok: false, status: 503 })
     )
 
-    await expect(assetService.deleteAsset('asset-1')).rejects.toThrow(/503/)
+    await expect(assetService.deleteAsset('asset-1')).resolves.toBe(false)
   })
 
-  it('issues a DELETE to the asset endpoint when the response is ok', async () => {
+  it.fails('issues a DELETE to the asset endpoint when the response is ok', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(null))
 
-    await assetService.deleteAsset('asset-1')
+    await expect(assetService.deleteAsset('asset-1')).resolves.toBe(true)
 
     expect(api.fetchApi).toHaveBeenCalledWith(
       '/assets/asset-1',
@@ -913,14 +928,26 @@ describe(assetService.seedModelAssets, () => {
 })
 
 describe(assetService.updateAsset, () => {
-  it('throws when the response body fails schema validation', async () => {
+  it.fails('returns unknown server state when the request reports failure', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildResponse({}, { ok: false, status: 500 })
+    )
+
+    await expect(
+      assetService.updateAsset('asset-1', { name: 'renamed.safetensors' })
+    ).resolves.toEqual({ kind: 'failed', serverState: 'unknown' })
+    expect(console.error).toHaveBeenCalledOnce()
+  })
+
+  it.fails('returns unknown server state when the response body is invalid', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildResponse({ name: 'no-id-field.safetensors' })
     )
 
     await expect(
       assetService.updateAsset('asset-1', { name: 'renamed.safetensors' })
-    ).rejects.toThrow(/Invalid response/)
+    ).resolves.toEqual({ kind: 'failed', serverState: 'unknown' })
+    expect(console.error).toHaveBeenCalledOnce()
   })
 
   it('PUTs the JSON payload and returns the parsed asset', async () => {

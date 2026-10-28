@@ -2,6 +2,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
+import userEvent from '@testing-library/user-event'
 
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,11 +11,11 @@ import { createI18n } from 'vue-i18n'
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import userEvent from '@testing-library/user-event'
+const mockDeleteAsset = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
-    deleteAsset: vi.fn()
+    deleteAsset: mockDeleteAsset
   }
 }))
 
@@ -147,5 +148,30 @@ describe('AssetCard', () => {
       expect(heading).toHaveTextContent(ORIGINAL_FILENAME)
       expect(heading).not.toHaveTextContent(HASH)
     })
+  })
+
+  it.fails('does not emit deleted when deletion returns false', async () => {
+    vi.useFakeTimers()
+    mockDeleteAsset.mockResolvedValue(false)
+    const asset = createDisplayAsset({ is_immutable: false })
+    const result = renderCard(asset)
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+    await user.click(screen.getByText('g.delete'))
+    const dialogOptions = vi.mocked(showConfirmDialog).mock.calls[0][0]
+    const onConfirm = dialogOptions?.footerProps?.onConfirm
+    expect(onConfirm).toBeTypeOf('function')
+    if (typeof onConfirm !== 'function') throw new Error('Missing confirmation')
+    const confirmation = onConfirm()
+
+    await vi.advanceTimersByTimeAsync(0)
+    expect(dialogOptions?.props?.promptText).toHaveProperty(
+      'value',
+      'assetBrowser.deletion.failed'
+    )
+    await vi.runAllTimersAsync()
+    await confirmation
+    expect(mockDeleteAsset).toHaveBeenCalledWith(asset.id)
+    expect(result.emitted('deleted')).toBeUndefined()
   })
 })

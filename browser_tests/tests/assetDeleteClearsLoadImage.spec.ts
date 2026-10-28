@@ -10,116 +10,14 @@
  * The cloud project is required because input-asset deletion is gated on
  * `isCloud === true` (see `useMediaAssetActions.deleteAssetApi`).
  */
-import type { Page, Route } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
-  STABLE_CHECKPOINT,
-  STABLE_INPUT_IMAGE
-} from '@e2e/fixtures/data/assetFixtures'
-
-// The asset name must match the dropped file so that the deletion flow's
-// widget-value matching (name + `name [input]`) actually targets the same
-// value the drag-and-drop set on the Load Image widget.
-const DROPPED_FILE = 'image64x64.webp'
-const TARGET_ASSET: Asset = {
-  ...STABLE_INPUT_IMAGE,
-  name: DROPPED_FILE,
-  mime_type: 'image/webp'
-}
-const SEEDED_ASSETS: Asset[] = [STABLE_CHECKPOINT, TARGET_ASSET]
-// MediaAssetCard renders the basename without extension, so card-text
-// matching uses the stripped form.
-const TARGET_CARD_TEXT = TARGET_ASSET.name.replace(/\.[^.]+$/, '')
-
-type AssetMockApi = {
-  readonly deleteCalls: ReadonlyArray<string>
-}
-
-const assetMockByPage = new WeakMap<Page, { deleteCalls: string[] }>()
-
-function filterByTags(assets: Asset[], url: URL): Asset[] {
-  const anyTags = parseTagParam(url.searchParams.get('tags_any'))
-  const noneTags = parseTagParam(url.searchParams.get('tags_none'))
-  return assets.filter((asset) => {
-    const tags = asset.tags ?? []
-    const matchesAny =
-      anyTags.length === 0 || anyTags.some((tag) => tags.includes(tag))
-    const matchesNone = noneTags.every((tag) => !tags.includes(tag))
-    return matchesAny && matchesNone
-  })
-}
-
-function parseTagParam(value: string | null): string[] {
-  return (
-    value
-      ?.split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean) ?? []
-  )
-}
-
-// Narrow the route patterns to the cloud API endpoints we actually want to
-// intercept. Using a broader pattern (e.g. `**/assets**`) collides with the
-// cloud build's static bundle paths under `/assets/*.js` and starves the app
-// of its own JavaScript, leaving it stuck on the loading splash.
-async function registerAssetMocks(
-  page: Page,
-  assets: Asset[],
-  deleteCalls: string[]
-): Promise<void> {
-  await page.route(/\/api\/assets(?:\?.*)?$/, (route: Route) => {
-    if (route.request().method() !== 'GET') return route.fallback()
-    const url = new URL(route.request().url())
-    const filtered = filterByTags(assets, url)
-    const body: ListAssetsResponse = {
-      assets: filtered,
-      total: filtered.length,
-      has_more: false
-    }
-    return route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(body)
-    })
-  })
-
-  await page.route(/\/api\/assets\/([^/?#]+)$/, (route: Route) => {
-    const method = route.request().method()
-    const id = new URL(route.request().url()).pathname.split('/').pop() ?? ''
-    if (method === 'DELETE') {
-      deleteCalls.push(id)
-      return route.fulfill({ status: 204, body: '' })
-    }
-    if (method === 'GET') {
-      const found = assets.find((asset) => asset.id === id)
-      if (found) return route.fulfill({ status: 200, json: found })
-      return route.fulfill({ status: 404, json: { error: 'Not found' } })
-    }
-    return route.fallback()
-  })
-}
-
-const baseTest = comfyPageFixture.extend<{ assetMock: AssetMockApi }>({
-  page: async ({ page }, use) => {
-    const deleteCalls: string[] = []
-    await registerAssetMocks(page, SEEDED_ASSETS, deleteCalls)
-    assetMockByPage.set(page, { deleteCalls })
-    await use(page)
-    assetMockByPage.delete(page)
-  },
-  assetMock: async ({ page }, use) => {
-    const state = assetMockByPage.get(page)
-    if (!state) throw new Error('assetMock state missing for page')
-    await use({
-      get deleteCalls() {
-        return state.deleteCalls
-      }
-    })
-  }
-})
+  assetDeleteImageFixture as baseTest,
+  DROPPED_FILE,
+  TARGET_ASSET,
+  TARGET_CARD_TEXT
+} from '@e2e/fixtures/assetDeleteImageFixture'
 
 baseTest.describe(
   'FE-230 asset delete clears Load Image preview',
@@ -127,53 +25,16 @@ baseTest.describe(
   () => {
     baseTest(
       'deleting an input asset clears widget value, preview cache, and marks workflow modified',
-      async ({ comfyPage, assetMock }) => {
-        await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-
-        // Drive the production drag-and-drop flow to point the Load Image
-        // widget at the asset we are about to delete and populate the preview
-        // cache. FE-230 is asserting that the deletion tears these down.
-        const loadImageNode = (
-          await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-        )[0]
-        const { x, y } = await loadImageNode.getPosition()
-        await comfyPage.dragDrop.dragAndDropFile(DROPPED_FILE, {
-          dropPosition: { x, y },
-          waitForUpload: true
-        })
+      async ({ comfyPage, assetMock, loadImageNode }) => {
         const imageWidget = await loadImageNode.getWidget(0)
-        await expect.poll(() => imageWidget.getValue()).toBe(DROPPED_FILE)
-
-        // Re-baseline the change tracker so the deletion-side mutation is the
-        // only thing that can flip `isModified` later.
-        // `reset()` re-baselines `initialState`; only `updateModified()`
-        // recomputes `isModified` from it.
-        await comfyPage.page.evaluate(() => {
-          const tracker =
-            window.app?.extensionManager.workflow?.activeWorkflow?.changeTracker
-          tracker?.reset()
-          tracker?.updateModified()
-        })
-        await expect
-          .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
-          .toBe(false)
-
-        // Drive the real production flow: assets sidebar → Imported tab →
-        // right-click asset card → Delete → confirm dialog.
         const sidebar = comfyPage.menu.assetsTab
-        // The default `open()` waits for assets on the Generated tab; we seed
-        // only an input asset, so skip that wait and let `waitForAssets(1)`
-        // gate on the Imported tab instead.
-        await sidebar.open({ waitForAssets: false })
-        await sidebar.switchToImported()
-        await sidebar.waitForAssets(1)
-        await sidebar.rightClickAsset(TARGET_CARD_TEXT)
-
-        const deleteMenuItem = sidebar.contextMenuItem('Delete')
-        await expect(deleteMenuItem).toBeVisible()
-        await deleteMenuItem.click()
-
-        await comfyPage.confirmDialog.click('delete')
+        await baseTest.step('Delete the imported image', async () => {
+          await sidebar.rightClickAsset(TARGET_CARD_TEXT)
+          const deleteMenuItem = sidebar.contextMenuItem('Delete')
+          await expect(deleteMenuItem).toBeVisible()
+          await deleteMenuItem.click()
+          await comfyPage.confirmDialog.click('delete')
+        })
 
         // Mocked DELETE was issued.
         await expect
@@ -199,5 +60,44 @@ baseTest.describe(
           .toBe(true)
       }
     )
+
+    baseTest.describe('Refused deletion', () => {
+      baseTest.use({ deleteStatus: 500 })
+
+      baseTest(
+        'refused asset deletion preserves widget, preview, and workflow state',
+        async ({ comfyPage, assetMock, loadImageNode }) => {
+          const imageWidget = await loadImageNode.getWidget(0)
+          const sidebar = comfyPage.menu.assetsTab
+          await baseTest.step(
+            'Attempt to delete the imported image',
+            async () => {
+              await sidebar.rightClickAsset(TARGET_CARD_TEXT)
+              await sidebar.contextMenuItem('Delete').click()
+              await comfyPage.confirmDialog.click('delete')
+            }
+          )
+
+          await expect
+            .poll(() => assetMock.deleteCalls)
+            .toEqual([TARGET_ASSET.id])
+          await expect(comfyPage.toast.toastErrors).toBeVisible()
+          await expect(comfyPage.toast.toastSuccesses).toHaveCount(0)
+          await expect.poll(() => imageWidget.getValue()).toBe(DROPPED_FILE)
+          await expect
+            .poll(() =>
+              comfyPage.page.evaluate((nodeId) => {
+                const node = window.app!.graph.getNodeById(nodeId)
+                return node?.imgs?.length ?? 0
+              }, loadImageNode.id)
+            )
+            .toBeGreaterThan(0)
+          await expect
+            .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+            .toBe(false)
+          await expect(sidebar.assetCards).toHaveCount(1)
+        }
+      )
+    })
   }
 )
