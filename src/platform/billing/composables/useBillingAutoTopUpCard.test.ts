@@ -70,6 +70,7 @@ function settingsWith(
     reload_credits: 5275,
     spent_this_cycle_cents: 0,
     status,
+    target_credits: 6275,
     threshold_credits: 1000
   }
 }

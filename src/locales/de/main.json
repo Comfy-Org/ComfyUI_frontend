@@ -5811,7 +5811,6 @@
         "onHold": "Keine Standardzahlungsmethode. Legen Sie eine fest, um die automatische Aufladung fortzusetzen.",
         "paused": "Monatliches Limit erreicht. Wird am {date} fortgesetzt.",
         "pausedNoDate": "Monatliches Limit erreicht.",
-        "rule": "Fügt {amount} ({credits} Credits) hinzu, wenn das Guthaben unter {threshold} Credits fällt.",
         "status": {
           "failed": "Fehlgeschlagen",
           "off": "Aus",
