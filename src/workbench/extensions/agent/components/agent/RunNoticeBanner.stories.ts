@@ -21,6 +21,7 @@ const meta: Meta<typeof RunNoticeBanner> = {
   title: 'Agent/RunNoticeBanner',
   component: RunNoticeBanner,
   tags: ['autodocs'],
+  args: { genericNoticeReady: true },
   parameters: { layout: 'centered' },
   globals: { theme: 'dark' },
   decorators: [withFreshDismissal]
@@ -44,6 +45,10 @@ export const BoundToWorkflow: Story = {
  * The name is underlined inline, so a long one has to wrap inside the panel
  * without pushing the dismiss button off the row.
  */
+export const FollowFailed: Story = {
+  args: { context: 'followFailed', workflowName: 'portrait' }
+}
+
 export const LongWorkflowName: Story = {
   args: { workflowName: 'product-photo-upscale-with-face-restore-v3' }
 }

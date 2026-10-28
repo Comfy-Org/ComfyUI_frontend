@@ -23,7 +23,7 @@
     </div>
 
     <div v-if="loading" class="flex items-center justify-center py-8">
-      <Spinner class="size-8" />
+      <AppSpinner class="size-8" />
     </div>
 
     <div
@@ -69,8 +69,8 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Button from '@/components/ui/button/Button.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { useSecrets } from '@/platform/secrets/composables/useSecrets'

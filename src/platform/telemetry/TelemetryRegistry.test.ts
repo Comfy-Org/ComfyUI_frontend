@@ -431,6 +431,12 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentPanelClosed(panelClosedMetadata)
       },
       {
+        method: 'trackAgentPanelRenderStalled',
+        expected: { stage: 'root_unresolved' },
+        invoke: (registry) =>
+          registry.trackAgentPanelRenderStalled({ stage: 'root_unresolved' })
+      },
+      {
         method: 'trackAgentEntryButtonClicked',
         expected: { ...entryClickedMetadata },
         invoke: (registry) =>
@@ -591,13 +597,13 @@ describe('TelemetryRegistry', () => {
       {
         method: 'trackAgentConsentOfferExited',
         expected: {
-          exit: 'already_offered',
+          exit: 'card_already_seen',
           stage: 'offer',
           retry_armed: false
         },
         invoke: (registry) =>
           registry.trackAgentConsentOfferExited({
-            exit: 'already_offered',
+            exit: 'card_already_seen',
             stage: 'offer',
             retry_armed: false
           })

@@ -169,7 +169,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         () => currentGraph.value?.events,
         'node:before-removed',
         (e: CustomEvent<{ node: LGraphNode }>) => {
-          newCanvas.deselect(e.detail.node)
+          newCanvas.deselect(e.detail.node, { notify: false })
         }
       )
 

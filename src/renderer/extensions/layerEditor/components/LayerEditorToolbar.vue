@@ -13,7 +13,7 @@
         :title="t('layerEditor.selectTool')"
         :aria-label="t('layerEditor.selectTool')"
       >
-        <i class="icon-[lucide--mouse-pointer-2] size-4" />
+        <i class="icon-[lucide--mouse-pointer-2]" />
       </ToggleGroupItem>
       <ToggleGroupItem
         value="hand"
@@ -21,11 +21,11 @@
         :title="t('layerEditor.handTool')"
         :aria-label="t('layerEditor.handTool')"
       >
-        <i class="icon-[lucide--hand] size-4" />
+        <i class="icon-[lucide--hand]" />
       </ToggleGroupItem>
     </ToggleGroup>
 
-    <Popover v-model:open="zoomOpen">
+    <PopoverRoot v-model:open="zoomOpen">
       <PopoverTrigger as-child>
         <button
           :class="
@@ -43,8 +43,7 @@
       </PopoverTrigger>
       <PopoverContent
         :side-offset="8"
-        :class="cn(menuContentClass, 'z-1700 flex w-auto min-w-20 flex-col')"
-        :style="zoomContentStyle"
+        :class="cn(menuContentClass, 'flex w-auto min-w-20 flex-col')"
       >
         <button
           v-for="item in zoomItems"
@@ -58,7 +57,7 @@
           {{ t('layerEditor.fitView') }}
         </button>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
     <button
       :class="toolButtonClass(false)"
@@ -67,7 +66,7 @@
       :aria-label="t('layerEditor.undo')"
       @click="session.undo()"
     >
-      <i class="icon-[lucide--undo-2] size-4" />
+      <i class="icon-[lucide--undo-2]" />
     </button>
     <button
       :class="toolButtonClass(false)"
@@ -76,7 +75,7 @@
       :aria-label="t('layerEditor.redo')"
       @click="session.redo()"
     >
-      <i class="icon-[lucide--redo-2] size-4" />
+      <i class="icon-[lucide--redo-2]" />
     </button>
     <button
       :class="toolButtonClass(false)"
@@ -85,28 +84,26 @@
       :aria-label="t('layerEditor.exportPsd')"
       @click="onExportPsd"
     >
-      <i class="icon-[lucide--file-down] size-4" />
+      <i class="icon-[lucide--file-down]" />
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { AcceptableValue } from 'reka-ui'
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuContentClass,
   menuButtonClass
-} from '@/components/ui/menu/menuStyles'
-import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
-import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
+} from '@comfyorg/design-system/lib/menu/menuStyles'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useLayerEditorExport } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
@@ -116,7 +113,6 @@ const { pointerMode, canUndo, canRedo, zoomRatio } = session
 const { exporting, exportPsd } = useLayerEditorExport(session)
 
 const zoomOpen = ref(false)
-const zoomContentStyle = useModalLiftedZIndex(zoomOpen)
 
 const zoomItems = [
   { label: '25%', ratio: 0.25 },

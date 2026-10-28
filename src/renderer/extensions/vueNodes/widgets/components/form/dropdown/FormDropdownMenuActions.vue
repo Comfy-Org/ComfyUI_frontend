@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import Popover from '@/components/common/ImperativePopover.vue'
+import { unrefElement } from '@vueuse/core'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import type {
   FilterOption,
   OwnershipFilterOption,
@@ -11,7 +14,7 @@ import type {
 } from '@/platform/assets/types/filterTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import { DROPDOWN_PANEL_CLASS } from './shared'
 import type { LayoutMode, SortOption } from './types'
 
@@ -43,21 +46,19 @@ const actionButtonStyle = cn(
   'h-8 rounded-lg bg-zinc-500/20 outline-1 -outline-offset-1 outline-node-border transition-all duration-150'
 )
 
+const actionPopoverClass = cn(
+  DROPDOWN_PANEL_CLASS,
+  'pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none'
+)
+
 const layoutSwitchItemStyle =
   'size-6 flex justify-center items-center rounded-sm cursor-pointer transition-all duration-150 hover:scale-108 hover:text-foreground active:scale-95'
 
-const sortPopoverRef = useTemplateRef('sortPopoverRef')
 const sortTriggerRef = useTemplateRef('sortTriggerRef')
 const isSortPopoverOpen = ref(false)
 
-function toggleSortPopover(event: Event) {
-  if (!sortPopoverRef.value || !sortTriggerRef.value) return
-  isSortPopoverOpen.value = !isSortPopoverOpen.value
-  sortPopoverRef.value.toggle(event, sortTriggerRef.value.$el)
-}
 function closeSortPopover() {
   isSortPopoverOpen.value = false
-  sortPopoverRef.value?.hide()
 }
 
 function handleSortSelected(item: SortOption) {
@@ -65,18 +66,11 @@ function handleSortSelected(item: SortOption) {
   closeSortPopover()
 }
 
-const ownershipPopoverRef = useTemplateRef('ownershipPopoverRef')
 const ownershipTriggerRef = useTemplateRef('ownershipTriggerRef')
 const isOwnershipPopoverOpen = ref(false)
 
-function toggleOwnershipPopover(event: Event) {
-  if (!ownershipPopoverRef.value || !ownershipTriggerRef.value) return
-  isOwnershipPopoverOpen.value = !isOwnershipPopoverOpen.value
-  ownershipPopoverRef.value.toggle(event, ownershipTriggerRef.value.$el)
-}
 function closeOwnershipPopover() {
   isOwnershipPopoverOpen.value = false
-  ownershipPopoverRef.value?.hide()
 }
 
 function handleOwnershipSelected(item: OwnershipFilterOption) {
@@ -84,15 +78,16 @@ function handleOwnershipSelected(item: OwnershipFilterOption) {
   closeOwnershipPopover()
 }
 
-const baseModelPopoverRef = useTemplateRef('baseModelPopoverRef')
 const baseModelTriggerRef = useTemplateRef('baseModelTriggerRef')
 const isBaseModelPopoverOpen = ref(false)
 
-function toggleBaseModelPopover(event: Event) {
-  if (!baseModelPopoverRef.value || !baseModelTriggerRef.value) return
-  isBaseModelPopoverOpen.value = !isBaseModelPopoverOpen.value
-  baseModelPopoverRef.value.toggle(event, baseModelTriggerRef.value.$el)
-}
+usePopoverViewportDismiss(isSortPopoverOpen, () => unrefElement(sortTriggerRef))
+usePopoverViewportDismiss(isOwnershipPopoverOpen, () =>
+  unrefElement(ownershipTriggerRef)
+)
+usePopoverViewportDismiss(isBaseModelPopoverOpen, () =>
+  unrefElement(baseModelTriggerRef)
+)
 
 function toggleBaseModelSelection(item: FilterOption) {
   const current = new Set(baseModelSelected.value)
@@ -111,6 +106,9 @@ function handleSearchEnter(event: KeyboardEvent) {
   <div class="flex gap-2 px-4 text-muted-foreground">
     <AsyncSearchInput
       v-model="searchQuery"
+      :clear-label="$t('g.clear')"
+      :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+      :accessible-label="$t('g.search')"
       autofocus
       :class="
         cn(
@@ -131,181 +129,167 @@ function handleSearchEnter(event: KeyboardEvent) {
       {{ t('widgets.uploadSelect.topResult', { result: candidateLabel }) }}
     </span>
 
-    <Button
-      ref="sortTriggerRef"
-      :aria-label="t('assetBrowser.sortBy')"
-      :title="t('assetBrowser.sortBy')"
-      variant="textonly"
-      size="icon"
-      :class="
-        cn(
-          actionButtonStyle,
-          'relative w-8 hover:outline-muted-foreground active:scale-95'
-        )
-      "
-      @click="toggleSortPopover"
-    >
-      <div
-        v-if="sortSelected !== 'default'"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
-      />
-      <i class="icon-[lucide--arrow-up-down] size-4" />
-    </Button>
-    <Popover
-      ref="sortPopoverRef"
-      align="start"
-      :content-class="[
-        DROPDOWN_PANEL_CLASS,
-        'border-none bg-transparent p-0 pt-2'
-      ]"
-      @hide="isSortPopoverOpen = false"
-    >
-      <div
-        :class="
-          cn(
-            'flex min-w-32 flex-col gap-2 p-2',
-            'bg-node',
-            'rounded-lg outline -outline-offset-1 outline-node-border'
-          )
-        "
-      >
+    <PopoverRoot v-model:open="isSortPopoverOpen">
+      <PopoverTrigger as-child>
         <Button
-          v-for="item of sortOptions"
-          :key="item.name"
+          ref="sortTriggerRef"
+          :aria-label="t('assetBrowser.sortBy')"
+          :title="t('assetBrowser.sortBy')"
           variant="textonly"
-          size="unset"
-          :class="cn('flex h-6 items-center justify-between text-left')"
-          @click="handleSortSelected(item)"
+          size="icon"
+          :class="
+            cn(
+              actionButtonStyle,
+              'relative w-8 hover:outline-muted-foreground active:scale-95'
+            )
+          "
         >
-          <span>{{ item.name }}</span>
-          <i
-            v-if="sortSelected === item.id"
-            class="icon-[lucide--check] size-4"
+          <div
+            v-if="sortSelected !== 'default'"
+            class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
           />
+          <i class="icon-[lucide--arrow-up-down]" />
         </Button>
-      </div>
-    </Popover>
+      </PopoverTrigger>
+      <PopoverContent align="start" :class="actionPopoverClass">
+        <div
+          :class="
+            cn(
+              'flex min-w-32 flex-col gap-2 p-2',
+              'bg-node',
+              'rounded-lg outline -outline-offset-1 outline-node-border'
+            )
+          "
+        >
+          <Button
+            v-for="item of sortOptions"
+            :key="item.name"
+            variant="textonly"
+            size="unset"
+            :class="cn('flex h-6 items-center justify-between text-left')"
+            @click="handleSortSelected(item)"
+          >
+            <span>{{ item.name }}</span>
+            <i v-if="sortSelected === item.id" class="icon-[lucide--check]" />
+          </Button>
+        </div>
+      </PopoverContent>
+    </PopoverRoot>
 
-    <Button
+    <PopoverRoot
       v-if="showOwnershipFilter && ownershipOptions?.length"
-      ref="ownershipTriggerRef"
-      :aria-label="t('assetBrowser.ownership')"
-      :title="t('assetBrowser.ownership')"
-      variant="textonly"
-      size="icon"
-      :class="
-        cn(
-          actionButtonStyle,
-          'relative w-8 hover:outline-muted-foreground active:scale-95'
-        )
-      "
-      @click="toggleOwnershipPopover"
+      v-model:open="isOwnershipPopoverOpen"
     >
-      <div
-        v-if="ownershipSelected !== 'all'"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
-      />
-      <i class="icon-[lucide--user] size-4" />
-    </Button>
-    <Popover
-      ref="ownershipPopoverRef"
-      align="start"
-      :content-class="[
-        DROPDOWN_PANEL_CLASS,
-        'border-none bg-transparent p-0 pt-2'
-      ]"
-      @hide="isOwnershipPopoverOpen = false"
-    >
-      <div
-        :class="
-          cn(
-            'flex min-w-32 flex-col gap-2 p-2',
-            'bg-node',
-            'rounded-lg outline -outline-offset-1 outline-node-border'
-          )
-        "
-      >
+      <PopoverTrigger as-child>
         <Button
-          v-for="item of ownershipOptions"
-          :key="item.value"
+          ref="ownershipTriggerRef"
+          :aria-label="t('assetBrowser.ownership')"
+          :title="t('assetBrowser.ownership')"
           variant="textonly"
-          size="unset"
-          :class="cn('flex h-6 items-center justify-between text-left')"
-          @click="handleOwnershipSelected(item)"
+          size="icon"
+          :class="
+            cn(
+              actionButtonStyle,
+              'relative w-8 hover:outline-muted-foreground active:scale-95'
+            )
+          "
         >
-          <span>{{ item.name }}</span>
-          <i
-            v-if="ownershipSelected === item.value"
-            class="icon-[lucide--check] size-4"
+          <div
+            v-if="ownershipSelected !== 'all'"
+            class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
           />
+          <i class="icon-[lucide--user]" />
         </Button>
-      </div>
-    </Popover>
+      </PopoverTrigger>
+      <PopoverContent align="start" :class="actionPopoverClass">
+        <div
+          :class="
+            cn(
+              'flex min-w-32 flex-col gap-2 p-2',
+              'bg-node',
+              'rounded-lg outline -outline-offset-1 outline-node-border'
+            )
+          "
+        >
+          <Button
+            v-for="item of ownershipOptions"
+            :key="item.value"
+            variant="textonly"
+            size="unset"
+            :class="cn('flex h-6 items-center justify-between text-left')"
+            @click="handleOwnershipSelected(item)"
+          >
+            <span>{{ item.name }}</span>
+            <i
+              v-if="ownershipSelected === item.value"
+              class="icon-[lucide--check]"
+            />
+          </Button>
+        </div>
+      </PopoverContent>
+    </PopoverRoot>
 
-    <Button
+    <PopoverRoot
       v-if="showBaseModelFilter && baseModelOptions?.length"
-      ref="baseModelTriggerRef"
-      :aria-label="t('assetBrowser.baseModel')"
-      :title="t('assetBrowser.baseModel')"
-      variant="textonly"
-      size="icon"
-      :class="
-        cn(
-          actionButtonStyle,
-          'relative w-8 hover:outline-muted-foreground active:scale-95'
-        )
-      "
-      @click="toggleBaseModelPopover"
+      v-model:open="isBaseModelPopoverOpen"
     >
-      <div
-        v-if="baseModelSelected.size > 0"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
-      />
-      <i class="icon-[comfy--ai-model] size-4" />
-    </Button>
-    <Popover
-      ref="baseModelPopoverRef"
-      align="start"
-      :content-class="[
-        DROPDOWN_PANEL_CLASS,
-        'border-none bg-transparent p-0 pt-2'
-      ]"
-      @hide="isBaseModelPopoverOpen = false"
-    >
-      <div
-        :class="
-          cn(
-            'flex min-w-32 flex-col gap-2 p-2',
-            'bg-node',
-            'rounded-lg outline -outline-offset-1 outline-node-border'
-          )
-        "
-      >
+      <PopoverTrigger as-child>
         <Button
-          v-for="item of baseModelOptions"
-          :key="item.value"
+          ref="baseModelTriggerRef"
+          :aria-label="t('assetBrowser.baseModel')"
+          :title="t('assetBrowser.baseModel')"
           variant="textonly"
-          size="unset"
-          :class="cn('flex h-6 items-center justify-between text-left')"
-          @click="toggleBaseModelSelection(item)"
+          size="icon"
+          :class="
+            cn(
+              actionButtonStyle,
+              'relative w-8 hover:outline-muted-foreground active:scale-95'
+            )
+          "
         >
-          <span>{{ item.name }}</span>
-          <i
-            v-if="baseModelSelected.has(item.value)"
-            class="icon-[lucide--check] size-4"
+          <div
+            v-if="baseModelSelected.size > 0"
+            class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
           />
+          <i class="icon-[comfy--ai-model]" />
         </Button>
-        <span class="h-0 w-full border-b" />
-        <Button
-          variant="textonly"
-          size="unset"
-          :class="cn('flex h-6 items-center justify-between text-left')"
-          @click="baseModelSelected = new Set()"
+      </PopoverTrigger>
+      <PopoverContent align="start" :class="actionPopoverClass">
+        <div
+          :class="
+            cn(
+              'flex min-w-32 flex-col gap-2 p-2',
+              'bg-node',
+              'rounded-lg outline -outline-offset-1 outline-node-border'
+            )
+          "
         >
-          {{ t('g.clearFilters') }}
-        </Button>
-      </div>
-    </Popover>
+          <Button
+            v-for="item of baseModelOptions"
+            :key="item.value"
+            variant="textonly"
+            size="unset"
+            :class="cn('flex h-6 items-center justify-between text-left')"
+            @click="toggleBaseModelSelection(item)"
+          >
+            <span>{{ item.name }}</span>
+            <i
+              v-if="baseModelSelected.has(item.value)"
+              class="icon-[lucide--check]"
+            />
+          </Button>
+          <span class="h-0 w-full border-b" />
+          <Button
+            variant="textonly"
+            size="unset"
+            :class="cn('flex h-6 items-center justify-between text-left')"
+            @click="baseModelSelected = new Set()"
+          >
+            {{ t('g.clearFilters') }}
+          </Button>
+        </div>
+      </PopoverContent>
+    </PopoverRoot>
 
     <div
       :class="
@@ -328,7 +312,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         "
         @click="layoutMode = 'list'"
       >
-        <i class="icon-[lucide--list] size-4" />
+        <i class="icon-[lucide--list]" />
       </Button>
       <Button
         :aria-label="t('assetBrowser.gridView')"
@@ -343,7 +327,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         "
         @click="layoutMode = 'grid'"
       >
-        <i class="icon-[lucide--layout-grid] size-4" />
+        <i class="icon-[lucide--layout-grid]" />
       </Button>
     </div>
   </div>

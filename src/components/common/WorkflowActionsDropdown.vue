@@ -7,11 +7,12 @@ let restoreFocusOnMount = false
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { snakeCase } from 'es-toolkit'
 import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -49,6 +50,14 @@ const { menuItems } = useWorkflowActionsMenu(
 const { hasUnseenItems, markAsSeen } = useNewMenuItemIndicator(
   () => menuItems.value
 )
+
+function onMenuItemActivate(item: object) {
+  if (!('id' in item) || typeof item.id !== 'string') return
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: `workflow_actions_${snakeCase(item.id)}_clicked`,
+    element_group: 'workflow_actions'
+  })
+}
 
 const toggleShortcut = computed(() => {
   const shortcut = keybindingStore
@@ -164,6 +173,7 @@ onMounted(async () => {
     :collision-padding="10"
     class="min-w-56"
     @update:open="onOpenChange"
+    @activate="onMenuItemActivate"
   >
     <template #trigger>
       <div
@@ -201,7 +211,7 @@ onMounted(async () => {
               @click="onSegmentClick(seg, $event)"
               @keydown="onSegmentKeydown(seg, $event)"
             >
-              <i :class="cn('size-4 shrink-0', seg.icon)" aria-hidden="true" />
+              <i :class="seg.icon" aria-hidden="true" />
               <span
                 :class="
                   cn(
@@ -217,7 +227,7 @@ onMounted(async () => {
                 >
                   {{ seg.label }}
                   <i
-                    class="ml-1 icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
+                    class="ml-1 icon-[lucide--chevron-down] text-muted-foreground"
                     aria-hidden="true"
                   />
                 </span>

@@ -30,6 +30,12 @@ import { refusedAttachmentsMessage } from '@/workbench/extensions/agent/utils/at
 import { withAgentAuth } from './agentAuth'
 
 import {
+  agentRequestFailureFingerprint,
+  describeAgentRequestFailure,
+  rememberAgentRequestFailure
+} from './agentRequestFailure'
+import type { AgentRequestFailureDiagnostics } from './agentRequestFailure'
+import {
   RENDERED_ASK_KINDS,
   zAgentAnswerReceipt,
   zAgentCancelAccepted,
@@ -115,6 +121,7 @@ interface AuthRejection {
   credential: ReportedAuthCredential
   body: unknown
   message: string
+  diagnostics: AgentRequestFailureDiagnostics
 }
 
 function reportAuthRejection({
@@ -123,7 +130,8 @@ function reportAuthRejection({
   authScheme,
   credential,
   body,
-  message
+  message,
+  diagnostics
 }: AuthRejection): boolean {
   let backendTags: AuthRejectionTags
   try {
@@ -135,7 +143,18 @@ function reportAuthRejection({
     reportError(new Error(AUTH_REJECTED_MESSAGE), {
       surface: 'agent',
       errorType: 'agent_api_auth_rejected',
-      tags: { operation, status, authScheme, credential, ...backendTags },
+      tags: {
+        operation,
+        status,
+        authScheme,
+        credential,
+        ...backendTags,
+        ...diagnostics
+      },
+      fingerprint: agentRequestFailureFingerprint(
+        'agent_api_auth_rejected',
+        diagnostics
+      ),
       level: 'warning'
     })
     return true
@@ -178,13 +197,31 @@ export class AgentResponseUnreadableError extends Error {
   }
 }
 
-type PaginationStopReason = 'missing_cursor' | 'repeated_cursor'
+type PaginationStopReason =
+  | 'missing_cursor'
+  | 'repeated_cursor'
+  | 'request_failed'
 
 type RequestResult<T> = { ok: true; value: T } | { ok: false; cause: unknown }
 
+function paginationFailure<Item>(
+  failure: Extract<RequestResult<never>, { ok: false }>,
+  items: Item[],
+  retainItems: boolean
+): RequestResult<{ items: Item[]; stopReason?: PaginationStopReason }> {
+  return retainItems && items.length > 0
+    ? { ok: true, value: { items, stopReason: 'request_failed' } }
+    : failure
+}
+
 export type ThreadListing =
   | { status: 'complete'; threads: AgentThreadSummary[] }
-  | { status: 'incomplete'; reason: PaginationStopReason }
+  /** Paging stopped early; carries the distinct threads it did reach. */
+  | {
+      status: 'incomplete'
+      reason: PaginationStopReason
+      threads: AgentThreadSummary[]
+    }
   | { status: 'failed'; cause: unknown }
   | { status: 'aborted' }
 
@@ -239,6 +276,8 @@ export interface PostMessageInput {
   clientMessageId?: string
 }
 
+const CLIENT_VERSION = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
+
 /**
  * Drops keys whose value is `undefined` so an absent optional is omitted from the
  * JSON body rather than sent as an explicit null-ish key. `false` and `0` are
@@ -274,7 +313,22 @@ function parseErrorBody(text: string): unknown {
   }
 }
 
-function getErrorMessage(body: unknown, fallback: string): string {
+function getBackendErrorMessage(body: unknown): string | undefined {
+  const plain = zAgentError.safeParse(body)
+  if (plain.success) {
+    return typeof plain.data.error === 'string'
+      ? plain.data.error
+      : plain.data.error.message
+  }
+  return isIngestErrorBody(body) ? body.error.message : undefined
+}
+
+function getErrorMessage(
+  body: unknown,
+  status: number,
+  operation: AgentApiOperation,
+  statusText: string
+): string {
   const refused = zAttachmentRejection.safeParse(body)
   if (refused.success) {
     return refusedAttachmentsMessage(
@@ -283,13 +337,16 @@ function getErrorMessage(body: unknown, fallback: string): string {
     )
   }
 
-  const plain = zAgentError.safeParse(body)
-  if (plain.success) {
-    return typeof plain.data.error === 'string'
-      ? plain.data.error
-      : plain.data.error.message
-  }
-  return isIngestErrorBody(body) ? body.error.message : fallback
+  const backendMessage = getBackendErrorMessage(body)
+  const normalizedStatusText = statusText.trim().slice(0, 80)
+  const statusTextSuffix =
+    !normalizedStatusText ||
+    normalizedStatusText.toLowerCase() === 'no error message'
+      ? ''
+      : ` ${normalizedStatusText}`
+  return backendMessage?.trim()
+    ? backendMessage
+    : `Agent request failed (HTTP ${status}${statusTextSuffix}, ${operation})`
 }
 
 const DAY_NAME = 'Mon|Tue|Wed|Thu|Fri|Sat|Sun'
@@ -497,6 +554,15 @@ function asDelaySeconds(seconds: number): number | undefined {
   return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds : undefined
 }
 
+function uniqueById(threads: AgentThreadSummary[]): AgentThreadSummary[] {
+  const seen = new Set<string>()
+  return threads.filter(({ id }) => {
+    if (seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
+}
+
 function getNextPageCursor(
   cursor: PaginationInfo['next_cursor'],
   seenCursors: ReadonlySet<string>
@@ -510,11 +576,18 @@ export function createAgentRestClient() {
   async function toApiError(
     response: Response,
     operation: AgentApiOperation,
+    route: string,
     authScheme: ReportedAuthScheme,
     credential: ReportedAuthCredential
   ): Promise<AgentApiError> {
     const body = parseErrorBody(await response.text())
-    const message = getErrorMessage(body, response.statusText)
+    const backendMessage = getBackendErrorMessage(body)
+    const message = getErrorMessage(
+      body,
+      response.status,
+      operation,
+      response.statusText
+    )
     const retryAfterSeconds = parseRetryAfter(
       response.headers.get('Retry-After')
     )
@@ -522,12 +595,15 @@ export function createAgentRestClient() {
     // method not allowed) arrived with no failing endpoint and no record of
     // which auth path was taken, so it couldn't be diagnosed. Reporting both
     // here means the next occurrence can be.
-    const apiError = new AgentApiError(
-      message,
-      response.status,
-      body,
-      retryAfterSeconds,
-      operation
+    const apiError = rememberAgentRequestFailure(
+      new AgentApiError(
+        message,
+        response.status,
+        body,
+        retryAfterSeconds,
+        operation
+      ),
+      route
     )
     if (
       isAuthRejectionStatus(response.status) &&
@@ -537,7 +613,8 @@ export function createAgentRestClient() {
         authScheme,
         credential,
         body,
-        message
+        message: backendMessage ?? '',
+        diagnostics: describeAgentRequestFailure(apiError)
       })
     ) {
       // Callers still receive the backend text for the UI, but their generic
@@ -577,7 +654,13 @@ export function createAgentRestClient() {
       try {
         return {
           ok: false,
-          cause: await toApiError(response, operation, authScheme, credential)
+          cause: await toApiError(
+            response,
+            operation,
+            route,
+            authScheme,
+            credential
+          )
         }
       } catch (cause) {
         return { ok: false, cause }
@@ -608,7 +691,7 @@ export function createAgentRestClient() {
     schema: z.ZodType<T>
   ): Promise<T> {
     const result = await requestResult(operation, route, init, schema)
-    if (!result.ok) throw result.cause
+    if (!result.ok) throw rememberAgentRequestFailure(result.cause, route)
     return result.value
   }
 
@@ -628,7 +711,8 @@ export function createAgentRestClient() {
     path: string,
     schema: z.ZodType<Page>,
     itemsOf: (page: Page) => Item[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    retainItemsOnFailure = false
   ): Promise<
     RequestResult<{ items: Item[]; stopReason?: PaginationStopReason }>
   > {
@@ -638,14 +722,24 @@ export function createAgentRestClient() {
     const seenCursors = new Set<string>()
     do {
       const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
+      const separator = path.includes('?') ? '&' : '?'
+      const route = `${path}${separator}limit=${LIST_PAGE_SIZE}${after}`
       const result = await requestResult(
         operation,
-        `${path}?limit=${LIST_PAGE_SIZE}${after}`,
+        route,
         { method: 'GET', signal },
         schema
       )
       if (signal?.aborted) return { ok: false, cause: signal.reason }
-      if (!result.ok) return result
+      if (!result.ok)
+        return paginationFailure(
+          {
+            ok: false,
+            cause: rememberAgentRequestFailure(result.cause, route)
+          },
+          items,
+          retainItemsOnFailure
+        )
       const page = result.value
       items.push(...itemsOf(page))
       hasMore = page.pagination.has_more
@@ -675,7 +769,13 @@ export function createAgentRestClient() {
       attachments: req.attachments,
       draft: req.draft && { content: req.draft.content },
       current_tab_unbound: req.currentTabUnbound,
-      client_message_id: req.clientMessageId
+      client_message_id: req.clientMessageId,
+      // Not `client_message_id`'s sibling: this is THIS TAB's ComfyUI socket
+      // id, which local agent runs are submitted under so their execution
+      // events reach this canvas (PM-1875). Read ambiently rather than taken
+      // from `req` because it belongs to the socket, not to the message.
+      client_id: api.clientId,
+      client_version: CLIENT_VERSION
     })
     return request(
       'post_thread_message',
@@ -698,21 +798,29 @@ export function createAgentRestClient() {
   }
 
   async function listThreads(
-    options: { signal?: AbortSignal } = {}
+    options: {
+      signal?: AbortSignal
+      workflowId?: string
+    } = {}
   ): Promise<ThreadListing> {
     if (options.signal?.aborted) return { status: 'aborted' }
+    const workflowQuery =
+      options.workflowId === undefined
+        ? ''
+        : `?workflow_id=${encodeURIComponent(options.workflowId)}`
     const result = await listAllPages(
       'list_threads',
-      '/agent/threads',
+      `/agent/threads${workflowQuery}`,
       zAgentThreads,
       (page) => page.threads,
-      options.signal
+      options.signal,
+      true
     )
     if (options.signal?.aborted) return { status: 'aborted' }
     if (!result.ok) return { status: 'failed', cause: result.cause }
     const { items, stopReason } = result.value
     return stopReason
-      ? { status: 'incomplete', reason: stopReason }
+      ? { status: 'incomplete', reason: stopReason, threads: uniqueById(items) }
       : { status: 'complete', threads: items }
   }
 

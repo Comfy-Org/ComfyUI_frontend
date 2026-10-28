@@ -155,6 +155,13 @@ function redactSentryException(exception: Exception): void {
   }
 }
 
+const RESOURCE_TIMING_BUFFER_SIZE = 1000
+
+function expandResourceTimingBuffer(): void {
+  if (typeof performance.setResourceTimingBufferSize !== 'function') return
+  performance.setResourceTimingBufferSize(RESOURCE_TIMING_BUFFER_SIZE)
+}
+
 export function initSentry({
   app,
   dsn,
@@ -166,6 +173,7 @@ export function initSentry({
   enabled: boolean
   isCloud: boolean
 }) {
+  expandResourceTimingBuffer()
   sentryInit({
     app,
     dsn,
@@ -180,15 +188,9 @@ export function initSentry({
     beforeBreadcrumb: redactSentryBreadcrumb,
     beforeSendSpan: redactSentrySpan,
     denyUrls: [/^(?:chrome|moz|safari(?:-web)?|ms-browser)-extension:\/\//],
-    // Only set these for non-cloud builds
     ...(isCloud
       ? {
-          integrations: [
-            // Disable event target wrapping to reduce overhead on high-frequency
-            // DOM events (pointermove, mousemove, wheel). Sentry still captures
-            // errors via window.onerror and unhandledrejection.
-            browserApiErrorsIntegration({ eventTarget: false })
-          ]
+          integrations: [browserApiErrorsIntegration({ eventTarget: false })]
         }
       : {
           integrations: [eventFiltersIntegration()],

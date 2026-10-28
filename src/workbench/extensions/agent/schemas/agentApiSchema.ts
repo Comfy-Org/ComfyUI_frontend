@@ -144,6 +144,15 @@ export const zPersistedToolCallSummary = zToolCallSummary.extend({
 export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
 
 /**
+ * One persisted `content.thinking` entry: a model round's thinking text,
+ * anchored to that round's first tool call when it made one.
+ */
+export const zPersistedThinkingEntry = z.object({
+  text: z.string(),
+  tool_call_id: z.string().nullish()
+})
+
+/**
  * The message-parse boundary's `content.tool_calls` field is deliberately
  * `z.array(z.unknown())`, not the stricter `zPersistedToolCallSummary`
  * above: `agentRestClient.ts`'s `request()` calls `.parse()` (throws) on
@@ -249,7 +258,21 @@ const zAgentToolCallData = zGeneratedAgentToolCallData
     op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),
     doc_seq: zGeneratedAgentToolCallData.shape.doc_seq.catch(undefined),
     doc_lineage_seq:
-      zGeneratedAgentToolCallData.shape.doc_lineage_seq.catch(undefined)
+      zGeneratedAgentToolCallData.shape.doc_lineage_seq.catch(undefined),
+    job_id: z
+      .string()
+      .min(1)
+      .max(128)
+      .refine(
+        (value) =>
+          !value.includes('\u0000') &&
+          !value.includes('\n') &&
+          !value.includes('\r') &&
+          !value.includes('\t')
+      )
+      .optional()
+      .catch(undefined),
+    job_workflow_id: z.string().min(1).optional().catch(undefined)
   })
   .passthrough()
 

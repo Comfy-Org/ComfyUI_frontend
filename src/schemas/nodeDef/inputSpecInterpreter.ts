@@ -55,13 +55,32 @@ export function createInputSpecInterpreter(
     return []
   }
 
+  const parsedOptionCache = new WeakMap<
+    object,
+    ReturnType<typeof zDynamicComboOption.safeParse>
+  >()
+
   function parseDynamicComboOptions(
     spec: InputSpecV2
   ): { key: string; inputs: ComfyInputsSpec }[] {
     return parseSpec(zDynamicComboSpecV2, spec).flatMap(({ options }) =>
-      options.flatMap((option, index) =>
-        parseSpec(zDynamicComboOption, spec, { option, index })
-      )
+      options.flatMap((option, index) => {
+        if (skipValidation())
+          return [option as { key: string; inputs: ComfyInputsSpec }]
+
+        const cached =
+          typeof option === 'object' && option !== null
+            ? parsedOptionCache.get(option)
+            : undefined
+        const parsedOption = cached ?? zDynamicComboOption.safeParse(option)
+        if (!cached && typeof option === 'object' && option !== null)
+          parsedOptionCache.set(option, parsedOption)
+        if (!parsedOption.success) {
+          warnSpecDrift(spec, parsedOption.error, index)
+          return []
+        }
+        return [parsedOption.data]
+      })
     )
   }
 

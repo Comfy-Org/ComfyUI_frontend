@@ -42,10 +42,6 @@
       />
     </template>
     <template #graph-canvas-panel>
-      <div
-        ref="canvasPanelBoundsRef"
-        class="pointer-events-none absolute inset-0"
-      />
       <GraphCanvasMenu
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
@@ -98,11 +94,7 @@
     @dispose="onLinkOverlayDispose"
   />
 
-  <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
-  <SelectionRectangle
-    v-if="comfyAppReady"
-    :panel-el="canvasPanelBoundsRef ?? undefined"
-  />
+  <SelectionRectangle v-if="comfyAppReady" />
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
@@ -170,6 +162,7 @@ import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { NodeState } from '@/types/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
+import { useNodeEmphasis } from '@/systems/nodeEmphasisSystem'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
@@ -240,7 +233,6 @@ const vueNodeDropTarget = computed(() => {
   const element: unknown = transformPaneRef.value?.$el
   return element instanceof HTMLElement ? element : null
 })
-const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
@@ -494,6 +486,11 @@ watch(
   }
 )
 
+watch(
+  () => canvasStore.selectedNodeIds,
+  () => canvasStore.canvas?.setDirty(true, true)
+)
+
 useEventListener(
   canvasRef,
   'litegraph:no-items-selected',
@@ -510,6 +507,7 @@ useCanvasDrop(canvasRef)
 useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
+useNodeEmphasis()
 
 useGlobalLitegraph()
 useContextMenuTranslation()
@@ -545,6 +543,7 @@ useEventListener(
 )
 
 let disposed = false
+const lateExtensionWork = new AbortController()
 const startupOwner = Symbol()
 
 function finishStartup(outcome: 'completed' | 'failed') {
@@ -552,6 +551,16 @@ function finishStartup(outcome: 'completed' | 'failed') {
   activeStartup = undefined
   workspaceStore.spinner = false
   bootstrapTracer.complete(outcome)
+}
+
+function showDeploymentLookupToast() {
+  toast.error(t('deploymentSwitcher.lookupUnavailable'), {
+    description: t('deploymentSwitcher.lookupUnavailableDetail'),
+    action: {
+      label: t('deploymentSwitcher.reload'),
+      onClick: () => window.location.reload()
+    }
+  })
 }
 
 onMounted(async () => {
@@ -584,7 +593,9 @@ onMounted(async () => {
 
     await Promise.all([
       until(() => isI18nReady.value || !!i18nError.value).toBe(true),
-      useNewUserService().initializeIfNewUser()
+      bootstrapTracer.settle('bootstrap/new-user', () =>
+        useNewUserService().initializeIfNewUser()
+      )
     ])
     if (i18nError.value) {
       console.warn(
@@ -593,28 +604,19 @@ onMounted(async () => {
       )
     }
 
-    await bootstrapTracer.settle('bootstrap/extensions-load', loadExtensions)
+    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
+      loadExtensions(lateExtensionWork.signal)
+    )
 
     const canvas = canvasRef.value
     if (!canvas) throw new TypeError('GraphCanvas mounted without a canvas')
-    const deploymentConfirmed = !isCloud || (await waitForDeploymentPick())
+    const deploymentConfirmed =
+      !isCloud ||
+      (await bootstrapTracer.settle('bootstrap/deployment-pick', () =>
+        waitForDeploymentPick(showDeploymentLookupToast)
+      ))
     if (disposed) return
-    if (!deploymentConfirmed) {
-      // The pick is an HttpOnly cookie the editor cannot read, so with no
-      // listing it cannot tell a browser on a deployment from one on Comfy
-      // Cloud. It boots on Comfy Cloud's models, as it did before
-      // deployments, so a failed lookup never blocks the editor. A browser
-      // that is on a deployment then offers models its Release may not have
-      // (its nodes and jobs are still the deployment's), so the toast says
-      // so and stays until closed, with a reload to try again.
-      toast.error(t('deploymentSwitcher.lookupUnavailable'), {
-        description: t('deploymentSwitcher.lookupUnavailableDetail'),
-        action: {
-          label: t('deploymentSwitcher.reload'),
-          onClick: () => window.location.reload()
-        }
-      })
-    }
+    if (!deploymentConfirmed) showDeploymentLookupToast()
     await comfyApp.setup(canvas)
     canvasStore.canvas = comfyApp.canvas
     canvasStore.canvas.render_canvas_border = false
@@ -636,10 +638,12 @@ onMounted(async () => {
     )
 
     // Restore saved workflow and workflow tabs state
-    startupOutcome = await workflowPersistence.initializeWorkflow()
-    await workflowPersistence.restoreWorkflowTabsState()
-    urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
-    await useFirstRunEntry().handleStartupOutcome(startupOutcome)
+    await bootstrapTracer.settle('bootstrap/workflow-restore', async () => {
+      startupOutcome = await workflowPersistence.initializeWorkflow()
+      await workflowPersistence.restoreWorkflowTabsState()
+      urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
+      await useFirstRunEntry().handleStartupOutcome(startupOutcome)
+    })
     bootstrapOutcome = 'completed'
   } finally {
     if (!disposed) {
@@ -677,6 +681,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   disposed = true
+  lateExtensionWork.abort()
   void nextTick(() => {
     if (activeStartup !== startupOwner) return
     activeStartup = undefined

@@ -19,13 +19,15 @@
     <template #header>
       <div class="flex w-full items-center justify-between gap-2">
         <div class="flex w-full items-center gap-2">
-          <SingleSelect
+          <AppSingleSelect
             v-model="searchMode"
             class="min-w-34"
             :options="filterOptions"
           />
           <SearchAutocomplete
             v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="$t('g.search')"
             :suggestions="suggestions"
             :placeholder="$t('manager.searchPlaceholder')"
             option-label="query"
@@ -85,14 +87,14 @@
         class="mx-6 mb-4 w-auto"
       >
         <template #icon>
-          <i class="icon-[lucide--info] size-4" />
+          <i class="icon-[lucide--info]" />
         </template>
         {{ $t('manager.legacyManagerSearchTip') }}
       </Message>
 
       <!-- Sort Options -->
       <div v-if="isSortable" class="flex justify-end px-6 pb-4">
-        <SingleSelect
+        <AppSingleSelect
           v-model="sortField"
           :label="$t('g.sort')"
           :options="availableSortOptions"
@@ -101,7 +103,7 @@
           <template #icon>
             <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
           </template>
-        </SingleSelect>
+        </AppSingleSelect>
       </div>
     </template>
 
@@ -114,31 +116,49 @@
         :node-names="unresolvedNodeNames"
       />
       <NoResultsPlaceholder
-        v-else-if="displayPacks.length === 0 && !canLoadMorePacks"
+        v-else-if="displayPacks.length === 0 && !hasPendingPages"
         :title="emptyStateTitle"
         :message="emptyStateMessage"
         :button-label="retryLabel"
         @action="retrySearch"
       />
-      <div v-else class="size-full" @click="handleGridContainerClick">
-        <VirtualGrid
-          id="results-grid"
-          :items="resultsWithKeys"
-          :buffer-rows="4"
-          :grid-style="GRID_STYLE"
-          :on-load-more="loadMorePacks"
-          :can-load-more="canLoadMorePacks"
+      <div v-else class="flex size-full flex-col">
+        <div class="min-h-0 flex-1" @click="handleGridContainerClick">
+          <VirtualGrid
+            id="results-grid"
+            :items="resultsWithKeys"
+            :buffer-rows="4"
+            :grid-style="GRID_STYLE"
+            :on-load-more="loadMorePacks"
+            :can-load-more="canLoadMorePacks"
+          >
+            <template #item="{ item }">
+              <PackCard
+                :node-pack="item"
+                :is-selected="
+                  selectedNodePacks.some((pack) => pack.id === item.id)
+                "
+                @click.stop="(event: MouseEvent) => selectNodePack(item, event)"
+              />
+            </template>
+          </VirtualGrid>
+        </div>
+        <Message
+          :visible="isNextPageFailed"
+          severity="warning"
+          class="mx-2 mt-2 w-auto items-center"
         >
-          <template #item="{ item }">
-            <PackCard
-              :node-pack="item"
-              :is-selected="
-                selectedNodePacks.some((pack) => pack.id === item.id)
-              "
-              @click.stop="(event: MouseEvent) => selectNodePack(item, event)"
-            />
-          </template>
-        </VirtualGrid>
+          <div class="flex items-center justify-between gap-3">
+            {{ $t('manager.loadMoreFailed') }}
+            <Button
+              ref="retryButton"
+              variant="secondary"
+              @click="retryNextPage"
+            >
+              {{ $t('g.retry') }}
+            </Button>
+          </div>
+        </Message>
       </div>
     </template>
 
@@ -157,23 +177,25 @@ import { refDebounced, until, whenever } from '@vueuse/core'
 import { merge } from 'es-toolkit/compat'
 import {
   computed,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   onUnmounted,
   provide,
   ref,
   toValue,
+  useTemplateRef,
   watch,
   watchEffect
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
-import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
+import SearchAutocomplete from '@comfyorg/design-system/search-input/SearchAutocomplete'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -414,6 +436,25 @@ const isSearchFailed = computed(
     isFirstPageForInput.value &&
     packs.firstPage.value.status === 'failed'
 )
+const isNextPageFailed = computed(
+  () =>
+    isSearchBacked.value &&
+    isFirstPageForInput.value &&
+    packs.isNextPageFailed.value
+)
+const retryButton = useTemplateRef<InstanceType<typeof Button>>('retryButton')
+async function retryNextPage() {
+  await packs.retryNextPage()
+  if (!isNextPageFailed.value) return
+  await nextTick()
+  if (document.activeElement && document.activeElement !== document.body) return
+  const button: HTMLElement | undefined = retryButton.value?.$el
+  button?.focus()
+}
+const hasPendingPages = computed(
+  () =>
+    isSearchBacked.value && (hasMorePacks.value || packs.isNextPageFailed.value)
+)
 const isFirstPagePending = computed(
   () =>
     isSearchBacked.value &&
@@ -517,7 +558,7 @@ const isSettledWithNoPacks = computed(
     displayPacks.value.length === 0 &&
     !isLoading.value &&
     !isManagerErrorRelevant.value &&
-    !hasMorePacks.value
+    !hasPendingPages.value
 )
 
 const isUnmatchedLegacyManagerSearch = computed(() => {

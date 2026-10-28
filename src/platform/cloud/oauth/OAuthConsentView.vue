@@ -33,6 +33,27 @@
               })
             }}
           </h1>
+          <template v-if="!isFirstPartyClient(challenge)">
+            <Badge
+              variant="compact"
+              severity="warning"
+              data-testid="client-unverified"
+            >
+              {{ t('oauth.consent.unverifiedBadge') }}
+            </Badge>
+            <p
+              class="m-0 text-xs wrap-anywhere text-muted-foreground"
+              data-testid="client-unverified-notice"
+            >
+              {{
+                destinationHost
+                  ? t('oauth.consent.unverifiedNotice', {
+                      host: destinationHost
+                    })
+                  : t('oauth.consent.unverifiedNoticeNoHost')
+              }}
+            </p>
+          </template>
           <p class="m-0 text-sm text-muted-foreground">
             {{ t('oauth.consent.subtitle', { resource: resourceName }) }}
           </p>
@@ -82,7 +103,7 @@
             </div>
             <i
               v-if="selectedWorkspaceId === workspace.id"
-              class="icon-[lucide--check] size-4 shrink-0 text-foreground"
+              class="icon-[lucide--check] text-foreground"
               aria-hidden="true"
             />
           </RadioGroupItem>
@@ -106,7 +127,7 @@
               class="flex items-center gap-2"
             >
               <i
-                class="icon-[lucide--check] size-4 shrink-0 text-brand-yellow"
+                class="icon-[lucide--check] text-brand-yellow"
                 aria-hidden="true"
               />
               <span class="text-sm">
@@ -183,10 +204,13 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   OAuthApiError,
   fetchOAuthConsentChallenge,
+  isFirstPartyClient,
+  redirectHost,
   submitOAuthConsentDecision
 } from '@/platform/cloud/oauth/oauthApi'
 import type {
@@ -224,6 +248,10 @@ const resourceName = computed(
   () =>
     challenge.value?.resource_display_name ??
     t('oauth.consent.resourceFallback')
+)
+
+const destinationHost = computed(() =>
+  redirectHost(challenge.value?.redirect_uri)
 )
 
 const selectedWorkspaceIsValid = computed(() =>
