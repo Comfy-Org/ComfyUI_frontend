@@ -63,7 +63,8 @@ function fakeGitHub() {
 async function upsert(
   github: ReturnType<typeof fakeGitHub>['github'],
   sectionName: string,
-  sectionContent: string
+  sectionContent: string,
+  commentMarker = COMMENT_MARKER
 ) {
   await new AsyncFunction(
     'github',
@@ -83,7 +84,7 @@ async function upsert(
         INPUT_SECTION_NAME: sectionName,
         INPUT_SECTION_CONTENT: sectionContent,
         INPUT_SECTION_CONTENT_FILE: '',
-        INPUT_COMMENT_MARKER: COMMENT_MARKER
+        INPUT_COMMENT_MARKER: commentMarker
       }
     }
   )
@@ -128,7 +129,20 @@ describe('upsert-comment-section content containing section markers', () => {
     expect(sectionContentsIn(comments[0].body)).toEqual({
       b: 'real b',
       c: 'other',
-      z: forged.replaceAll('<!-- section:', '<!-- section-quoted:')
+      z: forged.replaceAll('<!--', '<!--\u200B')
     })
+  })
+
+  it('cannot be matched as another report comment', async () => {
+    const { comments, github } = fakeGitHub()
+    const videoMarker = '<!-- playwright-video-new-tests -->'
+
+    await upsert(github, 'a', `${videoMarker} <!-- PLAYWRIGHT_TEST_STATUS -->`)
+    await upsert(github, 'videos', 'video report', videoMarker)
+
+    expect(comments).toHaveLength(2)
+    expect(comments[0].body).not.toContain(videoMarker)
+    expect(comments[0].body).not.toContain('<!-- PLAYWRIGHT_TEST_STATUS -->')
+    expect(sectionNamesIn(comments[0].body)).toEqual(['a'])
   })
 })

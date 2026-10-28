@@ -51,11 +51,9 @@ runs:
           const rawSectionContent = sectionContentFile
             ? require('node:fs').readFileSync(sectionContentFile, 'utf8')
             : process.env.INPUT_SECTION_CONTENT
-          // A literal section marker inside the content would truncate this
-          // section or forge another one when the comment is split back apart.
           const sectionContent = rawSectionContent.replaceAll(
-            '<!-- section:',
-            '<!-- section-quoted:'
+            '<!--',
+            '<!--\u200B'
           )
           const commentMarker = process.env.INPUT_COMMENT_MARKER
 
