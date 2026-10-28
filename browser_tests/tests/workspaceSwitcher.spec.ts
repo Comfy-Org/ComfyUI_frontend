@@ -2,7 +2,6 @@ import { expect, mergeTests } from '@playwright/test'
 
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
@@ -159,7 +158,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     const page = comfyPage.page
 
     await comfyPage.toast.closeToasts()
-    await page.getByRole('button', { name: 'Current user' }).click()
+    await workspaceAuth.openSwitcherPanel()
     await expect(page.getByTestId('add-credits-button')).toBeVisible()
     const longWorkspaceCapabilities = page.waitForResponse(
       (response) =>
@@ -167,7 +166,6 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
         response.request().headers()['authorization'] ===
           'Bearer mock-workspace-token-ws-team-long'
     )
-    await workspaceAuth.openSwitcherPanel()
     await page
       .getByTestId('workspace-switcher-panel')
       .getByText(LONG_WORKSPACE_NAME, { exact: true })
@@ -258,6 +256,9 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       initialSettings: {
         'Comfy.UseNewMenu': 'Top',
         'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
+      },
+      workspaceSwitcherRemoteConfig: {
+        'agent-in-app-experience': true
       }
     })
 
@@ -302,14 +303,6 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
 
       await test.step('Seed Agent state for both workspaces', async () => {
         await identityPersistence.mockAgentApi(identityStates)
-        await page.route('**/api/features', (route) =>
-          route.fulfill({
-            json: {
-              unified_cloud_auth: true,
-              'agent-in-app-experience': true
-            } satisfies RemoteConfig
-          })
-        )
         await identityPersistence.seed(identityStates)
         await comfyPage.workflow.reloadAndWaitForApp()
       })

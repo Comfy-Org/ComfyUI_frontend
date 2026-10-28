@@ -1,5 +1,6 @@
 import type { ListMembersResponse } from '@comfyorg/ingest-types'
 
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
@@ -31,10 +32,17 @@ interface WorkspaceSwitchTokenGate {
 export const workspaceSwitcherTest = comfyPageFixture.extend<{
   workspaceAuth: WorkspaceAuthHelper
   workspaceSwitchTokenGate: WorkspaceSwitchTokenGate
+  workspaceSwitcherRemoteConfig: RemoteConfig
 }>({
-  page: async ({ page }, use) => {
+  workspaceSwitcherRemoteConfig: [{}, { option: true }],
+  page: async ({ page, workspaceSwitcherRemoteConfig }, use) => {
     await page.route('**/api/features', (route) =>
-      route.fulfill(jsonRoute(WORKSPACE_SWITCHER_REMOTE_CONFIG))
+      route.fulfill(
+        jsonRoute({
+          ...WORKSPACE_SWITCHER_REMOTE_CONFIG,
+          ...workspaceSwitcherRemoteConfig
+        })
+      )
     )
 
     await mockWorkspaceList(page, WORKSPACE_SWITCHER_WORKSPACES)
