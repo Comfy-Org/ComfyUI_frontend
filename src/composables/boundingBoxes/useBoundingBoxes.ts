@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { useElementSize, useEventBus } from '@vueuse/core'
 import type { EventBusKey } from '@vueuse/core'
 import { cloneDeep, isEqual } from 'es-toolkit'
@@ -20,6 +21,7 @@ import type {
   HitMode,
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import {
   locateWidgetNode,
@@ -27,8 +29,8 @@ import {
 } from '@/composables/widgetHistoryScope'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
-import type { BoundingBox } from '@/types/boundingBoxes'
-import type { NodeId } from '@/types/nodeId'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { readableTextColor, textOnColor } from '@/utils/colorUtil'
 
@@ -74,7 +76,7 @@ export function useBoundingBoxes(
   const focused = ref(false)
   const drawing = ref(false)
   const dragMode = ref<HitMode | null>(null)
-  const dragStartNorm = ref<{ x: number; y: number } | null>(null)
+  const dragStartNorm = ref<Point2D | null>(null)
   const boxAtStart = ref<Region | null>(null)
   const hoverIndex = ref<number | null>(null)
   const hoverTagIndex = ref<number | null>(null)
@@ -85,9 +87,9 @@ export function useBoundingBoxes(
 
   const { width: canvasWidth, height: canvasHeight } = useElementSize(canvasEl)
 
-  const litegraphNode = computed(() => {
+  const litegraphNode = useLiveGraphNode(() => {
     const location = locateWidgetNode(widget, nodeId)
-    return location?.graph.getNodeById(location.nodeId) ?? null
+    return location?.graph.getNodeById(location.nodeId)
   })
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
   const isNodeSelected = computed(() => selectedNodeIds.value.has(nodeId))
@@ -370,7 +372,7 @@ export function useBoundingBoxes(
     return out
   }
 
-  const hitTestPoint = (mN: { x: number; y: number }) => {
+  const hitTestPoint = (mN: Point2D) => {
     const { w: W, h: H } = logicalSize()
     const cands = boxesAt(
       state.value.regions,
@@ -388,7 +390,7 @@ export function useBoundingBoxes(
     )
   }
 
-  const titleAt = (mN: { x: number; y: number }) => {
+  const titleAt = (mN: Point2D) => {
     const el = canvasEl.value
     if (!el) return null
     const ctx = el.getContext('2d')
@@ -406,7 +408,7 @@ export function useBoundingBoxes(
     return null
   }
 
-  function pickForSelection(mN: { x: number; y: number }, cycle: boolean) {
+  function pickForSelection(mN: Point2D, cycle: boolean) {
     const { w: W, h: H } = logicalSize()
     const cands = boxesAt(
       state.value.regions,
@@ -702,7 +704,7 @@ export function useBoundingBoxes(
     () => requestDraw()
   )
   watch([isNodeSelected, activeIndex], () => requestDraw())
-  watch([widthValue, heightValue], () => syncState())
+  watch([widthValue, heightValue], () => syncState(), { flush: 'post' })
 
   watch(
     litegraphNode,

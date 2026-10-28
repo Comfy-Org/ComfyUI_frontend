@@ -11,11 +11,13 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 declare global {
   interface Window {
     __desktopConsentSignIn: () => Promise<ComfyDesktop2AuthState>
+    __desktopConsentAuthState: () => Promise<ComfyDesktop2AuthState>
   }
 }
 
 class DesktopConsentSignIn {
   requests = 0
+  state: ComfyDesktop2AuthState = { status: 'signed_out' }
   private resolve: (state: ComfyDesktop2AuthState) => void = () => {}
   private readonly result = new Promise<ComfyDesktop2AuthState>((resolve) => {
     this.resolve = resolve
@@ -26,12 +28,17 @@ class DesktopConsentSignIn {
     return this.result
   }
 
-  complete(): void {
-    this.resolve({
+  finishInBrowser(): void {
+    this.state = {
       status: 'signed_in',
       userId: 'test-user-e2e',
       workspaceId: 'ws-personal'
-    })
+    }
+  }
+
+  complete(): void {
+    this.finishInBrowser()
+    this.resolve(this.state)
   }
 }
 
@@ -49,8 +56,12 @@ export const desktopAgentConsentTest = mergeTests(
     await page.exposeFunction('__desktopConsentSignIn', () =>
       desktopConsentSignIn.request()
     )
+    await page.exposeFunction(
+      '__desktopConsentAuthState',
+      () => desktopConsentSignIn.state
+    )
     await page.addInitScript(() => {
-      let state: ComfyDesktop2AuthState = { status: 'signed_out' }
+      let state: ComfyDesktop2AuthState | undefined
       const listeners = new Set<(next: ComfyDesktop2AuthState) => void>()
       const push = (next: ComfyDesktop2AuthState) => {
         state = next
@@ -64,9 +75,10 @@ export const desktopAgentConsentTest = mergeTests(
         changeTheme: () => {}
       } satisfies Partial<ElectronAPI>
       const auth = {
-        getState: async () => state,
+        getState: async () =>
+          (state ??= await window.__desktopConsentAuthState()),
         getWorkspaceToken: async (workspaceId: string) =>
-          state.status === 'signed_in' && state.workspaceId === workspaceId
+          state?.status === 'signed_in' && state.workspaceId === workspaceId
             ? 'mock-workspace-token'
             : null,
         requestSignIn: async () => push(await window.__desktopConsentSignIn()),

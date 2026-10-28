@@ -10,7 +10,7 @@ import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { AppMode } from '@/utils/appMode'
 
 const mockSave = vi.hoisted(() => vi.fn())

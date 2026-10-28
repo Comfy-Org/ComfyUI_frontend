@@ -16,24 +16,24 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { emitGraphRestored } from '@/scripts/graphRestore'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toRootGraphId } from '@/types/graphScopeId'
-import type { RootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createUuidv4 } from '@/utils/uuid'
 
 import {
@@ -47,8 +47,6 @@ import type { GraphOperation } from './graphOperations'
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
 import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSource extends LGraphNode {
   constructor() {
@@ -3505,24 +3503,29 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
         n.addWidget('text', 'prompt', 'a', () => {})
         n.addWidget('text', 'prompt', 'b', () => {})
       }
-    },
-    {
-      case: 'a stored value whose widget its serializer removed',
-      definition: nodeDef('Dynamic', {}),
-      build: (n: LGraphNode) => {
-        n.addWidget('text', 'prompt', 'a', () => {})
-        n.addWidget('text', 'extra', 'b', () => {})
-        new LGraph().add(n)
-        n.onSerialize = () => {
-          n.widgets?.pop()
-        }
-      }
     }
   ])('declares no form for a node with $case', ({ definition, build }) => {
     useNodeDefStore().addNodeDef(definition)
     const node = nodeWith('Dynamic', build)
 
     expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('declares the filtered form when serialization removes a widget', () => {
+    useNodeDefStore().addNodeDef(nodeDef('Dynamic', {}))
+    const node = nodeWith('Dynamic', (n) => {
+      n.addWidget('text', 'prompt', 'a', () => {})
+      n.addWidget('text', 'extra', 'b', () => {})
+      new LGraph().add(n)
+      n.onSerialize = () => {
+        n.widgets?.pop()
+      }
+    })
+
+    expect(wireNodeSnapshot(node)).toMatchObject({
+      widgets_values: { prompt: 'a' },
+      widgets_values_form: { order: ['prompt'] }
+    })
   })
 
   it('declares the form for a node built by the real widget constructors', () => {

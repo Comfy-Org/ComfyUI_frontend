@@ -263,12 +263,12 @@ describe('expected failure baseline comparison', () => {
   }
 
   it.for([
-    { name: 'accepts', count: 15, errors: [] },
+    { name: 'accepts', count: 14, errors: [] },
     {
       name: 'rejects',
-      count: 16,
+      count: 15,
       errors: [
-        'Live-defect count 16 must equal LIVE_DEFECT_CEILING (15); lower it when a pin is fixed or raise it to admit a new live defect.'
+        'Live-defect count 15 must equal LIVE_DEFECT_CEILING (14); lower it when a pin is fixed or raise it to admit a new live defect.'
       ]
     }
   ])(

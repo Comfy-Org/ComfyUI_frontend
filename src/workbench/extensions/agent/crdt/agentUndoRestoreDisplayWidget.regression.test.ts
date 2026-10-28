@@ -11,13 +11,13 @@ import {
 } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { emitGraphRestored } from '@/scripts/graphRestore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { toRootGraphId } from '@/types/graphScopeId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 
 import { attachDocOpMinter } from './docOpMinter'
 import type { DocOpMinter } from './docOpMinter'

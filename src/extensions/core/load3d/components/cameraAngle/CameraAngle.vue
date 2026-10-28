@@ -20,7 +20,7 @@
         :aria-label="option.label"
         @click="setViewMode(option.value)"
       >
-        <i :class="cn('size-4', option.icon)" />
+        <i :class="option.icon" />
         <span v-if="!compact">{{ option.label }}</span>
       </Button>
       <div class="mx-1 h-5 w-px shrink-0 bg-border" />
@@ -36,7 +36,7 @@
         :aria-label="previewLabel"
         @click="setPreviewVisible(!previewVisible)"
       >
-        <i class="icon-[lucide--picture-in-picture-2] size-4" />
+        <i class="icon-[lucide--picture-in-picture-2]" />
         <span v-if="!compact">{{ $t('cameraAngle.preview') }}</span>
       </Button>
       <span
@@ -87,19 +87,16 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
-import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import ViewportWidgetShell from '@/extensions/core/load3d/components/ViewportWidgetShell.vue'
+import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
 import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
-import Button from '@/components/ui/button/Button.vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import { useCameraAngle } from '@/extensions/core/load3d/composables/useCameraAngle'
 import {
   DISTANCE_TERMS,
@@ -115,7 +112,7 @@ import type {
   CameraAngleViewMode
 } from '@comfyorg/viewport3d/cameraAngle/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -124,7 +121,7 @@ const { widget } = defineProps<{
   widget: SimplifiedWidget
 }>()
 
-const node = ref<LGraphNode | null>(null)
+const node = useLiveGraphNode(resolveOwnerNode)
 
 const { t } = useI18n()
 const shell = useTemplateRef<InstanceType<typeof ViewportWidgetShell>>('shell')
@@ -148,7 +145,7 @@ const {
   viewMode,
   previewVisible,
   prompt
-} = useCameraAngle(node as Ref<LGraphNode | null>, {
+} = useCameraAngle(node, {
   faceLabels: () => ({
     back: t('cameraAngle.faces.back'),
     left: t('cameraAngle.faces.left'),
@@ -227,8 +224,6 @@ function selectPreset(field: CameraAngleField, key: unknown) {
   if (term) setField(field, term.preset)
 }
 
-const canvasStore = useCanvasStore()
-
 function resolveOwnerNode(): LGraphNode | null {
   const locatorId = widget.nodeLocatorId
   const graph = app.rootGraphOrUndefined
@@ -237,12 +232,12 @@ function resolveOwnerNode(): LGraphNode | null {
 
 onMounted(() => {
   watch(
-    () => canvasStore.rootGraphId,
-    () => {
+    node,
+    (current) => {
       const container = shell.value?.container
-      if (node.value || !container) return
-      node.value = resolveOwnerNode()
-      if (node.value) initialize(container)
+      if (!container) return
+      if (current) initialize(container)
+      else cleanup()
     },
     { immediate: true }
   )

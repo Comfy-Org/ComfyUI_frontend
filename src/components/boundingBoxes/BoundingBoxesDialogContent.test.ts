@@ -22,8 +22,8 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { openBoundingBoxesDialog } from './boundingBoxesDialog'
 import messages from '@/locales/en/main.json'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { BoundingBox } from '@/types/boundingBoxes'
-import { toNodeId } from '@/types/nodeId'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const { appState } = vi.hoisted(() => {
