@@ -24,12 +24,10 @@
     <Dialog :open="filterVisible" @update:open="onFilterDialogOpenChange">
       <DialogPortal>
         <DialogOverlay
-          v-reka-z-index
           data-testid="node-search-filter-overlay"
           @pointerdown.self.stop="filterVisible = false"
         />
         <DialogContent
-          v-reka-z-index
           class="min-w-96"
           @escape-key-down="$event.isComposing && $event.preventDefault()"
           @pointer-down-outside="(e) => onRekaPointerDownOutside({}, e)"
@@ -37,7 +35,7 @@
         >
           <DialogHeader>
             <DialogTitle>{{ $t('g.addNodeFilterCondition') }}</DialogTitle>
-            <DialogClose />
+            <DialogClose :aria-label="$t('g.close')" />
           </DialogHeader>
           <div class="px-4 py-2">
             <NodeSearchFilter @add-filter="onAddFilter" />
@@ -49,6 +47,8 @@
     <SearchAutocomplete
       ref="searchAutocomplete"
       v-model="currentQuery"
+      :clear-label="$t('g.clear')"
+      :accessible-label="$t('g.search')"
       class="comfy-vue-node-search-box z-10 grow"
       anchor-class="h-auto min-h-8 flex-wrap"
       :content-style="{ maxHeight: '40vh' }"
@@ -92,20 +92,19 @@ import { debounce } from 'es-toolkit/compat'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
 import NodePreview from '@/components/node/NodePreview.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import SearchAutocomplete from '@comfyorg/design-system/search-input/SearchAutocomplete'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
@@ -114,7 +113,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
-import SearchFilterChip from '../common/SearchFilterChip.vue'
+import SearchFilterChip from '@/components/common/SearchFilterChip.vue'
 
 const settingStore = useSettingStore()
 const { t } = useI18n()

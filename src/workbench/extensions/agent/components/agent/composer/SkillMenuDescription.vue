@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onBeforeUnmount, useTemplateRef } from 'vue'
 
-import HoverCard from '@/components/ui/hover-card/HoverCard.vue'
-import HoverCardContent from '@/components/ui/hover-card/HoverCardContent.vue'
-import type { SkillReferenceMetadata } from '../../../types/skillReference'
+import HoverCard from '@comfyorg/design-system/hover-card/HoverCard'
+import HoverCardContent from '@comfyorg/design-system/hover-card/HoverCardContent'
+import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 
 const { id, skill, anchor } = defineProps<{
   id: string

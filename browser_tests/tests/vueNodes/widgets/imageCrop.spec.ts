@@ -6,6 +6,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { toNodeId } from '@/types/nodeId'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 type CropValue = { x: number; y: number; width: number; height: number } | null
 
@@ -199,7 +200,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         await expect(node, 'image crop node should render').toBeVisible()
         await comfyPage.nextFrame()
         await comfyPage.nextFrame()
-        await expect(node).toHaveScreenshot('image-crop-empty-state.png', {
+        await expectElementScreenshot(node, 'image-crop-empty-state.png', {
           maxDiffPixelRatio: 0.05
         })
       }
@@ -300,7 +301,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
 
           await comfyPage.nextFrame()
           await comfyPage.nextFrame()
-          await expect(node).toHaveScreenshot('image-crop-with-source.png', {
+          await expectElementScreenshot(node, 'image-crop-with-source.png', {
             maxDiffPixelRatio: 0.05
           })
         }
@@ -402,7 +403,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
             )
             .not.toBeNull()
 
-          await expect(node).toHaveScreenshot('image-crop-after-drag.png', {
+          await expectElementScreenshot(node, 'image-crop-after-drag.png', {
             maxDiffPixelRatio: 0.05
           })
         }
@@ -665,7 +666,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
 
           await comfyPage.nextFrame()
           await comfyPage.nextFrame()
-          await expect(node).toHaveScreenshot('image-crop-resize-se.png', {
+          await expectElementScreenshot(node, 'image-crop-resize-se.png', {
             maxDiffPixelRatio: 0.05
           })
         }
@@ -711,7 +712,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
 
           await comfyPage.nextFrame()
           await comfyPage.nextFrame()
-          await expect(node).toHaveScreenshot('image-crop-resize-nw.png', {
+          await expectElementScreenshot(node, 'image-crop-resize-nw.png', {
             maxDiffPixelRatio: 0.05
           })
         }
@@ -814,7 +815,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
 
           await comfyPage.nextFrame()
           await comfyPage.nextFrame()
-          await expect(node).toHaveScreenshot('image-crop-eight-handles.png', {
+          await expectElementScreenshot(node, 'image-crop-eight-handles.png', {
             maxDiffPixelRatio: 0.05
           })
         }

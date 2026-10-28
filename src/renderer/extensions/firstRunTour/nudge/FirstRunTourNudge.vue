@@ -24,7 +24,7 @@
         data-testid="first-run-nudge-cursor"
         :class="
           cn(
-            'absolute icon-[lucide--mouse-pointer-2] size-4 text-foreground drop-shadow-md',
+            'absolute icon-[lucide--mouse-pointer-2] text-foreground drop-shadow-md',
             cursorEdgeClass(placement)
           )
         "
@@ -42,7 +42,7 @@
             :aria-label="t('g.close')"
             @click="dismissNudge"
           >
-            <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+            <i class="icon-[lucide--x]" aria-hidden="true" />
           </Button>
         </div>
 
@@ -91,8 +91,8 @@ import {
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import Button from '@comfyorg/design-system/button/Button'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { cursorEdgeClass } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
@@ -104,7 +104,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-import { useFirstRunTourController } from '../tour/useFirstRunTourController'
+import { useFirstRunTourController } from '@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'
 
 const NUDGE_IMAGE = '/assets/images/og-image.png'
 

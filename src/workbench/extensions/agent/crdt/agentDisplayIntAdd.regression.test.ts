@@ -20,8 +20,6 @@ import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { attachDocOpMinter } from './docOpMinter'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const DISPLAY_INT = 'Display Int (rgthree)'
 const WORKFLOW_ID = 'wf-pm-2003'
 
@@ -101,8 +99,12 @@ function connectAgentHeldWorkflow() {
     getGraph: () => graph,
     boundRootGraphId: () => toRootGraphId(graph.id),
     docInputNames: (nodeId) => follower.docInputNames(nodeId),
+    docWidgetValue: (nodeId, widgetName) =>
+      follower.docWidgetValue(nodeId, widgetName),
     docPromotedWidgets: (nodeId) => follower.docPromotedWidgets(nodeId),
     mayWritePromotedHost: (nodeId) => follower.mayWritePromotedHost(nodeId),
+    docHasSubgraphDefinition: (definitionId) =>
+      follower.docHasSubgraphDefinition(definitionId),
     onWidgetWriteRefused: (nodeId, widgetName) =>
       follower.notifyWidgetWriteRefused(nodeId, widgetName)
   })

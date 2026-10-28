@@ -1,5 +1,6 @@
 <template>
-  <DialogPanel
+  <AppDialogPanel
+    unpadded
     data-testid="open-shared-workflow-dialog"
     class="w-176 max-w-full"
     :aria-busy="isOpening"
@@ -63,7 +64,7 @@
           >
             <i
               v-if="isOpening"
-              class="icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
+              class="icon-[lucide--loader-circle] motion-safe:animate-spin"
               aria-hidden="true"
             />
             <span>
@@ -87,7 +88,7 @@
                 class="w-full justify-between px-4 py-1 text-sm"
               >
                 <i
-                  class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning"
+                  class="icon-[lucide--circle-alert] text-warning"
                   aria-hidden="true"
                 />
                 <span class="flex-1 text-left text-sm text-muted-foreground">
@@ -96,7 +97,7 @@
                 <i
                   :class="
                     cn(
-                      'icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform',
+                      'icon-[lucide--chevron-right] text-muted-foreground transition-transform',
                       isWarningExpanded && 'rotate-90'
                     )
                   "
@@ -150,7 +151,7 @@
         </Button>
       </footer>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
@@ -165,9 +166,9 @@ import { computed, ref } from 'vue'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
-import Button from '@/components/ui/button/Button.vue'
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type OpeningAction = 'copy-and-open' | 'open-only'

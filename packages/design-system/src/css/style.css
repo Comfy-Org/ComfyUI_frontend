@@ -8,6 +8,11 @@
 @import 'tailwindcss/utilities' layer(utilities);
 @import 'tw-animate-css';
 
+@source '../components';
+@source not '../components/**/*.test.ts';
+@source not '../components/**/*.md';
+@source '../../dist';
+
 @plugin "./iconifyDynamicPlugin.ts";
 
 @plugin "./lucideStrokePlugin.js";
@@ -43,6 +48,12 @@
 @custom-variant touch (@media (hover: none));
 
 @theme {
+  --z-index-overlay: 1700;
+  --z-index-onboarding: 1600;
+  --z-index-tour: 1800;
+  --z-index-toast: 9999;
+  --z-index-blocking: 10000;
+
   --shadow-2xs: 0 1px 1px var(--shadow-color);
   --shadow-xs: 0 1px 2px var(--shadow-color);
   --shadow-sm: 0 1px 4px var(--shadow-color);

@@ -6,6 +6,7 @@ import {
   setComboInputOptions
 } from '@e2e/fixtures/utils/objectInfo'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
@@ -62,7 +63,11 @@ test.describe(
           const request = await uploadRequestPromise
           expect(request.url()).toContain('/upload/')
         } else {
-          await expect(comfyPage.canvas).toHaveScreenshot(`${fileName}.png`)
+          await expectRegionScreenshot(
+            comfyPage.page,
+            await comfyPage.nodeOps.getAllNodeRefs(),
+            `${fileName}.png`
+          )
         }
       })
     })
@@ -80,13 +85,9 @@ test.describe(
 
         await comfyPage.dragDrop.dragAndDropURL(url)
 
-        // The drop triggers an async fetch → parse → loadGraphData chain.
-        // Poll until the graph settles with the loaded workflow's nodes.
-        await expect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
-            timeout: 15000
-          })
-          .toBeGreaterThan(initialNodeCount)
+        await comfyPage.expectNodeCountMinimum(initialNodeCount + 1, {
+          timeout: 15000
+        })
         expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
       })
     })
@@ -96,7 +97,7 @@ test.describe(
         comfyPage
       }) => {
         await comfyPage.nodeOps.clearGraph()
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+        await comfyPage.expectNodeCount(0)
 
         await comfyPage.page.evaluate(() => {
           window.app!.canvas.graph_mouse[0] = -9999
@@ -109,7 +110,7 @@ test.describe(
           waitForUpload: true
         })
 
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        await comfyPage.expectNodeCount(1)
 
         const { nodePos, expectedPos } = await comfyPage.page.evaluate(
           (drop) => {

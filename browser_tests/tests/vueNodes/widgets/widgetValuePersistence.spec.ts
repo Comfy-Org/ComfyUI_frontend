@@ -135,13 +135,9 @@ test.describe(
           })
         ])
         await comfyPage.menu.topbar.newWorkflowButton.click()
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+        await comfyPage.expectNodeCount(0)
         await comfyPage.searchBoxV2.addNode('Load Image (from Outputs)')
         await comfyPage.vueNodes.waitForNodes()
-      })
-
-      test.afterEach(async ({ comfyPage }) => {
-        await comfyPage.canvasOps.resetView()
       })
 
       test('keeps a selected non-first output and its preview after save and reload', async ({

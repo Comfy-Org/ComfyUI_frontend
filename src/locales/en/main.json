@@ -225,8 +225,11 @@
     "enableSelected": "Enable Selected",
     "disableSelected": "Disable Selected",
     "disableThirdParty": "Disable Third-Party",
+    "disableAgentCreated": "Disable all agent-created",
     "core": "Core",
     "custom": "Custom",
+    "createdByAgent": "Created by agent",
+    "agentCreated": "Agent-created",
     "command": "Command",
     "keybinding": "Keybinding",
     "keybindings": "Keybindings",
@@ -299,6 +302,7 @@
     "cancelled": "Cancelled",
     "agentWorking": "Agent is working on this workflow",
     "agentModified": "Agent updated this workflow",
+    "agentNeedsApproval": "Agent is waiting for your answer",
     "job": "Job",
     "asset": "{count} asset | {count} assets",
     "untitled": "Untitled",
@@ -377,6 +381,7 @@
     "recordingFailedToStart": "Could not start recording",
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
+    "agentInputNeededShort": "Input needed",
     "duplicate": "Duplicate",
     "itemsCopiedToClipboard": "Items copied to clipboard",
     "selectItemsToCopy": "Select items to copy",
@@ -422,7 +427,6 @@
     "1x": "1x",
     "2x": "2x",
     "beta": "BETA",
-    "comfyCloud": "Comfy Cloud",
     "nightly": "NIGHTLY",
     "profile": "Profile",
     "noItems": "No items",
@@ -551,6 +555,7 @@
     "totalNodes": "Total Nodes",
     "discoverCommunityContent": "Discover community-made Node Packs, Extensions, and more...",
     "errorConnecting": "Error connecting to the Comfy Node Registry.",
+    "loadMoreFailed": "Couldn't load more results.",
     "noResultsFound": "No results found matching your search.",
     "tryDifferentSearch": "Please try a different search query.",
     "emptyState": {
@@ -693,6 +698,7 @@
     "Add Node": "Add Node",
     "Hide Link": "Hide Link",
     "Show Link": "Show Link",
+    "Show Links": "Show Links",
     "Add Group": "Add Group",
     "Add Group For Selected Nodes": "Add Group For Selected Nodes",
     "Save Selected as Template": "Save Selected as Template",
@@ -996,7 +1002,6 @@
     "noGeneratedFiles": "No generated files found",
     "generatedAssetsHeader": "Generated assets",
     "importedAssetsHeader": "Imported assets",
-    "activeJobStatus": "Active job: {status}",
     "noFilesFoundMessage": "Upload files or generate content to see them here",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
@@ -1337,7 +1342,8 @@
   },
   "nodeTemplates": {
     "saveAsTemplate": "Save as template",
-    "enterName": "Enter name"
+    "enterName": "Enter name",
+    "notLoaded": "Saved templates could not be loaded, so changes were not saved to avoid overwriting them. Reload the page and try again."
   },
   "logsTerminal": {
     "loadError": "Unable to load logs, please ensure you have updated your ComfyUI backend.",
@@ -1574,12 +1580,13 @@
     "Quit": "Quit",
     "Reinstall": "Reinstall",
     "Restart": "Restart",
-    "Open 3D Viewer (Beta) for Selected Node": "Open 3D Viewer (Beta) for Selected Node",
     "Experimental: Browse Model Assets": "Experimental: Browse Model Assets",
     "Browse Templates": "Browse Templates",
     "Copy": "Copy",
     "Delete Selected Items": "Delete Selected Items",
+    "Delete Selected Links": "Delete Selected Links",
     "Zoom to fit": "Zoom to fit",
+    "Hide Selected Links": "Hide Selected Links",
     "Lock Canvas": "Lock Canvas",
     "Move Selected Nodes Down": "Move Selected Nodes Down",
     "Move Selected Nodes Left": "Move Selected Nodes Left",
@@ -1590,6 +1597,7 @@
     "Reset View": "Reset View",
     "Resize Selected Nodes": "Resize Selected Nodes",
     "Select All": "Select All",
+    "Show Selected Links": "Show Selected Links",
     "Node Links": "Node Links",
     "Canvas Toggle Lock": "Canvas Toggle Lock",
     "Minimap": "Minimap",
@@ -1985,6 +1993,8 @@
     "mage": "mage",
     "joyimage": "joyimage",
     "boogu": "boogu",
+    "moss_image": "moss_image",
+    "fibo": "fibo",
     "chroma radiance": "chroma radiance",
     "supir": "supir",
     "anima": "anima",
@@ -2021,6 +2031,7 @@
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
+    "Higgsfield": "Higgsfield",
     "HitPaw": "HitPaw",
     "Tencent": "Tencent",
     "Ideogram": "Ideogram",
@@ -2032,6 +2043,7 @@
     "Meshy": "Meshy",
     "Meta": "Meta",
     "MiniMax": "MiniMax",
+    "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
@@ -2046,10 +2058,12 @@
     "sync_so": "sync.so",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
     "Wan": "Wan",
-    "WaveSpeed": "WaveSpeed"
+    "WaveSpeed": "WaveSpeed",
+    "testing": "testing"
   },
   "dataTypes": {
     "*": "*",
@@ -2233,6 +2247,7 @@
     "noStackTrace": "No stacktrace available",
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed",
+    "executionFailedWhileDisconnected": "The job failed while the live connection was unavailable.",
     "accessRestrictedTitle": "Access Restricted",
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "workspaceChangedDuringExecution": "Your active workspace changed while preparing this execution. Run the workflow again to use the current workspace."
@@ -2498,6 +2513,12 @@
     "descPlaceholder": "description of this region",
     "colors": "color_palette",
     "grid": "Grid",
+    "openFullscreen": "Open fullscreen editor",
+    "editorTitle": "Bounding Boxes",
+    "drawRegionHint": "Drag on the canvas to add a region.",
+    "deleteRegion": "Delete region {tag}"
+  },
+  "widgetHistory": {
     "undo": "Undo",
     "redo": "Redo"
   },
@@ -2602,7 +2623,6 @@
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
     "errorLoadingModel": "Error loading model",
-    "failedToDownloadFile": "Failed to download file",
     "updateRequested": "Update requested",
     "nodeDefinitionsUpdated": "Node definitions updated",
     "nodeDefinitionsUpdateFailed": "Failed to update node definitions",
@@ -2680,6 +2700,9 @@
       "redirectNotice": "You'll be redirected to",
       "appTypeNative": "Native app",
       "appTypeWeb": "Web app",
+      "unverifiedBadge": "Name not verified",
+      "unverifiedNotice": "This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} — make sure you recognize it.",
+      "unverifiedNoticeNoHost": "This name was provided by whoever registered this app and has not been verified by Comfy.",
       "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
       "errorOriginRefused": "We couldn't approve this from this page. Reopen the sign-in from the app.",
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
@@ -2800,6 +2823,7 @@
         "orgNotAttached": "Your organization's Comfy workspace isn't set up yet. Contact your administrator.",
         "emailDomainNotAllowed": "Your organization's sign-in returned an email outside its domains. Ask your administrator to use your work email in the directory.",
         "orgMismatch": "You signed in to a different organization than the one for this email. Try again with your work account.",
+        "seatLimitReached": "Your organization has used all its Comfy seats. Ask your administrator to free a seat or add more.",
         "suspended": "Your organization has removed your access. Contact your administrator.",
         "accountDeleted": "This account is scheduled for deletion. If this is a mistake, email support{'@'}comfy.org.",
         "accountConflict": "More than one Comfy account uses this email. Email support{'@'}comfy.org for help.",
@@ -2960,9 +2984,18 @@
       "checkoutBlockedTitle": "Checkout didn't open",
       "checkoutBlockedBody": "Your browser blocked the new tab. Open checkout to finish paying.",
       "openCheckout": "Open checkout",
+      "checkoutOpenedTitle": "Checkout opened in a new tab",
+      "checkoutOpenedBody": "Credits are added to this workspace as soon as your payment goes through.",
+      "reopenCheckout": "Reopen checkout",
       "checkoutOpenFailed": "The payment page couldn't open. Nothing was charged. Try again.",
       "setDefaultCard": "Set a default card",
       "setDefaultCardError": "Couldn't open card settings",
+      "defaultCardBlockedTitle": "Payment page didn't open",
+      "defaultCardBlockedBody": "Your browser blocked the new tab. Open the payment page to set a default card.",
+      "openPaymentPage": "Open payment page",
+      "planRequiredFreeRuns": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used.",
+      "planRequiredResubscribe": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
+      "planRequiredSubscribe": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -2988,12 +3021,17 @@
       "maximumAmount": "${amount} max.",
       "minRequired": "{credits} credits minimum",
       "maxAllowed": "{credits} credits maximum.",
+      "negativeBalanceNotice": "Your balance is −{credits} credit. This top-up covers that first. | Your balance is −{credits} credits. This top-up covers that first.",
       "creditsPerDollar": "credits per dollar",
       "amountToPayLabel": "Amount to pay in dollars",
       "creditsToReceiveLabel": "Credits to receive",
       "selectAmount": "Select amount",
       "needMore": "Need more?",
-      "contactUs": "Contact us"
+      "contactUs": "Contact us",
+      "paymentProcessingFlyout": "Payment processing. You don't need to pay again.",
+      "paymentProcessingTitle": "A {amount} payment is still processing",
+      "paymentProcessingTitleNoAmount": "A payment is still processing",
+      "paymentProcessingBody": "No need to pay again."
     },
     "creditsAvailable": "Credits available",
     "refreshes": "Refreshes {date}",
@@ -3057,7 +3095,7 @@
     "previewLoadFailed": "Failed to load subscription preview",
     "unableToSubscribe": "Unable to subscribe",
     "billingTabBlocked": "Couldn't open the billing page. Allow pop-ups for this site and try again.",
-    "billingPortalUnavailable": "Couldn't open the billing page. Try again in a moment.",
+    "billingPortalUnavailable": "Couldn't open billing. Try again.",
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
     "teamWorkspace": "Team Workspace",
@@ -3314,6 +3352,8 @@
     "teamHeaderLearnMore": "Learn more",
     "personalHeader": "Personal plans are for individual use only. {action}",
     "personalHeaderAction": "To add teammates, subscribe to the Team plan.",
+    "pastDueNoticeOwner": "You have an outstanding payment — update your payment method to change plans.",
+    "pastDueNoticeMember": "This workspace has an outstanding payment — ask your workspace owner to update the payment method.",
     "scheduledChangeNotice": "Your plan changes to {plan} on {date}.",
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
@@ -3570,16 +3610,18 @@
           "updatePayment": "Update payment"
         },
         "failed": "Your charge didn't go through. Update your payment method or add credits manually.",
+        "turnedOff": "Turned off after 3 declined charges. Update your payment method, then turn it back on.",
         "limit": "Monthly limit: {spent} of {limit} used",
         "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
         "limitTooltipNoDate": "Counts only auto top-up charges.",
         "off": "Refills credits when your balance runs low",
-        "onHold": "No default payment method. Add a card to resume auto top-up.",
+        "onHold": "No default payment method. Set one to resume auto top-up.",
         "paused": "Monthly limit reached. Resumes {date}.",
         "pausedNoDate": "Monthly limit reached.",
-        "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",
+        "rule": "Tops up to {target} credits when below {threshold} credits.",
         "status": {
           "failed": "Failed",
+          "turnedOff": "Turned off",
           "off": "Off",
           "on": "On",
           "onHold": "On hold",
@@ -3598,8 +3640,6 @@
         "planTooltip": "Credits included with your plan. They refill each billing period.",
         "rateInfo": "About credits",
         "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
-        "resubscribe": "Resubscribe to use credits on Cloud.",
-        "subscribe": "Subscribe to use credits on Cloud.",
         "title": "Credits",
         "topUp": "Top-up",
         "topUpTooltip": "Credits you added. They're used once plan credits run out.",
@@ -3619,11 +3659,13 @@
       "plan": {
         "actions": {
           "choosePlan": "Choose a plan",
+          "contactSales": "Contact sales",
           "manage": "Manage",
           "resume": "Resume plan",
           "stay": "Stay on {plan}",
           "subscribe": "Subscribe"
         },
+        "activating": "Activating your {plan} plan…",
         "active": {
           "monthly": "Billed monthly. Next invoice {date}.",
           "yearly": "Billed yearly. Next invoice {date}."
@@ -3651,23 +3693,23 @@
           "title": "Your plan"
         }
       },
-      "tryAgain": "Try again"
-    },
-    "activity": {
-      "columns": {
-        "creditsUsed": "Credits",
-        "date": "Date",
-        "eventDetails": "Event details",
-        "eventType": "Event type",
-        "user": "User"
+      "topupCheckout": {
+        "creditsApplying": {
+          "body": "Your credits are being added. You won't be charged again.",
+          "title": "Payment received"
+        },
+        "dismiss": "Dismiss",
+        "failed": {
+          "body": "No credits were added. Try again or use a different payment method.",
+          "title": "Your {amount} top-up didn't go through",
+          "titleNoAmount": "Your top-up didn't go through"
+        },
+        "processing": {
+          "body": "Your bank is confirming the payment. Credits are added once it clears, so you don't need to pay again.",
+          "title": "Payment processing"
+        }
       },
-      "empty": "No activity yet.",
-      "fullActivity": "Full activity",
-      "hoverCard": {
-        "lastActivity": "Last activity",
-        "partnerNodeUsed": "Partner node used",
-        "totalCreditsUsed": "Total credits used"
-      }
+      "tryAgain": "Try again"
     },
     "billingStatus": {
       "outOfCredits": {
@@ -3676,11 +3718,25 @@
         "bodyNoDate": "Your team has used all its credits. Add more credits.",
         "personalBody": "You've used all your credits. Add more credits or wait until credits refill on {date}.",
         "personalBodyNoDate": "You've used all your credits. Add more credits.",
-        "pastDueBody": "You've used all your credits. Update your payment method to add credits.",
+        "pastDueBody": "Your team has used all its credits. Update your payment method to add more.",
+        "pastDueMemberBody": "Your team has used all its credits. Ask your workspace owner to update the payment method.",
+        "pastDuePersonalBody": "You've used all your credits. Update your payment method to add more.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
+      },
+      "autoTopUpFailed": {
+        "title": "Auto top-up failed",
+        "body": "Your auto top-up charge didn't go through. Update your payment method or add credits manually."
+      },
+      "autoTopUpOff": {
+        "title": "Auto top-up turned off",
+        "body": "Your payment method was declined 3 times in a row. Update your payment method, then turn auto top-up back on."
+      },
+      "lowCredits": {
+        "title": "Credits are low",
+        "localBody": "You have {credits} credits left. Add credits to keep running Partner Nodes."
       },
       "ending": {
         "title": "Your Team plan ends on {date}",
@@ -3692,6 +3748,26 @@
         "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
         "reactivate": "Resume plan",
         "contactSales": "Contact sales"
+      },
+      "paused": {
+        "body": "This workspace's subscription is paused. Update payment to resume."
+      },
+      "planCheckout": {
+        "dismiss": "Dismiss",
+        "paymentReceived": {
+          "body": "Your plan is activating. You won't be charged again.",
+          "title": "Payment received"
+        },
+        "verifyPayment": {
+          "action": "Verify your payment",
+          "body": "Your bank requires additional verification to complete this payment.",
+          "title": "Verify your payment"
+        }
+      },
+      "parked": {
+        "title": "Something went wrong with a recent payment",
+        "body": "Contact support so we can fix it.",
+        "contactSupport": "Contact support"
       },
       "planEnded": {
         "teamTitle": "Your Team plan ended on {date}",
@@ -3734,12 +3810,6 @@
       "placeholder": "Dashboard workspace settings"
     },
     "members": {
-      "activity": {
-        "daysAgo": "{count} day ago | {count} days ago",
-        "hoursAgo": "{n} hr ago",
-        "justNow": "just now",
-        "minutesAgo": "{n} min ago"
-      },
       "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
@@ -3771,13 +3841,10 @@
         "update": "Update limit"
       },
       "upsellBanner": "To add teammates, upgrade your plan.",
-      "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
       "resubscribe": "Resubscribe",
-      "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
       "endedTeamTitle": "Your Team plan has ended",
       "endedEnterpriseTitle": "Your Enterprise plan has ended",
       "endedPlanTitle": "Your plan has ended",
-      "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
       "contactSales": "Contact sales",
       "upgradeToTeam": "Upgrade to Team",
       "reactivateTeam": "Reactivate Team",
@@ -3985,41 +4052,62 @@
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
+    "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
     "failedToSwitch": "Failed to switch workspace"
   },
   "deploymentSwitcher": {
-    "lookupUnavailable": "Could not check which deployment this editor runs on.",
-    "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again.",
-    "runningOn": "Running on",
+    "runOn": "Run on",
     "comfyCloud": "Comfy Cloud",
-    "comfyCloudCaption": "Comfy's own node set",
     "deployment": "{build} v{version}",
     "unnamedDeployment": "Deployment {id}",
-    "pickGone": "The deployment you picked no longer exists.",
-    "pickGoneDetail": "This browser now runs on Comfy Cloud. Pick a deployment again from the account menu to use one.",
-    "defaultGone": "The workspace's default deployment no longer exists.",
     "namedDeployment": "{name}",
-    "namedCaption": "{release} · {caption}",
-    "caption": "{id}, {status}",
-    "captionDefault": "{id}, {status} · Workspace default",
-    "noDeployments": "This workspace has no deployments yet. Deploy a Release on the Developer Platform first.",
-    "buildsHidden": "Build names are not visible to this account.",
-    "reloadNote": "Picking reloads the editor with the deployment's nodes. When the deployment is updated to another Release, reload to get its new nodes.",
+    "fullLabel": "{build} · {deployment}",
+    "nameWithVersion": "{name} · v{version}",
+    "status": {
+      "stopped": "Stopped",
+      "starting": "Starting",
+      "provisioning": "Starting",
+      "notReady": "Not ready"
+    },
+    "triggerLabel": "Running on {deployment}. Choose where this editor runs",
+    "triggerLabelNotReady": "{status} Choose where this editor runs",
+    "currentTooltip": "Running on {deployment}",
+    "stoppedTooltip": "Running on {deployment}. It's stopped, so jobs won't run until it's started on the Developer Platform.",
+    "notReadyTooltip": "Running on {deployment}. It isn't ready, so jobs won't run until it is.",
+    "switching": "Switching",
+    "switchingNote": "Switching reloads the editor. Your tabs stay open.",
+    "switchingNoteWithoutDrafts": "Switching reloads the editor.",
+    "landed": "Running on {deployment}",
+    "pickGone": "The deployment you picked no longer exists.",
+    "pickGoneDetail": "This browser now runs on Comfy Cloud. Pick a deployment again to use one.",
+    "defaultGone": "The workspace default was deleted, so members start on Comfy Cloud.",
+    "defaultGoneOwner": "The workspace default was deleted, so members start on Comfy Cloud. Choose a new one under Workspace default.",
+    "noDeployments": "This workspace has no deployments yet.",
+    "createCustomDeployment": "Create a custom deployment",
+    "createCustomDeploymentTooltip": "Run the editor with your own custom nodes and models. Set it up on the Developer Platform.",
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
     "reload": "Reload",
     "failedToSwitch": "Could not switch",
+    "unsaved": {
+      "title": "Save your workflows before switching?",
+      "message": "Switching to {deployment} reloads the tab. These workflows have changes that aren't saved yet.",
+      "tabsReturn": "Your open tabs come back after the reload either way.",
+      "switchWithoutSaving": "Switch without saving",
+      "saveAndSwitch": "Save and switch"
+    },
     "workspaceDefault": "Workspace default",
-    "workspaceDefaultIs": "Workspace default: {deployment}",
-    "noWorkspaceDefault": "No workspace default: members start on Comfy Cloud.",
-    "followWorkspace": "Use the workspace default",
-    "followWorkspaceCaption": "Drop this browser's own pick and run on {deployment}",
-    "setAsDefault": "Set as workspace default",
-    "clearDefault": "Clear workspace default",
+    "membersStartOn": "Members without their own pick start on",
+    "defaultDeleted": "Deleted",
     "failedToSetDefault": "Could not change the workspace default",
     "linkTimedOut": "This deployment took too long to open. Try the link again.",
     "linkRefused": "Couldn't open this deployment",
-    "linkWorkspaceRefused": "Couldn't switch to that workspace. You're still in {workspaceName}."
+    "linkWorkspaceRefused": "Couldn't switch to that workspace. You're still in {workspaceName}.",
+    "lookupUnavailable": "Could not check which deployment this editor runs on.",
+    "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again.",
+    "runsThisWorkflow": "Runs this workflow",
+    "missingNodes": "Missing {count} node | Missing {count} nodes",
+    "notChecked": "Not checked"
   },
   "selectionToolbox": {
     "executeButton": {
@@ -4610,7 +4698,14 @@
     "summaryPacks": "{count} node pack | {count} node packs",
     "summaryModels": "{count} model | {count} models",
     "summaryClasses": "{count} node class | {count} node classes",
-    "briefFailed": "The brief for your agent could not be prepared. Try again."
+    "briefFailed": "The brief for your agent could not be prepared. Try again.",
+    "openBuilder": "Open the build wizard",
+    "bundleUnauthorized": "Sign in to your Comfy account again, then try once more.",
+    "bundleTooMany": "You have too many pending uploads. Try again later; they expire after 24 hours.",
+    "bundleTooLarge": "This installation is too large to upload.",
+    "bundleUnavailable": "Could not reach Comfy. Try again later.",
+    "bundleBusy": "Comfy is busy. Try again in a moment.",
+    "bundleRejected": "Comfy rejected the upload. The problem has been reported."
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",
@@ -4971,7 +5066,12 @@
       "applyChanges": "Apply Changes",
       "viewInManager": "View in Manager",
       "collapse": "Collapse",
-      "expand": "Expand"
+      "expand": "Expand",
+      "runsOn": "Runs on:",
+      "andMore": "and {count} more",
+      "noDeploymentRunsIt": "No deployment in this workspace has all of these nodes.",
+      "unsupportedOnBuild": "Not supported on this build: {cause}",
+      "unsupportedOnBuildNoCause": "Not supported on this build"
     },
     "missingModels": {
       "import": "Import",
@@ -5006,6 +5106,9 @@
     "multipleIssueCount": "{count} issue found | {count} issues found",
     "multipleIssuesMessage": "Resolve these issues before running the workflow.",
     "viewDetails": "View details",
+    "runsOn": "Runs on {deployment}",
+    "switchDeployment": "Switch",
+    "moreDeployments": "{count} more",
     "missingNodes": "Some nodes are missing and need to be installed",
     "missingModels": "{count} required model is missing | {count} required models are missing",
     "missingMedia": "Some nodes are missing required inputs"
@@ -5470,6 +5573,9 @@
     "inviteFailed": "Failed to Accept Invite",
     "inviteSsoUnavailable": "Ask your admin to add you",
     "inviteSsoUnavailableDetail": "Invite links can't be accepted from an SSO account yet. Ask a workspace admin to add you to the workspace directly.",
+    "inviteNeedsSignIn": "Sign in to accept this invite",
+    "inviteNeedsSignInDetail": "This browser is signed in, but accepting an invite needs you to sign in here once.",
+    "inviteSignIn": "Sign in",
     "inviteDirectoryManaged": "Your organization's admin manages membership",
     "inviteDirectoryManagedDetail": "This workspace's members are managed through your organization's directory, so invite links can't be used to join it. Ask your organization's admin to add you.",
     "viewWorkspace": "View workspace",
@@ -5781,18 +5887,23 @@
     "freeUseNoticeLabel": "Free use notice",
     "freeUseNotice": "Try your first chat for free!",
     "creditTransitionNotice": "You've used your free agent credits. Further agent activity uses your workspace credits, which may include paid credits.",
-    "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
-    "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
+    "runNotice": "The agent can modify the graph. Use Run permissions in the composer toolbar to control whether it asks before executing.",
+    "runNoticeExpanded": "The agent can modify your workflow. Use Run permissions in the composer toolbar to control whether it asks before executing.",
     "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",
     "targetFollowsVisibleWorkflow": "Target workflow follows the visible tab until you choose a target, reference nodes, or send a message.",
     "viewingDifferentWorkflow": "You’re viewing a different workflow from the target.",
     "showTarget": "Show target",
     "targetWorkflowUnavailable": "The target workflow is no longer available.",
+    "canvasIsEmptyAfterTurn": "This canvas is empty — nothing was added to it. There is nothing here to run, save or export yet.",
     "targetWorkflowOpenFailed": "Couldn’t open the target workflow.",
+    "openingWorkflowChat": "Opening chat for {workflowName}…",
+    "openingChat": "Opening chat…",
+    "followedChatOpenFailed": "Couldn’t open the chat for {workflowName}.",
+    "retryFollowedChat": "Retry opening the chat for {workflowName}",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
     "runApproval": {
-      "lead": "This tool wants to run the workflow:",
-      "leadBound": "This tool wants to run this workflow.",
+      "lead": "Comfy Agent wants to run the workflow:",
+      "leadBound": "Comfy Agent wants to run this workflow.",
       "question": "Do you approve?",
       "thisWorkflow": "this workflow",
       "cancel": "Cancel",
@@ -5851,6 +5962,7 @@
     "historyYesterday": "Yesterday",
     "historyEarlier": "Earlier",
     "historyEmpty": "No conversations yet",
+    "historyIncomplete": "Some chats could not be loaded. Showing the ones we have.",
     "historyOpenFailed": "Could not open. Select this chat to retry.",
     "copyMarkdown": "Copy as markdown",
     "delete": "Delete",
@@ -5963,6 +6075,8 @@
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
     "worked": "Worked",
+    "workedNotConfirmedOnCanvas": "Changes not confirmed on your canvas",
+    "toolNotConfirmedOnCanvas": "{tool} — not confirmed on your canvas",
     "workedForSeconds": "Worked for {seconds} seconds",
     "workedForMinutes": "Worked for {minutes}m {seconds}s",
     "copy": "Copy",
@@ -5992,6 +6106,7 @@
     "coachGraphBody": "You can still edit the graph or switch tabs while the agent is working.",
     "coachHistoryTitle": "Pick up where you left off",
     "coachHistoryBody": "Previous chats are saved here. Open one to review it or continue working with the agent.",
+    "coachHoldNotice": "Your message will send when you finish or skip the tour.",
     "downloadAssets": "Download assets",
     "toolOpenedNewTab": "Opened a new tab",
     "toolOpeningNewTab": "Opening a new tab",
@@ -6011,8 +6126,9 @@
     "targetNavigationUnavailable": "This workflow target is no longer available.",
     "workflowSyncFailedTitle": "This workflow can't sync",
     "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",
-    "workflowSyncFailedDetailCatalogMismatch": "This workflow uses a node catalog that is incompatible with this workspace. Your canvas has been left unchanged.",
+    "workflowSyncFailedDetailCatalogMismatch": "A node in this workflow has changed since the agent last saw it. Your canvas has been left unchanged. Your next message sends your canvas so the agent can rebuild its copy of the workflow.",
     "workflowSyncFailedDetailStaleClient": "This page is out of date, so the agent's changes can't be shown. Reload the page to see them.",
+    "workflowSyncFailedDetailStaleHost": "This page is ahead of the agent service, so the agent's changes can't be shown here yet. Reload the page once the service finishes updating to see them.",
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
@@ -6039,6 +6155,9 @@
       "readDocs": "Read the docs",
       "reject": "Skip for now",
       "accept": "Start using Comfy Agent",
+      "agreeAndContinue": "Agree and continue",
+      "signInNext": "You'll sign in next.",
+      "body2BeforeSignIn": "To build your workflows, Comfy Agent processes some of your data. Please rest assured, your data is never used for AI model training. By clicking Agree and continue, you agree to its usage.",
       "videoPlaceholder": "Video unavailable",
       "loadError": "Could not load your Agent preference. Try again.",
       "signInError": "Could not open sign-in. Please try again.",
@@ -6091,5 +6210,18 @@
       "descriptionTooLong": "Trigger line must be {max} characters or less",
       "bodyRequired": "Instructions are required"
     }
+  },
+  "lateCustomNodes": {
+    "starting": "Custom nodes are starting... {seconds} s",
+    "startingDetail": "Usually about 20 s. Their buttons and menus will show up here on their own.",
+    "stepCreating": "Creating the server for your custom nodes.\nFirst-time setup.",
+    "stepBuilding": "Building the server for your custom nodes.\nFirst-time setup for this version, takes a few minutes.",
+    "stepStarting": "Loading custom nodes.\nThis usually takes under half a minute.",
+    "waitingFor": "Waiting for: {packs}",
+    "waitingBadge": "Waiting for its pack",
+    "ready": "Custom nodes are ready",
+    "failed": "Some custom nodes didn't start",
+    "failedDetail": "Reload the page to turn on: {packs}",
+    "reload": "Reload"
   }
 }

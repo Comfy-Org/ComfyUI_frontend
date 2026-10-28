@@ -2,10 +2,10 @@ import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
-import UnsavedChangesContent from '@/components/dialog/content/setting/keybinding/UnsavedChangesContent.vue'
-import UnsavedChangesHeader from '@/components/dialog/content/setting/keybinding/UnsavedChangesHeader.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
+import UnsavedChangesContent from '@/platform/keybindings/components/UnsavedChangesContent.vue'
+import UnsavedChangesHeader from '@/platform/keybindings/components/UnsavedChangesHeader.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
@@ -114,7 +114,7 @@ export function useKeybindingPresetService() {
   function applyPreset(preset: KeybindingPreset) {
     keybindingStore.resetAllKeybindings()
     for (const binding of preset.unsetBindings) {
-      keybindingStore.unsetKeybinding(new KeybindingImpl(binding))
+      keybindingStore.addUserUnsetKeybinding(new KeybindingImpl(binding))
     }
     for (const binding of preset.newBindings) {
       keybindingStore.addUserKeybinding(new KeybindingImpl(binding))

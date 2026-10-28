@@ -12,7 +12,7 @@
       <div
         v-show="openModel"
         data-testid="nightly-survey-popover"
-        class="fixed right-4 bottom-4 z-10000 w-80 rounded-lg border border-border/50 bg-background p-4 shadow-lg"
+        class="fixed right-4 bottom-4 z-toast w-80 rounded-lg border border-border/50 bg-background p-4 shadow-lg"
       >
         <div class="mb-2 flex items-center justify-end">
           <Button
@@ -21,7 +21,7 @@
             :aria-label="t('g.close')"
             @click="handleDismiss"
           >
-            <i class="icon-[lucide--x] size-4" />
+            <i class="icon-[lucide--x]" />
           </Button>
         </div>
 
@@ -54,7 +54,7 @@
 import { onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 import TypeformEmbed from './TypeformEmbed.vue'
 import type { FeatureSurveyConfig } from './useSurveyEligibility'

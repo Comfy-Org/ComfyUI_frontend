@@ -4,16 +4,16 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
-import type { ReplyAsset } from '../../../utils/replyAssets'
+import { resolveReplyAssetDownload } from '@/workbench/extensions/agent/utils/resolveReplyAssetDownload'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 
 const { markdown, assets = [] } = defineProps<{
   markdown: string
@@ -73,7 +73,7 @@ async function downloadAssets(): Promise<void> {
       class="size-6"
       @click="setVote('up')"
     >
-      <span class="icon-[lucide--thumbs-up] size-3" />
+      <i aria-hidden="true" class="icon-[lucide--thumbs-up] size-3" />
     </Button>
     <Button
       :tooltip="t('agent.notHelpful')"
@@ -85,7 +85,7 @@ async function downloadAssets(): Promise<void> {
       class="size-6"
       @click="setVote('down')"
     >
-      <span class="icon-[lucide--thumbs-down] size-3" />
+      <i aria-hidden="true" class="icon-[lucide--thumbs-down] size-3" />
     </Button>
     <Button
       v-if="assets.length"
@@ -98,7 +98,7 @@ async function downloadAssets(): Promise<void> {
       class="size-6 rounded-lg"
       @click="downloadAssets"
     >
-      <span class="icon-[lucide--download] size-3" />
+      <i aria-hidden="true" class="icon-[lucide--download] size-3" />
     </Button>
     <div
       class="flex h-6 w-14 rounded-lg transition-colors hover:bg-accent hover:text-foreground has-data-[state=open]:bg-accent has-data-[state=open]:text-foreground"
@@ -118,7 +118,8 @@ async function downloadAssets(): Promise<void> {
             "
             @click="copyPlainText()"
           >
-            <span
+            <i
+              aria-hidden="true"
               :class="
                 cn(
                   'size-3',
@@ -145,7 +146,7 @@ async function downloadAssets(): Promise<void> {
             :aria-label="t('agent.copyMarkdown')"
             class="size-6 rounded-l-none rounded-r-lg text-inherit focus-visible:z-10"
           >
-            <span class="icon-[lucide--chevron-down] size-3" />
+            <i aria-hidden="true" class="icon-[lucide--chevron-down] size-3" />
           </Button>
         </template>
       </Menu>

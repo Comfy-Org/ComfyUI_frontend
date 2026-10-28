@@ -9,6 +9,7 @@ import {
   MINIMAP_POINTER_OPTS,
   readMainCanvasOffset
 } from '@e2e/fixtures/utils/minimapUtils'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 function hasCanvasContent(canvas: Locator): Promise<boolean> {
   return canvas.evaluate((el: HTMLCanvasElement) => {
@@ -156,7 +157,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       const { container } = getMinimapLocators(comfyPage)
       await expect(container).toBeVisible()
 
-      await expect(container).toHaveScreenshot('minimap-before-pan.png')
+      await expectElementScreenshot(container, 'minimap-before-pan.png')
 
       await comfyPage.page.evaluate(() => {
         const canvas = window.app!.canvas
@@ -165,7 +166,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
         canvas.ds.offset[1] = -600
         canvas.setDirty(true, true)
       })
-      await expect(container).toHaveScreenshot('minimap-after-pan.png')
+      await expectElementScreenshot(container, 'minimap-after-pan.png')
     }
   )
 
@@ -192,7 +193,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       expect(viewportBox!.x).toBeLessThan(minimapBox!.x + minimapBox!.width)
       expect(viewportBox!.y).toBeLessThan(minimapBox!.y + minimapBox!.height)
 
-      await expect(container).toHaveScreenshot('minimap-with-viewport.png')
+      await expectElementScreenshot(container, 'minimap-with-viewport.png')
     }
   )
 
@@ -427,7 +428,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await comfyPage.canvas.press('Delete')
     await comfyPage.nextFrame()
 
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     // Minimap canvas should be empty — no nodes means nothing to render
     await expect
@@ -506,7 +507,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       await comfyPage.contextMenu.clickMenuItemExact('Unpack Subgraph')
       await comfyPage.contextMenu.waitForHidden()
 
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+      await comfyPage.expectNodeCount(2)
       await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
       await expect(
         comfyPage.vueNodes.getNodeLocator(subgraphNodeId)

@@ -11,7 +11,7 @@ import { t } from '@/i18n'
 import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { isCloud } from '@/platform/distribution/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
-import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
 import {
   MAX_SCHEDULED_REFRESH_RETRIES,
@@ -33,6 +33,7 @@ const WorkspaceIdentitySchema = zWorkspaceWithRole.pick({
 const WorkspaceTokenResponseSchema = z.object({
   token: z.string(),
   expires_at: z.string(),
+  user_id: z.string().optional(),
   workspace: zWorkspaceWithRole.pick({ id: true, name: true, type: true }),
   role: zWorkspaceWithRole.shape.role,
   permissions: z.array(z.string())
@@ -374,7 +375,7 @@ export function createLegacyWorkspaceTokenRail({
     const firebaseToken = await getIdToken()
     if (!firebaseToken) throw notAuthenticatedError()
 
-    const response = await fetch(workspaceApiUrl('/auth/token'), {
+    const response = await fetch(ingestApiUrl('/auth/token'), {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${firebaseToken}`,
