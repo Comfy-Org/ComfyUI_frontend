@@ -94,7 +94,9 @@ test.describe('Workflow failure recovery', () => {
     }) => {
       const tab = comfyPage.menu.workflowsTab
       await tab.getPersistedItem('stable').click()
-      await expect.poll(() => tab.getActiveWorkflowName()).toBe('stable')
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toBe('workflows/stable.json')
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
       const request = comfyPage.page.waitForRequest(
         workflowRequest('GET', `${name}.json`)
@@ -104,7 +106,9 @@ test.describe('Workflow failure recovery', () => {
       expect((await request).method()).toBe('GET')
       await comfyPage.workflow.waitForWorkflowIdle()
 
-      expect(await tab.getActiveWorkflowName()).toBe('stable')
+      expect(await comfyPage.workflow.getActiveWorkflowPath()).toBe(
+        'workflows/stable.json'
+      )
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
       expect(await tab.getOpenedWorkflowNames()).not.toContain(name)
     })
@@ -115,7 +119,9 @@ test.describe('Workflow failure recovery', () => {
   }) => {
     const tab = comfyPage.menu.workflowsTab
     await tab.getPersistedItem('stable').click()
-    await expect.poll(() => tab.getActiveWorkflowName()).toBe('stable')
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toBe('workflows/stable.json')
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
     await comfyPage.page.evaluate(() => {
       const graph = window.app?.rootGraph
@@ -144,8 +150,9 @@ test.describe('Workflow failure recovery', () => {
         )
       )
       .toBe('true')
-    test.fail(true, 'Graph configuration failure recovery is not implemented')
-    expect(await tab.getActiveWorkflowName()).toBe('stable')
+    expect(await comfyPage.workflow.getActiveWorkflowPath()).toBe(
+      'workflows/stable.json'
+    )
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
   })
 
@@ -230,8 +237,8 @@ test.describe('Workflow failure recovery', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.menu.workflowsTab.getPersistedItem('stable').click()
       await expect
-        .poll(() => comfyPage.menu.workflowsTab.getActiveWorkflowName())
-        .toBe('stable')
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toBe('workflows/stable.json')
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
       await comfyPage.page.evaluate(() => {
         window.app!.graph.add(
@@ -280,9 +287,9 @@ test.describe('Workflow failure recovery', () => {
       await comfyPage.waitForAppReady()
       await comfyPage.menu.workflowsTab.open()
 
-      await expect(
-        comfyPage.menu.workflowsTab.activeWorkflowLabel
-      ).toContainText('stable', { timeout: 5000 })
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toBe('workflows/stable.json')
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(2)
     })
   })

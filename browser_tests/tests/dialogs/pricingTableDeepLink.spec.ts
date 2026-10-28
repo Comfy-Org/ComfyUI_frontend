@@ -785,7 +785,10 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       })
     })
 
-    test('retains the operation and stops checkout', async ({ page }) => {
+    test('retains the operation and stops checkout', async ({
+      page,
+      toast
+    }) => {
       await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
       await cloudAppExpect(
         page.getByRole('heading', { name: 'Confirm your payment' })
@@ -793,7 +796,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       await page.getByRole('button', { name: 'Subscribe to Creator' }).click()
 
       await expect(
-        page.locator('.p-toast-message.p-toast-message-error').filter({
+        toast.toastErrors.filter({
           hasText:
             'Payment options are unavailable. Please refresh and try again.'
         })

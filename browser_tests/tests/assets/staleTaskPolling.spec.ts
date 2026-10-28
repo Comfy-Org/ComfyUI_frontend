@@ -34,17 +34,13 @@ test.describe('Stale background task polling', { tag: ['@ui'] }, () => {
         await expect.poll(() => taskRequests.length).toBe(1)
         await comfyPage.page.clock.fastForward(10_000)
         await expect.poll(() => taskRequests.length).toBe(2)
-        await comfyPage.page.clock.fastForward(10_000)
-        await expect.poll(() => taskRequests.length).toBe(3)
         expect(taskRequests.map((url) => new URL(url).pathname)).toEqual([
-          `/api/tasks/${runningDownload.task_id}`,
           `/api/tasks/${runningDownload.task_id}`,
           `/api/tasks/${runningDownload.task_id}`
         ])
-        test.fail(true, 'Missing downloads are not marked as failed')
         await expect(
           downloadToast.getByText('Failed', { exact: true })
-        ).toBeVisible({ timeout: 1000 })
+        ).toBeVisible()
       })
 
       await test.step('Accept late completion and stop polling', async () => {
@@ -62,7 +58,7 @@ test.describe('Stale background task polling', { tag: ['@ui'] }, () => {
         await expect(
           downloadToast.getByText('missing-model.safetensors')
         ).toHaveCount(0)
-        expect(taskRequests).toHaveLength(3)
+        expect(taskRequests).toHaveLength(2)
       })
     })
   })
@@ -74,7 +70,7 @@ test.describe('Stale background task polling', { tag: ['@ui'] }, () => {
       }, runningExport)
     })
 
-    test('preserves a missing export after a late completion event', async ({
+    test('recovers a missing export after a late completion event', async ({
       comfyPage,
       staleTasks: { exportToast, taskRequests, downloadRequests }
     }) => {
@@ -95,37 +91,37 @@ test.describe('Stale background task polling', { tag: ['@ui'] }, () => {
         await expect.poll(() => taskRequests.length).toBe(1)
         await comfyPage.page.clock.fastForward(10_000)
         await expect.poll(() => taskRequests.length).toBe(2)
-        await comfyPage.page.clock.fastForward(10_000)
-        await expect.poll(() => taskRequests.length).toBe(3)
         expect(taskRequests.map((url) => new URL(url).pathname)).toEqual([
-          `/api/tasks/${runningExport.task_id}`,
           `/api/tasks/${runningExport.task_id}`,
           `/api/tasks/${runningExport.task_id}`
         ])
-        test.fail(true, 'Missing exports are not marked as failed')
         await expect(
-          exportToast.getByText('Export failed', { exact: true })
-        ).toBeVisible({ timeout: 1000 })
+          exportToast.getByText('1 export failed', { exact: true })
+        ).toBeVisible()
         await expect(
           exportToast.getByText('2/7', { exact: true })
         ).toBeVisible()
         expect(downloadRequests).toHaveLength(0)
       })
 
-      await test.step('Ignore late completion without downloading or polling', async () => {
+      await test.step('Download the completed export without resuming polling', async () => {
+        const downloadPromise = comfyPage.page.waitForEvent('download')
         await comfyPage.page.evaluate((data) => {
           window.app!.api.dispatchCustomEvent('asset_export', data)
         }, lateExport)
+        const download = await downloadPromise
+        expect(download.suggestedFilename()).toBe('late.zip')
         await comfyPage.page.clock.fastForward(20_000)
 
         await expect(
-          exportToast.getByText('Export failed', { exact: true })
+          exportToast.getByText('All exports completed', { exact: true })
         ).toBeVisible()
         await expect(
-          exportToast.getByText('2/7', { exact: true })
+          exportToast.getByText('7/7', { exact: true })
         ).toBeVisible()
-        expect(downloadRequests).toHaveLength(0)
-        expect(taskRequests).toHaveLength(3)
+        await expect(exportToast.getByText('late.zip').first()).toBeVisible()
+        expect(downloadRequests).toHaveLength(1)
+        expect(taskRequests).toHaveLength(2)
       })
     })
   })
