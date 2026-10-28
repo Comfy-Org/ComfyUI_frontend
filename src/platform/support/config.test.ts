@@ -87,3 +87,32 @@ describe('buildFeedbackHiddenFields', () => {
     )
   })
 })
+
+describe('buildAccountDeletionUrl', () => {
+  const formUrl =
+    'https://comfysupport.portal.usepylon.com/forms/request-account-deletion'
+
+  it.for([
+    {
+      known: 'every detail',
+      user: { name: 'Ada Lovelace', email: 'ada@example.com', id: 'uid-123' },
+      expected: `${formUrl}?name=Ada+Lovelace&email=ada%40example.com&comfy_cloud_user_id=uid-123`
+    },
+    {
+      known: 'only the email',
+      user: { name: undefined, email: 'ada@example.com', id: null },
+      expected: `${formUrl}?email=ada%40example.com`
+    },
+    {
+      known: 'no details',
+      user: { name: '', email: null, id: undefined },
+      expected: formUrl
+    }
+  ])(
+    'prefills the Pylon form fields when $known is known',
+    async ({ user, expected }) => {
+      const { buildAccountDeletionUrl } = await import('./config')
+      expect(buildAccountDeletionUrl(user)).toBe(expected)
+    }
+  )
+})
