@@ -9,7 +9,6 @@ export enum ServerFeatureFlag {
   ASSET_DELETION_ENABLED = 'asset_deletion_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
-  LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   PARTNER_NODE_GOVERNANCE_ENABLED = 'partner_node_governance_enabled',
   PARTNER_RUN_GATE_ENABLED = 'partner_run_gate_enabled',
   PARTNER_NODE_TOKEN = 'partner_node_token',
@@ -36,7 +35,6 @@ export enum ServerFeatureFlag {
   AUTO_TOP_UP_ENABLED = 'auto_top_up_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
-  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
   AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience',
   AGENT = 'agent'
 }

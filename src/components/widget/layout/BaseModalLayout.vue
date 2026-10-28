@@ -58,7 +58,7 @@
               :aria-label="t('g.showRightPanel')"
               @click="toggleRightPanel"
             >
-              <i class="icon-[lucide--panel-right] size-4" />
+              <i class="icon-[lucide--panel-right]" />
             </Button>
             <Button
               size="lg"
@@ -121,7 +121,7 @@
               :aria-label="t('g.hideRightPanel')"
               @click="toggleRightPanel"
             >
-              <i class="icon-[lucide--panel-right-close] size-4" />
+              <i class="icon-[lucide--panel-right-close]" />
             </Button>
             <Button
               size="lg"
@@ -147,8 +147,8 @@ import { useBreakpoints } from '@vueuse/core'
 import { computed, inject, ref, useSlots, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'

@@ -19,7 +19,6 @@ import { useAuthStore } from '@/stores/authStore'
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const CANVAS_GRAPH = { last_node_id: 1, nodes: [{ id: 1, type: 'KSampler' }] }
 

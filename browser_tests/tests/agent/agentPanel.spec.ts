@@ -653,7 +653,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const longestItem = menu.getByRole('menuitem', {
       name: enMessages.agent.addFromAssets
     })
-    const icon = longestItem.locator('span').first()
+    const icon = longestItem.locator('[class*="icon-["]')
     const label = longestItem.getByText(enMessages.agent.addFromAssets, {
       exact: true
     })

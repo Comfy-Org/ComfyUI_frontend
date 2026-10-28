@@ -33,7 +33,7 @@
             ring-class="ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
           />
           <i
-            class="icon-[lucide--chevron-down] size-3 shrink-0 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
+            class="icon-[lucide--chevron-down] size-3 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
             aria-hidden="true"
           />
         </Button>
@@ -56,8 +56,8 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'

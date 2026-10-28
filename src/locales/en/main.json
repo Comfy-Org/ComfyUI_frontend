@@ -302,7 +302,7 @@
     "cancelled": "Cancelled",
     "agentWorking": "Agent is working on this workflow",
     "agentModified": "Agent updated this workflow",
-    "agentNeedsApproval": "Agent needs your approval",
+    "agentNeedsApproval": "Agent is waiting for your answer",
     "job": "Job",
     "asset": "{count} asset | {count} assets",
     "untitled": "Untitled",
@@ -381,6 +381,7 @@
     "recordingFailedToStart": "Could not start recording",
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
+    "agentInputNeededShort": "Input needed",
     "duplicate": "Duplicate",
     "itemsCopiedToClipboard": "Items copied to clipboard",
     "selectItemsToCopy": "Select items to copy",
@@ -2822,6 +2823,7 @@
         "orgNotAttached": "Your organization's Comfy workspace isn't set up yet. Contact your administrator.",
         "emailDomainNotAllowed": "Your organization's sign-in returned an email outside its domains. Ask your administrator to use your work email in the directory.",
         "orgMismatch": "You signed in to a different organization than the one for this email. Try again with your work account.",
+        "seatLimitReached": "Your organization has used all its Comfy seats. Ask your administrator to free a seat or add more.",
         "suspended": "Your organization has removed your access. Contact your administrator.",
         "accountDeleted": "This account is scheduled for deletion. If this is a mistake, email support{'@'}comfy.org.",
         "accountConflict": "More than one Comfy account uses this email. Email support{'@'}comfy.org for help.",
@@ -4050,6 +4052,7 @@
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
+    "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
     "failedToSwitch": "Failed to switch workspace"
   },
   "deploymentSwitcher": {
@@ -5066,7 +5069,9 @@
       "expand": "Expand",
       "runsOn": "Runs on:",
       "andMore": "and {count} more",
-      "noDeploymentRunsIt": "No deployment in this workspace has all of these nodes."
+      "noDeploymentRunsIt": "No deployment in this workspace has all of these nodes.",
+      "unsupportedOnBuild": "Not supported on this build: {cause}",
+      "unsupportedOnBuildNoCause": "Not supported on this build"
     },
     "missingModels": {
       "import": "Import",
@@ -5957,6 +5962,7 @@
     "historyYesterday": "Yesterday",
     "historyEarlier": "Earlier",
     "historyEmpty": "No conversations yet",
+    "historyIncomplete": "Some chats could not be loaded. Showing the ones we have.",
     "historyOpenFailed": "Could not open. Select this chat to retry.",
     "copyMarkdown": "Copy as markdown",
     "delete": "Delete",

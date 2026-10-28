@@ -13,7 +13,6 @@ import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/u
 import OnboardingCoach from './OnboardingCoach.vue'
 
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const telemetry = () => vi.mocked(useTelemetry())!
 

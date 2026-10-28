@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import {
   getMediaAssetGridColumns,

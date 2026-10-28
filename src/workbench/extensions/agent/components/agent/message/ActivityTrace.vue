@@ -81,10 +81,9 @@ function rowSignature(row: ActivityRow): string {
       :class="cn('flex gap-2 px-2', live && 'agent-row-enter')"
     >
       <div class="flex w-4 shrink-0 flex-col items-center">
-        <span
-          :class="
-            cn('mt-0.5 size-4 shrink-0 text-muted-foreground', glyphOf(row))
-          "
+        <i
+          aria-hidden="true"
+          :class="cn('mt-0.5 text-muted-foreground', glyphOf(row))"
         />
         <span
           v-if="index < rows.length - 1"

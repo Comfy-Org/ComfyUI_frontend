@@ -19,8 +19,8 @@ import type {
 } from '@comfyorg/account-core/session'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import type { BillingSdk, BillingSdkOptions } from './createBillingSdk'
-import { createBillingSdk } from './createBillingSdk'
+import type { BillingSdk, BillingSdkOptions } from '@comfyorg/billing-core/sdk'
+import { createBillingSdk } from '@comfyorg/billing-core/sdk'
 
 const BASE = 'https://cloud.test/api'
 
