@@ -144,6 +144,60 @@ describe('useReconnectQueueRefresh', () => {
       ])
     })
 
+    it('sends an expanded node output to the node it is displayed on', async () => {
+      followRun('job-1')
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...makeJob('job-1', 'completed'),
+        outputs: { '15.0.0.3': { images: [image] }, '9': { images: [image] } },
+        execution_meta: {
+          '15.0.0.3': {
+            node_id: '5',
+            display_node: '15',
+            parent_node: '15',
+            real_node_id: '5'
+          },
+          '9': { node_id: '9', display_node: '9' }
+        }
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(
+        replayedExecutedFrames().map(([, detail]) => [
+          detail?.node,
+          detail?.display_node
+        ])
+      ).toEqual([
+        ['9', '9'],
+        ['15.0.0.3', '15']
+      ])
+    })
+
+    it.for([
+      ['no metadata', undefined],
+      ['malformed metadata', 'not-an-object'],
+      ['metadata without a display node', { '15.0.0.3': { node_id: '5' } }]
+    ] as const)(
+      'falls back to the output key when the job detail has %s',
+      async ([, executionMeta]) => {
+        followRun('job-1')
+        vi.mocked(api.getJobDetail).mockResolvedValue({
+          ...makeJob('job-1', 'completed'),
+          outputs: { '15.0.0.3': { images: [image] } },
+          execution_meta: executionMeta
+        })
+
+        await useReconnectQueueRefresh()()
+
+        expect(replayedExecutedFrames()).toEqual([
+          [
+            'executed',
+            expect.objectContaining({ node: '15.0.0.3', display_node: '15.0.0.3' })
+          ]
+        ])
+      }
+    )
+
     it('lets the terminal event clear the run after its output event', async () => {
       followRun('job-1')
       vi.mocked(api.getJobDetail).mockResolvedValue(finishedJob)
