@@ -12,10 +12,6 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/telemetry/__mocks__/**",
-      "role": "application"
-    },
-    {
       "path": "src/platform/telemetry/assertFailureReporter.test.ts",
       "role": "application"
     },
@@ -76,19 +72,7 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/telemetry/redactTelemetryUrls.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/telemetry/reportError.sentry.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/reportError.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/reportError.ts",
       "role": "application"
     },
     {
@@ -131,7 +115,7 @@
     {
       "name": "reportError routes each failure once to the sinks enabled for the distribution and host",
       "checks": [
-        "src/platform/telemetry/reportError.test.ts",
+        "packages/telemetry-contract/src/reportError.test.ts",
         "src/platform/telemetry/reportError.sentry.test.ts",
         "src/platform/telemetry/assertFailureReporter.test.ts",
         "src/platform/telemetry/assetLoadErrorReporting.test.ts"

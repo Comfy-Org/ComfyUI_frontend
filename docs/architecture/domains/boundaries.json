@@ -1152,7 +1152,6 @@
           "src/platform/telemetry/datadogRumBeforeSend.test.ts",
           "src/platform/telemetry/datadogRumBeforeSend.ts",
           "src/platform/telemetry/redactTelemetryUrls.test.ts",
-          "src/platform/telemetry/redactTelemetryUrls.ts",
           "src/platform/telemetry/sentryBeforeSend.test.ts",
           "src/platform/telemetry/sentryBeforeSend.ts",
           "src/platform/telemetry/thirdPartyErrorNoise.test.ts",
@@ -1170,9 +1169,7 @@
           "src/platform/telemetry/assertFailureReporter.ts",
           "src/platform/telemetry/assetLoadErrorReporting.test.ts",
           "src/platform/telemetry/assetLoadErrorReporting.ts",
-          "src/platform/telemetry/reportError.sentry.test.ts",
-          "src/platform/telemetry/reportError.test.ts",
-          "src/platform/telemetry/reportError.ts"
+          "src/platform/telemetry/reportError.sentry.test.ts"
         ]
       },
       {
@@ -3661,10 +3658,6 @@
         "patterns": ["src/composables/__mocks__/**"]
       },
       {
-        "name": "error-reporting/application/outer-1",
-        "patterns": ["src/platform/telemetry/__mocks__/**"]
-      },
-      {
         "name": "extension-manager/application/outer-1",
         "patterns": ["src/workbench/extensions/manager/**"]
       },
@@ -4160,7 +4153,6 @@
           "workflow-management/infrastructure",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
-          "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "unclassified"
         ]
@@ -4193,7 +4185,6 @@
           "workflow-management/infrastructure",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
-          "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "unclassified"
         ]
@@ -4226,7 +4217,6 @@
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
-          "error-reporting/application/outer-1",
           "extension-runtime/presentation/outer-1",
           "workflow-management/presentation/outer-1",
           "workbench-shell/presentation/outer-2",
@@ -4276,7 +4266,6 @@
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
-          "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
           "workflow-management/presentation/outer-1",
@@ -4992,7 +4981,6 @@
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
-          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
@@ -5004,7 +4992,6 @@
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
-          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
@@ -7081,7 +7068,6 @@
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
-          "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
           "workflow-management/presentation/outer-1",
@@ -7360,18 +7346,6 @@
           "error-handling/domain",
           "error-handling/application",
           "error-handling/application/outer-1",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "error-reporting/application/outer-1",
-        "allow": [
-          "ingest-api/domain/public",
-          "ingest-api/infrastructure/public",
-          "error-reporting/domain",
-          "error-reporting/application",
-          "error-reporting/infrastructure",
-          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
@@ -8370,7 +8344,6 @@
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
           "error-handling/application/outer-1",
-          "error-reporting/application/outer-1",
           "extension-manager/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
