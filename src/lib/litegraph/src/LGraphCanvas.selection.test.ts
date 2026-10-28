@@ -10,8 +10,9 @@ import {
   pointerEvent,
   selectedTitles
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
-import type { Positionable, Rect } from '@/lib/litegraph/src/interfaces'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import {
   LGraph,
   LGraphCanvas,
@@ -25,8 +26,8 @@ import {
   selectableKeyOf
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useSelectionStore } from '@/core/selection/selectionStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'

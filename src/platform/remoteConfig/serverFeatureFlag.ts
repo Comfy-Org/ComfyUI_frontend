@@ -9,7 +9,6 @@ export enum ServerFeatureFlag {
   ASSET_DELETION_ENABLED = 'asset_deletion_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
-  LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   PARTNER_NODE_GOVERNANCE_ENABLED = 'partner_node_governance_enabled',
   PARTNER_RUN_GATE_ENABLED = 'partner_run_gate_enabled',
   PARTNER_NODE_TOKEN = 'partner_node_token',

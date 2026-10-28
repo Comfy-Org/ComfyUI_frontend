@@ -24,8 +24,6 @@ import { askIdOf } from '@/workbench/extensions/agent/services/agent/agentMessag
 import type { TurnTab } from './agentConversationStore'
 import { useAgentConversationStore } from './agentConversationStore'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string): AgentChatEvent =>
   chat({
@@ -2568,7 +2566,16 @@ describe('useAgentConversationStore', () => {
 
     it('reports an ask kind the panel has no card for', () => {
       const store = useAgentConversationStore()
+      const tab = fromPartial<LoadedComfyWorkflow>({
+        path: 'workflows/a.json',
+        instanceId: 'workflows/a.json'
+      })
+      useWorkflowStore().attachWorkflow(tab, 0)
       store.setThreadId('th')
+      store.setTurnTabResolver(() => ({
+        status: 'known',
+        workflowInstanceId: 'workflows/a.json'
+      }))
       store.startTurn(T1)
       store.ingest(delta('t1', 'building your workflow'))
 
@@ -2587,6 +2594,10 @@ describe('useAgentConversationStore', () => {
           })
         })
       )
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+      expect(store.awaitingApproval).toBe(false)
     })
   })
 
@@ -2765,6 +2776,122 @@ describe('useAgentConversationStore', () => {
         expect(store.turnTabs).toEqual([
           { path: 'workflows/a.json', awaitingApproval: false }
         ])
+      }
+    )
+
+    const pendingAsks = [
+      {
+        kind: 'ask_user',
+        stashed: false,
+        overrides: {
+          kind: 'ask_user',
+          prompt: 'Allow network access to github.com?',
+          options: [
+            { id: 'allow', label: 'Allow' },
+            { id: 'deny', label: 'Deny' }
+          ]
+        }
+      },
+      {
+        kind: 'ask_user',
+        stashed: true,
+        overrides: {
+          kind: 'ask_user',
+          prompt: 'Allow network access to github.com?',
+          options: [
+            { id: 'allow', label: 'Allow' },
+            { id: 'deny', label: 'Deny' }
+          ]
+        }
+      },
+      {
+        kind: 'delete_approval',
+        stashed: false,
+        overrides: {
+          kind: 'delete_approval',
+          prompt: 'Delete 1 node you added?',
+          options: [
+            { id: 'delete', label: 'Delete' },
+            { id: 'keep', label: 'Keep' }
+          ],
+          context: {
+            action: 'delete_nodes',
+            nodes: [{ id: '7', title: 'Load Video' }]
+          }
+        }
+      }
+    ]
+
+    it.for(pendingAsks)(
+      'awaits approval for a $kind card until it is answered (stashed: $stashed)',
+      ({ stashed, overrides }) => {
+        openTab('workflows/a.json')
+        const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
+
+        store.ingest(runApproval('t1', 'ask-1', overrides))
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: true }
+        ])
+        expect(store.awaitingApproval).toBe(true)
+
+        store.setAskAnswering('ask-1', true)
+        expect(store.awaitingApproval).toBe(false)
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: false }
+        ])
+      }
+    )
+
+    it.for([
+      { turn: 'live', stashed: false },
+      { turn: 'stashed', stashed: true }
+    ])(
+      'stops awaiting approval when the asking turn ends ($turn turn)',
+      ({ stashed }) => {
+        openTab('workflows/a.json')
+        const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
+        store.ingest(runApproval('t1', 'ask-1'))
+
+        store.ingest(done('t1'))
+
+        expect(store.awaitingApproval).toBe(false)
+      }
+    )
+
+    it('keeps awaiting approval while an earlier background chat still waits', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'ask-1'))
+      store.stashActiveTurn()
+      store.startTurn(T2)
+      store.ingest(runApproval('t2', 'ask-2'))
+      store.stashActiveTurn()
+      store.setThreadId('th-other')
+      store.hydrate([])
+
+      store.retireAsk('ask-2', { status: 'retired' }, 'th')
+      expect(store.awaitingApproval).toBe(true)
+
+      store.retireAsk('ask-1', { status: 'retired' }, 'th')
+      expect(store.awaitingApproval).toBe(false)
+    })
+
+    it.for([
+      { turn: 'live', stashed: false },
+      { turn: 'stashed', stashed: true }
+    ])(
+      'awaits approval for a turn whose tab is not open ($turn turn)',
+      ({ stashed }) => {
+        const store = storeWithTurnOn({ status: 'none' }, stashed)
+
+        store.ingest(runApproval('t1', 'ask-1'))
+
+        expect(store.turnTabs).toEqual([])
+        expect(store.awaitingApproval).toBe(true)
+
+        store.retireAsk('ask-1', { status: 'retired' }, 'th')
+        expect(store.awaitingApproval).toBe(false)
       }
     )
 

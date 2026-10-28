@@ -11,12 +11,12 @@ import {
   LGraph,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import { usePainter } from './usePainter'
 
@@ -331,11 +331,26 @@ describe('usePainter', () => {
     })
 
     it('sets isImageInputConnected to true when input is connected', () => {
+      const { node } = makePaintNode()
+      node.addInput('image', 'IMAGE')
       mockIsInputConnected.mockReturnValue(true)
 
       const { painter } = mountPainter()
 
       expect(painter.isImageInputConnected.value).toBe(true)
+    })
+
+    it('finds the image input by name when it is not the first slot', () => {
+      const { node } = makePaintNode()
+      node.addInput('mask', 'MASK')
+      node.addInput('image', 'IMAGE')
+      mockIsInputConnected.mockReturnValue(true)
+
+      const { painter } = mountPainter()
+
+      expect(painter.isImageInputConnected.value).toBe(true)
+      expect(mockIsInputConnected).toHaveBeenCalledWith(1)
+      expect(mockGetInputNode).toHaveBeenCalledWith(1)
     })
   })
 

@@ -13,7 +13,7 @@
       @click="$emit('next')"
     >
       {{ $t('comfyHubPublish.next') }}
-      <i class="icon-[lucide--chevron-right] size-4" />
+      <i class="icon-[lucide--chevron-right]" />
     </Button>
     <Button
       v-else
@@ -25,10 +25,7 @@
     >
       <i
         :class="
-          cn(
-            'size-4',
-            isUpdate ? 'icon-[lucide--refresh-cw]' : 'icon-[lucide--upload]'
-          )
+          isUpdate ? 'icon-[lucide--refresh-cw]' : 'icon-[lucide--upload]'
         "
       />
       {{
@@ -41,8 +38,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Button from '@comfyorg/design-system/button/Button'
 
 defineProps<{

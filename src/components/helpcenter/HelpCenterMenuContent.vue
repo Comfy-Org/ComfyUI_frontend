@@ -34,11 +34,11 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="ml-auto icon-[lucide--external-link] size-4 text-primary"
+            class="ml-auto icon-[lucide--external-link] text-primary"
           />
           <i
             v-if="menuItem.key === 'more'"
-            class="pi pi-chevron-right ml-auto"
+            class="ml-auto icon-[lucide--chevron-right]"
           />
         </button>
       </nav>
@@ -140,13 +140,16 @@
         role="status"
         aria-live="polite"
       >
-        <i class="pi pi-spin pi-spinner help-menu-icon" aria-hidden="true" />
+        <i
+          class="help-menu-icon icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none"
+          aria-hidden="true"
+        />
         <span>{{ $t('helpCenter.loadingReleases') }}</span>
       </div>
 
       <!-- No Releases State -->
       <div v-else class="help-menu-item" role="status">
-        <i class="pi pi-info-circle help-menu-icon" aria-hidden="true" />
+        <i class="help-menu-icon icon-[lucide--info]" aria-hidden="true" />
         <span>{{ $t('helpCenter.noRecentReleases') }}</span>
       </div>
     </section>

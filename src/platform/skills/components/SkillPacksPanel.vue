@@ -14,7 +14,7 @@
         {{ $t('skillPacks.yourPacks') }}
       </h3>
       <Button @click="openCreateDialog">
-        <i class="mr-1 icon-[lucide--plus] size-4" />
+        <i class="mr-1 icon-[lucide--plus]" />
         {{ $t('skillPacks.addPack') }}
       </Button>
     </div>
@@ -112,6 +112,7 @@ function confirmDelete(pack: SkillPack) {
       promptText: t('skillPacks.deleteConfirmMessage', { name: pack.name })
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.delete'),
       confirmVariant: 'destructive',
       onCancel: () => dialogStore.closeDialog(dialog),

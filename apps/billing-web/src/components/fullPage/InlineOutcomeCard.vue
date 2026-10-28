@@ -37,10 +37,7 @@ onMounted(() => {
     class="flex flex-col gap-2 rounded-lg bg-muted p-4 text-sm/5 text-foreground focus-visible:outline-none"
   >
     <p class="m-0 flex items-center gap-2 font-medium">
-      <i
-        class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning"
-        aria-hidden="true"
-      />
+      <i class="icon-[lucide--circle-alert] text-warning" aria-hidden="true" />
       {{ t(`checkout.fullPage.outcome.${outcome.kind}.title`) }}
     </p>
     <p class="m-0 text-muted-foreground">

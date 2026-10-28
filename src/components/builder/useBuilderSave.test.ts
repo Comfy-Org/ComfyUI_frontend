@@ -315,7 +315,6 @@ describe('useBuilderSave', () => {
       const onSave = openSaveDialog()
       await onSave('new-name', false)
       const [options] = vi.mocked(showConfirmDialog).mock.calls[0]
-      assert.exists(options?.footerProps)
       const { onConfirm, onCancel } = options.footerProps
       assert(typeof onConfirm === 'function')
       assert(typeof onCancel === 'function')

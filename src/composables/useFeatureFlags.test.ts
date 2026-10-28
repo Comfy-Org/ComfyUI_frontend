@@ -484,78 +484,6 @@ describe('useFeatureFlags', () => {
     })
   })
 
-  describe('linearToggleEnabled', () => {
-    afterEach(() => {
-      vi.mocked(distributionTypes).isNightly = false
-      remoteConfig.value = {}
-    })
-
-    it('should return true when isNightly is true', () => {
-      vi.mocked(distributionTypes).isNightly = true
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (_path, defaultValue) => defaultValue
-      )
-
-      const { flags } = useFeatureFlags()
-      expect(flags.linearToggleEnabled).toBe(true)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
-        ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
-        true
-      )
-    })
-
-    it('should check remote config and server feature when isNightly is false', () => {
-      vi.mocked(distributionTypes).isNightly = false
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) => {
-          if (path === ServerFeatureFlag.LINEAR_TOGGLE_ENABLED) return true
-          return defaultValue
-        }
-      )
-
-      const { flags } = useFeatureFlags()
-      expect(flags.linearToggleEnabled).toBe(true)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
-        ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
-        false
-      )
-    })
-
-    it('should return false when isNightly is false and flag is disabled', () => {
-      vi.mocked(distributionTypes).isNightly = false
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (_path, defaultValue) => defaultValue
-      )
-
-      const { flags } = useFeatureFlags()
-      expect(flags.linearToggleEnabled).toBe(false)
-    })
-
-    it('lets a remote config false turn off the nightly default', () => {
-      vi.mocked(distributionTypes).isNightly = true
-      remoteConfig.value = { linear_toggle_enabled: false }
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (_path, defaultValue) => defaultValue
-      )
-
-      const { flags } = useFeatureFlags()
-      expect(flags.linearToggleEnabled).toBe(false)
-    })
-
-    it('lets a served server false turn off the nightly default', () => {
-      vi.mocked(distributionTypes).isNightly = true
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) =>
-          path === ServerFeatureFlag.LINEAR_TOGGLE_ENABLED
-            ? false
-            : defaultValue
-      )
-
-      const { flags } = useFeatureFlags()
-      expect(flags.linearToggleEnabled).toBe(false)
-    })
-  })
-
   describe('nodeLibraryEssentialsEnabled', () => {
     beforeEach(() => {
       vi.mocked(distributionTypes).isNightly = true
@@ -1201,7 +1129,6 @@ describe('useFeatureFlags', () => {
   describe('session override precedence', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
-      vi.mocked(distributionTypes).isNightly = false
       remoteConfigState.value = 'unloaded'
       cachedBillingControlEnabled.value = undefined
       remoteConfig.value = {}
@@ -1232,18 +1159,6 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
-    })
-
-    it('turns the linear toggle off against an enabled remote config', () => {
-      vi.mocked(distributionTypes).isNightly = true
-      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
-        flagKey === ServerFeatureFlag.LINEAR_TOGGLE_ENABLED ? false : undefined
-      )
-      remoteConfig.value = { linear_toggle_enabled: true }
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
-
-      const { flags } = useFeatureFlags()
-      expect(flags.linearToggleEnabled).toBe(false)
     })
 
     it('turns the node library essentials tab off against an enabled remote config', () => {

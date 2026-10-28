@@ -5858,7 +5858,6 @@
         "onHold": "Varsayılan ödeme yöntemi yok. Otomatik kredi yüklemeyi sürdürmek için bir tane ayarlayın.",
         "paused": "Aylık sınıra ulaşıldı. {date} tarihinde devam eder.",
         "pausedNoDate": "Aylık sınıra ulaşıldı.",
-        "rule": "Bakiye {threshold} kredinin altına düştüğünde {amount} ({credits} kredi) ekler.",
         "status": {
           "failed": "Başarısız",
           "off": "Kapalı",

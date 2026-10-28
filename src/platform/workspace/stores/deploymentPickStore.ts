@@ -9,10 +9,8 @@ import {
   DEPLOYMENT_LISTING_BACKSTOP_MS,
   DEPLOYMENT_LISTING_RETRY_DELAYS_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import {
   hasDeploymentLink,
   readDeploymentHint,
