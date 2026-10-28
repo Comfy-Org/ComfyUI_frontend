@@ -221,7 +221,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
     await maskEditor.drawStrokeAndExpectPixels(dialog)
 
-    const undoButton = dialog.locator('button[title="Undo"]')
+    const undoButton = dialog.getByRole('button', { name: 'Undo' })
     await expect(undoButton).toBeVisible()
     await undoButton.click()
 
@@ -233,12 +233,12 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
     await maskEditor.drawStrokeAndExpectPixels(dialog)
 
-    const undoButton = dialog.locator('button[title="Undo"]')
+    const undoButton = dialog.getByRole('button', { name: 'Undo' })
     await undoButton.click()
 
     await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(0)
 
-    const redoButton = dialog.locator('button[title="Redo"]')
+    const redoButton = dialog.getByRole('button', { name: 'Redo' })
     await expect(redoButton).toBeVisible()
     await redoButton.click()
 
@@ -293,7 +293,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     expect(dataBefore).not.toBeNull()
     const pixelsBefore = dataBefore!.nonTransparentPixels
 
-    const invertButton = dialog.getByRole('button', { name: 'Invert' })
+    const invertButton = dialog.getByRole('button', { name: 'Invert Mask' })
     await expect(invertButton).toBeVisible()
     await invertButton.click()
 

@@ -9,41 +9,14 @@ import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/controls/SliderControl.vue'),
-  () => ({
-    default: {
-      name: 'SliderControlStub',
-      props: ['label', 'min', 'max', 'step', 'modelValue'],
-      emits: ['update:modelValue'],
-      template: `<button data-control="slider" :aria-label="label" @click="$emit('update:modelValue', 99)">{{ modelValue }}</button>`
-    }
-  })
-)
-
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/controls/ToggleControl.vue'),
-  () => ({
-    default: {
-      name: 'ToggleControlStub',
-      props: ['label', 'modelValue'],
-      emits: ['update:modelValue'],
-      template: `<button data-control="toggle" :aria-label="label" @click="$emit('update:modelValue', !modelValue)">{{ modelValue }}</button>`
-    }
-  })
-)
-
-vi.mock<unknown>(
-  import('@comfyorg/design-system/select/DropdownControl'),
-  () => ({
-    default: {
-      name: 'DropdownControlStub',
-      props: ['label', 'options', 'modelValue'],
-      emits: ['update:modelValue'],
-      template: `<button data-control="dropdown" :aria-label="label" @click="$emit('update:modelValue', 'lab')">{{ modelValue }}</button>`
-    }
-  })
-)
+vi.mock<unknown>(import('@comfyorg/design-system/slider/Slider'), () => ({
+  default: {
+    name: 'SliderStub',
+    props: ['modelValue', 'ariaLabelledby'],
+    emits: ['update:modelValue'],
+    template: `<button data-slider="true" :aria-labelledby="ariaLabelledby" @click="$emit('update:modelValue', [40])">{{ modelValue?.[0] }}</button>`
+  }
+}))
 
 const i18n = createI18n({
   legacy: false,
@@ -57,6 +30,9 @@ const i18n = createI18n({
         livePreview: 'Live Preview',
         applyToWholeImage: 'Apply to Whole Image',
         method: 'Method',
+        methodSimple: 'Simple',
+        methodHsl: 'HSL',
+        methodLab: 'LAB',
         stopAtMask: 'Stop at mask',
         maskTolerance: 'Mask Tolerance'
       }
@@ -66,6 +42,12 @@ const i18n = createI18n({
 
 const renderPanel = () =>
   render(ColorSelectSettingsPanel, { global: { plugins: [i18n] } })
+
+const setNumberInput = (name: string, value: string): void => {
+  const input = screen.getByRole<HTMLInputElement>('spinbutton', { name })
+  input.value = value
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+}
 
 describe('ColorSelectSettingsPanel', () => {
   beforeEach(() => {
@@ -81,85 +63,86 @@ describe('ColorSelectSettingsPanel', () => {
     })
   })
 
-  it('should call setColorSelectTolerance when tolerance slider emits', async () => {
-    const user = userEvent.setup()
+  it('should convert a tolerance percent back to the 0-255 channel value', () => {
     renderPanel()
 
-    await user.click(screen.getByRole('button', { name: 'Tolerance' }))
+    setNumberInput('Tolerance', '40')
 
-    expect(mockStore.setColorSelectTolerance).toHaveBeenCalledWith(99)
+    expect(mockStore.setColorSelectTolerance).toHaveBeenCalledWith(102)
   })
 
-  it('should call setSelectionOpacity when selection opacity slider emits', async () => {
-    const user = userEvent.setup()
+  it('should show the stored tolerance as a percent', () => {
+    mockStore.colorSelectTolerance = 255
     renderPanel()
 
-    await user.click(screen.getByRole('button', { name: 'Selection Opacity' }))
-
-    expect(mockStore.setSelectionOpacity).toHaveBeenCalledWith(99)
+    expect(
+      screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Tolerance' })
+        .value
+    ).toBe('100')
   })
 
-  it('should toggle colorSelectLivePreview when live preview toggle emits', async () => {
-    const user = userEvent.setup()
-    mockStore.colorSelectLivePreview = false
+  it('should call setSelectionOpacity when the selection opacity changes', () => {
     renderPanel()
 
-    await user.click(screen.getByRole('button', { name: 'Live Preview' }))
+    setNumberInput('Selection Opacity', '40')
+
+    expect(mockStore.setSelectionOpacity).toHaveBeenCalledWith(40)
+  })
+
+  it('should toggle colorSelectLivePreview', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+
+    await user.click(screen.getByRole('switch', { name: 'Live Preview' }))
 
     expect(mockStore.colorSelectLivePreview).toBe(true)
   })
 
-  it('should toggle applyWholeImage when whole-image toggle emits', async () => {
+  it('should toggle applyWholeImage', async () => {
     const user = userEvent.setup()
-    mockStore.applyWholeImage = false
     renderPanel()
 
     await user.click(
-      screen.getByRole('button', { name: 'Apply to Whole Image' })
+      screen.getByRole('switch', { name: 'Apply to Whole Image' })
     )
 
     expect(mockStore.applyWholeImage).toBe(true)
   })
 
-  it('should set comparison method when dropdown emits', async () => {
+  it('should show the translated method and update the check when it changes', async () => {
     const user = userEvent.setup()
     renderPanel()
 
-    await user.click(screen.getByRole('button', { name: 'Method' }))
+    expect(screen.getByRole('button', { name: 'Method Simple' })).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Method Simple' }))
+    await user.click(screen.getByRole('menuitemcheckbox', { name: 'LAB' }))
 
     expect(mockStore.colorComparisonMethod).toBe(ColorComparisonMethod.LAB)
   })
 
-  it('should toggle maskBoundary when stop-at-mask toggle emits', async () => {
+  it('should toggle maskBoundary', async () => {
     const user = userEvent.setup()
-    mockStore.maskBoundary = false
     renderPanel()
 
-    await user.click(screen.getByRole('button', { name: 'Stop at mask' }))
+    await user.click(screen.getByRole('switch', { name: 'Stop at mask' }))
 
     expect(mockStore.maskBoundary).toBe(true)
   })
 
-  it('should call setMaskTolerance when mask tolerance slider emits', async () => {
-    const user = userEvent.setup()
+  it('should convert a mask tolerance percent back to 0-255', () => {
     renderPanel()
 
-    await user.click(screen.getByRole('button', { name: 'Mask Tolerance' }))
+    setNumberInput('Mask Tolerance', '40')
 
-    expect(mockStore.setMaskTolerance).toHaveBeenCalledWith(99)
+    expect(mockStore.setMaskTolerance).toHaveBeenCalledWith(102)
   })
 
-  it('should reflect store values on the controls', () => {
-    mockStore.colorSelectTolerance = 77
-    mockStore.colorComparisonMethod = ColorComparisonMethod.HSL
-
+  it('should ignore a cleared tolerance field', () => {
     renderPanel()
 
-    expect(
-      screen.getByRole('button', { name: 'Tolerance' }).textContent
-    ).toContain('77')
-    expect(
-      screen.getByRole('button', { name: 'Method' }).textContent
-    ).toContain('hsl')
+    setNumberInput('Tolerance', '')
+
+    expect(mockStore.setColorSelectTolerance).not.toHaveBeenCalled()
   })
 })

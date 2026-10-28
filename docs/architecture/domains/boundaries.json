@@ -5694,34 +5694,53 @@
       {
         "from": "mask-editor/application",
         "allow": [
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "mask-editor/application",
           "mask-editor/infrastructure",
+          "design-system/domain/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "mask-editor/infrastructure",
         "allow": [
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "mask-editor/application",
           "mask-editor/infrastructure",
+          "design-system/domain/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "mask-editor/presentation",
         "allow": [
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
           "mask-editor/application",
           "mask-editor/presentation",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "mask-editor/integration",
         "allow": [
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "design-system/presentation",
           "mask-editor/application",
           "mask-editor/infrastructure",
           "mask-editor/presentation",
           "mask-editor/integration",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
           "unclassified"
         ]
       },
