@@ -1,3 +1,4 @@
+import { until } from '@vueuse/core'
 import { defineAsyncComponent, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
@@ -15,6 +16,11 @@ import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import { recordConsentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
+import {
+  clearPendingSignInAccept,
+  writePendingSignInAccept
+} from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -50,6 +56,7 @@ export function useAgentConsent() {
   const consentStore = useAgentConsentStore()
   const introductionStore = useAgentConsentIntroductionStore()
   const agentPanelStore = useAgentPanelStore()
+  const composerStore = useAgentComposerStore()
   const toast = useToast()
   const { isLoggedIn } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
@@ -121,6 +128,7 @@ export function useAgentConsent() {
       const closeWith = (result: boolean): void => {
         if (settled) return
         settled = true
+        clearPendingSignInAccept()
         stopScopeWatch()
         dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY })
         resolve(result)
@@ -227,13 +235,47 @@ export function useAgentConsent() {
             if (settled) return
             settled = true
             stopScopeWatch()
-            if (shown) reportOutcome('dismissed')
-            else reportRequestExit('card_closed_before_mount', trigger)
+            if (shown) {
+              clearPendingSignInAccept()
+              reportOutcome('dismissed')
+            } else reportRequestExit('card_closed_before_mount', trigger)
             resolve(false)
           }
         }
       })
     })
+  }
+
+  async function saveAcceptanceAfterSignIn(): Promise<string | null> {
+    try {
+      const decisionIdentity = await consentStore.ensureScope()
+      if (!decisionIdentity || !(await consentStore.accept(decisionIdentity))) {
+        useTelemetry()?.trackAgentConsentResolved({
+          decision: 'accept_not_persisted',
+          save_error_shown: false
+        })
+        return null
+      }
+      useTelemetry()?.trackAgentConsentResolved({
+        decision: 'accepted',
+        save_error_shown: false
+      })
+      return decisionIdentity
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_consent_setting_write_failure'
+      })
+      toast.error(t('g.error'), {
+        description: t('agent.consent.saveError')
+      })
+      return null
+    }
+  }
+
+  function heldDraftText(): string {
+    const held = composerStore.submission
+    return held?.phase === 'pending' ? held.snapshot.prompt.text.trim() : ''
   }
 
   async function acceptAfterSignIn(
@@ -244,9 +286,12 @@ export function useAgentConsent() {
       return null
     introductionStore.isContinuingSignIn = true
     try {
+      writePendingSignInAccept(heldDraftText())
+      let signedIn: boolean
       try {
-        if (!(await showSignInDialog())) return null
+        signedIn = await showSignInDialog()
       } catch (error) {
+        clearPendingSignInAccept()
         reportError(error, {
           surface: 'agent',
           errorType: 'agent_consent_sign_in_failure'
@@ -256,37 +301,29 @@ export function useAgentConsent() {
         })
         return null
       }
-
-      try {
-        const decisionIdentity = await consentStore.ensureScope()
-        if (
-          !decisionIdentity ||
-          !(await consentStore.accept(decisionIdentity))
-        ) {
-          useTelemetry()?.trackAgentConsentResolved({
-            decision: 'accept_not_persisted',
-            save_error_shown: false
-          })
-          return null
-        }
-        useTelemetry()?.trackAgentConsentResolved({
-          decision: 'accepted',
-          save_error_shown: false
-        })
-        return decisionIdentity
-      } catch (error) {
-        reportError(error, {
-          surface: 'agent',
-          errorType: 'agent_consent_setting_write_failure'
-        })
-        toast.error(t('g.error'), {
-          description: t('agent.consent.saveError')
-        })
-        return null
-      }
+      if (!signedIn) return null
+      clearPendingSignInAccept()
+      return await saveAcceptanceAfterSignIn()
     } finally {
       introductionStore.isContinuingSignIn = false
     }
+  }
+
+  async function resumeAcceptAfterReload(draft: string): Promise<void> {
+    introductionStore.isContinuingSignIn = true
+    try {
+      await saveAcceptanceAfterSignIn()
+    } finally {
+      introductionStore.isContinuingSignIn = false
+    }
+    if (
+      draft &&
+      !composerStore.draft &&
+      composerStore.prompt.references.length === 0 &&
+      composerStore.attachments.length === 0 &&
+      !composerStore.submission
+    )
+      composerStore.restorePrompt({ text: draft, references: [] }, [])
   }
 
   async function requestConsentForCurrentUser(
@@ -349,6 +386,8 @@ export function useAgentConsent() {
     onAccept: () => void,
     hooks: ConsentOfferHooks = {}
   ): Promise<void> {
+    if (introductionStore.isContinuingSignIn)
+      await until(() => introductionStore.isContinuingSignIn).toBe(false)
     const decisionIdentity = isLoggedIn.value
       ? await requestConsentForCurrentUser(trigger, hooks)
       : await acceptAfterSignIn(trigger, hooks)
@@ -361,5 +400,5 @@ export function useAgentConsent() {
     onAccept()
   }
 
-  return { accepted, isChecking, withConsent }
+  return { accepted, isChecking, withConsent, resumeAcceptAfterReload }
 }
