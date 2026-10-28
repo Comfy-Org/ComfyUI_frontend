@@ -12,6 +12,7 @@ import {
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentToolCallData as zGeneratedAgentToolCallData,
+  zAgentThinkingEntry,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
   zToolCallSummary,
   zWorkflowListResponse
@@ -147,8 +148,10 @@ export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
  * One persisted `content.thinking` entry: a model round's thinking text,
  * anchored to that round's first tool call when it made one.
  */
-export const zPersistedThinkingEntry = z.object({
-  text: z.string(),
+export const zPersistedThinkingEntry = zAgentThinkingEntry.extend({
+  // `.nullish()`, matching `zPersistedToolCallSummary` above: a Go pointer
+  // field serialized without `omitempty` sends an explicit `null`, which the
+  // generated `.optional()` rejects, dropping that round's thinking.
   tool_call_id: z.string().nullish()
 })
 
