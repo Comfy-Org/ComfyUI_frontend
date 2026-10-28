@@ -76,10 +76,6 @@
       "role": "application"
     },
     {
-      "path": "src/components/dialog/useModalLayoutLabels.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useRangeEditor.test.ts",
       "role": "application"
     },
