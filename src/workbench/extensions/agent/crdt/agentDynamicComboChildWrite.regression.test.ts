@@ -280,11 +280,11 @@ describe('an Agent write to a dynamic-combo child (PM-2326)', () => {
     s.widget('model.prompt').value = 'typed by the person'
 
     const saved = s.node.serialize()
-    const names = (s.node.widgets ?? [])
-      .filter((widget) => widget.serialize !== false)
-      .map((widget) => widget.name)
-    const values = saved.widgets_values
-    if (!Array.isArray(values)) throw new Error('positional widgets_values')
-    expect(values[names.indexOf('model.generate_audio')]).toBe(false)
+    expect(saved.widgets_values).toEqual([
+      MODEL,
+      'typed by the person',
+      false,
+      5
+    ])
   })
 })
