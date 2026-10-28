@@ -19,7 +19,7 @@
       >
         <i
           v-if="isGitHubLink(safeRepositoryHref)"
-          class="pi pi-github text-base"
+          class="icon-[lucide--github]"
         />
         <span class="break-all">{{ safeRepositoryHref }}</span>
         <i class="icon-[lucide--external-link]" />
