@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, reactive, ref } from 'vue'
 
-import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import {
   getKeepAliveBounds,
   useViewportKeepAlive

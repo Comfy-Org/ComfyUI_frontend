@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ExecutionContext } from '@/platform/telemetry/types'
+import type { ExecutionContext } from '@comfyorg/telemetry/types'
 
 import { toWorkflowExecutionContext } from './workflowExecutionContext'
 

@@ -125,8 +125,13 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["account", "vue-node-renderer"],
-  "allowedConsumers": ["selection-toolbox"],
+  "allowedDependencies": [
+    "account",
+    "error-reporting",
+    "telemetry",
+    "vue-node-renderer"
+  ],
+  "allowedConsumers": ["error-reporting", "selection-toolbox"],
   "characterizationScenarios": [
     {
       "name": "Graph canvas restores detached Vue node elements and retains focus and link-drag sources while panning",

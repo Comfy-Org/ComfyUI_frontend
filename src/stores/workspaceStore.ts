@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { Settings } from '@/platform/settings/types'
 import { useColorPaletteService } from '@/services/colorPaletteService'

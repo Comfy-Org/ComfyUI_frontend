@@ -8,7 +8,7 @@ import {
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 

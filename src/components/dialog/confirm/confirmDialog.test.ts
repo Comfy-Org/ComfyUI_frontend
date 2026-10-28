@@ -35,6 +35,7 @@ function renderConfirm(
     headerProps: { title: 'Delete secret' },
     props: { promptText: 'This cannot be undone.' },
     footerProps: {
+      cancelText: 'Cancel',
       confirmText: 'Delete',
       optionsDisabled,
       onCancel: () => dialogStore.closeDialog(dialog),

@@ -377,7 +377,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["comfyui-api", "node-definition"],
+  "allowedDependencies": ["comfyui-api", "error-reporting", "node-definition"],
   "allowedConsumers": ["bounding-boxes", "vue-node-renderer"],
   "characterizationScenarios": [
     {
