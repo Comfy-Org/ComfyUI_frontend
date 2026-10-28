@@ -455,6 +455,43 @@ describe('BillingTab', () => {
     }
   )
 
+  it.for([
+    {
+      case: 'a served renewal date',
+      renewalDate: '2027-10-28T00:00:00Z',
+      line: 'Billed by contract. Renews October 28, 2027.'
+    },
+    {
+      case: 'no renewal date',
+      renewalDate: null,
+      line: 'Billed by contract.'
+    }
+  ])(
+    'shows an active sales-managed plan as Enterprise with $case',
+    ({ renewalDate, line }) => {
+      arrange({
+        planKind: 'sales_managed',
+        canOpenPlans: false,
+        subscription: {
+          ...activeSubscription,
+          tier: 'ENTERPRISE',
+          duration: 'ANNUAL',
+          renewalDate
+        }
+      })
+
+      expect(
+        screen.getByRole('heading', { name: 'Enterprise' })
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+        line
+      )
+      expect(
+        screen.getByRole('link', { name: 'Contact sales' })
+      ).toHaveAttribute('href', 'https://comfy.org/contact/')
+    }
+  )
+
   it('opens plan management on Cloud instead of a platform plans page', async () => {
     arrange()
 
