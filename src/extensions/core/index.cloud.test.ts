@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -23,7 +23,7 @@ describe('core extensions in a nightly cloud build', () => {
 
     await registerCoreExtensions()
 
-    const names = useCustomNodeStore().extensions.map(({ name }) => name)
+    const names = useExtensionStore().extensions.map(({ name }) => name)
     expect(names).not.toContain('Comfy.NodeTemplates')
     expect(names.slice(-5)).toEqual([
       'Comfy.Cloud.RemoteConfig',

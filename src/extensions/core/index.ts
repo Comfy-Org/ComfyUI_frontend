@@ -1,5 +1,5 @@
 import { isCloud, isNightly } from '@/platform/distribution/types'
-import { useCustomNodeService } from '@/platform/customNodes/services/customNodeService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { clipspaceExtension } from './clipspace'
@@ -71,7 +71,7 @@ const disposers: (() => void)[] = []
 let registration: Promise<void> | undefined
 
 function register(extension: ComfyExtension) {
-  disposers.push(useCustomNodeService().registerExtension(extension))
+  disposers.push(useExtensionService().registerExtension(extension))
 }
 
 async function registerInOrder() {

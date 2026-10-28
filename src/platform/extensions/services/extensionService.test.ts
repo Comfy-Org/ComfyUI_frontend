@@ -4,10 +4,10 @@ import type { WatchHandle } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useApp } from '@/scripts/appInstance'
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
 
-import { useCustomNodeService } from './customNodeService'
+import { useExtensionService } from './extensionService'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -19,11 +19,11 @@ describe('invokeExtensionsAsync', () => {
   type TestExtension = { name: string; [key: string]: unknown }
 
   function register(...extensions: TestExtension[]) {
-    const store = useCustomNodeStore()
+    const store = useExtensionStore()
     for (const ext of extensions) store.registerExtension(ext)
   }
 
-  const invoke = () => useCustomNodeService().invokeExtensionsAsync(HOOK, {})
+  const invoke = () => useExtensionService().invokeExtensionsAsync(HOOK, {})
 
   it('only calls extensions that define the hook, in registration order', async () => {
     const calls: string[] = []
@@ -124,7 +124,7 @@ describe('invokeExtensionsAsync', () => {
   it('skips disabled extensions', async () => {
     const hook = vi.fn()
     register({ name: 'off', [HOOK]: hook }, { name: 'on', [HOOK]: hook })
-    useCustomNodeStore().loadDisabledExtensionNames(['off'])
+    useExtensionStore().loadDisabledExtensionNames(['off'])
 
     await invoke()
 
@@ -145,12 +145,12 @@ describe('invokeExtensionsAsync', () => {
     register({ name: 'a', [HOOK]: hook })
     const defs = {}
 
-    await useCustomNodeService().invokeExtensionsAsync(HOOK, defs)
+    await useExtensionService().invokeExtensionsAsync(HOOK, defs)
 
     expect(hook).toHaveBeenCalledOnce()
     expect(hook.mock.calls[0]).toHaveLength(2)
     expect(hook.mock.calls[0][0]).toBe(defs)
-    expect(hook.mock.contexts[0]).toBe(useCustomNodeStore().extensions[0])
+    expect(hook.mock.contexts[0]).toBe(useExtensionStore().extensions[0])
   })
 
   type HookApp = ReturnType<typeof useApp>
@@ -181,7 +181,7 @@ describe('invokeExtensionsAsync', () => {
         }
       })
 
-      await useCustomNodeService().invokeExtensionsAsync('beforeLoadGraph')
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
       await expect(nested).rejects.toThrow(
         'A graph-load lifecycle hook cannot start a nested graph load'
@@ -197,7 +197,7 @@ describe('invokeExtensionsAsync', () => {
         retained = app
       }
     })
-    await useCustomNodeService().invokeExtensionsAsync('afterLoadGraph')
+    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     const handleFile = vi
       .spyOn(useApp(), 'handleFile')
       .mockResolvedValue(undefined)
@@ -324,7 +324,7 @@ describe('invokeExtensionsAsync', () => {
     register({
       name: 'registrar',
       [HOOK]: () =>
-        useCustomNodeStore().registerExtension({ name: 'added', [HOOK]: added })
+        useExtensionStore().registerExtension({ name: 'added', [HOOK]: added })
     })
 
     await invoke()
@@ -362,7 +362,7 @@ describe('invokeExtensionsAsync', () => {
         { name: 'none' }
       )
 
-      await useCustomNodeService().invokeExtensionsAsync('setup')
+      await useExtensionService().invokeExtensionsAsync('setup')
 
       expect(events).toEqual(['current:a', 'setup:a', 'current:null'])
     })
@@ -376,7 +376,7 @@ describe('invokeExtensionsAsync', () => {
         }
       })
 
-      await useCustomNodeService().invokeExtensionsAsync('setup')
+      await useExtensionService().invokeExtensionsAsync('setup')
 
       expect(spy.mock.calls).toEqual([['bad'], [null]])
       expect(console.error).toHaveBeenCalledOnce()
@@ -390,7 +390,7 @@ describe('invokeExtensionsAsync', () => {
         { name: 'after', setup: after }
       )
 
-      await useCustomNodeService().invokeExtensionsAsync('setup')
+      await useExtensionService().invokeExtensionsAsync('setup')
 
       expect(after).toHaveBeenCalledOnce()
       expect(spy.mock.calls).toContainEqual([null])
@@ -401,7 +401,7 @@ describe('invokeExtensionsAsync', () => {
       const setup = vi.fn()
       register({ name: 'a', setup })
 
-      await useCustomNodeService().invokeExtensionsAsync('setup')
+      await useExtensionService().invokeExtensionsAsync('setup')
 
       expect(setup).toHaveBeenCalledOnce()
       expect(setup.mock.calls[0]).toHaveLength(1)
@@ -412,15 +412,15 @@ describe('invokeExtensionsAsync', () => {
 describe('holding new extensions', () => {
   it('keeps extensions registered while holding aside, in order, without calling them', () => {
     const init = vi.fn()
-    useCustomNodeStore().holdNewCustomNodes()
+    useExtensionStore().holdNewCustomNodes()
 
-    useCustomNodeService().registerExtension({ name: 'a', init })
-    useCustomNodeService().registerExtension({ name: 'b' })
+    useExtensionService().registerExtension({ name: 'a', init })
+    useExtensionService().registerExtension({ name: 'b' })
 
-    expect(useCustomNodeStore().isHoldingCustomNodes).toBe(true)
-    expect(useCustomNodeStore().isExtensionInstalled('a')).toBe(false)
+    expect(useExtensionStore().isHoldingCustomNodes).toBe(true)
+    expect(useExtensionStore().isExtensionInstalled('a')).toBe(false)
     expect(
-      useCustomNodeStore()
+      useExtensionStore()
         .stopHoldingCustomNodes()
         .map(({ name }) => name)
     ).toEqual(['a', 'b'])
@@ -428,47 +428,47 @@ describe('holding new extensions', () => {
   })
 
   it('hands over what was held so far and goes on holding', () => {
-    useCustomNodeStore().holdNewCustomNodes()
-    useCustomNodeService().registerExtension({ name: 'first' })
+    useExtensionStore().holdNewCustomNodes()
+    useExtensionService().registerExtension({ name: 'first' })
 
-    const taken = useCustomNodeStore().takeHeldCustomNodes()
-    useCustomNodeService().registerExtension({ name: 'second' })
+    const taken = useExtensionStore().takeHeldCustomNodes()
+    useExtensionService().registerExtension({ name: 'second' })
 
     expect(taken.map(({ name }) => name)).toEqual(['first'])
-    expect(useCustomNodeStore().isExtensionInstalled('second')).toBe(false)
+    expect(useExtensionStore().isExtensionInstalled('second')).toBe(false)
     expect(
-      useCustomNodeStore()
+      useExtensionStore()
         .stopHoldingCustomNodes()
         .map(({ name }) => name)
     ).toEqual(['second'])
   })
 
   it('drops a held extension whose disposer runs before holding stops', () => {
-    useCustomNodeStore().holdNewCustomNodes()
-    const dispose = useCustomNodeService().registerExtension({ name: 'gone' })
+    useExtensionStore().holdNewCustomNodes()
+    const dispose = useExtensionService().registerExtension({ name: 'gone' })
 
     dispose()
 
-    expect(useCustomNodeStore().stopHoldingCustomNodes()).toEqual([])
+    expect(useExtensionStore().stopHoldingCustomNodes()).toEqual([])
   })
 
   it('registers as always once holding stops', () => {
-    useCustomNodeStore().holdNewCustomNodes()
-    useCustomNodeStore().stopHoldingCustomNodes()
+    useExtensionStore().holdNewCustomNodes()
+    useExtensionStore().stopHoldingCustomNodes()
 
-    useCustomNodeService().registerExtension({ name: 'after' })
+    useExtensionService().registerExtension({ name: 'after' })
 
-    expect(useCustomNodeStore().isHoldingCustomNodes).toBe(false)
-    expect(useCustomNodeStore().isExtensionInstalled('after')).toBe(true)
+    expect(useExtensionStore().isHoldingCustomNodes).toBe(false)
+    expect(useExtensionStore().isExtensionInstalled('after')).toBe(true)
   })
 
   it('registers an extension on demand while holding goes on', () => {
-    useCustomNodeStore().holdNewCustomNodes()
+    useExtensionStore().holdNewCustomNodes()
 
-    useCustomNodeService().registerExtensionNow({ name: 'now' })
+    useExtensionService().registerExtensionNow({ name: 'now' })
 
-    expect(useCustomNodeStore().isExtensionInstalled('now')).toBe(true)
-    expect(useCustomNodeStore().isHoldingCustomNodes).toBe(true)
+    expect(useExtensionStore().isExtensionInstalled('now')).toBe(true)
+    expect(useExtensionStore().isHoldingCustomNodes).toBe(true)
   })
 })
 
@@ -484,9 +484,9 @@ describe('invokeStartupHook', () => {
     }
     const b = { name: 'b', init: vi.fn(() => void events.push('b')) }
     const other = { name: 'other', init: vi.fn() }
-    useCustomNodeStore().registerExtension(other)
+    useExtensionStore().registerExtension(other)
 
-    await useCustomNodeService().invokeStartupHook([a, b], 'init')
+    await useExtensionService().invokeStartupHook([a, b], 'init')
 
     expect(events).toEqual(['a', 'b'])
     expect(b.init).toHaveBeenCalledWith(useApp())
@@ -495,9 +495,9 @@ describe('invokeStartupHook', () => {
 
   it('skips a disabled extension', async () => {
     const setup = vi.fn()
-    useCustomNodeStore().loadDisabledExtensionNames(['off'])
+    useExtensionStore().loadDisabledExtensionNames(['off'])
 
-    await useCustomNodeService().invokeStartupHook(
+    await useExtensionService().invokeStartupHook(
       [{ name: 'off', setup }],
       'setup'
     )
@@ -515,7 +515,7 @@ describe('invokeStartupHook', () => {
       }
     }
 
-    const failures = await useCustomNodeService().invokeStartupHook(
+    const failures = await useExtensionService().invokeStartupHook(
       [bad, { name: 'after', setup: after }],
       'setup'
     )
@@ -534,7 +534,7 @@ describe('invokeStartupHook', () => {
       }
     }
 
-    const failures = await useCustomNodeService().invokeStartupHook(
+    const failures = await useExtensionService().invokeStartupHook(
       [bad, { name: 'after', init: after }],
       'init'
     )
@@ -547,7 +547,7 @@ describe('invokeStartupHook', () => {
     const addCustomNodeDefs = vi.fn()
     const defs = {}
 
-    await useCustomNodeService().invokeStartupHook(
+    await useExtensionService().invokeStartupHook(
       [{ name: 'a', addCustomNodeDefs }],
       'addCustomNodeDefs',
       defs
@@ -596,7 +596,7 @@ describe('registerExtension auth hooks', () => {
       onAuthTokenRefreshed: vi.fn(),
       onAuthUserLogout: vi.fn()
     }
-    const service = useCustomNodeService()
+    const service = useExtensionService()
 
     const dispose = service.registerExtension(extension)
     dispose()
@@ -607,6 +607,6 @@ describe('registerExtension auth hooks', () => {
     expect(extension.onAuthUserResolved).toHaveBeenCalledOnce()
     expect(extension.onAuthTokenRefreshed).toHaveBeenCalledOnce()
     expect(extension.onAuthUserLogout).toHaveBeenCalledOnce()
-    expect(useCustomNodeStore().isExtensionInstalled('auth-hooks')).toBe(true)
+    expect(useExtensionStore().isExtensionInstalled('auth-hooks')).toBe(true)
   })
 })

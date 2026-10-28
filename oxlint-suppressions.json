@@ -631,12 +631,12 @@
       "count": 2
     }
   },
-  "src/platform/customNodes/services/extensionLoader.ts": {
+  "src/platform/extensions/services/extensionLoader.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
     }
   },
-  "src/platform/customNodes/stores/customNodeStore.ts": {
+  "src/platform/extensions/stores/extensionStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 2
     }

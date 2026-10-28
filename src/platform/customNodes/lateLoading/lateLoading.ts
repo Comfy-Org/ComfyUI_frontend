@@ -8,9 +8,9 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { couldBootOnDeployment } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { useApp } from '@/scripts/appInstance'
-import type { StartupHookFailure } from '@/platform/customNodes/services/customNodeService'
-import { useCustomNodeService } from '@/platform/customNodes/services/customNodeService'
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import type { StartupHookFailure } from '@/platform/extensions/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isNonNullish } from '@/utils/typeGuardUtil'
@@ -205,11 +205,11 @@ function reportStartupHookFailures(failures: StartupHookFailure[]) {
 }
 
 function registerHeldCustomNodes(last: boolean) {
-  const service = useCustomNodeService()
-  const customNodeStore = useCustomNodeStore()
+  const service = useExtensionService()
+  const extensionStore = useExtensionStore()
   const held = last
-    ? customNodeStore.stopHoldingCustomNodes()
-    : customNodeStore.takeHeldCustomNodes()
+    ? extensionStore.stopHoldingCustomNodes()
+    : extensionStore.takeHeldCustomNodes()
   const registered = held.filter((extension) => {
     try {
       service.registerExtensionNow(extension)
@@ -224,7 +224,7 @@ function registerHeldCustomNodes(last: boolean) {
 
 function keepHeldCustomNodesForNextEditor() {
   registerHeldCustomNodes(true)
-  useCustomNodeStore().finishLateCustomNodes()
+  useExtensionStore().finishLateCustomNodes()
 }
 
 function reportNodeDefsFailure(error: unknown) {
@@ -252,18 +252,18 @@ async function fetchNodeDefs() {
 async function startLateCustomNodes(
   extensions: ComfyExtension[]
 ): Promise<boolean> {
-  const service = useCustomNodeService()
+  const service = useExtensionService()
   const failures = await service.invokeStartupHook(extensions, 'init')
   const defs = await fetchNodeDefs()
   if (defs)
     failures.push(
       ...(await service.invokeStartupHook(
-        useCustomNodeStore().extensions,
+        useExtensionStore().extensions,
         'addCustomNodeDefs',
         defs
       ))
     )
-  else useCustomNodeStore().oweNodeDefHooks()
+  else useExtensionStore().oweNodeDefHooks()
   failures.push(
     ...(await service.invokeStartupHook(extensions, 'registerCustomNodes'))
   )
@@ -295,7 +295,7 @@ async function runLateBatch(
   const allHooksRan =
     registered.length === 0 || (await startLateCustomNodes(registered))
   if (work.isAborted()) return { turnedOn: false, allStarted: false }
-  if (last) useCustomNodeStore().finishLateCustomNodes()
+  if (last) useExtensionStore().finishLateCustomNodes()
   if (last || registered.length > 0) await rebuildOpenWorkflow()
   return {
     turnedOn: registered.length > 0,
@@ -403,7 +403,7 @@ async function turnOnLateCustomNodes(run: LateRun, startedAt: number) {
     run.stopWatchingServer()
     starting.dismiss()
     work.stop()
-    if (!work.isAborted()) useCustomNodeStore().finishLateCustomNodes()
+    if (!work.isAborted()) useExtensionStore().finishLateCustomNodes()
   }
 }
 
@@ -418,7 +418,7 @@ function startLateRun(
     firstReading,
     AbortSignal.any([run.signal, watching.signal])
   )
-  useCustomNodeStore().holdNewCustomNodes()
+  useExtensionStore().holdNewCustomNodes()
   void turnOnLateCustomNodes(
     {
       ...run,

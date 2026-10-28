@@ -16,7 +16,7 @@ import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WorkflowTabs from './WorkflowTabs.vue'
@@ -568,7 +568,7 @@ describe('WorkflowTabs environment badge separator', () => {
   it('divides the badge from the icon buttons once a badge appears', async () => {
     renderComponent()
 
-    useCustomNodeStore().registerExtension({
+    useExtensionStore().registerExtension({
       name: 'Test.Environment.Badge',
       topbarBadges: [{ text: 'Staging Environment', variant: 'warning' }]
     })

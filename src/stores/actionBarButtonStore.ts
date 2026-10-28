@@ -3,13 +3,13 @@ import { computed } from 'vue'
 
 import type { ActionBarButton } from '@/types/comfy'
 
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
 export const useActionBarButtonStore = defineStore('actionBarButton', () => {
-  const customNodeStore = useCustomNodeStore()
+  const extensionStore = useExtensionStore()
 
   const buttons = computed<ActionBarButton[]>(() =>
-    customNodeStore.extensions.flatMap((e) => e.actionBarButtons ?? [])
+    extensionStore.extensions.flatMap((e) => e.actionBarButtons ?? [])
   )
 
   return {

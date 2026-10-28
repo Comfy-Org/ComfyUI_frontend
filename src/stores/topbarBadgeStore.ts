@@ -3,13 +3,13 @@ import { computed } from 'vue'
 
 import type { TopbarBadge } from '@/types/comfy'
 
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
 export const useTopbarBadgeStore = defineStore('topbarBadge', () => {
-  const customNodeStore = useCustomNodeStore()
+  const extensionStore = useExtensionStore()
 
   const badges = computed<TopbarBadge[]>(() =>
-    customNodeStore.extensions.flatMap((e) => e.topbarBadges ?? [])
+    extensionStore.extensions.flatMap((e) => e.topbarBadges ?? [])
   )
 
   return {

@@ -1287,10 +1287,10 @@
           "src/scripts/appInstance.ts",
           "src/scripts/appRegistry.test.ts",
           "src/scripts/appRegistry.ts",
-          "src/platform/customNodes/services/customNodeService.test.ts",
-          "src/platform/customNodes/services/customNodeService.ts",
-          "src/platform/customNodes/stores/customNodeStore.test.ts",
-          "src/platform/customNodes/stores/customNodeStore.ts"
+          "src/platform/extensions/services/extensionService.test.ts",
+          "src/platform/extensions/services/extensionService.ts",
+          "src/platform/extensions/stores/extensionStore.test.ts",
+          "src/platform/extensions/stores/extensionStore.ts"
         ]
       },
       {
@@ -1312,8 +1312,8 @@
           "src/scripts/api.storeUserData.test.ts",
           "src/scripts/api.ts",
           "src/scripts/apiTimeouts.ts",
-          "src/platform/customNodes/services/extensionLoader.test.ts",
-          "src/platform/customNodes/services/extensionLoader.ts"
+          "src/platform/extensions/services/extensionLoader.test.ts",
+          "src/platform/extensions/services/extensionLoader.ts"
         ]
       },
       {
@@ -1323,7 +1323,7 @@
           "src/scripts/ui.storageResilience.test.ts",
           "src/scripts/ui.test.ts",
           "src/scripts/ui.ts",
-          "src/platform/customNodes/components/**"
+          "src/platform/extensions/components/**"
         ]
       },
       {

@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useCustomNodeService } from '@/platform/customNodes/services/customNodeService'
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
@@ -11,8 +11,8 @@ import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 describe('Context Menu Extension API', () => {
   let mockCanvas: LGraphCanvas
   let mockNode: LGraphNode
-  let customNodeStore: ReturnType<typeof useCustomNodeStore>
-  let customNodeService: ReturnType<typeof useCustomNodeService>
+  let extensionStore: ReturnType<typeof useExtensionStore>
+  let extensionService: ReturnType<typeof useExtensionService>
 
   // Mock menu items
   const canvasMenuItem1: IContextMenuValue = {
@@ -50,8 +50,8 @@ describe('Context Menu Extension API', () => {
   })
 
   beforeEach(() => {
-    customNodeStore = useCustomNodeStore()
-    customNodeService = useCustomNodeService()
+    extensionStore = useExtensionStore()
+    extensionService = useExtensionService()
 
     mockCanvas = createMockCanvas({
       graph_mouse: [100, 100],
@@ -73,10 +73,10 @@ describe('Context Menu Extension API', () => {
         { content: 'Item 3', callback: () => {} }
       ])
 
-      customNodeStore.registerExtension(ext1)
-      customNodeStore.registerExtension(ext2)
+      extensionStore.registerExtension(ext1)
+      extensionStore.registerExtension(ext2)
 
-      const items: IContextMenuValue[] = customNodeService
+      const items: IContextMenuValue[] = extensionService
         .invokeExtensions('getCanvasMenuItems', mockCanvas)
         .flat() as IContextMenuValue[]
 
@@ -102,9 +102,9 @@ describe('Context Menu Extension API', () => {
         { content: 'After Separator', callback: () => {} }
       ])
 
-      customNodeStore.registerExtension(extension)
+      extensionStore.registerExtension(extension)
 
-      const items: IContextMenuValue[] = customNodeService
+      const items: IContextMenuValue[] = extensionService
         .invokeExtensions('getCanvasMenuItems', mockCanvas)
         .flat() as IContextMenuValue[]
 
@@ -123,10 +123,10 @@ describe('Context Menu Extension API', () => {
         name: 'No Canvas Menu'
       }
 
-      customNodeStore.registerExtension(canvasExtension)
-      customNodeStore.registerExtension(extensionWithoutCanvasMenu)
+      extensionStore.registerExtension(canvasExtension)
+      extensionStore.registerExtension(extensionWithoutCanvasMenu)
 
-      const items: IContextMenuValue[] = customNodeService
+      const items: IContextMenuValue[] = extensionService
         .invokeExtensions('getCanvasMenuItems', mockCanvas)
         .flat() as IContextMenuValue[]
 
@@ -140,14 +140,14 @@ describe('Context Menu Extension API', () => {
         canvasMenuItem2
       ])
 
-      customNodeStore.registerExtension(extension)
+      extensionStore.registerExtension(extension)
 
       // Collect items multiple times (simulating repeated menu opens)
-      const items1: IContextMenuValue[] = customNodeService
+      const items1: IContextMenuValue[] = extensionService
         .invokeExtensions('getCanvasMenuItems', mockCanvas)
         .flat() as IContextMenuValue[]
 
-      const items2: IContextMenuValue[] = customNodeService
+      const items2: IContextMenuValue[] = extensionService
         .invokeExtensions('getCanvasMenuItems', mockCanvas)
         .flat() as IContextMenuValue[]
 
@@ -174,10 +174,10 @@ describe('Context Menu Extension API', () => {
         { content: 'Item 3', callback: () => {} }
       ])
 
-      customNodeStore.registerExtension(ext1)
-      customNodeStore.registerExtension(ext2)
+      extensionStore.registerExtension(ext1)
+      extensionStore.registerExtension(ext2)
 
-      const items: IContextMenuValue[] = customNodeService
+      const items: IContextMenuValue[] = extensionService
         .invokeExtensions('getNodeMenuItems', mockNode)
         .flat() as IContextMenuValue[]
 
@@ -200,9 +200,9 @@ describe('Context Menu Extension API', () => {
         }
       ])
 
-      customNodeStore.registerExtension(extension)
+      extensionStore.registerExtension(extension)
 
-      const items: IContextMenuValue[] = customNodeService
+      const items: IContextMenuValue[] = extensionService
         .invokeExtensions('getNodeMenuItems', mockNode)
         .flat() as IContextMenuValue[]
 
@@ -216,10 +216,10 @@ describe('Context Menu Extension API', () => {
         name: 'No Node Menu'
       }
 
-      customNodeStore.registerExtension(nodeExtension)
-      customNodeStore.registerExtension(extensionWithoutNodeMenu)
+      extensionStore.registerExtension(nodeExtension)
+      extensionStore.registerExtension(extensionWithoutNodeMenu)
 
-      const items: IContextMenuValue[] = customNodeService
+      const items: IContextMenuValue[] = extensionService
         .invokeExtensions('getNodeMenuItems', mockNode)
         .flat() as IContextMenuValue[]
 

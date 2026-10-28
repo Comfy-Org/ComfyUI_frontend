@@ -29,7 +29,7 @@
     "src/platform/workflowErrors/nodeReplacement/missingNodesErrorStore.ts->src/scripts/app.ts",
     "src/scripts/app.ts->src/scripts/changeTracker.ts",
     "src/scripts/app.ts->src/scripts/ui.ts",
-    "src/scripts/app.ts->src/services/extensionService.ts",
+    "src/scripts/app.ts->src/platform/extensions/services/extensionService.ts",
     "src/platform/telemetry/utils/getExecutionContext.ts->src/scripts/app.ts",
     "src/platform/workflow/core/services/workflowService.ts->src/scripts/app.ts",
     "src/platform/workflow/management/stores/workflowStore.ts->src/scripts/app.ts",

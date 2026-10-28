@@ -96,7 +96,7 @@ import { useAccountPreconditionDialog } from '@/platform/billing/subscription/co
 import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
-import { useCustomNodeService } from '@/platform/customNodes/services/customNodeService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -107,7 +107,7 @@ import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
@@ -546,10 +546,10 @@ export class ComfyApp implements IComfyApp {
   }
 
   /**
-   * @deprecated Use useCustomNodeStore().extensions instead
+   * @deprecated Use useExtensionStore().extensions instead
    */
   get extensions(): ComfyExtension[] {
-    return useCustomNodeStore().extensions
+    return useExtensionStore().extensions
   }
 
   /**
@@ -594,7 +594,7 @@ export class ComfyApp implements IComfyApp {
     }
     if (this.vueAppReady) {
       useNodeOutputStore().replaceOutputsFromLegacy(this.nodeOutputsData)
-      useCustomNodeService().invokeExtensions('onNodeOutputsUpdated', value)
+      useExtensionService().invokeExtensions('onNodeOutputsUpdated', value)
     }
   }
 
@@ -987,7 +987,7 @@ export class ComfyApp implements IComfyApp {
     })
 
     await bootstrapTracer.settle('bootstrap/extensions-init', () =>
-      useCustomNodeService().invokeExtensionsAsync('init')
+      useExtensionService().invokeExtensionsAsync('init')
     )
 
     await this.registerNodes()
@@ -995,7 +995,7 @@ export class ComfyApp implements IComfyApp {
     this.addDropHandler()
 
     await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
-      useCustomNodeService().invokeExtensionsAsync('setup')
+      useExtensionService().invokeExtensionsAsync('setup')
     )
 
     this.positionConversion = useCanvasPositionConversion(
@@ -1047,7 +1047,7 @@ export class ComfyApp implements IComfyApp {
 
     const nodeDefStore = useNodeDefStore()
     const nodeDefArray: ComfyNodeDefV1[] = Object.values(allNodeDefs)
-    useCustomNodeService().invokeExtensions(
+    useExtensionService().invokeExtensions(
       'beforeRegisterVueAppNodeDefs',
       nodeDefArray
     )
@@ -1075,7 +1075,7 @@ export class ComfyApp implements IComfyApp {
 
     await bootstrapTracer.settle('bootstrap/extensions', async () => {
       await this.registerNodesFromDefs(defs)
-      await useCustomNodeService().invokeExtensionsAsync('registerCustomNodes')
+      await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     })
     if (this.vueAppReady) {
       const phase = bootstrapTracer.startPhase('bootstrap/vue-node-defs')
@@ -1092,10 +1092,7 @@ export class ComfyApp implements IComfyApp {
   }
 
   async registerNodesFromDefs(defs: Record<string, ComfyNodeDefV1>) {
-    await useCustomNodeService().invokeExtensionsAsync(
-      'addCustomNodeDefs',
-      defs
-    )
+    await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
     // Register a node for each definition
     await Promise.all(
@@ -1172,10 +1169,7 @@ export class ComfyApp implements IComfyApp {
       reportType: 'loadWorkflowError'
     })
     console.error(error)
-    await useCustomNodeService().invokeExtensionsAsync(
-      'onGraphLoadError',
-      error
-    )
+    await useExtensionService().invokeExtensionsAsync('onGraphLoadError', error)
   }
 
   private enqueueGraphLoad<T>(operation: () => Promise<T>): Promise<T> {
@@ -1219,7 +1213,7 @@ export class ComfyApp implements IComfyApp {
       workflowNavigationId
     } = options
     useWorkflowService().beforeLoadNewGraph(clean)
-    await useCustomNodeService().invokeExtensionsAsync('beforeLoadGraph')
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
     ChangeTracker.isLoadingGraph = true
     let reset_invalid_values = false
@@ -1306,7 +1300,7 @@ export class ComfyApp implements IComfyApp {
 
       useSubgraphService().loadSubgraphs(graphData)
 
-      await useCustomNodeService().invokeExtensionsAsync(
+      await useExtensionService().invokeExtensionsAsync(
         'beforeConfigureGraph',
         graphData,
         missingNodeTypes
@@ -1501,7 +1495,7 @@ export class ComfyApp implements IComfyApp {
       const isCurrentGraphLoad = () =>
         configuredGraphState === this.rootGraph.state
       const cancelReplacedLoad = () =>
-        useCustomNodeService().invokeExtensionsAsync(
+        useExtensionService().invokeExtensionsAsync(
           'onGraphLoadError',
           new DOMException('Workflow load was replaced', 'AbortError')
         )
@@ -1561,11 +1555,11 @@ export class ComfyApp implements IComfyApp {
             }
           }
 
-          useCustomNodeService().invokeExtensions('loadedGraphNode', node)
+          useExtensionService().invokeExtensions('loadedGraphNode', node)
         })
       )
 
-      await useCustomNodeService().invokeExtensionsAsync(
+      await useExtensionService().invokeExtensionsAsync(
         'afterConfigureGraph',
         missingNodeTypes
       )
@@ -1601,7 +1595,7 @@ export class ComfyApp implements IComfyApp {
         await cancelReplacedLoad()
         return undefined
       }
-      await useCustomNodeService().invokeExtensionsAsync('afterLoadGraph')
+      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       if (!isCurrentGraphLoad()) {
         await cancelReplacedLoad()
         return undefined
@@ -2223,7 +2217,7 @@ export class ComfyApp implements IComfyApp {
             try {
               // false: final destination; no later load republishes the hash.
               useWorkflowService().beforeLoadNewGraph(false)
-              await useCustomNodeService().invokeExtensionsAsync(
+              await useExtensionService().invokeExtensionsAsync(
                 'beforeLoadGraph'
               )
             } finally {
@@ -2255,7 +2249,7 @@ export class ComfyApp implements IComfyApp {
         }
         // Intentionally no beforeConfigureGraph: A1111 has no mutable
         // workflow JSON before graph construction, so there is no payload.
-        await useCustomNodeService().invokeExtensionsAsync(
+        await useExtensionService().invokeExtensionsAsync(
           'afterConfigureGraph',
           []
         )
@@ -2263,7 +2257,7 @@ export class ComfyApp implements IComfyApp {
           fileName,
           this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
         )
-        await useCustomNodeService().invokeExtensionsAsync('afterLoadGraph')
+        await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
         return
       })
     }
@@ -2410,7 +2404,7 @@ export class ComfyApp implements IComfyApp {
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
     useWorkflowService().beforeLoadNewGraph(false)
-    await useCustomNodeService().invokeExtensionsAsync('beforeLoadGraph')
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     this.canvas.setGraph(this.rootGraph)
     withGraphIntentSource('load', () => this.clean())
 
@@ -2610,7 +2604,7 @@ export class ComfyApp implements IComfyApp {
 
     // Intentionally no beforeConfigureGraph: API JSON builds nodes directly
     // and never passes a ComfyWorkflowJSON through the configure stage.
-    await useCustomNodeService().invokeExtensionsAsync(
+    await useExtensionService().invokeExtensionsAsync(
       'afterConfigureGraph',
       missingNodeTypes
     )
@@ -2618,7 +2612,7 @@ export class ComfyApp implements IComfyApp {
       fileName,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
-    await useCustomNodeService().invokeExtensionsAsync('afterLoadGraph')
+    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes, options)
     }
@@ -2629,7 +2623,7 @@ export class ComfyApp implements IComfyApp {
    * @param {ComfyExtension} extension
    */
   registerExtension(extension: ComfyExtension) {
-    useCustomNodeService().registerExtension(extension)
+    useExtensionService().registerExtension(extension)
   }
 
   /**
@@ -2638,7 +2632,7 @@ export class ComfyApp implements IComfyApp {
    * @returns Array of context menu items from all extensions
    */
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[] {
-    return useCustomNodeService()
+    return useExtensionService()
       .invokeExtensions('getCanvasMenuItems', canvas)
       .flat() as IContextMenuValue[]
   }
@@ -2649,7 +2643,7 @@ export class ComfyApp implements IComfyApp {
    * @returns Array of context menu items from all extensions
    */
   collectNodeMenuItems(node: LGraphNode): IContextMenuValue[] {
-    return useCustomNodeService()
+    return useExtensionService()
       .invokeExtensions('getNodeMenuItems', node)
       .flat() as IContextMenuValue[]
   }
@@ -2663,8 +2657,8 @@ export class ComfyApp implements IComfyApp {
   ): Promise<boolean> {
     const defs = given ?? (await this.fetchReloadedNodeDefs())
     if (!defs) return false
-    if (useCustomNodeStore().takeOwedNodeDefHooks())
-      await useCustomNodeService().invokeExtensionsAsync(
+    if (useExtensionStore().takeOwedNodeDefHooks())
+      await useExtensionService().invokeExtensionsAsync(
         'addCustomNodeDefs',
         defs
       )
@@ -2706,7 +2700,7 @@ export class ComfyApp implements IComfyApp {
       }
     })
 
-    await useCustomNodeService().invokeExtensionsAsync(
+    await useExtensionService().invokeExtensionsAsync(
       'refreshComboInNodes',
       defs
     )
@@ -2723,7 +2717,7 @@ export class ComfyApp implements IComfyApp {
   private async fetchReloadedNodeDefs(): Promise<
     Record<string, ComfyNodeDefV1> | undefined
   > {
-    if (!useCustomNodeStore().areNodeDefHooksOwed())
+    if (!useExtensionStore().areNodeDefHooksOwed())
       return await this.getNodeDefs()
     const fetched = await this.fetchNodeDefs()
     if (fetched.ok) return fetched.defs

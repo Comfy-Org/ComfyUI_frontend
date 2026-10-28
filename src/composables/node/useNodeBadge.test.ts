@@ -2,7 +2,7 @@ import { render } from '@testing-library/vue'
 import { defineComponent, nextTick, ref, toRef } from 'vue'
 import type { Ref } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -71,7 +71,7 @@ describe('useNodeBadge', () => {
 
   it('keeps the extension-owned provider installed across canvas remounts', async () => {
     const firstMount = renderComposable()
-    const extension = vi.mocked(useCustomNodeStore().registerExtension).mock
+    const extension = vi.mocked(useExtensionStore().registerExtension).mock
       .calls[0][0]
     await extension.init?.(app)
 
@@ -79,7 +79,7 @@ describe('useNodeBadge', () => {
 
     const secondMount = renderComposable()
 
-    expect(useCustomNodeStore().registerExtension).toHaveBeenCalledOnce()
+    expect(useExtensionStore().registerExtension).toHaveBeenCalledOnce()
     expect(mocks.installNodeBadges).toHaveBeenCalledOnce()
 
     secondMount.unmount()
@@ -122,7 +122,7 @@ describe('useNodeBadge', () => {
 
   it('allows the canvas to be removed before a graph event arrives', async () => {
     const component = renderComposable()
-    const extension = vi.mocked(useCustomNodeStore().registerExtension).mock
+    const extension = vi.mocked(useExtensionStore().registerExtension).mock
       .calls[0][0]
     await extension.init?.(app)
     canvasStore.canvas = null

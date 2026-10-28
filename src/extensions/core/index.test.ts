@@ -1,11 +1,11 @@
 import { setActivePinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
 
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { createDisposablePinia } from '@/testing/pinia'
 
 const registeredNames = () =>
-  useCustomNodeStore().extensions.map((extension) => extension.name)
+  useExtensionStore().extensions.map((extension) => extension.name)
 
 async function namesRegisteredByImporting(loaders: (() => Promise<unknown>)[]) {
   using importScope = createDisposablePinia()

@@ -144,31 +144,31 @@
       "role": "integration"
     },
     {
-      "path": "src/platform/customNodes/components/**",
+      "path": "src/platform/extensions/components/**",
       "role": "presentation"
     },
     {
-      "path": "src/platform/customNodes/services/extensionLoader.test.ts",
+      "path": "src/platform/extensions/services/extensionLoader.test.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/customNodes/services/extensionLoader.ts",
+      "path": "src/platform/extensions/services/extensionLoader.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/customNodes/services/customNodeService.test.ts",
+      "path": "src/platform/extensions/services/extensionService.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/customNodes/services/customNodeService.ts",
+      "path": "src/platform/extensions/services/extensionService.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/customNodes/stores/customNodeStore.test.ts",
+      "path": "src/platform/extensions/stores/extensionStore.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/customNodes/stores/customNodeStore.ts",
+      "path": "src/platform/extensions/stores/extensionStore.ts",
       "role": "application"
     },
     {
@@ -186,16 +186,16 @@
   "characterizationScenarios": [
     {
       "name": "Extension loader fetches, filters, imports, and reports failing extensions",
-      "checks": ["src/platform/customNodes/services/extensionLoader.test.ts"]
+      "checks": ["src/platform/extensions/services/extensionLoader.test.ts"]
     },
     {
       "name": "Extension store registers extensions and honors disabled settings and always-on core extensions",
-      "checks": ["src/platform/customNodes/stores/customNodeStore.test.ts"]
+      "checks": ["src/platform/extensions/stores/extensionStore.test.ts"]
     },
     {
       "name": "Extension service registers extension contributions and invokes lifecycle hooks",
       "checks": [
-        "src/platform/customNodes/services/customNodeService.test.ts",
+        "src/platform/extensions/services/extensionService.test.ts",
         "browser_tests/tests/extensionAPI.spec.ts"
       ]
     },

@@ -28,7 +28,7 @@ type Registration =
   | { mode: 'holding'; held: readonly ComfyExtension[] }
   | { mode: 'starting' }
 
-export const useCustomNodeStore = defineStore('customNode', () => {
+export const useExtensionStore = defineStore('extension', () => {
   // For legacy reasons, the name uniquely identifies an extension
   const extensionByName = ref<Record<string, ComfyExtension>>({})
   const extensions = computed(() => Object.values(extensionByName.value))

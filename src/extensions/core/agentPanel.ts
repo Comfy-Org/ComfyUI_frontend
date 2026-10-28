@@ -27,7 +27,7 @@ import {
   notifyRestoreMintersGraphLoadError
 } from '@/workbench/extensions/agent/crdt/restoreOpMinter'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCustomNodeService } from '@/platform/customNodes/services/customNodeService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   clearPendingSignInAccept,
@@ -77,7 +77,7 @@ let registered = false
 export function registerAgentPanelExtension(): void {
   if (registered) return
 
-  useCustomNodeService().registerExtension({
+  useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
       notifyRestoreMintersBeforeGraphLoad()

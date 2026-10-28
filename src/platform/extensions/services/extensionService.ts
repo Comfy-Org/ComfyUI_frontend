@@ -6,7 +6,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -15,7 +15,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { useApp } from '@/scripts/appInstance'
-import { provideCustomNodeService } from '@/platform/customNodes/services/customNodeServiceAccess'
+import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   return (
@@ -76,8 +76,8 @@ export interface StartupHookFailure {
   error: unknown
 }
 
-export const useCustomNodeService = () => {
-  const customNodeStore = useCustomNodeStore()
+export const useExtensionService = () => {
+  const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
   const keybindingStore = useKeybindingStore()
   const {
@@ -91,16 +91,16 @@ export const useCustomNodeService = () => {
    * @returns A disposer that stops the extension's auth hooks and unregisters it.
    */
   const registerExtension = (extension: ComfyExtension) => {
-    if (customNodeStore.isHoldingCustomNodes) {
-      customNodeStore.holdCustomNode(extension)
-      return once(() => customNodeStore.releaseHeldCustomNode(extension))
+    if (extensionStore.isHoldingCustomNodes) {
+      extensionStore.holdCustomNode(extension)
+      return once(() => extensionStore.releaseHeldCustomNode(extension))
     }
     return registerExtensionNow(extension)
   }
 
   /** Registers an extension even while new ones are held. */
   const registerExtensionNow = (extension: ComfyExtension) => {
-    customNodeStore.registerExtension(extension)
+    extensionStore.registerExtension(extension)
 
     const addKeybinding = wrapWithErrorHandling(
       keybindingStore.addDefaultKeybinding
@@ -187,7 +187,7 @@ export const useCustomNodeService = () => {
 
     return once(() => {
       authHookHandles.forEach((stop) => stop())
-      customNodeStore.unregisterExtension(extension.name)
+      extensionStore.unregisterExtension(extension.name)
     })
   }
 
@@ -217,7 +217,7 @@ export const useCustomNodeService = () => {
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
     const results: ReturnType<ComfyExtensionMethod<T>>[] = []
-    for (const ext of customNodeStore.enabledExtensions) {
+    for (const ext of extensionStore.enabledExtensions) {
       if (method in ext) {
         try {
           const fn = ext[method]
@@ -268,7 +268,7 @@ export const useCustomNodeService = () => {
     // This runs once per node def per extension, so avoid allocating promises
     // or closures for extensions that do not define the hook.
     const pending: unknown[] = []
-    for (const ext of customNodeStore.enabledExtensions) {
+    for (const ext of extensionStore.enabledExtensions) {
       // The property read is inside the try so a throwing getter or Proxy trap
       // only affects its own extension.
       try {
@@ -315,7 +315,7 @@ export const useCustomNodeService = () => {
   ): Promise<StartupHookFailure[]> => {
     const failures: StartupHookFailure[] = []
     for (const extension of extensions) {
-      if (!customNodeStore.isExtensionEnabled(extension.name)) continue
+      if (!extensionStore.isExtensionEnabled(extension.name)) continue
       try {
         const fn: unknown = extension[method]
         if (typeof fn !== 'function') continue
@@ -340,4 +340,4 @@ export const useCustomNodeService = () => {
   }
 }
 
-provideCustomNodeService(useCustomNodeService)
+provideExtensionService(useExtensionService)

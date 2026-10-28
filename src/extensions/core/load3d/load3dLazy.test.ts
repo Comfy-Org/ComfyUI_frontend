@@ -123,16 +123,16 @@ async function loadLazyExtensionFresh() {
   vi.resetModules()
   const { load3dLazyExtension } =
     await import('@/extensions/core/load3d/load3dLazy')
-  const { useCustomNodeStore } =
-    await import('@/platform/customNodes/stores/customNodeStore')
+  const { useExtensionStore } =
+    await import('@/platform/extensions/stores/extensionStore')
   const { app } = await import('@/scripts/app')
   const { reportError } = await import('@/platform/telemetry/reportError')
-  const customNodeStore = useCustomNodeStore()
+  const extensionStore = useExtensionStore()
   return {
     app,
     reportError,
-    customNodeStore,
-    registeredNames: () => customNodeStore.extensions.map(({ name }) => name),
+    extensionStore,
+    registeredNames: () => extensionStore.extensions.map(({ name }) => name),
     registerNodeDef: (nodeData: ComfyNodeDef) =>
       load3dLazyExtension.beforeRegisterNodeDef!(
         fromAny<typeof LGraphNode, unknown>({}),
@@ -335,9 +335,9 @@ describe('load3dLazy', () => {
   })
 
   it('registers but does not replay lazy extensions that are disabled', async () => {
-    const { customNodeStore, registeredNames, createNode } =
+    const { extensionStore, registeredNames, createNode } =
       await loadLazyExtensionFresh()
-    customNodeStore.loadDisabledExtensionNames(['Comfy.Preview3D'])
+    extensionStore.loadDisabledExtensionNames(['Comfy.Preview3D'])
 
     await createNode(makeNode('Preview3D'))
 
@@ -351,9 +351,9 @@ describe('load3dLazy', () => {
   })
 
   it('rolls back a partial registration when a lazy 3D extension name is taken, then retries once it is free', async () => {
-    const { customNodeStore, registeredNames, createNode, reportError } =
+    const { extensionStore, registeredNames, createNode, reportError } =
       await loadLazyExtensionFresh()
-    customNodeStore.registerExtension({ name: 'Comfy.CreateLightInfo' })
+    extensionStore.registerExtension({ name: 'Comfy.CreateLightInfo' })
 
     await expect(createNode(makeNode('Load3D'))).resolves.toBeUndefined()
 
@@ -364,7 +364,7 @@ describe('load3dLazy', () => {
       surface: 'graph'
     })
 
-    customNodeStore.unregisterExtension('Comfy.CreateLightInfo')
+    extensionStore.unregisterExtension('Comfy.CreateLightInfo')
     await createNode(makeNode('Preview3D'))
 
     expect(registeredNames()).toEqual(LAZY_EXTENSION_REGISTRATION_ORDER)

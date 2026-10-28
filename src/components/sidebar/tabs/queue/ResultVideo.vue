@@ -9,7 +9,7 @@
 import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
   resultItemUrl,
@@ -26,7 +26,7 @@ const props = defineProps<{
 }>()
 
 const settingStore = useSettingStore()
-const { isExtensionInstalled, isExtensionEnabled } = useCustomNodeStore()
+const { isExtensionInstalled, isExtensionEnabled } = useExtensionStore()
 
 const vhsAdvancedPreviews = computed(() => {
   return (

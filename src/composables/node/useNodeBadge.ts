@@ -4,7 +4,7 @@ import { useNodePricing } from '@/composables/node/useNodePricing'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { installNodeBadges } from '@/systems/badgeSystem'
 
 /**
@@ -13,7 +13,7 @@ import { installNodeBadges } from '@/systems/badgeSystem'
  */
 export const useNodeBadge = () => {
   const settingStore = useSettingStore()
-  const customNodeStore = useCustomNodeStore()
+  const extensionStore = useExtensionStore()
   const canvasStore = useCanvasStore()
 
   const showApiPricingBadge = computed(() =>
@@ -33,7 +33,7 @@ export const useNodeBadge = () => {
   )
 
   onMounted(() => {
-    if (customNodeStore.isExtensionInstalled('Comfy.NodeBadge')) return
+    if (extensionStore.isExtensionInstalled('Comfy.NodeBadge')) return
 
     const nodePricing = useNodePricing()
 
@@ -45,7 +45,7 @@ export const useNodeBadge = () => {
       }
     )
 
-    customNodeStore.registerExtension({
+    extensionStore.registerExtension({
       name: 'Comfy.NodeBadge',
       init() {
         installNodeBadges()

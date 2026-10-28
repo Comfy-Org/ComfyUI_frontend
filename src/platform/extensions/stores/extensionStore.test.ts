@@ -1,24 +1,24 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
-describe('customNodeStore', () => {
+describe('extensionStore', () => {
   describe('registerExtension', () => {
     it('registers an extension by name', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       store.registerExtension({ name: 'test.ext' })
       expect(store.isExtensionInstalled('test.ext')).toBe(true)
     })
 
     it('throws for extension without name', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       expect(() => store.registerExtension({ name: '' })).toThrow(
         "Extensions must have a 'name' property."
       )
     })
 
     it('throws for duplicate registration', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       store.registerExtension({ name: 'dup' })
       expect(() => store.registerExtension({ name: 'dup' })).toThrow(
         "Extension named 'dup' already registered."
@@ -26,7 +26,7 @@ describe('customNodeStore', () => {
     })
 
     it('warns when registering a disabled extension but still installs it', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       try {
         store.loadDisabledExtensionNames(['disabled.ext'])
         store.registerExtension({ name: 'disabled.ext' })
@@ -43,14 +43,14 @@ describe('customNodeStore', () => {
 
   describe('isExtensionInstalled', () => {
     it('returns false for uninstalled extension', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       expect(store.isExtensionInstalled('missing')).toBe(false)
     })
   })
 
   describe('agent provenance', () => {
     it('attributes explicit provenance or an agent.<pack>. prefix, and nothing else', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       store.registerExtension({
         name: 'custom.toolbar',
         provenance: { createdBy: 'comfy-agent' }
@@ -70,20 +70,20 @@ describe('customNodeStore', () => {
 
   describe('isExtensionEnabled / loadDisabledExtensionNames', () => {
     it('all extensions are enabled by default', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       store.registerExtension({ name: 'fresh' })
       expect(store.isExtensionEnabled('fresh')).toBe(true)
     })
 
     it('disables extensions from provided list', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       store.loadDisabledExtensionNames(['off.ext'])
       store.registerExtension({ name: 'off.ext' })
       expect(store.isExtensionEnabled('off.ext')).toBe(false)
     })
 
     it('always disables hardcoded extensions', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       store.loadDisabledExtensionNames([])
       store.registerExtension({ name: 'pysssss.Locking' })
       store.registerExtension({ name: 'regular.ext' })
@@ -98,7 +98,7 @@ describe('customNodeStore', () => {
 
   describe('enabledExtensions', () => {
     it('filters out disabled extensions', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       store.loadDisabledExtensionNames(['ext.off'])
       store.registerExtension({ name: 'ext.on' })
       store.registerExtension({ name: 'ext.off' })
@@ -111,19 +111,19 @@ describe('customNodeStore', () => {
 
   describe('isExtensionReadOnly', () => {
     it('returns true for always-disabled extensions', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       expect(store.isExtensionReadOnly('pysssss.Locking')).toBe(true)
     })
 
     it('returns false for normal extensions', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       expect(store.isExtensionReadOnly('some.custom.ext')).toBe(false)
     })
   })
 
   describe('inactiveDisabledExtensionNames', () => {
     it('returns disabled names not currently installed', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       store.loadDisabledExtensionNames(['ghost.ext', 'installed.ext'])
       store.registerExtension({ name: 'installed.ext' })
 
@@ -136,7 +136,7 @@ describe('customNodeStore', () => {
 
   describe('core extensions', () => {
     it('captures current extensions as core', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       store.registerExtension({ name: 'core.a' })
       store.registerExtension({ name: 'core.b' })
       store.captureCoreExtensions()
@@ -146,7 +146,7 @@ describe('customNodeStore', () => {
     })
 
     it('identifies third-party extensions registered after capture', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       store.registerExtension({ name: 'core.x' })
       store.captureCoreExtensions()
 
@@ -157,7 +157,7 @@ describe('customNodeStore', () => {
     })
 
     it('returns false for isCoreExtension before capture', () => {
-      const store = useCustomNodeStore()
+      const store = useExtensionStore()
       store.registerExtension({ name: 'ext.pre' })
       expect(store.isCoreExtension('ext.pre')).toBe(false)
     })
