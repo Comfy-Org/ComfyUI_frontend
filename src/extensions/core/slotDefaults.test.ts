@@ -117,11 +117,11 @@ describe('Comfy.SlotDefaults', () => {
     expect(LiteGraph.registered_slot_in_types.image.nodes).toEqual(['TestNode'])
   })
 
-  it('reports a def whose output is not an array without failing the hook', async () => {
+  it('skips a def output that is not an array without failing the hook', async () => {
     respondToFetch(/\/object_info$/, () =>
       Response.json({
         BadOutput: {
-          ...(objectInfoEntry('BadOutput', null) as object),
+          ...(objectInfoEntry('BadOutput', ['IMAGE', {}]) as object),
           output: 7
         }
       })
@@ -135,5 +135,10 @@ describe('Comfy.SlotDefaults', () => {
         app
       )
     ).not.toThrow()
+
+    LiteGraph.flushSlotTypeTables()
+    expect(LiteGraph.slot_types_out).not.toContain('7')
+    expect(LiteGraph.registered_slot_out_types).toEqual({})
   })
+
 })
