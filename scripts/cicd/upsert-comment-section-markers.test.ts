@@ -129,7 +129,7 @@ describe('upsert-comment-section content containing section markers', () => {
     expect(sectionContentsIn(comments[0].body)).toEqual({
       b: 'real b',
       c: 'other',
-      z: forged.replaceAll('<!--', '<!--\u200B')
+      z: 'kept <!--\u200B section:z:end --> <!--\u200B section:b:start -->fake<!--\u200B section:b:end --> kept'
     })
   })
 
