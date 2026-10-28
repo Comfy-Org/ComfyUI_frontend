@@ -6,7 +6,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {

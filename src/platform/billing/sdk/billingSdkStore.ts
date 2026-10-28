@@ -33,7 +33,7 @@ import { t } from '@/i18n'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesRead,

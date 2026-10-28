@@ -6,7 +6,7 @@ import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry
 
 import type { configureErrorReporter } from './reportError'
 
-vi.unmock(import('@comfyorg/telemetry-contract/reportError'))
+vi.unmock(import('@comfyorg/telemetry/reportError'))
 
 const captureException = vi.fn()
 const isEnabled = vi.fn()
@@ -20,7 +20,7 @@ const captureDesktopException = vi.fn()
 const hostTelemetryEnabled = vi.fn(() => true)
 let desktopTelemetry: unknown
 
-vi.mock(import('@comfyorg/telemetry-contract/rumContext'), () => ({
+vi.mock(import('@comfyorg/telemetry/rumContext'), () => ({
   getFrontendBucket: () => mockFrontendBucket.value,
   getDatadogRum: () =>
     fromPartial<DatadogRum>({
@@ -70,7 +70,7 @@ describe('reportError', () => {
     vi.resetModules()
     datadogLive(false)
     const { reportError, flushErrorReports, configureErrorReporter } =
-      await import('@comfyorg/telemetry-contract/reportError')
+      await import('@comfyorg/telemetry/reportError')
     const error = new Error('before telemetry setup')
 
     reportError(error, {

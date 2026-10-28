@@ -470,9 +470,9 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:packages/tailwind-utils
-      '@comfyorg/telemetry-contract':
+      '@comfyorg/telemetry':
         specifier: workspace:*
-        version: link:packages/telemetry-contract
+        version: link:packages/telemetry
       '@comfyorg/viewport3d':
         specifier: workspace:*
         version: link:packages/viewport3d
@@ -1401,7 +1401,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
-  packages/telemetry-contract:
+  packages/telemetry:
     dependencies:
       '@comfyorg/account-core':
         specifier: workspace:*

@@ -14,7 +14,7 @@ import type {
   AgentPaywallSurface,
   AgentStarterPromptAssignment,
   AgentStopMethod
-} from '@comfyorg/telemetry-contract/types'
+} from '@comfyorg/telemetry/types'
 
 import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'

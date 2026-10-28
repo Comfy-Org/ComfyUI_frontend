@@ -298,11 +298,11 @@ vi.mock(import('@/composables/useIntersectionObserver'), () => ({
   useIntersectionObserver: vi.fn()
 }))
 
-vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 import WorkflowTemplateSelectorDialog from './WorkflowTemplateSelectorDialog.vue'
 

@@ -3,7 +3,7 @@ import { api } from '@/scripts/api'
 import type {
   TelemetryProvider,
   WorkflowImportMetadata
-} from '@comfyorg/telemetry-contract/types'
+} from '@comfyorg/telemetry/types'
 
 /**
  * ClickHouse Telemetry Provider - Cloud Build Implementation

@@ -3,7 +3,7 @@ import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { defineStore } from 'pinia'
 import { computed, shallowRef, watch } from 'vue'
 
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import {
   DEPLOYMENT_LISTING_BACKSTOP_MS,

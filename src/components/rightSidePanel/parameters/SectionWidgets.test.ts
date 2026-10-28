@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -29,7 +29,7 @@ const setDirty = vi.fn()
 const getNodeById = vi.fn()
 const animateToBounds = vi.fn()
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const WidgetItemStub = defineComponent({
   inheritAttrs: false,

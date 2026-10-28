@@ -1,3 +1,3 @@
 import { vi } from 'vitest'
 
-vi.mock(import('@comfyorg/telemetry-contract/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))

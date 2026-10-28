@@ -4,7 +4,7 @@ import { nextTick, watch } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type {
   AgentMessages,

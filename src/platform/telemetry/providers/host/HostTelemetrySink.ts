@@ -77,11 +77,11 @@ import type {
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata
-} from '@comfyorg/telemetry-contract/types'
+} from '@comfyorg/telemetry/types'
 import {
   CANCELLATION_STAGE_EVENTS,
   TelemetryEvents
-} from '@comfyorg/telemetry-contract/types'
+} from '@comfyorg/telemetry/types'
 import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<

@@ -1,6 +1,6 @@
-import { setTelemetryRegistry } from '@comfyorg/telemetry-contract'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
 import { isHostTelemetryEnabled } from './hostTelemetryEnabled'
-import { TelemetryRegistry } from '@comfyorg/telemetry-contract/TelemetryRegistry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { HostTelemetrySink } from './providers/host/HostTelemetrySink'
 
 export function initHostTelemetry(): void {

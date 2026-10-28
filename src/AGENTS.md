@@ -7,7 +7,7 @@
   and when a throw is still right.
 - User-friendly and actionable messages
 - Proper error propagation
-- Report failures with `reportError()` from `@comfyorg/telemetry-contract/reportError` —
+- Report failures with `reportError()` from `@comfyorg/telemetry/reportError` —
   never `captureException` or `datadogRum.addError` directly. Each of those
   reaches one sink, so the failure is invisible in the other console. Enforced
   by `no-restricted-imports`; raw sinks belong in app-side telemetry setup.

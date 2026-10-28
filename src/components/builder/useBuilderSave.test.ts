@@ -6,7 +6,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -26,7 +26,7 @@ vi.mock(import('@/composables/useAppMode'))
 
 vi.mock(import('@/composables/useErrorHandling'))
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 

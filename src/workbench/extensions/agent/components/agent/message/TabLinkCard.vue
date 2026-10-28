@@ -12,7 +12,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 import { AgentTargetNavigationError } from '@/workbench/extensions/agent/services/agent/targetAwareAgentNavigation'
 

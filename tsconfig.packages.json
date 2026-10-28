@@ -47,7 +47,7 @@
       "path": "./packages/graph-model/tsconfig.declarations.json"
     },
     {
-      "path": "./packages/telemetry-contract/tsconfig.declarations.json"
+      "path": "./packages/telemetry/tsconfig.declarations.json"
     }
   ]
 }

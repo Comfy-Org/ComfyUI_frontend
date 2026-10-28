@@ -26,7 +26,7 @@ vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
 }))
 
 const reportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError
 }))
 

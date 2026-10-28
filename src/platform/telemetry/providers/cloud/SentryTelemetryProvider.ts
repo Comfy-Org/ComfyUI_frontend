@@ -10,7 +10,7 @@ import type {
   NodeAddedMetadata,
   ShellLayoutMetadata,
   TelemetryProvider
-} from '@comfyorg/telemetry-contract/types'
+} from '@comfyorg/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
 export class SentryTelemetryProvider implements TelemetryProvider {

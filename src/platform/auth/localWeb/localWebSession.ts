@@ -4,7 +4,7 @@ import { startDesktopHostSession } from '@/platform/auth/desktopHost/desktopHost
 import type { LocalWebAuthEnvironment } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createLocalWebAuthBridge } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createStorageTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 /**
  * Hosts whose origin Cloud allows to read `/oauth/token` responses. `[::1]` is

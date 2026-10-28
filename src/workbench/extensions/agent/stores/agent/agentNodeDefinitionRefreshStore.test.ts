@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'

@@ -115,7 +115,7 @@
     {
       "name": "reportError routes each failure once to the sinks enabled for the distribution and host",
       "checks": [
-        "packages/telemetry-contract/src/reportError.test.ts",
+        "packages/telemetry/src/reportError.test.ts",
         "src/platform/telemetry/reportError.sentry.test.ts",
         "src/platform/telemetry/assertFailureReporter.test.ts",
         "src/platform/telemetry/assetLoadErrorReporting.test.ts"

@@ -18,7 +18,7 @@ import {
   REDACTION_SENTINEL,
   redactTelemetryUrls,
   redactTelemetryValues
-} from '@comfyorg/telemetry-contract/redactTelemetryUrls'
+} from '@comfyorg/telemetry/redactTelemetryUrls'
 
 /** `@sentry/vue` re-exports neither `TransactionEvent` nor `SpanJSON`. */
 type SentryOptions = NonNullable<Parameters<typeof sentryInit>[0]>

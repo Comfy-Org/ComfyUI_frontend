@@ -8,8 +8,8 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import InviteMemberDialogContent from '@/platform/account/components/dialogs/InviteMemberDialogContent.vue'
 
@@ -22,8 +22,8 @@ const mockOccupiedSeats = ref<number | null>(0)
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@comfyorg/telemetry-contract'))
-vi.mock(import('@comfyorg/telemetry-contract/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const i18n = createI18n({
   legacy: false,

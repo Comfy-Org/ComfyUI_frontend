@@ -4,14 +4,14 @@ import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type {
   AgentConsentNotOfferedReason,
   AgentConsentOfferExit,
   AgentConsentOfferStage
-} from '@comfyorg/telemetry-contract/types'
+} from '@comfyorg/telemetry/types'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import {
   CONSENT_DIALOG_KEY,

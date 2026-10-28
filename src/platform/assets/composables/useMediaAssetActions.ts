@@ -8,7 +8,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {

@@ -2,7 +2,7 @@ import { runWhenGlobalIdle } from '@/base/common/async'
 import type { SlotTypeDefaultNodeOpts } from '@/lib/litegraph/src/LiteGraphGlobal'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { collectRegistrableSlotTypes } from '@/extensions/core/slotDefaultTypes'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
 

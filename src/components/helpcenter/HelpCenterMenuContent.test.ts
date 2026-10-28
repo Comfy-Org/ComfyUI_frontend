@@ -43,7 +43,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: () => null

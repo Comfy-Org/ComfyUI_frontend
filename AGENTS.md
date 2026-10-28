@@ -298,7 +298,7 @@ ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at mos
     suggests adding a comment. An example that contains comments is not
     permission to write them.
 - NEVER call `captureException` or `datadogRum.addError` directly
-  - Use `reportError()` from `@comfyorg/telemetry-contract/reportError`; see `src/AGENTS.md`
+  - Use `reportError()` from `@comfyorg/telemetry/reportError`; see `src/AGENTS.md`
   - Each raw sink reaches one console, so the failure reads as zero in the other
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme

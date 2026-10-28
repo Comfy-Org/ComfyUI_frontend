@@ -5,7 +5,7 @@ import {
   authenticatedRemoteConfigState,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
@@ -15,7 +15,7 @@ import {
 } from './starterPromptSet'
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/utils/devFeatureFlagOverride'))
 vi.mock(import('@/utils/sessionFeatureFlagOverride'))
 

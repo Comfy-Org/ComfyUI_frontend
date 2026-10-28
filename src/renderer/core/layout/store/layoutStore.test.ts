@@ -19,7 +19,7 @@ import type {
 import type { NodeLayout } from '@comfyorg/graph-model/layout'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 

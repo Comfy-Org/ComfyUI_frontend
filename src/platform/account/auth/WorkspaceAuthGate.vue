@@ -104,8 +104,8 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
-import type { ReportErrorOptions } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { ReportErrorOptions } from '@comfyorg/telemetry/reportError'
 import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'

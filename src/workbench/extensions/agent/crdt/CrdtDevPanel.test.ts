@@ -18,7 +18,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
-vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError
 }))
 

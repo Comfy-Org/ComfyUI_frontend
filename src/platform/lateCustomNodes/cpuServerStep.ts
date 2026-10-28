@@ -1,7 +1,7 @@
 import { delay } from 'es-toolkit'
 import { shallowRef } from 'vue'
 
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { WorkspaceDeploymentCpuServer } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'

@@ -2,9 +2,9 @@ import { useStorage } from '@vueuse/core'
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
-import type { AgentOnboardingNotShownMetadata } from '@comfyorg/telemetry-contract/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { AgentOnboardingNotShownMetadata } from '@comfyorg/telemetry/types'
 
 export interface CoachStep {
   target: string

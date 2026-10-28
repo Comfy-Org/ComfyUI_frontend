@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import type { AgentPanelRenderStage } from '@comfyorg/telemetry-contract/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentPanelRenderStage } from '@comfyorg/telemetry/types'
 
 import { useAgentPanelRenderStore } from './agentPanelRenderStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 type RenderStore = ReturnType<typeof useAgentPanelRenderStore>
 

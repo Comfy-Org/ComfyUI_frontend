@@ -161,9 +161,9 @@ import SubscribeButton from '@/platform/billing/subscription/components/Subscrib
 import SubscriptionBenefits from '@/platform/billing/subscription/components/SubscriptionBenefits.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
-import type { PaymentIntentSource } from '@comfyorg/telemetry-contract/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 
 const { onClose, reason, paymentIntentSource, onChooseTeam } = defineProps<{
   onClose: () => void

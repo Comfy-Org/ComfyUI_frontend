@@ -144,7 +144,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(
   import('@/platform/updates/common/useFrontendVersionMismatchWarning'),
   () => ({

@@ -87,7 +87,7 @@ import {
   cancellationSurveyExitEvent,
   cancellationSurveyShownEvent
 } from '@/platform/billing/subscription/utils/cancellationSurvey'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 const { surveyId, experimentVariant, onExit } = defineProps<{
   surveyId: string

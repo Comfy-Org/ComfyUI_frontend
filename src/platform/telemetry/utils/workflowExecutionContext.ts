@@ -1,7 +1,7 @@
 import type {
   ExecutionContext,
   WorkflowExecutionContext
-} from '@comfyorg/telemetry-contract/types'
+} from '@comfyorg/telemetry/types'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 
 interface WorkflowExecutionContextOptions {

@@ -8,8 +8,8 @@
 import type { BillingIntent } from '@comfyorg/billing-contract'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import type { PaymentIntentSource } from '@comfyorg/telemetry-contract/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
 import {
   readCheckoutOperation,

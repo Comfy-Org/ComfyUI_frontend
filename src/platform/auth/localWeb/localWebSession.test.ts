@@ -9,7 +9,7 @@ import {
 import type { LocalWebAuthEnvironment } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createMemoryTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
 import { startLocalWebSession } from '@/platform/auth/localWeb/localWebSession'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 vi.mock(import('@/composables/useFeatureFlags'))
 

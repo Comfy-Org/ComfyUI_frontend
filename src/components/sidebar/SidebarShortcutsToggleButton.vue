@@ -12,7 +12,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 

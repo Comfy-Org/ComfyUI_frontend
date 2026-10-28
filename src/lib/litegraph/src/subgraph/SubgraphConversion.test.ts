@@ -24,7 +24,7 @@ import {
   createTestNode,
   createTestWidgetNode
 } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
-import type { reportError } from '@comfyorg/telemetry-contract/reportError'
+import type { reportError } from '@comfyorg/telemetry/reportError'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -42,7 +42,7 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 const mockReportError = vi.hoisted(() => vi.fn<typeof reportError>())
-vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 

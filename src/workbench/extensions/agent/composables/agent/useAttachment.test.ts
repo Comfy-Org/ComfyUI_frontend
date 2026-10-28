@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import {

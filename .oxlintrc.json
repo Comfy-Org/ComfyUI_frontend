@@ -493,12 +493,12 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@comfyorg/telemetry-contract/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@comfyorg/telemetry-contract/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -532,12 +532,12 @@
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
                 "allowTypeImports": true,
-                "message": "Use reportError() from '@comfyorg/telemetry-contract/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@comfyorg/telemetry-contract/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -559,12 +559,12 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@comfyorg/telemetry-contract/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@comfyorg/telemetry-contract/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }

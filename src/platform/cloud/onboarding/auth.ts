@@ -7,7 +7,7 @@ import {
   consumeSurveyReplayRequest,
   isSurveyReplayRequested
 } from '@/platform/onboarding/onboardingReplay'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { toError } from '@comfyorg/shared-frontend-utils/errorUtil'

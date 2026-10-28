@@ -17,8 +17,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import type { reportError as reportErrorFn } from '@comfyorg/telemetry-contract/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { reportError as reportErrorFn } from '@comfyorg/telemetry/reportError'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -165,10 +165,10 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
 
 vi.mock(import('./devPanelLog'), { spy: true })
 
-vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: telemetryState.reportError
 }))
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }

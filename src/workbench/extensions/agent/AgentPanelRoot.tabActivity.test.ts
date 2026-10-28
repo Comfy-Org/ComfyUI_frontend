@@ -80,7 +80,7 @@ vi.mock<unknown>(
   () => ({ useAccountPreconditionDialog: () => ({ open: vi.fn() }) })
 )
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'), {

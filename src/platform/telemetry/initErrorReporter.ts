@@ -1,6 +1,6 @@
 import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 
-import { configureErrorReporter } from '@comfyorg/telemetry-contract/reportError'
+import { configureErrorReporter } from '@comfyorg/telemetry/reportError'
 
 import { isCloud } from '@/platform/distribution/types'
 

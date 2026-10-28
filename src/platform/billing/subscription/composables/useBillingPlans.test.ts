@@ -43,7 +43,7 @@ const importUseBillingPlans = async () => {
     await Promise.all([
       import('@/platform/billing/subscription/composables/useBillingPlans'),
       import('@/platform/billing/api/billingApi'),
-      import('@comfyorg/telemetry-contract/reportError')
+      import('@comfyorg/telemetry/reportError')
     ])
   return { useBillingPlans, billingApi, reportError }
 }

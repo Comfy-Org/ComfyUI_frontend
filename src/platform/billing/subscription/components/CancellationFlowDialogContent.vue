@@ -36,7 +36,7 @@ import {
   createCancelFlowReporter,
   getSubscriptionCancellationMetadata
 } from '@/platform/billing/subscription/utils/subscriptionCancellationTelemetry'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 type CancellationFlowStep = 'survey' | 'offer' | 'confirm'

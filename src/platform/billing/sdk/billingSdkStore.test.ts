@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
@@ -48,7 +48,7 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 

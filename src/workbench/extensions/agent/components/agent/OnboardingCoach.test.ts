@@ -5,13 +5,13 @@ import { nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const telemetry = () => vi.mocked(useTelemetry())!
 

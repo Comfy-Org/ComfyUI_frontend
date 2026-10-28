@@ -253,11 +253,11 @@ import {
 import { isPlanDowngrade } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
-} from '@comfyorg/telemetry-contract/types'
+} from '@comfyorg/telemetry/types'
 import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useAuthStore } from '@/stores/authStore'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'

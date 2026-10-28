@@ -5,11 +5,11 @@ import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   OnboardingTourStepStage,
   OnboardingTourStepMetadata
-} from '@comfyorg/telemetry-contract/types'
+} from '@comfyorg/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -25,7 +25,7 @@ import { TOUR_SEEN_SETTING, tourDefinition } from './onboardingTours'
 import type { CoachId, CoachStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const dispatcher = useTelemetry()
 assert.exists(dispatcher)

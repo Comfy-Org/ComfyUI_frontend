@@ -6,8 +6,8 @@ import {
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { onCapabilityRevision } from '@/platform/remote/ingest/capabilityRevision'
 import type { BillingCapabilitiesRead } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'

@@ -2,8 +2,8 @@ import { useTimeoutFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import type { AgentPanelRenderStage } from '@comfyorg/telemetry-contract/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentPanelRenderStage } from '@comfyorg/telemetry/types'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const AGENT_PANEL_RENDER_STALL_MS = 3_000

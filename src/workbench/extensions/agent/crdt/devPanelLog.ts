@@ -1,6 +1,6 @@
 import { shallowRef, triggerRef } from 'vue'
 
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { isCrdtDebugEnabled } from './crdtDebugGate'
 import type { CrdtLogLevel } from './crdtDebugGate'

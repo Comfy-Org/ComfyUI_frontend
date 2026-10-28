@@ -3,10 +3,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { slotDefaultsExtension } from '@/extensions/core/slotDefaults'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { app } from '@/scripts/app'
 
-vi.mock(import('@comfyorg/telemetry-contract/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 function objectInfoEntry(name: string, image: unknown): unknown {
   return {

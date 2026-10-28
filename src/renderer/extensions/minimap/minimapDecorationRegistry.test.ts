@@ -4,7 +4,7 @@ import {
   getMinimapDecorations,
   registerMinimapDecorationLayer
 } from '@/platform/canvas/minimapDecorationRegistry'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   toOwningGraphId,
   toRootGraphId

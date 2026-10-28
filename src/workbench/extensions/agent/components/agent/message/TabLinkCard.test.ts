@@ -40,7 +40,7 @@ vi.mock(
 
 vi.mock(import('@/scripts/api'))
 
-vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 

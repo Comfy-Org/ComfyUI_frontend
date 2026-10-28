@@ -19,8 +19,8 @@ import type {
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
   UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS,
@@ -88,7 +88,7 @@ vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
   })
 }))
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/remote/ingest/ingestApiUrl'), () => ({
   ingestApiUrl: (route: string) => `https://api.example.com/api${route}`

@@ -21,7 +21,7 @@ vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('firebase/auth'))
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)

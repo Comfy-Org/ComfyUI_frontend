@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   } | null
 }))
 
-vi.mock<unknown>(import('@comfyorg/telemetry-contract'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry'), () => ({
   useTelemetry: () => mocks.telemetry
 }))
 

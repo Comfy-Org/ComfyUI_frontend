@@ -25,7 +25,7 @@ import type { NodeError } from '@/platform/remote/comfyui/types'
 import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
-} from '@comfyorg/telemetry-contract/types'
+} from '@comfyorg/telemetry/types'
 import type {
   ComfyWorkflow,
   LoadedComfyWorkflow

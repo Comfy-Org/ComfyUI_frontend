@@ -4,7 +4,7 @@ import {
   redactTelemetryError,
   redactTelemetryUrls,
   redactTelemetryValues
-} from '@comfyorg/telemetry-contract/redactTelemetryUrls'
+} from '@comfyorg/telemetry/redactTelemetryUrls'
 
 function denselySharedValue(): Record<string, unknown> {
   let shared: Record<string, unknown> = {

@@ -17,7 +17,7 @@ import {
 } from './dynamicGroupDiagnostics'
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
-vi.mock(import('@comfyorg/telemetry-contract/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const MAX = 3
 const FIELDS_PER_ROW = 1

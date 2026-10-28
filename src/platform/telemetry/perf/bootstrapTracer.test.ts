@@ -2,8 +2,8 @@ import type { DatadogRum } from '@datadog/browser-rum'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { TelemetryEvents } from '@comfyorg/telemetry-contract/types'
-import { useTelemetry as sharedUseTelemetry } from '@comfyorg/telemetry-contract'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
+import { useTelemetry as sharedUseTelemetry } from '@comfyorg/telemetry'
 
 import { BootstrapTracer } from './bootstrapTracer'
 
@@ -16,13 +16,13 @@ const { addAction, addTiming, rumInstalled, setViewLoadingTime } = vi.hoisted(
   })
 )
 
-vi.mock(import('@comfyorg/telemetry-contract/rumContext'), () => ({
+vi.mock(import('@comfyorg/telemetry/rumContext'), () => ({
   getDatadogRum: () =>
     rumInstalled.value
       ? fromPartial<DatadogRum>({ addAction, addTiming, setViewLoadingTime })
       : undefined
 }))
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 describe('bootstrapTracer', () => {
   beforeEach(() => {

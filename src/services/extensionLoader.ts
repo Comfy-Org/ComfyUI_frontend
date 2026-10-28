@@ -12,7 +12,7 @@ import {
 } from '@/platform/telemetry/extensionLoadTelemetry'
 import type { ExtensionFailureDiagnostic } from '@/platform/telemetry/extensionLoadTelemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
 import { useExtensionStore } from '@/stores/extensionStore'

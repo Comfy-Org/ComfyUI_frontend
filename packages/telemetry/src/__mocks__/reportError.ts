@@ -5,7 +5,7 @@ import type {
   flushErrorReports as realFlushErrorReports,
   markErrorReported as realMarkErrorReported,
   reportError as realReportError
-} from '@comfyorg/telemetry-contract/reportError'
+} from '@comfyorg/telemetry/reportError'
 
 export const reportError = vi.fn<typeof realReportError>()
 export const markErrorReported = vi.fn<typeof realMarkErrorReported>()

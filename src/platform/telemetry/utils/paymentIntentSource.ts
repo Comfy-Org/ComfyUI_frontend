@@ -3,7 +3,7 @@ import type { CheckoutEntrySource } from '@comfyorg/account-core/billing'
 import type {
   AddCreditsClickMetadata,
   PaymentIntentSource
-} from '@comfyorg/telemetry-contract/types'
+} from '@comfyorg/telemetry/types'
 
 type AddCreditsClickSource = AddCreditsClickMetadata['source']
 

@@ -18,8 +18,8 @@ import {
   unionRect
 } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import type { AgentOnboardingAction } from '@comfyorg/telemetry-contract/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentOnboardingAction } from '@comfyorg/telemetry/types'
 import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 import {
   reportMissingCoachTarget,

@@ -22,7 +22,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { extra: {} } }
 }))
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(import('./useBuilderSave'), () => ({
   useBuilderSave: () => ({

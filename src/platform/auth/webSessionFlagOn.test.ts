@@ -60,8 +60,8 @@ import {
   webSessionSend
 } from '@/platform/auth/session/webSessionFetch'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -175,7 +175,7 @@ vi.mock(import('@/views/UserSelectView.vue'), async () => ({
   default: defineComponent({ render: () => null })
 }))
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const { cloudSessionCookieExtension } =
   await import('@/extensions/core/cloudSessionCookie')

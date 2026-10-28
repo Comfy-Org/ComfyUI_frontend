@@ -125,8 +125,7 @@ async function loadLazyExtensionFresh() {
     await import('@/extensions/core/load3d/load3dLazy')
   const { useExtensionStore } = await import('@/stores/extensionStore')
   const { app } = await import('@/scripts/app')
-  const { reportError } =
-    await import('@comfyorg/telemetry-contract/reportError')
+  const { reportError } = await import('@comfyorg/telemetry/reportError')
   const extensionStore = useExtensionStore()
   return {
     app,

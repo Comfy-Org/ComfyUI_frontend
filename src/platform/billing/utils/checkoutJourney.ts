@@ -11,7 +11,7 @@ import {
   isContractIdentifier
 } from '@comfyorg/billing-contract'
 
-import type { PaymentIntentSource } from '@comfyorg/telemetry-contract/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { paymentIntentSourceForJourneyEntry } from '@/platform/telemetry/utils/paymentIntentSource'
 
 /**

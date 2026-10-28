@@ -10,8 +10,8 @@ import {
   mapApiTeamCreditStops
 } from '@comfyorg/account-ui/billing/catalog'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import type { PaymentIntentSource } from '@comfyorg/telemetry-contract/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type {
   SubscriptionCheckoutSelection,
   SubscriptionDialogOptions

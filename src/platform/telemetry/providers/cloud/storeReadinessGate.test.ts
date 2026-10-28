@@ -42,7 +42,7 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: hoisted.reportError
 }))
 
@@ -84,7 +84,7 @@ import {
   markStoresPending,
   markStoresReady
 } from '@/platform/telemetry/storeReadiness'
-import { TelemetryEvents } from '@comfyorg/telemetry-contract/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 import { CustomerIoTelemetryProvider } from './CustomerIoTelemetryProvider'
 import { MixpanelTelemetryProvider } from './MixpanelTelemetryProvider'

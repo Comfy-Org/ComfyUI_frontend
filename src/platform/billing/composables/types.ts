@@ -4,7 +4,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { PaymentIntentSource } from '@comfyorg/telemetry-contract/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
 import type {
   BillingStatus,

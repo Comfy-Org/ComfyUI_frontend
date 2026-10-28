@@ -20,9 +20,9 @@ import { useAuthStore } from '@/stores/authStore'
 
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 
-import type { PaymentIntentSource } from '@comfyorg/telemetry-contract/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import {
   clearCheckoutJourney,
   getActiveCheckoutJourney,
@@ -414,9 +414,9 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
-vi.mock(import('@comfyorg/telemetry-contract'))
+vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@comfyorg/telemetry-contract/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 

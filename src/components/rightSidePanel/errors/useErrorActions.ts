@@ -1,6 +1,6 @@
 import { useCommandStore } from '@/stores/commandStore'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 export function useErrorActions() {
   const telemetry = useTelemetry()

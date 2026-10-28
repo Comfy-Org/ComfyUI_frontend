@@ -26,7 +26,7 @@ import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   NodeExecutionId,
   NodeLocatorId

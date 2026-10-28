@@ -54,7 +54,7 @@
       "count": 1
     }
   },
-  "packages/telemetry-contract/src/redactTelemetryUrls.ts": {
+  "packages/telemetry/src/redactTelemetryUrls.ts": {
     "regexp/no-dupe-characters-character-class": {
       "count": 13
     }

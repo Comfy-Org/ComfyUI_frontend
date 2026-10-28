@@ -14,8 +14,8 @@ import { provideBillingDialogs } from '@/platform/billing/subscription/composabl
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import type { CancellationFlowDialogOptions } from '@/platform/billing/subscription/launchCancellationFlow'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
-import type { PaymentIntentSource } from '@comfyorg/telemetry-contract/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import InsufficientCreditsMemberDialog from '@/platform/billing/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -104,8 +104,7 @@ export function useBillingDialogs() {
       // surface with subscriptions enabled. Report it instead of returning
       // silently, so a caller's "Subscribe" button failing to do anything
       // shows up in telemetry rather than only in a user's bug report.
-      const { reportError } =
-        await import('@comfyorg/telemetry-contract/reportError')
+      const { reportError } = await import('@comfyorg/telemetry/reportError')
       reportError(
         new Error(
           'showSubscriptionRequiredDialog: subscription_required gate closed'

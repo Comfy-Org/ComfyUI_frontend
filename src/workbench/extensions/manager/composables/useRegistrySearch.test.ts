@@ -4,7 +4,7 @@ import { effectScope, nextTick, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
-import { reportError } from '@comfyorg/telemetry-contract/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type {
   SearchMode,

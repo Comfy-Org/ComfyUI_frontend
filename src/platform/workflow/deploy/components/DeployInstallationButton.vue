@@ -30,7 +30,7 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
-import { useTelemetry } from '@comfyorg/telemetry-contract'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 
 const emit = defineEmits<{ opened: [] }>()

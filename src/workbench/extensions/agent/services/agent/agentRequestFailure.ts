@@ -1,7 +1,7 @@
 import type {
   AgentRequestErrorName,
   AgentRequestPath
-} from '@comfyorg/telemetry-contract/types'
+} from '@comfyorg/telemetry/types'
 
 /**
  * Route templates a failed agent request can be attributed to.
