@@ -20,7 +20,7 @@
         :aria-label="option.label"
         @click="setViewMode(option.value)"
       >
-        <i :class="cn('size-4', option.icon)" />
+        <i :class="option.icon" />
         <span v-if="!compact">{{ option.label }}</span>
       </Button>
       <div class="mx-1 h-5 w-px shrink-0 bg-border" />
@@ -36,7 +36,7 @@
         :aria-label="previewLabel"
         @click="setPreviewVisible(!previewVisible)"
       >
-        <i class="icon-[lucide--picture-in-picture-2] size-4" />
+        <i class="icon-[lucide--picture-in-picture-2]" />
         <span v-if="!compact">{{ $t('cameraAngle.preview') }}</span>
       </Button>
       <span
@@ -88,8 +88,6 @@ import {
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
 import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'

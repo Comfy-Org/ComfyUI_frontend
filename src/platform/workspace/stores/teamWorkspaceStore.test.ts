@@ -239,7 +239,9 @@ describe('useTeamWorkspaceStore', () => {
 
       await store.initialize()
 
-      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
+      expect(mockWorkspaceApi.list).toHaveBeenCalledExactlyOnceWith({
+        skipStatusRetry: true
+      })
       expect(store.initState).toBe('ready')
       expect(store.workspaces).toHaveLength(2)
       expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
@@ -1511,7 +1513,54 @@ describe('useTeamWorkspaceStore', () => {
         await store.initialize()
 
         expect(store.canCreateWorkspace).toBe(expected)
-        expect(store.workspacesManagedByOrganization).toBe(!expected)
+      }
+    )
+
+    function ownedTeams(count: number) {
+      return Array.from({ length: count }, (_, i) => ({
+        ...mockTeamWorkspace,
+        id: `ws-owned-${i}`,
+        name: `Owned ${i}`
+      }))
+    }
+
+    it.for([
+      {
+        reason: 'organization',
+        response: {
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+          default_workspace_id: mockTeamWorkspace.id,
+          can_create_workspace: false
+        }
+      },
+      {
+        reason: 'unknown',
+        response: {
+          workspaces: [mockPersonalWorkspace, ...ownedTeams(9)],
+          can_create_workspace: false
+        }
+      },
+      {
+        reason: 'unknown',
+        response: {
+          workspaces: [mockPersonalWorkspace],
+          can_create_workspace: false
+        }
+      },
+      {
+        reason: 'limit',
+        response: { workspaces: [mockPersonalWorkspace, ...ownedTeams(9)] }
+      }
+    ])(
+      'names the $reason refusal from the workspace list',
+      async ({ reason, response }) => {
+        mockWorkspaceApi.list.mockResolvedValue(response)
+
+        const store = useTeamWorkspaceStore()
+        await store.initialize()
+
+        expect(store.canCreateWorkspace).toBe(false)
+        expect(store.createWorkspaceRefusal).toBe(reason)
       }
     )
 

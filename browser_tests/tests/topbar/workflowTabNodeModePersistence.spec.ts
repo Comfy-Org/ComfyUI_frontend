@@ -3,7 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 
 // Investigates https://github.com/Comfy-Org/ComfyUI_frontend/issues/18441,
 // which reports node mode (bypass/mute) resetting to ALWAYS for all nodes

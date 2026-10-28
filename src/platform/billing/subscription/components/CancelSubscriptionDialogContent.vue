@@ -31,10 +31,7 @@
           :key="feature.key"
           class="flex flex-col gap-1.5 rounded-[10px] border border-border/50 bg-secondary/50 p-3"
         >
-          <i
-            :class="cn(feature.icon, 'size-4 text-foreground')"
-            aria-hidden="true"
-          />
+          <i :class="cn(feature.icon, 'text-foreground')" aria-hidden="true" />
           <span class="text-sm">{{ feature.title }}</span>
           <span class="text-xs text-muted-foreground">
             {{ feature.description }}

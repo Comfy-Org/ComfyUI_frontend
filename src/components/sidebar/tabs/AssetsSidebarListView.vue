@@ -15,7 +15,7 @@
             :loading="assetsStore.isAssetDeleting(item.asset.id)"
             size="sm"
           >
-            <i class="pi pi-trash text-xs" />
+            <i class="icon-[lucide--trash-2] size-3" />
           </LoadingOverlay>
           <AssetsListItem
             role="button"
@@ -58,7 +58,7 @@
                 :aria-label="t('mediaAsset.actions.moreOptions')"
                 @click.stop="emit('context-menu', $event, item.asset)"
               >
-                <i class="icon-[lucide--ellipsis] size-4" />
+                <i class="icon-[lucide--ellipsis]" />
               </Button>
             </template>
           </AssetsListItem>

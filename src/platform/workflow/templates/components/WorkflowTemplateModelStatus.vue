@@ -31,10 +31,7 @@ const emit = defineEmits<{ download: [] }>()
     :title="row.status.label"
     class="col-start-3 row-start-1 flex size-8 shrink-0 items-center justify-center"
   >
-    <i
-      aria-hidden="true"
-      class="icon-[lucide--circle-check] size-4 text-success"
-    />
+    <i aria-hidden="true" class="icon-[lucide--circle-check] text-success" />
   </span>
   <span
     v-else-if="row.status"

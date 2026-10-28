@@ -16,12 +16,7 @@
         @click="gizmosOn = !gizmosOn"
       >
         <i
-          :class="
-            cn(
-              'size-4',
-              gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'
-            )
-          "
+          :class="gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'"
         />
         <span v-if="!compact">{{ gizmosLabel }}</span>
       </Button>
@@ -40,7 +35,7 @@
         :class="actionClass(effectiveTransformGizmoMode === option.value)"
         @click="transformGizmoMode = option.value"
       >
-        <i :class="cn('size-4', option.icon)" />
+        <i :class="option.icon" />
         <span v-if="!compact">{{ $t(option.labelKey) }}</span>
       </Button>
     </div>
@@ -57,7 +52,7 @@
         :aria-label="$t('load3d.outputView')"
         @click="emit('resetView')"
       >
-        <i class="icon-[lucide--focus] size-4" />
+        <i class="icon-[lucide--focus]" />
       </Button>
       <Button
         variant="textonly"
@@ -71,10 +66,7 @@
       >
         <i
           :class="
-            cn(
-              'size-4',
-              cameraLocked ? 'icon-[lucide--lock]' : 'icon-[lucide--lock-open]'
-            )
+            cameraLocked ? 'icon-[lucide--lock]' : 'icon-[lucide--lock-open]'
           "
         />
       </Button>

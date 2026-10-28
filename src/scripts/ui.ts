@@ -1,3 +1,4 @@
+import type { Point2D as Position2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -12,7 +13,7 @@ import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
 } from '@/platform/telemetry/types'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useCommandStore } from '@/stores/commandStore'
 import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 
@@ -24,11 +25,6 @@ import { toggleSwitch } from './ui/toggleSwitch'
 
 export const ComfyDialog = _ComfyDialog
 export const $el = _$el
-
-type Position2D = {
-  x: number
-  y: number
-}
 
 /** The slice of the app the legacy menu drives. `ComfyApp` implements it. */
 export interface LegacyUIApp {

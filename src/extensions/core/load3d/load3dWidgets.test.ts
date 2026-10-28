@@ -37,7 +37,6 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
 }))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/i18n'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const app = fromPartial<ComfyApp>({})
 

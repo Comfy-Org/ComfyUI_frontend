@@ -25,9 +25,9 @@
         >
           <i
             v-if="!isPlaying"
-            class="icon-[lucide--play] size-4 text-muted-foreground"
+            class="icon-[lucide--play] text-muted-foreground"
           />
-          <i v-else class="icon-[lucide--pause] size-4 text-muted-foreground" />
+          <i v-else class="icon-[lucide--pause] text-muted-foreground" />
         </Button>
 
         <!-- Time Display -->
@@ -66,16 +66,13 @@
         >
           <i
             v-if="showVolumeTwo"
-            class="icon-[lucide--volume-2] size-4 text-muted-foreground"
+            class="icon-[lucide--volume-2] text-muted-foreground"
           />
           <i
             v-else-if="showVolumeOne"
-            class="icon-[lucide--volume-1] size-4 text-muted-foreground"
+            class="icon-[lucide--volume-1] text-muted-foreground"
           />
-          <i
-            v-else
-            class="icon-[lucide--volume-x] size-4 text-muted-foreground"
-          />
+          <i v-else class="icon-[lucide--volume-x] text-muted-foreground" />
         </Button>
 
         <!-- Download Button -->
@@ -88,7 +85,7 @@
           class="size-6"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] size-4 text-muted-foreground" />
+          <i class="icon-[lucide--download] text-muted-foreground" />
         </Button>
 
         <!-- Options Button -->
@@ -100,9 +97,7 @@
               :aria-label="$t('g.moreOptions')"
               class="size-6 rounded-sm"
             >
-              <i
-                class="icon-[lucide--more-vertical] size-4 text-muted-foreground"
-              />
+              <i class="icon-[lucide--more-vertical] text-muted-foreground" />
             </Button>
           </template>
           <template #item="{ item, hasSubmenu }">

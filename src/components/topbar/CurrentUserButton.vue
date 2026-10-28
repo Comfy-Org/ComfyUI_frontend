@@ -34,10 +34,7 @@
               :class="compact && 'h-full w-auto'"
             />
 
-            <i
-              v-if="showArrow"
-              class="icon-[lucide--chevron-down] size-4 px-1"
-            />
+            <i v-if="showArrow" class="icon-[lucide--chevron-down] px-1" />
           </div>
         </Button>
       </PopoverTrigger>
@@ -46,7 +43,7 @@
         align="end"
         :class="
           cn(
-            'max-h-(--reka-popover-content-available-height) max-w-(--reka-popover-content-available-width) overflow-visible rounded-lg border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
+            'overflow-visible rounded-lg border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
             showWorkspacePopover ? 'w-fit max-w-96 min-w-80' : 'w-80'
           )
         "

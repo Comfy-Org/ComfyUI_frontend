@@ -77,7 +77,7 @@
           size="icon"
           @click="dismissWarningBanner"
         >
-          <i class="pi pi-times text-xs text-foreground"></i>
+          <i class="icon-[lucide--x] size-3 text-foreground"></i>
         </Button>
       </div>
 
@@ -87,7 +87,7 @@
         class="mx-6 mb-4 w-auto"
       >
         <template #icon>
-          <i class="icon-[lucide--info] size-4" />
+          <i class="icon-[lucide--info]" />
         </template>
         {{ $t('manager.legacyManagerSearchTip') }}
       </Message>

@@ -107,8 +107,6 @@ vi.mock(import('@/services/extensionService'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const { cloudSessionCookieExtension } =
   await import('@/extensions/core/cloudSessionCookie')
 useExtensionService().registerExtension(cloudSessionCookieExtension)

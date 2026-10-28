@@ -10,8 +10,6 @@ import {
   setCanvasVisible
 } from '@/utils/__tests__/canvasTestUtils'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 describe('createCanvasScheduler', () => {
   let storeCanvas: HTMLCanvasElement
 
