@@ -58,7 +58,6 @@ export function useLegacyBilling(): BillingState & BillingActions {
     subscriptionDuration,
     subscriptionStatus: legacySubscriptionStatus,
     isCancelled,
-    fetchStatus: legacyFetchStatus,
     fetchStatusDirect: legacyFetchStatusDirect,
     manageSubscription: legacyManageSubscription,
     subscribeDirect: legacySubscribeDirect
@@ -207,7 +206,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      await legacyFetchStatus()
+      await legacyFetchStatusDirect()
       if (requestId === latestStatusReadId) statusReadAuthoritative.value = true
     } catch (err) {
       if (requestId === latestStatusReadId)

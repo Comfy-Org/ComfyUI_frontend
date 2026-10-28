@@ -188,12 +188,14 @@ describe('useLegacyBilling', () => {
         scoped_has_funds: { agent: true }
       })
       let rejectStatusRead!: (reason: unknown) => void
-      const statusRead = new Promise<BillingStatusResponse | null | undefined>(
+      const statusRead = new Promise<BillingStatusResponse | null>(
         (_resolve, reject) => {
           rejectStatusRead = (reason) => reject(reason)
         }
       )
-      vi.mocked(useSubscription().fetchStatus).mockReturnValueOnce(statusRead)
+      vi.mocked(useSubscription().fetchStatusDirect).mockReturnValueOnce(
+        statusRead
+      )
       const billing = useLegacyBilling()
 
       const refresh = billing.fetchStatus()
@@ -239,7 +241,7 @@ describe('useLegacyBilling', () => {
 
         await useLegacyBilling().initialize()
 
-        expect(useSubscription().fetchStatus).toHaveBeenCalledTimes(reads)
+        expect(useSubscription().fetchStatusDirect).toHaveBeenCalledTimes(reads)
       }
     )
   })

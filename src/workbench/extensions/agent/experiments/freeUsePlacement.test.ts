@@ -65,7 +65,7 @@ describe('useFreeUsePlacement', () => {
     })
   })
 
-  it('uses the local product default without reporting Cloud experiment telemetry', () => {
+  it('reports Local notice telemetry without Cloud experiment exposure', () => {
     distribution.isCloud = false
     const telemetry = useTelemetry()!
     const { variant, reportNotice } = useFreeUsePlacement()
@@ -74,7 +74,20 @@ describe('useFreeUsePlacement', () => {
     expect(telemetry.trackAgentFreeUseExposure).not.toHaveBeenCalled()
 
     reportNotice({ action: 'shown', placement: LOCAL_FREE_USE_PLACEMENT })
-    expect(telemetry.trackAgentFreeUseNotice).not.toHaveBeenCalled()
+    reportNotice({
+      action: 'learn_more_clicked',
+      placement: LOCAL_FREE_USE_PLACEMENT
+    })
+    expect(telemetry.trackAgentFreeUseNotice).toHaveBeenNthCalledWith(1, {
+      action: 'shown',
+      placement: LOCAL_FREE_USE_PLACEMENT,
+      deployment: 'local'
+    })
+    expect(telemetry.trackAgentFreeUseNotice).toHaveBeenNthCalledWith(2, {
+      action: 'learn_more_clicked',
+      placement: LOCAL_FREE_USE_PLACEMENT,
+      deployment: 'local'
+    })
   })
 
   it('reports a served control arm, which is an arm like any other', () => {

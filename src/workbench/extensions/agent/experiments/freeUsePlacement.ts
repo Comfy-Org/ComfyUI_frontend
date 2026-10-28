@@ -88,13 +88,15 @@ export function useFreeUsePlacement(isCloudDistribution: boolean) {
   }
 
   function reportNotice(metadata: AgentFreeUseNoticeMetadata): void {
-    if (hasQaOverride || !isCloudDistribution) return
+    if (hasQaOverride) return
     if (metadata.action === 'shown' && panelStore.reportedFreeUseImpression)
       return
     const telemetry = useTelemetry()
     if (!telemetry) return
     if (metadata.action === 'shown') panelStore.reportedFreeUseImpression = true
-    telemetry.trackAgentFreeUseNotice(metadata)
+    telemetry.trackAgentFreeUseNotice(
+      isCloudDistribution ? metadata : { ...metadata, deployment: 'local' }
+    )
   }
 
   return {
