@@ -25,6 +25,7 @@ export async function resolveWidgetValueAsset(
   if (storedAsset) return storedAsset
 
   if (!useFeatureFlags().flags.assetsEnabled) return undefined
+  if (!hashFilename) return null
 
   const query = encodeParams({ limit: 1, hash: hashFilename })
   const resp = await api.fetchApi(`/assets?${query}`, { signal })

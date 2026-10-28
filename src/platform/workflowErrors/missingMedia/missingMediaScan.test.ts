@@ -782,6 +782,18 @@ describe('verifyMediaCandidates', () => {
     ])
   })
 
+  it('marks a value with no filename missing without an unfiltered hash query', async () => {
+    stubAssets({ remote: [makeAsset('unrelated.png', 'cc33.png')] })
+    const candidates = [
+      makeCandidate('1', '/ [output]', { isMissing: undefined })
+    ]
+
+    await verifyMediaCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(true)
+    expect(hashLookups()).toEqual([])
+  })
+
   it('leaves resolved candidates untouched', async () => {
     stubAssets({})
     const candidates = [
