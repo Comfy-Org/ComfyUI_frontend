@@ -65,6 +65,12 @@ undo history, and reopen it through normal navigation. While loading, draft
 persistence reads the selected document's frozen state rather than the incoming
 canvas. Revoked requests cannot repaint content from the old context.
 
+Cross-domain cancellation coverage lives in
+[`src/integrationTests/workflowHandoffPersistence.test.ts`](../../src/integrationTests/workflowHandoffPersistence.test.ts).
+The domain catalog's inventory contract lets this test compose application,
+workflow, storage and workspace boundaries without granting those imports to a
+production domain.
+
 Startup coordination lives with the [app URL loaders](../../src/composables/useSavedWorkflowUrlLoader.ts).
 [Navigation](../../src/platform/navigation/savedWorkflowLink.ts) validates the query,
 and an [authenticated read adapter](../../src/services/savedWorkflowService.ts)

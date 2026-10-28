@@ -43,7 +43,7 @@ import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
 import { app as comfyApp } from '@/scripts/app'
 
 export function useWorkflowPersistenceV2() {
@@ -106,7 +106,7 @@ export function useWorkflowPersistenceV2() {
     const activeWorkflow: ComfyWorkflow | null = workflowStore.activeWorkflow
     if (!activeWorkflow) return
 
-    const graphData = ChangeTracker.isLoadingGraph
+    const graphData = ChangeTrackerAccess.isLoadingGraph
       ? activeWorkflow.activeState
       : comfyApp.rootGraph.serialize()
     if (!graphData) return
