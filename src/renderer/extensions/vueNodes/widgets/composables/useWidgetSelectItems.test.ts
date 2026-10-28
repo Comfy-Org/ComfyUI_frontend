@@ -232,6 +232,14 @@ describe('useWidgetSelectItems', () => {
       {
         value: '/x.png [output]',
         query: { filename: '/x.png', type: 'output' }
+      },
+      {
+        value: '\\x.png [output]',
+        query: { filename: '\\x.png', type: 'output' }
+      },
+      {
+        value: 'sub/x.png/ [output]',
+        query: { filename: 'sub/x.png/', type: 'output' }
       }
     ])(
       'previews the fallback for $value from its root, subfolder and filename',
