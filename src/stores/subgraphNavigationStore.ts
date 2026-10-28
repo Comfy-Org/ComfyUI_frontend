@@ -8,7 +8,7 @@ import {
   useRouter
 } from 'vue-router'
 
-import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
+import type { PanZoom as DragAndScaleState } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'

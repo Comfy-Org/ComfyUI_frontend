@@ -31,7 +31,7 @@ import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
-import type { CurveData } from '@/components/curve/types'
+import type { CurveData } from '@comfyorg/graph-model/curve'
 import type { useExtensionService } from '@/services/extensionService'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
@@ -43,11 +43,11 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import * as keybindingServiceModule from '@/platform/keybindings/keybindingService'
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -72,7 +72,7 @@ import { createNode } from '@/utils/createNode'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -106,8 +106,8 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createTestRootGraph,
   createTestSubgraph,

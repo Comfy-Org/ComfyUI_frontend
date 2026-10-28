@@ -1,5 +1,5 @@
-import { parseNodeId, toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from './nodeId'
+import type { NodeId, SerializedNodeId } from './nodeId'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

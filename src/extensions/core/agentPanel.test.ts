@@ -43,8 +43,8 @@ import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
 } from '@/utils/__tests__/canvasTestUtils'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 let agentStore: Mocked<ReturnType<typeof useAgentPanelStore>>
 let workflowStore: ReturnType<typeof useWorkflowStore>

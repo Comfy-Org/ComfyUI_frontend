@@ -26,7 +26,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
-import { isNodeLocatorId } from '@/types/nodeIdentification'
+import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 export { zAgentAdmissionError, zAgentCancelAccepted }
 export type {

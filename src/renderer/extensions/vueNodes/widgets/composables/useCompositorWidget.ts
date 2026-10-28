@@ -3,7 +3,7 @@ import {
   isCompositorWidgetValue
 } from '@/renderer/extensions/compositor/components/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ICompositorWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ICompositorWidget } from '@comfyorg/graph-model/widgets'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
