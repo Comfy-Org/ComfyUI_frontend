@@ -184,7 +184,7 @@ describe('completeSignIn', () => {
     }
     expect(states).toEqual([expected])
     await expect(bridge.getState()).resolves.toEqual(expected)
-    expect(storage.items.size).toBe(0)
+    expect(storage.items.has(PENDING_KEY)).toBe(false)
   })
 
   it('leaves a page without a redirect untouched, keeping the pending sign-in for the callback', async () => {
@@ -522,9 +522,63 @@ describe('switchWorkspace', () => {
     expect(tokens.readWorkspace('ws-1')).toBeUndefined()
   })
 
+  it('keeps the session and stays put when the kept workspace cannot be refreshed right now', async () => {
+    const { bridge, env, clock } = await signedInToBothWorkspaces(30)
+    clock.now += 60_000
+    env.fetchImpl.mockRejectedValueOnce(new TypeError('network down'))
+
+    await expect(bridge.switchWorkspace?.('ws-1')).resolves.toMatchObject({
+      status: 'signed_in',
+      workspaceId: 'ws-2'
+    })
+    expect(env.navigate).not.toHaveBeenCalled()
+  })
+
+  it('never switches into tokens another account left behind', async () => {
+    const { bridge, env, tokens } = await signedIn()
+    tokens.writeWorkspace('ws-2', {
+      accessToken: accessToken({ sub: 'user-2', workspace_id: 'ws-2' }),
+      refreshToken: 'refresh-other',
+      expiresAt: NOW + 3_600_000,
+      scope: 'comfy-cloud:user:read'
+    })
+
+    void bridge.switchWorkspace?.('ws-2')
+
+    await vi.waitFor(() => expect(env.navigate).toHaveBeenCalledOnce())
+    await expect(bridge.getState()).resolves.toMatchObject({ userId: 'user-1' })
+  })
+
+  it('forgets the previous account when a different one signs in', async () => {
+    const harness = await signedInToBothWorkspaces()
+    const { bridge, env, tokens, storage, page } = harness
+    page.url = 'http://127.0.0.1:8188/?code=code-3&state=state-3'
+    storage.setItem(
+      PENDING_KEY,
+      JSON.stringify({ verifier: 'verifier-3', state: 'state-3' })
+    )
+    env.fetchImpl.mockResolvedValueOnce(
+      tokenResponse(
+        accessToken({ sub: 'user-2', workspace_id: 'ws-9' }),
+        'refresh-user-2'
+      )
+    )
+
+    await bridge.completeSignIn()
+
+    expect(tokens.readWorkspace('ws-1')).toBeUndefined()
+    expect(tokens.readWorkspace('ws-2')).toBeUndefined()
+    await expect(bridge.getState()).resolves.toMatchObject({
+      userId: 'user-2',
+      workspaceId: 'ws-9'
+    })
+  })
+
   it('forgets every workspace on sign-out', async () => {
-    const { bridge, env } = await signedInToBothWorkspaces()
+    const { bridge, env, tokens } = await signedInToBothWorkspaces()
     await bridge.signOut()
+    expect(tokens.readWorkspace('ws-1')).toBeUndefined()
+    expect(tokens.readWorkspace('ws-2')).toBeUndefined()
 
     void bridge.switchWorkspace?.('ws-1')
 
@@ -541,6 +595,10 @@ function handOverLock(): LocalWebAuthEnvironment['withRefreshLock'] {
       (value) => new Promise<T>((resolve) => setTimeout(() => resolve(value)))
     )
   }
+}
+
+function storageEvent(key: string | null): Event {
+  return Object.assign(new Event('storage'), { key })
 }
 
 function serialLock(): LocalWebAuthEnvironment['withRefreshLock'] {
@@ -571,6 +629,53 @@ describe('across tabs sharing stored tokens', () => {
     })
     return { first, second: open(), events }
   }
+
+  it('keeps another tab on its workspace when this tab switches in place', async () => {
+    const { first, second, events } = tabs()
+    await second.bridge.getState()
+    first.tokens.writeWorkspace('ws-2', {
+      accessToken: WS2_TOKEN,
+      refreshToken: 'refresh-ws2',
+      expiresAt: NOW + 3_600_000,
+      scope: 'comfy-cloud:user:read'
+    })
+
+    await expect(first.bridge.switchWorkspace?.('ws-2')).resolves.toMatchObject(
+      { workspaceId: 'ws-2' }
+    )
+    events.dispatchEvent(storageEvent(null))
+
+    await expect(second.bridge.getState()).resolves.toMatchObject({
+      workspaceId: 'ws-1'
+    })
+    second.clock.now = NOW - 120_000
+    await expect(second.bridge.getWorkspaceToken('ws-1')).resolves.toBe(
+      WS1_TOKEN
+    )
+  })
+
+  it('keeps another tab on its workspace when this tab switches through consent', async () => {
+    const { first, second, events } = tabs()
+    await second.bridge.getState()
+    first.page.url = 'http://127.0.0.1:8188/?code=code-2&state=state-2'
+    first.storage.setItem(
+      PENDING_KEY,
+      JSON.stringify({ verifier: 'verifier-2', state: 'state-2' })
+    )
+    first.env.fetchImpl.mockResolvedValueOnce(
+      tokenResponse(WS2_TOKEN, 'refresh-ws2')
+    )
+
+    await first.bridge.completeSignIn()
+    events.dispatchEvent(storageEvent(null))
+
+    await expect(first.bridge.getState()).resolves.toMatchObject({
+      workspaceId: 'ws-2'
+    })
+    await expect(second.bridge.getState()).resolves.toMatchObject({
+      workspaceId: 'ws-1'
+    })
+  })
 
   it('stays signed in after a reload without asking the token endpoint', async () => {
     const { second } = tabs()
