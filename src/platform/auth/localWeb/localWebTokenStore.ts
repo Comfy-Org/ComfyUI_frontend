@@ -17,8 +17,7 @@ export interface LocalWebTokenStore {
 }
 
 export const LOCAL_WEB_TOKENS_KEY = 'Comfy.LocalWebSignIn.Tokens'
-export const LOCAL_WEB_WORKSPACE_TOKENS_KEY =
-  'Comfy.LocalWebSignIn.WorkspaceTokens'
+const LOCAL_WEB_WORKSPACE_TOKENS_KEY = 'Comfy.LocalWebSignIn.WorkspaceTokens'
 
 type TokenStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
