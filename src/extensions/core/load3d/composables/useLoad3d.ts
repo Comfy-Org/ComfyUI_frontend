@@ -110,6 +110,11 @@ const isReloadedCopy = (node: LGraphNode, previous: LGraphNode) =>
 
 const reattachedNodes = new WeakSet<LGraphNode>()
 
+const hasGizmoTransform = ({ position, rotation, scale }: GizmoConfig) =>
+  [position.x, position.y, position.z, rotation.x, rotation.y, rotation.z].some(
+    (value) => value !== 0
+  ) || [scale.x, scale.y, scale.z].some((value) => value !== 1)
+
 const invokePersistentReadyCallback = (
   node: LGraphNode,
   callback: Load3dReadyCallback,
@@ -477,7 +482,10 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const applyEntireGizmoConfig = (instance: Load3d) => {
     const { gizmo } = modelConfig.value
     if (!gizmo) return
-    instance.applyGizmoTransform(gizmo.position, gizmo.rotation, gizmo.scale)
+    const { position, rotation, scale } = hasGizmoTransform(gizmo)
+      ? gizmo
+      : instance.getGizmoManager().getInitialTransform()
+    instance.applyGizmoTransform(position, rotation, scale)
     instance.setGizmoEnabled(gizmo.enabled)
     instance.setGizmoMode(gizmo.mode)
   }
@@ -486,17 +494,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     if (!load3d) return
     const gizmo = modelConfig.value.gizmo
     if (!gizmo) return
-    const hasTransform =
-      gizmo.position.x !== 0 ||
-      gizmo.position.y !== 0 ||
-      gizmo.position.z !== 0 ||
-      gizmo.rotation.x !== 0 ||
-      gizmo.rotation.y !== 0 ||
-      gizmo.rotation.z !== 0 ||
-      gizmo.scale.x !== 1 ||
-      gizmo.scale.y !== 1 ||
-      gizmo.scale.z !== 1
-    if (hasTransform) {
+    if (hasGizmoTransform(gizmo)) {
       load3d.applyGizmoTransform(gizmo.position, gizmo.rotation, gizmo.scale)
     }
     if (gizmo.enabled) {

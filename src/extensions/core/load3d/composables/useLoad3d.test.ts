@@ -64,6 +64,18 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   persistThumbnail: vi.fn().mockResolvedValue(undefined)
 }))
 
+const identityTransform = {
+  position: { x: 0, y: 0, z: 0 },
+  rotation: { x: 0, y: 0, z: 0 },
+  scale: { x: 1, y: 1, z: 1 }
+}
+
+function gizmoManagerWithBase(base: typeof identityTransform) {
+  return fromPartial<ReturnType<Load3d['getGizmoManager']>>({
+    getInitialTransform: () => base
+  })
+}
+
 describe('useLoad3d', () => {
   let scope: EffectScope
   function useLoad3d(...args: Parameters<typeof useLoad3dImpl>) {
@@ -184,6 +196,7 @@ describe('useLoad3d', () => {
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 1, y: 1, z: 1 }
       }),
+      getGizmoManager: vi.fn(() => gizmoManagerWithBase(identityTransform)),
       getModelInfo: vi.fn().mockReturnValue(null),
       captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,test'),
       setAnimationTime: vi.fn(),
@@ -535,12 +548,32 @@ describe('useLoad3d', () => {
       await replaceNode(nodeRef, replacementNode())
 
       expect(mockLoad3d.applyGizmoTransform).toHaveBeenLastCalledWith(
-        { x: 0, y: 0, z: 0 },
-        { x: 0, y: 0, z: 0 },
-        { x: 1, y: 1, z: 1 }
+        identityTransform.position,
+        identityTransform.rotation,
+        identityTransform.scale
       )
       expect(mockLoad3d.setGizmoEnabled).toHaveBeenLastCalledWith(false)
       expect(mockLoad3d.setGizmoMode).toHaveBeenLastCalledWith('translate')
+    })
+
+    it('keeps the up-direction rotation of the kept model when the gizmo is untouched', async () => {
+      const upDirectionBase = {
+        ...identityTransform,
+        rotation: { x: Math.PI / 2, y: 0, z: 0 }
+      }
+      mockLoad3d.getGizmoManager = vi.fn(() =>
+        gizmoManagerWithBase(upDirectionBase)
+      )
+      const nodeRef = shallowRef(mockNode)
+      await useLoad3d(nodeRef).initializeLoad3d(document.createElement('div'))
+
+      await replaceNode(nodeRef, replacementNode())
+
+      expect(mockLoad3d.applyGizmoTransform).toHaveBeenLastCalledWith(
+        upDirectionBase.position,
+        upDirectionBase.rotation,
+        upDirectionBase.scale
+      )
     })
 
     it('leaves disposing the Load3d of a removed node to its widget', async () => {

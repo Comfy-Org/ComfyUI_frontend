@@ -1,5 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Vector3 } from 'three'
 import { nextTick, reactive } from 'vue'
 
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
@@ -347,7 +348,12 @@ describe('Load3DConfiguration model load reporting', () => {
         new Load3DConfiguration(load3d).configure({
           modelWidget: widget,
           loadFolder: 'output',
-          cameraState: fromAny({ position: { x: 1, y: 2, z: 3 } })
+          cameraState: {
+            position: new Vector3(1, 2, 3),
+            target: new Vector3(0, 0, 0),
+            zoom: 1,
+            cameraType: 'perspective'
+          }
         })
       )
       await flush()
