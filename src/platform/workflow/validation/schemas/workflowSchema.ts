@@ -103,6 +103,15 @@ const zComfyLinkExtension = z
   })
   .passthrough()
 
+const zLinkTie = z
+  .object({
+    id: z.number(),
+    pos: zVector2,
+    angle: z.number(),
+    linkIds: z.array(z.number())
+  })
+  .passthrough()
+
 const zLinkPresentationFields = {
   hidden: z.boolean().optional(),
   label: z.string().optional()
@@ -381,6 +390,7 @@ const zExtra = z
       )
       .optional(),
     reroutes: z.array(zReroute).optional(),
+    linkTies: z.array(zLinkTie).optional(),
     workflowRendererVersion: zRendererType.optional(),
     BlueprintDescription: z.string().optional(),
     BlueprintSearchAliases: z.array(z.string()).optional(),
@@ -668,7 +678,8 @@ const zClipboardItemsSchema = z
     groups: z.array(zClipboardGroup).optional(),
     reroutes: z.array(zClipboardReroute).optional(),
     links: z.array(zComfyLinkObject).optional(),
-    subgraphs: z.array(zClipboardSubgraphDefinition).optional()
+    subgraphs: z.array(zClipboardSubgraphDefinition).optional(),
+    linkTies: z.array(zLinkTie).optional()
   })
   .refine(
     (items) =>

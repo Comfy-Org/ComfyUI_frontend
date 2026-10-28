@@ -255,6 +255,18 @@ describe('parseComfyWorkflow', () => {
     })
   })
 
+  it('keeps link ties through validation and clipboard parsing', async () => {
+    const linkTies = [{ id: 1, pos: [10, 20], angle: 0.5, linkIds: [1, 2] }]
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.extra = { ...workflow.extra, linkTies }
+
+    const validated = await validateComfyWorkflow(workflow)
+    const clipboard = zClipboardItems.parse({ links: [], linkTies })
+
+    expect(validated?.extra?.linkTies).toEqual(linkTies)
+    expect(clipboard.linkTies).toEqual(linkTies)
+  })
+
   it.for(['01', '1e0', '1.5', 'NaN', '9007199254740992'])(
     'rejects noncanonical link presentation key %s',
     async (linkId) => {

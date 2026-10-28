@@ -21,6 +21,7 @@ import type {
   SerialisableGraph,
   SerialisableLLink
 } from './types/serialisation'
+import { releaseLinkSidecars } from './linkSidecars'
 import { NodeSlotType } from './types/globalEnums'
 
 type ConfiguredGraph = (ISerialisedGraph | SerialisableGraph) &
@@ -51,7 +52,8 @@ export function remapLinkReferences(
     ),
     ...(data.inputs ?? []).map((slot) => slot.linkIds),
     ...(data.outputs ?? []).map((slot) => slot.linkIds),
-    ...(data.reroutes ?? []).map((reroute) => reroute.linkIds)
+    ...(data.reroutes ?? []).map((reroute) => reroute.linkIds),
+    ...(data.extra?.linkTies ?? []).map((tie) => tie.linkIds)
   ]
   for (const ids of linkIdLists) {
     if (ids) ids.splice(0, ids.length, ...new Set(ids.map(remap)))
@@ -349,6 +351,10 @@ export function realignInputLinkSlots(
         continue
       }
       successfulPasses++
+      releaseLinkSidecars(
+        graphScopeOf(graph),
+        removals.map((link) => link.id)
+      )
 
       for (const { connection, link } of removedConnections) {
         link.disconnect(graph)
