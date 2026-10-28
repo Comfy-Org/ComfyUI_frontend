@@ -109,24 +109,9 @@ function useBillingCapabilitiesInternal() {
     return state.response.capabilities
   })
   const hasResolvedCapabilities = computed(() => capabilities.value !== null)
-  const readUnavailableForCurrentScope = computed(() => {
-    const state = readState.value
-    return (
-      state.status === 'unavailable' &&
-      state.authUid === authStore.userId &&
-      state.workspaceId === workspaceStore.activeWorkspaceId
-    )
-  })
   const canTopUp = computed(() => {
     if (!isCloud) return workspaceStore.activeWorkspace?.role !== 'member'
-    // An unreadable capability keeps top-up available only for owners, so a
-    // transient outage does not strand the one role that can actually top up.
-    // Every other role - including an unresolved one - fails closed.
-    return (
-      capabilities.value?.can_top_up ??
-      (readUnavailableForCurrentScope.value &&
-        workspaceStore.activeWorkspace?.role === 'owner')
-    )
+    return capabilities.value?.can_top_up ?? false
   })
   const canSubscribeSelfServe = computed(
     () => capabilities.value?.can_subscribe_self_serve ?? false

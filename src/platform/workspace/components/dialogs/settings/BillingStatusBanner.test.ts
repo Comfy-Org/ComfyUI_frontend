@@ -179,7 +179,6 @@ const i18n = createI18n({
         }
       },
       subscription: {
-        upgradeToAddCredits: 'Upgrade to add credits',
         teamPlanName: 'Team',
         unknownTierName: 'Unknown',
         tiers: {
