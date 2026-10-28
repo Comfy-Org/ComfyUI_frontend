@@ -62,6 +62,7 @@ import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreS
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
+import { useReconnectNodeDefinitionRefresh } from '@/platform/remote/comfyui/useReconnectNodeDefinitionRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
@@ -309,9 +310,11 @@ const onExecutionSuccess = async () => {
 
 const { onReconnecting, onReconnected } = useReconnectingNotification()
 const refreshOnReconnect = useReconnectQueueRefresh()
+const refreshNodeDefinitionsOnReconnect = useReconnectNodeDefinitionRefresh()
 
 const handleReconnected = async () => {
   onReconnected()
+  void refreshNodeDefinitionsOnReconnect()
   await refreshOnReconnect()
 }
 
