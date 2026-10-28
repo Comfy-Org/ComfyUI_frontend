@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
+import { setAgentTabTitlePrefix } from './agentTabTitlePrefix'
 import { registerWorkflowTabActivityTracker } from './workflowTabActivityTracker'
 
 let workflowStore: ReturnType<typeof useWorkflowStore>
@@ -122,5 +124,19 @@ describe('registerWorkflowTabActivityTracker', () => {
 
     expect(activity.unseenModifiedPaths).toHaveLength(0)
     expect(activity.editingPaths.size).toBe(0)
+  })
+
+  it('removes the agent tab-title prefix when the feature is disabled', async () => {
+    stop()
+    const enabled = ref(true)
+    stop = registerWorkflowTabActivityTracker(enabled)
+    const titleStore = useBrowserTabTitleStore()
+    setAgentTabTitlePrefix('Input needed')
+    titleStore.setPrefix('other-feature', 'Other')
+
+    enabled.value = false
+    await nextTick()
+
+    expect(titleStore.prefix).toBe('[Other] ')
   })
 })
