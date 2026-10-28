@@ -528,6 +528,21 @@ describe('useLoad3d', () => {
       expect(nodeToLoad3dMap.has(mockNode)).toBe(false)
     })
 
+    it('returns the kept Load3d gizmo to the replacement node defaults', async () => {
+      const nodeRef = shallowRef(mockNode)
+      await useLoad3d(nodeRef).initializeLoad3d(document.createElement('div'))
+
+      await replaceNode(nodeRef, replacementNode())
+
+      expect(mockLoad3d.applyGizmoTransform).toHaveBeenLastCalledWith(
+        { x: 0, y: 0, z: 0 },
+        { x: 0, y: 0, z: 0 },
+        { x: 1, y: 1, z: 1 }
+      )
+      expect(mockLoad3d.setGizmoEnabled).toHaveBeenLastCalledWith(false)
+      expect(mockLoad3d.setGizmoMode).toHaveBeenLastCalledWith('translate')
+    })
+
     it('leaves disposing the Load3d of a removed node to its widget', async () => {
       const composable = useLoad3d(mockNode)
       await composable.initializeLoad3d(document.createElement('div'))

@@ -297,6 +297,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       const instance = load3d
       await restoreConfigurationsFromNode(instance, node)
       if (!isCurrentInitialization(instance, node)) return
+      if (kept) applyEntireGizmoConfig(kept)
 
       node.onMouseEnter = useChainCallback(node.onMouseEnter, () => {
         load3d?.refreshViewport()
@@ -471,6 +472,14 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     if (cfg.backgroundRenderMode) {
       load3d.setBackgroundRenderMode(cfg.backgroundRenderMode)
     }
+  }
+
+  const applyEntireGizmoConfig = (instance: Load3d) => {
+    const { gizmo } = modelConfig.value
+    if (!gizmo) return
+    instance.applyGizmoTransform(gizmo.position, gizmo.rotation, gizmo.scale)
+    instance.setGizmoEnabled(gizmo.enabled)
+    instance.setGizmoMode(gizmo.mode)
   }
 
   const applyGizmoConfigToLoad3d = () => {

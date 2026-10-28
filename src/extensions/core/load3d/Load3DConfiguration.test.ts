@@ -340,6 +340,25 @@ describe('Load3DConfiguration model load reporting', () => {
       }
     )
 
+    it('does not restore the initial camera on a later model change', async () => {
+      const load3d = viewerShowing(requestedModelUrl)
+      const widget = reactiveWidget('model.glb')
+      keepingLoadedModel(load3d, () =>
+        new Load3DConfiguration(load3d).configure({
+          modelWidget: widget,
+          loadFolder: 'output',
+          cameraState: fromAny({ position: { x: 1, y: 2, z: 3 } })
+        })
+      )
+      await flush()
+
+      widget.value = 'other.glb'
+      await flush()
+
+      expect(loadModelSpy).toHaveBeenCalledOnce()
+      expect(load3d.setCameraState).not.toHaveBeenCalled()
+    })
+
     it('loads the shown model again once keeping ends', async () => {
       const load3d = viewerShowing(requestedModelUrl)
       keepingLoadedModel(load3d, () => {})

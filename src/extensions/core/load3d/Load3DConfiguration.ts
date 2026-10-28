@@ -296,7 +296,10 @@ class Load3DConfiguration {
         )
       )
 
-      if (keepLoadedModel && this.isShowingModel(modelUrl)) return
+      if (keepLoadedModel && this.isShowingModel(modelUrl)) {
+        isFirstLoad = false
+        return
+      }
 
       const outcome = await this.load3d.loadModel(modelUrl, filename)
       reportLoadModelOutcome(outcome, { silentOnNotFound })
