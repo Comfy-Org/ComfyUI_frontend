@@ -87,6 +87,47 @@ describe('BrushSettingsPanel', () => {
     })
   })
 
+  describe('brush shape keyboard navigation', () => {
+    it.for([
+      { key: '{ArrowRight}', from: BrushShape.Arc, to: BrushShape.Rect },
+      { key: '{ArrowDown}', from: BrushShape.Arc, to: BrushShape.Rect },
+      { key: '{ArrowLeft}', from: BrushShape.Rect, to: BrushShape.Arc },
+      { key: '{ArrowUp}', from: BrushShape.Rect, to: BrushShape.Arc }
+    ] as const)(
+      'should select $to and move focus when pressing $key from $from',
+      async ({ key, from, to }) => {
+        mockStore.brushSettings.type = from
+        renderPanel()
+        const user = userEvent.setup()
+
+        const fromButton = screen.getByRole('radio', {
+          name: from === BrushShape.Arc ? 'Circle brush' : 'Square brush'
+        })
+        fromButton.focus()
+        await user.keyboard(key)
+
+        expect(mockStore.brushSettings.type).toBe(to)
+        const toButton = screen.getByRole('radio', {
+          name: to === BrushShape.Arc ? 'Circle brush' : 'Square brush'
+        })
+        expect(toButton).toHaveFocus()
+        expect(toButton).toHaveAttribute('aria-checked', 'true')
+        expect(fromButton).toHaveAttribute('tabindex', '-1')
+      }
+    )
+
+    it('should keep only the selected option in the tab order', () => {
+      renderPanel()
+
+      expect(
+        screen.getByRole('radio', { name: 'Circle brush' })
+      ).toHaveAttribute('tabindex', '0')
+      expect(
+        screen.getByRole('radio', { name: 'Square brush' })
+      ).toHaveAttribute('tabindex', '-1')
+    })
+  })
+
   describe('reset button', () => {
     it('should call resetBrushToDefault when clicked', async () => {
       const user = userEvent.setup()

@@ -24,11 +24,14 @@
         role="radiogroup"
         aria-labelledby="brush-shape-label"
         class="flex h-12 w-full items-center gap-2 rounded-lg bg-secondary px-2"
+        @keydown="onShapeKeydown"
       >
         <button
+          ref="arcButton"
           type="button"
           role="radio"
           :aria-checked="store.brushSettings.type === BrushShape.Arc"
+          :tabindex="store.brushSettings.type === BrushShape.Arc ? 0 : -1"
           :aria-label="t('maskEditor.brushShapeCircle')"
           :class="
             cn(
@@ -41,9 +44,11 @@
           @click="setBrushShape(BrushShape.Arc)"
         />
         <button
+          ref="rectButton"
           type="button"
           role="radio"
           :aria-checked="store.brushSettings.type === BrushShape.Rect"
+          :tabindex="store.brushSettings.type === BrushShape.Rect ? 0 : -1"
           :aria-label="t('maskEditor.brushShapeSquare')"
           :class="
             cn(
@@ -104,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -117,6 +122,34 @@ import SliderField from './controls/SliderField.vue'
 
 const { t } = useI18n()
 const store = useMaskEditorStore()
+
+const SHAPE_ORDER: BrushShape[] = [BrushShape.Arc, BrushShape.Rect]
+
+const arcButton = useTemplateRef<HTMLButtonElement>('arcButton')
+const rectButton = useTemplateRef<HTMLButtonElement>('rectButton')
+
+function onShapeKeydown(event: KeyboardEvent) {
+  const deltas: Record<string, number> = {
+    ArrowRight: 1,
+    ArrowDown: 1,
+    ArrowLeft: -1,
+    ArrowUp: -1
+  }
+  const delta = deltas[event.key]
+  if (delta === undefined) return
+  event.preventDefault()
+
+  const nextIndex =
+    (SHAPE_ORDER.indexOf(store.brushSettings.type) +
+      delta +
+      SHAPE_ORDER.length) %
+    SHAPE_ORDER.length
+  setBrushShape(SHAPE_ORDER[nextIndex])
+  ;(SHAPE_ORDER[nextIndex] === BrushShape.Arc
+    ? arcButton
+    : rectButton
+  ).value?.focus()
+}
 
 const rawSliderValue = ref<number | null>(null)
 
