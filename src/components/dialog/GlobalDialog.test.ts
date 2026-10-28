@@ -158,8 +158,8 @@ describe('GlobalDialog', () => {
     })
 
     const dialog = await screen.findByRole('dialog')
-    expect(dialog.className).toContain('-translate-x-1/2')
     expect(dialog.className).toContain('[--workspace-inset-right:0px]')
+    expect(dialog.className).not.toContain('-translate-x-1/2')
   })
 
   it('keeps default dialogs offset by the workspace inset', async () => {
