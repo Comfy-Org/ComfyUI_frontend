@@ -71,7 +71,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'

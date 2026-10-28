@@ -999,10 +999,6 @@
         ]
       },
       {
-        "name": "color-conversion/domain",
-        "patterns": ["src/utils/colorUtil.test.ts", "src/utils/colorUtil.ts"]
-      },
-      {
         "name": "color-palettes/domain",
         "patterns": [
           "src/constants/coreColorPalettes.ts",
@@ -1055,8 +1051,6 @@
       {
         "name": "design-system/domain",
         "patterns": [
-          "src/components/gradientslider/gradients.ts",
-          "src/types/navTypes.ts",
           "src/types/toastId.ts",
           "src/types/toastOptions.ts",
           "src/utils/histogramUtil.test.ts",
@@ -1095,16 +1089,11 @@
       {
         "name": "design-system/presentation",
         "patterns": [
-          "src/components/button/**",
-          "src/components/card/**",
-          "src/components/chip/**",
           "src/components/curve/CurveEditor.test.ts",
           "src/components/curve/CurveEditor.vue",
           "src/components/loader/**",
           "src/components/range/RangeEditor.test.ts",
           "src/components/range/RangeEditor.vue",
-          "src/components/ui/chart/**",
-          "src/components/ui/color-picker/**",
           "src/utils/gridUtil.ts"
         ]
       },
@@ -2325,7 +2314,6 @@
           "src/components/graph/NodeDragPreview.test.ts",
           "src/components/graph/NodeDragPreview.vue",
           "src/components/node/**",
-          "src/components/searchbox/HighlightedText.vue",
           "src/components/searchbox/NodeSearchBox.test.ts",
           "src/components/searchbox/NodeSearchBox.vue",
           "src/components/searchbox/NodeSearchBoxPopover.test.ts",
@@ -2588,12 +2576,6 @@
           "src/composables/graph/useGraphHierarchy.ts",
           "src/stores/workspace/favoritedWidgetsStore.ts",
           "src/stores/workspace/rightSidePanelStore.ts"
-        ]
-      },
-      {
-        "name": "properties-panel/presentation",
-        "patterns": [
-          "src/components/rightSidePanel/layout/CollapseToggleButton.vue"
         ]
       },
       {
@@ -3635,13 +3617,7 @@
       },
       {
         "name": "design-system/presentation/outer-1",
-        "patterns": [
-          "src/components/common/**",
-          "src/components/gradientslider/**",
-          "src/components/palette/**",
-          "src/components/rightSidePanel/layout/**",
-          "src/components/widget/**"
-        ]
+        "patterns": ["src/components/common/**", "src/components/palette/**"]
       },
       {
         "name": "dialog-host/presentation/outer-1",
@@ -4644,7 +4620,6 @@
         "from": "bounding-boxes/domain",
         "allow": [
           "bounding-boxes/domain",
-          "color-conversion/domain",
           "design-system/domain",
           "dialog-host/domain",
           "graph-model/domain",
@@ -4659,7 +4634,6 @@
         "allow": [
           "bounding-boxes/domain",
           "bounding-boxes/application",
-          "color-conversion/domain",
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
@@ -4682,7 +4656,6 @@
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
-          "color-conversion/domain",
           "design-system/domain",
           "design-system/application",
           "design-system/presentation",
@@ -4709,7 +4682,6 @@
           "bounding-boxes/application",
           "bounding-boxes/presentation",
           "bounding-boxes/integration",
-          "color-conversion/domain",
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
@@ -4909,10 +4881,6 @@
           "cloud/application/outer-3",
           "unclassified"
         ]
-      },
-      {
-        "from": "color-conversion/domain",
-        "allow": ["color-conversion/domain", "unclassified"]
       },
       {
         "from": "color-palettes/domain",
@@ -6318,15 +6286,6 @@
         "allow": ["properties-panel/application", "unclassified"]
       },
       {
-        "from": "properties-panel/presentation",
-        "allow": [
-          "properties-panel/application",
-          "properties-panel/presentation",
-          "properties-panel/presentation/outer-2",
-          "unclassified"
-        ]
-      },
-      {
         "from": "release-notes/application",
         "allow": [
           "release-notes/application",
@@ -6418,7 +6377,6 @@
           "canvas-renderer/application",
           "canvas-renderer/presentation",
           "properties-panel/application",
-          "properties-panel/presentation",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "telemetry/application",
@@ -6444,7 +6402,6 @@
           "canvas-renderer/presentation",
           "canvas-renderer/integration",
           "properties-panel/application",
-          "properties-panel/presentation",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "selection-toolbox/integration",
@@ -7488,7 +7445,6 @@
         "allow": [
           "bounding-boxes/domain",
           "bounding-boxes/application",
-          "color-conversion/domain",
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
@@ -7942,7 +7898,6 @@
           "canvas-renderer/presentation",
           "canvas-renderer/integration",
           "properties-panel/application",
-          "properties-panel/presentation",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "selection-toolbox/integration",
@@ -8286,7 +8241,6 @@
         "from": "properties-panel/presentation/outer-2",
         "allow": [
           "properties-panel/application",
-          "properties-panel/presentation",
           "properties-panel/presentation/outer-2",
           "unclassified"
         ]
@@ -8414,7 +8368,6 @@
           "cloud/infrastructure",
           "cloud/presentation",
           "cloud/integration",
-          "color-conversion/domain",
           "color-palettes/domain",
           "color-palettes/application",
           "comfy-registry/domain",
@@ -8554,7 +8507,6 @@
           "prompt-authoring/domain",
           "prompt-authoring/integration",
           "properties-panel/application",
-          "properties-panel/presentation",
           "release-notes/application",
           "release-notes/infrastructure",
           "remote-config/domain",
