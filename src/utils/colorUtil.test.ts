@@ -9,6 +9,7 @@ import {
   hsbToRgb,
   hsvaToHex,
   intToHex,
+  isOpaqueColor,
   isTransparent,
   luminance,
   normalizeHex,
@@ -299,6 +300,64 @@ describe('colorUtil conversions', () => {
     it('returns false for fully opaque hex colors', () => {
       expect(isTransparent('#ff0000')).toBe(false)
       expect(isTransparent('#ff0000ff')).toBe(false)
+    })
+  })
+
+  describe('isOpaqueColor', () => {
+    it.for([
+      ['#abc', true],
+      ['#ABC', true],
+      ['RGB(255, 0, 0)', true],
+      ['#abcf', true],
+      ['#abc8', false],
+      ['#abc0', false],
+      ['#ffffff', true],
+      ['#ffffffff', true],
+      ['#ffffff08', false],
+      ['#ffffff00', false],
+      ['rgb(255, 0, 0)', true],
+      ['rgba(255, 0, 0, 1)', true],
+      ['rgba(255, 0, 0, 100%)', true],
+      ['rgb(0 0 0)', true],
+      ['rgb(0 0 0 / 1)', true],
+      ['hsl(120, 50%, 50%)', true],
+      ['hsla(120, 50%, 50%, 0)', false],
+      ['rgba(0, 0, 0, 0)', false],
+      ['rgba(0, 0, 0, .5)', false],
+      ['rgba(255, 0, 0, 50%)', false],
+      ['rgb(255, 0, 0, 0.5)', false],
+      ['rgb(0 0 0 / 0.5)', false],
+      ['hsl(120 50% 50% / .5)', false],
+      ['rgb(0 0 0 / none)', false],
+      ['rgb(0 0 0 / calc(1/2))', false],
+      ['rgba(0, 0, 0, calc(1/2))', false],
+      ['rgba(calc(255/2), 0, 0, 0.5)', false],
+      ['rgb(0 0 0 / var(--alpha))', false],
+      ['rgba(var(--rgb), 0.5)', false],
+      ['rgb(from #0008 r g b)', false],
+      ['color-mix(in srgb, red 50%, transparent)', false],
+      ['oklch(0.5 0.1 120)', false],
+      ['rgba(0, 0, 0.0.0, 1)', false],
+      ['rgb(0 0 0 / 0.5 / 1)', false],
+      ['rgb(0, 0)', false],
+      ['rgb(0 0 / 0.5)', false],
+      ['rgb(255, 0 0)', false],
+      ['rgba(0,0,0,)', false],
+      ['hsl(50%, 50%, 50%)', false],
+      ['hsl(210deg 50% 50%)', true],
+      ['hsl(0.5turn, 50%, 50%)', true],
+      [`rgb(${'1'.repeat(100_000)}x 0 0)`, false],
+      ['red', true],
+      ['aliceblue', true],
+      ['GreenYellow', true],
+      ['transparent', false],
+      ['Transparent', false],
+      ['currentColor', false],
+      ['inherit', false],
+      [5, false],
+      [undefined, false]
+    ] as const)('%s → %s', ([color, expected]) => {
+      expect(isOpaqueColor(color)).toBe(expected)
     })
   })
 

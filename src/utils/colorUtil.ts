@@ -37,6 +37,49 @@ export function isTransparent(color: string) {
   return false
 }
 
+const KEYWORDS_THAT_ARE_NOT_OPAQUE_COLORS = new Set([
+  'transparent',
+  'currentcolor',
+  'inherit',
+  'initial',
+  'unset',
+  'revert'
+])
+
+const CSS_NUMBER = String.raw`[+-]?(?:\d+(?:\.\d*)?|\.\d+)`
+const CSS_NUMBER_OR_PERCENTAGE = `${CSS_NUMBER}%?`
+const CSS_HUE = `${CSS_NUMBER}(?:deg|grad|rad|turn)?`
+
+function colorFunctionPattern(name: string, firstChannel: string): RegExp {
+  const channel = CSS_NUMBER_OR_PERCENTAGE
+  const legacy = `${firstChannel}\\s*,\\s*${channel}\\s*,\\s*${channel}(?:\\s*,\\s*(${channel}))?`
+  const modern = `${firstChannel}\\s+${channel}\\s+${channel}(?:\\s*/\\s*(${channel}))?`
+  return new RegExp(`^${name}a?\\(\\s*(?:${legacy}|${modern})\\s*\\)$`, 'i')
+}
+
+const RGB_COLOR = colorFunctionPattern('rgb', CSS_NUMBER_OR_PERCENTAGE)
+const HSL_COLOR = colorFunctionPattern('hsl', CSS_HUE)
+
+/** Whether a CSS color is certainly opaque: a named color, hex, or rgb(a)/hsl(a) with plain numbers and alpha 1. */
+export function isOpaqueColor(color: unknown): boolean {
+  if (typeof color !== 'string') return false
+
+  if (/^[a-z]+$/i.test(color))
+    return !KEYWORDS_THAT_ARE_NOT_OPAQUE_COLORS.has(color.toLowerCase())
+
+  if (/^#(?:[\da-f]{3}f?|[\da-f]{6}(?:ff)?)$/i.test(color)) return true
+
+  const match = RGB_COLOR.exec(color) ?? HSL_COLOR.exec(color)
+  if (!match) return false
+
+  const alpha = match.slice(1).find(Boolean)
+  return alpha === undefined || parseAlpha(alpha) >= 1
+}
+
+function parseAlpha(value: string): number {
+  return value.endsWith('%') ? Number(value.slice(0, -1)) / 100 : Number(value)
+}
+
 export function rgbToHsl({ r, g, b }: RGB): HSL {
   r /= 255
   g /= 255

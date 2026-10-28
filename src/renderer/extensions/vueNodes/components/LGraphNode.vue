@@ -12,7 +12,7 @@
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        'drop-shadow-lg',
+        hasOpaqueNodeColors ? ['shadow-xl', shapeClass] : 'drop-shadow-lg',
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
@@ -31,7 +31,7 @@
       '--min-node-width': `${MIN_NODE_WIDTH}px`,
       transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
       zIndex: zIndex,
-      opacity: nodeOpacity
+      opacity: Math.min(nodeOpacity, OPACITY_THAT_KEEPS_NODE_COMPOSITED)
     }"
     :inert="isGhostPlacing"
     v-bind="pointerHandlers"
@@ -314,7 +314,7 @@ import {
   locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { isTransparent } from '@/utils/colorUtil'
+import { isOpaqueColor, isTransparent } from '@/utils/colorUtil'
 
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
@@ -380,6 +380,8 @@ const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
+
+const OPACITY_THAT_KEEPS_NODE_COMPOSITED = 0.999
 
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
@@ -511,6 +513,12 @@ const shapeClass = computed(() =>
     card: 'rounded-tl-xl rounded-br-xl',
     default: 'rounded-xl'
   })
+)
+
+const hasOpaqueNodeColors = computed(() =>
+  [nodeData.color, nodeData.bgcolor].every(
+    (color) => !color || isOpaqueColor(color)
+  )
 )
 
 const isTransparentHeaderless = computed(
