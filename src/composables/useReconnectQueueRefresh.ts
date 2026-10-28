@@ -1,6 +1,7 @@
 import { Semaphore, delay, withTimeout } from 'es-toolkit'
 
 import { t } from '@/i18n'
+import { zExecutionMeta } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type {
   ExecutionError,
   JobDetail
@@ -22,6 +23,7 @@ type JobOutcome =
       state: 'ended'
       status: EndedStatus
       outputs?: TaskOutput
+      displayNodes?: Map<string, string>
       executionError?: ExecutionError
       timestamp: number
     }
@@ -86,6 +88,18 @@ export function useReconnectQueueRefresh() {
     return historyTask.outputs
   }
 
+  function displayNodesOf(detail: JobDetail | undefined) {
+    const meta = zExecutionMeta.safeParse(detail?.execution_meta)
+    if (!meta.success) return undefined
+    const displayNodes = new Map<string, string>()
+    for (const [node, { display_node }] of Object.entries(meta.data)) {
+      if (display_node != null && display_node !== '') {
+        displayNodes.set(node, String(display_node))
+      }
+    }
+    return displayNodes
+  }
+
   function completedOutcome(
     detail: JobDetail | undefined,
     historyTask: TaskItemImpl | undefined
@@ -96,6 +110,7 @@ export function useReconnectQueueRefresh() {
       state: 'ended',
       status: 'completed',
       outputs,
+      displayNodes: displayNodesOf(detail),
       timestamp: outcomeTimestamp(detail, historyTask)
     }
   }
@@ -140,11 +155,15 @@ export function useReconnectQueueRefresh() {
     return readOutcome(jobId, historyTask)
   }
 
-  function replayOutputs(jobId: JobId, outputs: TaskOutput) {
+  function replayOutputs(
+    jobId: JobId,
+    outputs: TaskOutput,
+    displayNodes: Map<string, string> | undefined
+  ) {
     for (const [node, output] of Object.entries(outputs)) {
       api.dispatchCustomEvent('executed', {
         node,
-        display_node: node,
+        display_node: displayNodes?.get(node) ?? node,
         output,
         prompt_id: jobId
       })
@@ -218,7 +237,9 @@ export function useReconnectQueueRefresh() {
 
   function replayOutcome(jobId: JobId, outcome: JobOutcome) {
     if (outcome.state !== 'ended' || !isFollowed(jobId)) return
-    if (outcome.outputs) replayOutputs(jobId, outcome.outputs)
+    if (outcome.outputs) {
+      replayOutputs(jobId, outcome.outputs, outcome.displayNodes)
+    }
     dispatchTerminal(jobId, outcome)
   }
 

@@ -79,6 +79,20 @@ const zRawJobListItem = z
   .passthrough()
 
 /**
+ * Node-level execution metadata from the job detail (`execution_meta`), keyed
+ * by the executed node id. An expanded node reports the node it is shown on
+ * as `display_node`, the same id a live `executed` frame carries.
+ */
+export const zExecutionMeta = z.record(
+  z.string(),
+  z
+    .object({
+      display_node: z.union([z.string(), z.number()]).nullable().optional()
+    })
+    .passthrough()
+)
+
+/**
  * Job detail - returned by GET /api/jobs/{job_id} (detail endpoint)
  * Includes full workflow and outputs for re-execution and downloads
  */
