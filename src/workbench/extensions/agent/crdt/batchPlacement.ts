@@ -1,6 +1,6 @@
 import type {
   Bounds as PlacementRect,
-  RectEdges as Bounds
+  RectEdges
 } from '@comfyorg/shared-frontend-utils/geometry'
 
 interface PlacementOffset {
@@ -18,7 +18,7 @@ interface PlacementInput {
 export const DISCONNECTED_GAP_PX = 600
 export const PLACEMENT_GUTTER_PX = 80
 
-function toBounds(rect: PlacementRect): Bounds {
+function toBounds(rect: PlacementRect): RectEdges {
   return {
     left: rect.x,
     top: rect.y,
@@ -27,7 +27,7 @@ function toBounds(rect: PlacementRect): Bounds {
   }
 }
 
-function hull(rects: readonly PlacementRect[]): Bounds {
+function hull(rects: readonly PlacementRect[]): RectEdges {
   return rects.map(toBounds).reduce((a, b) => ({
     left: Math.min(a.left, b.left),
     top: Math.min(a.top, b.top),
@@ -36,7 +36,7 @@ function hull(rects: readonly PlacementRect[]): Bounds {
   }))
 }
 
-function intersects(a: Bounds, b: Bounds): boolean {
+function intersects(a: RectEdges, b: RectEdges): boolean {
   return (
     a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
   )
