@@ -69,7 +69,7 @@ defineExpose({ focus, showPicker })
 <template>
   <div
     :class="
-      cn(WidgetInputBaseClass, 'flex text-base leading-none', {
+      cn(WidgetInputBaseClass, 'flex text-xs leading-none', {
         'cursor-not-allowed opacity-50 outline-node-border': disabled
       })
     "
