@@ -228,6 +228,10 @@ describe('useWidgetSelectItems', () => {
       {
         value: 'clipspace/x.png',
         query: { filename: 'x.png', type: 'input', subfolder: 'clipspace' }
+      },
+      {
+        value: '/x.png [output]',
+        query: { filename: '/x.png', type: 'output' }
       }
     ])(
       'previews the fallback for $value from its root, subfolder and filename',

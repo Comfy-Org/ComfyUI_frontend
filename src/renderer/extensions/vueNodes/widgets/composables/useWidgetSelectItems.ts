@@ -70,11 +70,12 @@ function getAnnotatedValueMediaUrl(
 ): string {
   const { filepath, rootFolder } = parseAnnotatedPath(value)
   const folderEnd = filepath.lastIndexOf('/')
+  if (folderEnd <= 0) return getMediaUrl(filepath, rootFolder, assetKind)
   return getMediaUrl(
     filepath.slice(folderEnd + 1),
     rootFolder,
     assetKind,
-    filepath.slice(0, Math.max(folderEnd, 0))
+    filepath.slice(0, folderEnd)
   )
 }
 
