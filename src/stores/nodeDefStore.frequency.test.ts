@@ -2,10 +2,10 @@ import axios from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 
 import nodeFrequencies from '../../public/assets/sorted-custom-node-map.json' with { type: 'json' }
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 describe('useNodeFrequencyStore', () => {
   it('loads independent rankings for both Save Image node definitions', async () => {

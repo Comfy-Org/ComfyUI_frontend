@@ -6,7 +6,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ApiKeyAuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 

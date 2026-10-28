@@ -9,7 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -29,8 +29,8 @@ const mockDistributionTypes = vi.hoisted(() => ({
 }))
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/services/dialogService'))

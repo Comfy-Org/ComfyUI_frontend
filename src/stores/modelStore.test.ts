@@ -5,7 +5,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import {
@@ -23,7 +23,7 @@ const mockDistribution = vi.hoisted(
 vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const featureState = {
   serverFeatures: {} as Record<string, unknown>

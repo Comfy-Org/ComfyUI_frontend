@@ -4,9 +4,11 @@ import { join, resolve } from 'node:path'
 import ts from 'typescript'
 
 const bundle = resolve('dist/index.d.ts')
-const externalGeometry = readFileSync(bundle, 'utf8').includes(
-  '@comfyorg/shared-frontend-utils/geometry'
-)
+const declarations = readFileSync(bundle, 'utf8')
+const privateImports = [
+  '@comfyorg/shared-frontend-utils/geometry',
+  '@comfyorg/telemetry'
+].filter((specifier) => declarations.includes(specifier))
 
 const consumer = `
 import type {
@@ -157,12 +159,12 @@ try {
       `Published types resolve to any: ${unresolved.join(', ')}\n`
     )
   }
-  if (externalGeometry) {
+  if (privateImports.length) {
     process.stderr.write(
-      'Published types reference private geometry declarations\n'
+      `Published types reference private declarations: ${privateImports.join(', ')}\n`
     )
   }
-  if (diagnostics.length || unresolved.length || externalGeometry)
+  if (diagnostics.length || unresolved.length || privateImports.length)
     process.exitCode = 1
   else {
     process.stdout.write(`Published types resolve for consumers: ${bundle}\n`)

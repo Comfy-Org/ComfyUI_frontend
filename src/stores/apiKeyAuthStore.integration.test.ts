@@ -3,7 +3,7 @@ import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
@@ -23,9 +23,9 @@ vi.mock(
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 vi.mock(import('@/services/dialogService'))
 

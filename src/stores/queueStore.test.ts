@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import {
@@ -66,7 +66,7 @@ const createTaskOutput = (
 type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
 type QueueResolver = (value: QueueResponse) => void
 
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/scripts/api'))
 
 describe('useQueuePendingTaskCountStore', () => {

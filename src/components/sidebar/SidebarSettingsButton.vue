@@ -11,7 +11,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 
 import SidebarIcon from './SidebarIcon.vue'

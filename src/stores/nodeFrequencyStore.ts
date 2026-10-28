@@ -2,7 +2,7 @@ import axios from 'axios'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
   const nodeFrequencyLookup = ref<Record<string, number>>({})

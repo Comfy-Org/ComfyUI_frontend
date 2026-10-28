@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import type { SystemStats } from '@/platform/remote/comfyui/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 export const useSystemStatsStore = defineStore('systemStats', () => {

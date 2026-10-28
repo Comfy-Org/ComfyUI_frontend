@@ -2,13 +2,13 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 
 vi.mock(import('@/scripts/app'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const storedFavorites = {
   favorites: [{ nodeLocatorId: '1', widgetName: 'seed' }]

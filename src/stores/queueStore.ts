@@ -11,7 +11,7 @@ import type {
   StatusWsMessageStatus,
   TaskOutput
 } from '@/platform/remote/comfyui/execution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { filterPreviewableResults } from '@/utils/resultItem'

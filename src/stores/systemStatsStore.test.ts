@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SystemStats } from '@/platform/remote/comfyui/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
