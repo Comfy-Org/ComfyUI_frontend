@@ -137,11 +137,11 @@
 
     <div class="flex gap-3">
       <Button variant="primary" :disabled="!saveEnabled" @click="handleSave">
-        <i class="icon-[lucide--check] scale-125" />
+        <i class="icon-[lucide--check]" />
         {{ saveButtonText }}
       </Button>
       <Button variant="secondary" @click="handleCancel">
-        <i class="icon-[lucide--x] scale-150" />
+        <i class="icon-[lucide--x]" />
         {{ t('g.cancel') }}
       </Button>
     </div>
