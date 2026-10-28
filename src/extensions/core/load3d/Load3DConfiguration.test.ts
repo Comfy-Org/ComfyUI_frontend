@@ -15,11 +15,8 @@ import type {
   SceneConfig,
   StoredModelConfig
 } from '@comfyorg/viewport3d/load3d/interfaces'
-import type {
-  IBaseWidget,
-  INumericWidget
-} from '@/lib/litegraph/src/types/widgets'
-import type { Dictionary } from '@/lib/litegraph/src/interfaces'
+import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
+import type { Dictionary } from '@comfyorg/graph-model/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'

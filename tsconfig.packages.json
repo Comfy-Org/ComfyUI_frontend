@@ -42,6 +42,9 @@
     },
     {
       "path": "./packages/billing-core/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/graph-model/tsconfig.declarations.json"
     }
   ]
 }

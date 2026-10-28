@@ -100,6 +100,7 @@ describe('NodeSearchBox', () => {
       data: () => ({ filterVisible: false })
     })
     render(Parent, { global: { plugins: [i18n] } })
+    expect(screen.getByRole('combobox', { name: 'Search nodes' })).toBeVisible()
 
     await userEvent
       .setup()

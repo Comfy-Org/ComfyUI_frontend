@@ -98,7 +98,8 @@ vi.mock(
     useAgentConsent: () => ({
       accepted: computed(() => useAgentPanelStore().consentAccepted),
       isChecking: computed(() => consentChecking.value),
-      withConsent
+      withConsent,
+      resumeAcceptAfterReload: vi.fn()
     })
   })
 )

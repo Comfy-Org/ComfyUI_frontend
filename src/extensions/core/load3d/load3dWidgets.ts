@@ -8,7 +8,7 @@ import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModel
 import { t } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IStringWidget } from '@comfyorg/graph-model/widgets'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
