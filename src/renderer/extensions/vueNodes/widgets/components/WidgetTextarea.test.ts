@@ -10,6 +10,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
+import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -18,7 +19,6 @@ import { createMockWidget } from './widgetTestUtils'
 
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
-
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
     copyToClipboard: mockCopyToClipboard
@@ -467,6 +467,15 @@ describe('WidgetTextarea expand to editor', () => {
         within(actions).queryByRole('button', { name: 'textEditor.expand' })
       )
     ).toBe(shown)
+  })
+
+  it('reports the dialog arm as exposed when Expand opens the dialog', async () => {
+    const expose = vi.spyOn(usePromptEditorExperimentStore(), 'expose')
+    renderWithDialogHost()
+
+    await openEditor()
+
+    expect(expose).toHaveBeenCalledWith('control')
   })
 
   it.for([
