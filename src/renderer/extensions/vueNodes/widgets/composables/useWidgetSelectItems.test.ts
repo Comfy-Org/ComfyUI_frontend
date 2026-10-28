@@ -214,10 +214,6 @@ describe('useWidgetSelectItems', () => {
         query: { filename: 'x.png', type: 'output' }
       },
       {
-        value: 'x.png[output]',
-        query: { filename: 'x.png', type: 'output' }
-      },
-      {
         value: 'sub/x.png [output]',
         query: { filename: 'x.png', type: 'output', subfolder: 'sub' }
       },
@@ -228,6 +224,10 @@ describe('useWidgetSelectItems', () => {
       {
         value: 'clipspace/x.png',
         query: { filename: 'x.png', type: 'input', subfolder: 'clipspace' }
+      },
+      {
+        value: 'sub\\x.png [output]',
+        query: { filename: 'x.png', type: 'output', subfolder: 'sub' }
       },
       {
         value: '/x.png [output]',

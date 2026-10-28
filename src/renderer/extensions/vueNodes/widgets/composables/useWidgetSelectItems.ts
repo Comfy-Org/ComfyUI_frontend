@@ -30,7 +30,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { AssetKind } from '@/types/widgetTypes'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { getMediaTypeFromFilename, parseFilePath } from '@/utils/formatUtil'
 import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
@@ -69,14 +69,10 @@ function getAnnotatedValueMediaUrl(
   assetKind: AssetKind | undefined
 ): string {
   const { filepath, rootFolder } = parseAnnotatedPath(value)
-  const folderEnd = filepath.lastIndexOf('/')
-  if (folderEnd <= 0) return getMediaUrl(filepath, rootFolder, assetKind)
-  return getMediaUrl(
-    filepath.slice(folderEnd + 1),
-    rootFolder,
-    assetKind,
-    filepath.slice(0, folderEnd)
-  )
+  if (filepath.startsWith('/'))
+    return getMediaUrl(filepath, rootFolder, assetKind)
+  const { filename, subfolder } = parseFilePath(filepath)
+  return getMediaUrl(filename, rootFolder, assetKind, subfolder)
 }
 
 export interface UseWidgetSelectItemsOptions {
