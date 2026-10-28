@@ -148,7 +148,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import {
   createFileDownload,
   useAssetDownload
-} from '@/platform/assets/composables/useAssetDownload' 
+} from '@/platform/assets/composables/useAssetDownload'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 import {
