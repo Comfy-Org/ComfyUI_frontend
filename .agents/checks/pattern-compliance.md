@@ -51,18 +51,15 @@ Steps:
 
 ### Testing
 
-- Behavioral tests, not change detectors
-- No mock-heavy tests that don't test real behavior
-- Test names describe behavior, not implementation
-- No Testing Library rule disables used to permit DOM traversal. Prefer a
-  semantic query, or fix missing component semantics.
-- No timing sleeps. Wait on observable readiness or control time explicitly.
-- No malformed fixtures cast to the expected domain type. Pass `unknown` data
-  through the production parser.
+- Read `docs/guidance/testing-principles.md` and flag any violation of it:
+  change detectors, mock-heavy tests, implementation-named tests, Testing
+  Library rule disables, timing sleeps, malformed fixtures cast to a domain
+  type, copied test bodies that should be a table
 
 ### General
 
 - No commented-out code
+- No added comments other than curt JSDoc on an exported API; rationale belongs in the commit message or PR description
 - No `console.log` in production code (unless intentional logging)
 - No hardcoded URLs, credentials, or environment-specific values
 - Package manager is `pnpm`. Never use `npm`, `npx`, or `yarn`. Use `pnpm dlx` for one-off package execution

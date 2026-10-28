@@ -23,9 +23,9 @@ const PG_PORT = 54331
 const REDIS_PORT = 6379
 const CLOUD_QUICKSTART =
   'start the cloud stack first: `cloud up` from the cloud checkout, or scripts/start-all.sh'
-// Fixed so a rerun seeds nothing and the printed recorder command never moves.
 const TEMPORAL_INSTALL =
   'brew install temporal, or: https://docs.temporal.io/cli#install'
+// Fixed so a rerun seeds nothing and the printed recorder command never moves.
 const RECORD_USER_ID = 'rec-local-user'
 const RECORD_WORKSPACE_ID = 'w-1f2e3d4c-5b6a-4798-8899-aabbccddeeff'
 
@@ -93,7 +93,7 @@ async function containerFor(
     .map((line) => line.split(' '))
     .filter(
       ([, imageName, ...ports]) =>
-        imageName.includes(image) &&
+        imageName.replace(/@.+$/, '').replace(/:[^/]+$/, '') === image &&
         ports.join(' ').includes(`:${portNumber}->`)
     )
     .map(([name]) => name)
@@ -163,8 +163,7 @@ function recordEnv(options: Options, catalogPath: string, secret: string) {
     AGENT_ENGINE: options.engine,
     AGENT_M2M_SECRET: secret,
     AGENT_PORT: String(options.agentPort),
-    // Without this the non-standalone default is cloud, and comfy-cli edits 401 against cloud.comfy.org.
-    AGENT_TARGET: 'local',
+    AGENT_TARGET: options.target,
     AGENT_WIDGET_CATALOG_PATH: catalogPath,
     DB_CONNECTION_STRING: `postgresql://postgres:postgres@127.0.0.1:${PG_PORT}/postgres?sslmode=disable`,
     DOC_HOST_ENDPOINT: `http://127.0.0.1:${options.docHostPort}`,
@@ -199,7 +198,7 @@ export async function runRecord(options: Options): Promise<number> {
   try {
     catalogPath = await writeCatalog(options.catalog, dataDir)
     pgExec = await pgExecCommand(options.pgExec)
-    redisExec = await redisExecCommand()
+    redisExec = options.redisExec || (await redisExecCommand())
     await seedIdentity(pgExec)
   } catch (error) {
     await rm(dataDir, { force: true, recursive: true })
@@ -274,7 +273,7 @@ export async function runRecord(options: Options): Promise<number> {
 Recording stack ready: agent ${agentUrl}, doc host http://127.0.0.1:${options.docHostPort}
 Record a case with:
 
-AGENT_CLOUD_SHA=${cloudSha} AGENT_MODEL=<model> \\
+AGENT_CLOUD_SHA=${cloudSha} AGENT_MODEL=<model>${options.target === 'cloud' ? ' AGENT_TURN_TOKEN=<cloud-api-key>' : ''} \\
 AGENT_M2M_SECRET_FILE=${secretPath} AGENT_FULLSTACK_URL=${agentUrl} \\
 AGENT_WORKSPACE_ID=${RECORD_WORKSPACE_ID} AGENT_USER_ID=${RECORD_USER_ID} \\
 AGENT_PG_EXEC="${pgExec}" \\

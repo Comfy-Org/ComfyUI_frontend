@@ -154,13 +154,6 @@ export class Preview3DPipelineContext {
     await this.comfyPage.nextFrame()
   }
 
-  async alignPreview3dWorkflowUiSettings(): Promise<void> {
-    await this.comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Sidebar'
-    )
-  }
-
   async queuePromptAndWaitIdle(timeoutMs: number): Promise<void> {
     await this.comfyPage.command.executeCommand('Comfy.QueuePrompt')
     await this.comfyPage.workflow.waitForWorkflowIdle(timeoutMs)
@@ -222,7 +215,6 @@ export class Preview3DPipelineContext {
   }
 
   async openPersistedWorkflowFromSidebar(workflowName: string): Promise<void> {
-    await this.alignPreview3dWorkflowUiSettings()
     const tab = this.comfyPage.menu.workflowsTab
     await tab.open()
     await tab.getPersistedItem(workflowName).click()
@@ -260,11 +252,6 @@ export const preview3dPipelineTest = comfyPageFixture.extend<{
   preview3dPipeline: Preview3DPipelineContext
 }>({
   preview3dPipeline: async ({ comfyPage }, use) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Sidebar'
-    )
-
     await comfyPage.workflow.loadWorkflow('3d/preview3d_pipeline')
 
     const pipeline = new Preview3DPipelineContext(comfyPage)

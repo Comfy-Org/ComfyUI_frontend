@@ -1,10 +1,10 @@
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAppMode } from '@/composables/useAppMode'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
@@ -105,8 +105,7 @@ export function useSharedWorkflowUrlLoader() {
           }
         },
         dialogComponentProps: {
-          onClose: () => resolve({ action: 'cancel' }),
-          contentClass: 'sm:max-w-176 rounded-2xl overflow-hidden'
+          onClose: () => resolve({ action: 'cancel' })
         }
       })
     })
@@ -129,11 +128,7 @@ export function useSharedWorkflowUrlLoader() {
       console.warn(
         `[useSharedWorkflowUrlLoader] Invalid share parameter format: ${shareParam}`
       )
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('shareWorkflow.loadFailed')
-      })
+      toast.error(t('g.error'), { description: t('shareWorkflow.loadFailed') })
       clearShareIntent()
       return 'failed'
     }
@@ -173,10 +168,8 @@ export function useSharedWorkflowUrlLoader() {
             '[useSharedWorkflowUrlLoader] Failed to import assets:',
             importError
           )
-          toast.add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('openSharedWorkflow.importFailed')
+          toast.error(t('g.error'), {
+            description: t('openSharedWorkflow.importFailed')
           })
         }
       }
@@ -197,10 +190,8 @@ export function useSharedWorkflowUrlLoader() {
           '[useSharedWorkflowUrlLoader] Failed to load workflow graph:',
           error
         )
-        toast.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('shareWorkflow.loadFailed')
+        toast.error(t('g.error'), {
+          description: t('shareWorkflow.loadFailed')
         })
         clearShareIntent()
         return 'failed'

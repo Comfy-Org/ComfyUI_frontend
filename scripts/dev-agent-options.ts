@@ -15,6 +15,8 @@ export interface Options {
   help: boolean
   pgExec: string
   record: boolean
+  redisExec: string
+  target: 'cloud' | 'local'
   temporalPort: number
   temporalUiPort: number
 }
@@ -34,10 +36,12 @@ Options:
   --agent-port PORT     Standalone agent port (default: 6286)
   --air-bin PATH        Air executable (default: $AIR_BIN or ~/go/bin/air)
   --record              Record mode: the cloud stack's agent plus the doc host
+  --target NAME         Record mode execution target: local or cloud (default: local)
   --catalog PATH        Conversation fixture whose workflow.catalog the agent loads
   --doc-host-port PORT  Doc host port in record mode (default: 8096)
   --pg-exec CMD         Command taking one SQL string, ending in -c; quote
                         an argument that contains a space
+  --redis-exec CMD      redis-cli-compatible command for recording
   --engine NAME         Record mode engine: inline or temporal (default: inline)
   --temporal-port PORT  Temporal gRPC port for --engine temporal (default: 7234)
   --help                Show this help
@@ -45,7 +49,8 @@ Options:
 
 function optionValue(args: string[], index: number, option: string): string {
   const value = args.at(index + 1)
-  if (value === undefined) throw new Error(`${option} requires a value`)
+  if (value === undefined || value.startsWith('--'))
+    throw new Error(`${option} requires a value`)
   return value
 }
 
@@ -101,11 +106,26 @@ export function parseOptions(args: string[]): Options {
     help: false,
     pgExec: '',
     record: false,
+    redisExec: '',
+    target: 'local',
     temporalPort: 7234,
     temporalUiPort: 0
   }
+  const seen = new Set<string>()
   for (let index = 0; index < args.length; index++) {
     const arg = args[index]
+    if (arg === '--') {
+      const positional = args.slice(index + 1)
+      if (positional.length > 0)
+        throw new Error(`Unexpected argument: ${positional[0]}`)
+      break
+    }
+    if (arg === '--help') {
+      options.help = true
+      return options
+    }
+    if (seen.has(arg)) throw new Error(`Repeated option: ${arg}`)
+    seen.add(arg)
     switch (arg) {
       case '--agent-port':
         options.agentPort = port(optionValue(args, index, arg), arg)
@@ -135,9 +155,22 @@ export function parseOptions(args: string[]): Options {
         options.pgExec = optionValue(args, index, arg)
         index++
         break
+      case '--redis-exec':
+        options.redisExec = optionValue(args, index, arg)
+        index++
+        break
       case '--record':
         options.record = true
         break
+      case '--target': {
+        const target = optionValue(args, index, arg)
+        if (target !== 'cloud' && target !== 'local') {
+          throw new Error('--target must be local or cloud')
+        }
+        options.target = target
+        index++
+        break
+      }
       case '--cloud-repo':
         options.cloudRepo = resolve(optionValue(args, index, arg))
         index++
@@ -149,9 +182,6 @@ export function parseOptions(args: string[]): Options {
       case '--frontend-port':
         options.frontendPort = port(optionValue(args, index, arg), arg)
         index++
-        break
-      case '--help':
-        options.help = true
         break
       default:
         throw new Error(`Unknown option: ${arg}`)
@@ -168,6 +198,9 @@ export function parseOptions(args: string[]): Options {
   }
   if (options.engine === 'temporal' && !options.record) {
     throw new Error('--engine temporal applies to --record only')
+  }
+  if (options.target !== 'local' && !options.record) {
+    throw new Error('--target cloud applies to --record only')
   }
   options.temporalUiPort = options.temporalPort + TEMPORAL_UI_OFFSET
   if (options.temporalUiPort > 65535) {

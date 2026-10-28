@@ -3,8 +3,12 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import {
+  graphItems,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 
 const CREATE_GROUP_HOTKEY = 'Control+g'
 
@@ -126,9 +130,13 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await comfyPage.workflow.loadWorkflow('groups/oversized_group')
     await comfyPage.keyboard.selectAll()
     await comfyPage.command.executeCommand('Comfy.Graph.FitGroupToContents')
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'vue-groups-fit-to-contents.png'
-    )
+    await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
+    await fitToViewInstant(comfyPage)
+    const region = await screenshotRegion(comfyPage.page, [
+      graphItems(comfyPage.page, 'groups'),
+      ...(await comfyPage.vueNodes.nodes.all())
+    ])
+    await region.expectScreenshot('vue-groups-fit-to-contents.png')
   })
 
   test('should move nested groups together when dragging outer group', async ({
@@ -170,6 +178,46 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
       // The relative offset should be maintained (inner group moved with outer)
       expect(finalOffsetX).toBeCloseTo(initialOffsetX, 0)
       expect(finalOffsetY).toBeCloseTo(initialOffsetY, 0)
+    }).toPass({ timeout: 5000 })
+  })
+
+  test('undoing a group drag restores the group and its member nodes', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
+
+    const memberNode = await comfyPage.nodeOps.getNodeRefById('17')
+    async function readMemberPos() {
+      const geometry = await comfyPage.canvasOps.getNodeGeometry(memberNode.id)
+      return geometry.pos
+    }
+
+    const groupBefore =
+      await comfyPage.canvasOps.getGroupPosition('Outer Group')
+    const memberBefore = await readMemberPos()
+
+    await comfyPage.canvasOps.dragGroup({
+      name: 'Outer Group',
+      deltaX: 120,
+      deltaY: 90
+    })
+
+    // Confirm the drag actually displaced both, otherwise "restored by undo"
+    // would hold trivially for anything that never moved.
+    await expect(async () => {
+      const groupMoved =
+        await comfyPage.canvasOps.getGroupPosition('Outer Group')
+      expect(groupMoved).not.toEqual(groupBefore)
+      expect(await readMemberPos()).not.toEqual(memberBefore)
+    }).toPass({ timeout: 5000 })
+
+    await comfyPage.keyboard.undo()
+
+    await expect(async () => {
+      const groupAfter =
+        await comfyPage.canvasOps.getGroupPosition('Outer Group')
+      expect(groupAfter).toEqual(groupBefore)
+      expect(await readMemberPos()).toEqual(memberBefore)
     }).toPass({ timeout: 5000 })
   })
 
@@ -272,7 +320,12 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
 
     const toggleBypass = () =>
-      comfyPage.page.getByTestId(TestIds.selectionToolbox.bypass).click()
+      comfyPage.selectionToolbox
+        .getByRole('button', {
+          name: 'Bypass/Unbypass Selected Nodes',
+          exact: true
+        })
+        .click()
     const bypassCount = () =>
       comfyPage.page.evaluate(
         () => graph!.nodes.filter((node) => node.mode === 4).length
@@ -323,13 +376,13 @@ test.describe(
         button: 'right'
       })
 
-      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
       await expect(comfyPage.contextMenu.litegraphContextMenu).toBeHidden()
       await expect(comfyPage.contextMenu.litegraphMenu).toBeHidden()
 
       // Group-only action confirms it is the group menu.
       await expect(
-        comfyPage.contextMenu.primeVueMenu.getByText('Fit Group To Nodes')
+        comfyPage.contextMenu.ariaMenu.getByText('Fit Group To Nodes')
       ).toBeVisible()
     })
   }

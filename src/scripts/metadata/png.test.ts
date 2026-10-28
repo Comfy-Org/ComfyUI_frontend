@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   mockFileReaderAbort,
@@ -143,7 +143,6 @@ describe('getFromPngBuffer', () => {
   })
 
   it('logs warning and skips iTXt chunk with unsupported compression method', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const buffer = createPngWithChunk('iTXt', 'workflow', 'data', {
       compressionFlag: 1,
       compressionMethod: 99
@@ -168,7 +167,7 @@ describe('getFromPngBuffer', () => {
 
     const reader = stream.readable.getReader()
     const chunks: Uint8Array[] = []
-    while (true) {
+    for (;;) {
       const { done, value } = await reader.read()
       if (done) break
       chunks.push(value)
@@ -189,6 +188,30 @@ describe('getFromPngBuffer', () => {
     const result = await getFromPngBuffer(buffer)
     expect(result['workflow']).toBe(workflow)
   })
+
+  it('skips corrupt compressed iTXt metadata', async () => {
+    const corruptCompressedBytes = Uint8Array.from([
+      0x78, 0x9c, 0x43, 0x4c, 0x4a, 0x4e, 0x49, 0x4d, 0x1c, 0x25, 0x46, 0x12,
+      0x01, 0x00, 0x3d, 0xa5, 0xc1, 0x5d
+    ])
+    const buffer = createPngWithChunk(
+      'iTXt',
+      'workflow',
+      corruptCompressedBytes,
+      {
+        compressionFlag: 1,
+        compressionMethod: 0
+      }
+    )
+
+    const result = await getFromPngBuffer(buffer)
+
+    expect(result).toEqual({})
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to decompress iTXt chunk "workflow":',
+      expect.any(Error)
+    )
+  })
 })
 
 describe('getFromPngFile', () => {
@@ -203,7 +226,6 @@ describe('getFromPngFile', () => {
   })
 
   it('returns empty for an invalid PNG File', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const file = new File([new ArrayBuffer(8)], 'bad.png', {
       type: 'image/png'
     })

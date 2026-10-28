@@ -261,6 +261,31 @@ describe('LGraphNode widget ordering', () => {
       expect(node2.widgets!.map((w) => w.value)).toStrictEqual([5, 20])
     })
 
+    it('restores an object widget value, snapshotted by value rather than by reference', () => {
+      const saved = {
+        trim: { start_time: 1.5, duration: 4 },
+        crop: { x: 10, y: 20, width: 100, height: 50 }
+      }
+      node.addWidget('videoedit', 'video_edit', saved, null, {})
+      node.serialize_widgets = true
+
+      const serialised = node.serialize()
+      expect(serialised.widgets_values_named!.video_edit).toStrictEqual(saved)
+
+      const live = node.widgets![0].value as typeof saved
+      live.trim.start_time = 99
+      live.crop.width = 999
+
+      const restored = new LGraphNode('TestNode2')
+      restored.addWidget('videoedit', 'video_edit', {}, null, {})
+      restored.configure(serialised)
+
+      expect(restored.widgets![0].value).toStrictEqual({
+        trim: { start_time: 1.5, duration: 4 },
+        crop: { x: 10, y: 20, width: 100, height: 50 }
+      })
+    })
+
     it('should support specifying order for legacy workflows', () => {
       node.addWidget('number', 'steps', 0, null, {})
       node.addWidget('number', 'seed', 0, null, {})

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { WidgetVisibilitySource } from '@/types/widgetVisibility'
 import {
   applyLegacyAdvancedWrite,
   applyLegacyHiddenWrite,
@@ -17,6 +18,20 @@ import {
   WIDGET_SURFACES
 } from '@/types/widgetVisibility'
 
+describe('WidgetVisibilitySource', () => {
+  it('requires complete surface declarations', () => {
+    const source: WidgetVisibilitySource = {
+      type: 'text',
+      options: {
+        // @ts-expect-error Surface declarations must include every surface.
+        surfaces: { panel: 'never' }
+      }
+    }
+
+    expect(source.type).toBe('text')
+  })
+})
+
 describe('deriveWidgetSurfaces', () => {
   it.for([
     [{ type: 'number' }, ['shown', 'shown', 'shown']],
@@ -32,6 +47,25 @@ describe('deriveWidgetSurfaces', () => {
     [
       { type: 'text', options: { hideInPanel: true } },
       ['shown', 'shown', 'never']
+    ],
+    [
+      {
+        type: 'text',
+        options: {
+          surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'never' }
+        }
+      },
+      ['shown', 'shown', 'never']
+    ],
+    [
+      {
+        type: 'combo',
+        options: {
+          canvasOnly: true,
+          surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'never' }
+        }
+      },
+      ['shown', 'shown', 'never']
     ]
   ] as const)('applies surface policy for %o', ([widget, expected]) => {
     const surfaces = deriveWidgetSurfaces(widget)
@@ -39,6 +73,24 @@ describe('deriveWidgetSurfaces', () => {
       expected
     )
   })
+
+  it.for([
+    ['string', 'hidden'],
+    ['invalid tier', { canvas: 'shown', vueNode: 'never', panel: 'hidden' }],
+    ['partial object', { panel: 'never' }]
+  ] as const)(
+    'ignores a %s surfaces option and applies legacy derivation',
+    ([, declaredSurfaces]) => {
+      const options = { canvasOnly: true }
+      Object.defineProperty(options, 'surfaces', { value: declaredSurfaces })
+
+      expect(deriveWidgetSurfaces({ type: 'combo', options })).toEqual({
+        canvas: 'shown',
+        vueNode: 'never',
+        panel: 'never'
+      })
+    }
+  )
 })
 
 describe('isWidgetVisibleOnSurface', () => {

@@ -3,44 +3,26 @@ import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
+import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
+import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { toNodeId } from '@/types/nodeId'
 import type { AppMode } from '@/utils/appMode'
 
-beforeEach(() => {
-  vi.mocked(useAppModeStore().exitBuilder).mockImplementation(() => {})
-})
-
-const mockSetMode = vi.hoisted(() => vi.fn())
-
 const mockSave = vi.hoisted(() => vi.fn())
 const mockSaveAs = vi.hoisted(() => vi.fn())
 
-const mockState = {
-  mode: 'builder:inputs' as AppMode
-}
-
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({
-    mode: computed(() => mockState.mode),
-    isBuilderMode: ref(true),
-    isAppMode: ref(false),
-    isSelectMode: ref(false),
-    setMode: mockSetMode
-  })
-}))
+vi.mock(import('@/composables/useAppMode'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { extra: {} } }
 }))
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('./useBuilderSave'), () => ({
   useBuilderSave: () => ({
@@ -72,8 +54,13 @@ const i18n = createI18n({
 })
 
 describe('BuilderFooterToolbar', () => {
+  let mode: Ref<AppMode>
+
   beforeEach(() => {
-    mockState.mode = 'builder:inputs'
+    mode = ref<AppMode>('builder:inputs')
+    useAppMode().mode = computed(() => mode.value)
+    useAppMode().isBuilderMode = computed(() => true)
+    vi.mocked(useAppModeStore().exitBuilder).mockImplementation(() => {})
     useAppModeStore().selectedOutputs = [toNodeId('1')]
     useWorkflowStore().activeWorkflow = fromPartial({
       isTemporary: true,
@@ -99,42 +86,39 @@ describe('BuilderFooterToolbar', () => {
   }
 
   it('disables back on the first step', () => {
-    mockState.mode = 'builder:inputs'
     renderComponent()
     expect(screen.getByRole('button', { name: /back/i })).toBeDisabled()
   })
 
   it('enables back on the arrange step', () => {
-    mockState.mode = 'builder:arrange'
+    mode.value = 'builder:arrange'
     renderComponent()
     expect(screen.getByRole('button', { name: /back/i })).toBeEnabled()
   })
 
   it('disables next on arrange step when no outputs', () => {
-    mockState.mode = 'builder:arrange'
+    mode.value = 'builder:arrange'
     useAppModeStore().selectedOutputs = []
     renderComponent()
     expect(screen.getByRole('button', { name: /next/i })).toBeDisabled()
   })
 
   it('enables next on inputs step', () => {
-    mockState.mode = 'builder:inputs'
     renderComponent()
     expect(screen.getByRole('button', { name: /next/i })).toBeEnabled()
   })
 
   it('calls setMode on back click', async () => {
-    mockState.mode = 'builder:arrange'
+    mode.value = 'builder:arrange'
     const { user } = renderComponent()
     await user.click(screen.getByRole('button', { name: /back/i }))
-    expect(mockSetMode).toHaveBeenCalledWith('builder:outputs')
+    expect(useAppMode().setMode).toHaveBeenCalledWith('builder:outputs')
   })
 
   it('calls setMode on next click from inputs step', async () => {
-    mockState.mode = 'builder:inputs'
     const { user } = renderComponent()
     await user.click(screen.getByRole('button', { name: /next/i }))
-    expect(mockSetMode).toHaveBeenCalledWith('builder:outputs')
+    expect(useAppMode().setMode).toHaveBeenCalledWith('builder:outputs')
   })
 
   it('calls exitBuilder on exit button click', async () => {
@@ -146,7 +130,7 @@ describe('BuilderFooterToolbar', () => {
   it('calls setMode app on view app click', async () => {
     const { user } = renderComponent()
     await user.click(screen.getByRole('button', { name: /view app/i }))
-    expect(mockSetMode).toHaveBeenCalledWith('app')
+    expect(useAppMode().setMode).toHaveBeenCalledWith('app')
   })
 
   it('shows "Save as" when workflow is temporary', () => {

@@ -25,6 +25,40 @@ instructions, then run the recorder command below with one `--prompt` per
 turn. Replay the new case with the command in `browser_tests/README.md` under
 "Replay coverage for agent bug fixes" plus `-g <case id>`.
 
+## Playbook: record a case
+
+Prerequisites: the cloud checkout beside this repo with its own local stack up
+(`cloud up` there: Postgres on 54331, Redis on 6379), a ComfyUI backend on
+8188, `ANTHROPIC_API_KEY`, `COMFY_BIN` pointing at a comfy-cli that works
+without a home directory.
+
+1. Bring the recording stack up (Temporal engine so a turn can be cancelled):
+
+   ```bash
+   AGENT_MODEL=claude-opus-5 COMFY_BIN=~/.local/bin/comfy pnpm exec tsx scripts/dev-agent-integration.ts --record --engine temporal --catalog browser_tests/fixtures/data/agent/conversations/agent-rec-set-widget-existing.json --cloud-repo ../cloud --agent-port 8087 --doc-host-port 8096 --temporal-port 7234
+   ```
+
+2. Paste the recorder command it prints, filling `AGENT_MODEL`, the case id,
+   the seed fixture and one `--prompt` per turn (`--cancel-turn` and
+   `--cancel-after-ms` for a cancelled turn).
+
+3. Replay the new case:
+
+   Start the cloud-distribution frontend in one terminal:
+
+   ```bash
+   DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
+   ```
+
+   Replay on its port from a second terminal:
+
+   ```bash
+   PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test browser_tests/tests/agent/agentConversationReplay.spec.ts --project=cloud -g agent-rec-SLUG
+   ```
+
+Sidecars (raw frames, rows, receipt) land in `conversations/recordings/`;
+commit only the fixture.
+
 ## Recording a conversation
 
 One command records a whole thread against a running agent, applies the gates
@@ -133,10 +167,16 @@ query (`AGENT_PG_EXEC` must reach that environment's Postgres), and runs the
 same assembly gates as a recording. So it imports a session whose audit
 database is still reachable, not any Langfuse session.
 
-UNVERIFIED until the first real trace: that `comfy.turn_id` is the message id
-the audit rows carry; that attributes arrive under `metadata.attributes` (a
-flattened `metadata` key is the fallback); that the page meta carries
-`totalPages` (a short page ends the walk otherwise).
+It reads Langfuse's v2 observations endpoint (`/api/public/v2/observations`,
+filtered by `traceId` or `sessionId`, paged by `meta.cursor`); the v1 traces and
+observations reads are removed on 2026-11-16. v2 returns input and output as raw
+strings, which the importer parses back to JSON when they are JSON, and
+flattens attributes to `attributes.<key>` metadata keys, which `attributeOf`
+reads alongside the v1 `metadata.attributes` shape. Checked 2026-10-27 against
+a production trace: the v1 and v2 reads give the same capture.
+
+UNVERIFIED until the first real import with audit rows: that `comfy.turn_id` is
+the message id the audit rows carry.
 
 An import keeps `response_side: recorded`: the replies and accepted ops are the
 agent's, only the socket framing was rebuilt, and the replay suite lists
@@ -147,7 +187,9 @@ to bind the workflow through.
 
 ## Capture
 
-The recorder keeps the `/ws` frames of the thread with their receipt times and,
+The recorder keeps the agent-socket frames of the thread (what the panel reads
+on `/api/agent/events`; the replay serves them there through
+`AgentFollowerHostSocket`) with their receipt times and,
 after the last turn completes, reads each turn's audit rows itself: the parent
 tool-call rows with their child op ids and statuses, plus the draft as it stands
 at the end of the thread (`readRows` in `scripts/agentConversationRecord.ts`

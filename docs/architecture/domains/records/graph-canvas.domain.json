@@ -1,0 +1,426 @@
+{
+  "id": "graph-canvas",
+  "capability": "Graph canvas",
+  "description": "The LiteGraph canvas view-controller: pointer and gesture handling, viewport transform, hit testing, context menus, clipboard storage, title buttons, badges, and the shared 2D drawing primitives. Vue-node rendering, layout stores, and link dragging live outside this domain.",
+  "modules": [
+    {
+      "path": "src/base/common/selectionBounds.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/useCopy.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useCopy.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/usePaste.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/usePaste.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/contextMenuFilter.name.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/contextMenuFilter.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/contextMenuFilter.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/contextMenuFilter.wrap.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/groupOptions.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/groupOptions.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/selectionBorder.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/simpleTouchSupport.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/simpleTouchSupport.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/CanvasPointer.deviceDetection.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/CanvasPointer.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/ContextMenu.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/DragAndScale.animateToBounds.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/DragAndScale.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/DragAndScale.viewportSize.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphBadge.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphButton.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.clipboard.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.cloneZIndex.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.deprecated.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.drawConnections.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.gesture.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.ghost.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.groupSelection.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.interactionMode.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.invalidation.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.linkDragAutoPan.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.linkVisibility.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.onMenuAdd.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.prompt.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.renderInfo.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.resize.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.selectOnly.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.selection.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.setGraph.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.slotHitDetection.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.subgraphPasteDelete.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.titleButtons.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphCanvas.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraphIcon.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/__fixtures__/canvasHarness.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/__tests__/**",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/CanvasInteractionMode.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/InputIndicators.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/captureGesture.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/captureGesture.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/clipboardStorage.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/hitTesting.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/measureSlots.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/reduceGesture.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/reduceGesture.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/resolvePointerTarget.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/contextMenuCompat.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/contextMenuCompat.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/cursorCache.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/cursorCache.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/draw.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/infrastructure/LGraphCanvasEventMap.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/nodeBadgeDraw.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/nodeBadgeDraw.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/nodeEmphasis.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/types/contextMenu.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/types/events.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/types/panel.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/linkColors.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/textMeasureCache.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/textMeasureCache.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/textUtils.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/textUtils.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/systems/**",
+      "role": "application"
+    },
+    {
+      "path": "src/types/badgeData.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/vintageClipboard.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/workbench/eventHelpers.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/workbench/eventHelpers.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Pointer gestures resolve targets and stay interruptible",
+      "checks": [
+        "src/lib/litegraph/src/canvas/reduceGesture.test.ts",
+        "src/lib/litegraph/src/canvas/captureGesture.test.ts",
+        "src/lib/litegraph/src/LGraphCanvas.gesture.test.ts",
+        "src/lib/litegraph/src/LGraphCanvas.slotHitDetection.test.ts",
+        "src/lib/litegraph/src/CanvasPointer.deviceDetection.test.ts"
+      ]
+    },
+    {
+      "name": "Viewport pan, zoom, and fit keep canvas coordinates stable",
+      "checks": [
+        "src/lib/litegraph/src/DragAndScale.animateToBounds.test.ts",
+        "src/lib/litegraph/src/DragAndScale.viewportSize.test.ts",
+        "src/lib/litegraph/src/__tests__/DragAndScale.fitToBounds.test.ts",
+        "browser_tests/tests/viewport.spec.ts"
+      ]
+    },
+    {
+      "name": "Canvas selection, clipboard, and context menus act on the targeted items",
+      "checks": [
+        "src/lib/litegraph/src/LGraphCanvas.selection.test.ts",
+        "src/lib/litegraph/src/LGraphCanvas.clipboard.test.ts",
+        "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.test.ts",
+        "src/lib/litegraph/src/contextMenuCompat.test.ts",
+        "browser_tests/tests/copyPaste.spec.ts"
+      ]
+    },
+    {
+      "name": "Canvas drawing and invalidation redraw only what changed",
+      "checks": [
+        "src/lib/litegraph/src/LGraphCanvas.invalidation.test.ts",
+        "src/lib/litegraph/src/LGraphCanvas.drawConnections.test.ts",
+        "src/lib/litegraph/src/nodeBadgeDraw.test.ts",
+        "src/lib/litegraph/src/LGraphButton.test.ts"
+      ]
+    },
+    {
+      "name": "Canvas copy and paste route through clipboard storage and paste media into nodes",
+      "checks": [
+        "src/composables/useCopy.test.ts",
+        "src/composables/usePaste.test.ts"
+      ]
+    },
+    {
+      "name": "Node badges derive id, lifecycle, source, and credit parts including pricing inputs and subgraph aggregation",
+      "checks": [
+        "src/systems/badgeSystem.test.ts",
+        "src/systems/badgeSystem.pricing.test.ts",
+        "src/systems/badgeSystem.subgraph.test.ts"
+      ]
+    },
+    {
+      "name": "Node emphasis outlines selected and referenced nodes without changing selection",
+      "checks": [
+        "src/systems/nodeEmphasisSystem.test.ts",
+        "browser_tests/tests/agent/agentNodeMentionHighlight.spec.ts"
+      ]
+    },
+    {
+      "name": "Core canvas extensions filter combo menus, build group menus, and translate touch gestures",
+      "checks": [
+        "src/extensions/core/contextMenuFilter.test.ts",
+        "src/extensions/core/contextMenuFilter.wrap.test.ts",
+        "src/extensions/core/contextMenuFilter.name.test.ts",
+        "src/extensions/core/groupOptions.test.ts",
+        "src/extensions/core/simpleTouchSupport.test.ts"
+      ]
+    },
+    {
+      "name": "Canvas copy and paste ignore editable targets and text selections",
+      "checks": ["src/workbench/eventHelpers.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/CANVAS-GESTURE-0029-pointer-gesture-state-machine.md",
+    "docs/adr/CANVAS-VIEWPORT-0009-canvas-viewport-system.md",
+    "docs/adr/CANVAS-INTERACTION-0035-agent-node-picking-policy.md",
+    "docs/adr/RENDERING-INVALIDATION-0021-classified-frame-coalesced-canvas-invalidation.md"
+  ],
+  "compatibilityPromises": [
+    "LGraphCanvas methods, events, and menu hooks used by extensions keep their current behaviour.",
+    "Clipboard storage keys stay compatible with content copied by earlier frontend versions.",
+    "Inventory grants no new cross-domain permissions; graph entities importing draw.ts and the canvas importing renderer layout code remain inherited debt."
+  ],
+  "deepImports": "inventory"
+}

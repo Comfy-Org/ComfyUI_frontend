@@ -1,29 +1,35 @@
 <template>
   <div class="flex gap-2">
-    <InputText
+    <Input
       v-model="modelValue"
       class="flex-1"
       :placeholder="$t('g.imageUrl')"
     />
     <Button
-      v-tooltip="$t('g.upload')"
+      :tooltip="$t('g.upload')"
       variant="secondary"
       size="sm"
       :aria-label="$t('g.upload')"
       :disabled="isUploading"
       @click="triggerFileInput"
     >
-      <i :class="isUploading ? 'pi pi-spin pi-spinner' : 'pi pi-upload'" />
+      <i
+        :class="
+          isUploading
+            ? 'icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none'
+            : 'icon-[lucide--upload]'
+        "
+      />
     </Button>
     <Button
-      v-tooltip="$t('g.clear')"
+      :tooltip="$t('g.clear')"
       variant="destructive"
       size="sm"
       :aria-label="$t('g.clear')"
       :disabled="!modelValue"
       @click="clearImage"
     >
-      <i class="pi pi-trash" />
+      <i class="icon-[lucide--trash-2]" />
     </Button>
     <input
       ref="fileInput"
@@ -36,13 +42,17 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
+import { getErrorMessage } from '@/utils/errorUtil'
+
+const { t } = useI18n()
 
 const modelValue = defineModel<string>()
 
@@ -64,8 +74,8 @@ const uploadFile = async (file: File): Promise<string | null> => {
   })
 
   if (resp.status !== 200) {
-    useToastStore().addAlert(
-      `Upload failed: ${resp.status} - ${resp.statusText}`
+    useToast().warning(
+      t('g.uploadFailed', { reason: `${resp.status} - ${resp.statusText}` })
     )
     return null
   }
@@ -93,7 +103,11 @@ const handleFileUpload = async (event: Event) => {
         modelValue.value = `/api/view?${params.toString()}`
       }
     } catch (error) {
-      useToastStore().addAlert(`Upload error: ${String(error)}`)
+      useToast().warning(
+        t('g.uploadFailed', {
+          reason: getErrorMessage(error) ?? t('g.unknownError')
+        })
+      )
     } finally {
       isUploading.value = false
     }

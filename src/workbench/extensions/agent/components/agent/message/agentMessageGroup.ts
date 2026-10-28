@@ -1,0 +1,93 @@
+import type {
+  ActivityPart,
+  AskUnavailablePart,
+  AskUserPart,
+  DeleteApprovalPart,
+  MessagePart,
+  NoticePart,
+  PaywallPart,
+  RunApprovalPart,
+  TabLinkPart,
+  TextPart
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+
+export type AgentMessageGroup =
+  | { kind: 'text'; parts: TextPart[] }
+  | { kind: 'notice'; part: NoticePart | AskUnavailablePart }
+  | { kind: 'paywall'; part: PaywallPart }
+  | { kind: 'trace' }
+  | { kind: 'tabLinks'; parts: TabLinkPart[] }
+  | { kind: 'runApproval'; part: RunApprovalPart }
+  | { kind: 'askUser'; part: AskUserPart }
+  | { kind: 'deleteApproval'; part: DeleteApprovalPart }
+
+type TextGroup = Extract<AgentMessageGroup, { kind: 'text' }>
+type InterruptingPart = Exclude<MessagePart, TextPart | ActivityPart>
+
+export function groupMessageParts(
+  parts: readonly MessagePart[]
+): AgentMessageGroup[] {
+  const out: AgentMessageGroup[] = []
+  let tracePlaced = false
+  let openTextGroup: TextGroup | null = null
+  for (const part of parts) {
+    if (part.type === 'tool' || part.type === 'thinking') {
+      if (tracePlaced) continue
+      tracePlaced = true
+      out.push({ kind: 'trace' })
+      continue
+    }
+    if (part.type === 'text') {
+      openTextGroup = appendText(out, openTextGroup, part)
+      continue
+    }
+    openTextGroup = null
+    pushInterruptingGroup(out, part)
+  }
+  return out
+}
+
+function appendText(
+  out: AgentMessageGroup[],
+  openTextGroup: TextGroup | null,
+  part: TextPart
+): TextGroup {
+  if (openTextGroup) {
+    openTextGroup.parts.push(part)
+    return openTextGroup
+  }
+  const group: TextGroup = { kind: 'text', parts: [part] }
+  out.push(group)
+  return group
+}
+
+function pushInterruptingGroup(
+  out: AgentMessageGroup[],
+  part: InterruptingPart
+): void {
+  if (part.type !== 'tabLink') {
+    out.push(cardGroup(part))
+    return
+  }
+  const prev = out.at(-1)
+  if (prev?.kind === 'tabLinks') prev.parts.push(part)
+  else out.push({ kind: 'tabLinks', parts: [part] })
+}
+
+function cardGroup(
+  part: Exclude<InterruptingPart, TabLinkPart>
+): AgentMessageGroup {
+  switch (part.type) {
+    case 'runApproval':
+      return { kind: 'runApproval', part }
+    case 'askUser':
+      return { kind: 'askUser', part }
+    case 'deleteApproval':
+      return { kind: 'deleteApproval', part }
+    case 'paywall':
+      return { kind: 'paywall', part }
+    case 'notice':
+    case 'askUnavailable':
+      return { kind: 'notice', part }
+  }
+}

@@ -41,6 +41,8 @@ describe('parseOptions', () => {
       help: false,
       pgExec: '',
       record: false,
+      redisExec: '',
+      target: 'local',
       temporalPort: 7234,
       temporalUiPort: 8234
     })
@@ -50,6 +52,8 @@ describe('parseOptions', () => {
     expect(
       parseOptions([
         '--record',
+        '--target',
+        'cloud',
         '--catalog',
         'fixtures/conversation.json',
         '--cloud-repo',
@@ -69,10 +73,13 @@ describe('parseOptions', () => {
         '--temporal-port',
         '7400',
         '--pg-exec',
-        'psql -At -c'
+        'psql -At -c',
+        '--redis-exec',
+        'redis-cli -p 6379'
       ])
     ).toMatchObject({
       record: true,
+      target: 'cloud',
       catalog: resolve('fixtures/conversation.json'),
       cloudRepo: resolve('../cloud-dev'),
       airBin: resolve('bin/air'),
@@ -84,7 +91,8 @@ describe('parseOptions', () => {
       engine: 'temporal',
       temporalPort: 7400,
       temporalUiPort: 8400,
-      pgExec: 'psql -At -c'
+      pgExec: 'psql -At -c',
+      redisExec: 'redis-cli -p 6379'
     })
   })
 
@@ -97,6 +105,14 @@ describe('parseOptions', () => {
     {
       args: ['--engine', 'remote'],
       message: '--engine must be inline or temporal'
+    },
+    {
+      args: ['--target', 'remote'],
+      message: '--target must be local or cloud'
+    },
+    {
+      args: ['--target', 'cloud'],
+      message: '--target cloud applies to --record only'
     },
     {
       args: ['--frontend-port', '0'],
@@ -112,9 +128,29 @@ describe('parseOptions', () => {
       message: 'must leave room for the Temporal UI port'
     },
     { args: ['--cloud-repo'], message: '--cloud-repo requires a value' },
+    {
+      args: ['--cloud-repo', '--record'],
+      message: '--cloud-repo requires a value'
+    },
+    {
+      args: ['--frontend-port', '6208', '--frontend-port', '6209'],
+      message: 'Repeated option: --frontend-port'
+    },
+    { args: ['--', 'operand'], message: 'Unexpected argument: operand' },
     { args: ['--unknown'], message: 'Unknown option: --unknown' }
   ])('rejects an invalid launcher contract: $message', ({ args, message }) => {
     expect(() => parseOptions(args)).toThrow(message)
+  })
+
+  it('accepts an option terminator with no operands', () => {
+    expect(parseOptions(['--']).help).toBe(false)
+  })
+
+  it('returns help without validating or consuming later options', () => {
+    expect(parseOptions(['--help', '--record'])).toMatchObject({
+      help: true,
+      record: false
+    })
   })
 })
 

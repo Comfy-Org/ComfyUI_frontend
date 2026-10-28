@@ -27,7 +27,7 @@
           aria-hidden="true"
           :class="
             cn(
-              'icon-[lucide--chevron-right] size-4 text-muted-foreground transition-transform duration-200',
+              'icon-[lucide--chevron-right] text-muted-foreground transition-transform duration-200',
               expanded && 'rotate-90'
             )
           "
@@ -35,7 +35,7 @@
       </Button>
       <i
         v-if="isUnknownPack"
-        class="icon-[lucide--triangle-alert] size-4 shrink-0 text-warning-background"
+        class="icon-[lucide--triangle-alert] text-warning"
       />
       <span class="flex min-w-0 flex-1 items-center gap-2">
         <span class="flex min-w-0 items-center gap-2.5">
@@ -45,9 +45,7 @@
             :class="
               cn(
                 packTextButtonClass,
-                isUnknownPack
-                  ? 'text-warning-background'
-                  : 'text-base-foreground'
+                isUnknownPack ? 'text-warning' : 'text-foreground'
               )
             "
             :aria-expanded="expanded"
@@ -61,9 +59,7 @@
             :class="
               cn(
                 packTextButtonClass,
-                isUnknownPack
-                  ? 'text-warning-background'
-                  : 'text-base-foreground'
+                isUnknownPack ? 'text-warning' : 'text-foreground'
               )
             "
             @click="handleLocateNode(primaryLocatableNodeType)"
@@ -73,9 +69,7 @@
           <span
             v-else
             class="min-w-0 truncate text-xs/relaxed font-normal"
-            :class="
-              isUnknownPack ? 'text-warning-background' : 'text-base-foreground'
-            "
+            :class="isUnknownPack ? 'text-warning' : 'text-foreground'"
           >
             <span v-if="group.isResolving" class="text-muted-foreground italic">
               {{ t('g.loading') }}...
@@ -86,18 +80,18 @@
           </span>
           <Button
             v-if="showInfoButton && group.packId !== null"
-            variant="textonly"
+            variant="muted-textonly"
             size="icon-sm"
-            class="size-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
+            class="size-6 shrink-0 hover:bg-transparent hover:text-foreground focus-visible:ring-inset"
             :aria-label="t('rightSidePanel.missingNodePacks.viewInManager')"
             @click="emit('openManagerInfo', group.packId ?? '')"
           >
-            <i class="icon-[lucide--info] size-4" />
+            <i class="icon-[lucide--info]" />
           </Button>
           <span
             v-if="showNodeCount"
             data-testid="missing-node-pack-count"
-            class="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-sm bg-secondary-background-hover px-1 text-2xs font-semibold text-base-foreground"
+            class="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-sm bg-accent px-1 text-2xs font-semibold"
           >
             {{ group.nodeTypes.length }}
           </span>
@@ -117,7 +111,7 @@
             :size="12"
             class="mr-1.5 shrink-0"
           />
-          <span class="text-foreground min-w-0 truncate">
+          <span class="min-w-0 truncate text-foreground">
             {{
               isInstalling
                 ? t('rightSidePanel.missingNodePacks.installing')
@@ -130,10 +124,10 @@
       </div>
       <div
         v-else-if="showLoadingAction"
-        class="ml-auto flex h-6 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-sm bg-secondary-background px-2 py-1 text-xs opacity-60 select-none"
+        class="ml-auto flex h-6 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-sm bg-secondary px-2 py-1 text-xs opacity-60 select-none"
       >
         <DotSpinner duration="1s" :size="12" class="mr-1.5 shrink-0" />
-        <span class="text-foreground min-w-0 truncate text-xs">
+        <span class="min-w-0 truncate">
           {{ t('g.loading') }}
         </span>
       </div>
@@ -149,7 +143,7 @@
             })
           "
         >
-          <span class="text-foreground min-w-0 truncate">
+          <span class="min-w-0 truncate text-foreground">
             {{ t('g.search') }}
           </span>
         </Button>
@@ -168,6 +162,26 @@
         @locate="handleLocateNode(primaryLocatableNodeType)"
       />
     </div>
+
+    <p
+      v-if="unsupportedPack"
+      :class="
+        cn(
+          'm-0 text-xs/relaxed wrap-break-word text-muted-foreground',
+          hasMultipleNodeTypes && 'pl-5'
+        )
+      "
+    >
+      {{
+        unsupportedPack.cause
+          ? t(
+              'rightSidePanel.missingNodePacks.unsupportedOnBuild',
+              { cause: unsupportedPack.cause },
+              { escapeParameter: false }
+            )
+          : t('rightSidePanel.missingNodePacks.unsupportedOnBuildNoCause')
+      }}
+    </p>
 
     <TransitionCollapse>
       <ul
@@ -192,7 +206,7 @@
                 :class="
                   cn(
                     packTextButtonClass,
-                    'text-muted-foreground hover:text-base-foreground'
+                    'text-muted-foreground hover:text-foreground'
                   )
                 "
                 @click="handleLocateNode(nodeType)"
@@ -230,16 +244,18 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { selectionEmphasisClass } from './selectionEmphasis'
-import Button from '@/components/ui/button/Button.vue'
-import DotSpinner from '@/components/common/DotSpinner.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import LocateNodeButton from '@/components/rightSidePanel/errors/LocateNodeButton.vue'
-import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
+import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
 const { group, showInfoButton, highlighted } = defineProps<{
@@ -262,7 +278,9 @@ const packTextButtonClass =
 
 const { missingNodePacks, isLoading } = useMissingNodes()
 const comfyManagerStore = useComfyManagerStore()
-const { shouldShowManagerButtons, openManager } = useManagerState()
+const { shouldShowManagerButtons } = useManagerState()
+const { openManager } = useManagerDialog()
+const deploymentPick = useDeploymentPickStore()
 
 const nodePack = computed(() => {
   if (!group.packId) return null
@@ -310,6 +328,15 @@ const showSearchAction = computed(
     !showInstallAction.value &&
     !showLoadingAction.value
 )
+
+const unsupportedPack = computed(() => {
+  for (const nodeType of group.nodeTypes) {
+    if (typeof nodeType === 'string' || !nodeType.cnrId) continue
+    const pack = deploymentPick.unsupportedPackFor(nodeType.cnrId)
+    if (pack) return pack
+  }
+  return undefined
+})
 
 const hasMultipleNodeTypes = computed(() => group.nodeTypes.length > 1)
 const showNodeCount = computed(() => group.nodeTypes.length !== 1)

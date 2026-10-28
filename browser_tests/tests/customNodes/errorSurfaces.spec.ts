@@ -20,8 +20,8 @@ test('a persistent error toast fails carrying its visible text', async ({
   page
 }) => {
   await page.setContent(
-    '<div class="p-toast-message-error">Failed to load workspace: HTTP 502</div>' +
-      '<div class="p-toast-message-error">Settings seed rejected</div>'
+    '<div data-testid="toast" data-toast-kind="error">Failed to load workspace: HTTP 502</div>' +
+      '<div data-testid="toast" data-toast-kind="error">Settings seed rejected</div>'
   )
   const failure = await expectNoVisibleErrors(page, 'at startup').then(
     () => undefined,
@@ -54,7 +54,8 @@ test('a visible error toast fails after it clears before the assertion', async (
   await page.evaluate(() => {
     const toast = document.createElement('div')
     toast.id = 't'
-    toast.className = 'p-toast-message-error'
+    toast.dataset.testid = 'toast'
+    toast.dataset.toastKind = 'error'
     toast.textContent = 'momentary'
     document.getElementById('root')!.append(toast)
     setTimeout(() => toast.remove(), 800)
@@ -68,16 +69,20 @@ test('a visible error toast fails after it clears before the assertion', async (
   expect(String(failure)).toContain('momentary')
 })
 
-test('an error class added after insertion fails after it clears', async ({
+test('error toast attributes added after insertion fail after they clear', async ({
   page
 }) => {
   await page.setContent('<div id="t">late error</div>')
   await page.evaluate(() => {
     const toast = document.getElementById('t')!
-    toast.classList.add('p-toast-message-error')
-    setTimeout(() => toast.classList.remove('p-toast-message-error'), 800)
+    toast.dataset.testid = 'toast'
+    toast.dataset.toastKind = 'error'
+    setTimeout(() => {
+      delete toast.dataset.testid
+      delete toast.dataset.toastKind
+    }, 800)
   })
-  await expect(page.locator('#t')).not.toHaveClass('p-toast-message-error')
+  await expect(page.locator('#t')).not.toHaveAttribute('data-toast-kind')
   const failure = await expectNoVisibleErrors(page, 'class-added').then(
     () => undefined,
     (error: unknown) => error
@@ -91,7 +96,7 @@ test('a hidden error fails when an ancestor mutation reveals it', async ({
 }) => {
   await page.setContent(
     '<section id="container" hidden>' +
-      '<div class="p-toast-message-error">revealed error</div>' +
+      '<div data-testid="toast" data-toast-kind="error">revealed error</div>' +
       '</section>'
   )
   await page.evaluate(() => {

@@ -53,11 +53,7 @@ describe('NodeConflictDialogContent', () => {
     const result = render(NodeConflictDialogContent, {
       props,
       global: {
-        plugins: [pinia, i18n],
-        stubs: {
-          ContentDivider: true,
-          Button: { template: '<button><slot /></button>' }
-        }
+        plugins: [pinia, i18n]
       }
     })
     return { ...result, user }
@@ -164,9 +160,9 @@ describe('NodeConflictDialogContent', () => {
 
       const { container } = renderComponent()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const sections = container.querySelectorAll(
-        '.w-full.flex.flex-col.bg-base-background'
+        '.w-full.flex.flex-col.bg-background'
       )
 
       // Import Failed Extensions section
@@ -203,11 +199,11 @@ describe('NodeConflictDialogContent', () => {
       expect(expandedContent).toBeInTheDocument()
       expect(expandedContent.textContent).toContain('Test Package 3')
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const chevronIcon = container.querySelector(
         '[data-testid="conflict-dialog-panel-toggle"] i'
       )
-      expect(chevronIcon).toHaveClass('pi-chevron-down')
+      expect(chevronIcon).toHaveClass('icon-[lucide--chevron-down]')
     })
 
     it('should toggle conflicts panel', async () => {
@@ -349,7 +345,7 @@ describe('NodeConflictDialogContent', () => {
       for (const header of headers) {
         await user.click(header)
 
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
         const scrollableContainer = container.querySelector(
           '[class*="max-h-"][class*="overflow-y-auto"][class*="scrollbar-hide"]'
         )
@@ -365,12 +361,12 @@ describe('NodeConflictDialogContent', () => {
       mockConflictData.value = mockConflictResults
       const { container } = renderComponent()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const icons = container.querySelectorAll('i[class*="pi-chevron"]')
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const icons = container.querySelectorAll('i[class*="lucide--chevron"]')
       expect(icons).toHaveLength(3)
 
       icons.forEach((icon) => {
-        expect(icon.className).toMatch(/pi-chevron-(right|down)/)
+        expect(icon.className).toMatch(/lucide--chevron-(right|down)/)
       })
     })
 

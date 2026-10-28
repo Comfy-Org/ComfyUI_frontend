@@ -37,11 +37,13 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { resolveSetupApiUrl } from '@e2e/utils/e2eConfig'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
 import { ComfyNodeSearchBoxV2 } from '@e2e/fixtures/components/ComfyNodeSearchBoxV2'
 import { ConfirmDialog } from '@e2e/fixtures/components/ConfirmDialog'
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+import { CurrentUserPopover } from '@e2e/fixtures/components/CurrentUserPopover'
 import { MediaLightbox } from '@e2e/fixtures/components/MediaLightbox'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
@@ -82,6 +84,7 @@ class ComfyPropertiesPanel {
   readonly searchBox: Locator
   readonly titleEditor: TitleEditor
   readonly toggleButton: Locator
+  readonly closeButton: Locator
 
   constructor(readonly page: Page) {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
@@ -91,11 +94,15 @@ class ComfyPropertiesPanel {
     this.toggleButton = page.getByRole('button', {
       name: 'Toggle properties panel'
     })
+    this.closeButton = this.root.getByRole('button', {
+      name: 'Toggle properties panel'
+    })
   }
 }
 
 class ComfyMenu {
   private _appsTab: SidebarTab | null = null
+  private _jobHistoryTab: SidebarTab | null = null
   private _assetsTab: AssetsSidebarTab | null = null
   private _modelLibraryTab: ModelLibrarySidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
@@ -133,6 +140,11 @@ class ComfyMenu {
   get appsTab() {
     this._appsTab ??= new SidebarTab(this.page, 'apps')
     return this._appsTab
+  }
+
+  get jobHistoryTab() {
+    this._jobHistoryTab ??= new SidebarTab(this.page, 'job-history')
+    return this._jobHistoryTab
   }
 
   get assetsTab() {
@@ -182,7 +194,6 @@ export class ComfyPage {
   public readonly widgetTextBox: Locator
 
   // Buttons
-  public readonly resetViewButton: Locator
   public readonly queueButton: Locator // Run button in Legacy UI
   public readonly runButton: Locator // Run button (renamed "Queue" -> "Run")
 
@@ -210,6 +221,7 @@ export class ComfyPage {
   public readonly clipboard: ClipboardHelper
   public readonly workflow: WorkflowHelper
   public readonly contextMenu: ContextMenu
+  public readonly currentUserPopover: CurrentUserPopover
   public readonly toast: ToastHelper
   public readonly dragDrop: DragDropHelper
   public readonly featureFlags: FeatureFlagHelper
@@ -220,7 +232,6 @@ export class ComfyPage {
   public readonly assets: AssetsHelper
   public readonly modelLibrary: ModelLibraryHelper
   public readonly cloudAuth: CloudAuthHelper
-  public readonly visibleToasts: Locator
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -238,11 +249,10 @@ export class ComfyPage {
     public readonly request: APIRequestContext
   ) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
-    this.apiUrl = process.env.PLAYWRIGHT_SETUP_API_URL || this.url
+    this.apiUrl = resolveSetupApiUrl()
     this.canvas = page.locator('#graph-canvas')
     this.selectionToolbox = page.getByTestId(TestIds.selectionToolbox.root)
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
-    this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
     this.runButton = page.getByTestId(TestIds.topbar.queueButton)
     this.workflowUploadInput = page.locator('#comfy-file-input')
@@ -260,15 +270,15 @@ export class ComfyPage {
     this.vueNodes = new VueNodeHelpers(page)
     this.appMode = new AppModeHelper(this)
     this.subgraph = new SubgraphHelper(this)
-    this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
+    this.canvasOps = new CanvasHelper(page, this.canvas)
     this.nodeOps = new NodeOperationsHelper(this)
     this.settings = new SettingsHelper(page)
     this.keyboard = new KeyboardHelper(page, this.canvas)
     this.clipboard = new ClipboardHelper(this.keyboard, page)
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
+    this.currentUserPopover = new CurrentUserPopover(page)
     this.toast = new ToastHelper(page)
-    this.visibleToasts = this.toast.visibleToasts
     this.dragDrop = new DragDropHelper(page)
     this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
@@ -278,6 +288,33 @@ export class ComfyPage {
     this.assets = new AssetsHelper(page)
     this.modelLibrary = new ModelLibraryHelper(page)
     this.cloudAuth = new CloudAuthHelper(page)
+  }
+
+  async expectNodeCount(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBe(count)
+  }
+
+  async expectNodeCountMinimum(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBeGreaterThanOrEqual(count)
+  }
+
+  async expectNodeCountMaximum(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBeLessThanOrEqual(count)
   }
 
   async setupUser(username: string) {
@@ -360,9 +397,8 @@ export class ComfyPage {
     mockReleases?: boolean
     url?: string
   } = {}) {
-    // Mock release endpoint to prevent changelog popups (before navigation)
     if (mockReleases) {
-      await this.page.route('**/releases**', async (route) => {
+      await this.page.context().route('**/releases**', async (route) => {
         const url = route.request().url()
         if (
           url.includes('api.comfy.org') ||
@@ -380,8 +416,6 @@ export class ComfyPage {
     }
 
     if (clearStorage) {
-      // Navigate to a lightweight same-origin endpoint to obtain a page
-      // context for clearing storage without loading the full frontend app.
       await this.page.goto(`${this.url}/api/users`)
       await this.page.evaluate((id) => {
         localStorage.clear()
@@ -397,6 +431,8 @@ export class ComfyPage {
 
     await this.page.waitForFunction(() => document.fonts.ready)
     await this.waitForAppReady()
+    if ((await this.settings.getSetting('Comfy.UseNewMenu')) === 'Disabled')
+      await this.startInFocusMode()
   }
 
   /**
@@ -515,8 +551,9 @@ export class ComfyPage {
     })
   }
 
-  async closeMenu() {
+  private async startInFocusMode() {
     await this.page.locator('button.comfy-close-menu-btn').click()
+    await this.canvasOps.moveMouseToEmptyArea()
     await this.nextFrame()
   }
 
@@ -535,27 +572,6 @@ export class ComfyPage {
 
   get domWidgets(): Locator {
     return this.page.locator('.dom-widget')
-  }
-
-  async expectScreenshot(
-    locator: Locator,
-    name: string | string[],
-    options?: {
-      animations?: 'disabled' | 'allow'
-      caret?: 'hide' | 'initial'
-      mask?: Array<Locator>
-      maskColor?: string
-      maxDiffPixelRatio?: number
-      maxDiffPixels?: number
-      omitBackground?: boolean
-      scale?: 'css' | 'device'
-      stylePath?: string | Array<string>
-      threshold?: number
-      timeout?: number
-    }
-  ): Promise<void> {
-    await this.nextFrame()
-    await comfyExpect(locator).toHaveScreenshot(name, options)
   }
 
   async setFocusMode(focusMode: boolean) {
@@ -597,6 +613,8 @@ export const comfyPageFixture = base.extend<{
   initialLocalStorage: Record<string, string>
   initialSettings: Record<string, unknown>
   initialUrl: string | undefined
+  mockReleases: boolean
+  firebaseLogin: boolean
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
   comfyFiles: ComfyFiles
@@ -611,6 +629,9 @@ export const comfyPageFixture = base.extend<{
   // the fixture's defaults so per-test values win.
   initialSettings: [{}, { option: true }],
   initialUrl: [undefined, { option: true }],
+  mockReleases: [true, { option: true }],
+  // Set `false` to open a cloud tab that holds no Firebase login.
+  firebaseLogin: [true, { option: true }],
 
   page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
@@ -637,7 +658,9 @@ export const comfyPageFixture = base.extend<{
       initialFeatureFlags,
       initialLocalStorage,
       initialSettings,
-      initialUrl
+      initialUrl,
+      mockReleases,
+      firebaseLogin
     },
     use,
     testInfo
@@ -701,7 +724,8 @@ export const comfyPageFixture = base.extend<{
         await mockWorkspace(context, workspace('personal', 'owner'), [])
       }
       if (testInfo.tags.includes('@cloud') || testInfo.tags.includes('@auth')) {
-        await comfyPage.cloudAuth.mockAuth()
+        if (firebaseLogin) await comfyPage.cloudAuth.mockAuth()
+        else await comfyPage.cloudAuth.mockFirebaseEndpoints()
       }
 
       if (isCustomNodes) await installCustomNodeBlankStartup(page)
@@ -711,7 +735,11 @@ export const comfyPageFixture = base.extend<{
         await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
       }
 
-      await comfyPage.setup({ initialLocalStorage, url: initialUrl })
+      await comfyPage.setup({
+        initialLocalStorage,
+        url: initialUrl,
+        mockReleases
+      })
 
       if (startupErrorCollector) {
         startupErrorCollector.stop()
@@ -719,9 +747,7 @@ export const comfyPageFixture = base.extend<{
       }
 
       if (isCustomNodes) {
-        await comfyExpect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-          .toBe(0)
+        await comfyPage.expectNodeCount(0)
       }
 
       if (testInfo.tags.includes('@cloud')) {

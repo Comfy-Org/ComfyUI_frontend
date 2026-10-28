@@ -3,6 +3,12 @@ import {
   Preview3DPipelineContext
 } from '@e2e/fixtures/helpers/Preview3DPipelineFixture'
 
+test.use({
+  initialSettings: {
+    'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar'
+  }
+})
+
 test.describe(
   'Preview3D execution flow',
   { tag: ['@slow', '@node', '@vue-nodes'] },

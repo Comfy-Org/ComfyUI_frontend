@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { nodeOrganizationService } from '@/services/nodeOrganizationService'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { NodeSourceType } from '@/types/nodeSource'
 
 describe('nodeOrganizationService', () => {
@@ -127,24 +127,24 @@ describe('nodeOrganizationService', () => {
   describe('getGroupingIcon', () => {
     it('should return strategy icon', () => {
       const icon = nodeOrganizationService.getGroupingIcon('category')
-      expect(icon).toBe('pi pi-folder')
+      expect(icon).toBe('icon-[lucide--folder]')
     })
 
     it('should return fallback icon for unknown strategy', () => {
       const icon = nodeOrganizationService.getGroupingIcon('unknown')
-      expect(icon).toBe('pi pi-sort')
+      expect(icon).toBe('icon-[lucide--arrow-down-up]')
     })
   })
 
   describe('getSortingIcon', () => {
     it('should return strategy icon', () => {
       const icon = nodeOrganizationService.getSortingIcon('alphabetical')
-      expect(icon).toBe('pi pi-sort-alpha-down')
+      expect(icon).toBe('icon-[lucide--arrow-down-a-z]')
     })
 
     it('should return fallback icon for unknown strategy', () => {
       const icon = nodeOrganizationService.getSortingIcon('unknown')
-      expect(icon).toBe('pi pi-sort')
+      expect(icon).toBe('icon-[lucide--arrow-down-up]')
     })
   })
 

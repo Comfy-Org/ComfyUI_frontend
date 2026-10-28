@@ -20,7 +20,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { isWidgetHidden } from '@/types/widgetVisibility'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 function createTestWidget(
   node: LGraphNode,
@@ -303,6 +303,20 @@ describe('BaseWidget store integration', () => {
       })
     })
 
+    it('applies explicit surfaces when options are replaced', () => {
+      const widget = createTestWidget(node)
+
+      widget.options = {
+        surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'never' }
+      }
+
+      expect(widget.visibility.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'never'
+      })
+    })
+
     it('supplies shimmed options when constructed without them', () => {
       const widget = new MutableTypeWidget(
         fromPartial({
@@ -344,6 +358,20 @@ describe('BaseWidget store integration', () => {
 
       delete widget.options.hidden
       expect(widget.options.hidden).toBe(false)
+    })
+
+    it('facades canvasOnly reads from declared surfaces', () => {
+      const canvasOnlyWidget = createTestWidget(node, {
+        options: {
+          min: 0,
+          max: 100,
+          surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
+        }
+      })
+      const plainWidget = createTestWidget(node)
+
+      expect(canvasOnlyWidget.options.canvasOnly).toBe(true)
+      expect(plainWidget.options.canvasOnly).toBe(false)
     })
 
     it('keeps options.hidden scoped to extension writes under connection suppression', () => {

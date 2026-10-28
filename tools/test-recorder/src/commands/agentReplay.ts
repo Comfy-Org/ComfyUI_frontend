@@ -1,6 +1,6 @@
-import type { SpawnSyncOptions } from 'node:child_process'
-import { readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import type { SpawnSyncOptionsWithBufferEncoding } from 'node:child_process'
+import { existsSync, readdirSync } from 'node:fs'
+import { isAbsolute, join } from 'node:path'
 
 import { confirm, isCancel, select } from '@clack/prompts'
 import type { ConfirmOptions, SelectOptions } from '@clack/prompts'
@@ -10,6 +10,7 @@ import { runCommand } from '../cli/run'
 
 export interface AgentReplayOptions {
   caseId?: string
+  spec?: string
   url?: string
   headed?: boolean
   video?: boolean
@@ -23,8 +24,10 @@ export interface AgentReplayInvocation {
 
 const DEFAULT_URL = 'http://localhost:5173'
 const CONVERSATIONS_DIR = 'browser_tests/fixtures/data/agent/conversations'
+/** Playwright matches a positional argument against the spec file path. */
+const DEFAULT_SPEC = 'agentConversation'
 
-export const AGENT_REPLAY_USAGE = `Usage: comfy-test agent-replay [--case <id>] [--url <dev server>] [--headed] [--video]
+export const AGENT_REPLAY_USAGE = `Usage: comfy-test agent-replay [--case <id>] [--spec <path>] [--url <dev server>] [--headed] [--video]
 
 Replays the recorded agent conversations under ${CONVERSATIONS_DIR}/ as
 Playwright tests against a running dev server (default ${DEFAULT_URL}).
@@ -32,6 +35,9 @@ With no flags on a terminal it asks which recording to replay and whether
 to watch it; any flag, or a non-interactive stdin, runs without prompts.
 
   --case <id>   one recording (the JSON file name without .json)
+  --spec <path> the spec to replay it through, as a path or a file-name
+                fragment (default ${DEFAULT_SPEC}); any spec that titles
+                its cases "recorded <case id>" answers --case
   --url <url>   the dev server to test against
   --headed      show the browser
   --video       record each case under test-results/
@@ -45,6 +51,18 @@ export function listReplayCases(root: string = process.cwd()): string[] {
     .sort()
 }
 
+/**
+ * A spec written as a path is checked against disk, because a mistyped path
+ * otherwise reaches Playwright as a filter that quietly matches nothing.
+ */
+export function specExists(
+  spec: string,
+  root: string = process.cwd()
+): boolean {
+  if (!spec.includes('/') && !spec.includes('\\')) return true
+  return existsSync(isAbsolute(spec) ? spec : join(root, spec))
+}
+
 export function agentReplayInvocation(
   options: AgentReplayOptions
 ): AgentReplayInvocation {
@@ -52,7 +70,7 @@ export function agentReplayInvocation(
     'exec',
     'playwright',
     'test',
-    'agentConversation',
+    options.spec ?? DEFAULT_SPEC,
     '--project=cloud'
   ]
   if (options.caseId)
@@ -99,7 +117,7 @@ export async function promptAgentReplayOptions(
 type Runner = (
   command: string,
   args: string[],
-  options: SpawnSyncOptions
+  options: SpawnSyncOptionsWithBufferEncoding
 ) => { status: number | null }
 
 export function runAgentReplay(
@@ -122,10 +140,11 @@ export interface AgentReplayCliDeps {
   run?: Runner
   prompts?: Prompts
   cases?: () => string[]
+  specExists?: (spec: string) => boolean
   interactive?: boolean
 }
 
-const VALUE_FLAGS = ['case', 'url'] as const
+const VALUE_FLAGS = ['case', 'spec', 'url'] as const
 const PRESENCE_FLAGS = ['headed', 'video', 'help'] as const
 const KNOWN_FLAGS = new Set<string>([...VALUE_FLAGS, ...PRESENCE_FLAGS])
 
@@ -157,6 +176,13 @@ export async function agentReplayCli(
     process.stderr.write(`--${missing} needs a value\n${AGENT_REPLAY_USAGE}`)
     return 1
   }
+  if (
+    flags.spec !== undefined &&
+    !(deps.specExists ?? ((spec: string) => specExists(spec)))(flags.spec)
+  ) {
+    process.stderr.write(`no spec at ${flags.spec}\n`)
+    return 1
+  }
   const cases = (deps.cases ?? listReplayCases)()
   if (flags.case !== undefined && !cases.includes(flags.case)) {
     process.stderr.write(
@@ -170,6 +196,7 @@ export async function agentReplayCli(
     ? await promptAgentReplayOptions(cases, deps.prompts)
     : {
         caseId: flags.case,
+        spec: flags.spec,
         url: flags.url,
         headed: flags.headed !== undefined,
         video: flags.video !== undefined

@@ -1,0 +1,33 @@
+name: 'Repository consistency checks'
+description: >
+  Runs dependency-cycle, unused-code, locale integrity, follower-invariant and ADR checks. Shared by
+  ci-lint-format.yaml (PR) and ci-lint-format-queue.yaml (merge queue). The
+  caller is responsible for a blobless full-history checkout (locale:check
+  fetches source blobs from git history) and frontend setup.
+
+runs:
+  using: composite
+  steps:
+    - name: Reject circular imports
+      shell: bash
+      run: pnpm deps:audit
+
+    - name: Find unused files, exports and dependencies
+      shell: bash
+      run: pnpm knip
+
+    - name: Find components only tests and stories import
+      shell: bash
+      run: pnpm knip:components
+
+    - name: Verify locale integrity
+      shell: bash
+      run: pnpm locale:check
+
+    - name: Verify ADR naming
+      shell: bash
+      run: pnpm adr:check
+
+    - name: Verify Agent follower invariants
+      shell: bash
+      run: pnpm follower-invariants:check

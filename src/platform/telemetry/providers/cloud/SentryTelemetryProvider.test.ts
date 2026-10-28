@@ -1,16 +1,19 @@
+import { computed } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ExecutionContext, ShellLayoutMetadata } from '../../types'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type {
+  ExecutionContext,
+  ShellLayoutMetadata
+} from '@/platform/telemetry/types'
 import { SentryTelemetryProvider } from './SentryTelemetryProvider'
 
 const mocks = vi.hoisted(() => ({
   addBreadcrumb: vi.fn(),
   setContext: vi.fn(),
   setUser: vi.fn(),
-  onUserLogout: vi.fn(),
-  resolvedUserId: 'existing-user' as string | undefined,
   workflowIsModified: true,
   executionContext: {
     is_template: false,
@@ -33,20 +36,9 @@ vi.mock(import('@sentry/vue'), () => ({
   setUser: mocks.setUser
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    onUserLogout: mocks.onUserLogout,
-    resolvedUserInfo: {
-      value: mocks.resolvedUserId
-        ? {
-            id: mocks.resolvedUserId
-          }
-        : null
-    }
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('../../utils/getExecutionContext'), () => ({
+vi.mock(import('@/platform/telemetry/utils/getExecutionContext'), () => ({
   getExecutionContext: () => mocks.executionContext
 }))
 
@@ -62,6 +54,9 @@ const shellLayout: ShellLayoutMetadata = {
 }
 
 beforeEach(() => {
+  useCurrentUser().resolvedUserInfo = computed(() => ({
+    id: 'existing-user'
+  }))
   useWorkflowStore().activeWorkflow = fromPartial({
     isModified: mocks.workflowIsModified
   })
@@ -69,7 +64,6 @@ beforeEach(() => {
 
 describe('SentryTelemetryProvider', () => {
   beforeEach(() => {
-    mocks.resolvedUserId = 'existing-user'
     mocks.workflowIsModified = true
   })
 
@@ -81,9 +75,9 @@ describe('SentryTelemetryProvider', () => {
 
     expect(mocks.setUser).toHaveBeenNthCalledWith(1, { id: 'existing-user' })
     expect(mocks.setUser).toHaveBeenNthCalledWith(2, { id: 'new-user' })
-    expect(mocks.onUserLogout).toHaveBeenCalledOnce()
+    expect(useCurrentUser().onUserLogout).toHaveBeenCalledOnce()
 
-    const onLogout = mocks.onUserLogout.mock.calls[0][0]
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     onLogout()
 
     expect(mocks.setUser).toHaveBeenLastCalledWith(null)
