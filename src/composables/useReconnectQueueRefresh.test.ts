@@ -148,7 +148,10 @@ describe('useReconnectQueueRefresh', () => {
       followRun('job-1')
       vi.mocked(api.getJobDetail).mockResolvedValue({
         ...makeJob('job-1', 'completed'),
-        outputs: { '15.0.0.3': { images: [image] }, '9': { images: [image] } },
+        outputs: {
+          '15.0.0.3': { images: [image] },
+          '9': { images: [image] }
+        },
         execution_meta: {
           '15.0.0.3': {
             node_id: '5',
@@ -162,14 +165,12 @@ describe('useReconnectQueueRefresh', () => {
 
       await useReconnectQueueRefresh()()
 
-      expect(
-        replayedExecutedFrames().map(([, detail]) => [
-          detail?.node,
-          detail?.display_node
-        ])
-      ).toEqual([
-        ['9', '9'],
-        ['15.0.0.3', '15']
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ node: '9', display_node: '9' })],
+        [
+          'executed',
+          expect.objectContaining({ node: '15.0.0.3', display_node: '15' })
+        ]
       ])
     })
 
@@ -192,7 +193,10 @@ describe('useReconnectQueueRefresh', () => {
         expect(replayedExecutedFrames()).toEqual([
           [
             'executed',
-            expect.objectContaining({ node: '15.0.0.3', display_node: '15.0.0.3' })
+            expect.objectContaining({
+              node: '15.0.0.3',
+              display_node: '15.0.0.3'
+            })
           ]
         ])
       }
