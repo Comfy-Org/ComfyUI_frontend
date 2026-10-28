@@ -8,10 +8,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/common/CustomFormValue.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/common/FormColorPicker.test.ts",
       "role": "presentation"
     },
@@ -145,7 +141,12 @@
     }
   ],
   "publicEntryPoints": ["src/platform/settings/settingStore.ts"],
-  "allowedDependencies": ["authentication", "dialog-host"],
+  "allowedDependencies": [
+    "account",
+    "authentication",
+    "dialog-host",
+    "telemetry"
+  ],
   "allowedConsumers": ["vue-node-renderer"],
   "characterizationScenarios": [
     {

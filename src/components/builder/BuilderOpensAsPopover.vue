@@ -1,11 +1,11 @@
 <template>
-  <PopoverRoot v-slot="{ open }">
+  <PopoverRoot>
     <PopoverAnchor as-child>
       <div
         data-testid="builder-opens-as"
         class="flex h-8 min-w-64 items-center justify-center gap-2 rounded-t-2xl bg-ocean-900 px-4 text-sm text-white"
       >
-        <i :class="cn(currentModeIcon, 'size-4')" aria-hidden="true" />
+        <i :class="currentModeIcon" aria-hidden="true" />
         <i18n-t
           :keypath="
             isAppMode
@@ -32,39 +32,29 @@
             </PopoverTrigger>
           </template>
         </i18n-t>
-        <PopoverPortal :key="Number(open)">
-          <PopoverContent
-            side="top"
-            :side-offset="5"
-            :collision-padding="10"
-            class="z-overlay rounded-lg border border-border/50 bg-background p-2 shadow-sm will-change-[transform,opacity]"
-          >
-            <ViewTypeRadioGroup
-              :model-value="isAppMode"
-              :aria-label="t('builderToolbar.defaultViewLabel')"
-              size="sm"
-              @update:model-value="$emit('select', $event)"
-            />
-          </PopoverContent>
-        </PopoverPortal>
+        <PopoverContent
+          side="top"
+          :side-offset="5"
+          class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
+        >
+          <ViewTypeRadioGroup
+            :model-value="isAppMode"
+            :aria-label="t('builderToolbar.defaultViewLabel')"
+            size="sm"
+            @update:model-value="$emit('select', $event)"
+          />
+        </PopoverContent>
       </div>
     </PopoverAnchor>
   </PopoverRoot>
 </template>
 
 <script setup lang="ts">
-import {
-  PopoverPortal,
-  PopoverAnchor,
-  PopoverContent,
-  PopoverRoot,
-  PopoverTrigger
-} from 'reka-ui'
+import { PopoverAnchor, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Button from '@/components/ui/button/Button.vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 
 import ViewTypeRadioGroup from './ViewTypeRadioGroup.vue'
 

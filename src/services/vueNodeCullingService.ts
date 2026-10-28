@@ -1,6 +1,6 @@
 import { shallowRef } from 'vue'
 
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const excludedNodeTypeCounts = new Map<string, number>()
 const excludedNodeCounts = new Map<NodeId, number>()

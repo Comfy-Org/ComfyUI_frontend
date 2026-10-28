@@ -5,7 +5,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import largeGraphWorkflow from '@e2e/assets/large-graph-workflow.json' with { type: 'json' }
 import type { Page } from '@playwright/test'
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
 const LARGE_GRAPH_WORKFLOW = zComfyWorkflow.parse({
   ...largeGraphWorkflow,

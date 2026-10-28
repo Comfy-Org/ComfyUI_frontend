@@ -10,7 +10,10 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 export async function openMoreOptions(comfyPage: ComfyPage): Promise<Locator> {
   await expect(comfyPage.selectionToolbox).toBeVisible()
 
-  const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
+  const moreOptionsBtn = comfyPage.selectionToolbox.getByRole('button', {
+    name: 'More Options',
+    exact: true
+  })
   await expect(moreOptionsBtn).toBeVisible()
   await moreOptionsBtn.click()
 

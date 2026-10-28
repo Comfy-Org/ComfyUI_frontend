@@ -5,7 +5,7 @@ import { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
-import type { NodeProperty } from '@/types/nodeProperty'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { LLink } from './LLink'
 import { Reroute } from './Reroute'
 import { InputIndicators } from './canvas/InputIndicators'
@@ -15,15 +15,20 @@ import type {
   Dictionary,
   INodeFlags,
   ISlotType,
-  Point,
-  Rect,
-  Size,
   WhenNullish
-} from './interfaces'
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  Rect,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { distance, isInsideRectangle, overlapBounding } from './measure'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphSlot } from './subgraph/SubgraphSlotBase'
-import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
 import {
   LGraphEventMode,
   LinkDirection,
@@ -31,7 +36,7 @@ import {
   NodeSlotType,
   RenderShape,
   TitleMode
-} from './types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import { createUuidv4 } from '@/utils/uuid'
 
 /** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
@@ -1087,7 +1092,7 @@ export class LiteGraphGlobal {
 type RegisteredSlotTypeDefaultNodeOpts = SlotTypeDefaultNodeOpts
 type RegisteredLiteGraphGlobal = LiteGraphGlobal
 
-declare module './types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface SlotTypeDefaultNodeOpts extends RegisteredSlotTypeDefaultNodeOpts {}
   interface LiteGraphGlobal extends RegisteredLiteGraphGlobal {}
 }

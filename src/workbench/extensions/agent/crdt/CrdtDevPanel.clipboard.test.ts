@@ -16,7 +16,9 @@ const { reportError, writeText } = vi.hoisted(() => ({
 
 vi.mock(import('@vueuse/core'), { spy: true })
 vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError
+}))
 
 import type { AgentCrdtStatus } from './agentCrdtStatus'
 import CrdtDevPanel from './CrdtDevPanel.vue'

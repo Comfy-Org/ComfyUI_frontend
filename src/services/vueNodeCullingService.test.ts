@@ -6,7 +6,7 @@ import {
   registerNodeCullingOptOut,
   registerNodeTypeCullingOptOut
 } from '@/services/vueNodeCullingService'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 describe('vueNodeCullingService', () => {
   it('excludes a type while at least one registration holds', () => {

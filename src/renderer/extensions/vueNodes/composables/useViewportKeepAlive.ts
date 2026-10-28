@@ -3,7 +3,8 @@ import { shallowRef, watch } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { boundsIntersect } from '@/renderer/core/layout/utils/layoutMath'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import {

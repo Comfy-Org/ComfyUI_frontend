@@ -1,6 +1,6 @@
 import { defineAsyncComponent } from 'vue'
 import { useDialogService } from '@/services/dialogService'
-import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
+import { openTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
@@ -10,19 +10,19 @@ import {
   mapApiTeamCreditStops
 } from '@comfyorg/account-ui/billing/catalog'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type {
   SubscriptionCheckoutSelection,
   SubscriptionDialogOptions
 } from '@/platform/billing/composables/types'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { provideSubscriptionDialog } from '@/platform/billing/subscription/composables/subscriptionDialogAccess'
 import { toCurrentTier } from '@/platform/billing/subscription/utils/billingPlanTelemetry'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { getWorkspaceTelemetryContext } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { getWorkspaceTelemetryContext } from '@/platform/billing/telemetry/workspaceTelemetryContext'
 import { useAuthStore } from '@/stores/authStore'
 import {
   clearPendingSubscriptionCheckout,
@@ -57,7 +57,7 @@ export const useSubscriptionDialog = () => {
     useBillingRouting()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   const { flags } = useFeatureFlags()
 
   function hide() {
@@ -92,7 +92,7 @@ export const useSubscriptionDialog = () => {
   ): boolean {
     if (!shouldUseWorkspaceBilling.value) return false
 
-    const { permissions } = useWorkspaceUI()
+    const { permissions } = useBillingUI()
     if (permissions.value.canManageSubscription) return false
 
     trackPaywallShown(paymentIntentSource)
@@ -209,33 +209,21 @@ export const useSubscriptionDialog = () => {
     showPricingTable(options)
   }
 
-  /**
-   * Start the two-stage team workspace upgrade flow:
-   * 1. Close the current pricing dialog
-   * 2. Open the create workspace dialog
-   * 3. On successful creation, persist a resume intent so the team pricing
-   *    dialog reopens automatically after the page reload
-   *
-   * Uses sessionStorage (not a store) because the intent must survive
-   * a full page reload triggered by workspace switching.
-   */
   function startTeamWorkspaceUpgradeFlow() {
     hide()
-    useWorkspaceDialogs()
-      .showTeamWorkspacesDialog(() => {
-        try {
-          sessionStorage.setItem(RESUME_PRICING_KEY, '1')
-        } catch {
-          // sessionStorage may be unavailable
-        }
-      })
-      .catch((error) => {
-        console.error(
-          '[useSubscriptionDialog] Failed to open team workspaces dialog:',
-          error
-        )
-        showPricingTable()
-      })
+    openTeamWorkspaceDialog(() => {
+      try {
+        sessionStorage.setItem(RESUME_PRICING_KEY, '1')
+      } catch {
+        return
+      }
+    }).catch((error) => {
+      console.error(
+        '[useSubscriptionDialog] Failed to open team workspaces dialog:',
+        error
+      )
+      showPricingTable()
+    })
   }
 
   async function restoreCheckoutSelection(

@@ -3,10 +3,10 @@ import { onScopeDispose, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { reportError } from '@/platform/telemetry/reportError'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import type { ProcessingTopupPayment } from '@/platform/billing/processingTopupPayment'
 import { processingTopupPayment } from '@/platform/billing/processingTopupPayment'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
@@ -22,9 +22,9 @@ async function readProcessingTopupCheckouts(
   { ok: true; read: ProcessingTopupRead } | { ok: false; cause: unknown }
 > {
   try {
-    const { checkouts: listed } = await workspaceApi.listTopupCheckouts()
+    const { checkouts: listed } = await billingApi.listTopupCheckouts()
     const reads = await Promise.allSettled(
-      listed.map(({ session_id }) => workspaceApi.getTopupCheckout(session_id))
+      listed.map(({ session_id }) => billingApi.getTopupCheckout(session_id))
     )
     const checkouts: HostedTopupCheckout[] = []
     const sessionFailures: unknown[] = []
@@ -51,7 +51,7 @@ export function useProcessingTopupPayment(
   shown: MaybeRefOrGetter<boolean> = true
 ) {
   const { flags } = useFeatureFlags()
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   const workspaceScope = () =>
     `${workspaceStore.workspaceTransitionGeneration}:${workspaceStore.activeWorkspaceId}`
   const payment = shallowRef<ProcessingTopupPayment | null>(null)

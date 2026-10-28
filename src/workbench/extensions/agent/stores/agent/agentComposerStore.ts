@@ -3,7 +3,7 @@ import { computed, onScopeDispose, ref, shallowReactive, shallowRef } from 'vue'
 
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
-import type { AgentInputMethod } from '@/platform/telemetry/types'
+import type { AgentInputMethod } from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
@@ -39,6 +39,10 @@ function resetTextWhenReferencesCleared(
   references: ComposerReference[]
 ): string {
   return references.length === 0 && text.trim() === '' ? '' : text
+}
+
+function composerReferencePosition(reference: ComposerReference): string {
+  return `${composerReferenceKey(reference)}@${reference.textOffset}`
 }
 
 interface SubmittedDraft {
@@ -143,6 +147,28 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     starterPrompt: AgentStarterPromptSource | null
     snapshot: SubmittedDraft
   } | null>(null)
+  const rejectedDraft = shallowRef<{
+    prompt: ComposerPrompt
+    attachmentIds: string[]
+  } | null>(null)
+  const rejectedDraftUnchanged = computed(() => {
+    const rejected = rejectedDraft.value
+    if (!rejected) return false
+    const ids = attachmentIds.value
+    if (rejected.attachmentIds.length !== ids.length) return false
+    if (!rejected.attachmentIds.every((id, index) => id === ids[index]))
+      return false
+    const current = draftState.value
+    return (
+      rejected.prompt.text === current.text &&
+      rejected.prompt.references.length === current.references.length &&
+      rejected.prompt.references.every(
+        (reference, index) =>
+          composerReferencePosition(reference) ===
+          composerReferencePosition(current.references[index])
+      )
+    )
+  })
   let revision = 0
   let nextSubmissionId = 0
 
@@ -504,6 +530,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function startSubmission(snapshot: SubmittedDraft): number {
     resetPromptHistory()
+    rejectedDraft.value = null
     // Held with the snapshot, not dropped: a send that fails puts this draft
     // back in the composer, and the retry came from the same chip or edited
     // prompt the first attempt did.
@@ -548,7 +575,15 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function invalidateSubmission(): void {
     submission.value = null
+    rejectedDraft.value = null
     releaseUnusedAssets()
+  }
+
+  function markRejectedDraft(): void {
+    rejectedDraft.value = {
+      prompt: draftState.value,
+      attachmentIds: [...attachmentIds.value]
+    }
   }
 
   return {
@@ -565,6 +600,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     starterPrompt,
     insertionPoint,
     submission,
+    rejectedDraftUnchanged,
+    markRejectedDraft,
     setText,
     setInsertionPoint,
     resetPromptHistory,

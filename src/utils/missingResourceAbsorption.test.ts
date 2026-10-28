@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import {
   createBoundaryLinkedSubgraph,
   createTestRootGraph,
@@ -24,8 +24,8 @@ import {
   isCandidateScopeActive
 } from '@/utils/graphTraversalUtil'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 

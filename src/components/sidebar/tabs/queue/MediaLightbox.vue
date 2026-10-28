@@ -83,7 +83,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 import {

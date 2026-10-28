@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, reactive, ref } from 'vue'
 
-import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import {
   getKeepAliveBounds,
   useViewportKeepAlive
 } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlive'
 import { registerNodeTypeCullingOptOut } from '@/services/vueNodeCullingService'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const camera = reactive({ x: 0, y: 0, z: 1 })
 

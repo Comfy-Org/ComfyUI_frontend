@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import type { Keybinding } from '@/platform/keybindings/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { NodeBadgeMode } from '@/types/nodeSource'
 import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
@@ -12,7 +12,7 @@ import {
 import type { SettingParams, Settings } from '@/platform/settings/types'
 import { api } from '@/scripts/api'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/scripts/api'))
 
@@ -48,6 +48,14 @@ describe('useSettingStore', () => {
 
       expect(store.settingValues).toEqual(mockSettings)
       expect(api.getSettings).toHaveBeenCalled()
+    })
+
+    it('loads settings without the shared status retry stacking on its own backoff', async () => {
+      vi.mocked(api.getSettings).mockResolvedValue({} as Settings)
+
+      await store.load()
+
+      expect(api.getSettings).toHaveBeenCalledWith({ skipStatusRetry: true })
     })
 
     describe('Canvas Navigation override migration', () => {

@@ -48,14 +48,17 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useTelemetry } from '@/platform/telemetry'
-import type { AgentConsentTrigger } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentConsentTrigger } from '@comfyorg/telemetry/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { api } from '@/scripts/api'
@@ -77,7 +80,7 @@ import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
@@ -116,7 +119,6 @@ vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
   useFocusNode: () => ({ focusNodeInstance })
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('./experiments/freeUsePlacement'), { spy: true })
 
 const ws = vi.hoisted(() => {
@@ -201,7 +203,7 @@ const appMock = vi.hoisted(() => {
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: appMock }))
 
-vi.mock(import('@/platform/workflow/validation/schemas/workflowSchema'), {
+vi.mock(import('@comfyorg/graph-model/workflowSchema'), {
   spy: true
 })
 
@@ -226,7 +228,7 @@ const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
 vi.mock(import('@vueuse/core'), { spy: true })
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
 const telemetry = vi.mocked(telemetryProvider)
@@ -7561,7 +7563,7 @@ describe('AgentPanelRoot history', () => {
     ).not.toHaveProperty('request_status')
   })
 
-  it('keeps the loaded chat list and reports a non-retryable failure when a refresh ends before its last page', async () => {
+  it('shows the chats a truncated refresh did fetch and warns without the error overlay', async () => {
     respondToFetch(threadListRoute, () =>
       json(
         200,
@@ -7598,12 +7600,19 @@ describe('AgentPanelRoot history', () => {
     await openHistory()
 
     await vi.waitFor(() =>
-      expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'warning',
+          title: i18n.global.t('agent.historyIncomplete')
+        })
+      )
     )
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(telemetry.trackAgentError).toHaveBeenCalledWith(
       expect.objectContaining({
         error_class: 'thread_list_load_failed',
-        retryable: false
+        retryable: false,
+        ui_treatment: 'toast'
       })
     )
     expect(reportError).toHaveBeenCalledWith(
@@ -7612,7 +7621,69 @@ describe('AgentPanelRoot history', () => {
       }),
       expect.objectContaining({ tags: { reason: 'missing_cursor' } })
     )
-    expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
+    expect(history.sessions.map(({ id }) => id)).toEqual([
+      'th-partial',
+      'th-kept'
+    ])
+  })
+
+  it('warns once when every refresh ends truncated', async () => {
+    const incompleteWarning = i18n.global.t('agent.historyIncomplete')
+    const warnings = () =>
+      useToast().toasts.filter(({ title }) => title === incompleteWarning)
+    const truncationReports = () =>
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([error]) =>
+            error instanceof Error &&
+            error.message === 'Agent thread list ended before its last page'
+        )
+    respondToFetch(
+      threadListRoute,
+      () =>
+        json(
+          200,
+          agentThreadList(
+            [
+              agentThread({
+                id: 'th-partial',
+                title: 'Partial chat',
+                last_message_at: '2026-07-07T11:00:00Z'
+              })
+            ],
+            { has_more: true }
+          )
+        ),
+      { times: 1 }
+    )
+    renderWithSelectedTarget()
+    await vi.waitFor(() => expect(warnings()).toHaveLength(1))
+
+    respondToFetch(
+      threadListRoute,
+      () =>
+        json(
+          200,
+          agentThreadList(
+            [
+              agentThread({
+                id: 'th-partial',
+                title: 'Partial chat refreshed',
+                last_message_at: '2026-07-07T12:00:00Z'
+              })
+            ],
+            { has_more: true }
+          )
+        ),
+      { times: 1 }
+    )
+    await openHistory()
+    await screen.findByRole('button', { name: 'Partial chat refreshed' })
+
+    expect(warnings()).toHaveLength(1)
+    expect(truncationReports()).toHaveLength(1)
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
   })
 
   const staleRefreshOutcomes = [
@@ -8593,51 +8664,37 @@ describe('AgentPanelRoot workflow binding', () => {
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
 
-  it('asks signed-out users in a browser tab on a local Core to sign in before consent', async () => {
-    distribution.isCloud = false
-    makeTab('wf-42')
-    useAuthStore().currentUser = null
-    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
-    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValue(false)
-    Object.assign(useAgentConsentStore(), { accepted: false })
-    const bodies = mockMessagesEndpoint('wf-42')
-    renderWithSelectedTarget()
+  it.for([
+    { host: 'Desktop', desktop: true },
+    { host: 'a browser tab on a local Core', desktop: false }
+  ])(
+    'asks signed-out users in $host for consent before opening sign-in and keeps their draft on Skip',
+    async ({ desktop }) => {
+      distribution.isCloud = false
+      distribution.isDesktop = desktop
+      makeTab('wf-42')
+      useAuthStore().currentUser = null
+      vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
+      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValue(false)
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      withConsent.mockResolvedValueOnce()
+      const bodies = mockMessagesEndpoint('wf-42')
+      renderWithSelectedTarget()
 
-    await userEvent.click(screen.getByRole('textbox'))
-    await userEvent.paste('build me a workflow')
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('build me a workflow')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
 
-    expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
-    expect(withConsent).not.toHaveBeenCalled()
-    expect(bodies).toHaveLength(0)
-  })
-
-  it('asks signed-out Desktop users for consent before opening sign-in and keeps their draft on Skip', async () => {
-    distribution.isCloud = false
-    distribution.isDesktop = true
-    makeTab('wf-42')
-    useAuthStore().currentUser = null
-    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
-    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValue(false)
-    Object.assign(useAgentConsentStore(), { accepted: false })
-    withConsent.mockResolvedValueOnce()
-    const bodies = mockMessagesEndpoint('wf-42')
-    renderWithSelectedTarget()
-
-    await userEvent.click(screen.getByRole('textbox'))
-    await userEvent.paste('build me a workflow')
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
-
-    expect(withConsent).toHaveBeenCalledExactlyOnceWith(
-      'first_message',
-      expect.any(Function)
-    )
-    expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
-    expect(bodies).toHaveLength(0)
-    expect(useAgentComposerStore().draft).toBe('build me a workflow')
-  })
+      expect(withConsent).toHaveBeenCalledExactlyOnceWith(
+        'first_message',
+        expect.any(Function)
+      )
+      expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+      expect(bodies).toHaveLength(0)
+      expect(useAgentComposerStore().draft).toBe('build me a workflow')
+    }
+  )
 
   it.for([
     {
@@ -8763,7 +8820,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.paste('continue this submission')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     const agree = await screen.findByRole('button', {
-      name: 'Agree and continue'
+      name: 'Agree and continue with sign in'
     })
     expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
     expect(fetchRequests(consentPost)).toHaveLength(0)

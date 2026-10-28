@@ -126,11 +126,14 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [
-    "vue-node-renderer",
+    "account",
+    "canvas-renderer",
+    "error-reporting",
     "graph-layout",
-    "canvas-renderer"
+    "telemetry",
+    "vue-node-renderer"
   ],
-  "allowedConsumers": [],
+  "allowedConsumers": ["error-reporting", "selection-toolbox"],
   "characterizationScenarios": [
     {
       "name": "Graph canvas builds simplified node boxes from layout bounds, slot positions, and node shape styles",

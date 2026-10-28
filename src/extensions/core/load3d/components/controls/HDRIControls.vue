@@ -79,7 +79,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   SUPPORTED_HDRI_EXTENSIONS,
   SUPPORTED_HDRI_EXTENSIONS_ACCEPT

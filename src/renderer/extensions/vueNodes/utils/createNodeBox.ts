@@ -1,8 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type {
-  DefaultConnectionColors,
-  Point
-} from '@/lib/litegraph/src/interfaces'
+import type { DefaultConnectionColors } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   NodeBox,
   NodeBoxSlot,

@@ -10,7 +10,7 @@
  * Pure canvas drawing with no graph or renderer dependencies: it needs only a
  * 2D context and plain data.
  */
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { boundsIntersect } from '@/renderer/core/layout/utils/layoutMath'
 
 /** Centre of a slot, in graph space. */

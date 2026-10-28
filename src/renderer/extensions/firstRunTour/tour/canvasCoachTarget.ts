@@ -7,7 +7,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { registerNodeCullingOptOut } from '@/services/vueNodeCullingService'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 /** A canvas node as a coachmark target, derived from its layout and the camera. */
 export function canvasNodeTarget(nodeId: NodeId): RectTarget {

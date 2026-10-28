@@ -8,23 +8,24 @@ import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useDialogService } from '@/services/dialogService'
-import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
+import { openTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import type {
   BillingSubscriptionStatus,
   TeamCreditStops,
   TeamCreditStopSummary
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 import {
   getPendingSubscriptionCheckout,
   savePendingSubscriptionCheckout
@@ -65,7 +66,7 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/services/dialogService'))
-vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
+vi.mock(import('@/platform/billing/ports/teamWorkspaceDialog'))
 
 vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
@@ -73,7 +74,7 @@ vi.mock(import('@/composables/useFeatureFlags'))
 // The store is real; only the composition root it builds is faked, so the
 // testing Pinia still owns the store and its actions.
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/billing/sdk/createBillingSdk'), () => ({
+vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -84,9 +85,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
 /** A settled operation as the SDK store projects it for a recovery caller. */
 function recoveredOperation(
@@ -111,7 +112,7 @@ beforeEach(() => {
   vi.mocked(useDialogService().showLayoutDialog).mockImplementation(
     mockShowLayoutDialog
   )
-  vi.mocked(useWorkspaceDialogs().showTeamWorkspacesDialog).mockImplementation(
+  vi.mocked(openTeamWorkspaceDialog).mockImplementation(
     mockShowTeamWorkspacesDialog
   )
   const billing = useBillingContext()
@@ -421,7 +422,8 @@ describe('useSubscriptionDialog', () => {
       useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
       useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
-      useWorkspaceUI().permissions.value.canManageSubscription = false
+      useBillingUI().permissions.value.canManageSubscription =
+        receiveServerFact('can_manage_subscription', false)
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable({ reason: 'subscribe_to_run' })
@@ -468,7 +470,7 @@ describe('useSubscriptionDialog', () => {
           id: 'owner-personal-team-plan',
           type: 'personal',
           role: 'member',
-          subscriptionTier: 'TEAM'
+          subscription_tier: 'TEAM'
         }
       })
       const { showPricingTable } = useSubscriptionDialog()
@@ -493,7 +495,8 @@ describe('useSubscriptionDialog', () => {
       useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
       useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
-      useWorkspaceUI().permissions.value.canManageSubscription = false
+      useBillingUI().permissions.value.canManageSubscription =
+        receiveServerFact('can_manage_subscription', false)
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable({ reason: 'subscribe_to_run' })
@@ -507,7 +510,8 @@ describe('useSubscriptionDialog', () => {
       useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
       useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
-      useWorkspaceUI().permissions.value.canManageSubscription = false
+      useBillingUI().permissions.value.canManageSubscription =
+        receiveServerFact('can_manage_subscription', false)
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable({ reason: 'out_of_credits' })
@@ -617,7 +621,8 @@ describe('useSubscriptionDialog', () => {
       useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       mockIsFreeTier.value = true
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
-      useWorkspaceUI().permissions.value.canManageSubscription = false
+      useBillingUI().permissions.value.canManageSubscription =
+        receiveServerFact('can_manage_subscription', false)
       const { show } = useSubscriptionDialog()
 
       show()
@@ -713,7 +718,8 @@ describe('useSubscriptionDialog', () => {
           Object.assign(useTeamWorkspaceStore(), {
             isInPersonalWorkspace: false
           })
-          useWorkspaceUI().permissions.value.canManageSubscription = false
+          useBillingUI().permissions.value.canManageSubscription =
+            receiveServerFact('can_manage_subscription', false)
         },
         reason: 'out_of_credits',
         tier: 'CREATOR',

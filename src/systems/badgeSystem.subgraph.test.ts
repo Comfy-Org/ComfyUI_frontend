@@ -8,7 +8,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { graphCreditsBadges, nodeBadges } from './badgeSystem'
 

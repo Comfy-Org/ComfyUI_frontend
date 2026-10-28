@@ -9,14 +9,14 @@
   </div>
   <NoResultsPlaceholder
     v-else
-    icon="pi pi-search"
+    icon="icon-[lucide--search]"
     :title="$t('g.noResultsFound')"
     :message="$t('g.searchFailedMessage')"
   />
 </template>
 
 <script setup lang="ts">
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import SettingGroup from '@/platform/settings/components/SettingGroup.vue'
 import type { ISettingGroup } from '@/platform/settings/types'
 

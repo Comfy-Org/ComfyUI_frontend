@@ -6,8 +6,8 @@ import {
 import { computed, nextTick, shallowRef, watchEffect } from 'vue'
 
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const LIVE_STATE_SELECTOR = 'iframe, video, audio'
 

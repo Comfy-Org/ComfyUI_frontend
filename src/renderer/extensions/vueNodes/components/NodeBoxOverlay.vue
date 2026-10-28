@@ -10,7 +10,7 @@ import type {
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 const { getBoxes, contentVersion = 0 } = defineProps<{
   /**

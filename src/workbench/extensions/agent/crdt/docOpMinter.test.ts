@@ -16,21 +16,21 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toRootGraphId } from '@/types/graphScopeId'
-import type { RootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createUuidv4 } from '@/utils/uuid'
 
 import {
@@ -44,8 +44,6 @@ import type { GraphOperation } from './graphOperations'
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
 import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSource extends LGraphNode {
   constructor() {
