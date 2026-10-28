@@ -1148,7 +1148,7 @@ describe('attachDocOpMinter', () => {
       })
 
       describe('once a foreign append displaces an unechoed grow', () => {
-        const [first, displaced, third, later] = [1, 2, 3, 4].map(
+        const [first, third, later] = [1, 3, 4].map(
           (index) => `${IMAGES_GROUP}.image_${index}`
         )
         const foreign = `${IMAGES_GROUP}.other`
