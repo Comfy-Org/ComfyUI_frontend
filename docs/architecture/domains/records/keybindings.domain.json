@@ -53,10 +53,11 @@
     }
   ],
   "publicEntryPoints": [
+    "src/platform/keybindings/canvasActionShortcuts.ts",
     "src/platform/keybindings/composables/useShortcutsTab.ts"
   ],
   "allowedDependencies": [],
-  "allowedConsumers": ["bottom-panel"],
+  "allowedConsumers": ["agent", "bottom-panel"],
   "characterizationScenarios": [
     {
       "name": "Key combos parse keyboard events and respect reserved keys",
@@ -93,6 +94,10 @@
         "src/platform/keybindings/components/shortcuts/ShortcutsList.test.ts",
         "src/platform/keybindings/composables/useShortcutsTab.test.ts"
       ]
+    },
+    {
+      "name": "Canvas action shortcuts stay bound, so a reply naming one resolves to a real key",
+      "checks": ["src/platform/keybindings/canvasActionShortcuts.test.ts"]
     }
   ],
   "adrs": [],

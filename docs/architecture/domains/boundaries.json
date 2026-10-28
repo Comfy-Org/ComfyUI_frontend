@@ -36,6 +36,10 @@
         ]
       },
       {
+        "name": "keybindings/application/public",
+        "patterns": ["src/platform/keybindings/canvasActionShortcuts.ts"]
+      },
+      {
         "name": "keybindings/integration/public",
         "patterns": ["src/platform/keybindings/composables/useShortcutsTab.ts"]
       },
@@ -4051,8 +4055,18 @@
         ]
       },
       {
+        "from": "keybindings/application/public",
+        "allow": [
+          "keybindings/application/public",
+          "keybindings/domain",
+          "keybindings/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "keybindings/integration/public",
         "allow": [
+          "keybindings/application/public",
           "keybindings/integration/public",
           "keybindings/domain",
           "keybindings/presentation",
@@ -4141,6 +4155,7 @@
           "dialog-host/domain",
           "error-reporting/domain",
           "extension-runtime/domain",
+          "keybindings/domain",
           "workbench-shell/domain",
           "workflow-management/domain",
           "design-system/domain/outer-1",
@@ -4150,6 +4165,7 @@
       {
         "from": "agent/application",
         "allow": [
+          "keybindings/application/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -4167,6 +4183,7 @@
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/infrastructure",
+          "keybindings/domain",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/infrastructure",
@@ -4177,12 +4194,14 @@
           "design-system/domain/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
+          "keybindings/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "agent/infrastructure",
         "allow": [
+          "keybindings/application/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -4200,6 +4219,7 @@
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/infrastructure",
+          "keybindings/domain",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/infrastructure",
@@ -4210,12 +4230,14 @@
           "design-system/domain/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
+          "keybindings/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "agent/presentation",
         "allow": [
+          "keybindings/application/public",
           "agent/domain",
           "agent/application",
           "agent/presentation",
@@ -4232,6 +4254,8 @@
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/presentation",
+          "keybindings/domain",
+          "keybindings/presentation",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/presentation",
@@ -4243,6 +4267,7 @@
           "dialog-host/presentation/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/presentation/outer-1",
+          "keybindings/application/outer-1",
           "workflow-management/presentation/outer-1",
           "workbench-shell/presentation/outer-2",
           "unclassified"
@@ -4251,6 +4276,8 @@
       {
         "from": "agent/integration",
         "allow": [
+          "keybindings/application/public",
+          "keybindings/integration/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -4276,6 +4303,9 @@
           "extension-runtime/infrastructure",
           "extension-runtime/presentation",
           "extension-runtime/integration",
+          "keybindings/domain",
+          "keybindings/presentation",
+          "keybindings/integration",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/infrastructure",
@@ -4294,6 +4324,7 @@
           "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
+          "keybindings/application/outer-1",
           "workflow-management/presentation/outer-1",
           "workbench-shell/presentation/outer-2",
           "unclassified"
@@ -4598,6 +4629,7 @@
       {
         "from": "bottom-panel/infrastructure",
         "allow": [
+          "keybindings/application/public",
           "bottom-panel/infrastructure",
           "keybindings/domain",
           "keybindings/application/outer-1",
@@ -4607,6 +4639,7 @@
       {
         "from": "bottom-panel/presentation",
         "allow": [
+          "keybindings/application/public",
           "bottom-panel/presentation",
           "keybindings/domain",
           "keybindings/presentation",
@@ -5590,6 +5623,7 @@
       {
         "from": "keybindings/presentation",
         "allow": [
+          "keybindings/application/public",
           "keybindings/domain",
           "keybindings/presentation",
           "keybindings/application/outer-1",
@@ -5599,6 +5633,7 @@
       {
         "from": "keybindings/integration",
         "allow": [
+          "keybindings/application/public",
           "keybindings/integration/public",
           "keybindings/domain",
           "keybindings/presentation",
@@ -7026,6 +7061,8 @@
       {
         "from": "agent/integration/outer-1",
         "allow": [
+          "keybindings/application/public",
+          "keybindings/integration/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -7051,6 +7088,9 @@
           "extension-runtime/infrastructure",
           "extension-runtime/presentation",
           "extension-runtime/integration",
+          "keybindings/domain",
+          "keybindings/presentation",
+          "keybindings/integration",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/infrastructure",
@@ -7069,6 +7109,7 @@
           "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
+          "keybindings/application/outer-1",
           "workflow-management/presentation/outer-1",
           "workbench-shell/presentation/outer-2",
           "unclassified"
@@ -7204,6 +7245,7 @@
       {
         "from": "bottom-panel/integration/outer-1",
         "allow": [
+          "keybindings/application/public",
           "keybindings/integration/public",
           "bottom-panel/infrastructure",
           "bottom-panel/presentation",
@@ -7522,6 +7564,7 @@
       {
         "from": "keybindings/application/outer-1",
         "allow": [
+          "keybindings/application/public",
           "keybindings/domain",
           "keybindings/application/outer-1",
           "unclassified"
@@ -8038,6 +8081,7 @@
           "comfyui-api/domain/public",
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
+          "keybindings/application/public",
           "keybindings/integration/public",
           "node-definition/domain/public",
           "server-facts/domain/public",

@@ -6,6 +6,7 @@ import { computed, defineAsyncComponent, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import { useCanvasActionShortcutKeys } from '@/platform/keybindings/canvasActionShortcuts'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
@@ -20,6 +21,7 @@ import {
   rewriteAgentAssetHtml,
   tokenReplyAssets
 } from '@/workbench/extensions/agent/utils/replyAssets'
+import { renderShortcutKeycaps } from '@/workbench/extensions/agent/utils/shortcutKeycaps'
 import CodeBlock from './CodeBlock.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 
@@ -28,6 +30,12 @@ const { text } = defineProps<{
 }>()
 const apiBaseUrl = new URL(api.apiURL(''), window.location.origin).href
 const normalizedBase = apiBaseUrl.replace(/\/+$/, '')
+
+// Shortcut keys are resolved per render instead of being written into the
+// agent's prompt, so a user who rebound an action is shown their own key
+// (DES-779). Resolved through the keybindings domain's own entry point, which
+// keeps the prose transform a plain function of a resolver.
+const resolveShortcutKeys = useCanvasActionShortcutKeys()
 
 interface ProseSegment {
   type: 'prose'
@@ -69,7 +77,10 @@ const segments = computed<Segment[]>(() => {
     }
     out.push({
       type: 'prose',
-      html: rewriteAgentAssetHtml(renderMarkdownToHtml(prose, apiBaseUrl))
+      html: renderShortcutKeycaps(
+        rewriteAgentAssetHtml(renderMarkdownToHtml(prose, apiBaseUrl)),
+        resolveShortcutKeys
+      )
     })
     prose = ''
   }

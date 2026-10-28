@@ -1,10 +1,16 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
+import { useCanvasActionShortcutKeys } from '@/platform/keybindings/canvasActionShortcuts'
 
 import MarkdownStream from './MarkdownStream.vue'
+
+// The agent panel asks the keybindings domain what a command is bound to. The
+// real store is shared across this file's tests, so spy on the one entry point
+// the panel uses rather than rebinding a command globally.
+vi.mock(import('@/platform/keybindings/canvasActionShortcuts'), { spy: true })
 
 describe('MarkdownStream', () => {
   it('renders markdown prose', () => {
@@ -167,6 +173,26 @@ describe('MarkdownStream', () => {
     })
     expect(html()).not.toContain('<script')
     expect(screen.getByText(/hi/)).toBeInTheDocument()
+  })
+
+  // DES-779: the agent guesses shortcuts from training data, so the panel
+  // resolves them against the user's own bindings when the reply renders. The
+  // prompt carries no key list at all. Here the user rebound bypass to Alt+Q.
+  it('renders a shortcut as the key the user is bound to, not the one the agent wrote', () => {
+    vi.mocked(useCanvasActionShortcutKeys).mockReturnValue((commandId) =>
+      commandId === 'Comfy.Canvas.ToggleSelectedNodes.Bypass'
+        ? ['Alt', 'q']
+        : undefined
+    )
+
+    render(MarkdownStream, {
+      props: { text: 'Select it and press Ctrl+B to bypass the node.' },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Alt', { selector: 'kbd' })).toBeInTheDocument()
+    expect(screen.getByText('Q', { selector: 'kbd' })).toBeInTheDocument()
+    expect(screen.queryByText('Ctrl', { selector: 'kbd' })).toBeNull()
   })
 
   it('opens links in a new tab with rel=noopener', () => {
