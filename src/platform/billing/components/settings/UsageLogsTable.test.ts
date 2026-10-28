@@ -306,6 +306,33 @@ describe('UsageLogsTable', () => {
       )
     })
 
+    it('keeps params outside the allowlist out of the tooltip', async () => {
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'event-4',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: {
+              api_name: 'Chat',
+              model: 'test-model',
+              input_tokens: 42,
+              prompt: 'secret prompt text'
+            },
+            createdAt: '2024-01-01T10:00:00Z'
+          }
+        ])
+      )
+      await renderLoaded()
+
+      await userEvent.hover(
+        screen.getByRole('button', { name: 'Additional Info' })
+      )
+
+      const tooltip = await screen.findByRole('tooltip')
+      expect(tooltip).toHaveTextContent('input_tokens: 42')
+      expect(tooltip).not.toHaveTextContent('secret prompt text')
+    })
+
     it('does not render info buttons when no additional info', async () => {
       vi.mocked(useCustomerEventsService().hasAdditionalInfo).mockReturnValue(
         false
