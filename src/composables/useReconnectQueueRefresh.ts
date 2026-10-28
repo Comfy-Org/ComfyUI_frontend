@@ -1,7 +1,7 @@
 import { Semaphore, delay, withTimeout } from 'es-toolkit'
 
 import { t } from '@/i18n'
-import { zExecutionMeta } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { zExecutionMetaEntry } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type {
   ExecutionError,
   JobDetail
@@ -89,12 +89,14 @@ export function useReconnectQueueRefresh() {
   }
 
   function displayNodesOf(detail: JobDetail | undefined) {
-    const meta = zExecutionMeta.safeParse(detail?.execution_meta)
-    if (!meta.success) return undefined
+    const meta = detail?.execution_meta
+    if (meta == null || typeof meta !== 'object') return undefined
     const displayNodes = new Map<string, string>()
-    for (const [node, { display_node }] of Object.entries(meta.data)) {
-      if (display_node != null && display_node !== '') {
-        displayNodes.set(node, String(display_node))
+    for (const [node, entry] of Object.entries(meta)) {
+      const parsed = zExecutionMetaEntry.safeParse(entry)
+      const displayNode = parsed.success ? parsed.data.display_node : null
+      if (displayNode != null && displayNode !== '') {
+        displayNodes.set(node, String(displayNode))
       }
     }
     return displayNodes

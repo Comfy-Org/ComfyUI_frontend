@@ -159,7 +159,8 @@ describe('useReconnectQueueRefresh', () => {
             parent_node: '15',
             real_node_id: '5'
           },
-          '9': { node_id: '9', display_node: '9' }
+          '9': { node_id: '9', display_node: '9' },
+          '4': null
         }
       })
 
