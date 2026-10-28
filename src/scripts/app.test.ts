@@ -130,6 +130,7 @@ const {
   mockExtensionService,
   mockRefreshMissingModelPipeline,
   mockImportA1111,
+  mockAccountPreconditionOpen,
   mockWorkflowService,
   mockValidateWorkflow
 } = vi.hoisted(() => ({
@@ -139,6 +140,7 @@ const {
   },
   mockRefreshMissingModelPipeline: vi.fn(),
   mockImportA1111: vi.fn<typeof importA1111>(),
+  mockAccountPreconditionOpen: vi.fn(),
   mockWorkflowService: {
     beforeLoadNewGraph: vi.fn<WorkflowService['beforeLoadNewGraph']>(),
     afterLoadNewGraph: vi.fn<WorkflowService['afterLoadNewGraph']>(),
@@ -146,6 +148,15 @@ const {
   },
   mockValidateWorkflow: vi.fn<WorkflowValidation['validateWorkflow']>()
 }))
+
+vi.mock(
+  import('@/platform/billing/subscription/composables/useAccountPreconditionDialog'),
+  () => ({
+    useAccountPreconditionDialog: () => ({
+      open: mockAccountPreconditionOpen
+    })
+  })
+)
 
 vi.mock(
   import('@/platform/workflow/validation/composables/useWorkflowValidation'),
@@ -1925,6 +1936,26 @@ describe('ComfyApp', () => {
         now.mockRestore()
         setTelemetryRegistry(null)
       }
+    })
+
+    it('opens the subscription dialog for a cloud-subscription queue rejection', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          error: {
+            type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+            message: 'You have enough credits for this workflow',
+            details: ''
+          }
+        })
+      )
+
+      await app.queuePrompt(0)
+
+      expect(mockAccountPreconditionOpen).toHaveBeenCalledExactlyOnceWith(
+        'subscription'
+      )
+      expect(useExecutionErrorStore().lastPromptError).toBeNull()
     })
 
     it('records a rejected submission on the workflow that queued it', async () => {
