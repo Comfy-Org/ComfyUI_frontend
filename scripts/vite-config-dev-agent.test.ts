@@ -277,13 +277,47 @@ describe('dev server agent routes', () => {
     )?.[1]
   }
 
+  // The upgrade handler does not follow the HTTP rule. A matching context that
+  // cannot carry a socket -- no `ws`, and no ws:/wss: target -- is skipped and the
+  // walk continues, so a socket can land on a later entry than HTTP would pick.
+  // Modelling both with one resolver agreed with real routing only because every
+  // fixture here sets `ws: true`.
+  function resolveSocket(
+    routes: Record<string, ProxyOptions>,
+    url: string
+  ): ProxyOptions | undefined {
+    return Object.entries(routes).find(([context, options]) => {
+      if (!url.startsWith(context)) return false
+      const target = typeof options.target === 'string' ? options.target : ''
+      return options.ws === true || /^wss?:/.test(target)
+    })?.[1]
+  }
+
   it('upgrades the events socket on the backend without a local agent', () => {
     const routes = devServerAgentRoutes(undefined, backend)
 
     expect(routes).toEqual({
       '/api/agent/events': { target: 'https://cloud.example.com', ws: true }
     })
+    expect(resolveSocket(routes, '/api/agent/events')).toMatchObject({
+      target: 'https://cloud.example.com',
+      ws: true
+    })
+  })
+
+  it('falls the events socket through to the backend when the agent route cannot carry one', () => {
+    const routes = devServerAgentRoutes(
+      { target: 'http://127.0.0.1:8095' },
+      backend
+    )
+
+    // HTTP stops at '/api/agent', which matches first. The upgrade handler skips it
+    // for having no `ws` and reaches the backend entry, so the socket survives an
+    // agentProxy that loses `ws` even though the HTTP route does not change.
     expect(resolve(routes, '/api/agent/events')).toMatchObject({
+      target: 'http://127.0.0.1:8095'
+    })
+    expect(resolveSocket(routes, '/api/agent/events')).toMatchObject({
       target: 'https://cloud.example.com',
       ws: true
     })
@@ -294,9 +328,10 @@ describe('dev server agent routes', () => {
 
     expect(resolve(routes, '/api/workflows?limit=20')).toBe(agentProxy)
     expect(resolve(routes, '/api/agent/threads/new/messages')).toBe(agentProxy)
-    // The backend events entry is behind '/api/agent', so a local agent serves
-    // the socket as well; it exists for the no-local-agent case above only.
-    expect(resolve(routes, '/api/agent/events')).toBe(agentProxy)
+    // The backend events entry is behind '/api/agent', so a local agent that can
+    // carry a socket serves it as well; the backend entry exists for the
+    // no-local-agent case above only.
+    expect(resolveSocket(routes, '/api/agent/events')).toBe(agentProxy)
   })
 
   it('leaves other api traffic to the ComfyUI proxy', () => {
