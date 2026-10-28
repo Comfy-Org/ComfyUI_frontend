@@ -90,9 +90,13 @@ const LAYOUTS = {
     width: 'w-[min(960px,calc(100vw-2rem))]',
     card: cn(CARD_SHELL, 'grid-cols-2 items-stretch gap-x-7 p-2'),
     videoWrap:
-      'flex h-0 min-h-full w-full min-w-0 items-center justify-center self-stretch overflow-hidden rounded-lg [&>div]:h-full [&>div]:w-auto',
-    media: 'aspect-video h-full w-auto rounded-lg object-cover',
-    fallback: cn(FALLBACK_SHELL, 'aspect-video h-full w-auto'),
+      '[container-type:size] grid h-0 min-h-full w-full min-w-0 place-items-center self-stretch overflow-hidden rounded-lg [&>div.relative]:grid [&>div.relative]:size-full [&>div.relative]:place-items-center',
+    media:
+      'aspect-video w-[min(100cqw,calc(100cqh*16/9))] max-h-full rounded-lg object-contain',
+    fallback: cn(
+      FALLBACK_SHELL,
+      'aspect-video max-h-full w-[min(100cqw,calc(100cqh*16/9))]'
+    ),
     heading: 'my-0 text-2xl/7.5',
     copy: COPY_SHELL,
     contentWrap: 'flex min-w-0 flex-col justify-between gap-3.5 pt-3 pr-3 pb-3',
@@ -104,7 +108,6 @@ const LAYOUTS = {
 } as const
 
 const containerRef = ref<HTMLElement>()
-const contentRef = ref<HTMLElement>()
 const isWide = ref(true)
 const isTwoColumn = useMediaQuery('(min-width: 700px) and (height < 650px)')
 const isShortViewport = useMediaQuery('(height < 680px)')
@@ -146,7 +149,7 @@ const acceptLabelKey = computed(() =>
   requiresSignIn ? 'agent.consent.agreeAndContinue' : 'agent.consent.accept'
 )
 
-useResizeObserver(contentRef, ([entry]) => {
+useResizeObserver(containerRef, ([entry]) => {
   const width = entry.contentRect.width
   if (width === 0) return
   isWide.value = width >= WIDE_MIN_WIDTH
@@ -199,7 +202,7 @@ onMounted(() => {
         </Video>
       </div>
 
-      <div ref="contentRef" :class="layout.contentWrap">
+      <div :class="layout.contentWrap">
         <section :class="sectionClass">
           <DialogTitle :class="headingClass">
             {{ title }}
