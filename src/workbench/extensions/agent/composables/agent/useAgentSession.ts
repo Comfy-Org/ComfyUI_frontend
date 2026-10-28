@@ -95,15 +95,20 @@ interface SentTag {
 export interface WorkflowTurnContext {
   id?: string
   tabPath: string
+  /** `ComfyWorkflow.instanceId` of the tab this turn belongs to. */
+  instanceId: string
+  isTemporary: boolean
 }
 
 /**
  * Workflow lookup context: omitted resolves the currently selected target,
- * `null` pins the absence of a target, and `{ tabPath }` pins its identity.
- * A send captures this before preparation so later selections cannot change
- * which workflow owns the turn.
+ * `null` pins the absence of a target, and `{ instanceId }` pins its
+ * identity. A send captures this before preparation so later selections cannot
+ * change which workflow owns the turn. The instance, not the path, is the
+ * identity: a tab that closes mid-send can be replaced by another tab at the
+ * same path, and that replacement is a different turn target.
  */
-export type TurnOrigin = { tabPath: string } | null
+export type TurnOrigin = { instanceId: string } | null
 
 type PromptEditState =
   | { phase: 'idle' }
@@ -1107,9 +1112,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   // current_tab_unbound's own contract (see its generated doc comment) is
-  // a tab-level fact: this tab has no cloud id yet. wfContext with no id
-  // is exactly that (a saved tab whose cloud id failed to resolve makes
-  // wfContext undefined entirely instead - see targetWorkflowTurnContext).
+  // a tab-level fact: this tab has no cloud id yet.
   //
   // boundWorkflowId === null narrows WHEN we assert that fact, and is a
   // client-side policy choice, not part of the field's own meaning: the
@@ -1130,6 +1133,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): boolean {
     return (
       wfContext !== undefined &&
+      wfContext.isTemporary &&
       wfContext.id === undefined &&
       boundWorkflowId === null
     )
@@ -1360,7 +1364,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const threadAtSend = conversationStore.threadId ?? 'new'
     const originContext = workflow?.current()
     const origin: TurnOrigin =
-      originContext === undefined ? null : { tabPath: originContext.tabPath }
+      originContext === undefined
+        ? null
+        : { instanceId: originContext.instanceId }
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
     try {
@@ -1427,8 +1433,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     origin: WorkflowTurnContext | undefined,
     current: WorkflowTurnContext | undefined
   ): boolean {
-    if (origin?.id === undefined) return false
-    return current?.id !== origin.id
+    if (origin === undefined) return false
+    if (current === undefined) return true
+    if (current.instanceId !== origin.instanceId) return true
+    return origin.id !== undefined && current.id !== origin.id
   }
 
   async function sendMessage(
