@@ -19,7 +19,7 @@
           :class="
             item.dialogComponentProps.centerOnViewport &&
             !item.dialogComponentProps.maximized &&
-            '-translate-x-1/2 [--workspace-inset-right:0px]'
+            '[--workspace-inset-right:0px]'
           "
           :data-dialog-key="item.key"
           @escape-key-down="
