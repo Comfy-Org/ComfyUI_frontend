@@ -5,12 +5,13 @@ import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetIn
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { IBaseWidget, IComboWidget } from '@comfyorg/graph-model/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import { isCloud } from '@/platform/distribution/types'
+import { useDeploymentLibraryModelsStore } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import type {
   ComboInputSpec,
   InputSpec
@@ -51,7 +52,8 @@ const NODE_PLACEHOLDER_MAP: Record<string, string> = {
 
 const bindDynamicValuesOption = (
   widget: IBaseWidget,
-  getValues: () => unknown
+  getValues: (assignedValues: unknown[]) => unknown,
+  onAssign?: () => void
 ) => {
   const options = widget.options
   let fallbackValues = Array.isArray(options.values)
@@ -62,14 +64,44 @@ const bindDynamicValuesOption = (
     configurable: true,
     enumerable: true,
     get: () => {
-      const values = getValues()
+      const values = getValues(fallbackValues)
       if (values === undefined || values === null) return fallbackValues
       return values
     },
     set: (values: unknown[]) => {
       fallbackValues = Array.isArray(values) ? values : fallbackValues
+      onAssign?.()
     }
   })
+}
+
+function addLibraryModelOptions(widget: IComboWidget, folder: string) {
+  const library = useDeploymentLibraryModelsStore()
+  library.prepare(folder)
+  registerComboWidgetInventory(widget, {
+    getStatus: () => library.statusOf(folder),
+    waitForSettled: () => library.waitForSettled(folder)
+  })
+  let joined:
+    | { release: unknown[]; names: readonly string[]; values: unknown[] }
+    | undefined
+  bindDynamicValuesOption(
+    widget,
+    (release) => {
+      const names = library.namesIn(folder)
+      if (!names.length) return release
+      if (joined?.release !== release || joined.names !== names) {
+        const listed = new Set(release)
+        joined = {
+          release,
+          names,
+          values: [...release, ...names.filter((name) => !listed.has(name))]
+        }
+      }
+      return joined.values
+    },
+    () => library.refresh(folder)
+  )
 }
 
 const addMultiSelectWidget = (
@@ -265,6 +297,13 @@ const addComboWidget = (
     }
   }
 
+  const libraryFolder = isCloud
+    ? useDeploymentLibraryModelsStore().folderFor(
+        node.comfyClass ?? '',
+        inputSpec.name
+      )
+    : undefined
+
   // Standard combo widget
   const widget = node.addWidget(
     'combo',
@@ -294,6 +333,8 @@ const addComboWidget = (
       waitForSettled: remoteWidget.waitForInventory
     })
     bindDynamicValuesOption(widget, () => remoteWidget.getValue())
+  } else if (libraryFolder && isComboWidget(widget)) {
+    addLibraryModelOptions(widget, libraryFolder)
   }
 
   if (inputSpec.control_after_generate) {

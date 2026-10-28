@@ -51,6 +51,7 @@ interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
   excludeTags?: string[]
   includePublic?: boolean
+  workspaceLibrary?: boolean
   after?: string
   signal?: AbortSignal
 }
@@ -308,6 +309,7 @@ function createAssetService() {
       offset,
       after,
       includePublic,
+      workspaceLibrary,
       signal
     } = options
     const normalizedIncludeTags = normalizeAssetTags(includeTags)
@@ -329,6 +331,9 @@ function createAssetService() {
     }
     if (includePublic !== undefined) {
       queryParams.set('include_public', includePublic ? 'true' : 'false')
+    }
+    if (workspaceLibrary) {
+      queryParams.set('workspace_library', 'true')
     }
 
     const url = `${ASSETS_ENDPOINT}?${queryParams.toString()}`
@@ -719,8 +724,21 @@ function createAssetService() {
       signal
     }: Pick<AssetPaginationOptions, 'limit' | 'signal'> = {}
   ): Promise<AssetItem[]> {
+    return walkAssetPages(`tag '${tag}'`, signal, (after) =>
+      getAssetsPageByTag(tag, includePublic, {
+        limit: limit > 0 ? limit : DEFAULT_LIMIT,
+        after,
+        signal
+      })
+    )
+  }
+
+  async function walkAssetPages(
+    label: string,
+    signal: AbortSignal | undefined,
+    fetchPage: (after: string | undefined) => Promise<AssetResponse>
+  ): Promise<AssetItem[]> {
     const assets: AssetItem[] = []
-    const pageSize = limit > 0 ? limit : DEFAULT_LIMIT
     let after: string | undefined
     let batchCount = 0
 
@@ -728,16 +746,12 @@ function createAssetService() {
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
       if (batchCount++ >= MAX_PAGINATION_BATCHES) {
         console.warn(
-          `Paginated walk for tag '${tag}' hit the ${MAX_PAGINATION_BATCHES}-batch backstop; returning a truncated listing.`
+          `Paginated walk for ${label} hit the ${MAX_PAGINATION_BATCHES}-batch backstop; returning a truncated listing.`
         )
         return assets
       }
 
-      const data = await getAssetsPageByTag(tag, includePublic, {
-        limit: pageSize,
-        after,
-        signal
-      })
+      const data = await fetchPage(after)
       const batch = data.assets
       if (batch.length === 0) {
         return assets
@@ -752,6 +766,31 @@ function createAssetService() {
 
       after = data.next_cursor
     }
+  }
+
+  /**
+   * Lists the loader names of every private model in one folder of the
+   * workspace's library, including the ones teammates added.
+   */
+  async function getWorkspaceLibraryModels(folder: string): Promise<string[]> {
+    const assets = await walkAssetPages(
+      `workspace library folder '${folder}'`,
+      undefined,
+      (after) =>
+        handleAssetRequest(
+          {
+            includeTags: [MODELS_TAG, folder],
+            includePublic: false,
+            workspaceLibrary: true,
+            limit: DEFAULT_LIMIT,
+            after
+          },
+          `workspace library models in ${folder}`
+        )
+    )
+    return assets
+      .map((asset) => asset.loader_path ?? getAssetFilename(asset))
+      .filter((name) => assetFilenameSchema.safeParse(name).success)
   }
 
   /**
@@ -1103,6 +1142,7 @@ function createAssetService() {
     getAssetsByTag,
     getAssetsPageByTag,
     getAllAssetsByTag,
+    getWorkspaceLibraryModels,
     deleteAsset,
     updateAsset,
     addAssetTags,
