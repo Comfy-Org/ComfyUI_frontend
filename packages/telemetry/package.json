@@ -25,11 +25,11 @@
     "@comfyorg/comfyui-desktop-bridge-types": "catalog:",
     "@comfyorg/graph-model": "workspace:*",
     "@comfyorg/ingest-types": "workspace:*",
-    "@comfyorg/shared-frontend-utils": "workspace:*",
-    "@datadog/browser-rum": "catalog:",
-    "@sentry/vue": "catalog:"
+    "@comfyorg/shared-frontend-utils": "workspace:*"
   },
   "devDependencies": {
+    "@datadog/browser-rum": "catalog:",
+    "@sentry/vue": "catalog:",
     "@total-typescript/shoehorn": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

@@ -1421,13 +1421,13 @@ importers:
       '@comfyorg/shared-frontend-utils':
         specifier: workspace:*
         version: link:../shared-frontend-utils
+    devDependencies:
       '@datadog/browser-rum':
         specifier: 'catalog:'
         version: 6.33.0(@datadog/browser-logs@6.33.0)
       '@sentry/vue':
         specifier: 'catalog:'
         version: 10.65.0(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))(vue@3.5.42(typescript@6.0.3))
-    devDependencies:
       '@total-typescript/shoehorn':
         specifier: 'catalog:'
         version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
