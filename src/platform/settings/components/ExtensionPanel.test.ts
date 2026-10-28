@@ -467,6 +467,44 @@ describe('ExtensionPanel', () => {
     ).toBeVisible()
   })
 
+  it('shows an extension registered after the panel mounted as enabled, with no reload prompt', async () => {
+    registerDisabledSetting()
+    registerExtensions('Alpha')
+    renderPanel()
+    expect(reloadButton()).not.toBeInTheDocument()
+
+    registerExtensions('LateArrival')
+
+    expect(
+      await screen.findByRole('switch', { name: 'LateArrival' })
+    ).toBeChecked()
+    expect(reloadButton()).not.toBeInTheDocument()
+  })
+
+  it('keeps a switch edit still awaiting its save when another extension registers late', async () => {
+    const user = userEvent.setup()
+    registerDisabledSetting()
+    registerExtensions('Alpha')
+    let acknowledge = () => {}
+    vi.spyOn(useSettingStore(), 'setOrRevert').mockReturnValue(
+      new Promise((resolve) => {
+        acknowledge = () => resolve({ ok: true, outcome: 'saved' })
+      })
+    )
+    renderPanel()
+
+    await user.click(screen.getByRole('switch', { name: 'Alpha' }))
+    expect(screen.getByRole('switch', { name: 'Alpha' })).not.toBeChecked()
+
+    registerExtensions('LateArrival')
+
+    expect(
+      await screen.findByRole('switch', { name: 'LateArrival' })
+    ).toBeChecked()
+    expect(screen.getByRole('switch', { name: 'Alpha' })).not.toBeChecked()
+    acknowledge()
+  })
+
   it('disables the bulk action when all Agent extensions are read-only', async () => {
     const user = userEvent.setup()
     const extensionStore = useExtensionStore()
