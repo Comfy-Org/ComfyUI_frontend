@@ -40,6 +40,7 @@ test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
     const queued = comfyPage.page.waitForResponse('**/api/prompt')
     await comfyPage.actionbar.queueButton.primaryButton.click()
     await queued
+    await comfyPage.nextFrame()
 
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
@@ -74,6 +75,7 @@ test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
       )
       await comfyPage.page.evaluate(() => window.app!.queuePrompt(0))
       await refused
+      await comfyPage.nextFrame()
 
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
