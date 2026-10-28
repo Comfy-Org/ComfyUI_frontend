@@ -132,6 +132,15 @@ export function createLocalWebAuthBridge(
     return undefined
   }
 
+  function keepActiveWorkspace(): void {
+    const active = env.tokens.read()
+    const workspaceId =
+      active && readAccessTokenIdentity(active.accessToken)?.workspaceId
+    if (workspaceId && !env.tokens.readWorkspace(workspaceId)) {
+      env.tokens.writeWorkspace(workspaceId, active)
+    }
+  }
+
   async function refreshWorkspaceTokens(
     workspaceId: string
   ): Promise<OAuthTokens | undefined> {
@@ -198,14 +207,14 @@ export function createLocalWebAuthBridge(
       const current = currentState()
       if (current.status === 'signed_in' && current.workspaceId === workspaceId)
         return current
-      const tokens = await env.withRefreshLock(() =>
-        refreshWorkspaceTokens(workspaceId)
-      )
-      if (tokens && adopt(tokens) === 'adopted') {
-        emit()
-        return currentState()
-      }
-      return requestSignIn()
+      const switched = await env.withRefreshLock(async () => {
+        keepActiveWorkspace()
+        const tokens = await refreshWorkspaceTokens(workspaceId)
+        return tokens !== undefined && adopt(tokens) === 'adopted'
+      })
+      if (!switched) return requestSignIn()
+      emit()
+      return currentState()
     },
 
     signOut: () => env.withRefreshLock(async () => signOutLocally()),

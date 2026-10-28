@@ -470,6 +470,58 @@ describe('switchWorkspace', () => {
     expect(env.navigate).not.toHaveBeenCalled()
   })
 
+  it('keeps the workspace it leaves, even one signed in to before workspaces were kept', async () => {
+    const { bridge, env, tokens } = setup()
+    tokens.write({
+      accessToken: WS1_TOKEN,
+      refreshToken: 'refresh-1',
+      expiresAt: NOW + 3_600_000,
+      scope: 'comfy-cloud:user:read'
+    })
+
+    void bridge.switchWorkspace?.('ws-2')
+
+    await vi.waitFor(() => expect(env.navigate).toHaveBeenCalledOnce())
+    expect(tokens.readWorkspace('ws-1')?.accessToken).toBe(WS1_TOKEN)
+  })
+
+  it('stays signed out when sign-out lands while a switch is refreshing', async () => {
+    const harness = setup('http://127.0.0.1:8188/?code=code-1&state=state-1', {
+      withRefreshLock: handOverLock()
+    })
+    const { bridge, env, tokens, clock, storage, page } = harness
+    storage.setItem(
+      PENDING_KEY,
+      JSON.stringify({ verifier: 'verifier-1', state: 'state-1' })
+    )
+    env.fetchImpl.mockResolvedValueOnce(
+      tokenResponse(WS1_TOKEN, 'refresh-1', 30)
+    )
+    await bridge.completeSignIn()
+    page.url = 'http://127.0.0.1:8188/?code=code-2&state=state-2'
+    storage.setItem(
+      PENDING_KEY,
+      JSON.stringify({ verifier: 'verifier-2', state: 'state-2' })
+    )
+    env.fetchImpl.mockResolvedValueOnce(tokenResponse(WS2_TOKEN, 'refresh-ws2'))
+    await bridge.completeSignIn()
+    clock.now += 60_000
+    let answer: (response: Response) => void = () => {}
+    env.fetchImpl.mockImplementation(
+      () => new Promise((resolve) => (answer = resolve))
+    )
+
+    const switching = bridge.switchWorkspace?.('ws-1')
+    await vi.waitFor(() => expect(env.fetchImpl).toHaveBeenCalledTimes(3))
+    const signingOut = bridge.signOut()
+    answer(tokenResponse(WS1_TOKEN, 'refresh-3'))
+    await switching
+    await signingOut
+
+    expect(tokens.read()).toBeUndefined()
+    expect(tokens.readWorkspace('ws-1')).toBeUndefined()
+  })
+
   it('forgets every workspace on sign-out', async () => {
     const { bridge, env } = await signedInToBothWorkspaces()
     await bridge.signOut()
@@ -479,6 +531,17 @@ describe('switchWorkspace', () => {
     await vi.waitFor(() => expect(env.navigate).toHaveBeenCalledOnce())
   })
 })
+
+function handOverLock(): LocalWebAuthEnvironment['withRefreshLock'] {
+  let tail: Promise<unknown> = Promise.resolve()
+  return <T>(task: () => Promise<T>): Promise<T> => {
+    const run = tail.then(task)
+    tail = run.catch(() => undefined)
+    return run.then(
+      (value) => new Promise<T>((resolve) => setTimeout(() => resolve(value)))
+    )
+  }
+}
 
 function serialLock(): LocalWebAuthEnvironment['withRefreshLock'] {
   let tail: Promise<unknown> = Promise.resolve()
