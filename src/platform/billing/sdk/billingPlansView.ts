@@ -38,7 +38,7 @@ function projectFeatureItem({
 }: DecodedFeatureItem): FeatureItem | undefined {
   if (params === undefined) return item
   const count = asSafeNumber(params.count)
-  return count === undefined ? undefined : { ...item, params: { count } }
+  return count === undefined ? item : { ...item, params: { count } }
 }
 
 function projectFeatureItems(

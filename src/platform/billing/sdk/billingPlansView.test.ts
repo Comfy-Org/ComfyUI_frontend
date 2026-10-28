@@ -129,6 +129,40 @@ describe('projectBillingPlans', () => {
     expect(projectBillingPlans(withGrant)?.plans[0].credits).toBe(7_400)
   })
 
+  it('leaves an absent feature list absent', () => {
+    const withoutFeatures: BillingPlansData = {
+      ...DECODED,
+      plans: [{ ...DECODED.plans[0], feature_items: undefined }]
+    }
+
+    const plan = projectBillingPlans(withoutFeatures)?.plans[0]
+
+    expect(plan).toBeDefined()
+    expect(plan && 'feature_items' in plan).toBe(false)
+  })
+
+  it('preserves feature items without interpolation params', () => {
+    const withoutParams: BillingPlansData = {
+      ...DECODED,
+      plans: [
+        {
+          ...DECODED.plans[0],
+          feature_items: [
+            {
+              key: 'shortRuntime',
+              status: 'available',
+              text: 'Short runtime'
+            }
+          ]
+        }
+      ]
+    }
+
+    expect(projectBillingPlans(withoutParams)?.plans[0].feature_items).toEqual(
+      withoutParams.plans[0].feature_items
+    )
+  })
+
   it('refuses a catalog with a credit grant a number cannot hold exactly', () => {
     const tooLarge: BillingPlansData = {
       ...DECODED,
@@ -154,7 +188,7 @@ describe('projectBillingPlans', () => {
     expect(projectBillingPlans(tooLarge)).toBeUndefined()
   })
 
-  it('refuses a feature count a number cannot hold exactly', () => {
+  it('drops an unsafe display count without rejecting the catalog', () => {
     const tooLarge: BillingPlansData = {
       ...DECODED,
       plans: [
@@ -172,6 +206,12 @@ describe('projectBillingPlans', () => {
       ]
     }
 
-    expect(projectBillingPlans(tooLarge)).toBeUndefined()
+    expect(projectBillingPlans(tooLarge)?.plans[0].feature_items).toEqual([
+      {
+        key: 'membersUpTo',
+        status: 'available',
+        text: 'Too many members'
+      }
+    ])
   })
 })

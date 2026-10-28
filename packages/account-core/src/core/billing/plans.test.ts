@@ -78,4 +78,44 @@ describe('createPlansReader', () => {
 
     expect(calls[0].timeoutMs).toBe(5_000)
   })
+
+  it('drops unknown display features without rejecting the catalog', async () => {
+    const { scopeSource } = fakeSession()
+    const { transport } = fakeTransport([
+      httpOk({
+        ...CATALOG,
+        plans: [
+          {
+            ...PLAN,
+            features: ['Fallback copy'],
+            feature_items: [
+              {
+                key: 'shortRuntime',
+                status: 'available',
+                text: 'Short runtime'
+              },
+              {
+                key: 'futureFeature',
+                status: 'available',
+                text: 'Future feature'
+              }
+            ]
+          }
+        ]
+      })
+    ])
+
+    const result = await createPlansReader({ transport, scopeSource }).read()
+
+    expect(result.status).toBe('ok')
+    if (result.status !== 'ok') return
+    expect(result.value.data.plans[0].features).toEqual(['Fallback copy'])
+    expect(result.value.data.plans[0].feature_items).toEqual([
+      {
+        key: 'shortRuntime',
+        status: 'available',
+        text: 'Short runtime'
+      }
+    ])
+  })
 })
