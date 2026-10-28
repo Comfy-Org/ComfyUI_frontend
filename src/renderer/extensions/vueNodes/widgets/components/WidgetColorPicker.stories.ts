@@ -8,7 +8,7 @@ import { computed, ref, toRefs } from 'vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { ColorFormat } from '@/utils/colorUtil'
 
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import WidgetColorPicker from './WidgetColorPicker.vue'
 

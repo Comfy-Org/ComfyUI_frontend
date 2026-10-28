@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import type { Rect } from '@/lib/litegraph/src/interfaces'
-import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
-import type { NodeId } from '@/types/nodeId'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SerialisableLLink } from '@comfyorg/graph-model/serialisation'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -409,6 +409,26 @@ export class NodeReference {
     return new NodeSlotReference('output', index, this)
   }
   async getInput(index: number) {
+    return new NodeSlotReference('input', index, this)
+  }
+  async getInputByName(name: string) {
+    const index = await this.comfyPage.page.evaluate(
+      ([id, inputName]) => {
+        const node = window.app!.canvas.graph!.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+
+        const inputIndex = node.inputs.findIndex(
+          (input) => input.name === inputName
+        )
+        if (inputIndex < 0) {
+          throw new Error(`Input "${inputName}" not found on node ${id}`)
+        }
+
+        return inputIndex
+      },
+      [this.id, name] as const
+    )
+
     return new NodeSlotReference('input', index, this)
   }
   async getWidget(index: number) {

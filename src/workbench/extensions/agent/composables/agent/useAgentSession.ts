@@ -41,6 +41,11 @@ import {
   zTurnInProgressError
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
+  agentRequestFailureFingerprint,
+  describeAgentRequestFailure
+} from '@/workbench/extensions/agent/services/agent/agentRequestFailure'
+import type { AgentRequestFailureDiagnostics } from '@/workbench/extensions/agent/services/agent/agentRequestFailure'
+import {
   AgentApiError,
   AgentResponseUnreadableError
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
@@ -301,9 +306,19 @@ export function trackAgentError(
   errorClass: AgentErrorClass,
   stage: AgentErrorMetadata['failure_stage'],
   uiTreatment: AgentErrorMetadata['ui_treatment'],
-  overrides: { retryable?: boolean; turnAccepted?: boolean } = {}
+  overrides: {
+    retryable?: boolean
+    turnAccepted?: boolean
+    /**
+     * FE-3200. Spread straight through, so a call site that has already built
+     * the diagnosis for `reportError` passes the same record to both sinks
+     * rather than deriving it twice and risking them disagreeing.
+     */
+    diagnostics?: AgentRequestFailureDiagnostics
+  } = {}
 ): void {
   useTelemetry()?.trackAgentError({
+    ...overrides.diagnostics,
     error_class: errorClass,
     failure_stage: stage,
     retryable: overrides.retryable ?? stage === 'pre_acceptance',
@@ -360,16 +375,17 @@ function namesCommittedAnswer({
   return Array.isArray(selected) || Boolean(other_text)
 }
 
-function isSupersededAnswer(
+function diffAnswers(
   submitted: AgentAnswerRequest,
   committed: Extract<AskUserResolution, { status: 'answered' }>,
   selectionKnown: boolean
-): boolean {
-  return (
-    (selectionKnown &&
-      xor(submitted.selected, committed.selected).length > 0) ||
-    (submitted.other_text || undefined) !== committed.otherText
-  )
+) {
+  return {
+    selection_changed:
+      selectionKnown && xor(submitted.selected, committed.selected).length > 0,
+    other_text_changed:
+      (submitted.other_text || undefined) !== committed.otherText
+  }
 }
 
 let sessionGeneration = 0
@@ -938,15 +954,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
         localStorage.removeItem(threadStorageKey)
       return false
     }
+    const diagnostics = describeAgentRequestFailure(error)
     reportError(error, {
       surface: 'agent',
-      errorType: 'agent_history_load_failed'
+      errorType: 'agent_history_load_failed',
+      tags: diagnostics,
+      fingerprint: agentRequestFailureFingerprint(
+        'agent_history_load_failed',
+        diagnostics
+      )
     })
     if (failureNotice === 'error_overlay')
       pushError(error instanceof Error ? error.message : String(error))
     trackAgentError('history_load_failed', 'pre_acceptance', failureNotice, {
       retryable: isRetryableRequestFailure(error, false),
-      turnAccepted: stashedTurn
+      turnAccepted: stashedTurn,
+      diagnostics
     })
     return false
   }
@@ -1663,17 +1686,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const committed = toAskResolution(source)
     if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
-    if (
-      submitted === undefined ||
-      !isSupersededAnswer(submitted, committed, Array.isArray(source.selected))
-    )
-      return
-    reportError(
-      new Error(
-        `agent ask resolved as ${committed.selected.join(',')}, not ${submitted.selected.join(',')}`
-      ),
-      { surface: 'agent', errorType: 'agent_ask_answer_superseded' }
-    )
+    if (submitted === undefined) return
+    const selectionKnown = Array.isArray(source.selected)
+    const changes = diffAnswers(submitted, committed, selectionKnown)
+    if (!changes.selection_changed && !changes.other_text_changed) return
+    reportError(new Error('agent ask resolved with a different answer'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_superseded',
+      tags: {
+        ...changes,
+        selection_known: selectionKnown,
+        committed_selected_count: selectionKnown
+          ? committed.selected.length
+          : undefined,
+        submitted_selected_count: submitted.selected.length
+      }
+    })
     pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
   }
 

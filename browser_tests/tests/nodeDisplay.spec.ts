@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -39,7 +39,23 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
   })
 
   test('Force input', async ({ comfyPage }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'PR #10704 - forceInput sockets should preserve declaration order'
+    })
+
     await comfyPage.workflow.loadWorkflow('inputs/force_input')
+
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate((nodeId) => {
+          const node = window.app!.graph.getNodeById(nodeId)
+          return node?.inputs.map((input) => input.name)
+        }, toNodeId(5))
+      )
+      .toEqual(['int_input', 'int_input_widget', 'float_input'])
+
     await expectRegionScreenshot(
       comfyPage.page,
       await comfyPage.nodeOps.getAllNodeRefs(),
@@ -58,7 +74,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
 
   test('Only optional inputs', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/only_optional_inputs')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     ).toBeHidden()

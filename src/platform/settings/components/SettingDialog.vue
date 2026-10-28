@@ -20,6 +20,7 @@
           :clear-label="$t('g.clear')"
           :accessible-label="$t('g.search')"
           size="md"
+          class="rounded-lg ring-1 ring-border/50"
           :placeholder="$t('g.searchSettings') + '...'"
           :debounce-time="128"
           :autofocus="activeCategoryKey !== 'keybinding'"
@@ -29,7 +30,7 @@
 
       <nav
         ref="navRef"
-        class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
+        class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3 pt-1 pb-4"
       >
         <div
           v-for="(group, index) in navGroups"
@@ -62,7 +63,7 @@
       <SettingsWorkspaceHeader
         v-else-if="isWorkspaceCategoryActive"
         :workspace-name="workspaceName"
-        :subscription-tier="activeWorkspace?.subscriptionTier"
+        :subscription-tier="activeSummary?.subscriptionTier"
         :collapsed="isHeaderCollapsed"
         :large="unifiedBillingSettingsEnabled"
       />
@@ -116,13 +117,14 @@
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
 
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import SettingsWorkspaceHeader from '@/platform/settings/components/SettingsWorkspaceHeader.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
-import NavTitle from '@/components/widget/nav/NavTitle.vue'
+import NavTitle from '@comfyorg/design-system/navigation/NavTitle'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -177,16 +179,15 @@ const closeButtonVariant = computed(() =>
   unifiedBillingSettingsEnabled.value ? 'textonly' : undefined
 )
 const closeIcon = computed(() =>
-  unifiedBillingSettingsEnabled.value
-    ? 'icon-[lucide--x] size-4 shrink-0'
-    : undefined
+  unifiedBillingSettingsEnabled.value ? 'icon-[lucide--x]' : undefined
 )
 const isWorkspaceCategoryActive = computed(
   () =>
     activeCategoryKey.value !== null &&
     WORKSPACE_CATEGORY_KEYS.has(activeCategoryKey.value)
 )
-const { workspaceName, activeWorkspace } = storeToRefs(useTeamWorkspaceStore())
+const { workspaceName } = storeToRefs(useTeamWorkspaceStore())
+const { activeSummary } = storeToRefs(useWorkspaceBillingStateStore())
 
 const { isHeaderCollapsed, handlePanelScroll, resetHeaderCollapse } =
   useSettingsHeaderCollapse()

@@ -1,5 +1,6 @@
 import type { ContentStore } from '#/content'
-import type { RasterData, SceneNode, Vec2 } from '#/node'
+import type { RasterData, SceneNode } from '#/node'
+import type { Point2D as Vec2 } from '@comfyorg/shared-frontend-utils/geometry'
 import { toLocalFrame } from '#/tools/transformMath'
 
 export const PICK_OPACITY_THRESHOLD = 0.25

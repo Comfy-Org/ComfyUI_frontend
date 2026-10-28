@@ -21,7 +21,6 @@ vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 const billingContext = useBillingContext()
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()

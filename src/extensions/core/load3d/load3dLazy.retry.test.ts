@@ -49,7 +49,6 @@ const { lazyModules, lightInfoImport } = vi.hoisted(() => {
 vi.mock(import('@/scripts/app'), () => ({
   app: fromAny({ __mockApp: true })
 }))
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/extensions/core/load3d/load3d'), () => lazyModules.load3d)
 vi.mock(
   import('@/extensions/core/load3d/load3dAdvanced'),

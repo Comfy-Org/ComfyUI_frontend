@@ -1,3 +1,4 @@
+import type { Point2D as Position } from '@comfyorg/shared-frontend-utils/geometry'
 import { ref, shallowRef } from 'vue'
 
 import { t } from '@/i18n'
@@ -12,7 +13,6 @@ import { matchesWidgetName } from '@/utils/widgetBinding'
 import type { WidgetValueBinding } from '@/utils/widgetBinding'
 
 type DragMode = 'click' | 'native'
-type Position = { x: number; y: number }
 
 interface StartDragOptions {
   mode?: DragMode

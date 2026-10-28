@@ -20,8 +20,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { api } from '@/scripts/api'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type {
   AgentAnswerAccepted,
@@ -56,7 +56,6 @@ import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
@@ -2349,8 +2348,19 @@ describe('useAgentSession (v1 composition root)', () => {
         resolution: { status: 'answered', selected: ['flux'] }
       })
       expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+        expect.objectContaining({
+          message: 'agent ask resolved with a different answer'
+        }),
+        expect.objectContaining({
+          errorType: 'agent_ask_answer_superseded',
+          tags: {
+            selection_changed: true,
+            other_text_changed: false,
+            selection_known: true,
+            committed_selected_count: 1,
+            submitted_selected_count: 1
+          }
+        })
       )
     })
 
@@ -2453,7 +2463,16 @@ describe('useAgentSession (v1 composition root)', () => {
         })
         expect(reportError).toHaveBeenCalledWith(
           expect.any(Error),
-          expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+          expect.objectContaining({
+            errorType: 'agent_ask_answer_superseded',
+            tags: {
+              selection_changed: false,
+              other_text_changed: true,
+              selection_known: false,
+              committed_selected_count: undefined,
+              submitted_selected_count: 1
+            }
+          })
         )
         expect(session.notices.value).toEqual([
           {
@@ -2649,14 +2668,17 @@ describe('useAgentSession (v1 composition root)', () => {
       name: string
       committed: Pick<AgentAskResolvedData, 'selected' | 'other_text'>
       expected: AskUserResolution
+      changes: { selection_changed: boolean; other_text_changed: boolean }
     }>([
       {
         name: 'a different option',
+        changes: { selection_changed: true, other_text_changed: true },
         committed: { selected: ['flux'] },
         expected: { status: 'answered', selected: ['flux'] }
       },
       {
         name: 'a superset of it',
+        changes: { selection_changed: true, other_text_changed: false },
         committed: { selected: ['sdxl', 'flux'], other_text: 'a LoRA' },
         expected: {
           status: 'answered',
@@ -2666,11 +2688,13 @@ describe('useAgentSession (v1 composition root)', () => {
       },
       {
         name: 'a subset of it',
+        changes: { selection_changed: true, other_text_changed: false },
         committed: { selected: [], other_text: 'a LoRA' },
         expected: { status: 'answered', selected: [], otherText: 'a LoRA' }
       },
       {
         name: 'free text alone',
+        changes: { selection_changed: true, other_text_changed: true },
         committed: { selected: [], other_text: 'someone else' },
         expected: {
           status: 'answered',
@@ -2680,12 +2704,13 @@ describe('useAgentSession (v1 composition root)', () => {
       },
       {
         name: 'the same option with other free text',
+        changes: { selection_changed: false, other_text_changed: true },
         committed: { selected: ['sdxl'], other_text: 'a VAE' },
         expected: { status: 'answered', selected: ['sdxl'], otherText: 'a VAE' }
       }
     ])(
       'shows the committed answer when $name won',
-      async ({ committed, expected }) => {
+      async ({ committed, expected, changes }) => {
         const { session, emit } = await parkedOnQuestion()
         await session.answerAsk('turn-1:call-1', {
           selected: ['sdxl'],
@@ -2710,7 +2735,10 @@ describe('useAgentSession (v1 composition root)', () => {
         expect(shown.resolution).toEqual(expected)
         expect(reportError).toHaveBeenCalledWith(
           expect.any(Error),
-          expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+          expect.objectContaining({
+            errorType: 'agent_ask_answer_superseded',
+            tags: expect.objectContaining(changes)
+          })
         )
       }
     )
@@ -3038,7 +3066,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
-        errorType: 'agent_ask_answer_superseded'
+        errorType: 'agent_ask_answer_superseded',
+        tags: {
+          selection_changed: true,
+          other_text_changed: false,
+          selection_known: true,
+          committed_selected_count: 1,
+          submitted_selected_count: 1
+        }
       })
       expect(session.notices.value).toHaveLength(1)
       expect(cardOnScreen()).toBe(false)
@@ -7755,6 +7790,28 @@ describe('app:agent_error telemetry (TEL-8)', () => {
       turn_accepted: false,
       ui_treatment: 'error_overlay'
     })
+  })
+
+  it('preserves default grouping when a failure bypasses the REST boundary', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new AgentApiError('bad gateway', 502, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_history_load_failed',
+      tags: {},
+      fingerprint: undefined
+    })
+    const reportedError = vi.mocked(reportError).mock.calls[0][0] as Error
+    expect(reportedError.message).not.toContain('th-9')
+    expect(reportedError.stack ?? '').not.toContain('th-9')
   })
 
   it('does not track a 404 thread-not-found history load as an error', async () => {

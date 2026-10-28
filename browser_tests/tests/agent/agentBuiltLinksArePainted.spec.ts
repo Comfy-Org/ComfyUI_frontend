@@ -9,8 +9,8 @@ import {
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const CASE = 'agent-rec-refiner-between'
 
@@ -247,12 +247,17 @@ test.describe(
           toType: graph.getNodeById(link.target_id)?.type
         }
       }, toLinkId(insertedLinkId!))
+      const clipInput = await inputSlotIndex(
+        page,
+        insertedEndpoints.toNode,
+        'clip'
+      )
       expect(insertedEndpoints).toEqual({
         fromNode: expect.any(String),
         fromSlot: 1,
         fromType: 'CheckpointLoaderSimple',
         toNode: expect.any(String),
-        toSlot: 0,
+        toSlot: clipInput,
         toType: 'CLIPTextEncode'
       })
       await expect(

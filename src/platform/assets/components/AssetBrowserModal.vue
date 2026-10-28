@@ -9,7 +9,7 @@
     @close="handleClose"
   >
     <template v-if="shouldShowLeftPanel" #leftPanelHeaderTitle>
-      <i class="icon-[comfy--ai-model] size-4" />
+      <i class="icon-[comfy--ai-model]" />
       <h2 class="flex-auto text-base font-semibold text-nowrap select-none">
         {{ displayTitle }}
       </h2>
@@ -92,8 +92,8 @@ import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Button from '@/components/ui/button/Button.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Button from '@comfyorg/design-system/button/Button'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'

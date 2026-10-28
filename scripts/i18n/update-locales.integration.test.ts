@@ -19,7 +19,16 @@ import type { LocaleObject } from './locale-tree'
 import type { TranslateBatch, TranslationItem } from './translate'
 import { updateLocales } from './update-locales'
 
-const config = translationTargets.website
+const config: TranslationPipelineConfig = {
+  ...translationTargets.app,
+  output: 'catalogs',
+  strictProtectedTokens: true,
+  existingCopy: { kind: 'preserve', excludedKeyPrefixes: ['tos'] },
+  outputLocales: [
+    { code: 'zh-CN', name: 'Simplified Chinese' },
+    { code: 'ja', name: 'Japanese' }
+  ]
+}
 const manifestFile = '.source-manifest.json'
 
 function json(value: unknown): string {
@@ -553,7 +562,7 @@ describe('protected-token baselines', () => {
     expect(repo.readTree()).toEqual(before)
   })
 
-  it('checks retained website copy with strict markup and current-locale link rules', async () => {
+  it('checks retained copy with strict markup and current-locale link rules', async () => {
     const repo = createCatalogRepo()
     const source = {
       cta: 'See <a href="/pricing">pricing</a>',
