@@ -15,6 +15,7 @@ import {
   WORKSPACE_SWITCHER_REMOTE_CONFIG,
   WORKSPACE_SWITCHER_WORKSPACES
 } from '@e2e/fixtures/data/workspaceSwitcher'
+import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { WorkspaceAuthHelper } from '@e2e/fixtures/helpers/WorkspaceAuthHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
@@ -36,6 +37,11 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
 }>({
   workspaceSwitcherRemoteConfig: [{}, { option: true }],
   page: async ({ page, workspaceSwitcherRemoteConfig }, use) => {
+    if (workspaceSwitcherRemoteConfig['agent-in-app-experience'] === true) {
+      await new FeatureFlagHelper(page).seedServerFlags({
+        agent: { state: 'ready' }
+      })
+    }
     await page.route('**/api/features', (route) =>
       route.fulfill(
         jsonRoute({
