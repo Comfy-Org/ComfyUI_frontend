@@ -240,6 +240,14 @@
       "role": "application"
     },
     {
+      "path": "src/composables/useReconnectNodeDefinitionRefresh.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useReconnectNodeDefinitionRefresh.ts",
+      "role": "application"
+    },
+    {
       "path": "src/services/nodeHelpService.ts",
       "role": "infrastructure"
     },

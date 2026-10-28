@@ -1,7 +1,10 @@
+import { delay } from 'es-toolkit'
+
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
@@ -9,6 +12,9 @@ import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
+
+const CHANGE_SETTLE_POLL_MS = 100
+const CHANGE_SETTLE_TIMEOUT_MS = 30_000
 
 async function fetchServerNodeTypes(): Promise<string[] | undefined> {
   try {
@@ -28,8 +34,6 @@ function isRegistered(type: string): boolean {
   )
 }
 
-// A node whose type was unknown when the graph loaded is a placeholder that
-// keeps its saved data in `last_serialization`.
 function canvasHasRebuildablePlaceholder(): boolean {
   let found = false
   forEachNode(app.rootGraph, (node) => {
@@ -37,6 +41,28 @@ function canvasHasRebuildablePlaceholder(): boolean {
     if (isRegistered(node.type)) found = true
   })
   return found
+}
+
+async function changesSettled(workflow: LoadedComfyWorkflow): Promise<boolean> {
+  const deadline = Date.now() + CHANGE_SETTLE_TIMEOUT_MS
+  while (workflow.changeTracker.changeCount > 0) {
+    if (Date.now() >= deadline) return false
+    await delay(CHANGE_SETTLE_POLL_MS)
+  }
+  return true
+}
+
+async function rebuildWorkflow(workflow: LoadedComfyWorkflow): Promise<void> {
+  const workflowStore = useWorkflowStore()
+  const baseline = workflow.changeTracker.initialState
+  const wasModified = workflow.isModified
+  const reloaded = await useWorkflowService().openWorkflow(workflow, {
+    force: true,
+    isCurrent: () => workflowStore.activeWorkflow === workflow
+  })
+  if (!reloaded) return
+  workflow.changeTracker.initialState = baseline
+  workflow.isModified = wasModified
 }
 
 /**
@@ -49,23 +75,21 @@ export function useReconnectNodeDefinitionRefresh() {
   let inFlight: Promise<void> | null = null
   let reconnects = 0
 
-  async function refreshIfServerGainedNodeTypes(): Promise<void> {
+  async function refreshAndRebuild(): Promise<void> {
     const serverTypes = await fetchServerNodeTypes()
-    if (!serverTypes?.some((type) => !isRegistered(type))) return
-    await useCommandStore().execute('Comfy.RefreshNodeDefinitions', {
-      errorHandler: (error) => {
-        throw error
-      }
-    })
-    const workflowStore = useWorkflowStore()
-    const workflow = workflowStore.activeWorkflow
+    if (!serverTypes) return
+    if (serverTypes.some((type) => !isRegistered(type))) {
+      await useCommandStore().execute('Comfy.RefreshNodeDefinitions', {
+        errorHandler: (error) => {
+          throw error
+        }
+      })
+    }
+    const workflow = useWorkflowStore().activeWorkflow
     if (!workflow || !canvasHasRebuildablePlaceholder()) return
-    // Reload the workflow that was checked, not whichever one a queued load
-    // makes active first.
-    await useWorkflowService().openWorkflow(workflow, {
-      force: true,
-      isCurrent: () => workflowStore.activeWorkflow === workflow
-    })
+    if (!(await changesSettled(workflow))) return
+    if (useWorkflowStore().activeWorkflow !== workflow) return
+    await rebuildWorkflow(workflow)
   }
 
   async function refreshUntilSettled(): Promise<void> {
@@ -73,7 +97,7 @@ export function useReconnectNodeDefinitionRefresh() {
     do {
       handled = reconnects
       try {
-        await refreshIfServerGainedNodeTypes()
+        await refreshAndRebuild()
       } catch (error) {
         reportError(error, {
           surface: 'graph',

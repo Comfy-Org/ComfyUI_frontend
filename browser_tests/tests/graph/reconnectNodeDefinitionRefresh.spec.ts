@@ -5,6 +5,7 @@ import {
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
@@ -23,7 +24,7 @@ test.describe(
       let restarted = false
       await page.route('**/object_info', async (route) => {
         const response = await route.fetch()
-        const defs = await response.json()
+        const defs: Record<string, ComfyNodeDef> = await response.json()
         if (restarted) {
           defs.BrowserProofNode = {
             ...defs.KSampler,
@@ -54,7 +55,6 @@ test.describe(
         seed: undefined
       })
 
-      // The agent panel is never opened, so only the core reconnect path runs.
       await test.step('restart ComfyUI with the node pack installed', async () => {
         const socket = await getWebSocket()
         const reconnected = nextWebSocket()

@@ -15,7 +15,10 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockChangeTracker,
+  createMockLoadedWorkflow
+} from '@/utils/__tests__/litegraphTestUtils'
 
 import { useReconnectNodeDefinitionRefresh } from './useReconnectNodeDefinitionRefresh'
 
@@ -40,10 +43,7 @@ function nodeDef(name: string): ComfyNodeDef {
   }
 }
 
-let served: string[] = []
-
 function serverHas(...names: string[]) {
-  served = names
   const defs = Object.fromEntries(names.map((name) => [name, nodeDef(name)]))
   return vi
     .spyOn(api, 'fetchNodeDefs')
@@ -67,9 +67,8 @@ function showCanvas(...nodes: LGraphNode[]): LGraph {
   return graph
 }
 
-// The default refresh registers what the server serves, as the real one does.
 function registerRefreshCommand(
-  refresh = vi.fn<() => Promise<void>>(async () => pageKnows(...served))
+  refresh = vi.fn<() => Promise<void>>(async () => {})
 ) {
   useCommandStore().registerCommand({
     id: 'Comfy.RefreshNodeDefinitions',
@@ -81,18 +80,19 @@ function registerRefreshCommand(
 describe('useReconnectNodeDefinitionRefresh', () => {
   beforeEach(() => {
     distribution.isCloud = false
-    served = []
     showCanvas()
     useWorkflowStore().activeWorkflow = createMockLoadedWorkflow({
-      path: 'workflows/open.json'
+      path: 'workflows/open.json',
+      changeTracker: createMockChangeTracker({ changeCount: 0 })
     })
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
   })
 
   it('refreshes node definitions and reloads the open workflow when the server came back with a node the canvas shows as missing', async () => {
     const order: string[] = []
     registerRefreshCommand(
       vi.fn(async () => {
-        pageKnows(...served)
+        pageKnows('KSampler', 'NewPackNode')
         order.push('refresh')
       })
     )
@@ -136,7 +136,9 @@ describe('useReconnectNodeDefinitionRefresh', () => {
   })
 
   it('rebuilds a missing node inside a subgraph', async () => {
-    const refresh = registerRefreshCommand()
+    const refresh = registerRefreshCommand(
+      vi.fn(async () => pageKnows('NewPackNode'))
+    )
     const rootGraph = showCanvas()
     const subgraph = createTestSubgraph({ rootGraph })
     subgraph.add(node('NewPackNode', { missing: true }))
@@ -153,7 +155,7 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     const graph = showCanvas(node('NewPackNode', { missing: true }))
     registerRefreshCommand(
       vi.fn(async () => {
-        pageKnows(...served)
+        pageKnows('NewPackNode')
         graph.clear()
         graph.add(node('NewPackNode'))
       })
@@ -176,7 +178,7 @@ describe('useReconnectNodeDefinitionRefresh', () => {
   })
 
   it('keeps the open workflow when the refresh resolves without registering the new type', async () => {
-    const refresh = registerRefreshCommand(vi.fn(async () => {}))
+    const refresh = registerRefreshCommand()
     showCanvas(node('NewPackNode', { missing: true }))
     serverHas('NewPackNode')
 
@@ -187,7 +189,7 @@ describe('useReconnectNodeDefinitionRefresh', () => {
   })
 
   it('reloads the checked workflow only while it is still the active one', async () => {
-    registerRefreshCommand()
+    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
     showCanvas(node('NewPackNode', { missing: true }))
     serverHas('NewPackNode')
     const checked = useWorkflowStore().activeWorkflow
@@ -267,10 +269,86 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     const first = onReconnected()
     const second = onReconnected()
     const third = onReconnected()
+    expect(fetchDefs).toHaveBeenCalledOnce()
     resolveFirst(Response.json({}))
     await Promise.all([first, second, third])
 
     expect(fetchDefs).toHaveBeenCalledTimes(2)
     expect(refresh).toHaveBeenCalledOnce()
+
+    await onReconnected()
+
+    expect(fetchDefs).toHaveBeenCalledTimes(3)
+  })
+
+  it('rebuilds missing nodes on a later reconnect after a refresh registered their type but then failed', async () => {
+    registerRefreshCommand(
+      vi.fn(async () => {
+        pageKnows('NewPackNode')
+        throw new Error('an extension refresh callback failed')
+      })
+    )
+    showCanvas(node('NewPackNode', { missing: true }))
+    serverHas('NewPackNode')
+    const onReconnected = useReconnectNodeDefinitionRefresh()
+
+    await onReconnected()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+    await onReconnected()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the saved baseline and modified flag across the rebuild', async () => {
+    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
+    showCanvas(node('NewPackNode', { missing: true }))
+    serverHas('NewPackNode')
+    const workflow = useWorkflowStore().activeWorkflow!
+    const baseline = workflow.changeTracker.initialState
+    workflow.isModified = true
+    vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
+      async (opened) => {
+        opened.changeTracker!.initialState = structuredClone(
+          opened.changeTracker!.activeState
+        )
+        opened.isModified = false
+        return true
+      }
+    )
+
+    await useReconnectNodeDefinitionRefresh()()
+
+    expect(workflow.changeTracker.initialState).toBe(baseline)
+    expect(workflow.isModified).toBe(true)
+  })
+
+  it('waits for an edit in progress to finish before rebuilding', async () => {
+    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
+    showCanvas(node('NewPackNode', { missing: true }))
+    serverHas('NewPackNode')
+    const tracker = useWorkflowStore().activeWorkflow!.changeTracker
+    tracker.changeCount = 1
+
+    const done = useReconnectNodeDefinitionRefresh()()
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+    tracker.changeCount = 0
+    await vi.advanceTimersByTimeAsync(200)
+    await done
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('skips the rebuild when an edit stays in progress', async () => {
+    registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
+    showCanvas(node('NewPackNode', { missing: true }))
+    serverHas('NewPackNode')
+    useWorkflowStore().activeWorkflow!.changeTracker.changeCount = 1
+
+    const done = useReconnectNodeDefinitionRefresh()()
+    await vi.advanceTimersByTimeAsync(31_000)
+    await done
+
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 })
