@@ -1560,7 +1560,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         ? [...coreEntries, null, ...customEntries]
         : [...coreEntries, ...customEntries]
 
-    new LiteGraph.ContextMenu(entries, { event: e, parentMenu: prev_menu })
+    new LiteGraph.ContextMenu(entries, {
+      event: e,
+      parentMenu: prev_menu,
+      autoopen: true
+    })
     return false
 
     type AddNodeMenu = Omit<IContextMenuValue<string>, 'callback'> & {
@@ -1596,10 +1600,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             ? category_name.split('::', 2)[1]
             : category_name,
           has_submenu: true,
-          callback: function (value, _event, _mouseEvent, contextMenu) {
+          callback: function (value, _event, mouseEvent, contextMenu) {
             new LiteGraph.ContextMenu(buildEntries(value.value, types), {
-              event: e,
-              parentMenu: contextMenu
+              event: mouseEvent,
+              parentMenu: contextMenu,
+              autoopen: true
             })
           }
         })
