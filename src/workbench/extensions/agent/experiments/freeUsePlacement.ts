@@ -4,12 +4,12 @@ import {
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUseVariant
-} from '@/platform/telemetry/types'
-import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
+import { AGENT_FREE_USE_PLACEMENTS } from '@comfyorg/telemetry/types'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 

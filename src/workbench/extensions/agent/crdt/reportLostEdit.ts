@@ -1,6 +1,6 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 import { recordDevEvent } from './devPanelLog'

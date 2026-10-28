@@ -593,7 +593,12 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["design-system", "ingest-api", "server-facts"],
+  "allowedDependencies": [
+    "design-system",
+    "ingest-api",
+    "server-facts",
+    "telemetry"
+  ],
   "allowedConsumers": ["account"],
   "characterizationScenarios": [
     {

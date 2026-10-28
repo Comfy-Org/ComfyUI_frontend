@@ -8,8 +8,8 @@ import type { Ref } from 'vue'
 
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import type { SettingParams, Settings } from '@/platform/settings/types'
-import { useTelemetry } from '@/platform/telemetry'
-import type { SettingChangedMetadata } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { SettingChangedMetadata } from '@comfyorg/telemetry/types'
 import { api } from '@/scripts/api'
 
 export const getSettingInfo = (setting: SettingParams) => {
