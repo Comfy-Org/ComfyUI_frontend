@@ -361,9 +361,10 @@ describe('OAuthConsentView signed-in account', () => {
       userDisplayName: computed(() => displayName)
     })
   const sessionUser = { user_email: 'a@example.com' }
-  const consentControls = () =>
-    ['Continue', 'Cancel', 'Switch account'].map((name) =>
-      screen.getByRole('button', { name })
+  const consentControlNames = ['Continue', 'Cancel', 'Switch account']
+  const enabledConsentControls = () =>
+    consentControlNames.filter(
+      (name) => !screen.getByRole('button', { name }).hasAttribute('disabled')
     )
 
   beforeEach(() => {
@@ -410,7 +411,7 @@ describe('OAuthConsentView signed-in account', () => {
     expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
       signInPath: `/cloud/login?switchAccount=true&oauth_request_id=${challenge.oauth_request_id}`
     })
-    for (const control of consentControls()) expect(control).toBeDisabled()
+    expect(enabledConsentControls()).toEqual([])
     expect(mockSubmitOAuthConsentDecision).not.toHaveBeenCalled()
   })
 
@@ -425,7 +426,7 @@ describe('OAuthConsentView signed-in account', () => {
     await user.click(screen.getByRole('button', { name: 'Switch account' }))
 
     expect(reload).toHaveBeenCalledOnce()
-    for (const control of consentControls()) expect(control).toBeDisabled()
+    expect(enabledConsentControls()).toEqual([])
   })
 
   it('never puts an unvalidated request id into the sign-in path', async () => {
