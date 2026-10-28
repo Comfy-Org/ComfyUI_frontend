@@ -84,6 +84,14 @@ describe('perf-report heading', () => {
     )
   })
 
+  it('starts a scenario timing line with its first metric, not a separator', () => {
+    const output = render([
+      { name: 'fast', frameDurationMs: 16, p95FrameDurationMs: 17 }
+    ])
+
+    expect(output).toContain('> **fast**: 62.5 avg FPS · 58.8 P5 FPS ✅')
+  })
+
   it('does not report a run that measured nothing as clean', () => {
     const output = render([])
 

@@ -261,51 +261,83 @@ function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? '' : 's'}`
 }
 
-function renderHeadlineSummary(prGroups: Map<string, PerfMeasurement[]>): {
-  notice: string[]
-  lines: string[]
-} {
+function percentDelta(prVal: number, baseVal: number): number | null {
+  if (baseVal === 0) return prVal === 0 ? 0 : null
+  return ((prVal - baseVal) / baseVal) * 100
+}
+
+function baselineMedian(
+  baseSamples: PerfMeasurement[] | undefined,
+  key: MetricKey
+): number | null {
+  return baseSamples?.length ? medianMetric(baseSamples, key) : null
+}
+
+function formatIfPresent(
+  value: number | null,
+  format: (value: number) => string
+): string | null {
+  return value === null ? null : format(value)
+}
+
+function p5FpsPart(p95Frame: number): string {
+  const p5Fps = frameTimeToFps(p95Frame)
+  const verdict = p5Fps >= TARGET_P5_FPS ? '✅' : '❌'
+  return `${p5Fps.toFixed(1)} P5 FPS ${verdict} (target: ≥${TARGET_P5_FPS})`
+}
+
+function scenarioSummary(
+  testName: string,
+  prSamples: PerfMeasurement[]
+): string | null {
+  const parts = [
+    formatIfPresent(
+      sampledFrameMetric(prSamples, 'frameDurationMs'),
+      (ms) => `${frameTimeToFps(ms).toFixed(1)} avg FPS`
+    ),
+    formatIfPresent(
+      sampledFrameMetric(prSamples, 'p95FrameDurationMs'),
+      p5FpsPart
+    ),
+    formatIfPresent(
+      medianMetric(prSamples, 'totalBlockingTimeMs'),
+      (ms) => `${ms.toFixed(0)}ms TBT`
+    ),
+    formatIfPresent(
+      medianMetric(prSamples, 'heapUsedBytes'),
+      (bytes) => `${formatBytes(bytes)} heap`
+    )
+  ].filter((part): part is string => part !== null)
+
+  return parts.length > 0 ? `**${testName}**: ${parts.join(' · ')}` : null
+}
+
+function fpsTargetNotice({ below, unsampled }: FpsTargetTally): string[] {
   const notice: string[] = []
-  const lines: string[] = []
-  const summaries: string[] = []
-  const { below: belowTarget, unsampled } = tallyFpsTarget(prGroups)
-
-  for (const [testName, prSamples] of prGroups) {
-    const avgFrame = sampledFrameMetric(prSamples, 'frameDurationMs')
-    const p95Frame = sampledFrameMetric(prSamples, 'p95FrameDurationMs')
-    const tbt = medianMetric(prSamples, 'totalBlockingTimeMs')
-    const heap = medianMetric(prSamples, 'heapUsedBytes')
-
-    const avgFps = avgFrame !== null ? frameTimeToFps(avgFrame) : null
-    const p5Fps = p95Frame !== null ? frameTimeToFps(p95Frame) : null
-
-    const parts: string[] = [`**${testName}**:`]
-    if (avgFps !== null) parts.push(`${avgFps.toFixed(1)} avg FPS`)
-    if (p5Fps !== null) {
-      const pass = p5Fps >= TARGET_P5_FPS
-      parts.push(
-        `${p5Fps.toFixed(1)} P5 FPS ${pass ? '✅' : '❌'} (target: ≥${TARGET_P5_FPS})`
-      )
-    }
-    if (tbt !== null) parts.push(`${tbt.toFixed(0)}ms TBT`)
-    if (heap !== null) parts.push(`${formatBytes(heap)} heap`)
-
-    if (parts.length > 1) summaries.push(parts.join(' · '))
-  }
-
-  if (belowTarget > 0) {
+  if (below > 0) {
     notice.push(
-      `> ❌ **${plural(belowTarget, 'scenario')} below the ≥${TARGET_P5_FPS} P5 FPS target.** Expand the scenario timings below and profile the affected scenarios before merging.`,
+      `> ❌ **${plural(below, 'scenario')} below the ≥${TARGET_P5_FPS} P5 FPS target.** Expand the scenario timings below and profile the affected scenarios before merging.`,
       ''
     )
   }
-
   if (unsampled > 0) {
     notice.push(
       `> ⚠️ ${plural(unsampled, 'scenario')} recorded no frame samples, so ${unsampled === 1 ? 'its' : 'their'} FPS could not be checked against the target. Check the perf test logs for a frame sampling timeout.`,
       ''
     )
   }
+  return notice
+}
+
+function renderHeadlineSummary(prGroups: Map<string, PerfMeasurement[]>): {
+  notice: string[]
+  lines: string[]
+} {
+  const notice = fpsTargetNotice(tallyFpsTarget(prGroups))
+  const lines: string[] = []
+  const summaries = [...prGroups]
+    .map(([testName, prSamples]) => scenarioSummary(testName, prSamples))
+    .filter((summary): summary is string => summary !== null)
 
   if (summaries.length > 0) {
     lines.push(
@@ -327,6 +359,49 @@ interface RenderedReport {
   lines: string[]
 }
 
+interface ComparedRow {
+  row: string
+  flagged: boolean
+}
+
+function compareMetric(
+  testName: string,
+  metric: MetricDef,
+  prSamples: PerfMeasurement[],
+  baseSamples: PerfMeasurement[] | undefined,
+  historical: PerfReport[]
+): ComparedRow | null {
+  const { key, label, unit, minAbsDelta } = metric
+  const prVal = medianMetric(prSamples, key)
+  if (prVal === null) return null
+
+  const baseVal = baselineMedian(baseSamples, key)
+  if (baseVal === null) {
+    return {
+      row: `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`,
+      flagged: false
+    }
+  }
+
+  const histStats = getHistoricalStats(historical, testName, key)
+  const z = zScore(prVal, histStats)
+  const sig = classifyChange(
+    z,
+    computeCV(histStats),
+    prVal - baseVal,
+    minAbsDelta
+  )
+
+  return {
+    row: `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(percentDelta(prVal, baseVal))} | ${formatSignificance(sig, z)} |`,
+    flagged: isNoteworthy(sig)
+  }
+}
+
+function regressionVerdict(count: number): string {
+  return `${count} regression${count > 1 ? 's' : ''} detected`
+}
+
 function renderFullReport(
   prGroups: Map<string, PerfMeasurement[]>,
   baseline: PerfReport,
@@ -339,59 +414,31 @@ function renderFullReport(
     '|--------|----------|----------|---|-----|'
   ]
 
-  const flaggedRows: string[] = []
-  const allRows: string[] = []
-
-  for (const [testName, prSamples] of prGroups) {
-    const baseSamples = baselineGroups.get(testName)
-
-    for (const { key, label, unit, minAbsDelta } of REPORTED_METRICS) {
-      const prVal = medianMetric(prSamples, key)
-      if (prVal === null) continue
-      const histStats = getHistoricalStats(historical, testName, key)
-      const cv = computeCV(histStats)
-
-      if (!baseSamples?.length) {
-        allRows.push(
-          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`
-        )
-        continue
-      }
-
-      const baseVal = medianMetric(baseSamples, key)
-      if (baseVal === null) {
-        allRows.push(
-          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`
-        )
-        continue
-      }
-      const absDelta = prVal - baseVal
-      const deltaPct =
-        baseVal === 0
-          ? prVal === 0
-            ? 0
-            : null
-          : ((prVal - baseVal) / baseVal) * 100
-      const z = zScore(prVal, histStats)
-      const sig = classifyChange(z, cv, absDelta, minAbsDelta)
-
-      const row = `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(deltaPct)} | ${formatSignificance(sig, z)} |`
-      allRows.push(row)
-      if (isNoteworthy(sig)) {
-        flaggedRows.push(row)
-      }
-    }
-  }
+  const compared = [...prGroups].flatMap(([testName, prSamples]) =>
+    REPORTED_METRICS.map((metric) =>
+      compareMetric(
+        testName,
+        metric,
+        prSamples,
+        baselineGroups.get(testName),
+        historical
+      )
+    ).filter((row): row is ComparedRow => row !== null)
+  )
+  const allRows = compared.map(({ row }) => row)
+  const flaggedRows = compared
+    .filter(({ flagged }) => flagged)
+    .map(({ row }) => row)
 
   const status =
     flaggedRows.length > 0
-      ? `⚠️ ${flaggedRows.length} regression${flaggedRows.length > 1 ? 's' : ''} detected`
+      ? `⚠️ ${regressionVerdict(flaggedRows.length)}`
       : '✅ No regressions detected'
 
   const notice: string[] = []
   if (flaggedRows.length > 0) {
     notice.push(
-      `⚠️ **${flaggedRows.length} regression${flaggedRows.length > 1 ? 's' : ''} detected**. Review the regressions below and profile the affected scenarios before merging.`,
+      `⚠️ **${regressionVerdict(flaggedRows.length)}**. Review the regressions below and profile the affected scenarios before merging.`,
       ''
     )
     lines.push(
@@ -416,11 +463,23 @@ function renderFullReport(
   )
 
   lines.push(
+    ...renderHistoricalVariance(prGroups, historical),
+    ...renderTrend(prGroups, historical)
+  )
+
+  return { status, notice, lines }
+}
+
+function renderHistoricalVariance(
+  prGroups: Map<string, PerfMeasurement[]>,
+  historical: PerfReport[]
+): string[] {
+  const lines = [
     `<details><summary>Historical variance (last ${historical.length} runs)</summary>`,
     '',
     '| Metric | μ | σ | CV |',
     '|--------|---|---|-----|'
-  )
+  ]
   for (const [testName] of prGroups) {
     for (const { key, label, unit } of REPORTED_METRICS) {
       const stats = getHistoricalStats(historical, testName, key)
@@ -432,36 +491,36 @@ function renderFullReport(
     }
   }
   lines.push('', '</details>')
+  return lines
+}
 
+function renderTrend(
+  prGroups: Map<string, PerfMeasurement[]>,
+  historical: PerfReport[]
+): string[] {
   const trendRows: string[] = []
   for (const [testName] of prGroups) {
     for (const { key, label, unit } of REPORTED_METRICS) {
       const series = getHistoricalTimeSeries(historical, testName, key)
       if (series.length < 3) continue
-      const dir = trendDirection(series)
-      const arrow = trendArrow(dir)
-      const spark = sparkline(series)
+      const arrow = trendArrow(trendDirection(series))
       const last = series[series.length - 1]
       trendRows.push(
-        `| ${testName}: ${label} | ${spark} | ${arrow} | ${formatValue(last, unit)} |`
+        `| ${testName}: ${label} | ${sparkline(series)} | ${arrow} | ${formatValue(last, unit)} |`
       )
     }
   }
-
-  if (trendRows.length > 0) {
-    lines.push(
-      '',
-      `<details><summary>Trend (last ${historical.length} commits on main)</summary>`,
-      '',
-      '| Metric | Trend | Dir | Latest |',
-      '|--------|-------|-----|--------|',
-      ...trendRows,
-      '',
-      '</details>'
-    )
-  }
-
-  return { status, notice, lines }
+  if (trendRows.length === 0) return []
+  return [
+    '',
+    `<details><summary>Trend (last ${historical.length} commits on main)</summary>`,
+    '',
+    '| Metric | Trend | Dir | Latest |',
+    '|--------|-------|-----|--------|',
+    ...trendRows,
+    '',
+    '</details>'
+  ]
 }
 
 function renderColdStartReport(
@@ -487,28 +546,11 @@ function renderColdStartReport(
       const prVal = medianMetric(prSamples, key)
       if (prVal === null) continue
 
-      if (!baseSamples?.length) {
-        lines.push(
-          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
-        )
-        continue
-      }
-
-      const baseVal = medianMetric(baseSamples, key)
-      if (baseVal === null) {
-        lines.push(
-          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
-        )
-        continue
-      }
-      const deltaPct =
-        baseVal === 0
-          ? prVal === 0
-            ? 0
-            : null
-          : ((prVal - baseVal) / baseVal) * 100
+      const baseVal = baselineMedian(baseSamples, key)
       lines.push(
-        `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(deltaPct)} |`
+        baseVal === null
+          ? `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
+          : `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(percentDelta(prVal, baseVal))} |`
       )
     }
   }
@@ -541,6 +583,58 @@ function renderNoBaselineReport(
   return { status: 'ℹ️ No baseline — significance unavailable', lines }
 }
 
+function renderComparison(
+  prGroups: Map<string, PerfMeasurement[]>
+): RenderedReport {
+  if (!existsSync(BASELINE_PATH)) return renderNoBaselineReport(prGroups)
+  const baseline: PerfReport = JSON.parse(readFileSync(BASELINE_PATH, 'utf-8'))
+  const historical = loadHistoricalReports()
+  return historical.length >= 2
+    ? renderFullReport(prGroups, baseline, historical)
+    : renderColdStartReport(prGroups, baseline, historical.length)
+}
+
+function renderRawData(current: PerfReport): string[] {
+  const rawData = {
+    ...current,
+    measurements: current.measurements.map(
+      ({ allFrameDurationsMs: _, ...rest }) => rest
+    )
+  }
+  return [
+    '',
+    '<details><summary>Raw data</summary>',
+    '',
+    '```json',
+    JSON.stringify(rawData, null, 2),
+    '```',
+    '',
+    '</details>'
+  ]
+}
+
+/**
+ * The per-test target verdict lives in the collapsed summary, so without this
+ * the heading can read ✅ over a hidden ❌. It leads, because a reader scanning
+ * the comment takes the verdict from the first glyph and a target miss
+ * outranks "nothing moved since the baseline". A run that measured nothing, or
+ * sampled no frames, has not checked the target and must not read as clean.
+ */
+function perfHeadingStatus(
+  current: PerfReport,
+  prGroups: Map<string, PerfMeasurement[]>,
+  reportStatus: string
+): string {
+  if (current.measurements.length === 0)
+    return '⚠️ No measurements recorded — check the perf test logs'
+  const fps = tallyFpsTarget(prGroups)
+  if (fps.below > 0)
+    return `❌ ${fps.below} below ${TARGET_P5_FPS} FPS target · ${reportStatus}`
+  if (fps.unsampled > 0 && fps.sampled === 0)
+    return `⚠️ No frame samples — FPS target not checked · ${reportStatus}`
+  return reportStatus
+}
+
 function main() {
   if (!existsSync(CURRENT_PATH)) {
     process.stdout.write(
@@ -554,58 +648,12 @@ function main() {
   }
 
   const current: PerfReport = JSON.parse(readFileSync(CURRENT_PATH, 'utf-8'))
-
-  const baseline: PerfReport | null = existsSync(BASELINE_PATH)
-    ? JSON.parse(readFileSync(BASELINE_PATH, 'utf-8'))
-    : null
-
-  const historical = loadHistoricalReports()
   const prGroups = groupByName(current.measurements)
-
-  const report =
-    baseline && historical.length >= 2
-      ? renderFullReport(prGroups, baseline, historical)
-      : baseline
-        ? renderColdStartReport(prGroups, baseline, historical.length)
-        : renderNoBaselineReport(prGroups)
-
-  const rawData = {
-    ...current,
-    measurements: current.measurements.map(
-      ({ allFrameDurationsMs: _, ...rest }) => rest
-    )
-  }
+  const report = renderComparison(prGroups)
 
   const headline = renderHeadlineSummary(prGroups)
-  const body = [
-    ...headline.lines,
-    ...report.lines,
-    '',
-    '<details><summary>Raw data</summary>',
-    '',
-    '```json',
-    JSON.stringify(rawData, null, 2),
-    '```',
-    '',
-    '</details>'
-  ]
-
-  // The per-test target verdict lives in the collapsed summary, so without
-  // this the heading can read ✅ over a hidden ❌. It leads, because a reader
-  // scanning the comment takes the verdict from the first glyph and a target
-  // miss outranks "nothing moved since the baseline". A run that measured
-  // nothing has no verdict at all, and must not read as a clean one.
-  // Frame data that never arrived is not a pass either: with nothing sampled
-  // the target was not checked at all.
-  const fps = tallyFpsTarget(prGroups)
-  const status =
-    current.measurements.length === 0
-      ? '⚠️ No measurements recorded — check the perf test logs'
-      : fps.below > 0
-        ? `❌ ${fps.below} below ${TARGET_P5_FPS} FPS target · ${report.status}`
-        : fps.unsampled > 0 && fps.sampled === 0
-          ? `⚠️ No frame samples — FPS target not checked · ${report.status}`
-          : report.status
+  const body = [...headline.lines, ...report.lines, ...renderRawData(current)]
+  const status = perfHeadingStatus(current, prGroups, report.status)
 
   process.stdout.write(
     renderPrReportSection({
