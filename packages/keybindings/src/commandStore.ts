@@ -86,7 +86,7 @@ export class ComfyCommandImpl implements ComfyCommand {
 }
 
 export function defineCommandStore(
-  useErrorReporter: () => (error: unknown) => void
+  useDefaultErrorHandler: () => (error: unknown) => void
 ) {
   return defineStore('command', () => {
     const commandsById = ref<Record<string, ComfyCommandImpl>>({})
@@ -114,11 +114,11 @@ export function defineCommandStore(
       interactionMode = mode
     }
 
-    const reportError = useErrorReporter()
+    const defaultErrorHandler = useDefaultErrorHandler()
     const execute = async (
       commandId: string,
       {
-        errorHandler = reportError,
+        errorHandler = defaultErrorHandler,
         metadata
       }: {
         errorHandler?: (error: unknown) => void

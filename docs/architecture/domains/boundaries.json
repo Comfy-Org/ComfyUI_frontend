@@ -1382,7 +1382,6 @@
         "name": "graph-canvas/domain",
         "patterns": [
           "src/base/common/selectionBounds.ts",
-          "src/lib/litegraph/src/canvas/CanvasInteractionMode.ts",
           "src/lib/litegraph/src/canvas/measureSlots.ts",
           "src/lib/litegraph/src/canvas/reduceGesture.test.ts",
           "src/lib/litegraph/src/canvas/reduceGesture.ts",
