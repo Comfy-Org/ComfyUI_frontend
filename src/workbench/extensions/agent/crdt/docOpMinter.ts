@@ -1136,9 +1136,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       docNames.length >= grows.base &&
       echoed.length < grows.names.length &&
       echoed.every((name, index) => name === grows.names[index]) &&
-      grows.names
-        .slice(echoed.length)
-        .every((name) => !docNames.includes(name))
+      grows.names.slice(echoed.length).every((name) => !docNames.includes(name))
     if (onlyOurEchoes) return grows
     pendingGrows.set(key, { ...grows, displaced: true })
     return undefined
