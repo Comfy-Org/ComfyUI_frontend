@@ -76,7 +76,12 @@ function syncNodeWidgetOrder(node: LGraphNode) {
   )
 }
 
-function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
+/** Gives a socket-only input a label widget so it can take a widget row. */
+export function ensureWidgetForInput(
+  node: LGraphNode,
+  input: INodeInputSlot,
+  { advanced }: { advanced?: boolean } = {}
+) {
   node.widgets ??= []
   const { widget } = input
   if (widget && node.widgets.some((w) => w.name === widget.name)) return
@@ -88,7 +93,7 @@ function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
       ctx.restore()
     },
     name: input.name,
-    options: {},
+    options: { advanced, hideInPanel: advanced },
     serialize: false,
     type: 'shim',
     y: 0

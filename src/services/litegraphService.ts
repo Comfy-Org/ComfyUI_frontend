@@ -11,7 +11,10 @@ import {
   addWidgetPromotionOptions,
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
-import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
+import {
+  applyDynamicInputs,
+  ensureWidgetForInput
+} from '@/core/graph/widgets/dynamicWidgets'
 import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
   LGraphCanvas,
@@ -245,7 +248,7 @@ export const useLitegraphService = () => {
     )
       return
 
-    node.addInput(inputName, inputSpec.type, {
+    const input = node.addInput(inputName, inputSpec.type, {
       shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
       localized_name: resolveNodeDefSlotText(
         'name',
@@ -255,6 +258,8 @@ export const useLitegraphService = () => {
         inputName
       )
     })
+    if (inputSpec.advanced)
+      ensureWidgetForInput(node, input, { advanced: true })
   }
   /**
    * @internal Setup stroke styles for the node under various conditions.
@@ -479,12 +484,9 @@ export const useLitegraphService = () => {
       override configure(data: ISerialisedNode): void {
         const RESERVED_KEYS = ['name', 'type', 'shape', 'localized_name']
 
-        // Note: input name is unique in a node definition, so we can lookup
-        // input by name.
         const inputByName = new Map<string, ISerialisableNodeInput>(
           data.inputs?.map((input) => [input.name, input]) ?? []
         )
-        // Inputs defined by the node definition.
         const definedInputNames = new Set(
           this.inputs.map((input) => input.name)
         )
@@ -493,25 +495,17 @@ export const useLitegraphService = () => {
           return inputData
             ? {
                 ...inputData,
-                // Whether the input has associated widget follows the
-                // original node definition.
-                ...pick(input, RESERVED_KEYS.concat('widget'))
+                ...pick(input, RESERVED_KEYS.concat('widget', 'alwaysVisible'))
               }
             : input
         })
-        // Extra inputs that potentially dynamically added by custom js logic.
         const extraInputs = data.inputs?.filter(
           (input) => !definedInputNames.has(input.name)
         )
         data.inputs = [...definedInputs, ...(extraInputs ?? [])]
 
-        // Note: output name is not unique, so we cannot lookup output by name.
-        // Use index instead.
         data.outputs = zip(this.outputs, data.outputs ?? []).map(
           ([output, outputData], index) => {
-            // If there are extra outputs in the serialised node, use them directly.
-            // There are currently custom nodes that dynamically add outputs via
-            // js logic.
             if (!output) return outputData as ISerialisableNodeOutput
 
             return outputData
@@ -582,12 +576,9 @@ export const useLitegraphService = () => {
       override configure(data: ISerialisedNode): void {
         const RESERVED_KEYS = ['name', 'type', 'shape', 'localized_name']
 
-        // Note: input name is unique in a node definition, so we can lookup
-        // input by name.
         const inputByName = new Map<string, ISerialisableNodeInput>(
           data.inputs?.map((input) => [input.name, input]) ?? []
         )
-        // Inputs defined by the node definition.
         const definedInputNames = new Set(
           this.inputs.map((input) => input.name)
         )
@@ -596,25 +587,17 @@ export const useLitegraphService = () => {
           return inputData
             ? {
                 ...inputData,
-                // Whether the input has associated widget follows the
-                // original node definition.
-                ...pick(input, RESERVED_KEYS.concat('widget'))
+                ...pick(input, RESERVED_KEYS.concat('widget', 'alwaysVisible'))
               }
             : input
         })
-        // Extra inputs that potentially dynamically added by custom js logic.
         const extraInputs = data.inputs?.filter(
           (input) => !definedInputNames.has(input.name)
         )
         data.inputs = [...definedInputs, ...(extraInputs ?? [])]
 
-        // Note: output name is not unique, so we cannot lookup output by name.
-        // Use index instead.
         data.outputs = zip(this.outputs, data.outputs ?? []).map(
           ([output, outputData], index) => {
-            // If there are extra outputs in the serialised node, use them directly.
-            // There are currently custom nodes that dynamically add outputs via
-            // js logic.
             if (!output) return outputData as ISerialisableNodeOutput
 
             return outputData

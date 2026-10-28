@@ -53,6 +53,61 @@ function testNode() {
   return node as LGraphNode & Required<Pick<LGraphNode, 'widgets'>>
 }
 
+describe('Advanced socket-only inputs', () => {
+  test.for([
+    { advanced: true, widgets: 1 },
+    { advanced: undefined, widgets: 0 }
+  ])('advanced: $advanced binds $widgets widget', ({ advanced, widgets }) => {
+    const node = testNode()
+    addNodeInput(node, {
+      name: 'image',
+      isOptional: false,
+      type: 'IMAGE',
+      advanced
+    })
+    expect(node.widgets).toHaveLength(widgets)
+    expect(node.inputs[0].widget?.name).toBe(advanced ? 'image' : undefined)
+  })
+  test('is advanced on the Vue node surface and absent from the panel', () => {
+    const node = testNode()
+    addNodeInput(node, {
+      name: 'image',
+      isOptional: false,
+      type: 'IMAGE',
+      advanced: true
+    })
+    expect(node.widgets[0].visibility?.surfaces).toEqual({
+      canvas: 'shown',
+      vueNode: 'advanced',
+      panel: 'never'
+    })
+  })
+})
+
+describe('Advanced socket-only input on a registered node', () => {
+  const ADVANCED_SOCKET_NODE_TYPE = 'test/AdvancedSocket'
+  beforeEach(async () => {
+    await useLitegraphService().registerNodeDef(ADVANCED_SOCKET_NODE_TYPE, {
+      name: ADVANCED_SOCKET_NODE_TYPE,
+      display_name: 'Advanced Socket',
+      category: 'testing',
+      python_module: 'nodes',
+      description: '',
+      input: { optional: { mask: ['MASK', { advanced: true }] } },
+      output: [],
+      output_name: [],
+      output_node: false
+    })
+  })
+  test('keeps its connection dot always visible after a save and load', () => {
+    const saved = LiteGraph.createNode(ADVANCED_SOCKET_NODE_TYPE)
+    const loaded = LiteGraph.createNode(ADVANCED_SOCKET_NODE_TYPE)
+    assert.ok(saved && loaded, 'created nodes')
+    loaded.configure(saved.serialize())
+    expect(loaded.inputs[0].alwaysVisible).toBe(true)
+  })
+})
+
 describe('Dynamic Combos', () => {
   test('Can add widget on selection', () => {
     const node = testNode()
