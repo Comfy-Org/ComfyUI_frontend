@@ -183,8 +183,17 @@ test.describe(
           response.request().method() === 'GET' &&
           new URL(response.url()).pathname === '/api/billing/status'
       )
+      const turnAccepted = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          /^\/api\/agent\/threads\/[^/]+\/messages$/.test(
+            new URL(response.url()).pathname
+          )
+      )
       await agentPanel.sendMessage('Use the current workflow')
       const socket = await getAgentSocket()
+      await turnAccepted
+      await expect(agentPanel.stopButton).toBeVisible()
       const completed: AgentWsEvent = {
         type: 'agent_message_done',
         data: { ...accepted, usage: null }
