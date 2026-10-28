@@ -19,8 +19,8 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
 import { useTelemetry } from '@/platform/telemetry'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'

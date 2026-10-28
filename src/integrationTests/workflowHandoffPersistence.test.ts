@@ -31,7 +31,7 @@ import { useWorkflowPersistenceV2 } from '@/platform/workflow/persistence/compos
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { resetStorageAvailable } from '@/platform/workflow/persistence/base/storageIO'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'

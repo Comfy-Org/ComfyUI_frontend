@@ -37,7 +37,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import type { AppMode } from '@/utils/appMode'

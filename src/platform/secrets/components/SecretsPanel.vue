@@ -17,7 +17,7 @@
         {{ $t('secrets.modelProviders') }}
       </h3>
       <Button @click="openCreateDialog">
-        <i class="pi pi-plus mr-1" />
+        <i class="mr-1 icon-[lucide--plus]" />
         {{ $t('secrets.addSecret') }}
       </Button>
     </div>

@@ -6,8 +6,8 @@ import {
 import { isEqual } from 'es-toolkit'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'
 
 type SavedWorkflowRead =

@@ -15,7 +15,7 @@ import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import type { AgentStopMethod } from '@/platform/telemetry/types'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useNodeEmphasisSource } from '@/systems/nodeEmphasisSystem'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
