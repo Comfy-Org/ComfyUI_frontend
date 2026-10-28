@@ -133,4 +133,32 @@ describe('Comfy.SlotDefaults', () => {
     expect(LiteGraph.registered_slot_out_types).toEqual({})
   })
 
+  it('reports a defaults failure without blocking a table replacement', async () => {
+    respondToFetch(/\/object_info$/, () =>
+      Response.json({
+        PreviewImage: objectInfoEntry('PreviewImage', ['IMAGE', {}])
+      })
+    )
+    const defs = await app.getNodeDefs()
+    await slotDefaultsExtension.beforeRegisterNodeDef?.(
+      LGraphNode,
+      defs.PreviewImage,
+      app
+    )
+    const setDefaults = vi
+      .spyOn(slotDefaultsExtension, 'setDefaults')
+      .mockImplementationOnce(() => {
+        throw new TypeError('invalid defaults')
+      })
+
+    LiteGraph.slot_types_default_out = { IMAGE: ['MyNode'] }
+
+    expect(LiteGraph.slot_types_default_out).toEqual({ IMAGE: ['MyNode'] })
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(TypeError),
+      expect.objectContaining({ errorType: 'error_setting_slot_defaults' })
+    )
+    setDefaults.mockRestore()
+  })
+
 })

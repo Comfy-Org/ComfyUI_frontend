@@ -48,7 +48,14 @@ function registerPendingSlotTypes(extension: SlotDefaultsExtension) {
       })
     }
   }
-  extension.setDefaults(extension.suggestionsNumber?.value)
+  try {
+    extension.setDefaults(extension.suggestionsNumber?.value)
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'error_setting_slot_defaults',
+      surface: 'graph'
+    })
+  }
 }
 
 function registerSlotTypes(
