@@ -68,10 +68,6 @@ export interface ScreenshotRegion {
   expectScreenshot(name: string, options?: ScreenshotOptions): Promise<void>
 }
 
-/**
- * Measures the area enclosing every target plus `padding` once the targets
- * stop moving, for comparing one area across several screenshots.
- */
 export async function screenshotRegion(
   page: Page,
   targets: RegionTarget[],
@@ -92,26 +88,24 @@ export async function screenshotRegion(
     .toBe(true)
   return {
     expectScreenshot: (name, options) =>
-      expect(page).toHaveScreenshot(name, { ...options, clip })
+      expect.soft(page).toHaveScreenshot(name, { ...options, clip })
   }
 }
 
-/** Screenshot assertion of the whole viewport, for tests whose subject is the full app layout. */
 export async function expectPageScreenshot(
   page: Page,
   name: string,
   options?: ScreenshotOptions
 ): Promise<void> {
-  await expect(page).toHaveScreenshot(name, options)
+  await expect.soft(page).toHaveScreenshot(name, options)
 }
 
-/** Screenshot assertion limited to one element's box. */
 export async function expectElementScreenshot(
   element: Locator,
   name: string,
   options?: ScreenshotOptions
 ): Promise<void> {
-  await expect(element).toHaveScreenshot(name, options)
+  await expect.soft(element).toHaveScreenshot(name, options)
 }
 
 /** Screenshot assertion limited to the area enclosing every target. */
