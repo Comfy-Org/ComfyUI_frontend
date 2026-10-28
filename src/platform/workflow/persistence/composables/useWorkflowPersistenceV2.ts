@@ -43,6 +43,7 @@ import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { app as comfyApp } from '@/scripts/app'
 
 export function useWorkflowPersistenceV2() {
@@ -102,10 +103,13 @@ export function useWorkflowPersistenceV2() {
 
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
-    const activeWorkflow = workflowStore.activeWorkflow
+    const activeWorkflow: ComfyWorkflow | null = workflowStore.activeWorkflow
     if (!activeWorkflow) return
 
-    const graphData = comfyApp.rootGraph.serialize()
+    const graphData = ChangeTracker.isLoadingGraph
+      ? activeWorkflow.activeState
+      : comfyApp.rootGraph.serialize()
+    if (!graphData) return
     const workflowJson = JSON.stringify(graphData)
     const workflowPath = activeWorkflow.path
 
@@ -411,7 +415,11 @@ export function useWorkflowPersistenceV2() {
   watch(restoreState, ({ paths, activeIndex }) => {
     // Only persist after tab state has been restored to avoid
     // writing leaked data from wrong workspace during init
-    if (workflowPersistenceEnabled.value && tabStateRestored) {
+    if (
+      workflowPersistenceEnabled.value &&
+      tabStateRestored &&
+      activeIndex >= 0
+    ) {
       tabState.setOpenPaths(paths, activeIndex)
     }
   })

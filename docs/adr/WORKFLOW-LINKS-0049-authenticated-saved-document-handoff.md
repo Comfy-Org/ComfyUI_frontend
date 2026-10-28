@@ -58,6 +58,13 @@ or retrying after synchronization is safe. A future server-owned filename or
 record-ID association can replace the candidate-path verification without
 changing the URL contract.
 
+If a request is revoked after configuring the shared canvas, discard that canvas
+only while its graph state and document selection still belong to the load.
+Detach the selection before clearing, retain the previous tab's dirty draft and
+undo history, and reopen it through normal navigation. While loading, draft
+persistence reads the selected document's frozen state rather than the incoming
+canvas. Revoked requests cannot repaint content from the old context.
+
 Startup coordination lives with the [app URL loaders](../../src/composables/useSavedWorkflowUrlLoader.ts).
 [Navigation](../../src/platform/navigation/savedWorkflowLink.ts) validates the query,
 and an [authenticated read adapter](../../src/services/savedWorkflowService.ts)

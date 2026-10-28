@@ -379,7 +379,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     }
     if (
       deploymentId === pickedDeploymentId.value &&
-      (deploymentId !== null || isVisible.value)
+      (deploymentId !== null || pickSource.value === 'browser')
     )
       return { kind: 'unchanged' }
     return pickLinkAndReload(id, deploymentId)

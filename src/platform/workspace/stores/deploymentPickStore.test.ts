@@ -745,6 +745,44 @@ describe('useDeploymentPickStore', () => {
   })
 
   describe('a pick from a link', () => {
+    it('records standard Cloud for this browser when the workspace has no default', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        builds_visible: true,
+        items: listing.items
+      } satisfies WorkspaceDeploymentList)
+      mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
+      const store = useDeploymentPickStore()
+
+      await expect(store.pickFromLink(null)).resolves.toEqual({
+        kind: 'picked'
+      })
+
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledExactlyOnceWith(
+        'ws-1',
+        {},
+        expect.any(AbortSignal)
+      )
+      expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+      expect(reload).toHaveBeenCalledOnce()
+    })
+
+    it('keeps an explicit browser selection of standard Cloud unchanged', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        builds_visible: true,
+        pick_source: 'browser',
+        items: listing.items
+      } satisfies WorkspaceDeploymentList)
+      const store = useDeploymentPickStore()
+
+      await expect(store.pickFromLink(null)).resolves.toEqual({
+        kind: 'unchanged'
+      })
+
+      expect(mockWorkspaceApi.clearDeployment).not.toHaveBeenCalled()
+      expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+      expect(reload).not.toHaveBeenCalled()
+    })
+
     it('selects standard Cloud for this browser through the clear-pick route and reloads', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
       mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)

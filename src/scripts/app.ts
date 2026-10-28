@@ -1217,7 +1217,25 @@ export class ComfyApp implements IComfyApp {
       isCurrent
     } = options
     if (isCurrent?.() === false) return undefined
+    let graphOwner:
+      | { state: LGraph['state']; workflow: LoadedComfyWorkflow | null }
+      | undefined
+    const clearCancelledGraph = () => {
+      const workflowStore = useWorkflowStore()
+      if (
+        isCurrent?.() !== false ||
+        !graphOwner ||
+        graphOwner.state !== this.rootGraph.state ||
+        graphOwner.workflow !== workflowStore.activeWorkflow
+      )
+        return
+      workflowStore.activeWorkflow = null
+      this.canvas.setGraph(this.rootGraph)
+      withGraphIntentSource('load', () => this.clean())
+      useExecutionErrorStore().setActiveGraph(null)
+    }
     async function cancelLoad(): Promise<undefined> {
+      clearCancelledGraph()
       await useExtensionService().invokeExtensionsAsync(
         'onGraphLoadError',
         new DOMException('Workflow load was replaced', 'AbortError')
@@ -1225,6 +1243,7 @@ export class ComfyApp implements IComfyApp {
       return undefined
     }
     const resetCurrentGraph = () => {
+      const workflow = useWorkflowStore().activeWorkflow
       ChangeTracker.isLoadingGraph = true
       useExecutionErrorStore().setActiveGraph(null)
 
@@ -1242,6 +1261,10 @@ export class ComfyApp implements IComfyApp {
         this.canvas.setGraph(this.rootGraph)
 
         withGraphIntentSource('load', () => this.clean())
+      }
+      graphOwner = {
+        state: this.rootGraph.state,
+        workflow
       }
     }
     if (!isCurrent) useWorkflowService().beforeLoadNewGraph(clean)
@@ -1431,6 +1454,10 @@ export class ComfyApp implements IComfyApp {
       }
       try {
         this.rootGraph.configure(graphData as ISerialisedGraph)
+        graphOwner = {
+          state: this.rootGraph.state,
+          workflow: graphOwner?.workflow ?? null
+        }
         const originalMainGraphRenderer =
           this.rootGraph.extra.workflowRendererVersion
         ensureCorrectLayoutScale(originalMainGraphRenderer, this.rootGraph)
@@ -1480,11 +1507,6 @@ export class ComfyApp implements IComfyApp {
       const configuredGraphState = this.rootGraph.state
       const isCurrentGraphLoad = () =>
         configuredGraphState === this.rootGraph.state && isCurrent?.() !== false
-      const cancelReplacedLoad = () =>
-        useExtensionService().invokeExtensionsAsync(
-          'onGraphLoadError',
-          new DOMException('Workflow load was replaced', 'AbortError')
-        )
       const snapTo = LiteGraph.alwaysSnapToGrid
         ? this.rootGraph.getSnapToGridSize()
         : 0
@@ -1548,7 +1570,7 @@ export class ComfyApp implements IComfyApp {
         missingNodeTypes
       )
       if (!isCurrentGraphLoad()) {
-        await cancelReplacedLoad()
+        await cancelLoad()
         return isCurrent?.() === false ? false : undefined
       }
 
@@ -1577,12 +1599,12 @@ export class ComfyApp implements IComfyApp {
         if (isCurrentGraphLoad()) throw error
       }
       if (!isCurrentGraphLoad()) {
-        await cancelReplacedLoad()
+        await cancelLoad()
         return isCurrent?.() === false ? false : undefined
       }
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       if (!isCurrentGraphLoad()) {
-        await cancelReplacedLoad()
+        await cancelLoad()
         return isCurrent?.() === false ? false : undefined
       }
       ChangeTracker.isLoadingGraph = false
