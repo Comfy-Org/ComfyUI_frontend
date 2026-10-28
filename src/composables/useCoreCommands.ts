@@ -22,7 +22,8 @@ import {
 import {
   deleteSelectedLinks,
   hideSelectedLinks,
-  showSelectedLinks
+  showSelectedLinks,
+  toggleNodeLinks
 } from '@/lib/litegraph/src/canvas/linkSelection'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -124,7 +125,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const dialogStore = useDialogStore()
   const maskEditorStore = useMaskEditorStore()
 
-  const { getSelectedNodes, toggleSelectedNodesMode } =
+  const { getSelectedNodes, getSelectedNodesShallow, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
@@ -676,6 +677,16 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         toggleSelectedNodesMode(LGraphEventMode.BYPASS)
         app.canvas.setDirty(true, true)
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ToggleSelectedNodes.Links',
+      icon: 'icon-[lucide--eye-off]',
+      label: 'Hide/Show Links on Selected Nodes',
+      versionAdded: '1.60.0',
+      mutatesGraph: true,
+      function: () => {
+        toggleNodeLinks(app.canvas, getSelectedNodesShallow())
       }
     },
     {

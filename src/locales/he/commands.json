@@ -104,6 +104,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "כיווץ/הרחבה של הצמתים הנבחרים"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "הסתר/הצג קישורים של הצמתים הנבחרים"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "השתקה/ביטול השתקה של הצמתים הנבחרים"
   },

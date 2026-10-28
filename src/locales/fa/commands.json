@@ -104,6 +104,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "جمع/باز کردن nodeهای انتخاب‌شده"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "پنهان/نمایش پیوندهای nodeهای انتخاب‌شده"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "بی‌صدا/فعال کردن nodeهای انتخاب‌شده"
   },
