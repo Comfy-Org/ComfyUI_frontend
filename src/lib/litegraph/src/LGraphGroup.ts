@@ -8,7 +8,11 @@ import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import type { GroupId } from '@comfyorg/graph-model/groupId'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
-import { hexToRgb, luminance, readableTextColor } from '@comfyorg/design-system/lib/color-picker/colorUtil'
+import {
+  hexToRgb,
+  luminance,
+  readableTextColor
+} from '@comfyorg/design-system/lib/color-picker/colorUtil'
 
 import { canvasClass } from './canvas/canvasClassAccess'
 import { LGraphNode } from './LGraphNode'
