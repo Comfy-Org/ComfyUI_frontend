@@ -34,9 +34,6 @@ if (!commentStep?.run || !commentStep.env) {
 }
 const { run: commentRun, env: commentEnv } = commentStep
 
-// The step under test renders its comment with `envsubst` and the fake `gh`
-// builds records with `jq`. Without them every case fails with exit 127 and
-// no hint why, so name the missing tool up front.
 beforeAll(() => {
   const missing = ['envsubst', 'jq'].filter(
     (tool) => spawnSync('bash', ['-c', `command -v ${tool}`]).status !== 0
