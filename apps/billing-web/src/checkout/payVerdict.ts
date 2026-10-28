@@ -4,11 +4,14 @@ import type {
   PaymentProjection,
   PaymentReasonKey,
   SubscriptionCommandResult,
-  TopupResult
+  TopupResult,
+  BillingServerCode
 } from '@comfyorg/account-core/billing'
 import {
+  isPurchaseRefusal,
   matchesServerCode,
-  projectPaymentStep
+  projectPaymentStep,
+  unwrapServerCode
 } from '@comfyorg/account-core/billing'
 
 import type {
@@ -68,6 +71,7 @@ export function payVerdictOf(result: SubscriptionCommandResult): PayVerdict {
  */
 function refusalVerdict(result: {
   readonly code: string
+  readonly serverCode?: BillingServerCode
   readonly serverMessage?: string
 }): PayVerdict {
   if (result.code === 'OPERATION_ALREADY_PENDING' || result.code === 'CONFLICT')
@@ -76,7 +80,10 @@ function refusalVerdict(result: {
     kind: 'outcome',
     outcome: {
       kind: 'processing_error',
-      code: result.code,
+      code:
+        result.serverCode !== undefined && isPurchaseRefusal(result)
+          ? unwrapServerCode(result.serverCode)
+          : result.code,
       ...(result.serverMessage === undefined
         ? {}
         : { serverMessage: result.serverMessage })
