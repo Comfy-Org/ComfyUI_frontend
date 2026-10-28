@@ -311,6 +311,7 @@
           "
           size="lg"
           class="h-10 justify-center tabular-nums"
+          :data-dd-action-name="BILLING_ACTION_NAME.topUpPrimary"
           @click="handlePrimaryAction"
         >
           {{
@@ -338,6 +339,7 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import {
   getTopupAmountPreset,
