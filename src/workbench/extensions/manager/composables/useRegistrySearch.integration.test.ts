@@ -18,8 +18,6 @@ vi.mock(import('algoliasearch/dist/lite/builds/browser'), () => ({
   liteClient: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 function goOffline() {
   vi.mocked(algoliasearch, { partial: true }).mockReturnValue({
     search: vi.fn().mockRejectedValue(new Error('Algolia unreachable'))

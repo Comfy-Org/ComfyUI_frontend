@@ -40,7 +40,9 @@ const i18n = createI18n({
         maxWorkspacesReached:
           'You can only own 10 workspaces. Delete one to create a new one.',
         managedByOrganization:
-          "Your organization manages your workspaces, so you can't create one."
+          "Your organization manages your workspaces, so you can't create one.",
+        cannotCreateWorkspace:
+          "You can't create a workspace on this account right now."
       },
       subscription: {
         tiers: {
@@ -275,7 +277,10 @@ describe('WorkspaceSwitcherPopover', () => {
 
   it('says why creation is off when an organization manages the workspaces', async () => {
     const store = useTeamWorkspaceStore()
-    store.$patch({ workspacesManagedByOrganization: true })
+    store.$patch({
+      serverRefusesCreation: true,
+      workspacesManagedByOrganization: true
+    })
     const { emitted } = renderComponent()
 
     await userEvent.click(
@@ -284,6 +289,17 @@ describe('WorkspaceSwitcherPopover', () => {
 
     expect(screen.queryByText('Create a team workspace')).toBeNull()
     expect(emitted().create).toBeUndefined()
+  })
+
+  it('does not blame an organization when the server gives no reason', () => {
+    const store = useTeamWorkspaceStore()
+    store.$patch({ serverRefusesCreation: true })
+    renderComponent()
+
+    expect(
+      screen.getByText(/can't create a workspace on this account/)
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Your organization manages/)).toBeNull()
   })
 
   it('hides the create-workspace footer on non-cloud distributions', () => {

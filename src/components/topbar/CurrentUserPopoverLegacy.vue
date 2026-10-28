@@ -55,7 +55,7 @@
         :side-offset="16"
         prioritize-position
         dismiss-on-viewport-change
-        class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
+        class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
         data-testid="workspace-switcher-panel"
       >
         <WorkspaceSwitcherPopover @select="close" />

@@ -13,7 +13,6 @@ import type {
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -39,8 +38,6 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
-const AGENT_AUTO_SHOWN_KEY =
-  'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
 export const AGENT_COACH_SEEN_KEY =
   'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
 /** The cloud workflow id a turn ack binds the posting tab to. */
@@ -337,7 +334,6 @@ async function mockAgentBoot(
     agentConsentSave,
     agentConsentWebSession,
     agentConsentWrites,
-    agentAutoShownReadProbe,
     agentFlagEnabled,
     starterPromptSet,
     agentPanelInitiallyOpen,
@@ -361,22 +357,7 @@ async function mockAgentBoot(
   const csrfToken = 'csrf-e2e'
 
   await page.addInitScript(
-    ({
-      initiallyOpen,
-      onboardingCompleted,
-      debugEnabled,
-      autoShownReadProbe,
-      autoShownKey
-    }) => {
-      if (autoShownReadProbe) {
-        const originalGetItem = Storage.prototype.getItem
-        window.__autoShownReads = 0
-        Storage.prototype.getItem = function (candidate: string) {
-          if (candidate === autoShownKey)
-            window.__autoShownReads = (window.__autoShownReads ?? 0) + 1
-          return originalGetItem.call(this, candidate)
-        }
-      }
+    ({ initiallyOpen, onboardingCompleted, debugEnabled }) => {
       if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
         localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
       }
@@ -394,9 +375,7 @@ async function mockAgentBoot(
     {
       initiallyOpen: agentPanelInitiallyOpen,
       onboardingCompleted: agentOnboardingCompleted,
-      debugEnabled: crdtDebugEnabled,
-      autoShownReadProbe: agentAutoShownReadProbe,
-      autoShownKey: AGENT_AUTO_SHOWN_KEY
+      debugEnabled: crdtDebugEnabled
     }
   )
 
@@ -427,7 +406,6 @@ async function mockAgentBoot(
   const storedSettings: Record<string, unknown> = {
     'Comfy.TutorialCompleted': true,
     'Comfy.RightSidePanel.ShowErrorsTab': false,
-    ...DEPLOY_ACTION_SEEN_SETTINGS,
     ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
     ...initialSettings
   }
@@ -669,7 +647,6 @@ async function mockAgentBoot(
 type AgentFixtures = {
   acceptedTurns: AgentTurnAccepted[]
   agentBilling: AgentBillingFixture
-  agentAutoShownReadProbe: boolean
   agentConsentAccepted: boolean
   agentConsentReads: boolean[]
   agentConsentSave: { status: number; pending?: Promise<void> }
@@ -694,7 +671,6 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentBilling: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use(new AgentBillingFixture())
   },
-  agentAutoShownReadProbe: [false, { option: true }],
   agentConsentAccepted: [true, { option: true }],
   agentConsentReads: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
@@ -718,7 +694,6 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   objectInfo: [undefined, { option: true }],
   page: async (
     {
-      agentAutoShownReadProbe,
       agentConsentAccepted,
       agentConsentReads,
       agentConsentSave,
@@ -742,7 +717,6 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     testInfo
   ) => {
     await mockAgentBoot(page, {
-      agentAutoShownReadProbe,
       agentConsentAccepted,
       agentConsentReads,
       agentConsentSave,

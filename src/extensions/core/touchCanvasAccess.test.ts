@@ -9,8 +9,6 @@ import { app } from '@/scripts/app'
 
 import { canvasOrReport } from './touchCanvasAccess'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const canvasEl = vi.hoisted(() => document.createElement('canvas'))
 
 vi.mock(import('@/scripts/app'), () => ({

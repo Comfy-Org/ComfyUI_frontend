@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { render, screen } from '@testing-library/vue'
 
-import MarqueeLine from '@comfyorg/design-system/common/MarqueeLine'
+import MarqueeLine from './MarqueeLine.vue'
 
 describe(MarqueeLine, () => {
   it('renders slot content', () => {

@@ -1187,6 +1187,9 @@ importers:
       reka-ui:
         specifier: 'catalog:'
         version: 2.11.0(vue@3.5.42(typescript@6.0.3))
+      storybook:
+        specifier: 'catalog:'
+        version: 10.5.6(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.2

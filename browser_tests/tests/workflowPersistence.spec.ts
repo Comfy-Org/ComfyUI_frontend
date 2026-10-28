@@ -1007,7 +1007,7 @@ test.describe('Workflow Persistence', () => {
 
     await comfyPage.menu.topbar.getWorkflowTab(workflowA).click()
     await comfyPage.workflow.waitForWorkflowIdle()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
 
     const restoredNode = await getRequiredFirstNodeRef(
       comfyPage,
