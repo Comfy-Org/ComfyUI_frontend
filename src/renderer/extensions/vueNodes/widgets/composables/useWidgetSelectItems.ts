@@ -29,6 +29,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { AssetKind } from '@/types/widgetTypes'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { PagedList } from '@/utils/pagedList'
 
@@ -52,13 +53,29 @@ function assetKindToMediaType(kind: AssetKind): string {
 
 function getMediaUrl(
   filename: string,
-  type: 'input' | 'output',
-  assetKind: AssetKind | undefined
+  type: string,
+  assetKind: AssetKind | undefined,
+  subfolder?: string
 ): string {
   if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
   const params = new URLSearchParams({ filename, type })
+  if (subfolder) params.set('subfolder', subfolder)
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
+}
+
+function getAnnotatedValueMediaUrl(
+  value: string,
+  assetKind: AssetKind | undefined
+): string {
+  const { filepath, rootFolder } = parseAnnotatedPath(value)
+  const folderEnd = filepath.lastIndexOf('/')
+  return getMediaUrl(
+    filepath.slice(folderEnd + 1),
+    rootFolder,
+    assetKind,
+    filepath.slice(0, Math.max(folderEnd, 0))
+  )
 }
 
 export interface UseWidgetSelectItemsOptions {
@@ -277,18 +294,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     if (existsInInputs || existsInOutputs) return undefined
 
-    const isOutput = currentValue.endsWith(' [output]')
-    const strippedValue = isOutput
-      ? currentValue.replace(' [output]', '')
-      : currentValue
-
     return {
       id: `missing-${currentValue}`,
-      preview_url: getMediaUrl(
-        strippedValue,
-        isOutput ? 'output' : 'input',
-        kind
-      ),
+      preview_url: getAnnotatedValueMediaUrl(currentValue, kind),
       name: currentValue,
       label: getDisplayLabel(currentValue, labelFn)
     }
