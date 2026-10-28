@@ -1,4 +1,4 @@
-import { CANVAS_ACTION_COMMAND_IDS } from '@/platform/keybindings/canvasActionShortcuts'
+import { canvasCommandForWrittenKeys } from '@/platform/keybindings/canvasActionShortcuts'
 
 /** Resolves a command id to the key labels it is currently bound to. */
 export type KeySequenceResolver = (commandId: string) => string[] | undefined
@@ -12,16 +12,6 @@ const NON_PROSE_ELEMENTS = new Set([
   'STYLE'
 ])
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-const LONGEST_ACTION_PHRASE_FIRST = Object.keys(CANVAS_ACTION_COMMAND_IDS).sort(
-  (a, b) => b.length - a.length
-)
-
-const ACTION_SOURCE = `\\b(${LONGEST_ACTION_PHRASE_FIRST.map(escapeRegExp).join('|')})\\b`
-
 const MODIFIER = String.raw`[Cc]trl|CTRL|[Cc]ontrol|[Cc]md|[Cc]ommand|⌘|[Aa]lt|ALT|[Oo]ption|[Oo]pt|⌥|[Ss]hift|SHIFT|⇧`
 
 const NAMED_KEY = String.raw`F\d{1,2}|Enter|Return|Esc(?:ape)?|Space(?:bar)?|Tab|Delete|Del|Backspace|Home|End|PageUp|PageDown|Up|Down|Left|Right`
@@ -31,9 +21,7 @@ const SINGLE_KEY =
   '`' +
   String.raw`~!@#$%^&*()\-_=+\[\]{}\\|;:'",.<>/?]`
 
-const MODIFIER_BEARING_COMBO = String.raw`(?<![A-Za-z0-9])(?:${MODIFIER})(?:\s*\+\s*(?:${MODIFIER}|${NAMED_KEY}|${SINGLE_KEY})(?![A-Za-z0-9]))+`
-
-const AFTER_SENTENCE_END = /(?<=[.!?;\n])/
+const MODIFIER_BEARING_COMBO = String.raw`(?<![A-Za-z0-9])(?:${MODIFIER})(?:\s*\+\s*(?:${MODIFIER}|${NAMED_KEY}|${SINGLE_KEY})(?![A-Za-z0-9]))+(?!\s*\+)`
 
 function keyLabel(sequence: string): string {
   return sequence.length === 1 ? sequence.toUpperCase() : sequence
@@ -51,58 +39,35 @@ function keycaps(sequences: string[]): DocumentFragment {
 }
 
 function keysAsWritten(combo: string): string[] {
-  return combo
-    .split('+')
-    .map((token) => token.trim())
-    .filter(Boolean)
-}
-
-const COMMAND_ID_BY_ACTION_PHRASE = new Map<string, string>(
-  Object.entries(CANVAS_ACTION_COMMAND_IDS)
-)
-
-function soleActionCommandId(sentence: string): string | undefined {
-  const commandIds = new Set<string>()
-  for (const match of sentence.matchAll(new RegExp(ACTION_SOURCE, 'gi'))) {
-    const commandId = COMMAND_ID_BY_ACTION_PHRASE.get(match[1].toLowerCase())
-    if (commandId) commandIds.add(commandId)
-  }
-  return commandIds.size === 1 ? [...commandIds][0] : undefined
-}
-
-function appendSentenceWithKeycaps(
-  fragment: DocumentFragment,
-  sentence: string,
-  resolve: KeySequenceResolver
-): void {
-  const combos = [...sentence.matchAll(new RegExp(MODIFIER_BEARING_COMBO, 'g'))]
-  const commandId =
-    combos.length === 1 ? soleActionCommandId(sentence) : undefined
-  const bound = commandId ? resolve(commandId) : undefined
-  const unambiguousLiveKeys = bound && bound.length > 0 ? bound : undefined
-
-  let cursor = 0
-  for (const match of combos) {
-    const start = match.index
-    if (start > cursor) fragment.append(sentence.slice(cursor, start))
-    fragment.append(keycaps(unambiguousLiveKeys ?? keysAsWritten(match[0])))
-    cursor = start + match[0].length
-  }
-  fragment.append(sentence.slice(cursor))
+  const slots = combo.split(/\s*\+\s*/)
+  const keys: string[] = []
+  slots.forEach((slot, index) => {
+    if (slot) keys.push(slot)
+    else if (index > 0 && index === slots.length - 1) keys.push('+')
+  })
+  return keys
 }
 
 function rewriteTextNode(node: Text, resolve: KeySequenceResolver): boolean {
   const text = node.data
-  if (!new RegExp(MODIFIER_BEARING_COMBO).test(text)) return false
-
-  const sentences = text.split(AFTER_SENTENCE_END)
-  const reassembledLength = sentences.reduce((n, s) => n + s.length, 0)
-  if (reassembledLength !== text.length) return false
+  const combos = [...text.matchAll(new RegExp(MODIFIER_BEARING_COMBO, 'g'))]
+  if (combos.length === 0) return false
 
   const fragment = document.createDocumentFragment()
-  for (const sentence of sentences) {
-    appendSentenceWithKeycaps(fragment, sentence, resolve)
+  let cursor = 0
+  for (const match of combos) {
+    const start = match.index
+    if (start > cursor) fragment.append(text.slice(cursor, start))
+
+    const written = keysAsWritten(match[0])
+    const commandId = canvasCommandForWrittenKeys(written)
+    const bound = commandId ? resolve(commandId) : undefined
+    fragment.append(keycaps(bound?.length ? bound : written))
+
+    cursor = start + match[0].length
   }
+  fragment.append(text.slice(cursor))
+
   node.replaceWith(fragment)
   return true
 }
@@ -114,7 +79,11 @@ function isProse(node: Text): boolean {
   return true
 }
 
-/** Renders the key combos in rendered reply HTML as `<kbd>` keycaps, re-keyed to the bound keys where the sentence names one canvas action. */
+/**
+ * Renders the key combos in rendered reply HTML as `<kbd>` keycaps, re-keyed to
+ * the user's own binding when the written combo is a canvas action's shipped
+ * default. Text inside code, links and existing keycaps is left untouched.
+ */
 export function renderShortcutKeycaps(
   html: string,
   resolve: KeySequenceResolver

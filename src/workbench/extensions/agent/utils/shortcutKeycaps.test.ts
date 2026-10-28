@@ -8,6 +8,7 @@ const defaults: Record<string, string[]> = {
   [BYPASS]: ['Ctrl', 'b'],
   'Comfy.Canvas.ToggleSelectedNodes.Mute': ['Ctrl', 'm'],
   'Comfy.QueuePrompt': ['Ctrl', 'Enter'],
+  'Comfy.SaveWorkflow': ['Ctrl', 's'],
   'Comfy.Graph.ConvertToSubgraph': ['Ctrl', 'Shift', 'e']
 }
 
@@ -15,7 +16,7 @@ const resolveDefaults = (commandId: string) => defaults[commandId]
 const resolveNothing = () => undefined
 
 describe('renderShortcutKeycaps', () => {
-  it('leaves a reply with no key combo untouched, without parsing it', () => {
+  it('leaves a reply with no key combo untouched', () => {
     const html = '<p>Your image is ready.</p>'
     expect(renderShortcutKeycaps(html, resolveNothing)).toBe(html)
   })
@@ -28,16 +29,7 @@ describe('renderShortcutKeycaps', () => {
     expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>')
   })
 
-  it("replaces a wrong key with the user's bound one when the sentence names the action", () => {
-    const out = renderShortcutKeycaps(
-      '<p>Select the node and press Ctrl+Shift+B to bypass it.</p>',
-      resolveDefaults
-    )
-    expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>B</kbd>')
-    expect(out).not.toContain('Shift')
-  })
-
-  it('uses a rebound key rather than the shipped default', () => {
+  it('uses the rebound key when the model wrote the shipped default', () => {
     const rebound = (commandId: string) =>
       commandId === BYPASS ? ['Alt', 'q'] : undefined
     const out = renderShortcutKeycaps(
@@ -49,40 +41,88 @@ describe('renderShortcutKeycaps', () => {
   })
 
   it('rewrites a Mac-shaped combo to the label the settings panel shows', () => {
+    const rebound = (commandId: string) =>
+      commandId === BYPASS ? ['Alt', 'q'] : undefined
     const out = renderShortcutKeycaps(
       '<p>Press Cmd+B to bypass it.</p>',
-      resolveDefaults
+      rebound
     )
-    expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>B</kbd>')
+    expect(out).toContain('<kbd>Alt</kbd>+<kbd>Q</kbd>')
   })
 
-  it('styles but does not re-key a sentence naming two different actions', () => {
+  it('never re-keys a combo that is not a canvas action default', () => {
     const out = renderShortcutKeycaps(
-      '<p>Use Ctrl+B to bypass or Ctrl+M to mute</p>',
+      '<p>Hit Ctrl+Z to undo, then save.</p>',
       resolveDefaults
     )
-    expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>B</kbd>')
-    expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>M</kbd>')
+    expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>Z</kbd>')
+    expect(out).not.toContain('<kbd>S</kbd>')
   })
 
-  it('leaves every combo as written when one sentence holds several', () => {
+  it('does not borrow a binding from an unrelated action word in the sentence', () => {
     const out = renderShortcutKeycaps(
-      '<p>Press Ctrl+C and Ctrl+V to copy and paste, then Ctrl+X to bypass it</p>',
+      '<p>Copy it with Ctrl+C, then run the graph.</p>',
       resolveDefaults
     )
     expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>C</kbd>')
-    expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>V</kbd>')
-    expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>X</kbd>')
-    expect(out).not.toContain('<kbd>B</kbd>')
+    expect(out).not.toContain('Enter')
   })
 
-  it('pairs each sentence with its own action', () => {
+  it('leaves a wrong key the model invented as written', () => {
     const out = renderShortcutKeycaps(
-      '<p>Press Ctrl+X to bypass it. Then press Ctrl+Y to mute it.</p>',
+      '<p>Press Ctrl+Shift+B to bypass it.</p>',
       resolveDefaults
     )
-    expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>B</kbd>')
+    expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>')
+  })
+
+  it('re-keys each combo to its own command', () => {
+    const rebound = (commandId: string) =>
+      commandId === BYPASS ? ['Alt', 'q'] : defaults[commandId]
+    const out = renderShortcutKeycaps(
+      '<p>Use Ctrl+B to bypass or Ctrl+M to mute</p>',
+      rebound
+    )
+    expect(out).toContain('<kbd>Alt</kbd>+<kbd>Q</kbd>')
     expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>M</kbd>')
+  })
+
+  it('resolves a combo whose action word sits in another inline element', () => {
+    const rebound = (commandId: string) =>
+      commandId === BYPASS ? ['Alt', 'q'] : undefined
+    const out = renderShortcutKeycaps(
+      '<p>Press Ctrl+B to <strong>bypass</strong> the node.</p>',
+      rebound
+    )
+    expect(out).toContain('<kbd>Alt</kbd>+<kbd>Q</kbd>')
+  })
+
+  it('keeps a plus that is the key rather than the separator', () => {
+    const out = renderShortcutKeycaps(
+      '<p>Press Alt+Shift++ to zoom in.</p>',
+      resolveNothing
+    )
+    expect(out).toContain('<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>+</kbd>')
+  })
+
+  it('leaves a word that begins with a key letter alone', () => {
+    const html = '<p>Ctrl+click a node to add it to the selection.</p>'
+    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
+  })
+
+  it('leaves a modifier run followed by a word alone', () => {
+    const html = '<p>Ctrl+Shift+click to bypass several at once.</p>'
+    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
+  })
+
+  it('leaves a drag gesture alone rather than keycapping its first letter', () => {
+    const html = '<p>Shift+drag to move the group, or Alt+drag to copy it.</p>'
+    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
+  })
+
+  it('does not read a modifier out of the end of a longer word', () => {
+    const html = '<p>The salt+B variant is not a shortcut.</p>'
+    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
   })
 
   it('injects nothing into a sentence that named an action but no key', () => {
@@ -93,8 +133,7 @@ describe('renderShortcutKeycaps', () => {
   it('never rewrites inside code, a link, or an existing keycap', () => {
     const html =
       '<p><code>Ctrl+B</code> and <a href="https://example.com">Ctrl+B</a> and <kbd>Ctrl+B</kbd> to bypass</p>'
-    const out = renderShortcutKeycaps(html, resolveDefaults)
-    expect(out).toBe(html)
+    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
   })
 
   it('leaves a fenced code block alone', () => {
@@ -102,10 +141,10 @@ describe('renderShortcutKeycaps', () => {
     expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
   })
 
-  it('keeps the surrounding prose, including the sentence delimiter', () => {
+  it('keeps the surrounding prose', () => {
     const out = renderShortcutKeycaps(
       '<p>Done. Press Ctrl+B to bypass it; the node stays wired.</p>',
-      resolveDefaults
+      resolveNothing
     )
     const text = new DOMParser().parseFromString(out, 'text/html').body
       .textContent
@@ -118,21 +157,6 @@ describe('renderShortcutKeycaps', () => {
       resolveNothing
     )
     expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>B</kbd>')
-  })
-
-  it('leaves a word that begins with a key letter alone', () => {
-    const html = '<p>Ctrl+click a node to add it to the selection.</p>'
-    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
-  })
-
-  it('leaves a drag gesture alone rather than keycapping its first letter', () => {
-    const html = '<p>Shift+drag to move the group, or Alt+drag to copy it.</p>'
-    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
-  })
-
-  it('does not read a modifier out of the end of a longer word', () => {
-    const html = '<p>The salt+B variant is not a shortcut.</p>'
-    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
   })
 
   it('is stable when applied to its own output, as a streamed reply re-renders', () => {

@@ -25,38 +25,34 @@ has the measurements.
 ## Decision
 
 A keyboard shortcut named in an agent reply is resolved when the reply renders,
-not supplied to the model.
+not supplied to the model. **The combo identifies the command; the surrounding
+prose is never consulted.**
 
-`CANVAS_ACTION_COMMAND_IDS` maps the action phrases an agent reply uses to the
-commands they run, and is the only place reply text is tied to a keybinding. It
-holds no keys. `useCanvasActionShortcutKeys` closes over the keybinding store and
-answers per command, so user bindings and presets win over the shipped defaults.
-It is a public entry point of the keybindings domain; the agent domain declares
-`keybindings` as an allowed dependency and keybindings declares `agent` as an
-allowed consumer, so the reply panel reaches no other keybindings module.
+`canvasCommandForWrittenKeys` answers which canvas command ships a given combo
+as its default, folding the macOS spellings (`Cmd`, `Command`, `⌘`, `Option`,
+`Opt`, `⌥`, `⇧`) onto the labels this app uses. `useCanvasActionShortcutKeys`
+closes over the keybinding store and reports what that command is bound to now.
+Both are public entry points of the keybindings domain; the agent domain
+declares `keybindings` as an allowed dependency and keybindings declares `agent`
+as an allowed consumer, so the reply panel reaches no other keybindings module.
 
 `renderShortcutKeycaps` rewrites one block of rendered reply HTML. A
-modifier-bearing key combo becomes `<kbd>` keycaps. When the sentence holding it
-contains exactly one combo and names exactly one mapped canvas action, the combo
-is replaced by that command's current keys. Everything else is styled and left as
-written.
+modifier-bearing key combo becomes `<kbd>` keycaps. When that combo is a canvas
+action's shipped default and the user has rebound it, the keycaps show the
+user's keys instead. Every other combo is styled exactly as written.
 
 Three boundaries are part of the decision, not implementation detail:
 
-- **Shape, not words.** A combo is matched by its shape, so the styling half is
-  language independent.
+- **Shape, not words.** A combo is matched by its shape and identified by its
+  keys, so the whole behaviour is language independent.
 - **Never inject.** A reply naming an action without a key is unchanged. The
   transform only ever rewrites text that already held a combo.
-- **Ambiguity means hands off.** Two action words, or two combos, in one
-  sentence makes the pairing a guess, so no substitution happens. A confidently
-  wrong key is worse than an unstyled right one.
+- **Substitute only on an exact default.** A combo that is not a canvas
+  action's default is left as written, even when the sentence names an action we
+  have a command for.
 
 Keycaps are built from `createElement` and text nodes, never from an HTML string,
 and the result is sanitized downstream.
-
-`canvasActionShortcuts.test.ts` holds every command id in the table against
-`CORE_KEYBINDINGS`, so unbinding or renaming a command fails there rather than
-silently dropping a keycap from replies.
 
 ## Alternatives considered
 
@@ -76,6 +72,14 @@ result costs nothing and fires exactly when relevant. It covers only the turns
 where the agent performed the action itself, not the ones where the user asked
 how to do it by hand. Worth adding later as a complement, not a replacement.
 
+**Pairing a combo with an action word in the same sentence.** This was the first
+shape of this change and it is wrong. The table of action phrases does not cover
+every action, so `undo` and `copy` are absent while `save` and `run` are present,
+and "Hit Ctrl+Z to undo, then save" re-keyed `Ctrl+Z` to the save binding. Guards
+counting action words and combos narrowed the hole without closing it, and the
+remaining cases turn a key the model got right into a wrong one, which is the
+opposite of what this change is for. Caught in review by @dante01yoon.
+
 **Treating a mouse gesture as a key.** `Ctrl+click` and `Shift+drag` are left as
 written. Rendering them as keycaps is defensible but it is a separate call about
 what a keycap means, and is not made here.
@@ -89,8 +93,10 @@ A correction is invisible to the model. It will keep writing the key it
 remembers, and the panel will keep rewriting it. Anything that reads the agent's
 raw reply text, rather than the rendered panel, sees the unrewritten key.
 
-Action-phrase matching is English, so a non-English reply gets the styling but
-not the correction. The styling half is the part that is language independent.
+A key the model invented, rather than remembered, is styled and left wrong. We
+cannot tell which command such a combo was meant to be without guessing from the
+prose, and guessing is what this design gives up. The case it does fix, a user
+who rebound an action, is the one we can answer exactly.
 
 The agent domain now depends on keybindings. That dependency is narrow by
 construction: one entry point, one lookup.

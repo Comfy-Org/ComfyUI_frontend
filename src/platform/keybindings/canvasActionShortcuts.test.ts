@@ -1,23 +1,48 @@
 import { describe, expect, it } from 'vitest'
 
-import { CANVAS_ACTION_COMMAND_IDS } from './canvasActionShortcuts'
-import { CORE_KEYBINDINGS } from './defaults'
+import { canvasCommandForWrittenKeys } from './canvasActionShortcuts'
 
-describe('CANVAS_ACTION_COMMAND_IDS', () => {
-  it('names only commands the shipped defaults bind a key to', () => {
-    const bound = new Set(CORE_KEYBINDINGS.map((k) => k.commandId))
-    const unbound = Object.entries(CANVAS_ACTION_COMMAND_IDS)
-      .filter(([, commandId]) => !bound.has(commandId))
-      .map(([phrase]) => phrase)
-
-    expect(unbound).toEqual([])
+describe('canvasCommandForWrittenKeys', () => {
+  it('names the command a canvas action ships with', () => {
+    expect(canvasCommandForWrittenKeys(['Ctrl', 'b'])).toBe(
+      'Comfy.Canvas.ToggleSelectedNodes.Bypass'
+    )
   })
 
-  it('keys every action by a lower-case phrase, so matching can fold case', () => {
-    const mixedCase = Object.keys(CANVAS_ACTION_COMMAND_IDS).filter(
-      (phrase) => phrase !== phrase.toLowerCase()
-    )
+  it('folds the macOS spellings onto the labels this app uses', () => {
+    const spellings = [
+      ['Cmd', 'B'],
+      ['Command', 'b'],
+      ['⌘', 'B'],
+      ['CTRL', 'B']
+    ].map(canvasCommandForWrittenKeys)
 
-    expect(mixedCase).toEqual([])
+    expect(spellings).toEqual(
+      Array.from({ length: 4 }, () => 'Comfy.Canvas.ToggleSelectedNodes.Bypass')
+    )
+  })
+
+  it('folds Option onto Alt', () => {
+    expect(canvasCommandForWrittenKeys(['Option', 'c'])).toBe(
+      'Comfy.Canvas.ToggleSelectedNodes.Collapse'
+    )
+  })
+
+  it('reads a named key, not only a letter', () => {
+    expect(canvasCommandForWrittenKeys(['Ctrl', 'Enter'])).toBe(
+      'Comfy.QueuePrompt'
+    )
+  })
+
+  it('has no command for a combo no canvas action ships', () => {
+    expect(canvasCommandForWrittenKeys(['Ctrl', 'z'])).toBeUndefined()
+  })
+
+  it('has no command for a modifier run with no key', () => {
+    expect(canvasCommandForWrittenKeys(['Ctrl', 'Shift'])).toBeUndefined()
+  })
+
+  it('does not answer for a combo that belongs to another command', () => {
+    expect(canvasCommandForWrittenKeys(['Ctrl', 'Shift', 'b'])).toBeUndefined()
   })
 })
