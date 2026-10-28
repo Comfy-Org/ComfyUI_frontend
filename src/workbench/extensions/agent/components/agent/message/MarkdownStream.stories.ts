@@ -6,7 +6,6 @@ const meta: Meta<typeof MarkdownStream> = {
   title: 'Workbench/Agent/MarkdownStream',
   component: MarkdownStream,
   parameters: { layout: 'centered' },
-  globals: { theme: 'dark' },
   render: (args) => ({
     components: { MarkdownStream },
     setup: () => ({ args }),
