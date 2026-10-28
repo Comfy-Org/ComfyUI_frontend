@@ -19,7 +19,7 @@ import {
 import { effectScope } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { WorkspaceApiError as mockWorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import type {
@@ -65,7 +65,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -83,7 +83,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/useFeatureFlags'), { spy: true })

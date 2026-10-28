@@ -19,7 +19,7 @@ import {
   abandonSsoFlow,
   trackSsoRequiredShown
 } from '@/platform/auth/sso/ssoTelemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 

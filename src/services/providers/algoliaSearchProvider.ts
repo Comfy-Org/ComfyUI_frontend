@@ -14,7 +14,7 @@ import {
   SEARCH_CACHE_MAX_SIZE,
   USER_SEARCH_ANALYTICS_TAG
 } from '@/constants/searchConstants'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { buildPackSearchRequest } from '@/services/providers/algoliaPackSearchRequest'
 import type {
   AlgoliaNodePack,

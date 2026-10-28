@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
-const { reportError } = await import('@/platform/telemetry/reportError')
+const { reportError } = await import('@comfyorg/telemetry/reportError')
 
 describe('api.storeUserData', () => {
   it('resolves without reporting on a 200', async () => {
