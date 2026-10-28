@@ -28,6 +28,12 @@ describe('canvasCommandForWrittenKeys', () => {
     )
   })
 
+  it('reads a modifier run written in another order', () => {
+    expect(canvasCommandForWrittenKeys(['Shift', 'Ctrl', 'e'])).toBe(
+      'Comfy.Graph.ConvertToSubgraph'
+    )
+  })
+
   it('reads a named key, not only a letter', () => {
     expect(canvasCommandForWrittenKeys(['Ctrl', 'Enter'])).toBe(
       'Comfy.QueuePrompt'

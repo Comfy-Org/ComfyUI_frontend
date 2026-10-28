@@ -29,11 +29,17 @@ const EQUIVALENT_MODIFIER: Record<string, string> = {
   '⇧': 'SHIFT'
 }
 
+const MODIFIER_ORDER = ['CTRL', 'ALT', 'SHIFT']
+
 function canonical(keys: string[]): string {
-  return keys
+  const folded = keys
     .map((key) => key.toUpperCase())
     .map((key) => EQUIVALENT_MODIFIER[key] ?? key)
-    .join('+')
+  const modifiers = MODIFIER_ORDER.filter((modifier) =>
+    folded.includes(modifier)
+  )
+  const rest = folded.filter((key) => !MODIFIER_ORDER.includes(key))
+  return [...modifiers, ...rest].join('+')
 }
 
 const COMMAND_ID_BY_DEFAULT_COMBO = new Map(

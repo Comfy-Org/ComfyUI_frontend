@@ -93,6 +93,13 @@ A correction is invisible to the model. It will keep writing the key it
 remembers, and the panel will keep rewriting it. Anything that reads the agent's
 raw reply text, rather than the rendered panel, sees the unrewritten key.
 
+A combo split across inline elements by markdown emphasis, as in
+`Press **Ctrl**+**B**`, is not matched: each text node is rewritten on its own.
+Reassembling a match across a run of sibling nodes, then splicing the
+replacement back into the right ones, is where this kind of code goes wrong, and
+the trigger is an unusual shape for the model to emit. The failure is benign: the
+reply shows the key as written, which is where it stood before this change.
+
 A key the model invented, rather than remembered, is styled and left wrong. We
 cannot tell which command such a combo was meant to be without guessing from the
 prose, and guessing is what this design gives up. The case it does fix, a user
