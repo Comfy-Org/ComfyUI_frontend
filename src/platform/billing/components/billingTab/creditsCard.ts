@@ -1,5 +1,5 @@
 import type { BalanceInfo } from '@/platform/billing/composables/types'
-import type { BillingStatus } from '@comfyorg/billing-core'
+import type { AutoReloadSettings, BillingStatus } from '@comfyorg/billing-core'
 import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
 
 export interface CreditsCardFacts {
@@ -47,4 +47,25 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
     topUpInUse: planCents === 0 && topUpCents > 0,
     renewalDate: facts.renewalDate
   }
+}
+
+export interface AddCreditsEmphasisFacts {
+  availableCents: number | null
+  canTopUp: boolean
+  autoTopUpStatus: AutoReloadSettings['status'] | null
+  planActionIsPrimary: boolean
+}
+
+/** White when out of credits, auto top-up won't refill, and no plan action already takes white. */
+export function addCreditsEmphasis(
+  facts: AddCreditsEmphasisFacts
+): 'secondary' | 'inverted' {
+  const outOfCredits =
+    facts.availableCents !== null && facts.availableCents <= 0
+  return outOfCredits &&
+    facts.canTopUp &&
+    facts.autoTopUpStatus !== 'on' &&
+    !facts.planActionIsPrimary
+    ? 'inverted'
+    : 'secondary'
 }
