@@ -19,7 +19,6 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/composables/useErrorHandling'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('usePaymentRecoveryDialog', () => {
   beforeEach(() => {

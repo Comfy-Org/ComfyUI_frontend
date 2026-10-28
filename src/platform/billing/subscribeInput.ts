@@ -14,7 +14,7 @@
  */
 import type { SubscribeInput } from '@comfyorg/account-core/billing'
 
-import type { SubscribeOptions } from '@/platform/workspace/api/workspaceApi'
+import type { SubscribeOptions } from '@comfyorg/billing-core'
 
 export function subscribeInputFrom(
   planSlug: string,

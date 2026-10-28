@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const { reportError } = await import('@/platform/telemetry/reportError')
 
 describe('api.storeUserData', () => {

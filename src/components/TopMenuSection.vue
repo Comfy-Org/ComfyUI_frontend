@@ -80,7 +80,7 @@
                 :aria-label="t('menu.manageExtensions')"
                 @click="openCustomNodeManager"
               >
-                <i class="icon-[comfy--extensions-blocks] size-4" />
+                <i class="icon-[comfy--extensions-blocks]" />
                 <span
                   v-if="shouldShowRedDot"
                   class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
@@ -96,7 +96,7 @@
                 data-testid="run-bar-deploy"
                 @click="openDeployInstallationDialog"
               >
-                <i class="icon-[lucide--rocket] size-4" />
+                <i class="icon-[lucide--rocket]" />
               </Button>
               <Button
                 v-if="isCloud"
@@ -108,7 +108,7 @@
                 @click="() => openShareDialog().catch(toastErrorHandler)"
                 @pointerenter="prefetchShareDialog"
               >
-                <i class="icon-[comfy--send] size-4" />
+                <i class="icon-[comfy--send]" />
               </Button>
               <div v-if="!isRightSidePanelOpen" class="relative">
                 <Button
@@ -125,7 +125,7 @@
                   :aria-label="t('rightSidePanel.togglePanel')"
                   @click="openRightSidePanel"
                 >
-                  <i class="icon-[lucide--panel-right] size-4" />
+                  <i class="icon-[lucide--panel-right]" />
                 </Button>
                 <Badge
                   v-if="showErrorIndicatorOnPanelButton"

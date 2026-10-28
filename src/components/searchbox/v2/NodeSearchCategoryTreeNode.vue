@@ -34,10 +34,10 @@
           v-if="!hideChevrons"
           :class="
             cn(
-              'size-4 shrink-0 text-muted-foreground transition-[transform,opacity] duration-150',
+              'text-muted-foreground transition-[transform,opacity] duration-150',
               node.children?.length
                 ? 'icon-[lucide--chevron-down] opacity-0 group-hover/categories:opacity-100 group-has-focus-visible/categories:opacity-100'
-                : '',
+                : 'size-4 shrink-0',
               node.children?.length && !isExpanded && '-rotate-90'
             )
           "

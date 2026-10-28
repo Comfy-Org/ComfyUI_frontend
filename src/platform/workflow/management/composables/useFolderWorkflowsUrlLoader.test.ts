@@ -17,7 +17,6 @@ import { useFolderWorkflowsUrlLoader } from './useFolderWorkflowsUrlLoader'
 
 vi.mock(import('vue-router'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({

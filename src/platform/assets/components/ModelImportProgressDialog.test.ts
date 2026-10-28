@@ -11,8 +11,6 @@ import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 
 import ModelImportProgressDialog from './ModelImportProgressDialog.vue'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',

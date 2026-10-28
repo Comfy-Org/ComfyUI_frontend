@@ -7,7 +7,7 @@ import { toTierKey } from '@/platform/billing/subscription/constants/tierPricing
 import type {
   SubscriptionDuration,
   SubscriptionTier
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 /** The plan a customer is on, in the telemetry vocabulary; absent when it names none. */
 export function toCurrentTier(

@@ -11,7 +11,7 @@ import type {
 import type {
   SubscriptionDuration,
   SubscriptionTier
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 interface SubscriptionCancellationMetadataOptions {
   cancelAt?: string

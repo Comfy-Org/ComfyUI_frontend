@@ -125,7 +125,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["ingest-api"],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {

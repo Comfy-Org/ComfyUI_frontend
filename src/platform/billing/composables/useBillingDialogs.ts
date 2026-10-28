@@ -23,7 +23,7 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -185,7 +185,7 @@ export function useBillingDialogs() {
   }
 
   async function showCancelSubscriptionFlow(cancelAt?: string) {
-    const launchWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+    const launchWorkspaceId = useWorkspaceIdentity().activeWorkspaceId
     const cancellationFlow =
       await import('@/platform/billing/subscription/launchCancellationFlow')
     return cancellationFlow.launchCancellationFlow({

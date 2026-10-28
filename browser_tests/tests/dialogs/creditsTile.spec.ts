@@ -6,7 +6,7 @@ import type {
   BillingOpStatusResponse,
   BillingStatusResponse,
   CreateTopupResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'

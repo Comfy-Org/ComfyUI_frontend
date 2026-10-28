@@ -9,7 +9,6 @@ import type { ToastMessageOptions } from '@/types/extensionTypes'
 import { useWorkspaceStore } from './workspaceStore'
 
 vi.mock(import('firebase/auth'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 interface LegacyToastCase {
   expected: Partial<Toast>

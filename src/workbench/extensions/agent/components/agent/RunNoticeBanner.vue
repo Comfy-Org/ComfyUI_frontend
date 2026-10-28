@@ -47,7 +47,7 @@ const contextAction = computed(() => {
       return {
         label: 'agent.showTarget',
         name: 'agent.showTargetWorkflow',
-        icon: 'icon-[lucide--arrow-up-right] size-4',
+        icon: 'icon-[lucide--arrow-up-right]',
         run: () => emit('showTarget')
       }
     case 'followFailed':
@@ -70,8 +70,9 @@ const contextAction = computed(() => {
     :aria-live="liveness"
     class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-background p-4 ring-1 ring-border/50 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-muted"
   >
-    <span
-      class="icon-[heroicons--information-circle-20-solid] size-5 shrink-0 text-muted-foreground"
+    <i
+      aria-hidden="true"
+      class="icon-[heroicons--information-circle-20-solid] size-5 text-muted-foreground"
     />
     <p class="my-0 min-w-0 flex-1 text-sm">
       <template v-if="context">
@@ -105,7 +106,7 @@ const contextAction = computed(() => {
       class="shrink-0"
       @click="dismissed = true"
     >
-      <span class="icon-[lucide--x] size-5" />
+      <i aria-hidden="true" class="icon-[lucide--x] size-5" />
     </Button>
   </div>
 </template>

@@ -55,7 +55,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
         size="icon"
         :aria-label="t('agent.addToPrompt')"
       >
-        <span class="icon-[lucide--plus] size-4" />
+        <i aria-hidden="true" class="icon-[lucide--plus]" />
       </Button>
     </DropdownMenuTrigger>
     <MenuContent
@@ -70,7 +70,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
         class="mb-0.5"
         @select="emit('openAssets')"
       >
-        <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
+        <i aria-hidden="true" class="icon-[comfy--image-ai-edit]" />
         <span class="whitespace-nowrap">
           {{ t('agent.addFromAssets') }}
         </span>
@@ -82,7 +82,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
             :aria-description="nodeReferenceDisabledReason"
             @select="emit('selectNodes', $event)"
           >
-            <span class="icon-[comfy--node] size-4 shrink-0" />
+            <i aria-hidden="true" class="icon-[comfy--node]" />
             <span class="whitespace-nowrap">
               {{ t('agent.nodes') }}
             </span>
@@ -95,11 +95,11 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
         @update:open="onWorkflowSubmenuOpenChange"
       >
         <MenuSubTrigger>
-          <span class="icon-[comfy--workflow] size-4 shrink-0" />
+          <i aria-hidden="true" class="icon-[comfy--workflow]" />
           <span class="flex-1 text-left whitespace-nowrap">
             {{ t('agent.workflows') }}
           </span>
-          <span class="icon-[lucide--chevron-right] size-4 shrink-0" />
+          <i aria-hidden="true" class="icon-[lucide--chevron-right]" />
         </MenuSubTrigger>
         <MenuSubContent
           :side-offset="4"
@@ -108,7 +108,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
           class="agent-scope"
         >
           <MenuItem @select.prevent="workflowSubmenuOpen = false">
-            <span class="icon-[lucide--chevron-left] size-4 shrink-0" />
+            <i aria-hidden="true" class="icon-[lucide--chevron-left]" />
             <span>{{ t('g.back') }}</span>
           </MenuItem>
           <MenuItem
@@ -117,7 +117,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
             :disabled="workflowSelecting"
             @select.prevent="pickWorkflow(workflow)"
           >
-            <span class="icon-[comfy--workflow] size-4 shrink-0" />
+            <i aria-hidden="true" class="icon-[comfy--workflow]" />
             <span class="max-w-64 truncate">{{ workflow.name }}</span>
             <span
               v-if="workflow.id === undefined"

@@ -25,7 +25,7 @@
             <WorkspaceProfilePic
               v-else-if="showWorkspaceIcon"
               :workspace-name="workspaceName"
-              :subscription-tier="activeWorkspace?.subscriptionTier"
+              :subscription-tier="activeSummary?.subscriptionTier"
               :class="compact && 'size-full'"
             />
             <UserAvatar
@@ -34,10 +34,7 @@
               :class="compact && 'h-full w-auto'"
             />
 
-            <i
-              v-if="showArrow"
-              class="icon-[lucide--chevron-down] size-4 px-1"
-            />
+            <i v-if="showArrow" class="icon-[lucide--chevron-down] px-1" />
           </div>
         </Button>
       </PopoverTrigger>
@@ -46,7 +43,7 @@
         align="end"
         :class="
           cn(
-            'max-h-(--reka-popover-content-available-height) max-w-(--reka-popover-content-available-width) overflow-visible rounded-lg border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
+            'overflow-visible rounded-lg border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
             showWorkspacePopover ? 'w-fit max-w-96 min-w-80' : 'w-80'
           )
         "
@@ -76,14 +73,14 @@ import Button from '@comfyorg/design-system/button/Button'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const CurrentUserPopoverWorkspace = defineAsyncComponent(
-  () =>
-    import('@/platform/workspace/components/CurrentUserPopoverWorkspace.vue')
+  () => import('@/platform/account/components/CurrentUserPopoverWorkspace.vue')
 )
 
 const { showArrow = true, compact = false } = defineProps<{
@@ -100,9 +97,9 @@ const photoURL = computed<string | undefined>(
 const {
   workspaceName: teamWorkspaceName,
   initState,
-  isInPersonalWorkspace,
-  activeWorkspace
+  isInPersonalWorkspace
 } = storeToRefs(useTeamWorkspaceStore())
+const { activeSummary } = storeToRefs(useWorkspaceBillingStateStore())
 
 const showWorkspaceSkeleton = computed(
   () => isCloud && initState.value === 'loading'

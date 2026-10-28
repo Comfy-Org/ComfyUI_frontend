@@ -18,8 +18,6 @@ import { toNodeId } from '@/types/nodeId'
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 class TestSink extends LGraphNode {
   constructor() {
     super('Test Sink')

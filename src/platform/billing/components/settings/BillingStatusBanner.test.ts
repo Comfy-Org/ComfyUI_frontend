@@ -15,10 +15,8 @@ import type {
   BillingPortalOutcome,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
-import type {
-  BillingStatus,
-  WorkspaceType
-} from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatus } from '@comfyorg/billing-core'
+import type { WorkspaceWithRole } from '@comfyorg/ingest-types'
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 
 interface Subscription {
@@ -41,7 +39,7 @@ const state = vi.hoisted(() => ({
     scheduledChange: null
   } as Subscription | null,
   renewalDate: null as string | null,
-  workspaceType: 'team' as WorkspaceType,
+  workspaceType: 'team' as WorkspaceWithRole['type'],
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
   canReactivatePlan: true,
@@ -90,19 +88,16 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: computed(() => ({
-        canManageSubscription: state.canManageSubscription,
-        canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-      })),
-      workspaceType: computed(() => state.workspaceType),
-      canReactivatePlan: computed(() => state.canReactivatePlan)
-    })
+vi.mock<unknown>(import('@/platform/billing/composables/useBillingUI'), () => ({
+  useBillingUI: () => ({
+    permissions: computed(() => ({
+      canManageSubscription: state.canManageSubscription,
+      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+    })),
+    workspaceType: computed(() => state.workspaceType),
+    canReactivatePlan: computed(() => state.canReactivatePlan)
   })
-)
+}))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 

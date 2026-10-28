@@ -10,7 +10,7 @@
         type="button"
         :aria-label="compact ? t('load3d.menuBar.upDirection') : undefined"
       >
-        <i class="icon-[lucide--move-3d] size-4" />
+        <i class="icon-[lucide--move-3d]" />
         <span v-if="!compact">{{ t('load3d.menuBar.upDirection') }}</span>
       </Button>
     </PopoverTrigger>
@@ -41,7 +41,7 @@
         type="button"
         :aria-label="compact ? t('load3d.menuBar.material') : undefined"
       >
-        <i class="icon-[lucide--box] size-4" />
+        <i class="icon-[lucide--box]" />
         <span v-if="!compact">{{ t('load3d.menuBar.material') }}</span>
       </Button>
     </PopoverTrigger>
@@ -73,7 +73,7 @@
     :aria-label="compact ? t('load3d.menuBar.skeleton') : undefined"
     @click="toggleSkeleton"
   >
-    <i class="icon-[lucide--bone] size-4" />
+    <i class="icon-[lucide--bone]" />
     <span v-if="!compact">{{ t('load3d.menuBar.skeleton') }}</span>
   </Button>
 </template>

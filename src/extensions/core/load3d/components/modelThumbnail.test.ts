@@ -23,7 +23,6 @@ vi.mock(import('@comfyorg/viewport3d/load3d/createLoad3d'), () => ({
   createLoad3d
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'))
 const reportErrorMock = vi.mocked(reportError)
 
 const releaseSharedRenderer = vi.hoisted(() => vi.fn())

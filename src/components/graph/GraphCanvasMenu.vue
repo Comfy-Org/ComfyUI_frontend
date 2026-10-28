@@ -34,7 +34,7 @@
           class="size-8 bg-transparent p-0"
           @click="() => commandStore.execute('Comfy.Canvas.FitView')"
         >
-          <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--focus]" aria-hidden="true" />
         </Button>
 
         <Button
@@ -53,7 +53,7 @@
         >
           <span class="inline-flex items-center gap-1 px-2 text-xs">
             <span>{{ canvasStore.appScalePercentage }}%</span>
-            <i class="icon-[lucide--chevron-down] size-4" aria-hidden="true" />
+            <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
           </span>
         </Button>
 
@@ -73,7 +73,7 @@
           "
           @click="onMinimapToggleClick"
         >
-          <i class="icon-[lucide--map] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--map]" aria-hidden="true" />
         </Button>
 
         <Button
@@ -90,7 +90,7 @@
           :style="stringifiedMinimapStyles.buttonStyles"
           @click="onLinkVisibilityToggleClick"
         >
-          <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--route-off]" aria-hidden="true" />
         </Button>
       </div>
     </div>

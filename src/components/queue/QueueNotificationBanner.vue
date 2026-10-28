@@ -39,7 +39,7 @@
         />
         <i
           v-else
-          :class="cn(iconClass, 'size-4', iconColorClass)"
+          :class="cn(iconClass, iconColorClass)"
           aria-hidden="true"
           data-testid="notification-icon"
         />

@@ -6,11 +6,11 @@
       @click="handleViewModeChange(MEDIA_ASSET_VIEW_MODE.list)"
     >
       <span class="flex items-center gap-2">
-        <i class="icon-[lucide--table-of-contents] size-4" />
+        <i class="icon-[lucide--table-of-contents]" />
         <span>{{ $t('sideToolbar.queueProgressOverlay.viewList') }}</span>
       </span>
       <i
-        class="ml-auto icon-[lucide--check] size-4"
+        class="ml-auto icon-[lucide--check]"
         :class="viewMode !== MEDIA_ASSET_VIEW_MODE.list && 'opacity-0'"
       />
     </Button>
@@ -21,11 +21,11 @@
       @click="handleViewModeChange(MEDIA_ASSET_VIEW_MODE.gridSmall)"
     >
       <span class="flex items-center gap-2">
-        <i class="icon-[lucide--grid-3x3] size-4" />
+        <i class="icon-[lucide--grid-3x3]" />
         <span>{{ $t('sideToolbar.mediaAssets.viewGridSmall') }}</span>
       </span>
       <i
-        class="ml-auto icon-[lucide--check] size-4"
+        class="ml-auto icon-[lucide--check]"
         :class="viewMode !== MEDIA_ASSET_VIEW_MODE.gridSmall && 'opacity-0'"
       />
     </Button>
@@ -36,11 +36,11 @@
       @click="handleViewModeChange(MEDIA_ASSET_VIEW_MODE.grid)"
     >
       <span class="flex items-center gap-2">
-        <i class="icon-[lucide--layout-grid] size-4" />
+        <i class="icon-[lucide--layout-grid]" />
         <span>{{ $t('sideToolbar.mediaAssets.viewGridLarge') }}</span>
       </span>
       <i
-        class="ml-auto icon-[lucide--check] size-4"
+        class="ml-auto icon-[lucide--check]"
         :class="viewMode !== MEDIA_ASSET_VIEW_MODE.grid && 'opacity-0'"
       />
     </Button>
@@ -55,7 +55,7 @@
       >
         <span>{{ $t('sideToolbar.mediaAssets.sortNewestFirst') }}</span>
         <i
-          class="ml-auto icon-[lucide--check] size-4"
+          class="ml-auto icon-[lucide--check]"
           :class="sortBy !== 'newest' && 'opacity-0'"
         />
       </Button>
@@ -67,7 +67,7 @@
       >
         <span>{{ $t('sideToolbar.mediaAssets.sortOldestFirst') }}</span>
         <i
-          class="ml-auto icon-[lucide--check] size-4"
+          class="ml-auto icon-[lucide--check]"
           :class="sortBy !== 'oldest' && 'opacity-0'"
         />
       </Button>
@@ -75,7 +75,7 @@
       <Button variant="textonly" class="w-full" @click="handleSortChange('az')">
         <span>{{ $t('sideToolbar.mediaAssets.sortAToZ') }}</span>
         <i
-          class="ml-auto icon-[lucide--check] size-4"
+          class="ml-auto icon-[lucide--check]"
           :class="sortBy !== 'az' && 'opacity-0'"
         />
       </Button>
@@ -83,7 +83,7 @@
       <Button variant="textonly" class="w-full" @click="handleSortChange('za')">
         <span>{{ $t('sideToolbar.mediaAssets.sortZToA') }}</span>
         <i
-          class="ml-auto icon-[lucide--check] size-4"
+          class="ml-auto icon-[lucide--check]"
           :class="sortBy !== 'za' && 'opacity-0'"
         />
       </Button>
@@ -96,7 +96,7 @@
         >
           <span>{{ $t('sideToolbar.mediaAssets.sortLongestFirst') }}</span>
           <i
-            class="ml-auto icon-[lucide--check] size-4"
+            class="ml-auto icon-[lucide--check]"
             :class="sortBy !== 'longest' && 'opacity-0'"
           />
         </Button>
@@ -108,7 +108,7 @@
         >
           <span>{{ $t('sideToolbar.mediaAssets.sortFastestFirst') }}</span>
           <i
-            class="ml-auto icon-[lucide--check] size-4"
+            class="ml-auto icon-[lucide--check]"
             :class="sortBy !== 'fastest' && 'opacity-0'"
           />
         </Button>

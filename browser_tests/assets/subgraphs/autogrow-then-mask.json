@@ -1,0 +1,59 @@
+{
+  "id": "3b5e0c1d-7a4f-4c2e-8d96-fe3325000001",
+  "revision": 0,
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "title": "Image source",
+      "pos": [40, 120],
+      "size": [282.796875, 346],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "IMAGE", "type": "IMAGE", "links": [] },
+        { "name": "MASK", "type": "MASK", "links": [] }
+      ],
+      "properties": { "Node name for S&R": "LoadImage" },
+      "widgets_values": ["example.png", "image"]
+    },
+    {
+      "id": 2,
+      "type": "AutogrowThenMaskTestNode",
+      "title": "Autogrow Then Mask",
+      "pos": [420, 120],
+      "size": [260, 120],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "image0",
+          "name": "images.image0",
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "image1",
+          "name": "images.image1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        { "name": "mask", "type": "MASK", "link": null }
+      ],
+      "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": [] }],
+      "properties": { "Node name for S&R": "AutogrowThenMaskTestNode" },
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": { "ds": { "scale": 1, "offset": [0, 0] } },
+  "version": 0.4
+}

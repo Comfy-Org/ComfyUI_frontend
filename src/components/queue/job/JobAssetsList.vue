@@ -58,7 +58,7 @@
                   :aria-label="t('g.cancel')"
                   @click.stop="emitCancelItem(row.job)"
                 >
-                  <i class="icon-[lucide--x] size-4" />
+                  <i class="icon-[lucide--x]" />
                 </Button>
                 <Button
                   v-else-if="isFailedDeletable(row.job)"
@@ -67,7 +67,7 @@
                   :aria-label="t('g.delete')"
                   @click.stop="emitDeleteItem(row.job)"
                 >
-                  <i class="icon-[lucide--trash-2] size-4" />
+                  <i class="icon-[lucide--trash-2]" />
                 </Button>
                 <Button
                   v-else-if="row.job.state === 'completed'"
@@ -83,7 +83,7 @@
                   :aria-label="t('g.more')"
                   @click.stop="$emit('menu', row.job, $event)"
                 >
-                  <i class="icon-[lucide--ellipsis] size-4" />
+                  <i class="icon-[lucide--ellipsis]" />
                 </Button>
               </template>
             </AssetsListItem>

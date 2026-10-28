@@ -1,12 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 
 import { useLinkPresentationStore } from './linkPresentationStore'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const graphA = {
   rootGraphId: toRootGraphId('graph-a'),

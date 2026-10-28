@@ -16,7 +16,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import CreditsTile from '@/platform/billing/subscription/components/CreditsTile.vue'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
-import type { TeamCreditStopSummary } from '@/platform/workspace/api/workspaceApi'
+import type { TeamCreditStopSummary } from '@comfyorg/billing-core'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 
 type Balance = Pick<

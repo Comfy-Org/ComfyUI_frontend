@@ -41,7 +41,7 @@ import {
 import type {
   BillingAuthenticationState,
   PreviewSubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 import { useCheckoutCopy } from '@/platform/billing/composables/useCheckoutCopy'
 
 const {

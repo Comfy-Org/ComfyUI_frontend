@@ -21,7 +21,7 @@ import type {
   SubscriptionTier,
   TeamCreditStops,
   TeamCreditStopSummary
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 /** `unknown` until the active workspace has loaded; no billing call may be made yet. */
 export type BillingType = 'legacy' | 'workspace' | 'unknown'

@@ -20,7 +20,7 @@
             "
             @click="grid = !grid"
           >
-            <i class="icon-[lucide--grid-3x3] size-4" />
+            <i class="icon-[lucide--grid-3x3]" />
             <span>{{ $t('boundingBoxes.grid') }}</span>
           </Button>
           <WidgetHistoryButtons
@@ -36,7 +36,7 @@
             :class="actionBtnClass"
             @click="clearAll"
           >
-            <i class="icon-[lucide--trash-2] size-4" />
+            <i class="icon-[lucide--trash-2]" />
             <span>{{ $t('boundingBoxes.clearAll') }}</span>
           </Button>
           <slot name="toolbar-end" />

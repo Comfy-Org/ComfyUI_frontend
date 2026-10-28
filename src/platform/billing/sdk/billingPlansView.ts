@@ -4,7 +4,7 @@ import type {
   BillingPlansResponse,
   Plan,
   TeamCreditStops
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { asSafeNumber } from './safeInt64'
 

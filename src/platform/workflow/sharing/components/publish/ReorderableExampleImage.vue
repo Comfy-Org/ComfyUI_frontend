@@ -38,7 +38,7 @@
       class="absolute top-1 right-1 flex size-6 bg-black/60 text-white opacity-0 transition-opacity not-group-has-focus-visible/grid:group-hover:opacity-100 group-focus-visible:opacity-100 hover:bg-black/80"
       @click="$emit('remove', image.id)"
     >
-      <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+      <i class="icon-[lucide--x]" aria-hidden="true" />
     </Button>
   </div>
 </template>

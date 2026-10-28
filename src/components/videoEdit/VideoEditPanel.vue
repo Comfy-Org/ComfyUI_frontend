@@ -98,12 +98,7 @@
         @click="isPlaying = !isPlaying"
       >
         <i
-          :class="
-            cn(
-              isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]',
-              'size-4'
-            )
-          "
+          :class="isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'"
         />
       </button>
       <span
@@ -129,7 +124,7 @@
         :aria-label="t('videoEdit.fullscreen')"
         @click="enterFullscreen"
       >
-        <i class="icon-[lucide--maximize] size-4" />
+        <i class="icon-[lucide--maximize]" />
       </button>
       <button
         type="button"
@@ -140,10 +135,7 @@
       >
         <i
           :class="
-            cn(
-              isMuted ? 'icon-[lucide--volume-x]' : 'icon-[lucide--volume-2]',
-              'size-4'
-            )
+            isMuted ? 'icon-[lucide--volume-x]' : 'icon-[lucide--volume-2]'
           "
         />
       </button>

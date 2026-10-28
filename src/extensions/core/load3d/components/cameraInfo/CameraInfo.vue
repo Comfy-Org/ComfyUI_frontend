@@ -19,12 +19,7 @@
         @click="toggleGizmos"
       >
         <i
-          :class="
-            cn(
-              'size-4',
-              gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'
-            )
-          "
+          :class="gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'"
         />
         <span v-if="!compact">{{ gizmosLabel }}</span>
       </Button>
@@ -49,7 +44,7 @@
         "
         @click="selectTransformGizmo(option.value)"
       >
-        <i :class="cn('size-4', option.icon)" />
+        <i :class="option.icon" />
         <span v-if="!compact">{{ $t(option.labelKey) }}</span>
       </Button>
     </template>
@@ -64,7 +59,7 @@
         :aria-label="lookThroughLabel"
         @click="toggleLookThrough"
       >
-        <i class="icon-[lucide--video] size-4" />
+        <i class="icon-[lucide--video]" />
       </Button>
     </template>
   </ViewportWidgetShell>

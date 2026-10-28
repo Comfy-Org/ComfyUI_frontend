@@ -53,6 +53,12 @@ test.describe(
           'the retired blanket-beta sentence is not appended'
         ).not.toContainText('during BETA')
         await expect(notice).toHaveAttribute('data-placement', PLACEMENT)
+        await expect(
+          notice.getByRole('link', { name: 'Learn more' })
+        ).toHaveAttribute(
+          'href',
+          'https://docs.comfy.org/agent-tools/in-app-agent#what-it-costs'
+        )
 
         const composer = agentPanel.root.getByTestId('agent-composer')
         await expect

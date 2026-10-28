@@ -12,7 +12,6 @@ import { startLocalWebSession } from '@/platform/auth/localWeb/localWebSession'
 import { reportError } from '@/platform/telemetry/reportError'
 
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const ACCESS_TOKEN = `e30.${btoa(
   JSON.stringify({ sub: 'user-1', workspace_id: 'ws-1' })

@@ -411,6 +411,26 @@ export class NodeReference {
   async getInput(index: number) {
     return new NodeSlotReference('input', index, this)
   }
+  async getInputByName(name: string) {
+    const index = await this.comfyPage.page.evaluate(
+      ([id, inputName]) => {
+        const node = window.app!.canvas.graph!.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+
+        const inputIndex = node.inputs.findIndex(
+          (input) => input.name === inputName
+        )
+        if (inputIndex < 0) {
+          throw new Error(`Input "${inputName}" not found on node ${id}`)
+        }
+
+        return inputIndex
+      },
+      [this.id, name] as const
+    )
+
+    return new NodeSlotReference('input', index, this)
+  }
   async getWidget(index: number) {
     return new NodeWidgetReference(index, this)
   }

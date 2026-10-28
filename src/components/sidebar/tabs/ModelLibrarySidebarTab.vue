@@ -9,7 +9,7 @@
         :aria-label="$t('g.refresh')"
         @click="withLoadFailureToast(() => modelStore.refresh())"
       >
-        <i class="icon-[lucide--refresh-cw] size-4" />
+        <i class="icon-[lucide--refresh-cw]" />
       </Button>
       <Button
         v-if="!flags.assetsEnabled"
@@ -20,7 +20,7 @@
         :aria-label="$t('g.loadAllFolders')"
         @click="withLoadFailureToast(() => modelStore.loadModels())"
       >
-        <i class="icon-[lucide--cloud-download] size-4" />
+        <i class="icon-[lucide--cloud-download]" />
       </Button>
     </template>
     <template #header>

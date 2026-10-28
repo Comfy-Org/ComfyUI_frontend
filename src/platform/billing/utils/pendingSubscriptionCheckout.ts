@@ -1,6 +1,6 @@
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingOpStatusResponse } from '@comfyorg/billing-core'
 
 const STORAGE_KEY = 'comfy:pending-subscription-checkout'
 const MAX_AGE_MS = 24 * 60 * 60_000

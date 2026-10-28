@@ -44,8 +44,6 @@ import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 class PromotedWidgetNode extends LGraphNode {
   constructor() {
     super('promoted-widget')

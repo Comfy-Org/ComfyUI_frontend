@@ -13,8 +13,6 @@ import type {
 } from '@/types/searchServiceTypes'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 vi.mock(import('@/services/gateway/registrySearchGateway'), () => {
   const gateway = {
     searchPacks: vi.fn(),

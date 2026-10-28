@@ -22,7 +22,7 @@
           :class="tabButtonClass('publishToHub')"
           @click="handleDialogModeChange('publishToHub')"
         >
-          <i class="icon-[lucide--globe] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--globe]" aria-hidden="true" />
           {{ $t('shareWorkflow.publishToHubTab') }}
         </Button>
       </div>
@@ -37,7 +37,7 @@
         {{ $t('shareWorkflow.shareLinkTab') }}
       </DialogTitle>
       <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
-        <i class="icon-[lucide--x] size-4" />
+        <i class="icon-[lucide--x]" />
       </Button>
     </header>
 

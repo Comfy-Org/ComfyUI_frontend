@@ -9,7 +9,7 @@
     :aria-label="$t('sideToolbar.closeSidebar')"
     @click="sidebarTabStore.activeSidebarTabId = null"
   >
-    <i class="icon-[lucide--x] size-4" />
+    <i class="icon-[lucide--x]" />
   </Button>
 </template>
 

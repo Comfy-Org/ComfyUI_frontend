@@ -187,7 +187,7 @@ const PRIMARY_BUTTON =
       >
         <i
           v-if="loading"
-          class="icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
+          class="icon-[lucide--loader-circle] motion-safe:animate-spin"
           aria-hidden="true"
         />
         <span :class="cn(loading && 'sr-only')">

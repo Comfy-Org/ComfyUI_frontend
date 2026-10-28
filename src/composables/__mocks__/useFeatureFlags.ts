@@ -46,7 +46,6 @@ const defaultFlags: FeatureFlags = {
   v1PaymentRecovery: false,
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
-  onboardingTourEnabled: false,
   assetsEnabled: false,
   agentInAppExperienceEnabled: false
 }

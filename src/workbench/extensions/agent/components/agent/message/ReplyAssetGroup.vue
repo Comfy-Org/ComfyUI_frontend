@@ -411,7 +411,8 @@ function inspect(asset: ReplyVisualAssetData): void {
       @click="expanded = !expanded"
     >
       {{ expanded ? t('agent.showLess') : t('agent.showMore') }}
-      <span
+      <i
+        aria-hidden="true"
         :class="
           cn('icon-[lucide--chevron-down] size-3', expanded && 'rotate-180')
         "

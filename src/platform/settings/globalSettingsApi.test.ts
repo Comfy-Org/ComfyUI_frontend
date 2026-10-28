@@ -3,6 +3,7 @@ vi.mock(import('@/services/dialogService'))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -159,4 +160,28 @@ describe('Global Settings transport', () => {
       })
     }
   )
+  describe('on the web session', () => {
+    const unavailable = () => new Response(null, { status: 503 })
+
+    it('reads again after a 503 with exactly two sends', async () => {
+      vi.useFakeTimers()
+      const answers = [unavailable(), Response.json(stored)]
+      const send = vi.fn<WebSessionSend>(async () => answers.shift()!)
+
+      const pending = getGlobalSetting(key, send)
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      await expect(pending).resolves.toEqual(stored)
+      expect(send).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not send a write twice after a 503', async () => {
+      const send = vi.fn<WebSessionSend>(async () => unavailable())
+
+      await expect(
+        setGlobalSetting({ key, value: true }, send)
+      ).rejects.toMatchObject({ status: 503 })
+      expect(send).toHaveBeenCalledOnce()
+    })
+  })
 })

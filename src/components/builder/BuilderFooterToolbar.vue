@@ -87,10 +87,7 @@
                 data-testid="builder-save-as-chevron"
                 class="w-6 rounded-l-none border-l px-0"
               >
-                <i
-                  class="icon-[lucide--chevron-down] size-4"
-                  aria-hidden="true"
-                />
+                <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
               </Button>
             </template>
           </Menu>

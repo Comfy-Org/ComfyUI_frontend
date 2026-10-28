@@ -34,7 +34,7 @@
           class="shrink-0 hover:bg-transparent"
           @click="onBackToTemplates"
         >
-          <i aria-hidden="true" class="icon-[lucide--arrow-left] size-4" />
+          <i aria-hidden="true" class="icon-[lucide--arrow-left]" />
           {{ pageTitle }}
         </Button>
       </nav>
@@ -286,7 +286,7 @@
                     class="not-group-hover/card:opacity-0"
                     @click.stop="openTutorial(template)"
                   >
-                    <i class="icon-[lucide--info] size-4" />
+                    <i class="icon-[lucide--info]" />
                   </Button>
                   <PaidTemplateBadge v-if="template.isPartnerNode" />
                 </template>

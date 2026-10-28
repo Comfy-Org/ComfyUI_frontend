@@ -20,7 +20,6 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('./agentAuth'))
 
 import {

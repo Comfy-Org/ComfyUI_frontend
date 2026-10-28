@@ -8,9 +8,10 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -49,9 +50,7 @@ const mockMembers = {
         role: 'owner',
         created_at: '2025-01-01',
         joined_at: '2025-01-01',
-        isSubscribed: true,
-        subscriptionPlan: null,
-        subscriptionTier: 'PRO',
+        subscription_tier: 'PRO',
         members,
         pendingInvites: [],
         membersLoaded: true,
@@ -62,7 +61,7 @@ const mockMembers = {
   }
 }
 
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true,
@@ -123,11 +122,15 @@ describe('useDowngradeToPersonal', () => {
   let windowOpen: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const workspaceUI = vi.mocked(useBillingUI())
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
       ...defaultPermissions,
-      ...mockPermissions.value
+      ...mockPermissions.value,
+      canManageSubscription: receiveServerFact(
+        'can_manage_subscription',
+        mockPermissions.value.canManageSubscription
+      )
     }))
     const billingContext = useBillingContext()
     vi.mocked(useBillingContext).mockReturnValue(billingContext)

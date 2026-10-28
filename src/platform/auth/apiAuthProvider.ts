@@ -1,4 +1,5 @@
 import type { AuthHeader } from '@/types/authTypes'
+import type { RetryPolicy } from '@/utils/retryPolicy'
 
 export interface RetrySignalLifecycle {
   clearInitialTimeout: () => void
@@ -19,7 +20,8 @@ export interface ApiAuthProvider {
     input: RequestInfo | URL,
     init: RequestInit,
     retryOn401: boolean,
-    retrySignalLifecycle?: RetrySignalLifecycle
+    retrySignalLifecycle?: RetrySignalLifecycle,
+    retryPolicy?: RetryPolicy
   ): Promise<Response>
 }
 

@@ -394,7 +394,7 @@ function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
   if (running.value) return
-  composer.submit()
+  composer.submit('keyboard')
 }
 
 const primaryActionLabel = computed(() =>
@@ -449,7 +449,7 @@ const primaryActionShortcut = computed(() =>
 function onPrimaryAction(): void {
   if (openingChat) return
   if (running.value) emit('stop', 'button')
-  else composer.submit()
+  else composer.submit('explicit')
 }
 
 const composerContainerRef = useTemplateRef<HTMLDivElement>(
@@ -632,7 +632,7 @@ defineExpose({
         "
       >
         <template v-if="uploadingAttachmentCount > 0">
-          <span
+          <i
             aria-hidden="true"
             class="icon-[lucide--loader-circle] size-3 animate-spin"
           />
@@ -649,7 +649,10 @@ defineExpose({
           role="status"
           class="-mb-2 flex items-center gap-1 px-3 pt-3 text-xs text-muted-foreground"
         >
-          <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
+          <i
+            aria-hidden="true"
+            class="icon-[lucide--loader-circle] size-3 animate-spin"
+          />
           {{ t('agent.savingWorkflow') }}
         </div>
         <div class="grid flex-1">

@@ -75,7 +75,6 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import Button from '@comfyorg/design-system/button/Button'
 import TagEditor from '@/components/common/TagEditor.vue'
 import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
@@ -116,6 +115,7 @@ const {
 }>()
 
 const emit = defineEmits<{
+  invitesCreated: [invites: WorkspacePendingInvite[]]
   submitted: [emails: string[], invites: WorkspacePendingInvite[]]
   cancel: []
 }>()
@@ -124,7 +124,6 @@ const { t } = useI18n()
 const toast = useToast()
 const telemetry = useTelemetry()
 const workspaceStore = useTeamWorkspaceStore()
-const { fetchStatus } = useBillingContext()
 
 const emails = ref<string[]>([])
 const invitedEmails = ref<string[]>([])
@@ -260,7 +259,7 @@ async function onSubmit() {
         source,
         count: successfulEmails.length
       })
-      void fetchStatus().catch(console.error)
+      emit('invitesCreated', createdInvites)
     }
 
     if (failedEmails.length === 0) {

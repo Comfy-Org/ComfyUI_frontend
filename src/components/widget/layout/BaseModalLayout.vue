@@ -58,7 +58,7 @@
               :aria-label="t('g.showRightPanel')"
               @click="toggleRightPanel"
             >
-              <i class="icon-[lucide--panel-right] size-4" />
+              <i class="icon-[lucide--panel-right]" />
             </Button>
             <Button
               size="lg"
@@ -121,7 +121,7 @@
               :aria-label="t('g.hideRightPanel')"
               @click="toggleRightPanel"
             >
-              <i class="icon-[lucide--panel-right-close] size-4" />
+              <i class="icon-[lucide--panel-right-close]" />
             </Button>
             <Button
               size="lg"

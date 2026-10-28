@@ -92,7 +92,12 @@ test.describe(
     }) => {
       await openMoreOptionsMenu(comfyPage, 'KSampler')
 
-      await comfyPage.page.getByTestId('more-options-button').click()
+      await comfyPage.selectionToolbox
+        .getByRole('button', {
+          name: 'More Options',
+          exact: true
+        })
+        .click()
 
       await expect(comfyPage.contextMenu.ariaMenu).toBeHidden()
     })

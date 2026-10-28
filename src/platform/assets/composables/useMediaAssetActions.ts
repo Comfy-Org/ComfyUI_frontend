@@ -1,4 +1,4 @@
-import { uniqBy } from 'es-toolkit'
+import { compact, uniqBy } from 'es-toolkit'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { inject } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -32,7 +32,10 @@ import { clearDeletedAssetWidgetValues } from '@/platform/assets/utils/clearDele
 import { clearNodePreviewCacheForValues } from '@/platform/assets/utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '@/platform/assets/utils/markDeletedAssetsAsMissingMedia'
 import { getTotalAssetOutputCount } from '@/platform/assets/utils/outputAssetCountUtil'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import {
+  getStoredOutputIdentity,
+  resolveOutputAssetItems
+} from '@/platform/assets/utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -57,35 +60,16 @@ function createAssetWidgetPath(asset: AssetItem): string {
   })
 }
 
-/**
- * Canonical widget-value strings that may reference this asset, scoped by the
- * asset's source type so basenames cannot cross-match across input/output.
- *
- * Output assets emit `<name> [output]` (and the subfolder-prefixed form when
- * present in metadata). Input/temp assets emit the bare name plus the explicit
- * annotation. The content `hash` is included whenever present, since
- * cloud-stored assets can be referenced by hash.
- */
 function widgetValueVariants(
   name: string | undefined,
   type: string | undefined,
   subfolder?: string,
   hash?: string
 ): string[] {
-  const variants: string[] = []
-  if (name) {
-    if (type === 'output') {
-      const path = subfolder ? `${subfolder}/${name}` : name
-      variants.push(`${path} [output]`)
-    } else if (type === 'temp') {
-      variants.push(`${name} [temp]`)
-    } else {
-      variants.push(name)
-      variants.push(`${name} [input]`)
-    }
-  }
-  if (hash) variants.push(hash)
-  return variants
+  const rootFolder = isResultItemType(type) ? type : undefined
+  return compact([name, hash]).map((filename) =>
+    createAnnotatedPath(filename, { rootFolder, subfolder })
+  )
 }
 
 export function useMediaAssetActions() {
@@ -623,7 +607,8 @@ export function useMediaAssetActions() {
           const variants = widgetValueVariants(
             output.filename,
             output.type,
-            output.subfolder
+            output.subfolder,
+            output.hash
           )
           return {
             kind: 'asset',
@@ -636,11 +621,12 @@ export function useMediaAssetActions() {
         })
         if (childAssets.length > 0) return childAssets
 
+        const stored = getStoredOutputIdentity(asset)
         const variants = widgetValueVariants(
           asset.name,
-          getAssetType(asset, 'input'),
+          stored?.type ?? getAssetType(asset, 'input'),
           metadata?.subfolder,
-          asset.hash
+          asset.hash ?? stored?.hash
         )
         return [
           {
@@ -742,9 +728,6 @@ export function useMediaAssetActions() {
     const rootGraph = app.rootGraph
     if (deletedVariants.size) {
       const nodeOutputStore = useNodeOutputStore()
-      // Order matters: mark + cache-clear both look up nodes by
-      // current widget.value, so they must run before
-      // clearDeletedAssetWidgetValues blanks those values.
       markDeletedAssetsAsMissingMedia(rootGraph, deletedVariants)
       clearNodePreviewCacheForValues(rootGraph, deletedVariants, (node) =>
         nodeOutputStore.removeNodeOutputsForNode(node)

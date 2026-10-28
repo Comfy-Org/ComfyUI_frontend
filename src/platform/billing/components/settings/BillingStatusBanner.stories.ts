@@ -8,8 +8,8 @@ import {
   setCanSubscribeSelfServeMock,
   setCanTopUpMock
 } from '@/storybook/mocks/useBillingCapabilities'
-import type { WorkspaceUIMockState } from '@/storybook/mocks/useWorkspaceUI'
-import { setWorkspaceUIMock } from '@/storybook/mocks/useWorkspaceUI'
+import type { WorkspaceUIMockState } from '@/storybook/mocks/useBillingUI'
+import { setWorkspaceUIMock } from '@/storybook/mocks/useBillingUI'
 
 import BillingStatusBanner from './BillingStatusBanner.vue'
 

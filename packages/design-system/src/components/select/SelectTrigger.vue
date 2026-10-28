@@ -47,7 +47,7 @@ const {
   >
     <slot />
     <SelectIcon as-child>
-      <i class="icon-[lucide--chevron-down] shrink-0 text-muted-foreground" />
+      <i class="icon-[lucide--chevron-down] text-muted-foreground" />
     </SelectIcon>
   </SelectTrigger>
 </template>

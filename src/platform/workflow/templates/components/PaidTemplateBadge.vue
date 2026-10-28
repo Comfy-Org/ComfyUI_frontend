@@ -38,7 +38,7 @@ const tooltipCopy = computed(() => {
         >
           <template #icon>
             <i
-              class="icon-[tabler--crown-filled] size-4 text-brand-yellow"
+              class="icon-[tabler--crown-filled] text-brand-yellow"
               aria-hidden="true"
             />
           </template>

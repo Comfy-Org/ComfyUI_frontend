@@ -41,7 +41,6 @@ import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
 
 vi.mock(import('@/scripts/app'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class SaveImageNode extends LGraphNode {
   constructor() {

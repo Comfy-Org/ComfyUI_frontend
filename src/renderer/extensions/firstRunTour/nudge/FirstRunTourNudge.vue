@@ -24,7 +24,7 @@
         data-testid="first-run-nudge-cursor"
         :class="
           cn(
-            'absolute icon-[lucide--mouse-pointer-2] size-4 text-foreground drop-shadow-md',
+            'absolute icon-[lucide--mouse-pointer-2] text-foreground drop-shadow-md',
             cursorEdgeClass(placement)
           )
         "
@@ -42,7 +42,7 @@
             :aria-label="t('g.close')"
             @click="dismissNudge"
           >
-            <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+            <i class="icon-[lucide--x]" aria-hidden="true" />
           </Button>
         </div>
 

@@ -3,8 +3,6 @@ import { expect, it, vi } from 'vitest'
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob: vi.fn() }))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/utils/vintageClipboard'), () => ({

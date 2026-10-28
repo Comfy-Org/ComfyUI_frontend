@@ -10,7 +10,7 @@
       rel="noopener noreferrer"
     >
       {{ $t('deployToComfyApi.readDocs') }}
-      <span class="icon-[lucide--square-arrow-out-up-right] size-4" />
+      <i aria-hidden="true" class="icon-[lucide--square-arrow-out-up-right]" />
     </Button>
   </DefineDocsLink>
 
@@ -87,11 +87,11 @@
             @click="copyHandoff"
           >
             <template v-if="copied">
-              <i class="icon-[lucide--check] size-4" aria-hidden="true" />
+              <i class="icon-[lucide--check]" aria-hidden="true" />
               {{ $t('deployToComfyApi.copied') }}
             </template>
             <template v-else>
-              <i class="icon-[lucide--copy] size-4" aria-hidden="true" />
+              <i class="icon-[lucide--copy]" aria-hidden="true" />
               {{ $t('deployToComfyApi.deployWithAgent') }}
             </template>
           </Button>

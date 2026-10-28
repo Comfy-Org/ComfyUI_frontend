@@ -15,7 +15,7 @@
       data-testid="queue-button"
       @click="queuePrompt"
     >
-      <i :class="cn(iconClass, 'size-4')" data-testid="queue-button-icon" />
+      <i :class="iconClass" data-testid="queue-button-icon" />
       {{ queueButtonLabel }}
     </Button>
 

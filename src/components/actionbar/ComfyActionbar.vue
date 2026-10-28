@@ -40,7 +40,7 @@
           :aria-label="t('menu.interrupt')"
           @click="cancelCurrentJob"
         >
-          <i class="icon-[lucide--x] size-4" />
+          <i class="icon-[lucide--x]" />
         </Button>
         <ContextMenu :model="queueContextMenuItems">
           <Button

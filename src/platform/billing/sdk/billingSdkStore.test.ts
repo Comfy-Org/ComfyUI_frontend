@@ -5,8 +5,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -35,12 +35,12 @@ import type {
   HostedBillingDestination
 } from '@comfyorg/account-core/billing'
 import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
-import type { BillingSdk, BillingSdkOptions } from './createBillingSdk'
+import type { BillingSdk, BillingSdkOptions } from '@comfyorg/billing-core/sdk'
 
 const mockCreateBillingSdk = vi.hoisted(() =>
   vi.fn<(options: BillingSdkOptions) => BillingSdk>()
 )
-vi.mock(import('./createBillingSdk'), () => ({
+vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 
@@ -98,7 +98,7 @@ describe('useBillingSdkStore', () => {
     expect(options.session).toBe(
       useWorkspaceAuthStore().getUnifiedSessionClient()
     )
-    expect(options.resolveUrl).toBe(workspaceApiUrl)
+    expect(options.resolveUrl).toBe(ingestApiUrl)
     expect(options.pointerStorage).toBe(sessionStorage)
   })
 

@@ -42,7 +42,7 @@
           aria-hidden="true"
           :class="
             cn(
-              'icon-[lucide--chevron-up] size-4 text-muted-foreground transition-transform group-hover:text-foreground',
+              'icon-[lucide--chevron-up] text-muted-foreground transition-transform group-hover:text-foreground',
               collapse && '-rotate-180'
             )
           "

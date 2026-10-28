@@ -53,6 +53,10 @@ const createOutputs = (
   }
 }
 
+const isResultItem = (
+  image: ResultItem | null | undefined
+): image is ResultItem => image != null
+
 interface SetOutputOptions {
   merge?: boolean
 }
@@ -139,7 +143,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const rand = useApp().getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
-    return outputs.images.map((image) => {
+    return outputs.images.filter(isResultItem).map((image) => {
       const filename = image.filename ?? ''
       const { filepath, rootFolder } = parseAnnotatedPath(filename, image.type)
       const params = new URLSearchParams({

@@ -21,7 +21,7 @@
             :aria-label="$t('sideToolbar.backToAssets')"
             @click="exitFolderView"
           >
-            <i class="icon-[lucide--arrow-left] size-4" />
+            <i class="icon-[lucide--arrow-left]" />
           </Button>
           <span class="shrink-0 font-bold">
             {{ $t('assetBrowser.jobId') }}:
@@ -37,7 +37,7 @@
             :aria-label="$t('g.copyJobId')"
             @click="copyFolderJobId"
           >
-            <i class="icon-[lucide--copy] size-4" />
+            <i class="icon-[lucide--copy]" />
           </Button>
         </div>
         <div class="shrink-0">
@@ -212,9 +212,9 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import {
   getAssetFileUrl,
+  getAssetInlineMediaUrl,
   getAssetSubfolder,
-  getAssetViewUrl,
-  resolveMediaSrc
+  getAssetViewUrl
 } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
@@ -470,7 +470,7 @@ const galleryItems = computed<AugmentedResultItem[]>(() => {
       type: 'output',
       nodeId: '0',
       mediaType: mediaType === 'image' ? 'images' : mediaType,
-      url: resolveMediaSrc(asset.preview_url)
+      url: getAssetInlineMediaUrl(asset)
     }
   })
 })

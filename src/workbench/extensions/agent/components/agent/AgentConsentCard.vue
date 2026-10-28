@@ -160,7 +160,10 @@ onMounted(() => {
             rel="noopener noreferrer"
           >
             {{ $t('agent.consent.readDocs') }}
-            <span class="icon-[lucide--square-arrow-out-up-right] size-3" />
+            <i
+              aria-hidden="true"
+              class="icon-[lucide--square-arrow-out-up-right] size-3"
+            />
           </Button>
           <p
             v-if="requiresSignIn"

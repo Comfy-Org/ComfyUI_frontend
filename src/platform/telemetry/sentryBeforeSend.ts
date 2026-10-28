@@ -1,6 +1,6 @@
 import type { ErrorEvent, EventHint } from '@sentry/vue'
 
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
 import { addVueDirectiveDiagnostics } from './vueDirectiveErrorDiagnostics'

@@ -66,7 +66,7 @@ const uploadButtonStyle = cn(
       :class="uploadButtonStyle"
       @click="emit('show-picker')"
     >
-      <i class="icon-[lucide--folder-search] size-4" />
+      <i class="icon-[lucide--folder-search]" />
       <span>{{ $t('g.upload') }}</span>
     </Button>
   </div>

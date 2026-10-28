@@ -6,7 +6,6 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/auth/sso/SsoRequiredDialogContent.vue'), () => {
   throw new Error('Failed to fetch dynamically imported module')
 })

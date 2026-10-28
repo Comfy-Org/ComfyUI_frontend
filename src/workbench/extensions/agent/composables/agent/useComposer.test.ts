@@ -276,4 +276,82 @@ describe('useComposer', () => {
 
     expect(composer.attachments.value.map((a) => a.id)).toEqual(['a2'])
   })
+
+  describe('a draft restored after a refused send', () => {
+    function restoredAfterRefusal() {
+      const { composer, onSend } = setup()
+      composer.setText('make a red fox')
+      useAgentComposerStore().markRejectedDraft()
+      return { composer, onSend }
+    }
+
+    it('refuses the keyboard intent until it changes', () => {
+      const { composer, onSend } = restoredAfterRefusal()
+
+      composer.submit('keyboard')
+
+      expect(onSend).not.toHaveBeenCalled()
+      expect(composer.draft.value).toBe('make a red fox')
+    })
+
+    it('still retries on the explicit Send intent', () => {
+      const { composer, onSend } = restoredAfterRefusal()
+
+      composer.submit('explicit')
+
+      expect(onSend).toHaveBeenCalledWith('make a red fox', [])
+    })
+
+    it('defaults an unspecified intent to explicit, so Send cannot regress', () => {
+      const { composer, onSend } = restoredAfterRefusal()
+
+      composer.submit()
+
+      expect(onSend).toHaveBeenCalledWith('make a red fox', [])
+    })
+
+    it('re-arms the keyboard intent once the text changes', () => {
+      const { composer, onSend } = restoredAfterRefusal()
+
+      composer.setText('make a red fox at dusk')
+      composer.submit('keyboard')
+
+      expect(onSend).toHaveBeenCalledWith('make a red fox at dusk', [])
+    })
+
+    it('re-arms the keyboard intent once the attachments change', () => {
+      const { composer, onSend } = restoredAfterRefusal()
+
+      composer.addAttachment({ id: 'a1', name: 'fox.png', ref: 'rfox' })
+      composer.submit('keyboard')
+
+      expect(onSend).toHaveBeenCalledWith('make a red fox', [
+        { id: 'a1', name: 'fox.png', ref: 'rfox' }
+      ])
+    })
+
+    it('re-arms the keyboard intent when a reference moves within unchanged text', () => {
+      const store = useAgentComposerStore()
+      const text = 'render this and then stop'
+      const reference = {
+        id: 'wf-1',
+        name: 'Fox',
+        textOffset: 12
+      }
+      store.restorePrompt({
+        text,
+        references: [{ ...reference, kind: 'workflow' as const }]
+      })
+      store.markRejectedDraft()
+      const { composer, onSend } = setup()
+
+      store.restorePrompt({
+        text,
+        references: [{ ...reference, kind: 'workflow' as const, textOffset: 4 }]
+      })
+      composer.submit('keyboard')
+
+      expect(onSend).toHaveBeenCalled()
+    })
+  })
 })

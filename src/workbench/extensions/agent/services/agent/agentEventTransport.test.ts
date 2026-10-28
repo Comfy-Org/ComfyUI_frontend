@@ -27,8 +27,6 @@ import type {
 import { createAssistantMessage } from './agentMessageParts'
 import { createUndeliverableAskReporter } from './undeliverableAskReporter'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const fixtureText = import.meta.glob(
   '../../schemas/__fixtures__/agent/*.jsonl',
   { query: '?raw', import: 'default', eager: true }

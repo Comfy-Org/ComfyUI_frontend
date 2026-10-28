@@ -247,12 +247,17 @@ test.describe(
           toType: graph.getNodeById(link.target_id)?.type
         }
       }, toLinkId(insertedLinkId!))
+      const clipInput = await inputSlotIndex(
+        page,
+        insertedEndpoints.toNode,
+        'clip'
+      )
       expect(insertedEndpoints).toEqual({
         fromNode: expect.any(String),
         fromSlot: 1,
         fromType: 'CheckpointLoaderSimple',
         toNode: expect.any(String),
-        toSlot: 0,
+        toSlot: clipInput,
         toType: 'CLIPTextEncode'
       })
       await expect(

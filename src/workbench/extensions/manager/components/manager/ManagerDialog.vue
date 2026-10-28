@@ -87,7 +87,7 @@
         class="mx-6 mb-4 w-auto"
       >
         <template #icon>
-          <i class="icon-[lucide--info] size-4" />
+          <i class="icon-[lucide--info]" />
         </template>
         {{ $t('manager.legacyManagerSearchTip') }}
       </Message>

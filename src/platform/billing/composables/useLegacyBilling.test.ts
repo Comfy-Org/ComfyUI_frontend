@@ -8,7 +8,7 @@ import { useSubscription } from '@/platform/billing/subscription/composables/use
 import type {
   BillingStatusResponse,
   RenewalInvoice
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 import { useLegacyBilling } from './useLegacyBilling'
 
 vi.mock(import('firebase/auth'))

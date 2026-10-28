@@ -10,7 +10,7 @@
       :aria-label="compact ? fileActionLabel : undefined"
       @click="hdriFileRef?.click()"
     >
-      <i class="icon-[lucide--upload] size-4" />
+      <i class="icon-[lucide--upload]" />
       <span v-if="!compact">{{ fileActionLabel }}</span>
     </Button>
     <input
@@ -34,7 +34,7 @@
       :aria-label="compact ? t('load3d.hdri.label') : undefined"
       @click="toggleHdriEnabled"
     >
-      <i class="icon-[lucide--globe] size-4" />
+      <i class="icon-[lucide--globe]" />
       <span v-if="!compact">{{ t('load3d.hdri.label') }}</span>
     </Button>
     <Button
@@ -48,7 +48,7 @@
       :aria-label="compact ? t('load3d.hdri.showAsBackground') : undefined"
       @click="toggleHdriShowAsBackground"
     >
-      <i class="icon-[lucide--image] size-4" />
+      <i class="icon-[lucide--image]" />
       <span v-if="!compact">{{ t('load3d.hdri.showAsBackground') }}</span>
     </Button>
     <Button
@@ -61,7 +61,7 @@
       :aria-label="compact ? t('load3d.hdri.removeFile') : undefined"
       @click="removeHdri"
     >
-      <i class="icon-[lucide--x] size-4" />
+      <i class="icon-[lucide--x]" />
       <span v-if="!compact">{{ t('load3d.hdri.removeFile') }}</span>
     </Button>
   </template>

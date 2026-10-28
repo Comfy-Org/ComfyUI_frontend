@@ -1,0 +1,434 @@
+import type { Pinia } from 'pinia'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { getActivePinia } from 'pinia'
+import { useDialogStore } from '@/stores/dialogStore'
+/* oxlint-disable testing-library/no-container */
+/* oxlint-disable testing-library/no-node-access */
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+import { nextTick } from 'vue'
+
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+import TeamWorkspacesDialogContent from '@/platform/account/components/dialogs/TeamWorkspacesDialogContent.vue'
+
+const flushPromises = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+const mockSwitchWorkspace = vi.fn()
+
+let pinia: Pinia
+let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
+
+vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
+  useWorkspaceSwitch: () => ({
+    switchWorkspace: mockSwitchWorkspace
+  })
+}))
+
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useWorkspaceTierLabel'),
+  () => ({
+    useWorkspaceTierLabel: () => ({
+      getTierLabel: (w: { subscriptionTier: string | null }) =>
+        w.subscriptionTier === 'PRO' ? 'Pro' : null
+    })
+  })
+)
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+function mountComponent(props: Record<string, unknown> = {}) {
+  const user = userEvent.setup()
+  const { container } = render(TeamWorkspacesDialogContent, {
+    props,
+    global: {
+      plugins: [pinia, i18n],
+      stubs: {
+        WorkspaceProfilePic: true
+      }
+    }
+  })
+  return { container, user }
+}
+
+function findCreateButton(container: Element): HTMLButtonElement {
+  const buttons = container.querySelectorAll('button')
+  return Array.from(buttons).find(
+    (btn) => !btn.closest('header') && !btn.closest('li')
+  ) as HTMLButtonElement
+}
+
+function createTeamWorkspace({
+  id,
+  name,
+  role,
+  subscriptionTier = null
+}: {
+  id: string
+  name: string
+  role: 'owner' | 'member'
+  subscriptionTier?: 'PRO' | null
+}) {
+  return {
+    id,
+    name,
+    type: 'team' as const,
+    role,
+    created_at: '2025-01-01',
+    joined_at: '2025-01-01',
+    subscription_tier: subscriptionTier ?? undefined,
+    members: [],
+    pendingInvites: [],
+    membersLoaded: true,
+    pendingInvitesLoaded: true
+  }
+}
+
+function setOwnedWorkspaces() {
+  workspaceStore.workspaces = [
+    createTeamWorkspace({
+      id: 'ws-1',
+      name: 'Team Alpha',
+      role: 'owner',
+      subscriptionTier: 'PRO'
+    }),
+    createTeamWorkspace({
+      id: 'ws-2',
+      name: 'Team Beta',
+      role: 'member'
+    })
+  ]
+}
+
+beforeEach(() => {
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+})
+
+describe('TeamWorkspacesDialogContent', () => {
+  beforeEach(() => {
+    vi.useRealTimers()
+    pinia = getActivePinia()!
+    workspaceStore = useTeamWorkspaceStore(pinia)
+    workspaceStore.workspaces = []
+    workspaceStore.serverRefusesCreation = false
+    workspaceStore.workspacesManagedByOrganization = false
+  })
+
+  describe('workspace listing', () => {
+    it('displays only owned workspaces', () => {
+      setOwnedWorkspaces()
+      const { container } = mountComponent()
+      const items = container.querySelectorAll('li')
+      expect(items).toHaveLength(1)
+      expect(container.textContent).toContain('Team Alpha')
+      expect(container.textContent).not.toContain('Team Beta')
+    })
+
+    it('shows tier label for subscribed workspaces', () => {
+      setOwnedWorkspaces()
+      const { container } = mountComponent()
+      expect(container.textContent).toContain('Pro')
+    })
+
+    it('hides workspace list section when no owned workspaces', () => {
+      const { container } = mountComponent()
+      expect(container.querySelectorAll('li')).toHaveLength(0)
+    })
+
+    it('shows create-only subtitle when no owned workspaces', () => {
+      const { container } = mountComponent()
+      const subtitle = container.querySelector('header p')
+      expect(subtitle?.textContent).toBe(
+        'teamWorkspacesDialog.subtitleNoWorkspaces'
+      )
+    })
+
+    it('shows switch-or-create subtitle when owned workspaces exist', () => {
+      setOwnedWorkspaces()
+      const { container } = mountComponent()
+      const subtitle = container.querySelector('header p')
+      expect(subtitle?.textContent).toBe('teamWorkspacesDialog.subtitle')
+    })
+  })
+
+  describe('workspace switching', () => {
+    it('calls switchWorkspace with workspace id and closes dialog on success', async () => {
+      mockSwitchWorkspace.mockResolvedValue(true)
+      setOwnedWorkspaces()
+      const { container, user } = mountComponent()
+
+      const switchButton = container.querySelector('li button')!
+      await user.click(switchButton)
+      await flushPromises()
+
+      expect(mockSwitchWorkspace).toHaveBeenCalledWith('ws-1')
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: 'team-workspaces'
+      })
+    })
+
+    it('shows error toast and keeps dialog open when switch fails', async () => {
+      mockSwitchWorkspace.mockRejectedValue(new Error('Network error'))
+      setOwnedWorkspaces()
+      const { container, user } = mountComponent()
+
+      const switchButton = container.querySelector('li button')!
+      await user.click(switchButton)
+      await flushPromises()
+
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+      expect(useToast().error).toHaveBeenCalledWith(
+        'workspaceSwitcher.failedToSwitch',
+        { description: 'Network error' }
+      )
+    })
+  })
+
+  describe('when creation is refused', () => {
+    function expectNoCreateControls() {
+      expect(
+        screen.queryByLabelText(
+          'workspacePanel.createWorkspaceDialog.nameLabel'
+        )
+      ).toBeNull()
+      expect(
+        screen.queryByRole('button', {
+          name: 'teamWorkspacesDialog.createWorkspace'
+        })
+      ).toBeNull()
+    }
+
+    it('replaces the create form with the organization notice', () => {
+      setOwnedWorkspaces()
+      workspaceStore.serverRefusesCreation = true
+      workspaceStore.workspacesManagedByOrganization = true
+      mountComponent()
+      expectNoCreateControls()
+      expect(
+        screen.getByText('workspaceSwitcher.managedByOrganization')
+      ).toBeInTheDocument()
+      expect(screen.getByText('Team Alpha')).toBeInTheDocument()
+    })
+
+    it('explains the owned-workspace limit', () => {
+      workspaceStore.workspaces = Array.from({ length: 10 }, (_, i) =>
+        createTeamWorkspace({ id: `ws-${i}`, name: `Team ${i}`, role: 'owner' })
+      )
+      mountComponent()
+      expectNoCreateControls()
+      expect(
+        screen.getByText('workspaceSwitcher.maxWorkspacesReached')
+      ).toBeInTheDocument()
+    })
+
+    it('uses neutral copy when the server refuses without a known reason', () => {
+      setOwnedWorkspaces()
+      workspaceStore.serverRefusesCreation = true
+      mountComponent()
+      expectNoCreateControls()
+      expect(
+        screen.getByText('workspaceSwitcher.cannotCreateWorkspace')
+      ).toBeInTheDocument()
+    })
+
+    it('keeps a server refusal neutral at the owned-workspace limit', () => {
+      workspaceStore.workspaces = Array.from({ length: 10 }, (_, i) =>
+        createTeamWorkspace({ id: `ws-${i}`, name: `Team ${i}`, role: 'owner' })
+      )
+      workspaceStore.serverRefusesCreation = true
+      mountComponent()
+      expectNoCreateControls()
+      expect(
+        screen.getByText('workspaceSwitcher.cannotCreateWorkspace')
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('workspaceSwitcher.maxWorkspacesReached')
+      ).toBeNull()
+    })
+  })
+
+  describe('name validation', () => {
+    it('disables create button for empty name', () => {
+      const { container } = mountComponent()
+      expect(findCreateButton(container)).toBeDisabled()
+    })
+
+    it('enables create button for valid name', async () => {
+      const { container, user } = mountComponent()
+      const input = container.querySelector(
+        '#workspace-name-input'
+      ) as HTMLInputElement
+      await user.clear(input)
+      await user.type(input, 'My Team')
+      await nextTick()
+
+      expect(findCreateButton(container)).not.toBeDisabled()
+    })
+
+    it('disables create button for name with special characters', async () => {
+      const { container, user } = mountComponent()
+      const input = container.querySelector(
+        '#workspace-name-input'
+      ) as HTMLInputElement
+      await user.clear(input)
+      await user.type(input, '!@#$%')
+      await nextTick()
+
+      expect(findCreateButton(container)).toBeDisabled()
+    })
+
+    it('disables create button for name exceeding 50 characters', async () => {
+      const { container, user } = mountComponent()
+      const input = container.querySelector(
+        '#workspace-name-input'
+      ) as HTMLInputElement
+      await user.clear(input)
+      await user.type(input, 'a'.repeat(51))
+      await nextTick()
+
+      expect(findCreateButton(container)).toBeDisabled()
+    })
+  })
+
+  describe('workspace creation', () => {
+    async function typeAndCreate(
+      container: Element,
+      user: ReturnType<typeof userEvent.setup>,
+      name: string
+    ) {
+      const input = container.querySelector(
+        '#workspace-name-input'
+      ) as HTMLInputElement
+      await user.clear(input)
+      await user.type(input, name)
+      await user.click(findCreateButton(container))
+      await flushPromises()
+    }
+
+    it('calls createWorkspace and onConfirm on success', async () => {
+      vi.mocked(workspaceStore.createWorkspace).mockResolvedValue(
+        createTeamWorkspace({
+          id: 'new-ws',
+          name: 'New Team',
+          role: 'owner'
+        })
+      )
+      const onConfirm = vi.fn()
+      const { container, user } = mountComponent({ onConfirm })
+
+      await typeAndCreate(container, user, 'New Team')
+
+      expect(workspaceStore.createWorkspace).toHaveBeenCalledWith('New Team')
+      expect(onConfirm).toHaveBeenCalledWith('New Team')
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: 'team-workspaces'
+      })
+    })
+
+    it('shows error toast when creation fails', async () => {
+      vi.mocked(workspaceStore.createWorkspace).mockRejectedValue(
+        new Error('Limit reached')
+      )
+      const { container, user } = mountComponent()
+
+      await typeAndCreate(container, user, 'New Team')
+
+      expect(useToast().error).toHaveBeenCalledWith(
+        'workspacePanel.toast.failedToCreateWorkspace',
+        { description: 'Limit reached' }
+      )
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    })
+
+    it('shows separate toast when onConfirm fails but still closes dialog', async () => {
+      vi.mocked(workspaceStore.createWorkspace).mockResolvedValue(
+        createTeamWorkspace({
+          id: 'new-ws',
+          name: 'New Team',
+          role: 'owner'
+        })
+      )
+      const onConfirm = vi.fn().mockRejectedValue(new Error('Setup failed'))
+      const { container, user } = mountComponent({ onConfirm })
+
+      await typeAndCreate(container, user, 'New Team')
+
+      expect(workspaceStore.createWorkspace).toHaveBeenCalledWith('New Team')
+      expect(useToast().error).toHaveBeenCalledWith(
+        'teamWorkspacesDialog.confirmCallbackFailed',
+        { description: 'Setup failed' }
+      )
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: 'team-workspaces'
+      })
+    })
+
+    it('does not call onConfirm when createWorkspace fails', async () => {
+      vi.mocked(workspaceStore.createWorkspace).mockRejectedValue(
+        new Error('Limit reached')
+      )
+      const onConfirm = vi.fn()
+      const { container, user } = mountComponent({ onConfirm })
+
+      await typeAndCreate(container, user, 'New Team')
+
+      expect(onConfirm).not.toHaveBeenCalled()
+    })
+
+    it('does not call createWorkspace when name is invalid', async () => {
+      const { container, user } = mountComponent()
+      await user.click(findCreateButton(container))
+      await nextTick()
+
+      expect(workspaceStore.createWorkspace).not.toHaveBeenCalled()
+    })
+
+    it('resets loading state after createWorkspace fails', async () => {
+      vi.mocked(workspaceStore.createWorkspace).mockRejectedValue(
+        new Error('Limit reached')
+      )
+      const { container, user } = mountComponent()
+
+      await typeAndCreate(container, user, 'New Team')
+
+      expect(findCreateButton(container)).not.toHaveAttribute('aria-busy')
+    })
+
+    it('resets loading state after onConfirm fails', async () => {
+      vi.mocked(workspaceStore.createWorkspace).mockResolvedValue(
+        createTeamWorkspace({
+          id: 'new-ws',
+          name: 'New Team',
+          role: 'owner'
+        })
+      )
+      const onConfirm = vi.fn().mockRejectedValue(new Error('Setup failed'))
+      const { container, user } = mountComponent({ onConfirm })
+
+      await typeAndCreate(container, user, 'New Team')
+
+      expect(findCreateButton(container)).not.toHaveAttribute('aria-busy')
+    })
+  })
+
+  describe('close button', () => {
+    it('closes dialog on close button click', async () => {
+      const { container, user } = mountComponent()
+      const closeBtn = container.querySelector('header button')!
+      await user.click(closeBtn)
+
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: 'team-workspaces'
+      })
+    })
+  })
+})

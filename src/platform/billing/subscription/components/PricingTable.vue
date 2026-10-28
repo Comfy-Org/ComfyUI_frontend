@@ -97,10 +97,7 @@
                 }}
               </span>
               <div class="flex items-center gap-1">
-                <i
-                  class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
-                  aria-hidden="true"
-                />
+                <i class="icon-[lucide--coins] bg-credit" aria-hidden="true" />
                 <span class="text-sm/normal font-bold tabular-nums">
                   {{ n(getCreditsDisplay(tier)) }}
                 </span>
@@ -164,7 +161,7 @@
                       <PopoverContent
                         align="start"
                         dismiss-on-viewport-change
-                        class="max-h-(--reka-popover-content-available-height) w-auto max-w-sm overflow-auto rounded-lg border-border/50 shadow-lg data-[state=open]:animate-none"
+                        class="w-auto max-w-sm rounded-lg border-border/50 shadow-lg data-[state=open]:animate-none"
                       >
                         <div class="flex flex-col gap-2">
                           <p class="text-sm/normal text-foreground">
@@ -263,7 +260,7 @@ import type {
 } from '@/platform/telemetry/types'
 import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useAuthStore } from '@/stores/authStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
@@ -356,7 +353,7 @@ const isYearlySubscription = computed(
 )
 const telemetry = useTelemetry()
 const { userId } = storeToRefs(useAuthStore())
-const workspaceStore = useTeamWorkspaceStore()
+const workspaceStore = useWorkspaceIdentity()
 const { accessBillingPortal, accessBillingPortalDirect, reportError } =
   useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()

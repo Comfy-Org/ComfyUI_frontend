@@ -61,8 +61,6 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const USER = fromPartial<User>({
   uid: 'user-a',
   getIdToken: async () => 'firebase-id-token'

@@ -17,8 +17,6 @@ import {
   widgetValuesFormVerdict
 } from './widgetValuesForm'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 function nodeDef(
   name: string,
   required: NonNullable<ComfyNodeDefV1['input']>['required']

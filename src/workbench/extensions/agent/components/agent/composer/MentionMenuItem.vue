@@ -51,7 +51,7 @@ const disabledReason = computed(() =>
 )
 const asset = computed(() => (match.kind === 'asset' ? match.asset : undefined))
 const icon = computed(() => {
-  if (match.kind === 'back') return 'icon-[lucide--chevron-left] size-4'
+  if (match.kind === 'back') return 'icon-[lucide--chevron-left]'
   if (match.kind !== 'section') return undefined
   return match.id === 'nodes'
     ? 'icon-[comfy--node] size-3.5'
@@ -88,7 +88,7 @@ const nodeId = computed(() =>
         @mouseenter="emit('highlight')"
         @click="emit('pick')"
       >
-        <span v-if="icon" :class="cn(icon, 'shrink-0')" />
+        <i v-if="icon" aria-hidden="true" :class="icon" />
         <AssetThumbnail
           v-if="asset"
           :name="asset.name"
@@ -118,9 +118,10 @@ const nodeId = computed(() =>
         >
           {{ ' #' + nodeId }}</span
         >
-        <span
+        <i
           v-if="match.kind === 'section'"
-          class="icon-[lucide--chevron-right] size-4 shrink-0"
+          aria-hidden="true"
+          class="icon-[lucide--chevron-right]"
         />
       </div>
     </TooltipTrigger>

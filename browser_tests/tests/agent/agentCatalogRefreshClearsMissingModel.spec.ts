@@ -20,6 +20,11 @@ test.describe(
   () => {
     test.use({
       connectWebSocketToServer: false,
+      initialLocalStorage: {
+        'Comfy.AgentConsent.IntroductionResponded.signed-out': 'true',
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+          'true'
+      },
       initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true },
       objectInfo: 'server'
     })

@@ -1240,6 +1240,11 @@ watch(
   (tabs) => tabActivity.setAgentTurnTabs(tabs),
   { immediate: true, flush: 'sync' }
 )
+watch(
+  () => conversationStore.awaitingApproval,
+  (awaiting) => tabActivity.setAgentAwaitingApproval(awaiting),
+  { immediate: true, flush: 'sync' }
+)
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {
@@ -1619,6 +1624,7 @@ onBeforeUnmount(() => {
     },
     clearAgentTurnTabs: () => {
       tabActivity.setAgentTurnTabs([])
+      tabActivity.setAgentAwaitingApproval(false)
     },
     resetTurnTabResolver: () => {
       conversationStore.setTurnTabResolver(() => ({ status: 'unknown' }))
@@ -1941,12 +1947,6 @@ const { submit: onSend } = useAgentDraftSubmission({
   // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
     const dismissAsk = sendDismissesAsk.value
-    if (
-      !agentPanelStore.onboarding.introduceBeforeSignIn &&
-      !hasAgentCredential() &&
-      !(await ensureSignedIn())
-    )
-      return false
     const submissionId = composerStore.submission?.id
     if (
       !consentAccepted.value &&
@@ -1993,10 +1993,6 @@ const { submit: onSend } = useAgentDraftSubmission({
           nodes,
           references,
           () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
-          // The same id reported on app:agent_message_sent just above. Sent to
-          // the server so it can echo it onto agent_turn_started, which is what
-          // makes the message -> turn step attributable instead of only
-          // countable.
           meta.clientMessageId,
           onAccepted,
           dismissAsk
@@ -2460,9 +2456,9 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       role="status"
       class="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed bg-secondary/90 p-4 font-inter text-sm/5 text-foreground"
     >
-      <span
+      <i
         aria-hidden="true"
-        class="icon-[lucide--upload] size-8 shrink-0 text-muted-foreground"
+        class="icon-[lucide--upload] size-8 text-muted-foreground"
       />
       <span>{{ t('agent.dragAndDropAssets') }}</span>
     </div>

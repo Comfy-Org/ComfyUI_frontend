@@ -45,8 +45,6 @@ import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
 import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 class TestSource extends LGraphNode {
   constructor() {
     super('Test Source')

@@ -13,8 +13,6 @@ import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/st
 
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 function workflow(
   path: string,
   filename: string,

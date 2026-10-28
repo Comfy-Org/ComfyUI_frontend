@@ -21,8 +21,6 @@ const { mockIsDesktop, mockStartDownload } = vi.hoisted(() => ({
   mockStartDownload: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 vi.mock(
   import('@/platform/distribution/types'),
   () =>

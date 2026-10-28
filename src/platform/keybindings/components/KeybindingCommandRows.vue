@@ -26,7 +26,7 @@
             v-if="command.expandable"
             :class="
               cn(
-                'icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform',
+                'icon-[lucide--chevron-right] text-muted-foreground transition-transform',
                 expanded && 'rotate-90'
               )
             "
@@ -39,7 +39,7 @@
             "
           >
             <TooltipTrigger as-child>
-              <i class="icon-[lucide--triangle-alert] shrink-0 text-warning" />
+              <i class="icon-[lucide--triangle-alert] text-warning" />
             </TooltipTrigger>
             <TooltipContent>{{
               $t('g.browserReservedKeybindingTooltip')

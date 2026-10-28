@@ -15,6 +15,8 @@ export interface UseComposerOptions {
   onStop: () => void
 }
 
+type ComposerSubmitIntent = 'keyboard' | 'explicit'
+
 export function useComposer(options: UseComposerOptions) {
   const store = useAgentComposerStore()
   const { draft, attachments, prompt, workflowReferences, promptEpoch } =
@@ -29,12 +31,13 @@ export function useComposer(options: UseComposerOptions) {
       !attachments.value.some((item) => item.uploading || item.validationError)
   )
 
-  function submit(): void {
+  function submit(intent: ComposerSubmitIntent = 'explicit'): void {
     if (options.isRunning()) {
       options.onStop()
       return
     }
     if (!canSend.value) return
+    if (intent === 'keyboard' && store.rejectedDraftUnchanged) return
     options.onSend(
       composerPromptForSubmission(prompt.value).text.trim(),
       attachments.value

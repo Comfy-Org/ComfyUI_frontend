@@ -1,6 +1,6 @@
 <template>
-  <span class="relative inline-flex size-[1em] items-center justify-center">
-    <i :class="mainIcon" class="text-[1em]" />
+  <span class="relative inline-flex items-center justify-center">
+    <i :class="mainIcon" />
     <i
       :class="
         cn(
@@ -53,7 +53,8 @@ const textShadow = [
 ].join(', ')
 
 const subIconStyle = computed(() => ({
-  fontSize: `${subIconScale}em`,
+  scale: subIconScale,
+  transformOrigin: `${positionX} ${positionY}`,
   textShadow,
   ...(offsetX !== 0 && {
     [positionX === 'left' ? 'left' : 'right']: `${offsetX}px`

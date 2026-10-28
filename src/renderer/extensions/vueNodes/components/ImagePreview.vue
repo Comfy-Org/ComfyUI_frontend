@@ -59,7 +59,7 @@
           :aria-label="$t('g.downloadImages')"
           @click="handleExportOutputs"
         >
-          <i class="icon-[lucide--folder-down] size-4" />
+          <i class="icon-[lucide--folder-down]" />
         </Button>
       </div>
     </div>
@@ -151,7 +151,7 @@
           :aria-label="$t('hdrViewer.openInHdrViewer')"
           @click="openHdrViewer(currentImageUrl)"
         >
-          <i class="icon-[lucide--sun] size-4" />
+          <i class="icon-[lucide--sun]" />
         </Button>
 
         <!-- Layer Editor Button -->
@@ -164,7 +164,7 @@
           :aria-label="$t('g.openLayerEditor')"
           @click="handleOpenLayerEditor"
         >
-          <i class="icon-[lucide--layers] size-4" />
+          <i class="icon-[lucide--layers]" />
         </Button>
 
         <!-- Download Button -->
@@ -177,7 +177,7 @@
           :aria-label="$t('g.downloadImage')"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] size-4" />
+          <i class="icon-[lucide--download]" />
         </Button>
 
         <!-- Back to Grid Button -->
@@ -190,7 +190,7 @@
           :aria-label="$t('g.viewGrid')"
           @click="viewMode = 'grid'"
         >
-          <i class="icon-[lucide--layout-grid] size-4" />
+          <i class="icon-[lucide--layout-grid]" />
         </Button>
       </div>
     </div>

@@ -141,10 +141,10 @@ const promptIcons = [
           "
           @click="onPromptClick(prompt, index)"
         >
-          <span
+          <i
             :class="
               cn(
-                'size-3 shrink-0 text-muted-foreground',
+                'size-3 text-muted-foreground',
                 promptIcons[index] ?? 'icon-[lucide--sparkles]'
               )
             "

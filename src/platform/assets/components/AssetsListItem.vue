@@ -84,7 +84,7 @@
         :aria-expanded="stackExpanded"
         @click.stop="emit('stack-toggle')"
       >
-        <i aria-hidden="true" class="icon-[lucide--layers] size-4" />
+        <i aria-hidden="true" class="icon-[lucide--layers]" />
         <span class="text-xs leading-none">{{ stackCount }}</span>
         <i
           aria-hidden="true"

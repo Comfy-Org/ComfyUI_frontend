@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   NoWorkspaceAccessError,
   WorkspaceApiError
-} from '@/platform/workspace/api/workspaceApiError'
+} from '@/platform/remote/ingest/ingestApiError'
 
 import { sentryBeforeSend } from './sentryBeforeSend'
 

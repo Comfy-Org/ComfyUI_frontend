@@ -36,7 +36,7 @@ const isCancelled = computed(() => isDownloadCancelled(job.status))
 
     <div class="flex shrink-0 items-center gap-2">
       <template v-if="isFailed">
-        <i class="icon-[lucide--circle-alert] size-4 text-destructive" />
+        <i class="icon-[lucide--circle-alert] text-destructive" />
         <Badge variant="label" severity="danger">
           {{ t('progressToast.failed') }}
         </Badge>

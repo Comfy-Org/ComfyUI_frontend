@@ -165,9 +165,16 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       return
     }
 
-    isImageInputConnected.value = node.isInputConnected(0)
+    const imageInputSlot = node.findInputSlot('image')
+    if (imageInputSlot < 0) {
+      inputImageUrl.value = null
+      isImageInputConnected.value = false
+      return
+    }
 
-    const inputNode = node.getInputNode(0)
+    isImageInputConnected.value = node.isInputConnected(imageInputSlot)
+
+    const inputNode = node.getInputNode(imageInputSlot)
     if (!inputNode) {
       inputImageUrl.value = null
       return

@@ -63,7 +63,7 @@
           :aria-label="$t('lightInfo.addLight')"
           @click="addLight('directional')"
         >
-          <i class="icon-[lucide--plus] size-4" />
+          <i class="icon-[lucide--plus]" />
         </Button>
         <Button
           v-if="selectedLight"
@@ -73,7 +73,7 @@
           :aria-label="$t('lightInfo.removeLight')"
           @click="removeSelectedLight"
         >
-          <i class="icon-[lucide--trash-2] size-4" />
+          <i class="icon-[lucide--trash-2]" />
         </Button>
         <WidgetHistoryButtons
           class="ml-auto"

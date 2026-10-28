@@ -10,7 +10,7 @@
         type="button"
         :aria-label="compact ? t('load3d.menuBar.intensity') : undefined"
       >
-        <i class="icon-[lucide--sun] size-4" />
+        <i class="icon-[lucide--sun]" />
         <span v-if="!compact">{{ t('load3d.menuBar.intensity') }}</span>
       </Button>
     </PopoverTrigger>

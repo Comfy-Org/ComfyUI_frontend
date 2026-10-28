@@ -56,7 +56,7 @@
         @click="openHistory"
       >
         {{ $t('workspacePanel.invoices.fullHistory') }}
-        <i class="icon-[lucide--external-link] size-4" />
+        <i class="icon-[lucide--external-link]" />
       </Button>
     </div>
   </div>

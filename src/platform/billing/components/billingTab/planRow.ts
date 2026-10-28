@@ -7,7 +7,7 @@ import type {
   BillingStatus,
   BillingSubscriptionStatus,
   SubscriptionDuration
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 type BillingCadence = 'monthly' | 'yearly'
 

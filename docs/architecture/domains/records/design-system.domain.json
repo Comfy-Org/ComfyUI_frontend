@@ -190,7 +190,7 @@
         "packages/design-system/src/components/switch/Switch.test.ts",
         "packages/design-system/src/components/textarea/Textarea.test.ts",
         "src/components/common/UrlInput.test.ts",
-        "src/components/common/EditableText.test.ts"
+        "packages/design-system/src/components/common/EditableText.test.ts"
       ]
     },
     {
@@ -238,11 +238,11 @@
         "packages/design-system/src/components/pagination/Pagination.test.ts",
         "packages/design-system/src/components/tree/Tree.test.ts",
         "src/components/ui/chart/Chart.test.ts",
-        "src/components/common/VirtualGrid.test.ts",
+        "packages/design-system/src/components/common/VirtualGrid.test.ts",
         "src/components/common/Video.test.ts",
-        "src/components/common/VideoCompareSlider.test.ts",
+        "packages/design-system/src/components/common/VideoCompareSlider.test.ts",
         "src/components/common/ImageLightbox.test.ts",
-        "src/components/common/SanitizedHtml.test.ts",
+        "packages/design-system/src/components/common/SanitizedHtml.test.ts",
         "src/components/common/UserAvatar.test.ts"
       ]
     },

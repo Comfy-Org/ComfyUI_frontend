@@ -7,8 +7,8 @@ test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 const SUBGRAPH_LINKS_EXPECTED = {
   rootLinks: [
     '4:0->HOST:0',
-    '4:1->6:0',
-    '4:1->7:0',
+    '4:1->6:1',
+    '4:1->7:1',
     '4:2->HOST:4',
     '5:0->HOST:3',
     '6:0->HOST:1',

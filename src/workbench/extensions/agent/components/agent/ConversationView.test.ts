@@ -31,7 +31,6 @@ import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
-vi.mock(import('@/platform/telemetry/reportError'))
 import {
   toTurnId,
   zAgentWsEvent

@@ -6,7 +6,7 @@
     :aria-label="label"
     @click.stop="emit('locate')"
   >
-    <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
+    <i aria-hidden="true" class="icon-[lucide--locate]" />
   </Button>
 </template>
 

@@ -46,7 +46,7 @@
           <i
             v-if="markView.icon"
             aria-hidden="true"
-            :class="cn(markView.icon, 'size-3 shrink-0')"
+            :class="cn(markView.icon, 'size-3')"
           />
           {{ markView.text }}
         </span>

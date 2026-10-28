@@ -106,9 +106,10 @@ const options: {
         :class="cn('gap-1', open && 'bg-accent')"
       >
         <span>{{ triggerLabel }}</span>
-        <span
+        <i
+          aria-hidden="true"
           data-testid="run-mode-chevron"
-          class="icon-[lucide--chevron-down] size-4"
+          class="icon-[lucide--chevron-down]"
         />
       </Button>
     </DropdownMenuTrigger>
@@ -161,10 +162,9 @@ const options: {
               )
             "
           >
-            <span
-              :class="
-                cn('mt-0.5 size-4 shrink-0 text-muted-foreground', option.icon)
-              "
+            <i
+              aria-hidden="true"
+              :class="cn('mt-0.5 text-muted-foreground', option.icon)"
             />
             <span class="min-w-0 flex-1">
               <span class="block text-sm/5 text-foreground">
@@ -174,15 +174,16 @@ const options: {
                 {{ t(option.description) }}
               </span>
             </span>
-            <span
+            <i
               aria-hidden="true"
               :class="
                 cn(
-                  'mt-0.5 size-4 shrink-0',
+                  'mt-0.5',
                   savingMode === option.mode
                     ? 'icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin'
-                    : store.mode === option.mode &&
-                        'icon-[lucide--check] text-foreground'
+                    : store.mode === option.mode
+                      ? 'icon-[lucide--check] text-foreground'
+                      : 'size-4 shrink-0'
                 )
               "
             />

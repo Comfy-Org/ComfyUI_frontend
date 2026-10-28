@@ -21,7 +21,7 @@
             :aria-label="t('g.close')"
             @click="handleDismiss"
           >
-            <i class="icon-[lucide--x] size-4" />
+            <i class="icon-[lucide--x]" />
           </Button>
         </div>
 

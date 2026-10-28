@@ -192,7 +192,7 @@ function openFullSettings() {
         @click="openFullSettings"
       >
         {{ t('rightSidePanel.globalSettings.viewAllSettings') }}
-        <i class="icon-[lucide--settings] size-4" />
+        <i class="icon-[lucide--settings]" />
       </Button>
     </div>
   </div>

@@ -187,7 +187,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
       <BaseModalLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'" :header-padding="args.headerPadding">
         <!-- Left Panel Header Title -->
         <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
-          <i class="icon-[lucide--puzzle] size-4 text-neutral" />
+          <i class="icon-[lucide--puzzle] text-neutral" />
           <span class="text-neutral text-base">Title</span>
         </template>
 
@@ -220,7 +220,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
             <Menu :items="moreMenuItems" align="end" remove-label="Remove">
               <template #trigger>
                 <Button size="icon" variant="secondary">
-                  <i class="icon-[lucide--ellipsis] size-4" />
+                  <i class="icon-[lucide--ellipsis]" />
                 </Button>
               </template>
             </Menu>
@@ -287,7 +287,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                   </template>
                   <template #top-right>
                     <Button size="icon" class="!bg-white !text-neutral-900" @click="() => {}">
-                      <i class="icon-[lucide--info] size-4" />
+                      <i class="icon-[lucide--info]" />
                     </Button>
                   </template>
                   <template #bottom-right>
@@ -313,7 +313,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <!-- Same content but WITH right panel -->
         <!-- Left Panel Header Title -->
         <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
-          <i class="icon-[lucide--puzzle] size-4 text-neutral" />
+          <i class="icon-[lucide--puzzle] text-neutral" />
           <span class="text-neutral text-base">Title</span>
         </template>
 
@@ -346,7 +346,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
             <Menu :items="moreMenuItems" align="end" remove-label="Remove">
               <template #trigger>
                 <Button size="icon" variant="secondary">
-                  <i class="icon-[lucide--ellipsis] size-4" />
+                  <i class="icon-[lucide--ellipsis]" />
                 </Button>
               </template>
             </Menu>
@@ -410,7 +410,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                   </template>
                   <template #top-right>
                     <Button size="icon" class="!bg-white !text-neutral-900" @click="() => {}">
-                      <i class="icon-[lucide--info] size-4" />
+                      <i class="icon-[lucide--info]" />
                     </Button>
                   </template>
                   <template #bottom-right>

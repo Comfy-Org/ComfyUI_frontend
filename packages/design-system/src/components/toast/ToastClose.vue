@@ -20,7 +20,7 @@ const forwardedProps = useForwardProps(restProps)
       size="icon-sm"
       :class="cn('ml-auto', className)"
     >
-      <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+      <i class="icon-[lucide--x]" aria-hidden="true" />
     </Button>
   </ToastClose>
 </template>

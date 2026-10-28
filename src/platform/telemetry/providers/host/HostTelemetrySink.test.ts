@@ -512,12 +512,12 @@ describe('HostTelemetrySink', () => {
       name: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentOfferExited({
-          exit: 'workspace_switching',
+          exit: 'consent_unresolved',
           stage: 'offer',
           retry_armed: true
         }),
       properties: {
-        exit: 'workspace_switching',
+        exit: 'consent_unresolved',
         stage: 'offer',
         retry_armed: true
       }

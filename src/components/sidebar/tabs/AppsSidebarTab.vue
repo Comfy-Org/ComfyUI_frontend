@@ -18,7 +18,7 @@
         size="md"
         @click="createApp"
       >
-        <i class="icon-[lucide--plus] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--plus]" aria-hidden="true" />
         {{ $t('linearMode.appModeToolbar.create') }}
       </Button>
     </template>

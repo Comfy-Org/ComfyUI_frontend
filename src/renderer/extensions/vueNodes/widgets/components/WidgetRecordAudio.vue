@@ -57,7 +57,7 @@
         class="flex size-8 shrink-0 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handlePlayRecording"
       >
-        <i class="icon-[lucide--play] size-4" />
+        <i class="icon-[lucide--play]" />
       </button>
 
       <button
@@ -66,7 +66,7 @@
         class="flex size-8 shrink-0 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopPlayback"
       >
-        <i class="icon-[lucide--square] size-4" />
+        <i class="icon-[lucide--square]" />
       </button>
     </div>
     <audio

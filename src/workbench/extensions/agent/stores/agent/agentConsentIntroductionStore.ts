@@ -41,6 +41,24 @@ export const useAgentConsentIntroductionStore = defineStore(
       }
     }
 
-    return { scope, hasResponded, markResponded, isContinuingSignIn }
+    function canRecordResponse(): boolean {
+      if (!scope.value) return false
+      const probeKey = `${RESPONDED_PREFIX}.${scope.value}.probe`
+      try {
+        localStorage.setItem(probeKey, 'true')
+        localStorage.removeItem(probeKey)
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    return {
+      scope,
+      hasResponded,
+      markResponded,
+      canRecordResponse,
+      isContinuingSignIn
+    }
   }
 )

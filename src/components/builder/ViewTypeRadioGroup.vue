@@ -20,7 +20,7 @@
       <div
         class="flex size-8 min-h-8 items-center justify-center rounded-lg bg-accent"
       >
-        <i :class="cn(option.icon, 'size-4')" aria-hidden="true" />
+        <i :class="option.icon" aria-hidden="true" />
       </div>
       <div class="mx-2 flex flex-1 flex-col items-start">
         <span class="text-sm font-medium text-foreground">
@@ -32,7 +32,7 @@
       </div>
       <i
         v-if="modelValue === option.value"
-        class="icon-[lucide--check] size-4 text-foreground"
+        class="icon-[lucide--check] text-foreground"
         aria-hidden="true"
       />
     </Button>

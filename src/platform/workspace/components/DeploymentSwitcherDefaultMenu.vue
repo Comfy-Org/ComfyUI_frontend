@@ -6,7 +6,7 @@
       data-testid="deployment-switcher-default"
     >
       <i
-        class="icon-[lucide--users] size-3.5 shrink-0 text-muted-foreground"
+        class="icon-[lucide--users] size-3.5 text-muted-foreground"
         aria-hidden="true"
       />
       <span>{{ $t('deploymentSwitcher.workspaceDefault') }}</span>

@@ -83,11 +83,11 @@ vi.mock(
     useWorkspaceUrlLoader: mocks.useWorkspace
   })
 )
-vi.mock(import('@/platform/workspace/composables/useInviteUrlLoader'), () => ({
+vi.mock(import('@/platform/account/composables/useInviteUrlLoader'), () => ({
   useInviteUrlLoader: mocks.useInvite
 }))
 vi.mock(
-  import('@/platform/workspace/composables/useCreateWorkspaceUrlLoader'),
+  import('@/platform/account/composables/useCreateWorkspaceUrlLoader'),
   () => ({
     useCreateWorkspaceUrlLoader: mocks.useCreateWorkspace
   })

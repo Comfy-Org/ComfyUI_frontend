@@ -111,12 +111,7 @@ function submit(): void {
           @click="revealed = !revealed"
         >
           <i
-            :class="
-              cn(
-                'size-4',
-                revealed ? 'icon-[lucide--eye-off]' : 'icon-[lucide--eye]'
-              )
-            "
+            :class="revealed ? 'icon-[lucide--eye-off]' : 'icon-[lucide--eye]'"
             aria-hidden="true"
           />
         </button>

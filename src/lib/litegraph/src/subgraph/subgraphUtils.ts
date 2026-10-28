@@ -28,7 +28,6 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { INodeOutputSlot } from '@/lib/litegraph/src/types/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { createUuidv4 } from '@/utils/uuid'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -226,24 +225,7 @@ export function getBoundaryLinks(
 }
 
 export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
-  const clonedNodes: ISerialisedNode[] = []
-
-  // Selectively clone - keep IDs & links
-  for (const node of nodes) {
-    const newNode = LiteGraph.createNode(node.type)
-    const data = structuredClone(node.serialize())
-    if (!newNode) {
-      console.warn('Failed to create node', node.type)
-      clonedNodes.push(data)
-      continue
-    }
-
-    // Must be cloned; litegraph "serialize" is mostly shallow clone
-    newNode.configure(data)
-    clonedNodes.push(newNode.serialize())
-  }
-
-  return clonedNodes
+  return Array.from(nodes, (node) => structuredClone(node.serialize()))
 }
 
 export function findUnresolvableSubgraphLink(

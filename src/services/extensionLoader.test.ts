@@ -12,8 +12,6 @@ import {
   shouldLoadExtension
 } from './extensionLoader'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const coreLoad = vi.hoisted(() => ({
   onConfigure: undefined as unknown,
   processMouseDown: undefined as unknown,

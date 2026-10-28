@@ -116,7 +116,7 @@ const sidebarTabTemplateStub = {
 
 const assetsGridStub = {
   props: ['assets'],
-  emits: ['output-count-click', 'context-menu'],
+  emits: ['output-count-click', 'context-menu', 'zoom'],
   template: `
     <div data-testid="assets-grid">
       <button
@@ -124,8 +124,14 @@ const assetsGridStub = {
         @click="$emit('output-count-click', assets[0])"
         @contextmenu.prevent="$emit('context-menu', $event, assets[0])"
       />
+      <button aria-label="Zoom" @click="$emit('zoom', assets[0])" />
     </div>
   `
+}
+
+const mediaLightboxStub = {
+  props: ['allGalleryItems', 'activeIndex'],
+  template: `<div data-testid="lightbox-url">{{ allGalleryItems[activeIndex]?.url }}</div>`
 }
 
 function renderTab({ realTemplate = false } = {}) {
@@ -138,7 +144,7 @@ function renderTab({ realTemplate = false } = {}) {
         AssetsSidebarListView: true,
         MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
-        MediaLightbox: true
+        MediaLightbox: mediaLightboxStub
       }
     }
   })
@@ -188,6 +194,17 @@ describe('AssetsSidebarTab folder navigation', () => {
     ).not.toBeInTheDocument()
     expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
   })
+})
+
+it('gives the lightbox a playable URL for a video without a preview_url', async () => {
+  useAssetsStore().outputAssets.items = [
+    { ...folderAsset, id: 'clip', name: 'clip.mp4' }
+  ]
+  renderTab()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+
+  expect(screen.getByTestId('lightbox-url').textContent).toBeTruthy()
 })
 
 it('shows the sidebar close button when mounted as a sidebar tab', () => {

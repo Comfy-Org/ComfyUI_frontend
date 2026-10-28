@@ -391,6 +391,7 @@ describe('ReplyAssetGroup', () => {
   })
 
   it('bounds sustained queue backpressure with exponential retries and one server lookup', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     vi.setSystemTime(0)
     isAssetPreviewSupported.mockReturnValue(true)
     generateModelThumbnail.mockResolvedValue({ status: 'busy' })

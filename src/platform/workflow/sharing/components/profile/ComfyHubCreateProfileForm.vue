@@ -11,7 +11,7 @@
         {{ $t('comfyHubProfile.createProfileTitle') }}
       </h2>
       <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
-        <i class="icon-[lucide--x] size-4" />
+        <i class="icon-[lucide--x]" />
       </Button>
     </header>
     <h2 v-else class="px-6 pt-6 text-base font-normal text-foreground">

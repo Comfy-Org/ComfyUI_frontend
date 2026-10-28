@@ -8,8 +8,6 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 const scopeA = {
   rootGraphId: toRootGraphId('workflow-a'),
   owningGraphId: toOwningGraphId('workflow-a')

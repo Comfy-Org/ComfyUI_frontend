@@ -6,7 +6,6 @@ import {
 } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import {
@@ -125,7 +124,6 @@ export const useFirstRunEntry = createSharedComposable(() => {
       useNewUserService().isNewUser()
     if (isNewUser === false) return 'complete'
 
-    if (!useFeatureFlags().flags.onboardingTourEnabled) return 'defer'
     if (!isDesktopWidth.value) return 'defer'
     if (!useSubscription().isSubscriptionEnabled()) return 'defer'
     if (isNewUser === null) return 'defer'

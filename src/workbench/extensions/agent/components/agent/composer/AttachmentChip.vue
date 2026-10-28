@@ -89,7 +89,8 @@ const validationMessage = computed(
             aria-hidden="true"
             class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-background/80"
           >
-            <span
+            <i
+              aria-hidden="true"
               class="icon-[lucide--triangle-alert] size-3 text-destructive"
             />
           </span>
@@ -119,7 +120,7 @@ const validationMessage = computed(
         aria-hidden="true"
         class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-background/80"
       >
-        <span class="icon-[lucide--play] size-3" />
+        <i aria-hidden="true" class="icon-[lucide--play] size-3" />
       </span>
       <span
         v-if="uploading"
@@ -127,7 +128,8 @@ const validationMessage = computed(
         :aria-label="$t('agent.uploading')"
         class="absolute inset-0 flex items-center justify-center bg-background/60"
       >
-        <span
+        <i
+          aria-hidden="true"
           class="icon-[lucide--loader-circle] size-5 animate-spin text-muted-foreground"
         />
       </span>

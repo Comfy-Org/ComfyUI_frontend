@@ -27,7 +27,7 @@
           :disabled="activeIndex === 0"
           @click="activeIndex--"
         >
-          <i class="icon-[lucide--chevron-left] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--chevron-left]" aria-hidden="true" />
         </Button>
         <Button
           v-if="images.length > 1"
@@ -39,7 +39,7 @@
           :disabled="activeIndex === images.length - 1"
           @click="activeIndex++"
         >
-          <i class="icon-[lucide--chevron-right] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--chevron-right]" aria-hidden="true" />
         </Button>
       </div>
 

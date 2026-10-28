@@ -19,7 +19,7 @@
           rel="noopener noreferrer"
           @click="handleLearnMore"
         >
-          <i class="icon-[lucide--external-link] size-4"></i>
+          <i class="icon-[lucide--external-link]"></i>
           {{ $t('releaseToast.whatsNew') }}
         </a>
       </template>

@@ -10,6 +10,8 @@ import { createI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import { useSettingUI as useSettingUIComposable } from './useSettingUI'
@@ -49,6 +51,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 interface MockSettingParams {
   id: string
@@ -269,6 +272,23 @@ describe('useSettingUI', () => {
       })
       expect(findPanelByKey('workspace-members')).toBeNull()
       expect(findPanelByKey('workspace-allowlist')).toBeNull()
+    })
+
+    it('shows Members off Cloud when the server says the actor can manage them', () => {
+      env.state.isCloud = false
+      vi.mocked(useBillingCapabilities()).canManageMembers = computed(() =>
+        receiveServerFact('can_manage_members', true)
+      )
+
+      const { navGroups } = useSettingUI()
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'PlanCredits' },
+        { id: 'workspace-members', label: 'Members' }
+      ])
     })
 
     it('mounts the Billing tab on local when unified billing settings is on', () => {

@@ -9,7 +9,7 @@
     @close="handleClose"
   >
     <template v-if="shouldShowLeftPanel" #leftPanelHeaderTitle>
-      <i class="icon-[comfy--ai-model] size-4" />
+      <i class="icon-[comfy--ai-model]" />
       <h2 class="flex-auto text-base font-semibold text-nowrap select-none">
         {{ displayTitle }}
       </h2>

@@ -6,8 +6,6 @@ import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 interface BadSpecScenario {
   name: string
   spec: InputSpec
