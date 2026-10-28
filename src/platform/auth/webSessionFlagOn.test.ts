@@ -179,7 +179,8 @@ vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
 await import('@/extensions/core/cloudSessionCookie')
-const { default: router } = await import('@/router')
+const { createAppRouter } = await import('@/router')
+const router = await createAppRouter()
 
 installCloudApiAuth()
 installWorkspaceApiAuth()
