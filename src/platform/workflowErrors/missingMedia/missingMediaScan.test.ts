@@ -782,17 +782,21 @@ describe('verifyMediaCandidates', () => {
     ])
   })
 
-  it('marks a value with no filename missing without an unfiltered hash query', async () => {
-    stubAssets({ remote: [makeAsset('unrelated.png', 'cc33.png')] })
-    const candidates = [
-      makeCandidate('1', '/ [output]', { isMissing: undefined })
-    ]
+  it.for(['/ [output]', 'deadbeef/ [output]'])(
+    'marks %s, which has no filename, missing without a hash query',
+    async (name) => {
+      stubAssets({
+        output: [makeAsset('folder-named.png', 'deadbeef')],
+        remote: [makeAsset('unrelated.png', 'cc33.png')]
+      })
+      const candidates = [makeCandidate('1', name, { isMissing: undefined })]
 
-    await verifyMediaCandidates(candidates)
+      await verifyMediaCandidates(candidates)
 
-    expect(candidates[0].isMissing).toBe(true)
-    expect(hashLookups()).toEqual([])
-  })
+      expect(candidates[0].isMissing).toBe(true)
+      expect(hashLookups()).toEqual([])
+    }
+  )
 
   it('leaves resolved candidates untouched', async () => {
     stubAssets({})

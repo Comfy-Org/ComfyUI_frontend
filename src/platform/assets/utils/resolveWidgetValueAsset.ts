@@ -15,7 +15,9 @@ export async function resolveWidgetValueAsset(
   { signal }: { signal?: AbortSignal } = {}
 ): Promise<AssetItem | null | undefined> {
   const { filepath } = parseAnnotatedPath(widgetValue)
-  const { filename: hashFilename } = parseFilePath(filepath)
+  const { filename: hashFilename } = parseFilePath(
+    /[\\/]$/.test(filepath) ? '' : filepath
+  )
   const assetMatches = (asset: AssetItem) =>
     asset.hash ? asset.hash === hashFilename : asset.name === filepath
   const assetsStore = useAssetsStore()
