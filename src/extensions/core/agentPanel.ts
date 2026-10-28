@@ -27,7 +27,7 @@ import {
   notifyRestoreMintersGraphLoadError
 } from '@/workbench/extensions/agent/crdt/restoreOpMinter'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCustomNodeService } from '@/services/customNodeService'
+import { useCustomNodeService } from '@/platform/customNodes/services/customNodeService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   clearPendingSignInAccept,

@@ -120,7 +120,7 @@ import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
-import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
+import ManagerProgressToast from '@/platform/customNodes/manager/components/ManagerProgressToast.vue'
 
 setupAutoQueueHandler()
 useProgressFavicon()

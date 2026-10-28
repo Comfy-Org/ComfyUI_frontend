@@ -2,8 +2,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { reportError } from '@/platform/telemetry/reportError'
 import { app } from '@/scripts/app'
-import { useCustomNodeService } from '@/services/customNodeService'
-import { useCustomNodeStore } from '@/stores/customNodeStore'
+import { useCustomNodeService } from '@/platform/customNodes/services/customNodeService'
+import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
 
 import type { ComfyExtension } from '@/types/comfy'
 

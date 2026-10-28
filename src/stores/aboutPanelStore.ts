@@ -7,7 +7,7 @@ import type { AboutPageBadge } from '@/types/comfy'
 import { electronAPI } from '@/utils/envUtil'
 import { formatCommitHash } from '@/utils/formatUtil'
 
-import { useCustomNodeStore } from './customNodeStore'
+import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
 import { useSystemStatsStore } from './systemStatsStore'
 
 export const useAboutPanelStore = defineStore('aboutPanel', () => {

@@ -11,7 +11,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 
 import HelpCenterMenuContent from './HelpCenterMenuContent.vue'
 
@@ -50,15 +50,15 @@ vi.mock<unknown>(import('@/utils/envUtil'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
+  import('@/platform/customNodes/manager/composables/useConflictAcknowledgment'),
 
   () => ({
     useConflictAcknowledgment: () => ({ shouldShowRedDot: { value: false } })
   })
 )
 
-vi.mock(import('@/workbench/extensions/manager/composables/useManagerDialog'))
-vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
+vi.mock(import('@/platform/customNodes/manager/composables/useManagerDialog'))
+vi.mock(import('@/platform/customNodes/manager/composables/useManagerState'))
 
 function renderComponent() {
   const user = userEvent.setup()

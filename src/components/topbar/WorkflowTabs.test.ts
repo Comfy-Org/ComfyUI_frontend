@@ -16,7 +16,7 @@ import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
-import { useCustomNodeStore } from '@/stores/customNodeStore'
+import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WorkflowTabs from './WorkflowTabs.vue'

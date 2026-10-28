@@ -7,8 +7,8 @@ import { createI18n } from 'vue-i18n'
 
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
-import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
+import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 
 import MissingPackGroupRow from './MissingPackGroupRow.vue'
 
@@ -19,7 +19,7 @@ const mockMissingNodePacks = ref<Array<{ id: string; name: string }>>([])
 const mockIsLoading = ref(false)
 
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/nodePack/useMissingNodes'),
+  import('@/platform/customNodes/manager/composables/nodePack/useMissingNodes'),
 
   () => ({
     useMissingNodes: () => ({
@@ -30,7 +30,7 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/nodePack/usePackInstall'),
+  import('@/platform/customNodes/manager/composables/nodePack/usePackInstall'),
 
   () => ({
     usePackInstall: () => ({
@@ -40,11 +40,11 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/workbench/extensions/manager/composables/useManagerDialog'))
-vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
+vi.mock(import('@/platform/customNodes/manager/composables/useManagerDialog'))
+vi.mock(import('@/platform/customNodes/manager/composables/useManagerState'))
 
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/types/comfyManagerTypes'),
+  import('@/platform/customNodes/manager/types/comfyManagerTypes'),
 
   () => ({
     ManagerTab: { Missing: 'missing', All: 'all' }

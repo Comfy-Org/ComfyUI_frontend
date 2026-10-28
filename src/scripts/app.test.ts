@@ -32,7 +32,7 @@ vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@comfyorg/graph-model/curve'
-import type { useCustomNodeService } from '@/services/customNodeService'
+import type { useCustomNodeService } from '@/platform/customNodes/services/customNodeService'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -103,7 +103,7 @@ import { PromptExecutionError, api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useCustomNodeStore } from '@/stores/customNodeStore'
+import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
@@ -191,7 +191,7 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   })
 }))
 
-vi.mock(import('@/services/customNodeService'), () => ({
+vi.mock(import('@/platform/customNodes/services/customNodeService'), () => ({
   useCustomNodeService: vi.fn(() =>
     fromPartial<ReturnType<typeof useCustomNodeService>>(mockCustomNodeService)
   )

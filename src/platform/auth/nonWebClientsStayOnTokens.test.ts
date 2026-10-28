@@ -27,7 +27,7 @@ import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSession
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { useDialogService } from '@/services/dialogService'
-import { useCustomNodeService } from '@/services/customNodeService'
+import { useCustomNodeService } from '@/platform/customNodes/services/customNodeService'
 import type { ComfyExtension } from '@/types/comfy'
 
 type IdentityObserver = (user: User | null) => void
@@ -83,7 +83,7 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/services/customNodeService'), () => ({
+vi.mock(import('@/platform/customNodes/services/customNodeService'), () => ({
   useCustomNodeService: () =>
     fromPartial<ReturnType<typeof useCustomNodeService>>({
       registerExtension: (extension: ComfyExtension) => {

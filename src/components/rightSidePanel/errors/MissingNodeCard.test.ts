@@ -8,8 +8,8 @@ import { createI18n } from 'vue-i18n'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
-import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
+import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 
 import MissingNodeCard from './MissingNodeCard.vue'
 
@@ -25,7 +25,7 @@ const mockMissingCoreNodes = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/nodePack/useMissingNodes'),
+  import('@/platform/customNodes/manager/composables/nodePack/useMissingNodes'),
 
   () => ({
     useMissingNodes: () => ({
@@ -41,7 +41,7 @@ vi.mock<unknown>(
 const mockApplyChanges = vi.hoisted(() => vi.fn())
 const mockIsRestarting = vi.hoisted(() => ({ value: false }))
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useApplyChanges'),
+  import('@/platform/customNodes/manager/composables/useApplyChanges'),
 
   () => ({
     useApplyChanges: () => ({
@@ -54,7 +54,7 @@ vi.mock<unknown>(
 )
 
 const mockShouldShowManagerButtons = vi.hoisted(() => ({ value: false }))
-vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
+vi.mock(import('@/platform/customNodes/manager/composables/useManagerState'))
 
 vi.mock<unknown>(import('./MissingPackGroupRow.vue'), () => ({
   default: {

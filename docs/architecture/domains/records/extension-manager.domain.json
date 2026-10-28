@@ -40,35 +40,35 @@
       "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/manager/**",
+      "path": "src/platform/customNodes/manager/**",
       "role": "application"
     },
     {
-      "path": "src/workbench/extensions/manager/components/**",
+      "path": "src/platform/customNodes/manager/components/**",
       "role": "presentation"
     },
     {
-      "path": "src/workbench/extensions/manager/services/comfyManagerService.ts",
+      "path": "src/platform/customNodes/manager/services/comfyManagerService.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/manager/types/compatibility.types.ts",
+      "path": "src/platform/customNodes/manager/types/compatibility.types.ts",
       "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/manager/types/conflictDetectionTypes.ts",
+      "path": "src/platform/customNodes/manager/types/conflictDetectionTypes.ts",
       "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/manager/types/generatedManagerTypes.ts",
+      "path": "src/platform/customNodes/manager/types/generatedManagerTypes.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/manager/types/importFailedTypes.ts",
+      "path": "src/platform/customNodes/manager/types/importFailedTypes.ts",
       "role": "presentation"
     },
     {
-      "path": "src/workbench/extensions/manager/utils/**",
+      "path": "src/platform/customNodes/manager/utils/**",
       "role": "domain"
     }
   ],
@@ -79,17 +79,17 @@
     {
       "name": "Compatibility and version policy determine pack conflicts and ordering",
       "checks": [
-        "src/workbench/extensions/manager/utils/systemCompatibility.test.ts",
-        "src/workbench/extensions/manager/utils/versionUtil.test.ts",
-        "src/workbench/extensions/manager/utils/nodePackSort.test.ts"
+        "src/platform/customNodes/manager/utils/systemCompatibility.test.ts",
+        "src/platform/customNodes/manager/utils/versionUtil.test.ts",
+        "src/platform/customNodes/manager/utils/nodePackSort.test.ts"
       ]
     },
     {
       "name": "Queued pack operations and dialog lifecycle preserve manager behavior",
       "checks": [
-        "src/workbench/extensions/manager/composables/useManagerQueue.test.ts",
-        "src/workbench/extensions/manager/composables/useManagerDialog.test.ts",
-        "src/workbench/extensions/manager/stores/comfyManagerStore.test.ts"
+        "src/platform/customNodes/manager/composables/useManagerQueue.test.ts",
+        "src/platform/customNodes/manager/composables/useManagerDialog.test.ts",
+        "src/platform/customNodes/manager/stores/comfyManagerStore.test.ts"
       ]
     },
     {

@@ -1,7 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
 
-import { useCustomNodeStore } from '@/stores/customNodeStore'
+import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
 import { createDisposablePinia } from '@/testing/pinia'
 
 const registeredNames = () =>

@@ -3,7 +3,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { useCustomNodeStore } from '@/stores/customNodeStore'
+import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
 import { api } from '@/scripts/api'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 

@@ -13,7 +13,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useCustomNodeService } from '@/services/customNodeService'
+import { useCustomNodeService } from '@/platform/customNodes/services/customNodeService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -22,7 +22,7 @@ import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/services/customNodeService'), () => {
+vi.mock(import('@/platform/customNodes/services/customNodeService'), () => {
   const service: ReturnType<typeof useCustomNodeService> = {
     registerExtension: vi.fn(),
     registerExtensionNow: vi.fn(),

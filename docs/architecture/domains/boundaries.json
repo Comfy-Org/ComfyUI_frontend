@@ -1252,9 +1252,9 @@
           "src/utils/mapperUtil.ts",
           "src/utils/packUtils.test.ts",
           "src/utils/packUtils.ts",
-          "src/workbench/extensions/manager/types/compatibility.types.ts",
-          "src/workbench/extensions/manager/types/conflictDetectionTypes.ts",
-          "src/workbench/extensions/manager/utils/**"
+          "src/platform/customNodes/manager/types/compatibility.types.ts",
+          "src/platform/customNodes/manager/types/conflictDetectionTypes.ts",
+          "src/platform/customNodes/manager/utils/**"
         ]
       },
       {
@@ -1264,15 +1264,15 @@
           "src/composables/useCachedRequest.ts",
           "src/composables/useServerLogs.test.ts",
           "src/composables/useServerLogs.ts",
-          "src/workbench/extensions/manager/services/comfyManagerService.ts",
-          "src/workbench/extensions/manager/types/generatedManagerTypes.ts"
+          "src/platform/customNodes/manager/services/comfyManagerService.ts",
+          "src/platform/customNodes/manager/types/generatedManagerTypes.ts"
         ]
       },
       {
         "name": "extension-manager/presentation",
         "patterns": [
-          "src/workbench/extensions/manager/components/**",
-          "src/workbench/extensions/manager/types/importFailedTypes.ts"
+          "src/platform/customNodes/manager/components/**",
+          "src/platform/customNodes/manager/types/importFailedTypes.ts"
         ]
       },
       {
@@ -1287,10 +1287,10 @@
           "src/scripts/appInstance.ts",
           "src/scripts/appRegistry.test.ts",
           "src/scripts/appRegistry.ts",
-          "src/services/customNodeService.test.ts",
-          "src/services/customNodeService.ts",
-          "src/stores/customNodeStore.test.ts",
-          "src/stores/customNodeStore.ts"
+          "src/platform/customNodes/services/customNodeService.test.ts",
+          "src/platform/customNodes/services/customNodeService.ts",
+          "src/platform/customNodes/stores/customNodeStore.test.ts",
+          "src/platform/customNodes/stores/customNodeStore.ts"
         ]
       },
       {
@@ -1312,8 +1312,8 @@
           "src/scripts/api.storeUserData.test.ts",
           "src/scripts/api.ts",
           "src/scripts/apiTimeouts.ts",
-          "src/services/extensionLoader.test.ts",
-          "src/services/extensionLoader.ts"
+          "src/platform/customNodes/services/extensionLoader.test.ts",
+          "src/platform/customNodes/services/extensionLoader.ts"
         ]
       },
       {
@@ -1322,7 +1322,8 @@
           "src/scripts/ui.setStatus.test.ts",
           "src/scripts/ui.storageResilience.test.ts",
           "src/scripts/ui.test.ts",
-          "src/scripts/ui.ts"
+          "src/scripts/ui.ts",
+          "src/platform/customNodes/components/**"
         ]
       },
       {
@@ -3666,7 +3667,7 @@
       },
       {
         "name": "extension-manager/application/outer-1",
-        "patterns": ["src/workbench/extensions/manager/**"]
+        "patterns": ["src/platform/customNodes/manager/**"]
       },
       {
         "name": "extension-runtime/infrastructure/outer-1",

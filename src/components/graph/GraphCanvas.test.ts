@@ -34,7 +34,7 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
-import { loadExtensions } from '@/services/extensionLoader'
+import { loadExtensions } from '@/platform/customNodes/services/extensionLoader'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -158,7 +158,7 @@ vi.mock<unknown>(import('@/scripts/changeTracker'), () => ({
   ChangeTracker: { init: vi.fn() }
 }))
 
-vi.mock(import('@/services/extensionLoader'), () => ({
+vi.mock(import('@/platform/customNodes/services/extensionLoader'), () => ({
   loadExtensions: vi.fn(async () => {})
 }))
 

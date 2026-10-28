@@ -9,7 +9,7 @@
 import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCustomNodeStore } from '@/stores/customNodeStore'
+import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
   resultItemUrl,

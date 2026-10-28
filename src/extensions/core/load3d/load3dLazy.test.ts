@@ -123,7 +123,8 @@ async function loadLazyExtensionFresh() {
   vi.resetModules()
   const { load3dLazyExtension } =
     await import('@/extensions/core/load3d/load3dLazy')
-  const { useCustomNodeStore } = await import('@/stores/customNodeStore')
+  const { useCustomNodeStore } =
+    await import('@/platform/customNodes/stores/customNodeStore')
   const { app } = await import('@/scripts/app')
   const { reportError } = await import('@/platform/telemetry/reportError')
   const customNodeStore = useCustomNodeStore()

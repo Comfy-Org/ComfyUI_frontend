@@ -198,7 +198,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
-import { loadExtensions } from '@/services/extensionLoader'
+import { loadExtensions } from '@/platform/customNodes/services/extensionLoader'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {

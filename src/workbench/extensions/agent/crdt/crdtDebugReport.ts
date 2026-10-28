@@ -21,7 +21,7 @@
 import { DISTRIBUTION } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
-import { useCustomNodeStore } from '@/stores/customNodeStore'
+import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
 
 import type {
   AssistantMessage,

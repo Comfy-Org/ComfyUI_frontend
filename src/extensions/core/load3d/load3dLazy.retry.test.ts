@@ -5,7 +5,7 @@ import { load3dLazyExtension } from '@/extensions/core/load3d/load3dLazy'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { reportError } from '@/platform/telemetry/reportError'
 import { app } from '@/scripts/app'
-import { useCustomNodeStore } from '@/stores/customNodeStore'
+import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
 
 const { lazyModules, lightInfoImport } = vi.hoisted(() => {
   const defineExtension = (name: string) => ({

@@ -81,7 +81,7 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type { ComfyApp } from '@/scripts/app'
-import { useCustomNodeService } from '@/services/customNodeService'
+import { useCustomNodeService } from '@/platform/customNodes/services/customNodeService'
 import { createDisposablePinia } from '@/testing/pinia'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -158,7 +158,7 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/services/customNodeService'), () => ({
+vi.mock(import('@/platform/customNodes/services/customNodeService'), () => ({
   useCustomNodeService: () =>
     fromPartial<ReturnType<typeof useCustomNodeService>>({
       registerExtension: (extension: ComfyExtension) => {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useCustomNodeStore } from '@/stores/customNodeStore'
+import { useCustomNodeStore } from '@/platform/customNodes/stores/customNodeStore'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/distribution/types'), () => ({

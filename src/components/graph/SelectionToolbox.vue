@@ -162,7 +162,7 @@ import { areSelectedLinksHidden } from '@/lib/litegraph/src/canvas/linkSelection
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useCustomNodeService } from '@/services/customNodeService'
+import { useCustomNodeService } from '@/platform/customNodes/services/customNodeService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
