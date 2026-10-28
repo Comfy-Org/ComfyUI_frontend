@@ -1147,6 +1147,140 @@ describe('attachDocOpMinter', () => {
         ])
       })
 
+      describe('once a foreign append displaces an unechoed grow', () => {
+        const [first, displaced, third, later] = [1, 2, 3, 4].map(
+          (index) => `${IMAGES_GROUP}.image_${index}`
+        )
+        const foreign = `${IMAGES_GROUP}.other`
+
+        function wideSinkWithSources(count: number) {
+          const sources = Array.from({ length: count }, () => new TestSource())
+          const sink = new TestWideAutogrowSink()
+          withGraphIntentSource('load', () => {
+            for (const source of sources) graph.add(source)
+            graph.add(sink)
+            sources[0].connect(0, sink, 0)
+          })
+          return { sources, sink }
+        }
+
+        it('keeps a replacing link at its document slot when a later grow is cancelled', async () => {
+          const { sources, sink } = wideSinkWithSources(3)
+          let docNames = [first]
+          docInputNames = (nodeId) => (nodeId === sink.id ? docNames : null)
+          sources[1].connect(0, sink, 1)
+          await afterFlush()
+          docNames = [first, foreign, third]
+          sources[2].connect(0, sink, 2)
+          await afterFlush()
+          minted.length = 0
+
+          const unsent = new TestSource()
+          graph.add(unsent)
+          unsent.connect(0, sink, 3)
+          sources[0].connect(0, sink, 2)
+          const replacement = sink.inputs[2].link
+          graph.remove(unsent)
+          await afterFlush()
+
+          expect(minted.filter((op) => op.op === 'connect' && op.grow)).toEqual(
+            []
+          )
+          expect(minted).toContainEqual(
+            expect.objectContaining({
+              op: 'connect',
+              link_id: replacement,
+              to_slot: 2
+            })
+          )
+        })
+
+        it('predicts grows again once a displaced grow has had time to echo and never did', async () => {
+          const { sources, sink } = wideSinkWithSources(4)
+          let docNames = [first]
+          docInputNames = (nodeId) => (nodeId === sink.id ? docNames : null)
+          sources[1].connect(0, sink, 1)
+          await afterFlush()
+          docNames = [first, foreign]
+          sources[2].connect(0, sink, 2)
+          await afterFlush()
+          docNames = [first, foreign, third]
+          await vi.advanceTimersByTimeAsync(
+            2 * PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
+          )
+          sources[3].connect(0, sink, 3)
+          await afterFlush()
+          minted.length = 0
+          const laterLink = sink.inputs[3].link
+
+          sink.disconnectInput(3)
+          await afterFlush()
+
+          expect(sink.inputs[3].name).toBe(later)
+          expect(minted).toEqual([
+            {
+              op: 'disconnect',
+              link_id: laterLink,
+              to_node: sink.id,
+              to_slot: 3
+            }
+          ])
+          expect(reportError).not.toHaveBeenCalled()
+        })
+
+        it('predicts nothing for a later grow while a displaced grow may still echo', async () => {
+          const { sources, sink } = wideSinkWithSources(4)
+          let docNames = [first]
+          docInputNames = (nodeId) => (nodeId === sink.id ? docNames : null)
+          sources[1].connect(0, sink, 1)
+          await afterFlush()
+          docNames = [first, foreign]
+          sources[2].connect(0, sink, 2)
+          await afterFlush()
+          docNames = [first, foreign, third]
+          sources[3].connect(0, sink, 3)
+          await afterFlush()
+          minted.length = 0
+
+          sink.disconnectInput(3)
+          await afterFlush()
+
+          expect(minted).toEqual([])
+          expect(
+            vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+          ).toEqual(['agent_crdt_link_slot_not_in_doc'])
+        })
+      })
+
+      it('predicts a grow from the document length once an earlier grow echoed below its base', async () => {
+        const sources = [new TestSource(), new TestSource(), new TestSource()]
+        const sink = new TestAutogrowSink()
+        withGraphIntentSource('load', () => {
+          graph.add(sources[0])
+          graph.add(sources[1])
+          graph.add(sources[2])
+          graph.add(sink)
+          sources[0].connect(0, sink, 0)
+        })
+        const echoedBelowBase = [`${IMAGES_GROUP}.image_2`]
+        let docNames = [`${IMAGES_GROUP}.image_1`]
+        docInputNames = (nodeId) => (nodeId === sink.id ? docNames : null)
+        sources[1].connect(0, sink, 1)
+        await afterFlush()
+        docNames = echoedBelowBase
+        sources[2].connect(0, sink, 2)
+        await afterFlush()
+        minted.length = 0
+        const grownLink = sink.inputs[2].link
+
+        sink.disconnectInput(2)
+        await afterFlush()
+
+        expect(minted).toEqual([
+          { op: 'disconnect', link_id: grownLink, to_node: sink.id, to_slot: 1 }
+        ])
+      })
+
       describe('with two grows on one node awaiting their echo', () => {
         async function mintTwoUnechoedGrows() {
           const sources = [new TestSource(), new TestSource(), new TestSource()]
