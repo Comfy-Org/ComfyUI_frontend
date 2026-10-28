@@ -58,6 +58,32 @@ describe('perf-report heading', () => {
     )
   })
 
+  // A run that recorded no frames stores 0 alongside the real samples. It must
+  // be dropped before the median, or it halves the frame time and turns a
+  // real miss into a pass.
+  it('ignores unsampled runs when taking the median frame time', () => {
+    const output = render([
+      { name: 'slow', frameDurationMs: 0, p95FrameDurationMs: 0 },
+      { name: 'slow', frameDurationMs: 16, p95FrameDurationMs: 18 },
+      { name: 'slow', frameDurationMs: 16, p95FrameDurationMs: 21 }
+    ])
+
+    expect(heading(output)).toMatch(
+      /^## ⚡ Performance: ❌ 1 below 52 FPS target/
+    )
+    expect(output).not.toContain('recorded no frame samples')
+  })
+
+  it('does not read as clean when no scenario recorded frame samples', () => {
+    const output = render([
+      { name: 'unsampled', frameDurationMs: 0, p95FrameDurationMs: 0 }
+    ])
+
+    expect(heading(output)).toMatch(
+      /^## ⚡ Performance: ⚠️ No frame samples — FPS target not checked/
+    )
+  })
+
   it('does not report a run that measured nothing as clean', () => {
     const output = render([])
 

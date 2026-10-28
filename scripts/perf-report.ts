@@ -228,19 +228,22 @@ function sampledFrameMetric(
   samples: PerfMeasurement[],
   key: 'frameDurationMs' | 'p95FrameDurationMs'
 ): number | null {
-  const value = medianMetric(samples, key)
-  return value !== null && value > 0 ? value : null
+  // Drop the unsampled runs before the median: left in, a 0 drags the median
+  // frame time down and reports a scenario faster than it ran.
+  const sampled = samples.filter((s) => (getMetricValue(s, key) ?? 0) > 0)
+  return medianMetric(sampled, key)
 }
 
 interface FpsTargetTally {
   below: number
+  sampled: number
   unsampled: number
 }
 
 function tallyFpsTarget(
   prGroups: Map<string, PerfMeasurement[]>
 ): FpsTargetTally {
-  const tally: FpsTargetTally = { below: 0, unsampled: 0 }
+  const tally: FpsTargetTally = { below: 0, sampled: 0, unsampled: 0 }
   for (const prSamples of prGroups.values()) {
     const p95Frame = sampledFrameMetric(prSamples, 'p95FrameDurationMs')
     if (p95Frame === null) {
@@ -248,6 +251,7 @@ function tallyFpsTarget(
         tally.unsampled++
       continue
     }
+    tally.sampled++
     if (frameTimeToFps(p95Frame) < TARGET_P5_FPS) tally.below++
   }
   return tally
@@ -591,13 +595,17 @@ function main() {
   // scanning the comment takes the verdict from the first glyph and a target
   // miss outranks "nothing moved since the baseline". A run that measured
   // nothing has no verdict at all, and must not read as a clean one.
-  const { below: belowTarget } = tallyFpsTarget(prGroups)
+  // Frame data that never arrived is not a pass either: with nothing sampled
+  // the target was not checked at all.
+  const fps = tallyFpsTarget(prGroups)
   const status =
     current.measurements.length === 0
       ? '⚠️ No measurements recorded — check the perf test logs'
-      : belowTarget > 0
-        ? `❌ ${belowTarget} below ${TARGET_P5_FPS} FPS target · ${report.status}`
-        : report.status
+      : fps.below > 0
+        ? `❌ ${fps.below} below ${TARGET_P5_FPS} FPS target · ${report.status}`
+        : fps.unsampled > 0 && fps.sampled === 0
+          ? `⚠️ No frame samples — FPS target not checked · ${report.status}`
+          : report.status
 
   process.stdout.write(
     renderPrReportSection({
