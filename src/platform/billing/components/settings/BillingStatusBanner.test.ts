@@ -213,7 +213,9 @@ const globalOptions = {
   plugins: [i18n]
 }
 
-function renderBanner(section?: 'planCredits' | 'members' | 'allowlist') {
+function renderBanner(
+  section?: 'planCredits' | 'members' | 'allowlist' | 'billing'
+) {
   return render(BillingStatusBanner, {
     props: { section },
     global: globalOptions
@@ -285,6 +287,59 @@ describe('BillingStatusBanner', () => {
     useBillingCapabilities().canReactivate = computed(() => true)
     state.canReactivatePlan = true
     state.shouldUseWorkspaceBilling = true
+  })
+
+  describe('on the Billing tab', () => {
+    it.for([
+      {
+        name: 'plan ending',
+        enter: () => {
+          state.subscription = {
+            ...state.subscription!,
+            isCancelled: true,
+            endDate: '2026-10-28T00:00:00Z'
+          }
+        },
+        text: 'Your Team plan ends on'
+      },
+      {
+        name: 'plan ended',
+        enter: () => {
+          state.subscriptionStatus = 'ended'
+          state.billingStatus = 'inactive'
+          state.canAccessSubscriptionFeatures = false
+          state.subscription = {
+            hasFunds: false,
+            isCancelled: true,
+            endDate: '2026-09-12T12:00:00Z',
+            scheduledChange: null,
+            tier: 'PRO'
+          }
+        },
+        text: 'Your Team plan ended on September 12, 2026'
+      }
+    ])(
+      'shows $name without the actions the plan row owns',
+      ({ enter, text }) => {
+        enter()
+        renderBanner('billing')
+
+        expect(screen.getByRole('status')).toHaveTextContent(text)
+        expect(
+          screen.queryByRole('button', { name: /Resume|Resubscribe/ })
+        ).not.toBeInTheDocument()
+      }
+    )
+
+    it.for([
+      { name: 'out of credits', enter: exhausted },
+      { name: 'paused', enter: pausedState }
+    ])('leaves $name to the Billing tab banners', ({ enter }) => {
+      enter()
+      renderBanner('billing')
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
   })
 
   it('renders nothing for a healthy funded team', () => {
