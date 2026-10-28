@@ -3,6 +3,7 @@ import type {
   Meta,
   StoryObj
 } from '@storybook/vue3-vite'
+import { fn } from 'storybook/test'
 
 import Tag from './Tag.vue'
 
@@ -26,7 +27,8 @@ const meta: Meta<ComponentPropsAndSlots<typeof Tag>> = {
     label: 'Tag',
     shape: 'square',
     state: 'default',
-    interactive: false
+    interactive: false,
+    onRemove: fn()
   }
 }
 
