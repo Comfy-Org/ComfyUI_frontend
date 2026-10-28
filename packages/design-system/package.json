@@ -73,11 +73,6 @@
         "import": "./dist/*.vue.js",
         "default": "./dist/*.vue.js"
       },
-      "./lib/color-picker/colorUtil": {
-        "types": "./dist/color-picker/colorUtil.d.ts",
-        "import": "./dist/color-picker/colorUtil.js",
-        "default": "./dist/color-picker/colorUtil.js"
-      },
       "./lib/color-picker/types": {
         "types": "./dist/color-picker/types.d.ts",
         "import": "./dist/color-picker/types.js",
