@@ -1022,6 +1022,19 @@ describe('BillingTab', () => {
       expect(addCreditsVariants()).toEqual(['inverted', 'inverted'])
     })
 
+    it('turns Add credits white at 0 while a top-up payment is processing and auto top-up is off', async () => {
+      servedCheckouts(checkout('payment_processing'))
+      arrange({ balance: zeroBalance })
+
+      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-auto-top-up-status')
+      expect(
+        within(screen.getByTestId('billing-credits-card')).getByRole('button', {
+          name: 'Add credits'
+        })
+      ).toHaveAttribute('data-variant', 'inverted')
+    })
+
     it('keeps Add credits grey at 0 when the served auto top-up status will refill', async () => {
       const served = await billingApi.getBillingAutoReload()
       vi.mocked(billingApi.getBillingAutoReload).mockResolvedValue({

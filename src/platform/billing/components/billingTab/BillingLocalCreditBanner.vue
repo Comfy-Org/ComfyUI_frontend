@@ -246,7 +246,7 @@ function creditsLeft(): string {
 function lowCreditsBodyKey(): string {
   if (!isCloud) return `${bs}.lowCredits.localBody`
   if (workspaceType.value !== 'team') return `${bs}.lowCredits.personalBody`
-  return canTopUp.value
+  return canManageBilling.value
     ? `${bs}.lowCredits.ownerBody`
     : `${bs}.lowCredits.memberBody`
 }

@@ -284,14 +284,25 @@ describe('BillingLocalCreditBanner', () => {
       name: 'a team owner on Cloud',
       isCloud: true,
       workspaceType: 'team',
+      canManageBilling: true,
       canTopUp: true,
       body: 'This workspace has 1,055 credits left. Add credits before you run out.',
       buttons: ['Dismiss', 'Add credits']
     },
     {
+      name: 'a team owner whose top-up the server denies on Cloud',
+      isCloud: true,
+      workspaceType: 'team',
+      canManageBilling: true,
+      canTopUp: false,
+      body: 'This workspace has 1,055 credits left. Add credits before you run out.',
+      buttons: ['Dismiss']
+    },
+    {
       name: 'a team member on Cloud',
       isCloud: true,
       workspaceType: 'team',
+      canManageBilling: false,
       canTopUp: false,
       body: 'This workspace has 1,055 credits left. Ask the workspace owner to add credits before you run out.',
       buttons: ['Dismiss']
@@ -300,6 +311,7 @@ describe('BillingLocalCreditBanner', () => {
       name: 'a personal workspace on Cloud',
       isCloud: true,
       workspaceType: 'personal',
+      canManageBilling: true,
       canTopUp: true,
       body: 'You have 1,055 credits left. Add credits before you run out.',
       buttons: ['Dismiss', 'Add credits']
@@ -308,16 +320,18 @@ describe('BillingLocalCreditBanner', () => {
       name: 'a local install',
       isCloud: false,
       workspaceType: 'personal',
+      canManageBilling: true,
       canTopUp: true,
       body: 'You have 1,055 credits left. Add credits to keep running Partner Nodes.',
       buttons: ['Dismiss', 'Add credits']
     }
   ] as const)(
     'shows the low-credit copy for $name',
-    ({ isCloud, workspaceType, canTopUp, body, buttons }) => {
+    ({ isCloud, workspaceType, canManageBilling, canTopUp, body, buttons }) => {
       arrange({
         isCloud,
         workspaceType,
+        canManageBilling,
         canTopUp,
         balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
       })
