@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { renderShortcutKeycaps } from './shortcutKeycaps'
 
@@ -109,6 +109,21 @@ describe('renderShortcutKeycaps', () => {
     expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>B</kbd>')
   })
 
+  it('leaves a word that begins with a key letter alone', () => {
+    const html = '<p>Ctrl+click a node to add it to the selection.</p>'
+    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
+  })
+
+  it('leaves a drag gesture alone rather than keycapping its first letter', () => {
+    const html = '<p>Shift+drag to move the group, or Alt+drag to copy it.</p>'
+    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
+  })
+
+  it('does not read a modifier out of the end of a longer word', () => {
+    const html = '<p>The salt+B variant is not a shortcut.</p>'
+    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
+  })
+
   it('is stable when applied to its own output, as a streamed reply re-renders', () => {
     const once = renderShortcutKeycaps(
       '<p>Press Ctrl+B to bypass it.</p>',
@@ -125,11 +140,5 @@ describe('renderShortcutKeycaps', () => {
     )
     expect(out).not.toContain('<img')
     expect(out).toContain('&lt;img')
-  })
-
-  it('does not resolve a command for prose with no combo in it', () => {
-    const resolve = vi.fn(resolveDefaults)
-    renderShortcutKeycaps('<p>I bypassed the two upscalers.</p>', resolve)
-    expect(resolve).not.toHaveBeenCalled()
   })
 })

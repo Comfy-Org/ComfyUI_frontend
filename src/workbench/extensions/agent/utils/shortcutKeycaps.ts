@@ -31,7 +31,7 @@ const SINGLE_KEY =
   '`' +
   String.raw`~!@#$%^&*()\-_=+\[\]{}\\|;:'",.<>/?]`
 
-const MODIFIER_BEARING_COMBO = String.raw`(?:${MODIFIER})(?:\s*\+\s*(?:${MODIFIER}|${NAMED_KEY}|${SINGLE_KEY}))+`
+const MODIFIER_BEARING_COMBO = String.raw`(?<![A-Za-z0-9])(?:${MODIFIER})(?:\s*\+\s*(?:${MODIFIER}|${NAMED_KEY}|${SINGLE_KEY})(?![A-Za-z0-9]))+`
 
 const AFTER_SENTENCE_END = /(?<=[.!?;\n])/
 
@@ -111,12 +111,7 @@ function isProse(node: Text): boolean {
   return true
 }
 
-/**
- * Renders the keyboard shortcuts in one block of rendered reply HTML as `<kbd>`
- * keycaps, replacing a combo with the keys `resolve` reports whenever the
- * sentence holding it names exactly one canvas action. Prose that carries no
- * combo, and text inside code, links and existing keycaps, are left untouched.
- */
+/** Renders the key combos in rendered reply HTML as `<kbd>` keycaps, re-keyed to the bound keys where the sentence names one canvas action. */
 export function renderShortcutKeycaps(
   html: string,
   resolve: KeySequenceResolver
