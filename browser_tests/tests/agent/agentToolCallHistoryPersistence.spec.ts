@@ -20,8 +20,6 @@ import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 // This test mimics that verbatim content pass-through (the shared fixture's
 // own GET mock does not carry tool_calls) and asserts the summary survives a
 // refresh.
-// Release note: on this branch the restored Add node call reads as an
-// unconfirmed canvas write rather than a plain tool label.
 const THINKING_ROUND_1 =
   'The user wants a loader node, so I will search for one.'
 const THINKING_ROUND_2 = 'Found a match; adding it to the graph.'
