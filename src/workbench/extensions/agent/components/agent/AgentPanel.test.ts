@@ -290,6 +290,47 @@ describe('AgentPanel', () => {
     draftCalls.replaceDraft.length = 0
   })
 
+  it('locks immediately but only shows the conversation veil for a slow opening', async () => {
+    vi.useFakeTimers()
+    const { rerender } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        openingWorkflowName: 'portrait'
+      },
+      global: { plugins: [i18n], stubs: { Composer: true, EmptyState: true } }
+    })
+
+    expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+    expect(screen.queryByRole('status')).toBeNull()
+    await vi.advanceTimersByTimeAsync(100)
+    await rerender({ openingWorkflowName: undefined })
+    await vi.advanceTimersByTimeAsync(20)
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+      'inert'
+    )
+
+    await rerender({ openingWorkflowName: 'portrait' })
+    await vi.advanceTimersByTimeAsync(119)
+    expect(screen.queryByRole('status')).toBeNull()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(
+      screen.getByRole('status', {
+        name: i18n.global.t('agent.openingWorkflowChat', {
+          workflowName: 'portrait'
+        })
+      })
+    ).toBeVisible()
+
+    await rerender({ openingWorkflowName: undefined })
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+      'inert'
+    )
+  })
+
   it('renders and forwards the treatment starter prompt exposure', () => {
     distribution.isCloud = true
     const { emitted } = render(AgentPanel, {
@@ -313,6 +354,32 @@ describe('AgentPanel', () => {
     expect(emitted('starterPromptRendered')).toEqual([['test']])
   })
 
+  it('shows a recoverable workflow sync failure and emits retry', async () => {
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        syncRetryAvailable: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { Composer: true, EmptyState: true, PanelHeader: true }
+      }
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      i18n.global.t('agent.workflowSyncFailedTitle')
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('g.retry')
+      })
+    )
+
+    expect(emitted('retrySync')).toHaveLength(1)
+  })
+
   it('keeps a failed opening in history and lets the user retry that row', async () => {
     const select = vi.fn().mockResolvedValueOnce(false).mockResolvedValue(true)
     mountHistory(select)
@@ -330,6 +397,30 @@ describe('AgentPanel', () => {
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
     )
+    expect(
+      screen.getByRole('button', { name: 'Show chat history' })
+    ).toBeVisible()
+  })
+
+  it('leaves history on Back even when reopening the previous chat keeps failing', async () => {
+    const select = vi.fn().mockResolvedValue(false)
+    mountHistory(select)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show chat history' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'First chat' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      i18n.global.t('agent.historyOpenFailed')
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+    )
+    expect(select.mock.calls.map(([id]) => id)).toEqual(['first', 'previous'])
     expect(
       screen.getByRole('button', { name: 'Show chat history' })
     ).toBeVisible()

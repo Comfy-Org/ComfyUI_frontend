@@ -45,9 +45,7 @@ function defineNodeTemplatesTests(mode: NodeMode) {
       await nodeTemplates.insertTemplate(name)
     })
 
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(initialNodeCount + 1)
+    await comfyPage.expectNodeCount(initialNodeCount + 1)
   })
 
   test('Deleting a template in the manage dialog removes it from the list', async ({

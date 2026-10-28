@@ -4,7 +4,7 @@ import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import {
   assert,
   beforeEach,
@@ -148,7 +148,7 @@ function createWrapper({
           name: 'ContextMenu',
           props: ['model'],
           template:
-            '<div data-testid="context-menu" :data-model="JSON.stringify(model)" />'
+            '<div data-testid="context-menu" :data-model="JSON.stringify(model)"><slot /></div>'
         },
         ...stubs
       }

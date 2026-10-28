@@ -105,11 +105,9 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey
-  onboarding_tour_enabled?: boolean
   /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
   manager_survey_url?: string
   cancellation_survey_id?: string
-  linear_toggle_enabled?: boolean
   'agent-in-app-experience'?: boolean
   partner_node_governance_enabled?: boolean
   /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
@@ -123,6 +121,10 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   new_free_tier_subscriptions?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
+  /** The deployment switcher's marks of which deployments can run the open workflow; its own off switch, per workspace. */
+  deployment_compatibility_marks_enabled?: boolean
+  /** The editor opens after 2 s of custom node scripts and turns the late ones on when they arrive. */
+  late_custom_nodes_enabled?: boolean
   // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
   // funnel it through normalizeHostedBillingDestination before trusting it.
   hosted_billing_destination?: string

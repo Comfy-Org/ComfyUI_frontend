@@ -30,7 +30,7 @@ import {
   resultItemUrl,
   resultItemVhsAdvancedPreviewUrl
 } from '@/utils/resultItemUrl'
-import type { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/services/extensionService'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -107,9 +107,9 @@ vi.mock(import('@/services/extensionService'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
-await import('@/extensions/core/cloudSessionCookie')
+const { cloudSessionCookieExtension } =
+  await import('@/extensions/core/cloudSessionCookie')
+useExtensionService().registerExtension(cloudSessionCookieExtension)
 
 const ONE_HOUR_MS = 60 * 60 * 1000
 

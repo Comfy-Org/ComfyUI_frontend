@@ -16,7 +16,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { Toast } from '@/components/ui/toast/toastStore'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -34,11 +34,12 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
+import { loadExtensions } from '@/services/extensionLoader'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import GraphCanvas from './GraphCanvas.vue'
 const distribution = vi.hoisted(() => ({ isCloud: false }))
@@ -330,6 +331,18 @@ describe('GraphCanvas legacy settings bridge', () => {
     await useSettingStore().set('Comfy.Locale', 'zh')
 
     expect(app.ui.settings.dispatchChange).not.toHaveBeenCalled()
+  })
+})
+
+describe('GraphCanvas late custom nodes', () => {
+  it('stops turning late custom nodes on once the canvas unmounts', async () => {
+    await mountGraphCanvas()
+    const [signal] = vi.mocked(loadExtensions).mock.calls[0]
+    expect(signal?.aborted).toBe(false)
+
+    cleanup()
+
+    expect(signal?.aborted).toBe(true)
   })
 })
 

@@ -80,7 +80,14 @@ jobs:
             echo '## Playwright video walkthroughs'
             echo
             printf 'Recording run: **%s**. [Run and downloadable reports](%s).\n' "$RESULT" "$RUN_URL"
-            printf '\nRecorded head: %s%s%s.\n' '`' "$HEAD_SHA" '`'
+            printf '\nPR head: %s%s%s.\n' '`' "$HEAD_SHA" '`'
+            if [ -s video-report/reused-recordings.tsv ]; then
+              printf '\nThese specs are unchanged, so their earlier recordings were reused:\n\n'
+              while IFS=$'\t' read -r PROJECT FILE SHA; do
+                printf -- '- %s%s%s (%s) recorded at %s%s%s\n' '`' "$FILE" '`' "$PROJECT" '`' "$SHA" '`'
+              done < video-report/reused-recordings.tsv
+              printf '\nComment %s/playwright-regen-recordings%s to record them again.\n' '`' '`'
+            fi
             if [ -n "$REPORT_URL" ]; then
               printf '\n[View tests with embedded video](%s).\n' "$REPORT_URL"
             else

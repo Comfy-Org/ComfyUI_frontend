@@ -3,8 +3,6 @@ import { expect, it, vi } from 'vitest'
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob: vi.fn() }))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/utils/vintageClipboard'), () => ({
@@ -36,8 +34,7 @@ async function importNodeTemplates(getUserData: () => Promise<Response>) {
   const { app } = await import('@/scripts/app')
   const { reportError } = await import('@/platform/telemetry/reportError')
   vi.mocked(api.getUserData).mockImplementation(getUserData)
-  await import('./nodeTemplates')
-  const extension = vi.mocked(app.registerExtension).mock.calls[0][0]
+  const { nodeTemplatesExtension: extension } = await import('./nodeTemplates')
   return { api, app, reportError, extension }
 }
 

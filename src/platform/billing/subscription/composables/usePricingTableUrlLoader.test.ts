@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
 
-import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
+import type { TeamCreditStops } from '@comfyorg/billing-core'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import { usePricingTableUrlLoader } from './usePricingTableUrlLoader'
 
@@ -23,7 +24,7 @@ vi.mock(
 vi.mock(import('vue-router'))
 
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')
@@ -38,7 +39,7 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 const mockCanOpenPricingSurface = vi.hoisted(() => ({ value: true }))
 
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
@@ -50,12 +51,14 @@ const TEAM_CREDIT_STOPS = {
     monthly: {
       action: 'subscribe',
       list_price_cents: usd * 100,
-      price_cents: usd * 100 - index * 500
+      price_cents: usd * 100 - index * 500,
+      period_charge_cents: usd * 100 - index * 500
     },
     yearly: {
       action: 'subscribe',
       list_price_cents: usd * 100,
-      price_cents: usd * 100 - index * 1000
+      price_cents: usd * 100 - index * 1000,
+      period_charge_cents: (usd * 100 - index * 1000) * 12 + 1
     }
   }))
 } satisfies TeamCreditStops
@@ -68,11 +71,15 @@ function setRouteQuery(value: LocationQueryRaw) {
 
 describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
-    const workspaceUI = useWorkspaceUI()
+    const workspaceUI = useBillingUI()
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
       ...defaultPermissions,
-      ...mockPermissions.value
+      ...mockPermissions.value,
+      canManageSubscription: receiveServerFact(
+        'can_manage_subscription',
+        mockPermissions.value.canManageSubscription
+      )
     }))
     workspaceUI.canOpenPricingSurface = computed(
       () => mockCanOpenPricingSurface.value
@@ -247,7 +254,8 @@ describe('usePricingTableUrlLoader', () => {
           id: 'team_700',
           credits: 147700,
           usd: 700,
-          discountedUsd: 680
+          discountedUsd: 680,
+          periodChargeUsd: { monthly: 690, yearly: 8160.01 }
         },
         billingCycle: 'yearly'
       }
@@ -367,7 +375,11 @@ describe('usePricingTableUrlLoader', () => {
             id: catalogStop.id,
             credits: catalogStop.credits,
             usd: catalogStop[billingCycle].list_price_cents / 100,
-            discountedUsd: catalogStop[billingCycle].price_cents / 100
+            discountedUsd: catalogStop[billingCycle].price_cents / 100,
+            periodChargeUsd: {
+              monthly: catalogStop.monthly.period_charge_cents / 100,
+              yearly: catalogStop.yearly.period_charge_cents / 100
+            }
           },
           billingCycle
         }

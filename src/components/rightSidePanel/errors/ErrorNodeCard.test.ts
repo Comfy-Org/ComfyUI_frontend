@@ -6,11 +6,11 @@ import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
 
-import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
+import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import ErrorNodeCard from './ErrorNodeCard.vue'

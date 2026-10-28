@@ -5,8 +5,8 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
-import { zSparseSubgraphDefinition } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
+import { zSparseSubgraphDefinition } from '@comfyorg/graph-model/workflowSchema'
 
 /**
  * Root map the op layer mints `definitions.subgraphs` into, keyed by

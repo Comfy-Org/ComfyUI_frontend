@@ -43,7 +43,7 @@
 import { computed, ref } from 'vue'
 
 import NavItem from '@/components/widget/nav/NavItem.vue'
-import NavTitle from '@/components/widget/nav/NavTitle.vue'
+import NavTitle from '@comfyorg/design-system/navigation/NavTitle'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 
 const { navItems = [], modelValue } = defineProps<{

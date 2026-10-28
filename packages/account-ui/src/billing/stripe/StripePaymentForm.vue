@@ -44,7 +44,7 @@
         class="flex items-start gap-3 rounded-xl bg-background/60 px-4 py-3 text-xs text-muted-foreground"
       >
         <i
-          class="mt-0.5 icon-[lucide--shield-check] size-4 shrink-0 text-(--success-foreground)"
+          class="mt-0.5 icon-[lucide--shield-check] text-(--success-foreground)"
         />
         <p class="m-0">
           {{ copy.alipayRenewalNote }}
@@ -99,14 +99,15 @@ const {
   canSubmit = true,
   locked = false,
   themeKey = '',
-  pageLayout = false
+  pageLayout = false,
+  payOnce = false
 } = defineProps<{
   publishableKey: string
   amountCents: number
   currency: string
   copy: StripePaymentCopy
-  /** Stripe payment method configuration governing which methods Elements
-   *  offers (served per-environment by the preview). */
+  /** Stripe payment method configuration governing which methods a subscription
+   *  offers (served per-environment by the preview); paying once is card only. */
   paymentMethodConfigurationId?: string
   isLoading?: boolean
   /** A 3DS verification is pending: the host's own verification action is
@@ -122,6 +123,8 @@ const {
   /** The full-page checkout titles the column itself, so the form drops its
    *  heading and subtitle and sets the address label in the body style. */
   pageLayout?: boolean
+  /** A one-time payment the card is never saved for, instead of a renewing subscription. */
+  payOnce?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -194,6 +197,7 @@ function mountPaymentElement(
     // inputs, and a customer who filled the two differently would send the
     // issuer an address that contradicts the one we collected for AVS.
     fields: { billingDetails: { address: 'never' } },
+    ...(payOnce ? { wallets: { link: 'never' as const } } : {}),
     // The host's terms note carries the recurring-charge authorization;
     // Stripe's card mandate text would say it twice.
     terms: { card: 'never' }
@@ -242,15 +246,21 @@ function mountAddressElement(
   })
 }
 
+function intentOptions() {
+  return payOnce
+    ? { mode: 'payment' as const, paymentMethodTypes: ['card'] }
+    : {
+        mode: 'subscription' as const,
+        setupFutureUsage: 'off_session' as const,
+        paymentMethodConfiguration: paymentMethodConfigurationId
+      }
+}
+
 onMounted(async () => {
   if (!publishableKey || !paymentMethodConfigurationId) {
     failElementInit()
     return
   }
-  // A non-positive amount means the caller mounted this before its quote
-  // resolved. Stay silent rather than latching an error the caller cannot
-  // clear: callers gate on a ready quote, and a wrong error here reads to the
-  // customer as "payment is broken" when the amount is merely still loading.
   if (amountCents <= 0) return
 
   try {
@@ -264,15 +274,9 @@ onMounted(async () => {
     return
   }
   stripeElements.value = stripe.elements({
-    mode: 'subscription',
+    ...intentOptions(),
     amount: amountCents,
     currency: currency.toLowerCase(),
-    // Intent-wide by policy: every method offered here must be chargeable
-    // off-session at renewal, so Stripe's dynamic filtering is the gate —
-    // a configuration-enabled method without off-session support (or without
-    // this account's permission for it) simply never renders.
-    setupFutureUsage: 'off_session',
-    paymentMethodConfiguration: paymentMethodConfigurationId,
     appearance: resolveAppearance(paymentElementTarget.value)
   })
   mountPaymentElement(stripeElements.value, paymentElementTarget.value)
