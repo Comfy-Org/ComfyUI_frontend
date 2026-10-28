@@ -69,6 +69,7 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
       reload_credits: null,
       spent_this_cycle_cents: 0,
       status: 'off',
+      target_credits: null,
       threshold_credits: null
     }),
     getBillingPlans: async () => ({ plans: [] }),

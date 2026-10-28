@@ -5858,7 +5858,6 @@
         "onHold": "Nenhuma forma de pagamento padrão. Defina uma para retomar a recarga automática.",
         "paused": "Limite mensal atingido. Retoma em {date}.",
         "pausedNoDate": "Limite mensal atingido.",
-        "rule": "Adiciona {amount} ({credits} créditos) quando houver menos de {threshold} créditos.",
         "status": {
           "failed": "Falhou",
           "off": "Desativada",
