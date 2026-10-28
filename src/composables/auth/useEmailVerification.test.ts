@@ -13,8 +13,7 @@ import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPo
 
 const mocks = vi.hoisted(() => ({
   flags: { emailVerificationNudgeEnabled: true },
-  isCloud: { current: true },
-  reportError: vi.fn()
+  isCloud: { current: true }
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'), () => ({
@@ -27,9 +26,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 vi.mock(import('firebase/auth'), { spy: true })
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: mocks.reportError
-}))
 
 interface FakeUser {
   emailVerified: boolean
@@ -71,7 +67,6 @@ beforeEach(() => {
   mocks.flags.emailVerificationNudgeEnabled = true
   mocks.isCloud.current = true
   vi.mocked(sendEmailVerification).mockReset()
-  mocks.reportError.mockReset()
 })
 
 afterEach(() => {
@@ -246,21 +241,6 @@ describe('useEmailVerification', () => {
       expect(canResend.value).toBe(false)
     })
 
-    it('does not show an error toast when a post-send refresh fails', async () => {
-      signIn(
-        makeUser({
-          reload: vi.fn().mockRejectedValue(new Error('offline'))
-        })
-      )
-      vi.mocked(sendEmailVerification).mockResolvedValue(undefined)
-      const { resend } = await loadComposable()
-
-      await resend()
-
-      expect(toastsOfKind('success')).toHaveLength(1)
-      expect(toastsOfKind('error')).toEqual([])
-    })
-
     it('re-enables the button after the cooldown elapses', async () => {
       signIn(makeUser())
       vi.mocked(sendEmailVerification).mockResolvedValue(undefined)
@@ -328,11 +308,12 @@ describe('useEmailVerification', () => {
         })
       )
       const { refresh } = await loadComposable()
+      const { reportError } = await import('@/platform/telemetry/reportError')
 
       await expect(refresh()).resolves.toBeUndefined()
 
-      expect(mocks.reportError).toHaveBeenCalledWith(reloadFailure, {
-        errorType: 'email_verification_refresh_failure',
+      expect(reportError).toHaveBeenCalledWith(reloadFailure, {
+        errorType: 'error_refreshing_email_verification',
         surface: 'auth'
       })
     })

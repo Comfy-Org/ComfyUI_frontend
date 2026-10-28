@@ -14,11 +14,6 @@ const PASSWORD_PROVIDER_ID = 'password'
 const RESEND_COOLDOWN_MS = 60_000
 const DISMISSED_AT_KEY = 'Comfy.EmailVerificationNudge.DismissedAt'
 
-/**
- * Timestamp captured once when the module loads (app start). A dismissal that
- * happened before this point belongs to an earlier session, so the nudge is
- * re-prompted at most once per session while the dismissal itself persists.
- */
 const SESSION_START_MS = Date.now()
 
 function readDismissedAt(): number {
@@ -27,34 +22,22 @@ function readDismissedAt(): number {
     const parsed = raw === null ? NaN : Number(raw)
     return Number.isFinite(parsed) ? parsed : 0
   } catch {
-    // Storage blocked (sandboxed iframe / privacy mode) — treat as undismissed.
     return 0
   }
 }
 
-/**
- * Non-blocking, client-side email-verification nudge. Exposes whether an
- * authenticated password-provider user still needs to verify their email, a
- * resend action with a client-side cooldown, and a refresh that lazily
- * propagates a verified state to the backend via a forced token refresh.
- *
- * Nothing here gates a route, dialog, or feature — it only drives an optional
- * banner.
- */
 function useEmailVerificationInternal() {
   const authStore = useAuthStore()
   const currentUser = computed(() => authStore.currentUser)
   const { flags } = useFeatureFlags()
   const toast = useToast()
 
-  // Bumped after an in-place `User.reload()` so computeds that read the mutated
-  // firebase user object (whose reference does not change) re-evaluate.
-  const reloadTick = ref(0)
+  const userReloadedTick = ref(0)
   const canResend = ref(true)
   const dismissedAt = ref(readDismissedAt())
 
   const isPasswordUser = computed(() => {
-    void reloadTick.value
+    void userReloadedTick.value
     return (
       currentUser.value?.providerData.some(
         (provider) => provider.providerId === PASSWORD_PROVIDER_ID
@@ -63,7 +46,7 @@ function useEmailVerificationInternal() {
   })
 
   const needsEmailVerification = computed(() => {
-    void reloadTick.value
+    void userReloadedTick.value
     const user = currentUser.value
     if (!user) return false
     if (user.emailVerified) return false
@@ -91,8 +74,7 @@ function useEmailVerificationInternal() {
     try {
       localStorage.setItem(DISMISSED_AT_KEY, String(now))
     } catch {
-      // Storage blocked — the in-memory dismissal still hides the nudge for
-      // this session; it just won't survive a reload.
+      return
     }
   }
 
@@ -105,16 +87,14 @@ function useEmailVerificationInternal() {
     isRefreshing = true
     try {
       await user.reload()
-      reloadTick.value++
+      userReloadedTick.value++
 
       if (user.emailVerified) {
-        // Force a token refresh so subsequent API calls carry the
-        // `email_verified=true` claim, letting the backend lazily persist it.
         await user.getIdToken(true)
       }
     } catch (error) {
       reportError(error, {
-        errorType: 'email_verification_refresh_failure',
+        errorType: 'error_refreshing_email_verification',
         surface: 'auth'
       })
     } finally {
@@ -137,8 +117,6 @@ function useEmailVerificationInternal() {
       const isRateLimited =
         error instanceof FirebaseError &&
         error.code === 'auth/too-many-requests'
-      // A rate-limit error means the cooldown is warranted; any other failure
-      // (e.g. transient network) should let the user retry immediately.
       if (!isRateLimited) {
         window.clearTimeout(cooldownTimeout)
         canResend.value = true
@@ -156,12 +134,9 @@ function useEmailVerificationInternal() {
       description: t('auth.emailVerification.resentSuccessDetail'),
       duration: 5000
     })
-    await refresh()
   }
 
   useEventListener(window, 'focus', () => {
-    // Deliberately not gated on `isNudgeVisible`: a dismissed nudge still
-    // needs to pick up a verification done in another tab.
     if (isNudgeEnabled.value && needsEmailVerification.value) void refresh()
   })
 
@@ -175,6 +150,7 @@ function useEmailVerificationInternal() {
   }
 }
 
+/** Non-blocking email-verification nudge state for password-provider users. */
 export const useEmailVerification = createSharedComposable(
   useEmailVerificationInternal
 )

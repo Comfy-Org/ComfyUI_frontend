@@ -62,7 +62,7 @@ describe('EmailVerificationNudge', () => {
     renderNudge()
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Verify your email to unlock account benefits'
+      'Please verify your email address'
     )
 
     await userEvent.click(resendButton())

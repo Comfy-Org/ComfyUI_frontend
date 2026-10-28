@@ -2929,7 +2929,7 @@
       "tooltipLearnMore": "Learn more..."
     },
     "emailVerification": {
-      "genericMessage": "Verify your email to unlock account benefits",
+      "genericMessage": "Please verify your email address",
       "resendButton": "Resend verification email",
       "dismiss": "Dismiss",
       "resentSuccess": "Verification email sent",
