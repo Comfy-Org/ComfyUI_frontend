@@ -108,7 +108,7 @@ Paste the recorder command it prints, one `--prompt` per turn.
    The browser learns this from `VITE_DEV_AGENT_PROXY_CREDENTIAL`, which
    `vite.config.mts` defines as `'true'` whenever the agent proxy is configured and
    `DEV_AGENT_COMFY_TOKEN` is set. Do not set it yourself: it is derived, it is read
-   only in development mode, and the token itself never leaves the proxy. It is the
+   only in development mode, and the token itself never reaches the browser. It is the
    name to grep for when a signed-out panel sends anyway.
 
 The root dependency on `@comfyorg/comfy-multi-player` may use the published npm
