@@ -36,6 +36,7 @@ import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/com
 import { useDialogStore } from '@/stores/dialogStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
+import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
@@ -400,6 +401,17 @@ describe('ChangeTracker', () => {
           key: TEXT_EDITOR_DIALOG_KEY,
           component: {}
         })
+
+        events.dispatchEvent(new MouseEvent('mouseup'))
+
+        expect(tracker.activeState).toEqual(initial)
+      })
+
+      it('does not checkpoint mouseup while the prompt panel editor is focused', () => {
+        const initial = createState(1)
+        const tracker = createTracker(initial)
+        mockCanvasState(createState(2))
+        usePromptPanelStore().isEditorFocused = true
 
         events.dispatchEvent(new MouseEvent('mouseup'))
 

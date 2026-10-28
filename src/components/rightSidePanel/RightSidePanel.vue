@@ -23,6 +23,7 @@ import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/mis
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -51,6 +52,7 @@ const missingModelStore = useMissingModelStore()
 const missingMediaStore = useMissingMediaStore()
 const missingNodesErrorStore = useMissingNodesErrorStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const promptPanelStore = usePromptPanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
@@ -350,7 +352,13 @@ function handleTitleCancel() {
 <template>
   <div
     data-testid="properties-panel"
-    class="flex size-full flex-col bg-background"
+    :class="
+      cn(
+        'flex size-full flex-col bg-background',
+        promptPanelStore.isActive &&
+          'pointer-events-auto overflow-hidden rounded-xl border border-border shadow-lg'
+      )
+    "
   >
     <!-- Panel Header -->
     <section class="pt-1">
@@ -383,6 +391,15 @@ function handleTitleCancel() {
         </h3>
 
         <div class="flex gap-2">
+          <Button
+            v-if="promptPanelStore.isActive"
+            variant="muted-textonly"
+            size="md"
+            @click="promptPanelStore.isPromptViewShown = true"
+          >
+            <i class="icon-[lucide--text-cursor-input]" />
+            {{ t('textEditor.prompt') }}
+          </Button>
           <Button
             v-if="isSingleSubgraphNode"
             variant="secondary"

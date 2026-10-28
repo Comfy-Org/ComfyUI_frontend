@@ -94,8 +94,13 @@ import Button from '@comfyorg/design-system/button/Button'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
+import { useAppMode } from '@/composables/useAppMode'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
+import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -109,10 +114,12 @@ const actionButtonClass =
 
 const {
   widget,
+  nodeId,
   nodeTitle,
   placeholder = ''
 } = defineProps<{
   widget: SimplifiedWidget<string>
+  nodeId?: NodeId
   nodeTitle?: string
   placeholder?: string
 }>()
@@ -164,16 +171,43 @@ async function handleCopy() {
   })
 }
 
+const canvasStore = useCanvasStore()
 const promptEditorExperiment = usePromptEditorExperimentStore()
+const promptPanelStore = usePromptPanelStore()
+const { isBuilderMode } = useAppMode()
+const rightSidePanelStore = useRightSidePanelStore()
+const canOpenPromptPanel = computed(
+  () =>
+    !hideLayoutField &&
+    !canvasStore.linearMode &&
+    !isBuilderMode.value &&
+    !promptPanelStore.isPanelHidden &&
+    !rightSidePanelStore.isLegacyMenu
+)
 let closeTextEditor: (() => void) | undefined
 
+function openPromptPanel(): boolean {
+  const node =
+    nodeId === undefined
+      ? undefined
+      : canvasStore.currentGraph?.getNodeById(nodeId)
+  const target = node?.widgets?.find(({ name }) => name === widget.name)
+  if (!node || !target) return false
+  promptEditorExperiment.expose('panel')
+  canvasStore.canvas?.selectItems([node])
+  return promptPanelStore.open({ node, widget: target })
+}
+
 function openTextEditor() {
-  promptEditorExperiment.expose('control')
+  const isPromptPanelArm = promptEditorExperiment.assignment === 'panel'
+  if (canOpenPromptPanel.value && isPromptPanelArm && openPromptPanel()) return
+  if (canOpenPromptPanel.value) promptEditorExperiment.expose('control')
   closeTextEditor = showTextEditor({
     readText: () => text.value,
     widgetLabel: displayName.value,
     nodeTitle,
     readOnly: () => isReadOnly.value,
+    isInExperiment: canOpenPromptPanel.value,
     onEdit: (text) => (modelValue.value = text),
     textareaAttributes: () => ({
       ...omit(filteredProps.value, ['disabled']),

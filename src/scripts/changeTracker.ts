@@ -23,6 +23,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { serializeNodeId } from '@/types/nodeId'
 import { isSelectOnly } from '@/utils/litegraphUtil'
@@ -735,8 +736,12 @@ export class ChangeTracker implements WorkflowChangeTracker {
       }
     })
 
+    const isEditingText = () =>
+      dialogStore.isDialogOpen(TEXT_EDITOR_DIALOG_KEY) ||
+      usePromptPanelStore().isEditorFocused
+
     window.addEventListener('mouseup', () => {
-      if (dialogStore.isDialogOpen(TEXT_EDITOR_DIALOG_KEY)) return
+      if (isEditingText()) return
       captureState()
     })
 

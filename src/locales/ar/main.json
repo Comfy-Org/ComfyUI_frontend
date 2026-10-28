@@ -5475,6 +5475,11 @@
   "textEditor": {
     "characterCount": "{count} حرف | {count} حرف",
     "expand": "توسيع",
+    "focusView": "توسيع إلى عرض التركيز",
+    "noPrompt": "لا يحتوي {node} على موجّه.",
+    "noPromptHint": "حدّد عقدة تحتوي على إدخال نصي لتحرير موجّهها هنا.",
+    "nodeSettings": "إعدادات العقدة",
+    "prompt": "الموجّه",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

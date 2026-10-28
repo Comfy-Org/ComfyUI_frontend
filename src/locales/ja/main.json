@@ -5475,6 +5475,11 @@
   "textEditor": {
     "characterCount": "{count} 文字",
     "expand": "拡大",
+    "focusView": "フォーカス表示で拡大",
+    "noPrompt": "{node} にはプロンプトがありません。",
+    "noPromptHint": "テキスト入力のあるノードを選択すると、ここでプロンプトを編集できます。",
+    "nodeSettings": "ノード設定",
+    "prompt": "プロンプト",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

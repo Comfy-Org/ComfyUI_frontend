@@ -5475,6 +5475,11 @@
   "textEditor": {
     "characterCount": "{count} carattere | {count} caratteri",
     "expand": "Ingrandisci",
+    "focusView": "Ingrandisci in vista focus",
+    "noPrompt": "{node} non ha un prompt.",
+    "noPromptHint": "Seleziona un nodo con un input di testo per modificarne qui il prompt.",
+    "nodeSettings": "Impostazioni del nodo",
+    "prompt": "Prompt",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

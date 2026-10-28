@@ -5475,6 +5475,11 @@
   "textEditor": {
     "characterCount": "{count} 个字符",
     "expand": "放大",
+    "focusView": "展开为专注视图",
+    "noPrompt": "{node} 没有提示词。",
+    "noPromptHint": "选择带有文本输入的节点，即可在此编辑其提示词。",
+    "nodeSettings": "节点设置",
+    "prompt": "提示词",
     "title": "{widget} · {node}"
   },
   "toastMessages": {
