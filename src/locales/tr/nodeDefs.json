@@ -18946,6 +18946,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "description": "Bir istem yönlendirmesiyle, giriş görüntüsünün bir bölgesinden kusursuz döşenebilir bir PBR malzemesi (doku görüntüsü + PBR haritaları) çıkarın.",
+    "display_name": "Patina Malzeme Çıkarma",
+    "inputs": {
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "basecolor (albedo) haritasını oluşturun."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Yükseklik/deplasman haritasını oluşturun."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Doku çıkarılacak görüntü."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "Çıktı doku boyutu. 512 ile 2048 arasında bir genişlik/yükseklik için 'custom' seçeneğini belirleyin (8K sonuç, haritaların 4x büyütülmesiyle elde edilir)."
+      },
+      "metalness": {
+        "name": "metalness",
+        "tooltip": "Metallik haritasını oluşturun."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Normal haritasını oluşturun."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "Doku oluşturma için gürültü giderme adımları."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Görüntüden hangi dokunun çıkarılacağını açıklayın (örn. \"duvar\")."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "Daha zengin doku ayrıntısı için istemi bir LLM ile genişletin. Varsayılan olarak kapalıdır: genişletme, istemi fotoğraf olarak yeniden çerçeveler ve metallik haritasını soluklaştırma eğilimindedir."
+      },
+      "roughness": {
+        "name": "roughness",
+        "tooltip": "Pürüzlülük haritasını oluşturun."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Yeniden üretilebilir oluşturma için tohum."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Giriş görüntüsünün ne ölçüde dönüştürüleceği."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "latent uzayındaki karo boyutu (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "latent uzayındaki karo adımı."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "Döşeme yönü: çok yönlü, yatay veya dikey."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "PBR haritalarının kusursuz SeedVR büyütmesi (temel doku büyütülmez)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "doku",
+        "tooltip": null
+      },
+      "1": {
+        "name": "basecolor",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "pürüzlülük",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metallik",
+        "tooltip": null
+      },
+      "5": {
+        "name": "yükseklik",
+        "tooltip": null
+      },
+      "6": {
+        "name": "genişletilmiş istem",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "Bir metin isteminden, 8K'ya kadar eksiksiz ve kusursuz döşenebilir bir PBR malzemesi (doku görüntüsü + PBR haritaları) oluşturun. İsteğe bağlı olarak bir giriş görüntüsüyle (img2img) ya da bir görüntü + mask ile (inpaint) yönlendirin.",
+    "display_name": "Patina Malzemesi",
+    "inputs": {
+      "basecolor": {
+        "name": "temel renk",
+        "tooltip": "Temel renk (albedo) haritasını oluşturun."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "height": {
+        "name": "yükseklik",
+        "tooltip": "Yükseklik/deplasman haritasını oluşturun."
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "İsteğe bağlı kaynak görüntüsü. Tek başına sağlanırsa = img2img; mask ile birlikteyse = inpaint."
+      },
+      "image_size": {
+        "name": "görüntü boyutu",
+        "tooltip": "Çıktı doku boyutu. 512 ile 2048 arasında bir genişlik/yükseklik için 'custom' seçeneğini kullanın (8K sonuç, haritaların 4x büyütülmesiyle elde edilir)."
+      },
+      "mask": {
+        "name": "maske",
+        "tooltip": "İsteğe bağlı inpaint maskesi (görüntü gerektirir). Beyaz = yeniden oluştur, siyah = koru."
+      },
+      "metalness": {
+        "name": "metallik",
+        "tooltip": "Metallik haritasını oluşturun."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Normal haritasını oluşturun."
+      },
+      "num_inference_steps": {
+        "name": "çıkarım adımı sayısı",
+        "tooltip": "Doku oluşturma için gürültü giderme adımları."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Oluşturulacak malzemeyi/dokuyu açıklayın."
+      },
+      "prompt_expansion": {
+        "name": "istem genişletme",
+        "tooltip": "Daha zengin doku ayrıntısı için istemi bir LLM ile genişletin. Varsayılan olarak kapalıdır: genişletme, istemi fotoğraf olarak yeniden çerçeveler ve metallik haritasını soluklaştırma eğilimindedir."
+      },
+      "roughness": {
+        "name": "pürüzlülük",
+        "tooltip": "Pürüzlülük haritasını oluşturun."
+      },
+      "safety_checker": {
+        "name": "güvenlik denetleyicisi"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Yeniden üretilebilir oluşturma için tohum."
+      },
+      "strength": {
+        "name": "güç",
+        "tooltip": "Giriş görüntüsünün ne ölçüde dönüştürüleceği. Yalnızca bir görüntü sağlandığında kullanılır."
+      },
+      "tile_size": {
+        "name": "karo boyutu",
+        "tooltip": "latent uzaydaki karo boyutu (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "karo adımı",
+        "tooltip": "latent uzaydaki karo adımı."
+      },
+      "tiling_mode": {
+        "name": "döşeme modu",
+        "tooltip": "Döşeme yönü: çok yönlü, yatay veya dikey."
+      },
+      "upscale_factor": {
+        "name": "büyütme katsayısı",
+        "tooltip": "PBR haritalarının kusursuz SeedVR büyütmesi (temel doku büyütülmez)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "doku",
+        "tooltip": null
+      },
+      "1": {
+        "name": "temel renk",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "pürüzlülük",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metallik",
+        "tooltip": null
+      },
+      "5": {
+        "name": "yükseklik",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "Bir doku görüntüsünden PBR malzeme haritaları (temel renk, normal, pürüzlülük, metallik, yükseklik) oluşturun.",
+    "display_name": "Patina PBR Malzeme Haritaları",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "En uzun kenarı 2048 px'i (modelin girdi sınırı) aşan bir girdi görüntüsünü en boy oranını koruyarak otomatik olarak küçültür; daha küçük görüntüler olduğu gibi bırakılır. Bunun yerine büyük boyutlu görüntülerde hata vermek için devre dışı bırakın."
+      },
+      "basecolor": {
+        "name": "temel renk",
+        "tooltip": "Temel renk (albedo) haritasını oluşturun."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "height": {
+        "name": "yükseklik",
+        "tooltip": "Yükseklik/deplasman haritasını oluşturun."
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "PBR haritaları türetilecek girdi fotoğrafı veya render."
+      },
+      "metalness": {
+        "name": "metallik",
+        "tooltip": "Metallik haritasını oluşturun."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Normal haritasını oluşturun."
+      },
+      "roughness": {
+        "name": "pürüzlülük",
+        "tooltip": "Pürüzlülük haritasını oluşturun."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Yeniden üretilebilir gürültü giderme için tohum."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "temel renk",
+        "tooltip": null
+      },
+      "1": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "2": {
+        "name": "pürüzlülük",
+        "tooltip": null
+      },
+      "3": {
+        "name": "metallik",
+        "tooltip": null
+      },
+      "4": {
+        "name": "yükseklik",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg (PerpNegGuider tarafından ESKİ)",
     "inputs": {
@@ -28551,6 +28833,33 @@
       "video": {
         "name": "video",
         "tooltip": "30 dakikadan kısa, konuşma ses parçası içeren video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "VEED ile bir videodaki konuşmayı başka bir dile çevirin. Her konuşmacının sesi klonlanır ve dudakları çeviriyle senkronize edilir.",
+    "display_name": "VEED Dublaj",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "standard: daha düşük fiyat, mono ses; İspanyolca Latin Amerika İspanyolcasıdır ve Portekizce Brezilya Portekizcesidir. pro: bölgesel aksanlar ve stereo ses."
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_source_language": {
+        "name": "source_language"
+      },
+      "model_target_language": {
+        "name": "hedef_dil"
       }
     },
     "outputs": {

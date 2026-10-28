@@ -18946,6 +18946,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "description": "根据提示词，从输入图像的某个区域中提取可无缝平铺的 PBR 材质（纹理图像 + PBR 贴图）。",
+    "display_name": "铜绿材质提取",
+    "inputs": {
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "生成基础色（反照率）贴图。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "生成高度/位移贴图。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "要从中提取纹理的图像。"
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "输出纹理尺寸。选择“自定义”可设置 512 至 2048 之间的宽度/高度（通过将贴图放大 4 倍可得到 8K 结果）。"
+      },
+      "metalness": {
+        "name": "metalness",
+        "tooltip": "生成金属度贴图。"
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "生成法线贴图。"
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "纹理生成的去噪步数。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "描述要从图像中提取的纹理（例如“墙面”）。"
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "使用 LLM 扩展提示词，以获得更丰富的纹理细节。默认关闭：扩展会将提示词重新构造成照片，且往往会使金属度贴图变淡。"
+      },
+      "roughness": {
+        "name": "roughness",
+        "tooltip": "生成粗糙度贴图。"
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于可复现生成的种子。"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "对输入图像进行变换的程度。"
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "latent 空间中的分块大小（64 = 512px，128 = 1024px）。"
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "latent 空间中的分块步长。"
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "平铺方向：全方向、水平或垂直。"
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "对 PBR 贴图进行无缝 SeedVR 放大（基础纹理不会被放大）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texture",
+        "tooltip": null
+      },
+      "1": {
+        "name": "basecolor",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "roughness",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metalness",
+        "tooltip": null
+      },
+      "5": {
+        "name": "height",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "根据文本提示词生成完整的无缝平铺 PBR 材质（纹理图像 + PBR 贴图），最高可达 8K。也可选择使用输入图像驱动（img2img），或使用图像 + mask（局部重绘）。",
+    "display_name": "铜绿材质",
+    "inputs": {
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "生成基础颜色（反照率）贴图。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "生成高度/位移贴图。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "可选的源图像。单独提供时 = img2img；与 mask 一起提供时 = 局部重绘。"
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "输出纹理尺寸。选择“custom”可设置介于 512 和 2048 之间的宽度/高度（8K 结果来自将贴图放大 4 倍）。"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "可选的局部重绘 mask（需要 image）。白色 = 重新生成，黑色 = 保留。"
+      },
+      "metalness": {
+        "name": "metalness",
+        "tooltip": "生成金属度贴图。"
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "生成法线贴图。"
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "纹理生成的去噪步数。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "描述要生成的材质/纹理。"
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "使用 LLM 扩展提示词，以获得更丰富的纹理细节。默认关闭：扩展会将提示词重新构建为照片，并且往往会淡化金属度贴图。"
+      },
+      "roughness": {
+        "name": "roughness",
+        "tooltip": "生成粗糙度贴图。"
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于可复现生成的种子。"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "输入图像的变换程度。仅在提供图像时使用。"
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "潜空间中的瓦片尺寸（64 = 512px，128 = 1024px）。"
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "潜空间中的瓦片步长。"
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "平铺方向：全向、水平或垂直。"
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "对 PBR 贴图进行无缝 SeedVR 放大（基础纹理不会被放大）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "纹理",
+        "tooltip": null
+      },
+      "1": {
+        "name": "基础颜色",
+        "tooltip": null
+      },
+      "2": {
+        "name": "法线",
+        "tooltip": null
+      },
+      "3": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "金属度",
+        "tooltip": null
+      },
+      "5": {
+        "name": "高度",
+        "tooltip": null
+      },
+      "6": {
+        "name": "扩展提示词",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "从纹理图像生成 PBR 材质贴图（基础颜色、法线、粗糙度、金属度、高度）。",
+    "display_name": "Patina PBR 材质贴图",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自动缩小",
+        "tooltip": "自动缩小最长边超过 2048px（模型输入限制）的输入图像，同时保持宽高比；较小的图像保持不变。禁用此选项后，超大图像将改为引发错误。"
+      },
+      "basecolor": {
+        "name": "基础颜色",
+        "tooltip": "生成基础颜色（反照率）贴图。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "生成高度/置换贴图。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "用于生成 PBR 贴图的输入照片或渲染图。"
+      },
+      "metalness": {
+        "name": "金属度",
+        "tooltip": "生成金属度贴图。"
+      },
+      "normal": {
+        "name": "法线",
+        "tooltip": "生成法线贴图。"
+      },
+      "roughness": {
+        "name": "粗糙度",
+        "tooltip": "生成粗糙度贴图。"
+      },
+      "safety_checker": {
+        "name": "安全检查器"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于可复现去噪的种子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "基础颜色",
+        "tooltip": null
+      },
+      "1": {
+        "name": "法线",
+        "tooltip": null
+      },
+      "2": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "3": {
+        "name": "金属度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "高度",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg（已弃用，使用PerpNegGuider）",
     "inputs": {
@@ -28551,6 +28833,33 @@
       "video": {
         "name": "视频",
         "tooltip": "带有语音音轨且时长短于 30 分钟的视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "使用 VEED 将视频中的语音翻译成另一种语言。每位说话者的声音都会被克隆，其嘴型会与译文同步。",
+    "display_name": "VEED 配音",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "标准：价格较低，单声道音频；西班牙语为拉丁美洲西班牙语，葡萄牙语为巴西葡萄牙语。专业：支持地区口音和立体声音频。"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_source_language": {
+        "name": "源语言"
+      },
+      "model_target_language": {
+        "name": "目标语言"
       }
     },
     "outputs": {

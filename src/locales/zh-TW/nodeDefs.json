@@ -18946,6 +18946,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "description": "依據提示詞，從輸入影像的某個區域擷取可無縫平鋪的 PBR 材質（紋理影像 + PBR 貼圖）。",
+    "display_name": "Patina 材質擷取",
+    "inputs": {
+      "basecolor": {
+        "name": "基礎色",
+        "tooltip": "生成基礎色（反照率）貼圖。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "生成高度／位移貼圖。"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "要從中擷取紋理的影像。"
+      },
+      "image_size": {
+        "name": "影像尺寸",
+        "tooltip": "輸出紋理尺寸。選擇「自訂」可設定介於 512 與 2048 之間的寬度／高度（8K 結果來自將貼圖放大 4 倍）。"
+      },
+      "metalness": {
+        "name": "金屬度",
+        "tooltip": "生成金屬度貼圖。"
+      },
+      "normal": {
+        "name": "法線",
+        "tooltip": "生成法線貼圖。"
+      },
+      "num_inference_steps": {
+        "name": "推論步數",
+        "tooltip": "紋理生成的去噪步數。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述要從影像擷取的紋理（例如「牆面」）。"
+      },
+      "prompt_expansion": {
+        "name": "提示詞擴展",
+        "tooltip": "使用 LLM 擴展提示詞，以獲得更豐富的紋理細節。預設為關閉：擴展會將提示詞重新詮釋為照片，且往往會使金屬度貼圖變淡。"
+      },
+      "roughness": {
+        "name": "粗糙度",
+        "tooltip": "生成粗糙度貼圖。"
+      },
+      "safety_checker": {
+        "name": "安全檢查器"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於可重現生成的種子。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "轉換輸入影像的程度。"
+      },
+      "tile_size": {
+        "name": "區塊尺寸",
+        "tooltip": "latent 空間中的區塊尺寸（64 = 512px，128 = 1024px）。"
+      },
+      "tile_stride": {
+        "name": "區塊步幅",
+        "tooltip": "latent 空間中的區塊步幅。"
+      },
+      "tiling_mode": {
+        "name": "平鋪模式",
+        "tooltip": "平鋪方向：全向、水平或垂直。"
+      },
+      "upscale_factor": {
+        "name": "放大倍率",
+        "tooltip": "以無縫方式使用 SeedVR 放大 PBR 貼圖（不會放大基礎紋理）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "紋理",
+        "tooltip": null
+      },
+      "1": {
+        "name": "基礎色",
+        "tooltip": null
+      },
+      "2": {
+        "name": "法線",
+        "tooltip": null
+      },
+      "3": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "金屬度",
+        "tooltip": null
+      },
+      "5": {
+        "name": "高度",
+        "tooltip": null
+      },
+      "6": {
+        "name": "擴展後提示詞",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "根據文字提示詞生成完整的無縫平鋪 PBR 材質（紋理影像 + PBR 貼圖），最高可達 8K。也可選擇使用輸入影像（img2img）或影像 + mask（局部重繪）來引導生成。",
+    "display_name": "銅綠材質",
+    "inputs": {
+      "basecolor": {
+        "name": "基礎色",
+        "tooltip": "生成基礎色（反照率）貼圖。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "生成高度／位移貼圖。"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "選用的來源影像。僅提供影像 = img2img；搭配 mask = 局部重繪。"
+      },
+      "image_size": {
+        "name": "影像尺寸",
+        "tooltip": "輸出紋理尺寸。選擇「自訂」可設定介於 512 與 2048 之間的寬度／高度（8K 結果是將貼圖放大 4 倍而得）。"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "選用的局部重繪遮罩（需要影像）。白色 = 重新生成，黑色 = 保留。"
+      },
+      "metalness": {
+        "name": "金屬度",
+        "tooltip": "生成金屬度貼圖。"
+      },
+      "normal": {
+        "name": "法線",
+        "tooltip": "生成法線貼圖。"
+      },
+      "num_inference_steps": {
+        "name": "推論步數",
+        "tooltip": "紋理生成的去噪步數。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述要生成的材質／紋理。"
+      },
+      "prompt_expansion": {
+        "name": "提示詞擴展",
+        "tooltip": "使用 LLM 擴展提示詞，以取得更豐富的紋理細節。預設為關閉：擴展會將提示詞重構為照片，且往往會淡化金屬度貼圖。"
+      },
+      "roughness": {
+        "name": "粗糙度",
+        "tooltip": "生成粗糙度貼圖。"
+      },
+      "safety_checker": {
+        "name": "安全檢查器"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於可重現生成的種子。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "輸入影像的變換程度。僅在提供影像時使用。"
+      },
+      "tile_size": {
+        "name": "圖塊尺寸",
+        "tooltip": "latent 空間中的圖塊尺寸（64 = 512px，128 = 1024px）。"
+      },
+      "tile_stride": {
+        "name": "圖塊步幅",
+        "tooltip": "latent 空間中的圖塊步幅。"
+      },
+      "tiling_mode": {
+        "name": "平鋪模式",
+        "tooltip": "平鋪方向：全向、水平或垂直。"
+      },
+      "upscale_factor": {
+        "name": "放大倍率",
+        "tooltip": "對 PBR 貼圖進行無縫 SeedVR 放大（不會放大基礎紋理）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "紋理",
+        "tooltip": null
+      },
+      "1": {
+        "name": "基礎色",
+        "tooltip": null
+      },
+      "2": {
+        "name": "法線",
+        "tooltip": null
+      },
+      "3": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "金屬度",
+        "tooltip": null
+      },
+      "5": {
+        "name": "高度",
+        "tooltip": null
+      },
+      "6": {
+        "name": "擴充提示詞",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "從紋理影像產生 PBR 材質貼圖（基礎色、法線、粗糙度、金屬度、高度）。",
+    "display_name": "Patina PBR 材質貼圖",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動縮小",
+        "tooltip": "自動縮小最長邊超過 2048px（模型輸入限制）的輸入影像，並保留長寬比；較小的影像將維持不變。停用後，過大的影像會改為引發錯誤。"
+      },
+      "basecolor": {
+        "name": "基礎色",
+        "tooltip": "產生基礎色（反照率）貼圖。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "產生高度／位移貼圖。"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "用於衍生 PBR 貼圖的輸入照片或渲染圖。"
+      },
+      "metalness": {
+        "name": "金屬度",
+        "tooltip": "產生金屬度貼圖。"
+      },
+      "normal": {
+        "name": "法線",
+        "tooltip": "產生法線貼圖。"
+      },
+      "roughness": {
+        "name": "粗糙度",
+        "tooltip": "產生粗糙度貼圖。"
+      },
+      "safety_checker": {
+        "name": "安全檢查器"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於可重現去雜訊結果的種子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "基礎色",
+        "tooltip": null
+      },
+      "1": {
+        "name": "法線",
+        "tooltip": null
+      },
+      "2": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "3": {
+        "name": "金屬度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "高度",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg（已被 PerpNegGuider 棄用）",
     "inputs": {
@@ -28551,6 +28833,33 @@
       "video": {
         "name": "影片",
         "tooltip": "含有語音音軌的影片，長度短於 30 分鐘。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "使用 VEED 將影片中的語音翻譯成另一種語言。每位說話者的聲音都會被複製，且其嘴形會與翻譯內容同步。",
+    "display_name": "VEED 配音",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "標準：價格較低、單聲道音訊；西班牙語為拉丁美洲版本，葡萄牙語為巴西版本。專業：提供地區口音與立體聲音訊。"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_source_language": {
+        "name": "來源語言"
+      },
+      "model_target_language": {
+        "name": "目標語言"
       }
     },
     "outputs": {

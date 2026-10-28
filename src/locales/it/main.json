@@ -3666,6 +3666,7 @@
     "debug": "debug",
     "detection": "rilevamento",
     "experimental": "sperimentale",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "filtri",
     "flux": "flux",
