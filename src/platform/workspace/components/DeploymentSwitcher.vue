@@ -8,12 +8,7 @@
       v-model:open="isOpen"
       :modal="false"
       :side-offset="8"
-      :class="
-        cn(
-          'max-w-[min(25rem,calc(100vw-1rem))] min-w-56',
-          switcherMenuMotionClass
-        )
-      "
+      :class="cn(switcherMenuWidthClass, switcherMenuMotionClass)"
       @update:open="onOpenChange"
     >
       <template #trigger>
@@ -63,7 +58,10 @@ import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
-import { switcherMenuMotionClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
+import {
+  switcherMenuMotionClass,
+  switcherMenuWidthClass
+} from '@/platform/workspace/components/deploymentSwitcherStyles'
 import {
   COMFY_CLOUD_ROW,
   deploymentStatusTone,
