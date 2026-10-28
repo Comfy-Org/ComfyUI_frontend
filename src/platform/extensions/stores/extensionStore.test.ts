@@ -91,7 +91,7 @@ describe('extensionStore', () => {
         '/extensions/missing/'
       ]
       vi.spyOn(api, 'storeSetting')
-        .mockResolvedValueOnce(new Response(null, { status: 500 }))
+        .mockResolvedValueOnce(new Response(null, { status: 400 }))
         .mockResolvedValueOnce(new Response())
 
       expect(await store.setExtensionPathEnabled('/extensions/a/', true)).toBe(
@@ -113,6 +113,22 @@ describe('extensionStore', () => {
         'Comfy.Extension.DisabledPacks',
         ['/extensions/missing/']
       )
+    })
+
+    it('retains an extension path change after an indeterminate response', async () => {
+      const settingStore = useSettingStore()
+      const store = useExtensionStore()
+      settingStore.settingValues['Comfy.Extension.DisabledPacks'] = []
+      vi.spyOn(api, 'storeSetting').mockResolvedValue(
+        new Response(null, { status: 500 })
+      )
+
+      expect(await store.setExtensionPathEnabled('/extensions/a/', false)).toBe(
+        'indeterminate'
+      )
+      expect(settingStore.get('Comfy.Extension.DisabledPacks')).toEqual([
+        '/extensions/a/'
+      ])
     })
   })
 
