@@ -150,14 +150,15 @@ describe('AssetCard', () => {
     })
   })
 
-  it.fails('does not emit deleted when deletion returns false', async () => {
+  it('does not emit deleted when deletion returns false', async () => {
     vi.useFakeTimers()
     mockDeleteAsset.mockResolvedValue(false)
     const asset = createDisplayAsset({ is_immutable: false })
     const result = renderCard(asset)
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 
-    await user.click(screen.getByText('g.delete'))
+    await user.click(screen.getByRole('button', { name: 'g.more' }))
+    await user.click(screen.getByRole('menuitem', { name: 'g.delete' }))
     const dialogOptions = vi.mocked(showConfirmDialog).mock.calls[0][0]
     const onConfirm = dialogOptions?.footerProps?.onConfirm
     expect(onConfirm).toBeTypeOf('function')

@@ -116,7 +116,7 @@ describe('useNodeHelpContent', () => {
     expect(renderedHelpHtml.value).toContain('This is test help content')
   })
 
-  it.fails('should show the unavailable state when core help is absent', async () => {
+  it('should show the unavailable state when core help is absent', async () => {
     const nodeRef = ref(mockCoreNode)
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(null, { status: 404, statusText: 'Not Found' })
@@ -129,7 +129,7 @@ describe('useNodeHelpContent', () => {
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
-  it.fails('should show the unavailable state when custom help is absent', async () => {
+  it('should show the unavailable state when custom help is absent', async () => {
     const nodeRef = ref(mockCustomNode)
     vi.mocked(fetch).mockImplementation(
       async () => new Response(null, { status: 404, statusText: 'Not Found' })
@@ -142,7 +142,7 @@ describe('useNodeHelpContent', () => {
     expect(renderedHelpHtml.value).toContain(mockCustomNode.description)
   })
 
-  it.fails('should use core help for Essentials nodes', async () => {
+  it('should use core help for Essentials nodes', async () => {
     const node = createMockNode({
       name: 'EssentialsNode',
       essentials_category: 'image',
@@ -159,7 +159,7 @@ describe('useNodeHelpContent', () => {
     expect(renderedHelpHtml.value).toContain('Essentials help')
   })
 
-  it.fails('should use the core base URL for relative Essentials images', async () => {
+  it('should use the core base URL for relative Essentials images', async () => {
     const node = createMockNode({
       name: 'EssentialsNode',
       essentials_category: 'image',
@@ -192,7 +192,7 @@ describe('useNodeHelpContent', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it.fails('should show the unavailable state for a blueprint without a description', async () => {
+  it('should show the unavailable state for a blueprint without a description', async () => {
     const nodeRef = ref(
       createMockNode({ description: '', python_module: 'blueprint' })
     )
@@ -235,11 +235,11 @@ describe('useNodeHelpContent', () => {
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('OK')
+    expect(error.value).toBe('Help not found')
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
-  it.fails('should log and recover from infrastructure failures', async () => {
+  it('should log and recover from infrastructure failures', async () => {
     const nodeRef = ref(mockCoreNode)
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(null, {
@@ -257,6 +257,7 @@ describe('useNodeHelpContent', () => {
       ),
       {
         errorType: 'node_help_fetch_failure',
+        surface: 'graph',
         context: { path: '/docs/TestNode/en.md' }
       }
     )
@@ -339,7 +340,7 @@ describe('useNodeHelpContent', () => {
     expect(renderedHelpHtml.value).toContain('Fallback content')
   })
 
-  it.fails('should use custom node fallback help after a localized request fails', async () => {
+  it('should use custom node fallback help after a localized request fails', async () => {
     const nodeRef = ref(mockCustomNode)
     const requestError = new Error('network failure')
     vi.mocked(fetch)
@@ -354,6 +355,7 @@ describe('useNodeHelpContent', () => {
     expect(fetch).toHaveBeenCalledTimes(2)
     expect(reportError).toHaveBeenCalledWith(requestError, {
       errorType: 'node_help_fetch_failure',
+      surface: 'graph',
       context: {
         path: '/extensions/test_module/docs/CustomNode/en.md'
       }
@@ -524,7 +526,7 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
     expect(helpContent.value).toBe('# Second node content')
   })
 
-  it.fails('should ignore a pending request when the node is cleared', async () => {
+  it('should ignore a pending request when the node is cleared', async () => {
     const nodeRef = ref<ComfyNodeDefImpl | null>(mockCoreNode)
     let resolveRequest: ((response: Response) => void) | undefined
     const request = new Promise<Response>((resolve) => {

@@ -1152,8 +1152,14 @@ export function useCoreCommands(): ComfyCommand[] {
         const graph = canvas.subgraph ?? canvas.graph
         if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
 
-        const res = graph.convertToSubgraph(canvas.selectedItems)
-        const { node } = res
+        if (!canvas.selectedItems.size) {
+          toast.error(t('toastMessages.cannotCreateSubgraph'), {
+            description: t('toastMessages.failedToConvertToSubgraph')
+          })
+          return
+        }
+
+        const { node } = graph.convertToSubgraph(canvas.selectedItems)
         canvas.select(node)
       }
     },

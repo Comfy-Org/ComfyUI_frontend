@@ -176,7 +176,10 @@ async function saveAsNewPreset() {
 }
 
 async function handleDeletePreset() {
-  await presetService.deletePreset(keybindingStore.currentPresetName)
+  const deleted = await presetService.deletePreset(
+    keybindingStore.currentPresetName
+  )
+  if (!deleted) return
   refreshPresetList()
 }
 

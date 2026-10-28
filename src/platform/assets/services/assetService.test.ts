@@ -381,17 +381,18 @@ describe(assetService.uploadAssetAsync, () => {
 })
 
 describe(assetService.deleteAsset, () => {
-  it.fails('reports and preserves request failures', async () => {
+  it('reports and preserves request failures', async () => {
     const failure = new Error('Network unavailable')
     vi.mocked(api.fetchApi).mockRejectedValueOnce(failure)
 
     await expect(assetService.deleteAsset('asset-1')).rejects.toBe(failure)
     expect(mockReportError).toHaveBeenCalledWith(failure, {
-      errorType: 'asset_deletion_request_failure'
+      errorType: 'asset_deletion_request_failure',
+      surface: 'assets'
     })
   })
 
-  it.fails('returns false when the response is not ok', async () => {
+  it('returns false when the response is not ok', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildResponse(null, { ok: false, status: 503 })
     )
@@ -399,7 +400,7 @@ describe(assetService.deleteAsset, () => {
     await expect(assetService.deleteAsset('asset-1')).resolves.toBe(false)
   })
 
-  it.fails('issues a DELETE to the asset endpoint when the response is ok', async () => {
+  it('issues a DELETE to the asset endpoint when the response is ok', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(null))
 
     await expect(assetService.deleteAsset('asset-1')).resolves.toBe(true)

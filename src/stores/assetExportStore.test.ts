@@ -356,4 +356,54 @@ describe('assetExportStore triggerDownload', () => {
       'exportToast.unsupportedDownloadUrl'
     )
   })
+
+  it('recovers a completed export after its task was unavailable', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const store = useAssetExportStore()
+    const taskId = 'task-123'
+
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      new Response(null, { status: 404 })
+    )
+    store.trackExport(taskId)
+
+    await vi.advanceTimersByTimeAsync(45_000)
+
+    expect(store.activeExports).toHaveLength(0)
+    expect(store.finishedExports[0].status).toBe('failed')
+    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+
+    dispatch(
+      createExportMessage({
+        task_id: taskId,
+        export_name: 'late.zip',
+        assets_total: 1,
+        assets_attempted: 1,
+        bytes_total: 100,
+        bytes_processed: 100,
+        progress: 1,
+        status: 'completed'
+      })
+    )
+
+    expect(store.finishedExports[0].status).toBe('completed')
+  })
+
+  it('accepts completion after a transient missing-task response', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const store = useAssetExportStore()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    vi.spyOn(assetService, 'getExportDownloadUrl').mockResolvedValue({
+      url: 'https://example.com/export.zip'
+    })
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      new Response(null, { status: 404 })
+    )
+    dispatch(createExportMessage())
+
+    await vi.advanceTimersByTimeAsync(10_000)
+    dispatch(createExportMessage({ status: 'completed', progress: 1 }))
+
+    expect(store.finishedExports[0].status).toBe('completed')
+  })
 })

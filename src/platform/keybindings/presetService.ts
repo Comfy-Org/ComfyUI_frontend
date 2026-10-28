@@ -7,6 +7,7 @@ import { t } from '@/i18n'
 import UnsavedChangesContent from '@/platform/keybindings/components/UnsavedChangesContent.vue'
 import UnsavedChangesHeader from '@/platform/keybindings/components/UnsavedChangesHeader.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { uploadFile } from '@/scripts/utils'
@@ -144,17 +145,28 @@ export function useKeybindingPresetService() {
     })
   }
 
-  async function deletePreset(name: string) {
+  async function deletePreset(name: string): Promise<boolean> {
     const confirmed = await dialogService.confirm({
       title: t('g.keybindingPresets.deletePresetTitle'),
       message: t('g.keybindingPresets.deletePresetWarning'),
       type: 'delete'
     })
-    if (!confirmed) return
+    if (!confirmed) return false
 
     const resp = await api.deleteUserData(presetFilePath(name))
     if (!resp.ok) {
-      throw new Error(t('g.keybindingPresets.deletePresetFailed', { name }))
+      const message = t('g.keybindingPresets.deletePresetFailed', { name })
+      const error = new Error(message)
+      console.error(error)
+      reportError(error, {
+        errorType: 'keybinding_preset_deletion_http_failure',
+        surface: 'platform',
+        tags: { status: resp.status }
+      })
+      toast.error(t('g.error'), {
+        description: message
+      })
+      return false
     }
 
     if (keybindingStore.currentPresetName === name) {
@@ -164,6 +176,7 @@ export function useKeybindingPresetService() {
     toast.info(t('g.keybindingPresets.presetDeleted', { name }), {
       duration: 3000
     })
+    return true
   }
 
   function exportPreset() {

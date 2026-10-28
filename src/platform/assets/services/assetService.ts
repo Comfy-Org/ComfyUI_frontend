@@ -28,6 +28,7 @@ import {
   isModelTypeCovered
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -759,19 +760,36 @@ function createAssetService() {
    * Only available in cloud environment
    *
    * @param id - The asset ID (UUID)
-   * @returns Promise<void>
-   * @throws Error if deletion fails
+   * @returns Whether the server accepted the deletion
+   * @throws Error if the request cannot be completed
    */
-  async function deleteAsset(id: AssetId): Promise<void> {
-    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
-      method: 'DELETE'
-    })
+  async function deleteAsset(id: AssetId): Promise<boolean> {
+    let res: Response
+    try {
+      res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
+        method: 'DELETE'
+      })
+    } catch (error) {
+      reportError(error, {
+        errorType: 'asset_deletion_request_failure',
+        surface: 'assets'
+      })
+      throw error
+    }
 
     if (!res.ok) {
-      throw new Error(
+      const error = new Error(
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
+      console.error(error)
+      reportError(error, {
+        errorType: 'asset_deletion_http_failure',
+        surface: 'assets',
+        tags: { status: res.status }
+      })
+      return false
     }
+    return true
   }
 
   /**
