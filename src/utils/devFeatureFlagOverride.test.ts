@@ -3,6 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
 describe('getDevOverride', () => {
+  it('returns undefined when localStorage is unavailable', () => {
+    vi.stubGlobal('localStorage', undefined)
+    expect(getDevOverride('some_flag')).toBeUndefined()
+  })
+
   it('returns undefined when no override is set', () => {
     expect(getDevOverride('some_flag')).toBeUndefined()
   })
@@ -43,11 +48,10 @@ describe('getDevOverride', () => {
   })
 
   it('returns undefined and warns on invalid JSON', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     localStorage.setItem('ff:bad', 'True')
 
     expect(getDevOverride('bad')).toBeUndefined()
-    expect(warnSpy).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       '[ff] Invalid JSON for override "bad":',
       'True'
     )

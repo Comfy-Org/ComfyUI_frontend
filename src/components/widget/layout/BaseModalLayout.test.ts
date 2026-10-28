@@ -34,7 +34,7 @@ describe('BaseModalLayout close button', () => {
   it('renders the secondary variant by default', () => {
     renderLayout()
 
-    expect(closeButton()).toHaveClass('bg-secondary-background')
+    expect(closeButton()).toHaveClass('bg-secondary')
   })
 
   it('applies the supplied close button variant', () => {
@@ -42,6 +42,18 @@ describe('BaseModalLayout close button', () => {
 
     const button = closeButton()
     expect(button).toHaveClass('bg-transparent')
-    expect(button).not.toHaveClass('bg-secondary-background')
+    expect(button).not.toHaveClass('bg-secondary')
+  })
+
+  it('keeps the prime close icon unless a dialog supplies one', () => {
+    renderLayout()
+
+    expect(closeButton()).toContainHTML('pi-times')
+  })
+
+  it('renders the supplied close icon', () => {
+    renderLayout({ closeIcon: 'icon-[lucide--x] size-4' })
+
+    expect(closeButton()).toContainHTML('icon-[lucide--x]')
   })
 })

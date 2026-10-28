@@ -1,7 +1,11 @@
+import { once } from 'es-toolkit'
+
 import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
+import type { PermanentDocSubscribeRefusalCode } from './docFrameCodes'
+import { isPermanentSubscribeRefusalCode } from './docFrameCodes'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount loses the binding until the NEXT turn ack. Persist it per-tab
@@ -39,6 +43,17 @@ const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
 const SUBSCRIBE_RETRY_BASE_MS = 500
 const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
 
+export type SubscribeGiveUpReason = 'refused' | 'retry_exhausted' | 'timeout'
+
+const SILENT_PERMANENT_REFUSAL_CODES: ReadonlySet<PermanentDocSubscribeRefusalCode> =
+  new Set(['unsupported'])
+
+function isNotifyingPermanentRefusalCode(
+  code: PermanentDocSubscribeRefusalCode
+): boolean {
+  return !SILENT_PERMANENT_REFUSAL_CODES.has(code)
+}
+
 /**
  * A `doc_subscribe` that left the transport and was never answered is retried
  * on the same lineage after this long. The ingest relay's own resync budget is
@@ -48,7 +63,7 @@ const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
 export const SUBSCRIBE_ACK_TIMEOUT_MS = 15_000
 // The third unanswered attempt is terminal: frames at 0 s, 15 s and 30 s,
 // give-up at 45 s. Silent attempts also count into the shared refusal budget.
-const SUBSCRIBE_ACK_MAX_TIMEOUTS = 3
+export const SUBSCRIBE_ACK_MAX_TIMEOUTS = 3
 
 /**
  * Recency heartbeat budget (BE-9740's FE half): a bound, healthy channel that
@@ -75,12 +90,7 @@ export const STALE_AFTER_MS = 30_000
  */
 export const SUBSCRIBE_CATCHUP_GRACE_MS = 2_000
 
-// One nonce per page load (module scope = one per top-level navigation, since
-// a full reload re-evaluates the module). A tab duplicated mid-session
-// inherits sessionStorage's persisted record but gets its own module
-// instance and thus its own nonce, so the inherited record's nonce mismatches
-// and is refused.
-const pageSessionNonce = createUuidv4()
+const pageSessionNonce = once(createUuidv4)
 
 interface PersistedDocIdRecord {
   docId: string
@@ -100,12 +110,12 @@ function persistDocId(docId: string): void {
   try {
     const record: PersistedDocIdRecord = {
       docId,
-      nonce: pageSessionNonce,
+      nonce: pageSessionNonce(),
       expiresAt: Date.now() + DOC_ID_TTL_MS
     }
     safeSessionStorage()?.setItem(DOC_ID_SESSION_KEY, JSON.stringify(record))
   } catch {
-    // Quota / privacy mode: persistence is best-effort.
+    return
   }
 }
 
@@ -120,11 +130,9 @@ function readPersistedDocId(): string | null {
       typeof record.nonce !== 'string' ||
       typeof record.expiresAt !== 'number'
     ) {
-      // Legacy/malformed record (e.g. pre-FEC-5 bare-string value): treat as
-      // absent rather than trusting an unscoped id.
       return null
     }
-    if (record.nonce !== pageSessionNonce) return null
+    if (record.nonce !== pageSessionNonce()) return null
     if (Date.now() >= record.expiresAt) return null
     return record.docId
   } catch {
@@ -162,6 +170,28 @@ export class AgentCrdtDocLifecycle {
   // a status-frame reconcile can turn the bounded retry into an unbounded one.
   // Released only by a lifecycle edge: confirm, reconnect, retarget.
   private gaveUp = false
+  private recoverableGiveUpReason: Extract<
+    SubscribeGiveUpReason,
+    'retry_exhausted' | 'timeout'
+  > | null = null
+  private lastReportedRecoverableWorkflowId: string | null = null
+  // The workflow id last notified (reportError + onGaveUp) for a permanent
+  // refusal. A reconnect to the SAME workflow answered with the SAME
+  // permanent code is one unchanged fact, not a new one - re-arm only when
+  // the target actually changes (retarget/doc_reset) or a subscribe for it
+  // actually succeeds (`onSubscribeConfirmed`), never on a bare reconnect
+  // that never recovers. See `resetNotifiedGiveUp`.
+  private lastNotifiedGiveUpWorkflowId: string | null = null
+  // Stale-ack race: an ack-timeout resubscribe can leave the OLDER attempt
+  // still outstanding at the doc-host while a NEWER one (sent on the same
+  // lineage) confirms first. A confirm and a permanent refusal can never
+  // both be the answer to the SAME subscribe, so once this is true, any
+  // permanent refusal that arrives before another subscribe is sent cannot
+  // be answering the one that just confirmed - it must be the older
+  // attempt's late answer - and `onSubscribeRefused` discards it instead of
+  // tearing down the confirm's own probe/latch. Cleared by the next actual
+  // send (`onSubscribeSent`), which starts a fresh round.
+  private confirmedSinceLastSend = false
   // FEC-5: `Date.now()` of the last persisted-record write by this instance.
   // A confirmed subscribe always writes; doc-scoped frames re-stamp the expiry
   // no more often than DOC_ID_REFRESH_INTERVAL_MS, so a doc that keeps
@@ -174,8 +204,8 @@ export class AgentCrdtDocLifecycle {
 
   constructor(
     private readonly workflowId: () => string | null,
-    private readonly resubscribe: () => void,
-    private readonly onGaveUp: () => void
+    private readonly resubscribe: () => boolean | void,
+    private readonly onGaveUp: (reason: SubscribeGiveUpReason) => void
   ) {}
 
   readPersistedDocId(): string | null {
@@ -189,6 +219,9 @@ export class AgentCrdtDocLifecycle {
   onSubscribeConfirmed(): void {
     this.clearAckTimer()
     this.gaveUp = false
+    this.recoverableGiveUpReason = null
+    this.confirmedSinceLastSend = true
+    this.resetNotifiedGiveUp()
     this.clearSubscribeRetry()
     if (this.usedCatchUpGrace) {
       this.armStaleProbe()
@@ -200,14 +233,38 @@ export class AgentCrdtDocLifecycle {
     if (workflowId !== null) this.persistConfirmedDocId(workflowId)
   }
 
-  onSubscribeRefused(): void {
+  /** Returns whether this refusal newly triggered a give-up notification. */
+  onSubscribeRefused(code?: string): boolean {
+    if (code !== undefined && isPermanentSubscribeRefusalCode(code)) {
+      if (this.confirmedSinceLastSend) return false
+      const supersedesRecoverableGiveUp = this.recoverableGiveUpReason !== null
+      this.recoverableGiveUpReason = null
+      if (supersedesRecoverableGiveUp) this.gaveUp = false
+      this.clearAckTimer()
+      this.clearStaleProbe()
+      return this.giveUpPermanently(code, isNotifyingPermanentRefusalCode(code))
+    }
     this.clearAckTimer()
     this.clearStaleProbe()
     this.scheduleSubscribeRetry()
+    return false
+  }
+
+  refusalIsFinal(): boolean {
+    return !this.confirmedSinceLastSend && this.subscribeRetryTimer === null
+  }
+
+  stopProbing(): void {
+    this.clearAckTimer()
+    this.clearSubscribeRetry()
+    this.clearStaleProbe()
+    this.gaveUp = true
+    this.recoverableGiveUpReason = null
   }
 
   onSubscribeSent(workflowId: string): void {
     this.clearAckTimer()
+    this.confirmedSinceLastSend = false
     if (this.gaveUp) return
     this.ackTimer = setTimeout(() => {
       this.ackTimer = null
@@ -217,7 +274,12 @@ export class AgentCrdtDocLifecycle {
         this.ackTimeouts >= SUBSCRIBE_ACK_MAX_TIMEOUTS ||
         this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS
       ) {
-        this.giveUp(workflowId)
+        this.giveUp(
+          workflowId,
+          this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS
+            ? 'retry_exhausted'
+            : 'timeout'
+        )
         return
       }
       this.subscribeRetryAttempt += 1
@@ -225,13 +287,19 @@ export class AgentCrdtDocLifecycle {
         attempt: this.subscribeRetryAttempt,
         workflowId
       })
-      this.resubscribe()
+      this.resubscribeOrScheduleRetry()
     }, SUBSCRIBE_ACK_TIMEOUT_MS)
   }
 
-  /** A new socket is a new server-side session: every budget starts over. */
+  /**
+   * A new socket is a new server-side session: every budget starts over,
+   * including the permanent-give-up latch (a redeployed host may now be
+   * readable). `lastNotifiedGiveUpWorkflowId` deliberately survives this -
+   * see `resetNotifiedGiveUp` - so a refusal that recurs for the same
+   * workflow after reconnecting doesn't re-fire the notification.
+   */
   onReconnected(): void {
-    this.clearForRetarget()
+    this.resetForNewAttempt()
   }
 
   onDocumentUpdate(): void {
@@ -254,16 +322,35 @@ export class AgentCrdtDocLifecycle {
     }
   }
 
-  shouldDeferSubscribe(): boolean {
+  private shouldDeferSubscribe(): boolean {
     return this.gaveUp || this.subscribeRetryTimer !== null
   }
 
   clearForRetarget(): void {
-    this.clearAckTimer()
-    this.clearSubscribeRetry()
-    this.clearStaleProbe()
-    this.gaveUp = false
-    this.usedCatchUpGrace = false
+    this.resetForNewAttempt()
+    this.resetNotifiedGiveUp()
+  }
+
+  retry(): boolean {
+    const reason = this.recoverableGiveUpReason
+    if (reason === null) return false
+    this.resetForNewAttempt()
+    if (this.resubscribe() === true) return true
+    this.gaveUp = true
+    this.recoverableGiveUpReason = reason
+    return false
+  }
+
+  /**
+   * Lets a permanent refusal for a different episode of the same workflow
+   * id notify again. Called when the subscribed target actually changes
+   * (retarget), its lineage restarts (`doc_reset`), or it actually confirms
+   * (`onSubscribeConfirmed`) - never on a bare reconnect that never
+   * recovers, which keeps the same episode and the same unrecoverable fact.
+   */
+  resetNotifiedGiveUp(): void {
+    this.lastNotifiedGiveUpWorkflowId = null
+    this.lastReportedRecoverableWorkflowId = null
   }
 
   destroy(): void {
@@ -289,13 +376,21 @@ export class AgentCrdtDocLifecycle {
       this.staleProbeTimer = null
       if (this.gaveUp) return
       this.armStaleProbe()
-      // A probe that is still awaiting its own answer is the ack timer's job.
       if (this.ackTimer !== null) return
       recordDevEvent(isCatchUpProbe ? 'catchup_probe' : 'stale_probe', {
         workflowId: this.workflowId()
       })
-      this.resubscribe()
+      this.resubscribeOrScheduleRetry()
     }, delayMs)
+  }
+
+  private resetForNewAttempt(): void {
+    this.clearAckTimer()
+    this.clearSubscribeRetry()
+    this.clearStaleProbe()
+    this.gaveUp = false
+    this.recoverableGiveUpReason = null
+    this.usedCatchUpGrace = false
   }
 
   private clearAckTimer(): void {
@@ -305,23 +400,69 @@ export class AgentCrdtDocLifecycle {
     }
   }
 
-  private giveUp(workflowId: string): void {
+  /** Returns whether this call actually notified (reportError + onGaveUp). */
+  private giveUpPermanently(code: string, notify: boolean): boolean {
+    // A redelivered/duplicate refusal frame answers nothing new once the
+    // latch is already set — without this guard it would re-run the report
+    // and the caller's `onGaveUp` (toast/telemetry) a second time.
+    if (this.gaveUp) return false
+    this.gaveUp = true
+    // An already-armed retry from an earlier, retryable refusal must not
+    // survive the permanent latch: its callback checks only `workflowId()`,
+    // not `gaveUp`, so left alone it would still fire a resubscribe later.
+    this.clearSubscribeRetry()
+    if (!notify) return false
+    const workflowId = this.workflowId()
+    // A reconnect that lands the same permanent code for the same workflow
+    // is one unchanged fact - only a different workflow (retarget/doc_reset,
+    // see `resetNotifiedGiveUp`) is a new one worth telling the person about.
+    if (workflowId !== null && workflowId === this.lastNotifiedGiveUpWorkflowId)
+      return false
+    this.lastNotifiedGiveUpWorkflowId = workflowId
+    recordDevEvent(
+      'subscribe_refused_permanent',
+      { code, terminal: true },
+      { level: 'warn' }
+    )
+    reportError(new Error(`agent doc subscribe permanently refused: ${code}`), {
+      surface: 'agent',
+      errorType: 'failure_confirming_agent_doc_subscribe',
+      level: 'warning',
+      tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+    })
+    this.onGaveUp('refused')
+    return true
+  }
+
+  private giveUp(
+    workflowId: string,
+    reason: Extract<SubscribeGiveUpReason, 'retry_exhausted' | 'timeout'>
+  ): void {
     this.clearStaleProbe()
     this.gaveUp = true
+    this.recoverableGiveUpReason = reason
     recordDevEvent(
-      'subscribe_ack_timeout',
+      reason === 'timeout' ? 'subscribe_ack_timeout' : 'subscribe_retry',
       { attempt: this.subscribeRetryAttempt, workflowId, terminal: true },
       { level: 'warn' }
     )
-    reportError(
-      new Error('agent doc subscribe was sent but never acknowledged'),
-      {
-        errorType: 'failure_confirming_agent_doc_subscribe',
-        level: 'warning',
-        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
-      }
-    )
-    this.onGaveUp()
+    if (workflowId !== this.lastReportedRecoverableWorkflowId) {
+      this.lastReportedRecoverableWorkflowId = workflowId
+      reportError(
+        new Error(
+          reason === 'timeout'
+            ? 'agent doc subscribe was sent but never acknowledged'
+            : 'agent doc subscription retries were exhausted'
+        ),
+        {
+          surface: 'agent',
+          errorType: 'failure_confirming_agent_doc_subscribe',
+          level: 'warning',
+          tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+        }
+      )
+    }
+    this.onGaveUp(reason)
   }
 
   private clearSubscribeRetry(): void {
@@ -335,9 +476,12 @@ export class AgentCrdtDocLifecycle {
 
   private scheduleSubscribeRetry(): void {
     if (this.shouldDeferSubscribe()) return
-    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
     const target = this.workflowId()
     if (target === null) return
+    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      this.giveUp(target, 'retry_exhausted')
+      return
+    }
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** this.subscribeRetryAttempt
     this.subscribeRetryAttempt += 1
     this.subscribeRetryTimer = setTimeout(() => {
@@ -347,7 +491,13 @@ export class AgentCrdtDocLifecycle {
         attempt: this.subscribeRetryAttempt,
         workflowId: target
       })
-      this.resubscribe()
+      this.resubscribeOrScheduleRetry()
     }, delay)
+  }
+
+  private resubscribeOrScheduleRetry(): void {
+    if (this.resubscribe() !== false) return
+    this.clearStaleProbe()
+    this.scheduleSubscribeRetry()
   }
 }

@@ -2,13 +2,13 @@ import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
-import UnsavedChangesContent from '@/components/dialog/content/setting/keybinding/UnsavedChangesContent.vue'
-import UnsavedChangesHeader from '@/components/dialog/content/setting/keybinding/UnsavedChangesHeader.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
+import UnsavedChangesContent from '@/platform/keybindings/components/UnsavedChangesContent.vue'
+import UnsavedChangesHeader from '@/platform/keybindings/components/UnsavedChangesHeader.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { uploadFile } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
@@ -53,7 +53,7 @@ export function useKeybindingPresetService() {
   const settingStore = useSettingStore()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
-  const toast = useToastStore()
+  const toast = useToast()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   async function switchToDefaultPreset({ resetBindings = true } = {}) {
@@ -115,7 +115,7 @@ export function useKeybindingPresetService() {
   function applyPreset(preset: KeybindingPreset) {
     keybindingStore.resetAllKeybindings()
     for (const binding of preset.unsetBindings) {
-      keybindingStore.unsetKeybinding(new KeybindingImpl(binding))
+      keybindingStore.addUserUnsetKeybinding(new KeybindingImpl(binding))
     }
     for (const binding of preset.newBindings) {
       keybindingStore.addUserKeybinding(new KeybindingImpl(binding))
@@ -140,10 +140,8 @@ export function useKeybindingPresetService() {
     keybindingStore.currentPresetName = name
     await keybindingService.persistUserKeybindings()
     await settingStore.set('Comfy.Keybinding.CurrentPreset', name)
-    toast.add({
-      severity: 'success',
-      summary: t('g.keybindingPresets.presetSaved', { name }),
-      life: 3000
+    toast.success(t('g.keybindingPresets.presetSaved', { name }), {
+      duration: 3000
     })
   }
 
@@ -162,12 +160,11 @@ export function useKeybindingPresetService() {
       console.error(error)
       reportError(error, {
         errorType: 'keybinding_preset_deletion_http_failure',
+        surface: 'platform',
         tags: { status: resp.status }
       })
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: message
+      toast.error(t('g.error'), {
+        description: message
       })
       return false
     }
@@ -176,10 +173,8 @@ export function useKeybindingPresetService() {
       await switchToDefaultPreset()
     }
 
-    toast.add({
-      severity: 'info',
-      summary: t('g.keybindingPresets.presetDeleted', { name }),
-      life: 3000
+    toast.info(t('g.keybindingPresets.presetDeleted', { name }), {
+      duration: 3000
     })
     return true
   }
@@ -226,11 +221,7 @@ export function useKeybindingPresetService() {
     // Switch to the imported preset (handles dirty check)
     await switchPreset(preset.name)
 
-    toast.add({
-      severity: 'success',
-      summary: t('g.keybindingPresets.presetImported'),
-      life: 3000
-    })
+    toast.success(t('g.keybindingPresets.presetImported'), { duration: 3000 })
   }
 
   async function promptAndSaveNewPreset(): Promise<boolean> {

@@ -4,21 +4,27 @@ import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Tag from '@/components/chip/Tag.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
-import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
+import type { UserAttachment } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type {
   PromptSnapshot,
   WorkflowReference
-} from '../../../types/workflowReference'
-import type { ReplyAsset } from '../../../utils/replyAssets'
-import { agentMessageText } from '../../../utils/agentMessageText'
-import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
+} from '@/workbench/extensions/agent/types/workflowReference'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+import { isReplyAssetKind } from '@/workbench/extensions/agent/utils/replyAssets'
+import { agentMessageText } from '@/workbench/extensions/agent/utils/agentMessageText'
+import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
+import type { SkillReference as SkillReferenceData } from '@/workbench/extensions/agent/types/skillReference'
+import CatalogSkillReference from '@/workbench/extensions/agent/components/agent/CatalogSkillReference.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 import {
   selectedUserMessageClipboard,
@@ -30,12 +36,14 @@ const {
   attachments = [],
   tags = [],
   workflowReferences = [],
+  skillReference,
   editable = false
 } = defineProps<{
   text: string
   attachments?: UserAttachment[]
   tags?: string[]
   workflowReferences?: WorkflowReference[]
+  skillReference?: SkillReferenceData
   editable?: boolean
 }>()
 const emit = defineEmits<{
@@ -45,10 +53,16 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const promptParts = computed(() =>
-  workflowReferenceParts(text, workflowReferences)
+  promptReferenceParts(text, workflowReferences, skillReference)
 )
 const readableText = computed(() =>
-  agentMessageText({ text, workflowReferences, tags, attachments })
+  agentMessageText({
+    text,
+    workflowReferences,
+    skillReference,
+    tags,
+    attachments
+  })
 )
 const bubble = useTemplateRef<HTMLElement>('bubble')
 const plainClipboard = useClipboard({ copiedDuring: 2000, legacy: true })
@@ -59,13 +73,14 @@ const copied = computed(
 
 async function copyMessage(): Promise<void> {
   if (
-    workflowReferences.length &&
+    (workflowReferences.length || skillReference) &&
     richClipboard.isSupported.value &&
     typeof ClipboardItem !== 'undefined'
   ) {
     const content = userMessageClipboard({
       text,
       workflowReferences,
+      skillReference,
       tags,
       attachments
     })
@@ -110,39 +125,41 @@ function attachmentIconClass(name: string): string {
   return kind === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind)
 }
 
-/**
- * Sent uploads reuse the reply asset grid (Uy, FE-1323): media attachments
- * render as the DES-530 per-count grid with the same hover-play, inspect, and
- * audio-card behavior as agent replies. A ref resolves to the uploaded input
- * file; an image without one still has its local preview. Text and other
- * kinds have no grid treatment and keep the compact tiles.
- */
 const splitAttachments = computed(() => {
   const grid: ReplyAsset[] = []
   const plain: UserAttachment[] = []
   for (const item of attachments) {
-    const kind = getMediaTypeFromFilename(item.name)
-    const url =
-      item.previewUrl ??
-      (item.ref
-        ? api.apiURL(
-            `/view?filename=${encodeURIComponent(item.ref)}&type=input`
-          )
-        : undefined)
-    if (
-      url &&
-      (kind === 'image' ||
-        kind === 'video' ||
-        kind === 'audio' ||
-        kind === '3D')
-    ) {
-      grid.push({ url, filename: item.name, kind })
-    } else {
-      plain.push(item)
-    }
+    const asset = gridAsset(item)
+    if (asset) grid.push(asset)
+    else plain.push(item)
   }
   return { grid, plain }
 })
+
+function gridAsset(item: UserAttachment): ReplyAsset | undefined {
+  const kind = item.kind ?? getMediaTypeFromFilename(item.name)
+  if (!isReplyAssetKind(kind)) return undefined
+  const url = attachmentUrl(item, kind)
+  if (!url) return undefined
+  const filename = item.ref ?? item.name
+  return {
+    url,
+    filename,
+    kind,
+    label: filename === item.name ? undefined : item.name
+  }
+}
+
+function attachmentUrl(
+  item: UserAttachment,
+  kind: ReplyAsset['kind']
+): string | undefined {
+  const capturedUrl =
+    kind === 'video' || kind === 'audio' ? item.mediaUrl : item.previewUrl
+  if (capturedUrl) return capturedUrl
+  if (!item.ref || isHdrImageFilename(item.name)) return
+  return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
+}
 </script>
 
 <template>
@@ -156,7 +173,7 @@ const splitAttachments = computed(() => {
         class="max-w-48"
       >
         <template #icon>
-          <span class="icon-[lucide--at-sign] size-3 shrink-0" />
+          <i aria-hidden="true" class="icon-[lucide--at-sign] size-3" />
         </template>
       </Tag>
     </div>
@@ -173,9 +190,10 @@ const splitAttachments = computed(() => {
         class="m-0"
       >
         <div
-          class="flex aspect-square w-full items-center justify-center rounded-lg bg-secondary-background"
+          class="flex aspect-square w-full items-center justify-center rounded-lg bg-secondary"
         >
-          <span
+          <i
+            aria-hidden="true"
             :class="
               cn(attachmentIconClass(item.name), 'size-6 text-muted-foreground')
             "
@@ -187,17 +205,17 @@ const splitAttachments = computed(() => {
       </figure>
     </div>
     <div
-      v-if="text || workflowReferences.length"
+      v-if="text || workflowReferences.length || skillReference"
       ref="bubble"
       data-testid="user-message-bubble"
-      class="w-fit max-w-full rounded-lg border border-component-node-border bg-secondary-background px-2.5 py-1.5 text-sm/7 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
+      class="w-fit max-w-full rounded-lg bg-secondary px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
     >
       <template v-for="(part, index) in promptParts" :key="index">
         <Tag
           v-if="part.type === 'workflow'"
           interactive
           :label="part.reference.name"
-          class="max-w-64 align-middle"
+          class="-my-0.5 max-w-64 align-middle"
           :aria-label="
             part.reference.unavailable
               ? t('agent.unavailableWorkflowReference', {
@@ -225,43 +243,40 @@ const splitAttachments = computed(() => {
           @click="openReference(part.reference)"
         >
           <template #icon>
-            <span class="icon-[comfy--workflow] size-3 shrink-0" />
+            <i aria-hidden="true" class="icon-[comfy--workflow] size-3" />
           </template>
         </Tag>
+        <CatalogSkillReference
+          v-else-if="part.type === 'skill'"
+          :skill="part.reference"
+        />
         <template v-else>{{ part.text }}</template>
       </template>
     </div>
     <div
       v-if="readableText"
-      class="flex text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
+      class="pointer-events-none flex text-muted-foreground opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 touch:pointer-events-auto touch:opacity-100"
     >
-      <AccessibleTooltip
-        v-if="editable && (text || workflowReferences.length)"
-        :label="t('g.edit')"
-        :skip-delay-duration="0"
-        disable-hoverable-content
-        :collision-padding="8"
+      <Button
+        v-if="editable && (text || workflowReferences.length || skillReference)"
+        :tooltip="t('g.edit')"
+        type="button"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="t('g.edit')"
+        class="size-6 rounded-lg"
+        @click="
+          emit('edit', {
+            text,
+            workflowReferences,
+            ...(skillReference ? { skillReference } : {})
+          })
+        "
       >
-        <template #trigger>
-          <Button
-            type="button"
-            variant="muted-textonly"
-            size="icon-sm"
-            :aria-label="t('g.edit')"
-            class="size-6 rounded-lg"
-            @click="emit('edit', { text, workflowReferences })"
-          >
-            <span class="icon-[lucide--pencil] size-3" />
-          </Button>
-        </template>
-      </AccessibleTooltip>
-      <AccessibleTooltip
-        :label="copied ? t('agent.copied') : t('agent.copy')"
-        :skip-delay-duration="0"
-        disable-hoverable-content
-        :collision-padding="8"
-      >
-        <template #trigger>
+        <i aria-hidden="true" class="icon-[lucide--pencil] size-3" />
+      </Button>
+      <Tooltip disable-closing-trigger>
+        <TooltipTrigger as-child>
           <Button
             type="button"
             variant="muted-textonly"
@@ -270,7 +285,8 @@ const splitAttachments = computed(() => {
             class="size-6 rounded-lg"
             @click="copyMessage"
           >
-            <span
+            <i
+              aria-hidden="true"
               :class="
                 cn(
                   'size-3',
@@ -279,8 +295,11 @@ const splitAttachments = computed(() => {
               "
             />
           </Button>
-        </template>
-      </AccessibleTooltip>
+        </TooltipTrigger>
+        <TooltipContent>{{
+          copied ? t('agent.copied') : t('agent.copy')
+        }}</TooltipContent>
+      </Tooltip>
     </div>
   </div>
 </template>

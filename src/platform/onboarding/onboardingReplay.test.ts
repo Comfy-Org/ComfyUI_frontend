@@ -70,7 +70,10 @@ describe('onboardingReplay', () => {
       expect(requestOnboardingReplay(OWNER_ID)).toBe(false)
       expect(reportError).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'QuotaExceededError' }),
-        { errorType: 'error_writing_onboarding_replay_request' }
+        {
+          surface: 'platform',
+          errorType: 'error_writing_onboarding_replay_request'
+        }
       )
     })
 
@@ -137,7 +140,10 @@ describe('onboardingReplay', () => {
       expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
       expect(reportError).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'SecurityError' }),
-        { errorType: 'error_reading_onboarding_replay_request' }
+        {
+          surface: 'platform',
+          errorType: 'error_reading_onboarding_replay_request'
+        }
       )
     })
 
@@ -146,6 +152,7 @@ describe('onboardingReplay', () => {
 
       expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
       expect(reportError).toHaveBeenCalledWith(expect.any(SyntaxError), {
+        surface: 'platform',
         errorType: 'error_reading_onboarding_replay_request'
       })
     })

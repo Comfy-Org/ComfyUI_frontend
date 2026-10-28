@@ -36,18 +36,18 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/platform/missingModel/composables/useMissingModelInteractions'),
+  import('@/platform/workflowErrors/missingModel/composables/useMissingModelInteractions'),
   () => ({
     clearMissingModelState: vi.fn()
   })
 )
 
 import { useExecutionErrorStore } from './executionErrorStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { toNodeId } from '@/types/nodeId'
-import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
+import { createMissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
 
 function mockGraphReady(rootGraph: LGraph) {
   vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
@@ -918,7 +918,6 @@ it('opens the runtime error dialog with details when the Issues tab is disabled'
 
 describe('before the root graph exists', () => {
   it('resolves the execution error locator without touching app.rootGraph', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const store = useExecutionErrorStore()
     store.recordExecutionError({
       prompt_id: 'test',
@@ -933,7 +932,7 @@ describe('before the root graph exists', () => {
 
     expect(store.lastExecutionErrorNodeId).toBe(toNodeId('7'))
     expect(store.activeGraphErrorNodeIds).toEqual(new Set())
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 })
 

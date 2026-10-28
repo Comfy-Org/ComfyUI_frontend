@@ -72,6 +72,7 @@ function expectUnresolvableLinkReported(
   expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
     new Error('Cannot unpack subgraph: unresolvable inner link'),
     {
+      surface: 'graph',
       errorType: 'error_unpacking_subgraph_link',
       context: {
         subgraphNodeId: subgraphNode.id,
@@ -244,6 +245,7 @@ describe('SubgraphConversion', () => {
         new Error(`Cannot unpack: node type "${nodeType}" is not registered`),
         {
           errorType: 'error_unpacking_subgraph_node_type',
+          surface: 'graph',
           context: { subgraphNodeId: subgraphNode.id, nodeType }
         }
       )
@@ -956,6 +958,7 @@ describe('SubgraphConversion', () => {
             message: 'Missing host input when unpacking subgraph'
           }),
           {
+            surface: 'graph',
             errorType: 'subgraph_unpack_missing_host_input',
             context: {
               linkId: link.id,

@@ -1,3 +1,4 @@
+import { omit } from 'es-toolkit'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -11,6 +12,7 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphCanvas,
+  LGraphEventMode,
   LGraphNode,
   LiteGraph,
   LGraph,
@@ -20,10 +22,8 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
-import {
-  createMockCanvasRenderingContext2D,
-  createMockLGraphNodeWithArrayBoundingRect
-} from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -51,12 +51,10 @@ function getMockISerialisedNode(
 
 describe('LGraphNode', () => {
   let node: LGraphNode
-  let origLiteGraph: typeof LiteGraph
+  let origLiteGraph: Omit<typeof LiteGraph, 'Classes'>
 
   beforeEach(() => {
-    origLiteGraph = Object.assign({}, LiteGraph)
-    // @ts-expect-error Intended: Force remove an otherwise readonly non-optional property
-    delete origLiteGraph.Classes
+    origLiteGraph = omit(LiteGraph, ['Classes'])
 
     Object.assign(LiteGraph, {
       NODE_TITLE_HEIGHT: 20,
@@ -75,6 +73,16 @@ describe('LGraphNode', () => {
 
   afterEach(() => {
     Object.assign(LiteGraph, origLiteGraph)
+  })
+
+  test.for([
+    LGraphEventMode.ALWAYS,
+    LGraphEventMode.ON_EVENT,
+    LGraphEventMode.NEVER,
+    LGraphEventMode.BYPASS
+  ])('accepts mode %s through changeMode', (mode) => {
+    expect(node.changeMode(mode)).toBe(true)
+    expect(node.mode).toBe(mode)
   })
 
   test('preserves null property values', () => {
@@ -151,7 +159,6 @@ describe('LGraphNode', () => {
     })
     expect(parent).toBeDefined()
     const parentBefore = parent?.asSerialisable()
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(
       node.connectFloatingReroute([10, 10], node.outputs[0], parentId)
@@ -160,7 +167,7 @@ describe('LGraphNode', () => {
     expect(graph.reroutes.size).toBe(1)
     expect(graph.getReroute(parentId)?.asSerialisable()).toEqual(parentBefore)
     expect(graph.floatingLinks.size).toBe(0)
-    expect(error).toHaveBeenCalledWith(expect.any(Error))
+    expect(console.error).toHaveBeenCalledWith(expect.any(Error))
   })
 
   test('should configure inputs correctly', () => {
@@ -209,6 +216,20 @@ describe('LGraphNode', () => {
     graph.add(node)
     node.configure(getMockISerialisedNode({ id: -1 }))
     expect(node.id).not.toBe(-1)
+  })
+
+  test('draws the ❌ type fallback title for an unknown-type replacement node', () => {
+    const node = new LGraphNode('', 'UNKNOWN NODE')
+    node.configure(getMockISerialisedNode({ type: 'UNKNOWN NODE' }))
+    const ctx = createMockCanvasRenderingContext2D()
+
+    node.drawTitleText(ctx, { scale: 1, default_title_color: '#fff' })
+
+    expect(ctx.fillText).toHaveBeenCalledWith(
+      '❌ UNKNOWN NODE',
+      expect.any(Number),
+      expect.any(Number)
+    )
   })
 
   describe('Disconnect I/O Slots', () => {

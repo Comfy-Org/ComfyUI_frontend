@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex min-h-0 scrollbar-hide w-full flex-auto flex-col gap-1 overflow-y-auto bg-modal-panel-background px-3"
+    class="flex min-h-0 scrollbar-hide w-full flex-auto flex-col gap-1 overflow-y-auto bg-card px-3"
   >
     <template
       v-for="item in navItems"
@@ -43,7 +43,7 @@
 import { computed, ref } from 'vue'
 
 import NavItem from '@/components/widget/nav/NavItem.vue'
-import NavTitle from '@/components/widget/nav/NavTitle.vue'
+import NavTitle from '@comfyorg/design-system/navigation/NavTitle'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 
 const { navItems = [], modelValue } = defineProps<{

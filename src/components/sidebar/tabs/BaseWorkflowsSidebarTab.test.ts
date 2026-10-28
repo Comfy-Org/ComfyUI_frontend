@@ -50,7 +50,7 @@ const {
 })
 
 vi.mock<unknown>(
-  import('@/components/sidebar/tabs/SidebarTopArea.vue'),
+  import('@comfyorg/design-system/navigation/SidebarTopArea'),
   () => ({
     default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
   })

@@ -1,4 +1,4 @@
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { NodeSourceType } from '@/types/nodeSource'
 import { normalizePackId } from '@/utils/packUtils'
 

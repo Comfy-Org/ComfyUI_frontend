@@ -6,6 +6,11 @@ Date: 2026-09-19
 
 Proposed
 
+Revised 2026-09-29 by
+[FE-3032](https://linear.app/comfyorg/issue/FE-3032/agentcrdt-pr-and-stale-adr-cleanup-after-store-first-removal)
+after the graph-intent write path replaced the deleted mint-port wiring. The
+authority and delivery decisions are unchanged.
+
 ## Context
 
 The In-App Agent edits a shared per-workflow document that the frontend follows
@@ -13,15 +18,18 @@ The In-App Agent edits a shared per-workflow document that the frontend follows
 Two channels carry the human's canvas to the server:
 
 1. **Semantic operations.** While a chat is bound to the workflow and its tab
-   is active, the mint ports turn canvas edits into `doc_ops`
-   (`src/workbench/extensions/agent/crdt/mintPortWiring.ts`,
-   `layoutMintPort.ts`, `opSender.ts`). The gate
-   (`mintGate.ts`) is closed when no thread is bound: before the first turn
-   acknowledges, and after "new chat". The sender drops queued operations as
-   `undeliverable` when the binding changes or the transport stays refused.
+   is active, litegraph's graph API emits provenance-tagged commands through
+   `src/lib/litegraph/src/graphIntents.ts`.
+   `src/workbench/extensions/agent/crdt/docOpMinter.ts` turns local commands
+   into `doc_ops`, and `opSender.ts` delivers them. The minter's document-bound
+   gate is closed when no thread is bound: before the first turn acknowledges,
+   and after "new chat". The sender drops queued operations as `undeliverable`
+   when the binding changes or the transport stays refused. Remote follower
+   writes use the same graph API with `agent-remote` provenance, so they update
+   the live graph and stores without minting operations back to the host.
 2. **The turn draft.** Every turn whose target has a cloud workflow id, and
    every first turn of a new chat, posts the live canvas as `draft`
-   (`src/workbench/extensions/agent/composables/agent/useAgentSession.ts`).
+   (`src/workbench/extensions/agent/AgentPanelRoot.vue`).
    The client sends `draft.content` only; the server derives the version it
    compares against from the document it already holds.
 
@@ -142,9 +150,12 @@ Alternatives considered and rejected:
   operations of that batch unapplied, where separate batches were independent.
   Chunking at the wire cap bounds a batch, and the ledger already models
   `unprocessed`.
-- Human operations settled `undeliverable` or `unconfirmed` (at unbind, at
-  `doc_reset`, on a dead transport) are still reported only to the dev panel;
-  surfacing them to the user is a follow-up.
+- Human operations settled `undeliverable`, `unconfirmed`, or
+  `unacknowledged` produce one `reportError` call and a dev-panel entry per
+  batch. Reports include the mint-time workflow id and termination cause.
+  `doc_reset` identifies batches superseded by the draft under decision 4,
+  so lost-edit queries can exclude them. User-facing notices for sender
+  termination remain a follow-up.
 - Two browser tabs on the same document, both agent-bound, are out of scope:
   which tab's draft wins a divergence is decided by the server's sequence
   check, not by anything the frontend promises.

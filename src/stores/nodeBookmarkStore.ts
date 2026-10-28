@@ -12,7 +12,7 @@ import {
   createDummyFolderNodeDef,
   useNodeDefStore
 } from './nodeDefStore'
-import type { ComfyNodeDefImpl } from './nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const BOOKMARK_SETTING_ID = 'Comfy.NodeLibrary.Bookmarks.V2'
 
@@ -26,7 +26,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
 
   const bookmarksSet = computed<Set<string>>(() => new Set(bookmarks.value))
 
-  const bookmarkedRoot = computed<TreeNode>(() =>
+  const bookmarkedRoot = computed<TreeNode<ComfyNodeDefImpl>>(() =>
     buildBookmarkTree(bookmarks.value)
   )
 

@@ -37,6 +37,12 @@ The build output is a static SPA:
   item; transactional Subscribe, Resubscribe, and embedded-checkout actions
   remain in the core frontend until the hosted app reaches parity.
 
+  > **Amended 2026-09-27 by
+  > [ADR-BILLING-WEB-0038](BILLING-WEB-0038-checkout-only-hosts-own-plan-selection.md):**
+  > the flag no longer redirects Plans & pricing. Plan selection stays in
+  > the host app, which opens billing-web `/v1/checkout` with a `plan`;
+  > billing-web hosts checkout, not a plan grid.
+
 The first scaffold deliberately does not guess the future SDK interfaces or
 credential lifecycle. Integration code must follow
 [ADR-AUTH-CREDENTIALS-0011](AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md)

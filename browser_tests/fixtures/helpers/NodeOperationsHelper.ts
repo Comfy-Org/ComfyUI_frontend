@@ -42,9 +42,11 @@ export class NodeOperationsHelper {
 
   async getSelectedNodeIds(): Promise<NodeId[]> {
     const selectedNodeIds = await this.page.evaluate(() => {
-      const selected = window.app?.canvas.selected_nodes
-      if (!selected) return []
-      return Object.keys(selected)
+      const canvas = window.app?.canvas
+      if (!canvas?.graph) return []
+      return canvas.graph.nodes
+        .filter((node) => canvas.selectedItems.has(node))
+        .map((node) => String(node.id))
     })
     return selectedNodeIds.map(toNodeId)
   }
@@ -106,6 +108,14 @@ export class NodeOperationsHelper {
     })
     if (!id) return null
     return this.getNodeRefById(id)
+  }
+
+  /** Every node in the graph currently shown on the canvas. */
+  async getAllNodeRefs(): Promise<NodeReference[]> {
+    const ids = await this.page.evaluate(() =>
+      window.app!.canvas.graph!.nodes.map((n: LGraphNode) => n.id)
+    )
+    return ids.map((id) => new NodeReference(id, this.comfyPage))
   }
 
   async getNodeRefById(id: SerializedNodeId): Promise<NodeReference> {
@@ -180,6 +190,15 @@ export class NodeOperationsHelper {
     return this.page.evaluate(
       () => window.app!.graph.serialize() as ComfyWorkflowJSON
     )
+  }
+
+  async getSerializedGraphWithoutViewport() {
+    return this.page.evaluate(() => {
+      const data = window.app!.graph.serialize()
+      const extra = { ...data.extra }
+      delete extra.ds
+      return { ...data, extra }
+    })
   }
 
   async loadGraph(data: ComfyWorkflowJSON): Promise<void> {

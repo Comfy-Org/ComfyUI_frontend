@@ -120,7 +120,8 @@ function renderCard(
       ...props
     },
     global: {
-      plugins: [i18n]
+      plugins: [i18n],
+      stubs: { MissingNodeDeploymentOffer: true }
     }
   })
   return { ...result, user }
@@ -321,7 +322,7 @@ describe('MissingNodeCard', () => {
       }
       const { container } = renderCard()
       expect(container.textContent).toContain('AlphaNode, ZebraNode')
-      // eslint-disable-next-line testing-library/no-container
+      // oxlint-disable-next-line testing-library/no-container
       expect(container.textContent.match(/ZebraNode/g)).toHaveLength(1)
     })
 

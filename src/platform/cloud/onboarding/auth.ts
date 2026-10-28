@@ -1,4 +1,6 @@
 import { addBreadcrumb } from '@sentry/vue'
+import { watch } from 'vue'
+
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 
 import {
@@ -7,6 +9,7 @@ import {
 } from '@/platform/onboarding/onboardingReplay'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
 import { toError } from '@/utils/errorUtil'
 
 interface UserCloudStatus {
@@ -24,6 +27,7 @@ function captureApiError(
   extraContext?: Record<string, unknown>
 ) {
   reportError(error, {
+    surface: 'platform',
     errorType,
     tags: {
       api_endpoint: endpoint,
@@ -122,7 +126,9 @@ async function readStoredSurvey(signal?: AbortSignal): Promise<StoredSurvey> {
     const data: unknown = await response.json()
     return classifyStoredSurvey(data)
   } catch (error) {
+    if (signal?.aborted && error === signal.reason) return 'unknown'
     reportError(error, {
+      surface: 'platform',
       errorType: 'network_error',
       tags: { api_endpoint: '/settings/{key}' },
       context: {
@@ -139,21 +145,34 @@ export type SurveySubmissionResult =
   | { status: 'stored' }
   | { status: 'preserved' }
   | { status: 'failed'; cause: unknown }
+  | { status: 'cancelled' }
 
 export async function submitSurvey(
   survey: Record<string, unknown>,
   ownerId: string
 ): Promise<SurveySubmissionResult> {
   const identityChanged = new AbortController()
-  const stopWatchingIdentity = firebaseIdentity.onUserChanged((user) => {
-    if (user?.uid !== ownerId) identityChanged.abort()
-  })
+  const auth = useAuthStore()
+  const abortUnlessOwner = (firebaseUid: string | undefined) => {
+    if ((firebaseUid ?? auth.sessionOnlyUser?.id) !== ownerId) {
+      identityChanged.abort()
+    }
+  }
+  const stopWatchingFirebase = firebaseIdentity.onUserChanged((user) =>
+    abortUnlessOwner(user?.uid)
+  )
+  const stopWatchingSession = watch(
+    () => auth.sessionOnlyUser?.id,
+    () => abortUnlessOwner(auth.currentUser?.uid),
+    { flush: 'sync' }
+  )
 
   try {
     const replaying = isSurveyReplayRequested(ownerId)
     if (replaying) {
       const stored = await readStoredSurvey(identityChanged.signal)
-      if (stored === 'unknown' || identityChanged.signal.aborted) {
+      if (identityChanged.signal.aborted) return { status: 'cancelled' }
+      if (stored === 'unknown') {
         return {
           status: 'failed',
           cause:
@@ -184,9 +203,7 @@ export async function submitSurvey(
       body: JSON.stringify({ [ONBOARDING_SURVEY_KEY]: survey })
     })
 
-    if (identityChanged.signal.aborted) {
-      return { status: 'failed', cause: identityChanged.signal.reason }
-    }
+    if (identityChanged.signal.aborted) return { status: 'cancelled' }
     if (!response.ok) {
       const error = new Error(`Failed to submit survey: ${response.statusText}`)
       captureApiError(
@@ -215,6 +232,11 @@ export async function submitSurvey(
 
     return { status: 'stored' }
   } catch (error) {
+    if (
+      identityChanged.signal.aborted &&
+      error === identityChanged.signal.reason
+    )
+      return { status: 'cancelled' }
     captureApiError(
       toError(error),
       '/settings',
@@ -224,6 +246,7 @@ export async function submitSurvey(
     )
     return { status: 'failed', cause: error }
   } finally {
-    stopWatchingIdentity()
+    stopWatchingFirebase()
+    stopWatchingSession()
   }
 }

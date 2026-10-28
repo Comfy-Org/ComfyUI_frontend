@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="upload-model-dialog flex flex-col gap-6 border-t border-border-default p-4 pt-6"
-  >
+  <div class="upload-model-dialog flex flex-col gap-6 border-t p-4 pt-6">
     <!-- Scrollable content area -->
     <div class="min-h-0 flex-auto basis-0 overflow-y-auto">
       <!-- Step 1: Enter URL -->

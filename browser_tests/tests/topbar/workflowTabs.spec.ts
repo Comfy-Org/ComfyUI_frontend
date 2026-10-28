@@ -2,19 +2,24 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Workflow tabs', () => {
-  // These Agent-adjacent path-identity cases are staged behind the stacked
-  // workflow-tab slice: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184
-  test.describe('Agent workflow-tab contract from slice 04', () => {
+  test.describe('Path-backed active-tab identity', () => {
+    const pathBackedWorkflowNames = [
+      'path-backed-first',
+      'path-backed-second'
+    ] as const
+
+    test.afterEach(async ({ comfyPage }) => {
+      for (const name of pathBackedWorkflowNames) {
+        await comfyPage.workflow.deleteWorkflow(name)
+      }
+    })
+
     test('keeps exactly one active tab after selecting several workflows', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       await topbar.newWorkflowButton.click()
@@ -27,27 +32,22 @@ test.describe('Workflow tabs', () => {
     test('keeps path-backed active identity after a tab switch', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
+      const [firstWorkflow, secondWorkflow] = pathBackedWorkflowNames
+
+      await topbar.saveWorkflow(firstWorkflow)
       await topbar.newWorkflowButton.click()
-      const names = await topbar.getTabNames()
+      await topbar.saveWorkflow(secondWorkflow)
       await topbar.getTab(0).click()
 
-      await expect.poll(() => topbar.getActiveTabName()).toContain(names[0])
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toContain(firstWorkflow)
     })
 
     test('activates a valid neighbor when the active workflow is closed', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       await topbar.newWorkflowButton.click()
@@ -62,11 +62,6 @@ test.describe('Workflow tabs', () => {
     test('preserves tab identity across browser reload', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       await topbar.getTab(1).click()
@@ -266,49 +261,162 @@ test.describe('Workflow tabs', () => {
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
   })
 
-  test(
-    'Scroll arrows navigate overflowing workflow tabs',
-    { tag: '@ui' },
-    async ({ comfyPage }) => {
-      await comfyPage.page.setViewportSize({ width: 800, height: 720 })
-      const topbar = comfyPage.menu.topbar
+  test.describe('with a narrow viewport', () => {
+    test.use({ viewport: { width: 800, height: 720 } })
 
-      for (let index = 0; index < 8; index++) {
-        await topbar.newWorkflowButton.click()
-      }
-      await expect.poll(() => topbar.getTabNames()).toHaveLength(9)
+    test(
+      'Tabs shrink to the 90px floor before the strip scrolls',
+      { tag: '@ui' },
+      async ({ comfyPage }) => {
+        const topbar = comfyPage.menu.topbar
 
-      const scrollLeft = topbar.workflowTabs.getByRole('button', {
-        name: 'Scroll Left'
-      })
-      const scrollRight = topbar.workflowTabs.getByRole('button', {
-        name: 'Scroll Right'
-      })
-      await expect(scrollLeft).toBeVisible()
-      await expect(scrollLeft).toBeEnabled()
-      await expect(scrollRight).toBeDisabled()
-      const moreWorkflows = topbar.workflowTabs.getByRole('button', {
-        name: 'More workflows',
-        exact: true
-      })
-      await expect(async () => {
-        const [scrollArrowBox, moreWorkflowsBox] = await Promise.all([
-          scrollRight.boundingBox(),
-          moreWorkflows.boundingBox()
-        ])
-        expect(scrollArrowBox).not.toBeNull()
-        expect(moreWorkflowsBox).toMatchObject({
-          height: scrollArrowBox?.height
+        await test.step('shrink tabs while they still fit', async () => {
+          await topbar.openBlankWorkflows(5)
+          const [firstTabName] = await topbar.getTabNames()
+          await comfyPage.workflow.switchToTab(firstTabName)
+
+          await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
+          await expect
+            .poll(async () => {
+              const [activeBox, inactiveBox] = await Promise.all([
+                topbar.getActiveTab().boundingBox(),
+                topbar.tabs.last().boundingBox()
+              ])
+              return activeBox && inactiveBox
+                ? activeBox.width - inactiveBox.width
+                : null
+            })
+            .toBeGreaterThan(0)
+          await expect
+            .poll(() =>
+              topbar.tabStrip.evaluate((strip) => ({
+                fits: strip.scrollWidth <= strip.clientWidth + 1,
+                scrollLeft: strip.scrollLeft
+              }))
+            )
+            .toEqual({ fits: true, scrollLeft: 0 })
         })
-      }).toPass({ timeout: 5000 })
 
-      const activeTabName = await topbar.getActiveTabName()
-      await scrollLeft.dispatchEvent('mousedown')
-      await expect(scrollRight).toBeEnabled()
-      await scrollLeft.dispatchEvent('mouseup')
-      await expect.poll(() => topbar.getActiveTabName()).toBe(activeTabName)
-    }
-  )
+        await test.step('scroll after inactive tabs reach 90px', async () => {
+          await topbar.openBlankWorkflows(1)
+          await expect
+            .poll(async () => {
+              const widths = await topbar.tabs.evaluateAll((tabs) =>
+                tabs
+                  .filter(
+                    (tab) =>
+                      !tab.querySelector('[role="tab"][aria-selected="true"]')
+                  )
+                  .map((tab) => Math.round(tab.getBoundingClientRect().width))
+              )
+              return widths
+            })
+            .toEqual(Array(6).fill(90))
+          await expect
+            .poll(() =>
+              topbar.tabStrip.evaluate(
+                (strip) => strip.scrollWidth > strip.clientWidth + 1
+              )
+            )
+            .toBe(true)
+        })
+      }
+    )
+
+    test(
+      'Keeps the active tab visible when the viewport narrows',
+      { tag: '@ui' },
+      async ({ comfyPage }) => {
+        const topbar = comfyPage.menu.topbar
+
+        await test.step('open tabs with the last tab active', async () => {
+          await topbar.openBlankWorkflows(10)
+          await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
+        })
+
+        await test.step('keep the active tab visible after resize', async () => {
+          await comfyPage.page.setViewportSize({ width: 600, height: 720 })
+          await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
+        })
+
+        await test.step('reveal a hidden tab when it becomes active', async () => {
+          await topbar.openWorkflowOverflowMenu()
+          await comfyPage.page
+            .getByRole('menuitem', { name: 'Unsaved Workflow', exact: true })
+            .click()
+
+          await expect(topbar.tabs.first()).toBeInViewport({ ratio: 1 })
+          await expect(topbar.tabs.last()).not.toBeInViewport({ ratio: 1 })
+        })
+      }
+    )
+
+    test(
+      'Compact inactive tabs reveal their close button to keyboard only',
+      { tag: '@ui' },
+      async ({ comfyPage }) => {
+        const topbar = comfyPage.menu.topbar
+
+        await test.step('open compact tabs', async () => {
+          await topbar.openBlankWorkflows(10)
+          await expect(
+            topbar.tabs.first(),
+            'strip must overflow'
+          ).not.toBeInViewport({ ratio: 1 })
+        })
+
+        const inactiveTab = topbar.getTab(9)
+
+        await test.step('hide Close on inactive tab hover', async () => {
+          await inactiveTab.hover()
+          await expect(
+            inactiveTab.getByTestId(TestIds.topbar.workflowDirtyIndicator)
+          ).toBeVisible()
+          await expect(
+            inactiveTab.getByTestId(TestIds.topbar.closeWorkflowButton)
+          ).toBeHidden()
+
+          const activeTab = topbar.getActiveTab()
+          await activeTab.hover()
+          await expect(
+            activeTab.getByTestId(TestIds.topbar.closeWorkflowButton)
+          ).toBeVisible()
+        })
+
+        await test.step('focus and activate Close with the keyboard', async () => {
+          const tabCount = await topbar.tabs.count()
+          const closeButton = inactiveTab.getByTestId(
+            TestIds.topbar.closeWorkflowButton
+          )
+          await inactiveTab.getByRole('tab').focus()
+          await comfyPage.page.keyboard.press('Tab')
+          await expect(closeButton).toBeFocused()
+          await expect(closeButton).toBeVisible()
+          await comfyPage.page.keyboard.press('Enter')
+          await expect(topbar.tabs).toHaveCount(tabCount - 1)
+        })
+      }
+    )
+
+    test(
+      'Keyboard overflow menu opens below its trigger and returns focus',
+      { tag: '@ui' },
+      async ({ comfyPage }) => {
+        const topbar = comfyPage.menu.topbar
+
+        await topbar.openBlankWorkflows(8)
+        await topbar.openWorkflowOverflowMenu()
+        await expect(async () => {
+          const gap = await topbar.getWorkflowOverflowMenuVerticalGap()
+          expect(gap).toBeGreaterThanOrEqual(0)
+          expect(gap).toBeLessThan(10)
+        }).toPass({ timeout: 5000 })
+
+        await topbar.closeWorkflowOverflowMenu()
+        await expect(topbar.workflowOverflowButton).toBeFocused()
+      }
+    )
+  })
 
   test.describe('Closing a modified workflow tab (FE-419)', () => {
     async function modifyActiveWorkflow(page: Page, activeTab: Locator) {

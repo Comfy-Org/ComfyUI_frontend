@@ -3,111 +3,6 @@ import { entryPath, expect, test } from './fixtures/test'
 
 const SUBSCRIPTION = entryPath('subscription')
 
-test('renders the catalog with the current plan marked and priced', async ({
-  page,
-  signIn
-}) => {
-  await signIn(SUBSCRIPTION)
-
-  await expect(page.getByText('Current plan: Creator · Monthly')).toBeVisible()
-  const creator = page
-    .getByRole('listitem')
-    .filter({ has: page.getByRole('heading', { name: 'Creator · Monthly' }) })
-  await expect(creator.getByText('Current plan', { exact: true })).toBeVisible()
-  await expect(creator.getByText('This is your current plan.')).toBeVisible()
-  await expect(
-    creator.getByRole('button', { name: 'Choose Creator · Monthly' })
-  ).toBeDisabled()
-
-  const pro = page
-    .getByRole('listitem')
-    .filter({ has: page.getByRole('heading', { name: 'Pro · Monthly' }) })
-  await expect(pro.getByText('$50.00')).toBeVisible()
-  await expect(pro.getByText('$100.00 in monthly credits')).toBeVisible()
-  await expect(pro.getByText('1 seat')).toBeVisible()
-})
-
-test('choosing a plan quotes it from the server and continues to checkout', async ({
-  page,
-  cloud,
-  signIn
-}) => {
-  cloud.scenario.preview = {
-    ...cloud.scenario.preview,
-    transition_type: 'upgrade'
-  }
-  await signIn(SUBSCRIPTION)
-
-  await page.getByRole('button', { name: 'Choose Pro · Monthly' }).click()
-
-  const quote = page.locator('section', {
-    has: page.getByRole('heading', { name: 'Your plan change' })
-  })
-  await expect(quote.getByText('Upgrade')).toBeVisible()
-  await expect(quote.getByText('$50.00').first()).toBeVisible()
-  const preview = cloud.requests.find(
-    (request) => request.path === '/billing/preview-subscribe'
-  )
-  expect(preview?.body).toStrictEqual({ plan_slug: 'pro_monthly' })
-
-  await quote.getByRole('button', { name: 'Continue to checkout' }).click()
-
-  await expect(page).toHaveURL(/\/v1\/checkout\?.*plan=pro_monthly/)
-  await expect(
-    page.getByRole('heading', { name: 'Confirm your payment' })
-  ).toBeVisible()
-  await expect(page.getByText('Pro · Monthly')).toBeVisible()
-  await expect(page.getByText('Total due today')).toBeVisible()
-  // An upgrade on an existing subscription charges the saved payment method
-  // server-side, so no card form is needed here — see checkout.spec.ts for
-  // that path's full coverage.
-  await expect(
-    page.getByRole('button', { name: 'Pay and subscribe' })
-  ).toBeVisible()
-  await expect(
-    page.getByText("The payment form isn't available right now.")
-  ).not.toBeVisible()
-})
-
-test('a checkout link naming a team credit stop quotes it along with the plan', async ({
-  page,
-  cloud,
-  signIn
-}) => {
-  await signIn(
-    entryPath('checkout', {
-      plan: 'pro_monthly',
-      team_credit_stop_id: 'stop_700'
-    })
-  )
-
-  await expect(
-    page.getByRole('heading', { name: 'Confirm your payment' })
-  ).toBeVisible()
-  const preview = cloud.requests.find(
-    (request) => request.path === '/billing/preview-subscribe'
-  )
-  expect(preview?.body).toStrictEqual({
-    plan_slug: 'pro_monthly',
-    team_credit_stop_id: 'stop_700'
-  })
-})
-
-test('a checkout link that names no plan sends the customer to choose one', async ({
-  page,
-  signIn
-}) => {
-  await signIn(entryPath('checkout'))
-
-  await expect(
-    page.getByRole('heading', { name: 'Choose a plan first' })
-  ).toBeVisible()
-  await page.getByRole('link', { name: 'See plans' }).click()
-
-  await expect(page).toHaveURL(/\/v1\/subscription\?/)
-  await expect(page.getByText('Current plan: Creator · Monthly')).toBeVisible()
-})
-
 test('cancels after a confirmation step and then offers to resubscribe', async ({
   page,
   cloud,
@@ -165,6 +60,7 @@ test('shows only the actions the server allows', async ({
   await signIn(SUBSCRIPTION)
 
   await expect(page.getByText('Current plan: Creator · Monthly')).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Choose/ })).toHaveCount(0)
   await expect(
     page.getByRole('button', { name: 'Cancel subscription' })
   ).toHaveCount(0)

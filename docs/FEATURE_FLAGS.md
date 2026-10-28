@@ -297,14 +297,19 @@ Getters that call `api.getServerFeature()` directly — `supportsPreviewMetadata
 `maxUploadSize`, `supportsManagerV4`, `nodeReplacementsEnabled`,
 `showSignInButton` — skip the override layers entirely.
 
-Two variants exist alongside `resolveFlag()`:
+Three variants exist alongside `resolveFlag()`:
 
 - `resolveAuthGatedFlag()` — for per-user Cloud-only flags that select backend
   behaviour. Always `false` off the Cloud build, and while authenticated config
   is still loading it falls back to the cached session value so anonymous
   bootstrap config cannot route the user to the wrong backend.
-- `resolveFailClosedBooleanFlag()` — returns `true` only for a literal `true`,
+- `resolveStrictBooleanFlag()` — returns `true` only for a literal `true`,
   and `false` if the read throws.
+- `resolveWhitelistFlag()` — for per-user allowlists that gate a visible
+  surface. Always `false` off the Cloud build and before the first
+  authenticated answer. After one, a failed refresh falls back to that
+  answer — held in memory for the session only, never in storage, because a
+  persisted grant makes two browsers disagree for one account (PM-1707).
 
 #### Dev overrides (local, `import.meta.env.DEV` only)
 
@@ -387,16 +392,22 @@ if feature_flags.supports_feature(sockets_metadata, sid, "your_new_feature"):
 ```
 
 2. **For server or extension features**, add the flag path to the
-   `ServerFeatureFlag` enum and expose a named getter on the `flags` object in
+   `ServerFeatureFlag` enum in `src/platform/remoteConfig/serverFeatureFlag.ts`
+   and expose a named getter on the `flags` object in
    `src/composables/useFeatureFlags.ts`. Nested extension flags use a
    dot-separated path:
 
 ```typescript
-// In useFeatureFlags.ts
+// In src/platform/remoteConfig/serverFeatureFlag.ts
 export enum ServerFeatureFlag {
   // ... existing entries
   YOUR_EXTENSION_NEW_FEATURE = 'extension.yourExtension.supports_new_feature'
 }
+```
+
+```typescript
+// In src/composables/useFeatureFlags.ts
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 
 export function useFeatureFlags() {
   const flags = reactive({

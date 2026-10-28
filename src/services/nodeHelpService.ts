@@ -1,6 +1,6 @@
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { NodeSourceType } from '@/types/nodeSource'
 import { extractCustomNodeName } from '@/workbench/utils/nodeHelpUtil'
 
@@ -70,6 +70,7 @@ class NodeHelpService {
     } catch (error) {
       reportError(error, {
         errorType: 'node_help_fetch_failure',
+        surface: 'graph',
         context: { path }
       })
       throw error
@@ -82,6 +83,7 @@ class NodeHelpService {
       )
       reportError(error, {
         errorType: 'node_help_fetch_failure',
+        surface: 'graph',
         context: { path }
       })
       throw error
@@ -94,6 +96,7 @@ class NodeHelpService {
     } catch (error) {
       reportError(error, {
         errorType: 'node_help_fetch_failure',
+        surface: 'graph',
         context: { path }
       })
       throw error

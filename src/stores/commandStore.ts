@@ -6,7 +6,6 @@ import type { CanvasInteractionModeReader } from '@/lib/litegraph/src/canvas/Can
 import { EDITABLE_INTERACTION_MODE } from '@/lib/litegraph/src/canvas/CanvasInteractionMode'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import type { ComfyExtension } from '@/types/comfy'
 
 export interface ComfyCommand {
   id: string
@@ -132,7 +131,10 @@ export const useCommandStore = defineStore('command', () => {
     return !!commandsById.value[command]
   }
 
-  const loadExtensionCommands = (extension: ComfyExtension) => {
+  const loadExtensionCommands = (extension: {
+    name: string
+    commands?: ComfyCommand[]
+  }) => {
     if (extension.commands) {
       for (const command of extension.commands) {
         registerCommand({
