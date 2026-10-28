@@ -468,9 +468,14 @@ describe('useWidgetSelectItems', () => {
       jobId: string
       allOutputs?: readonly { filename: string }[]
     }): AssetItem[] {
-      return (meta.allOutputs ?? []).map((output) =>
-        makeResolvedOutput(`${meta.jobId}-${output.filename}`, output.filename)
-      )
+      return [...(meta.allOutputs ?? [])]
+        .reverse()
+        .map((output) =>
+          makeResolvedOutput(
+            `${meta.jobId}-${output.filename}`,
+            output.filename
+          )
+        )
     }
 
     async function flushQueuedPromises() {
@@ -1008,8 +1013,8 @@ describe('useWidgetSelectItems', () => {
 
       await vi.waitFor(() => {
         expect(dropdownItems.value.map((item) => item.name)).toEqual([
-          'batch_001.png [output]',
-          'batch_002.png [output]'
+          'batch_002.png [output]',
+          'batch_001.png [output]'
         ])
       })
 
@@ -1019,9 +1024,9 @@ describe('useWidgetSelectItems', () => {
 
       await vi.waitFor(() => {
         expect(dropdownItems.value.map((item) => item.name)).toEqual([
-          'batch_001.png [output]',
+          'batch_003.png [output]',
           'batch_002.png [output]',
-          'batch_003.png [output]'
+          'batch_001.png [output]'
         ])
       })
     })
@@ -1048,8 +1053,8 @@ describe('useWidgetSelectItems', () => {
 
       await vi.waitFor(() => {
         expect(dropdownItems.value.map((item) => item.name)).toEqual([
-          'batch_001.png [output]',
-          'batch_002.png [output]'
+          'batch_002.png [output]',
+          'batch_001.png [output]'
         ])
       })
       expect(mockResolveOutputAssetItems).toHaveBeenCalledTimes(1)
@@ -1061,8 +1066,8 @@ describe('useWidgetSelectItems', () => {
 
       expect(mockResolveOutputAssetItems).toHaveBeenCalledTimes(1)
       expect(dropdownItems.value.map((item) => item.name)).toEqual([
-        'batch_001.png [output]',
-        'batch_002.png [output]'
+        'batch_002.png [output]',
+        'batch_001.png [output]'
       ])
     })
 
@@ -1084,8 +1089,8 @@ describe('useWidgetSelectItems', () => {
 
       await vi.waitFor(() => {
         expect(dropdownItems.value.map((item) => item.name)).toEqual([
-          'a.png [output]',
-          'b.png [output]'
+          'b.png [output]',
+          'a.png [output]'
         ])
       })
 
@@ -1111,38 +1116,38 @@ describe('useWidgetSelectItems', () => {
       await nextTick()
 
       expect(dropdownItems.value.map((item) => item.name)).toEqual([
-        'a.png [output]',
         'b.png [output]',
+        'a.png [output]',
         'd.png [output]'
       ])
 
       resolveNew([
-        makeResolvedOutput('job-new-d.png', 'd.png'),
-        makeResolvedOutput('job-new-e.png', 'e.png')
+        makeResolvedOutput('job-new-e.png', 'e.png'),
+        makeResolvedOutput('job-new-d.png', 'd.png')
       ])
       await flushQueuedPromises()
 
       expect(dropdownItems.value.map((item) => item.name)).toEqual([
-        'a.png [output]',
         'b.png [output]',
+        'a.png [output]',
         'd.png [output]'
       ])
 
       resolveGrown([
-        makeResolvedOutput('job-paged-a.png', 'a.png'),
+        makeResolvedOutput('job-paged-c.png', 'c.png'),
         makeResolvedOutput('job-paged-b.png', 'b.png'),
-        makeResolvedOutput('job-paged-c.png', 'c.png')
+        makeResolvedOutput('job-paged-a.png', 'a.png')
       ])
 
       await vi.waitFor(() => {
         expect(dropdownItems.value).toHaveLength(5)
       })
       expect(dropdownItems.value.map((item) => item.name)).toEqual([
-        'a.png [output]',
-        'b.png [output]',
         'c.png [output]',
-        'd.png [output]',
-        'e.png [output]'
+        'b.png [output]',
+        'a.png [output]',
+        'e.png [output]',
+        'd.png [output]'
       ])
     })
   })
