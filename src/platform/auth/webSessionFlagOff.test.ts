@@ -6,6 +6,7 @@ import { effectScope } from 'vue'
 import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecovery'
 import type {
   BillingCapabilities,
+  BillingStatusResponse,
   ExchangeTokenResponse
 } from '@comfyorg/ingest-types'
 
@@ -191,13 +192,14 @@ const CAPABILITIES = {
 
 const BILLING_STATUS = {
   billing_rail: 'stripe',
+  ended_at: null,
   has_funds: true,
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
   scheduled_change: null,
   team_credit_stop: null
-}
+} satisfies BillingStatusResponse
 
 function installFetchRecorder(features: Record<string, unknown>) {
   const all: RecordedRequest[] = []
