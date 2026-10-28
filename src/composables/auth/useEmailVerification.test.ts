@@ -308,7 +308,7 @@ describe('useEmailVerification', () => {
         })
       )
       const { refresh } = await loadComposable()
-      const { reportError } = await import('@/platform/telemetry/reportError')
+      const { reportError } = await import('@comfyorg/telemetry/reportError')
 
       await expect(refresh()).resolves.toBeUndefined()
 

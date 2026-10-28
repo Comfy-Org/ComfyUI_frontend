@@ -7,7 +7,7 @@
     data-testid="email-verification-nudge"
   >
     <i
-      class="icon-[lucide--mail-warning] size-4 shrink-0 text-muted-foreground"
+      class="icon-[lucide--mail-warning] text-muted-foreground"
       aria-hidden="true"
     />
     <span class="text-xs whitespace-nowrap text-foreground">
@@ -29,7 +29,7 @@
       data-testid="email-verification-dismiss"
       @click="dismiss"
     >
-      <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+      <i class="icon-[lucide--x]" aria-hidden="true" />
     </Button>
   </div>
 </template>
