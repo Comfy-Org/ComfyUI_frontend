@@ -58,6 +58,35 @@ describe('resolveAccountPrecondition', () => {
     }
   )
 
+  it.for([
+    [
+      'FREE_TIER_EXHAUSTED',
+      "You've used all your free generations. Upgrade to keep creating."
+    ],
+    [
+      'PARTNER_NODE_PAYMENT_REQUIRED',
+      'Partner-node workflows require a paid subscription'
+    ],
+    ['MODEL_PAYMENT_REQUIRED', 'This model requires a paid subscription']
+  ])(
+    'classifies the free-tier %s 402 as a subscription precondition',
+    ([exceptionType, exceptionMessage]) => {
+      expect(
+        resolveAccountPrecondition({ exceptionType, exceptionMessage })
+      ).toBe('subscription')
+    }
+  )
+
+  it('keeps the retryable FREE_TIER_UNAVAILABLE 429 out of the subscription route', () => {
+    expect(
+      resolveAccountPrecondition({
+        exceptionType: 'FREE_TIER_UNAVAILABLE',
+        exceptionMessage:
+          'Free-tier is temporarily unavailable. Please try again shortly.'
+      })
+    ).toBeUndefined()
+  })
+
   it('classifies a subscription-upgrade error as a subscription precondition', () => {
     expect(
       resolveAccountPrecondition({

@@ -46,6 +46,13 @@ const SUBSCRIPTION_REQUIRED_MESSAGES = new Set([
   'User has no active subscription. Please subscribe to a plan to continue.',
   'Subscription required to queue workflows'
 ])
+const SUBSCRIPTION_REQUIRED_TYPES = new Set([
+  'InactiveSubscriptionError',
+  'CLOUD_SUBSCRIPTION_REQUIRED',
+  'FREE_TIER_EXHAUSTED',
+  'PARTNER_NODE_PAYMENT_REQUIRED',
+  'MODEL_PAYMENT_REQUIRED'
+])
 const SUBSCRIPTION_UPGRADE_REQUIRED_PREFIX =
   'the following private models require a subscription upgrade:'
 const TIMEOUT_MESSAGES = new Set(['Job execution time exceeded maximum limit'])
@@ -260,8 +267,7 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
   },
   {
     matches: (info, message) =>
-      info.exceptionType === 'InactiveSubscriptionError' ||
-      info.exceptionType === 'CLOUD_SUBSCRIPTION_REQUIRED' ||
+      SUBSCRIPTION_REQUIRED_TYPES.has(info.exceptionType) ||
       SUBSCRIPTION_REQUIRED_MESSAGES.has(message),
     resolve: () => catalogMatch(SUBSCRIPTION_REQUIRED_CATALOG_ID)
   },
