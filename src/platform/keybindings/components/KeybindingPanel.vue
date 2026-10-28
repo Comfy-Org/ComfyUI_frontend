@@ -402,6 +402,7 @@ function handleRemoveAllKeybindings(command: KeybindingCommand) {
     headerProps: { title: t('g.removeAllKeybindingsTitle') },
     props: { promptText: t('g.removeAllKeybindingsMessage') },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.removeAll'),
       confirmVariant: 'destructive',
       onCancel: () => dialogStore.closeDialog(dialog),
@@ -453,6 +454,7 @@ function resetAllKeybindings() {
       promptText: t('g.resetAllKeybindingsMessage')
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.resetAll'),
       confirmVariant: 'destructive',
       onCancel: () => {
