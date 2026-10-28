@@ -100,6 +100,26 @@ describe('agentSettingsAuthHeader', () => {
       Authorization: 'Bearer cloud-workspace'
     })
   })
+
+  // Minting rejects rather than resolving null. Consent reads null as "authentication
+  // required"; a rejection reaches it as a generic load/write failure instead.
+  it.for(missingWorkspaceTokens)(
+    'resolves null rather than rejecting with $label',
+    async ({ token, apiKey }) => {
+      signInWithout(token, apiKey)
+
+      await expect(agentSettingsAuthHeader()).resolves.toBeNull()
+    }
+  )
+
+  it('resolves null when the cloud workspace header cannot be obtained', async () => {
+    distribution.isCloud = true
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeader').mockRejectedValue(
+      new Error('token exchange failed')
+    )
+
+    await expect(agentSettingsAuthHeader()).resolves.toBeNull()
+  })
 })
 
 describe('withAgentAuth', () => {
