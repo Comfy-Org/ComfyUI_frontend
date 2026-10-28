@@ -9,11 +9,13 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import { useReconnectNodeDefinitionRefresh } from './useReconnectNodeDefinitionRefresh'
 
@@ -81,6 +83,9 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     distribution.isCloud = false
     served = []
     showCanvas()
+    useWorkflowStore().activeWorkflow = createMockLoadedWorkflow({
+      path: 'workflows/open.json'
+    })
   })
 
   it('refreshes node definitions and reloads the open workflow when the server came back with a node the canvas shows as missing', async () => {
@@ -91,9 +96,10 @@ describe('useReconnectNodeDefinitionRefresh', () => {
         order.push('refresh')
       })
     )
-    vi.mocked(useWorkflowService().reloadCurrentWorkflow).mockImplementation(
+    vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
       async () => {
         order.push('reload')
+        return true
       }
     )
     pageKnows('KSampler')
@@ -114,7 +120,7 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     await useReconnectNodeDefinitionRefresh()()
 
     expect(refresh).toHaveBeenCalledOnce()
-    expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
   it('does nothing when the server reconnects with the node types the page already has', async () => {
@@ -126,7 +132,7 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     await useReconnectNodeDefinitionRefresh()()
 
     expect(refresh).not.toHaveBeenCalled()
-    expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
   it('rebuilds a missing node inside a subgraph', async () => {
@@ -140,7 +146,7 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     await useReconnectNodeDefinitionRefresh()()
 
     expect(refresh).toHaveBeenCalledOnce()
-    expect(useWorkflowService().reloadCurrentWorkflow).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
   })
 
   it('keeps the open workflow when another refresh already rebuilt its missing nodes', async () => {
@@ -156,7 +162,7 @@ describe('useReconnectNodeDefinitionRefresh', () => {
 
     await useReconnectNodeDefinitionRefresh()()
 
-    expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
   it('counts a type LiteGraph registered outside the node definition store as known', async () => {
@@ -177,7 +183,26 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     await useReconnectNodeDefinitionRefresh()()
 
     expect(refresh).toHaveBeenCalledOnce()
-    expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('reloads the checked workflow only while it is still the active one', async () => {
+    registerRefreshCommand()
+    showCanvas(node('NewPackNode', { missing: true }))
+    serverHas('NewPackNode')
+    const checked = useWorkflowStore().activeWorkflow
+
+    await useReconnectNodeDefinitionRefresh()()
+
+    const [workflow, options] = vi.mocked(useWorkflowService().openWorkflow)
+      .mock.calls[0]
+    expect(workflow).toBe(checked)
+    expect(options).toMatchObject({ force: true })
+    expect(options?.isCurrent?.()).toBe(true)
+    useWorkflowStore().activeWorkflow = createMockLoadedWorkflow({
+      path: 'workflows/other.json'
+    })
+    expect(options?.isCurrent?.()).toBe(false)
   })
 
   it('does not fetch node definitions on cloud', async () => {
@@ -220,7 +245,7 @@ describe('useReconnectNodeDefinitionRefresh', () => {
         errorType: 'failure_refreshing_node_definitions_after_reconnect'
       })
     )
-    expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
   it('checks once more when ComfyUI reconnects again during a check', async () => {

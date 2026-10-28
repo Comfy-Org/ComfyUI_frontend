@@ -2,6 +2,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -56,9 +57,15 @@ export function useReconnectNodeDefinitionRefresh() {
         throw error
       }
     })
-    if (canvasHasRebuildablePlaceholder()) {
-      await useWorkflowService().reloadCurrentWorkflow()
-    }
+    const workflowStore = useWorkflowStore()
+    const workflow = workflowStore.activeWorkflow
+    if (!workflow || !canvasHasRebuildablePlaceholder()) return
+    // Reload the workflow that was checked, not whichever one a queued load
+    // makes active first.
+    await useWorkflowService().openWorkflow(workflow, {
+      force: true,
+      isCurrent: () => workflowStore.activeWorkflow === workflow
+    })
   }
 
   async function refreshUntilSettled(): Promise<void> {
