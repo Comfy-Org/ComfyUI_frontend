@@ -4,7 +4,7 @@ import type {
   BillingStatusResponse,
   RenewalInvoice,
   TeamCreditStopSummary
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { asSafeNumber } from './safeInt64'
 

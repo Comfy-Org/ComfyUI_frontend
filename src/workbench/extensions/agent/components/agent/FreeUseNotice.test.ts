@@ -53,7 +53,7 @@ describe('FreeUseNotice', () => {
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute(
       'href',
-      'https://docs.comfy.org/agent-tools/in-app-agent'
+      'https://docs.comfy.org/agent-tools/in-app-agent#what-it-costs'
     )
   })
 

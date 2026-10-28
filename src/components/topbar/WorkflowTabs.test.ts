@@ -97,7 +97,8 @@ vi.mock(
     useAgentConsent: () => ({
       accepted: computed(() => useAgentPanelStore().consentAccepted),
       isChecking: computed(() => consentChecking.value),
-      withConsent
+      withConsent,
+      resumeAcceptAfterReload: vi.fn()
     })
   })
 )
@@ -120,12 +121,20 @@ vi.mock(import('./WorkflowTab.vue'), () => ({
         required: true
       }
     },
+    emits: ['closeOthers'],
     render() {
-      return h(
-        TabsTrigger,
-        { value: this.workflowOption.workflow.path },
-        () => this.workflowOption.workflow.filename
-      )
+      return [
+        h(
+          TabsTrigger,
+          { value: this.workflowOption.workflow.path },
+          () => this.workflowOption.workflow.filename
+        ),
+        h(
+          'button',
+          { type: 'button', onClick: () => this.$emit('closeOthers') },
+          `Close tabs other than ${this.workflowOption.workflow.filename}`
+        )
+      ]
     }
   })
 }))
@@ -353,43 +362,32 @@ describe('WorkflowTabs agent entry button', () => {
       host: 'a local Desktop 2 window',
       desktop: false,
       bridge: { isRemote: () => false }
+    },
+    {
+      host: 'a browser tab on a local Core',
+      desktop: false,
+      bridge: undefined
+    },
+    {
+      host: 'a remote Desktop 2 view',
+      desktop: false,
+      bridge: { isRemote: () => true }
     }
   ])(
-    'toggles the locked panel without consent in $host',
+    'asks for consent from the entry button in $host',
     async ({ desktop, bridge }) => {
       distribution.isCloud = false
       distribution.isDesktop = desktop
       window.__comfyDesktop2 = bridge
       const { user } = renderComponent()
-      const button = screen.getByRole('button', {
-        name: enMessages.agent.entryButton
-      })
 
-      await user.click(button)
-      expect(useAgentPanelStore().isVisible).toBe(true)
-      expect(useAgentPanelStore().consentAccepted).toBe(false)
-      expect(button).toHaveAttribute('aria-pressed', 'true')
+      await user.click(
+        screen.getByRole('button', { name: enMessages.agent.entryButton })
+      )
 
-      await user.click(button)
-      expect(useAgentPanelStore().isVisible).toBe(false)
-      expect(withConsent).not.toHaveBeenCalled()
+      expect(withConsent).toHaveBeenCalledOnce()
     }
   )
-
-  it.for([
-    { host: 'a browser tab on a local Core', bridge: undefined },
-    { host: 'a remote Desktop 2 view', bridge: { isRemote: () => true } }
-  ])('asks for consent from the entry button in $host', async ({ bridge }) => {
-    distribution.isCloud = false
-    window.__comfyDesktop2 = bridge
-    const { user } = renderComponent()
-
-    await user.click(
-      screen.getByRole('button', { name: enMessages.agent.entryButton })
-    )
-
-    expect(withConsent).toHaveBeenCalledOnce()
-  })
 
   it('closes the visible panel when the entry button is clicked again', async () => {
     useAgentPanelStore().consentAccepted = true
@@ -606,7 +604,10 @@ describe('WorkflowTabs selection and overflow', () => {
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-      firstWorkflow
+      firstWorkflow,
+      {
+        initiator: 'user'
+      }
     )
     expect(screen.getByRole('tab', { name: 'First workflow' })).toHaveAttribute(
       'aria-selected',
@@ -621,7 +622,10 @@ describe('WorkflowTabs selection and overflow', () => {
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-      secondWorkflow
+      secondWorkflow,
+      {
+        initiator: 'user'
+      }
     )
   })
 
@@ -634,7 +638,10 @@ describe('WorkflowTabs selection and overflow', () => {
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-      secondWorkflow
+      secondWorkflow,
+      {
+        initiator: 'user'
+      }
     )
   })
 
@@ -647,8 +654,31 @@ describe('WorkflowTabs selection and overflow', () => {
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-      firstWorkflow
+      firstWorkflow,
+      {
+        initiator: 'user'
+      }
     )
+  })
+
+  it('closes the other tabs as one user action', async () => {
+    const thirdWorkflow = await useWorkflowStore()
+      .createTemporary('Third workflow.json')
+      .load()
+    useWorkflowStore().attachWorkflow(thirdWorkflow, 2)
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Close tabs other than Second workflow'
+      })
+    )
+
+    expect(useWorkflowService().closeWorkflows).toHaveBeenCalledExactlyOnceWith(
+      [thirdWorkflow, firstWorkflow],
+      { warnIfUnsaved: true, initiator: 'user' }
+    )
+    expect(useWorkflowService().closeWorkflow).not.toHaveBeenCalled()
   })
 
   it('keeps the real workflow selected when another workflow fails to load', async () => {

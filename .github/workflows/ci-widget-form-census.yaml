@@ -1,0 +1,256 @@
+# Manual measurement: how often can the widget form be derived, and does it
+# agree with the values it describes, across the pinned registry corpus?
+#
+# `workflow_dispatch` ONLY, and deliberately so. This is a measurement, not a
+# gate: it has no floor, no baseline, no required check, and nothing here
+# blocks a pull request. A workflow nobody agreed to gate on must not be able
+# to become one by being wired to `push`.
+#
+# What it measures is `classifyWidgetValuesForm` in widgetValuesForm.ts, the
+# producer the Agent wire ships, which declares `widgets_values_form.order`
+# only when it can prove it against the post-hook serialisation. A node
+# carrying a form consults no catalogue on any leg, so a wrong form is
+# authoritative and strictly worse than no form. That makes a decline a correct
+# outcome, and makes the useful answer a class-by-class breakdown rather than a
+# pass rate: how many nodes get a form, how many are declined and for which
+# reason, and how many would get a form that is wrong.
+#
+# It reuses the ecosystem matrix's corpus, pins, cache key and runner, so the
+# population and its provenance are the same ones
+# `ci-ecosystem-matrix.yaml` reports. Read
+# scripts/registry-census/README.md before citing a figure from here: the
+# corpus size and the executed count are different numbers, and the pin age in
+# the `pin-status` output is part of the citation.
+name: 'Measure: widget form/values agreement'
+
+on:
+  workflow_dispatch:
+    inputs:
+      renderer:
+        description: 'Renderer arm to measure'
+        type: choice
+        default: legacy
+        options: [legacy, vue]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: widget-form-census-${{ github.ref }}-${{ inputs.renderer }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.11'
+  CORPUS_CACHE_PREFIX: registry-corpus-v6-
+  MATRIX_RENDERER: ${{ inputs.renderer }}
+  MATRIX_VUE: ${{ inputs.renderer == 'vue' && '1' || '' }}
+
+jobs:
+  # Stale pins are the one defect this instrument cannot detect from the
+  # inside, and a published figure has to be cited with the snapshot it came
+  # from. Dependency-free so it lands at the top of the run.
+  pin-status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: How old is the corpus, and how do I bump it
+        run: python3 scripts/registry-census/pins.py
+
+  # Same cache key as ci-ecosystem-matrix, so a manual run normally restores
+  # the shared entry main already built and refetches nothing. On a miss it
+  # builds its own branch-scoped entry rather than measuring a partial corpus.
+  corpus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # The fetch holds a token while extracting untrusted archives, so this job
+    # must not also carry actions: write. Pack code executes in `measure`.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Restore corpus cache
+        id: restore
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: .census
+          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json', 'scripts/registry-census/fetch_corpus.py', 'scripts/registry-census/validate_corpus.py') }}
+
+      - name: Refresh registry snapshot
+        if: steps.restore.outputs.cache-hit != 'true'
+        run: python3 scripts/registry-census/refresh_registry.py
+
+      - name: Fetch corpus
+        id: fetch
+        if: steps.restore.outputs.cache-hit != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/registry-census/fetch_corpus.py
+
+      - name: Validate corpus cache
+        run: python3 scripts/registry-census/validate_corpus.py
+
+      # The identity any published figure has to be cited with.
+      - name: Upload corpus provenance
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: widget-form-corpus-lock
+          path: |
+            .census/*.json
+            .census/data/registry.json
+          retention-days: 30
+          if-no-files-found: error
+          include-hidden-files: true
+
+      - name: Save corpus cache
+        if: |
+          steps.restore.outputs.cache-hit != 'true'
+          && steps.fetch.outcome == 'success'
+          && hashFiles('.census/corpus.ready.json') != ''
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: .census
+          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json', 'scripts/registry-census/fetch_corpus.py', 'scripts/registry-census/validate_corpus.py') }}
+
+  # Executes every JS-shipping pack's real extension code and records the form
+  # verdict each node reaches at the serialize op. Same runner, shard split and
+  # security posture as ci-ecosystem-matrix's shards: no secret, no persisted
+  # credential, no pnpm store write-back out of a job running unreviewed code.
+  measure:
+    needs: corpus
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Restore corpus cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: .census
+          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json', 'scripts/registry-census/fetch_corpus.py', 'scripts/registry-census/validate_corpus.py') }}
+          fail-on-cache-miss: true
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+          node_cache: 'false'
+
+      - name: Build shard fixture
+        run: python3 scripts/registry-census/build_matrix.py --shard ${{ matrix.shard }}/4
+
+      # Stub rows first, so a hang or worker crash yields an incomplete row the
+      # report counts rather than a missing one it measures a short
+      # denominator over.
+      - name: Pre-create stub rows
+        run: |
+          python3 - <<'PY'
+          import json, os
+          manifest = json.load(open('src/__ecs_matrix__/manifest.json'))
+          os.makedirs('matrix-rows', exist_ok=True)
+          for pack, entry in manifest.items():
+              if 'entries' in entry:
+                  json.dump(
+                      {'pack': pack, 'incomplete': True},
+                      open(os.path.join('matrix-rows', entry['safe'] + '.json'), 'w'),
+                  )
+          PY
+
+      - name: Run the matrix
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          specs=(src/__ecs_matrix__/*.matrix.test.ts)
+          if [ "${#specs[@]}" -eq 0 ]; then
+            echo "::error::no pack specs built - corpus missing or empty"
+            exit 1
+          fi
+          MATRIX_OUT="$PWD/matrix-rows" pnpm exec vitest run \
+            --config vitest.matrix.config.mts > matrix-rows/_vitest-shard.log 2>&1 \
+            || echo "vitest exited nonzero - tolerated, pack code may leak unhandled errors"
+          tail -25 matrix-rows/_vitest-shard.log
+          echo "specs=${#specs[@]}"
+
+      - name: Upload rows
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: widget-form-rows-shard-${{ matrix.shard }}
+          path: matrix-rows/
+          retention-days: 30
+          if-no-files-found: warn
+
+  report:
+    needs: measure
+    if: always() && needs.measure.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Merge shard rows
+        uses: actions/download-artifact@v8
+        with:
+          path: matrix-shards
+          pattern: widget-form-rows-shard-*
+
+      - name: Verify and merge every shard
+        run: |
+          set -euo pipefail
+          mapfile -t shards < <(find matrix-shards -mindepth 1 -maxdepth 1 -type d -name 'widget-form-rows-shard-*' | sort)
+          if [ "${#shards[@]}" -ne 4 ]; then
+            echo "::error::expected 4 shard artifacts, found ${#shards[@]}"
+            exit 1
+          fi
+          mkdir matrix-rows
+          for shard in "${shards[@]}"; do
+            cp "$shard"/*.json matrix-rows/
+          done
+
+      # A shard that died leaves its pre-created stub rows behind, so the
+      # report's stub count is how a short population shows up - it never
+      # silently shrinks the denominator.
+      - name: Breakdown
+        run: |
+          set -euo pipefail
+          MATRIX_OUT="$PWD/matrix-rows" \
+            python3 scripts/registry-census/summarize_form_agreement.py \
+            | tee form-agreement.md
+
+      - name: Upload breakdown
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: widget-form-agreement
+          path: form-agreement.md
+          retention-days: 90
+          if-no-files-found: warn

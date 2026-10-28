@@ -542,3 +542,11 @@ export function resolveDisplayImageDimensions(
 export function getAssetUrlFilename(asset: AssetItem): string {
   return asset.hash ?? asset.name
 }
+
+/** `user_metadata.subfolder` when it is a string, whether or not the rest qualifies as output metadata. */
+export function getOutputSubfolder(
+  userMetadata: Record<string, unknown> | undefined
+): string | undefined {
+  const subfolder = userMetadata?.subfolder
+  return typeof subfolder === 'string' ? subfolder : undefined
+}
