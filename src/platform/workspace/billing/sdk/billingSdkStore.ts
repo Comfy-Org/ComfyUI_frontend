@@ -61,6 +61,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { getCheckoutJourneyPaymentIntentSource } from '@/platform/workspace/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
+import { fetchWithRetry } from '@/utils/fetchWithRetry'
 
 import { projectBillingCapabilities } from './billingCapabilitiesView'
 import { projectBillingPlans } from './billingPlansView'
@@ -144,6 +145,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const sdk = createBillingSdk({
     ...sessionPorts(),
     resolveUrl: workspaceApiUrl,
+    fetchImpl: fetchWithRetry,
     pointerStorage: sessionStorage,
     hostedDestination: () => flags.hostedBillingDestination,
     onTelemetry: reportTelemetry
