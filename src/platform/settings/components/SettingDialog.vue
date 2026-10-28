@@ -20,7 +20,7 @@
         <SearchInput
           v-model:model-value="searchQuery"
           :clear-label="$t('g.clear')"
-          :accessible-label="$t('g.search')"
+          :accessible-label="$t('g.searchSettings') + '...'"
           size="md"
           class="rounded-lg ring-1 ring-border/50"
           :placeholder="$t('g.searchSettings') + '...'"
