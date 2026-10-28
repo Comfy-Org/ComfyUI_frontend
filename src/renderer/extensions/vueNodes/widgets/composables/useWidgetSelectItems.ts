@@ -69,7 +69,7 @@ function getAnnotatedValueMediaUrl(
   assetKind: AssetKind | undefined
 ): string {
   const { filepath, rootFolder } = parseAnnotatedPath(value)
-  if (/^[\\/]|[\\/]$/.test(filepath))
+  if (/^([A-Za-z]:|[\\/])|[\\/]$/.test(filepath))
     return getMediaUrl(filepath, rootFolder, assetKind)
   const { filename, subfolder } = parseFilePath(filepath)
   return getMediaUrl(filename, rootFolder, assetKind, subfolder)
