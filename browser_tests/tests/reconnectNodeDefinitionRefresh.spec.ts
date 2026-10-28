@@ -10,10 +10,6 @@ import { toNodeId } from '@/types/nodeId'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 const proofNodeId = toNodeId(1)
 
-/**
- * A ComfyUI restart the agent panel never saw (panel closed, `comfy launch`,
- * a Desktop server restart) must still pick up the node pack it installed.
- */
 test.describe(
   'Node definitions after a ComfyUI restart',
   { tag: ['@canvas', '@node'] },
@@ -25,12 +21,10 @@ test.describe(
     }) => {
       const page = comfyPage.page
       let restarted = false
-      let objectInfoReads = 0
       await page.route('**/object_info', async (route) => {
         const response = await route.fetch()
         const defs = await response.json()
         if (restarted) {
-          objectInfoReads += 1
           defs.BrowserProofNode = {
             ...defs.KSampler,
             name: 'BrowserProofNode',
@@ -60,6 +54,7 @@ test.describe(
         seed: undefined
       })
 
+      // The agent panel is never opened, so only the core reconnect path runs.
       await test.step('restart ComfyUI with the node pack installed', async () => {
         const socket = await getWebSocket()
         const reconnected = nextWebSocket()
@@ -74,7 +69,6 @@ test.describe(
         hasStepsWidget: true,
         seed: 156680208700286
       })
-      expect(objectInfoReads).toBeGreaterThan(0)
     })
   }
 )

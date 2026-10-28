@@ -9,7 +9,6 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
-/** The server's node types, or undefined when it cannot answer yet. */
 async function fetchServerNodeTypes(): Promise<string[] | undefined> {
   try {
     const response = await api.fetchNodeDefs()
@@ -21,46 +20,45 @@ async function fetchServerNodeTypes(): Promise<string[] | undefined> {
   }
 }
 
-function canvasUsesAny(types: ReadonlySet<string>): boolean {
+function isRegistered(type: string): boolean {
+  return (
+    type in useNodeDefStore().nodeDefsByName ||
+    type in LiteGraph.registered_node_types
+  )
+}
+
+// A node whose type was unknown when the graph loaded is a placeholder that
+// keeps its saved data in `last_serialization`.
+function canvasHasRebuildablePlaceholder(): boolean {
   let found = false
   forEachNode(app.rootGraph, (node) => {
-    if (!found && types.has(node.type)) found = true
+    if (found || node.last_serialization === undefined) return
+    if (isRegistered(node.type)) found = true
   })
   return found
 }
 
 /**
- * Returns the handler for the `reconnected` api event that picks up node
- * types a restarted ComfyUI now serves. Any restart counts: one the agent
- * panel never saw, `comfy launch` or `comfy stop`, a Desktop server restart.
- * When `/object_info` lists a type the page has not registered, it refreshes
- * node definitions; when the open workflow holds a node of that type, which
- * loaded as a missing node, it then reloads the workflow so the node is built
- * from its definition. A reconnect with no new types costs one `/object_info`
- * read and changes nothing. Cloud servers are not restarted this way, so the
- * handler does nothing there.
+ * Returns the `reconnected` handler that loads node types a restarted local
+ * ComfyUI added, and rebuilds the open workflow's missing nodes from them.
  */
 export function useReconnectNodeDefinitionRefresh() {
+  if (isCloud) return async () => {}
+
   let inFlight: Promise<void> | null = null
   let reconnects = 0
 
   async function refreshIfServerGainedNodeTypes(): Promise<void> {
     const serverTypes = await fetchServerNodeTypes()
-    if (!serverTypes) return
-    const known = useNodeDefStore().nodeDefsByName
-    const added = new Set(
-      serverTypes.filter(
-        (type) => !(type in known) && !(type in LiteGraph.registered_node_types)
-      )
-    )
-    if (added.size === 0) return
-    const reloadWorkflow = canvasUsesAny(added)
+    if (!serverTypes?.some((type) => !isRegistered(type))) return
     await useCommandStore().execute('Comfy.RefreshNodeDefinitions', {
       errorHandler: (error) => {
         throw error
       }
     })
-    if (reloadWorkflow) await useWorkflowService().reloadCurrentWorkflow()
+    if (canvasHasRebuildablePlaceholder()) {
+      await useWorkflowService().reloadCurrentWorkflow()
+    }
   }
 
   async function refreshUntilSettled(): Promise<void> {
@@ -80,7 +78,6 @@ export function useReconnectNodeDefinitionRefresh() {
   }
 
   return async function refreshNodeDefinitionsOnReconnect(): Promise<void> {
-    if (isCloud) return
     reconnects += 1
     if (inFlight) return inFlight
     inFlight = refreshUntilSettled().finally(() => {

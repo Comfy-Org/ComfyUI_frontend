@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -32,7 +38,10 @@ function nodeDef(name: string): ComfyNodeDef {
   }
 }
 
+let served: string[] = []
+
 function serverHas(...names: string[]) {
+  served = names
   const defs = Object.fromEntries(names.map((name) => [name, nodeDef(name)]))
   return vi
     .spyOn(api, 'fetchNodeDefs')
@@ -43,18 +52,22 @@ function pageKnows(...names: string[]) {
   useNodeDefStore().updateNodeDefs(names.map(nodeDef))
 }
 
-function canvasHas(...types: string[]) {
-  const graph = new LGraph()
-  for (const type of types) {
-    const node = new LGraphNode(type)
-    node.type = type
-    graph.add(node)
-  }
-  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+function node(type: string, { missing = false } = {}): LGraphNode {
+  const node = new LGraphNode('', type)
+  if (missing) node.last_serialization = node.serialize()
+  return node
 }
 
+function showCanvas(...nodes: LGraphNode[]): LGraph {
+  const graph = createTestRootGraph()
+  for (const each of nodes) graph.add(each)
+  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+  return graph
+}
+
+// The default refresh registers what the server serves, as the real one does.
 function registerRefreshCommand(
-  refresh = vi.fn<() => Promise<void>>(async () => {})
+  refresh = vi.fn<() => Promise<void>>(async () => pageKnows(...served))
 ) {
   useCommandStore().registerCommand({
     id: 'Comfy.RefreshNodeDefinitions',
@@ -66,13 +79,15 @@ function registerRefreshCommand(
 describe('useReconnectNodeDefinitionRefresh', () => {
   beforeEach(() => {
     distribution.isCloud = false
-    canvasHas()
+    served = []
+    showCanvas()
   })
 
   it('refreshes node definitions and reloads the open workflow when the server came back with a node the canvas shows as missing', async () => {
     const order: string[] = []
     registerRefreshCommand(
       vi.fn(async () => {
+        pageKnows(...served)
         order.push('refresh')
       })
     )
@@ -82,7 +97,7 @@ describe('useReconnectNodeDefinitionRefresh', () => {
       }
     )
     pageKnows('KSampler')
-    canvasHas('KSampler', 'NewPackNode')
+    showCanvas(node('KSampler'), node('NewPackNode', { missing: true }))
     serverHas('KSampler', 'NewPackNode')
 
     await useReconnectNodeDefinitionRefresh()()
@@ -93,7 +108,7 @@ describe('useReconnectNodeDefinitionRefresh', () => {
   it('refreshes node definitions but keeps the open workflow when the new node is not on the canvas', async () => {
     const refresh = registerRefreshCommand()
     pageKnows('KSampler')
-    canvasHas('KSampler')
+    showCanvas(node('KSampler'))
     serverHas('KSampler', 'NewPackNode')
 
     await useReconnectNodeDefinitionRefresh()()
@@ -105,13 +120,53 @@ describe('useReconnectNodeDefinitionRefresh', () => {
   it('does nothing when the server reconnects with the node types the page already has', async () => {
     const refresh = registerRefreshCommand()
     pageKnows('KSampler', 'CLIPTextEncode')
-    canvasHas('KSampler')
+    showCanvas(node('KSampler'))
     serverHas('KSampler', 'CLIPTextEncode')
 
     await useReconnectNodeDefinitionRefresh()()
 
     expect(refresh).not.toHaveBeenCalled()
     expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('rebuilds a missing node inside a subgraph', async () => {
+    const refresh = registerRefreshCommand()
+    const rootGraph = showCanvas()
+    const subgraph = createTestSubgraph({ rootGraph })
+    subgraph.add(node('NewPackNode', { missing: true }))
+    rootGraph.add(createTestSubgraphNode(subgraph))
+    serverHas('NewPackNode')
+
+    await useReconnectNodeDefinitionRefresh()()
+
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(useWorkflowService().reloadCurrentWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the open workflow when another refresh already rebuilt its missing nodes', async () => {
+    const graph = showCanvas(node('NewPackNode', { missing: true }))
+    registerRefreshCommand(
+      vi.fn(async () => {
+        pageKnows(...served)
+        graph.clear()
+        graph.add(node('NewPackNode'))
+      })
+    )
+    serverHas('NewPackNode')
+
+    await useReconnectNodeDefinitionRefresh()()
+
+    expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('counts a type LiteGraph registered outside the node definition store as known', async () => {
+    const refresh = registerRefreshCommand()
+    LiteGraph.registerNodeType('FrontendOnlyNode', class extends LGraphNode {})
+    serverHas('FrontendOnlyNode')
+
+    await useReconnectNodeDefinitionRefresh()()
+
+    expect(refresh).not.toHaveBeenCalled()
   })
 
   it('does not fetch node definitions on cloud', async () => {
@@ -142,7 +197,7 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     registerRefreshCommand(
       vi.fn<() => Promise<void>>().mockRejectedValue(failure)
     )
-    canvasHas('NewPackNode')
+    showCanvas(node('NewPackNode', { missing: true }))
     serverHas('NewPackNode')
 
     await expect(useReconnectNodeDefinitionRefresh()()).resolves.toBeUndefined()
