@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
@@ -25,7 +25,7 @@ import type {
   LGraphCanvas,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import ErrorGroupList from './ErrorGroupList.vue'
@@ -65,15 +65,18 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   }))
 }))
 
-vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
-  downloadModel: vi.fn(),
-  fetchModelMetadata: vi.fn().mockResolvedValue({
-    fileSize: null,
-    gatedRepoUrl: null
-  }),
-  isModelDownloadable: vi.fn(() => true),
-  toBrowsableUrl: vi.fn((url: string) => url)
-}))
+vi.mock(
+  import('@/platform/workflowErrors/missingModel/missingModelDownload'),
+  () => ({
+    downloadModel: vi.fn(),
+    fetchModelMetadata: vi.fn().mockResolvedValue({
+      fileSize: null,
+      gatedRepoUrl: null
+    }),
+    isModelDownloadable: vi.fn(() => true),
+    toBrowsableUrl: vi.fn((url: string) => url)
+  })
+)
 
 const ROOT_GRAPH = fromPartial<LGraph>(app.rootGraph)
 const SUBGRAPH = fromPartial<Subgraph>({

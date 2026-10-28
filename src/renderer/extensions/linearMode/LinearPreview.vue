@@ -3,9 +3,9 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -119,7 +119,7 @@ async function rerun(e: Event) {
         {{ t('linearMode.reuseParameters') }}
         <i class="icon-[lucide--list-restart]" />
       </Button>
-      <div class="mx-1 border-r border-border-subtle" />
+      <div class="mx-1 border-r border-border/50" />
     </template>
     <Button
       v-if="selectedOutput"

@@ -1,6 +1,6 @@
 import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
-import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
 import type { TaskStatus } from '@/platform/tasks/services/taskSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 
@@ -120,6 +120,11 @@ export interface LogsRawResponse {
   entries: LogEntry[]
 }
 export type FeatureFlagsWsMessage = Record<string, unknown>
+/** ComfyUI's `agent` server feature, pushed again on every change. */
+export interface AgentStatusWsMessage {
+  state: 'starting' | 'ready' | 'failed'
+  reason?: string | null
+}
 export interface AssetDownloadWsMessage {
   task_id: string
   asset_name: string

@@ -18,6 +18,7 @@
         <div class="sidebar-icon-wrapper relative">
           <i
             v-if="typeof icon === 'string'"
+            class="size-5"
             :class="icon + ' side-bar-button-icon'"
           />
           <component
@@ -29,7 +30,7 @@
             v-if="shouldShowBadge"
             :class="
               cn(
-                'sidebar-icon-badge absolute min-w-[16px] rounded-full bg-primary-background py-0.25 text-2xs leading-[14px] font-medium text-base-foreground',
+                'sidebar-icon-badge absolute min-w-[16px] rounded-full bg-primary py-0.25 text-2xs leading-[14px] font-medium text-foreground',
                 badgeClass || '-top-1 -right-1'
               )
             "
@@ -53,7 +54,7 @@
 import { computed } from 'vue'
 import type { Component } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { st } from '@/i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -100,11 +101,11 @@ const computedTooltip = computed(() => {
 }
 
 .side-bar-button-selected {
-  background-color: var(--interface-panel-selected-surface);
-  color: var(--content-hover-fg);
+  background-color: var(--muted);
+  color: var(--foreground);
 }
 .side-bar-button:hover {
-  background-color: var(--interface-panel-hover-surface);
-  color: var(--content-hover-fg);
+  background-color: var(--accent);
+  color: var(--foreground);
 }
 </style>

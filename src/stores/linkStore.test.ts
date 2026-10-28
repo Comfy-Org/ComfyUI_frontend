@@ -3,10 +3,13 @@ import { computed } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import type { LinkTopology } from '@/types/linkTopology'
-import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
+import { toNodeId, UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 
 import { useLinkStore } from './linkStore'
 

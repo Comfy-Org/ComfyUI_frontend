@@ -14,6 +14,7 @@ interface CommonWireData {
 
 interface DocUpdateWireData extends CommonWireData {
   seq?: unknown
+  lineage_seq?: unknown
   update_b64?: unknown
   actor?: unknown
   op_ids?: unknown
@@ -46,7 +47,12 @@ function serverFrame<T extends ServerFrameType>(type: T, data: CommonWireData) {
 }
 
 export function docUpdateFrame(data: DocUpdateWireData = {}) {
-  return serverFrame('doc_update', { seq: 1, update_b64: 'AQ==', ...data })
+  return serverFrame('doc_update', {
+    seq: 1,
+    lineage_seq: 1,
+    update_b64: 'AQ==',
+    ...data
+  })
 }
 
 export function docSubscribedFrame(data: DocSubscribedWireData = {}) {

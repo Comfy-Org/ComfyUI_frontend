@@ -1,4 +1,4 @@
-import type { SubgraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { SubgraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -12,10 +12,10 @@ import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted-background"
+    class="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted"
   >
     <Skeleton
       v-if="normalizedPreviewUrl && isLoading"
@@ -22,7 +22,7 @@
     />
     <i
       v-if="!normalizedPreviewUrl || error"
-      class="icon-[lucide--image] size-4 text-muted-foreground"
+      class="icon-[lucide--image] text-muted-foreground"
     />
   </div>
 </template>
@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useImageQuiet } from '@/composables/useImageQuiet'
 import { cn } from '@comfyorg/tailwind-utils'
 

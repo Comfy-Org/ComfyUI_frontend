@@ -21,7 +21,7 @@
           <i
             :class="
               cn(
-                'icon-[lucide--chevron-right] size-4 text-muted-foreground transition-transform',
+                'icon-[lucide--chevron-right] text-muted-foreground transition-transform',
                 expandedSectionId === section.id && 'rotate-90'
               )
             "
@@ -48,7 +48,7 @@
             />
             <Tooltip :disabled="!item.name">
               <TooltipTrigger as-child>
-                <span class="truncate text-xs text-base-foreground">
+                <span class="truncate text-xs text-foreground">
                   {{ item.name }}
                 </span>
               </TooltipTrigger>
@@ -77,10 +77,10 @@ import {
 import type { AssetInfo } from '@comfyorg/ingest-types'
 import ShareAssetThumbnail from '@/platform/workflow/sharing/components/ShareAssetThumbnail.vue'
 import { useAssetSections } from '@/platform/workflow/sharing/composables/useAssetSections'
-import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { items } = defineProps<{

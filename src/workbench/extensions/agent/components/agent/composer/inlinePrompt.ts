@@ -2,7 +2,7 @@ import { Schema } from '@tiptap/pm/model'
 import type { Node } from '@tiptap/pm/model'
 
 import { zMediaKindSchema } from '@/platform/assets/schemas/mediaAssetSchema'
-import { isNodeLocatorId } from '@/types/nodeIdentification'
+import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   MAX_DESCRIPTION_CODE_POINTS,
   MAX_NAME_LENGTH,
@@ -13,11 +13,11 @@ import type {
   ComposerInsertionPoint,
   ComposerPrompt,
   ComposerReference
-} from '../../../types/composerPrompt'
+} from '@/workbench/extensions/agent/types/composerPrompt'
 import {
   assetReferenceText,
   nodeReferenceText
-} from '../../../utils/agentMessageText'
+} from '@/workbench/extensions/agent/utils/agentMessageText'
 
 function isSkillName(name: string): boolean {
   return name.length <= MAX_NAME_LENGTH && PACK_NAME_PATTERN.test(name)

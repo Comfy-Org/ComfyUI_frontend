@@ -11,14 +11,14 @@ import {
   zErrorResponse
 } from '@comfyorg/ingest-types/zod'
 
-import { timedSignal } from './core/requestTimeout.js'
-import { safeInternalPath } from './redirect.js'
+import { timedSignal } from './core/requestTimeout'
+import { safeInternalPath } from './redirect'
 
 export {
   isAccountOutsideOrganizationRefusal,
   isSsoRequiredRefusal,
   ssoRequiredOrganizationId
-} from './core/ssoRequired.js'
+} from './core/ssoRequired'
 
 const SSO_DISCOVER_PATH = '/api/auth/sso/discover'
 const SSO_START_PATH = '/api/auth/sso/start'
@@ -196,6 +196,7 @@ const SSO_ERROR_CODES = [
   'SSO_ORG_DISABLED',
   'SSO_ORG_MISMATCH',
   'SSO_ORG_NOT_ATTACHED',
+  'SSO_SEAT_LIMIT_REACHED',
   'SSO_SIGN_IN_FAILED',
   'SSO_UNAVAILABLE',
   'SSO_USER_SUSPENDED'

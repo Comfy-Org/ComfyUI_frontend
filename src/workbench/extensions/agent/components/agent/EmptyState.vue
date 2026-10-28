@@ -3,13 +3,13 @@ import { computed, onMounted, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { FALLBACK_LOCALE } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import type { AgentStarterPromptAssignment } from '@/platform/telemetry/types'
 
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import { starterPromptAttribution } from '../../utils/starterPrompts'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 
 const {
   userName,
@@ -141,10 +141,10 @@ const promptIcons = [
           "
           @click="onPromptClick(prompt, index)"
         >
-          <span
+          <i
             :class="
               cn(
-                'size-3 shrink-0 text-muted-foreground',
+                'size-3 text-muted-foreground',
                 promptIcons[index] ?? 'icon-[lucide--sparkles]'
               )
             "

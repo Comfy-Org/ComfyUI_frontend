@@ -11,7 +11,7 @@ import { DEBOUNCE_MS } from '@/renderer/glsl/glslPreviewUtils'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 /**
  * Guards the writer/reader store contract behind the GLSL live preview: the

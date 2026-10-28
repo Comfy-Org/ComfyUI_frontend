@@ -276,11 +276,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/types/contextMenu.ts",
-      "role": "domain"
+      "path": "src/lib/litegraph/src/nodeEmphasis.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/types/events.ts",
+      "path": "src/lib/litegraph/src/types/contextMenu.ts",
       "role": "domain"
     },
     {
@@ -383,6 +383,13 @@
         "src/systems/badgeSystem.test.ts",
         "src/systems/badgeSystem.pricing.test.ts",
         "src/systems/badgeSystem.subgraph.test.ts"
+      ]
+    },
+    {
+      "name": "Node emphasis outlines selected and referenced nodes without changing selection",
+      "checks": [
+        "src/systems/nodeEmphasisSystem.test.ts",
+        "browser_tests/tests/agent/agentNodeMentionHighlight.spec.ts"
       ]
     },
     {

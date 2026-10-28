@@ -44,10 +44,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/sidebar/tabs/SidebarTopArea.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/topbar/ActionBarButtons.vue",
       "role": "presentation"
     },
@@ -166,7 +162,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
       "name": "Splitter overlay and top menu arrange workbench regions from layout settings",

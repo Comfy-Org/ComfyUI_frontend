@@ -1,16 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ModelMetadataFetchOutcome } from '@/platform/missingModel/missingModelDownload'
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ModelMetadataFetchOutcome } from '@/platform/workflowErrors/missingModel/missingModelDownload'
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import { resolveTemplateModelMetadata } from './templateModelMetadata'
 
 const mocks = vi.hoisted(() => ({
   fetchModelMetadataWithStatus: vi.fn()
 }))
 
-vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
-  fetchModelMetadataWithStatus: mocks.fetchModelMetadataWithStatus
-}))
+vi.mock(
+  import('@/platform/workflowErrors/missingModel/missingModelDownload'),
+  () => ({
+    fetchModelMetadataWithStatus: mocks.fetchModelMetadataWithStatus
+  })
+)
 
 function model(name: string, url = `https://example.com/${name}`): ModelFile {
   return { name, url, directory: 'checkpoints' }

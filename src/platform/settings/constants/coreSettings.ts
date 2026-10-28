@@ -586,7 +586,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Appearance', 'General'],
     name: 'Disable animations',
     type: 'boolean',
-    defaultValue: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    defaultValue: () =>
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     tooltip:
       'Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation.',
     onChange: (value: unknown) => {
@@ -880,7 +881,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Seen new workflow action items',
     type: 'hidden',
     defaultValue: [] as string[],
-    versionAdded: '1.41.5'
+    versionAdded: '1.41.5',
+    deprecated: true
   },
   {
     id: 'Comfy.Execution.PreviewMethod',
@@ -1045,7 +1047,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Minimap.Visible',
     name: 'Display minimap on canvas',
     type: 'hidden',
-    defaultValue: window.innerWidth >= breakpointsTailwind.lg,
+    defaultValue: () => window.innerWidth >= breakpointsTailwind.lg,
     versionAdded: '1.25.0'
   },
   {

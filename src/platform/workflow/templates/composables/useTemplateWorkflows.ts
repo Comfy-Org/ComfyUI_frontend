@@ -24,17 +24,17 @@ import {
 import type {
   ComfyWorkflowJSON,
   LegacyLoadableWorkflow
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import {
   validateComfyWorkflow,
   zLegacyLoadableWorkflow
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { prepareTemplateInputs } from '../services/templateInputService'
+import { prepareTemplateInputs } from '@/platform/workflow/templates/services/templateInputService'
 
 type TemplateLoadResult = 'loaded' | 'graph-failed' | 'not-started'
 

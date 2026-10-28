@@ -6,7 +6,8 @@ import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 import { computed, defineComponent, h, reactive, ref } from 'vue'
 import { setImmediate } from 'node:timers/promises'
 
@@ -15,6 +16,9 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { useAgentConsent } from './useAgentConsent'
 
@@ -24,8 +28,12 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyApiBaseUrl: () => 'https://api.comfy.test'
 }))
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
-  isCloud: false
+  get isCloud() {
+    return distribution.isCloud
+  },
+  isDesktop: true
 }))
 
 vi.mock(import('@/scripts/api'))
@@ -124,14 +132,14 @@ async function startConsent() {
 
 describe('useAgentConsent', () => {
   beforeEach(() => {
+    distribution.isCloud = false
     useCurrentUser().isLoggedIn = computed(() => true)
     useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
     localStorage.clear()
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
     vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockReset()
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
+    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
       Authorization: 'Bearer account-a-token'
     })
     vi.mocked(api.fetchApi).mockReset()
@@ -157,6 +165,57 @@ describe('useAgentConsent', () => {
     }
   )
 
+  it.for([
+    {
+      action: 'Agree and continue',
+      signedOut: true,
+      key: 'Comfy.AgentConsent.IntroductionResponded.signed-out'
+    },
+    {
+      action: 'Skip for now',
+      signedOut: false,
+      key: 'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a'
+    }
+  ])(
+    'remembers the introduction response to $action for its scope',
+    async ({ action, signedOut, key }) => {
+      useCurrentUser().isLoggedIn = computed(() => !signedOut)
+      useCurrentUser().resolvedUserInfo = computed(() =>
+        signedOut ? null : { id: 'account-a' }
+      )
+      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
+      const onOpen = vi.fn()
+      const request = useAgentConsent().withConsent('button_click', onOpen)
+      const dialog = await waitForConsentDialog()
+      await renderConsentCard(dialog)
+
+      expect(localStorage.getItem(key)).toBeNull()
+      await userEvent.click(screen.getByRole('button', { name: action }))
+      await request
+
+      await vi.waitFor(() => {
+        expect(localStorage.getItem(key)).toBe('true')
+      })
+      expect(useAgentConsentStore().accepted).toBe(false)
+      expect(onOpen).not.toHaveBeenCalled()
+    }
+  )
+
+  it('does not remember a card that was dismissed without a decision', async () => {
+    const request = useAgentConsent().withConsent('first_load', vi.fn())
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
+
+    useDialogStore().closeDialog({ key: 'agent-consent' })
+    await request
+
+    expect(
+      localStorage.getItem(
+        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a'
+      )
+    ).toBeNull()
+  })
+
   it('reports a rejection as the resolved decision', async () => {
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent('button_click', onOpen)
@@ -171,6 +230,44 @@ describe('useAgentConsent', () => {
     ])
     expect(onOpen).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { host: 'Local', cloud: false, arrange: () => {} },
+    {
+      host: 'Cloud',
+      cloud: true,
+      arrange: () => {
+        vi.mocked(api.apiURL).mockImplementation(
+          (path) => `https://api.comfy.test/api${path}`
+        )
+        vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
+          Authorization: 'Bearer workspace-a-token'
+        })
+      }
+    }
+  ])(
+    'records Skip as an introduction response and writes no consent on $host',
+    async ({ cloud, arrange }) => {
+      distribution.isCloud = cloud
+      arrange()
+      const request = useAgentConsent().withConsent('first_load', vi.fn())
+      const dialog = await waitForConsentDialog()
+      await renderConsentCard(dialog)
+
+      await clickCardAction('reject')
+      await request
+
+      expect(useDialogStore().dialogStack).toEqual([])
+      expect(
+        useAgentConsentIntroductionStore().hasResponded('account-a.workspace-a')
+      ).toBe(true)
+      expect(fetchWithUnifiedRemint).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ method: 'POST' }),
+        expect.anything()
+      )
+    }
+  )
 
   it('reports an acceptance as the resolved decision once the save lands', async () => {
     fetchWithUnifiedRemint
@@ -197,15 +294,20 @@ describe('useAgentConsent', () => {
     void useAgentConsent().withConsent('button_click', vi.fn())
     const dialog = await waitForConsentDialog()
 
-    ;(dialog.contentProps.onAccept as () => void)()
+    await renderConsentCard(dialog)
+    await clickCardAction('accept')
     await vi.waitFor(() => {
       expect(dialog.contentProps.error).toBe(
         i18n.global.t('agent.consent.saveError')
       )
     })
 
-    // A raised save is not an ending: the card is still on screen and
-    // retryable, so the outcome belongs to whatever the user does next.
+    expect(
+      localStorage.getItem(
+        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a'
+      )
+    ).toBe('true')
+    expect(useAgentConsentStore().accepted).toBe(false)
     expect(telemetry.trackAgentConsentResolved).not.toHaveBeenCalled()
   })
 
@@ -243,28 +345,6 @@ describe('useAgentConsent', () => {
     expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
       [{ decision: 'dismissed', save_error_shown: true }]
     ])
-  })
-
-  it('reports an acceptance that did not persist without raising', async () => {
-    const identity = ref('account-a')
-    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
-    const onOpen = vi.fn()
-    const request = useAgentConsent().withConsent('button_click', onOpen)
-    const dialog = await waitForConsentDialog()
-    await renderConsentCard(dialog)
-
-    // The scope moves under the open card, so `accept` resolves false: nothing
-    // was stored, nothing raised, and no error is shown. The user believes they
-    // consented.
-    identity.value = 'account-b'
-    await clickCardAction('accept')
-    await request
-
-    expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
-      [{ decision: 'accept_not_persisted', save_error_shown: false }]
-    ])
-    expect(reportError).not.toHaveBeenCalled()
-    expect(onOpen).not.toHaveBeenCalled()
   })
 
   it('reports a card closed before it rendered as an exit, not a dismissal', async () => {
@@ -499,95 +579,12 @@ describe('useAgentConsent', () => {
     expect(useDialogStore().dialogStack).toHaveLength(0)
   })
 
-  it('reports the card as shown only after its async component mounts', async () => {
-    const onOpen = vi.fn()
-    const onShown = vi.fn()
-    const request = useAgentConsent().withConsent('button_click', onOpen, {
-      onShown
-    })
-    const dialog = await waitForConsentDialog()
-
-    expect(onShown).not.toHaveBeenCalled()
-    render(
-      defineComponent({
-        setup: () => () => h(dialog.component, dialog.contentProps)
-      }),
-      { global: { plugins: [i18n] } }
-    )
-    expect(
-      await screen.findByRole('heading', {
-        name: i18n.global.t('agent.consent.title')
-      })
-    ).toBeInTheDocument()
-    expect(onShown).toHaveBeenCalledOnce()
-
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.consent.reject')
-      })
-    )
-    await request
-    expect(onOpen).not.toHaveBeenCalled()
-  })
-
-  it.for([
-    { scope: 'account', user: null, workspaceId: 'workspace-a' },
-    {
-      scope: 'workspace',
-      user: { id: 'account-a' },
-      workspaceId: 'workspace-b'
-    }
-  ])(
-    'does not consume the automatic offer when the $scope changes before mount',
-    async ({ user, workspaceId }) => {
-      const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
-      vi.spyOn(
-        useCurrentUser().resolvedUserInfo,
-        'value',
-        'get'
-      ).mockImplementation(() => currentUser.value)
-      const key = 'Comfy.AgentConsent.AutoShown.account-a.workspace-a'
-      const onOpen = vi.fn()
-      const request = useAgentConsent().withConsent('button_click', onOpen, {
-        onShown: () => {
-          localStorage.setItem(key, 'true')
-        }
-      })
-      const dialog = await waitForConsentDialog()
-      currentUser.value = user
-      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: workspaceId })
-
-      render(
-        defineComponent({
-          setup: () => () => h(dialog.component, dialog.contentProps)
-        }),
-        { global: { plugins: [i18n] } }
-      )
-      expect(
-        await screen.findByRole('heading', {
-          name: i18n.global.t('agent.consent.title')
-        })
-      ).toBeInTheDocument()
-      await userEvent.click(
-        screen.getByRole('button', {
-          name: i18n.global.t('agent.consent.reject')
-        })
-      )
-      await request
-
-      expect(localStorage.getItem(key)).toBeNull()
-      expect(onOpen).not.toHaveBeenCalled()
-    }
-  )
-
   it('asks canShow only after the setting has loaded and keeps the card off when it says no', async () => {
     const load = deferred<Response>()
     fetchWithUnifiedRemint.mockReturnValueOnce(load.promise)
     const onOpen = vi.fn()
-    const onShown = vi.fn()
     const canShow = vi.fn(() => false)
     const request = useAgentConsent().withConsent('button_click', onOpen, {
-      onShown,
       canShow
     })
 
@@ -599,7 +596,6 @@ describe('useAgentConsent', () => {
 
     expect(canShow).toHaveBeenCalledOnce()
     expect(useDialogStore().dialogStack).toHaveLength(0)
-    expect(onShown).not.toHaveBeenCalled()
     expect(onOpen).not.toHaveBeenCalled()
   })
 
@@ -627,7 +623,7 @@ describe('useAgentConsent', () => {
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValueOnce(null)
+    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValueOnce(null)
 
     ;(dialog.contentProps.onAccept as () => void)()
     await vi.waitFor(() =>
@@ -663,6 +659,44 @@ describe('useAgentConsent', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it.for([
+    {
+      scope: 'account',
+      change: (userId: Ref<string>) => {
+        userId.value = 'account-b'
+      }
+    },
+    {
+      scope: 'workspace',
+      change: () => {
+        Object.assign(useTeamWorkspaceStore(), {
+          activeWorkspaceId: 'workspace-b'
+        })
+      }
+    }
+  ])(
+    'closes a card when its $scope changes before a decision',
+    async ({ change }) => {
+      const userId = ref('account-a')
+      useCurrentUser().resolvedUserInfo = computed(() => ({ id: userId.value }))
+      const onSend = vi.fn()
+      const request = useAgentConsent().withConsent('first_message', onSend)
+      const dialog = await waitForConsentDialog()
+
+      change(userId)
+      await vi.waitFor(() =>
+        expect(useDialogStore().dialogStack).toHaveLength(0)
+      )
+      const accept = dialog.contentProps.onAccept
+      assert(typeof accept === 'function')
+      accept()
+      await request
+
+      expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
+      expect(onSend).not.toHaveBeenCalled()
+    }
+  )
+
   it('authenticates signed-out Local users before saving to their account', async () => {
     const authState = reactive<{ loggedIn: boolean; identity: string | null }>({
       loggedIn: false,
@@ -682,6 +716,7 @@ describe('useAgentConsent', () => {
     )
     vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
       async () => {
+        expect(useAgentConsentIntroductionStore().isContinuingSignIn).toBe(true)
         authState.loggedIn = true
         authState.identity = 'account-a'
         return true
@@ -692,7 +727,20 @@ describe('useAgentConsent', () => {
 
     const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
-    ;(dialog.contentProps.onAccept as () => void)()
+    await renderConsentCard(dialog)
+    expect(screen.getByText("You'll sign in next.")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /By clicking Agree and continue, you agree to its usage\./
+      )
+    ).toBeInTheDocument()
+    expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
+    expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+    const continueButton = screen.getByRole('button', {
+      name: 'Agree and continue'
+    })
+    expect(continueButton).toHaveAccessibleDescription("You'll sign in next.")
+    await userEvent.click(continueButton)
     await request
 
     expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
@@ -707,16 +755,14 @@ describe('useAgentConsent', () => {
       false
     )
     expect(onOpen).toHaveBeenCalledOnce()
-    // Two outcomes for one card, and that is the contract: the card's own
-    // ending is `accepted_pending_sign_in`, and `accepted` is the later moment
-    // consent actually became stored.
+    expect(useAgentConsentIntroductionStore().isContinuingSignIn).toBe(false)
     expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
       [{ decision: 'accepted_pending_sign_in', save_error_shown: false }],
       [{ decision: 'accepted', save_error_shown: false }]
     ])
   })
 
-  it('writes nothing when a signed-out Local user cancels sign-in', async () => {
+  it('asks for consent again after a user cancels sign-in', async () => {
     useCurrentUser().isLoggedIn = computed(() => false)
     useCurrentUser().resolvedUserInfo = computed(() => null)
     vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
@@ -724,21 +770,35 @@ describe('useAgentConsent', () => {
 
     const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
-    ;(dialog.contentProps.onAccept as () => void)()
+    await renderConsentCard(dialog)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Agree and continue' })
+    )
     await request
 
     expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
     expect(onOpen).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
     expect(useToast().toasts).toEqual([])
-    // Accepting the card is only half of the signed-out flow. Consent was
-    // never persisted, so reporting it accepted would put a decision the user
-    // did not complete into the funnel — but the card half did happen, and
-    // `accepted_pending_sign_in` with no later `accepted` is exactly how an
-    // abandoned sign-in is now readable.
     expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
       [{ decision: 'accepted_pending_sign_in', save_error_shown: false }]
     ])
+    expect(
+      localStorage.getItem(
+        'Comfy.AgentConsent.IntroductionResponded.signed-out'
+      )
+    ).toBe('true')
+    expect(useAgentConsentStore().accepted).toBe(false)
+
+    const retry = useAgentConsent().withConsent('button_click', onOpen)
+    const nextDialog = await waitForConsentDialog()
+    expect(nextDialog.contentProps.requiresSignIn).toBe(true)
+    expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+    const reject = nextDialog.contentProps.onReject
+    assert(typeof reject === 'function')
+    reject()
+    await retry
+    expect(onOpen).not.toHaveBeenCalled()
   })
 
   it('reports when signed-out acceptance cannot resolve a persistence scope', async () => {
@@ -909,5 +969,342 @@ describe('useAgentConsent', () => {
     await request
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(onOpen).not.toHaveBeenCalled()
+  })
+
+  describe('accepting while signed out across a page reload', () => {
+    const PENDING_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
+
+    function signedOut() {
+      useCurrentUser().isLoggedIn = computed(() => false)
+      useCurrentUser().resolvedUserInfo = computed(() => null)
+    }
+
+    function signedIn() {
+      useCurrentUser().isLoggedIn = computed(() => true)
+      useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
+    }
+
+    function holdDraft(text: string) {
+      useAgentComposerStore().startSubmission({
+        prompt: { text, references: [] },
+        attachments: [],
+        nodes: [],
+        target: {} as ComfyWorkflow
+      })
+    }
+
+    function scopeResolves() {
+      vi.spyOn(useAgentConsentStore(), 'ensureScope').mockResolvedValue(
+        'account-a/workspace-a'
+      )
+    }
+
+    beforeEach(() => {
+      sessionStorage.clear()
+      localStorage.clear()
+      vi.mocked(useAuthDialogs().showSignInDialog).mockReset()
+      telemetry.trackAgentConsentResolved.mockReset()
+      reportError.mockReset()
+    })
+
+    it('keeps the held draft while the sign-in dialog is open', async () => {
+      signedOut()
+      holdDraft('make it blue')
+      vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(
+        new Promise(() => {})
+      )
+
+      void useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await vi.waitFor(() =>
+        expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+      )
+
+      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toEqual({
+        draft: 'make it blue',
+        savedAt: expect.any(Number)
+      })
+    })
+
+    it('keeps the held text without the blank space a dropped reference leaves', async () => {
+      signedOut()
+      holdDraft('  raise the steps on this node')
+      vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(
+        new Promise(() => {})
+      )
+
+      void useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await vi.waitFor(() =>
+        expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+      )
+
+      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
+        draft: 'raise the steps on this node'
+      })
+    })
+
+    it('keeps nothing when the signed-out card is rejected', async () => {
+      signedOut()
+      holdDraft('make it blue')
+
+      const request = useAgentConsent().withConsent('first_message', vi.fn())
+      const dialog = await waitForConsentDialog()
+      ;(dialog.contentProps.onReject as () => void)()
+      await request
+
+      expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
+
+    it.for([
+      {
+        outcome: 'failed',
+        result: () => Promise.reject(new Error('Sign-in chunk could not load'))
+      },
+      { outcome: 'completed', result: () => Promise.resolve(true) }
+    ])(
+      'clears the held draft when sign-in is $outcome in the page',
+      async ({ result }) => {
+        signedOut()
+        vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
+          result
+        )
+        scopeResolves()
+        vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
+
+        const request = useAgentConsent().withConsent('first_message', vi.fn())
+        await startConsent()
+        await request
+
+        expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+      }
+    )
+
+    it('keeps the held draft when the sign-in dialog is closed, since a browser sign-in may still finish and reload', async () => {
+      signedOut()
+      holdDraft('make it blue')
+      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
+      const accept = vi.spyOn(useAgentConsentStore(), 'accept')
+
+      const request = useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await request
+
+      expect(accept).not.toHaveBeenCalled()
+      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
+        draft: 'make it blue'
+      })
+    })
+
+    it('drops a kept accept when a later signed-out card is skipped', async () => {
+      signedOut()
+      holdDraft('make it blue')
+      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
+      const accept = vi.spyOn(useAgentConsentStore(), 'accept')
+      const first = useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await first
+
+      const second = useAgentConsent().withConsent('first_message', vi.fn())
+      const card = await waitForConsentDialog()
+      ;(card.contentProps.onReject as () => void)()
+      await second
+
+      expect(accept).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
+
+    it('leaves a newer Agree in place when an older sign-in dialog was closed first', async () => {
+      signedOut()
+      holdDraft('first message')
+      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
+      const first = useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await first
+
+      holdDraft('second message')
+      const secondSignIn = deferred<boolean>()
+      vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(
+        secondSignIn.promise
+      )
+      void useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await vi.waitFor(() =>
+        expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledTimes(2)
+      )
+      await setImmediate()
+
+      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
+        draft: 'second message'
+      })
+    })
+
+    it.for(['reject', 'dismiss'] as const)(
+      'drops a kept accept when a later card is answered with %s',
+      async (answer) => {
+        signedIn()
+        sessionStorage.setItem(
+          PENDING_KEY,
+          JSON.stringify({ draft: 'make it blue', savedAt: Date.now() })
+        )
+
+        const request = useAgentConsent().withConsent('first_message', vi.fn())
+        const dialog = await waitForConsentDialog()
+        await renderConsentCard(dialog)
+        if (answer === 'reject') (dialog.contentProps.onReject as () => void)()
+        else (dialog.dialogComponentProps.onClose as () => void)()
+        await request
+
+        expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+      }
+    )
+
+    it('saves consent once after the reload and then restores the draft', async () => {
+      signedIn()
+      scopeResolves()
+      let finishSave = (_saved: boolean) => {}
+      const accept = vi
+        .spyOn(useAgentConsentStore(), 'accept')
+        .mockReturnValueOnce(new Promise((resolve) => (finishSave = resolve)))
+
+      const resume = useAgentConsent().resumeAcceptAfterReload('make it blue')
+      await vi.waitFor(() => expect(accept).toHaveBeenCalledOnce())
+      expect(useAgentComposerStore().draft).toBe('')
+
+      finishSave(true)
+      await resume
+      expect(accept).toHaveBeenCalledExactlyOnceWith('account-a/workspace-a')
+      expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
+        [{ decision: 'accepted', save_error_shown: false }]
+      ])
+      expect(useAgentComposerStore().draft).toBe('make it blue')
+      expect(useAgentComposerStore().submission).toBeNull()
+    })
+
+    it.for([
+      {
+        composer: 'text',
+        fill: () => useAgentComposerStore().setText('something newer')
+      },
+      {
+        composer: 'a reference',
+        fill: () => {
+          const composer = useAgentComposerStore()
+          composer.setSkillScope('scope')
+          composer.restorePrompt({
+            text: '',
+            references: [
+              {
+                kind: 'skill',
+                name: 'portrait',
+                description: '',
+                scope: 'scope',
+                textOffset: 0
+              }
+            ]
+          })
+          expect(composer.prompt.references).toHaveLength(1)
+        }
+      },
+      {
+        composer: 'an attachment',
+        fill: () =>
+          useAgentComposerStore().addAttachment({
+            id: 'image',
+            name: 'source.png',
+            ref: 'source.png'
+          })
+      }
+    ])(
+      'does not overwrite $composer already in the composer',
+      async ({ fill }) => {
+        signedIn()
+        fill()
+        const before = useAgentComposerStore().prompt
+        const attachmentsBefore = useAgentComposerStore().attachments
+        scopeResolves()
+        vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
+
+        await useAgentConsent().resumeAcceptAfterReload('make it blue')
+
+        expect(useAgentComposerStore().prompt).toEqual(before)
+        expect(useAgentComposerStore().attachments).toEqual(attachmentsBefore)
+        expect(useAgentConsentStore().accept).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('reports a failed save after the reload and still restores the draft', async () => {
+      signedIn()
+      scopeResolves()
+      const error = new Error('save failed')
+      vi.spyOn(useAgentConsentStore(), 'accept').mockRejectedValueOnce(error)
+
+      await useAgentConsent().resumeAcceptAfterReload('make it blue')
+
+      expect(reportError).toHaveBeenCalledWith(error, {
+        surface: 'agent',
+        errorType: 'agent_consent_setting_write_failure'
+      })
+      expect(useAgentComposerStore().draft).toBe('make it blue')
+    })
+
+    it('after a failed post-reload save, asks once on the next Send and saves once on Agree', async () => {
+      signedIn()
+      let posts = 0
+      fetchWithUnifiedRemint.mockImplementation(
+        async (_url: string, init: RequestInit) => {
+          if (init.method !== 'POST') return settingResponse(false)
+          posts += 1
+          return posts === 1
+            ? new Response(null, { status: 500 })
+            : savedResponse()
+        }
+      )
+
+      await useAgentConsent().resumeAcceptAfterReload('make it blue')
+      expect(useAgentConsentStore().accepted).toBe(false)
+      expect(useAgentComposerStore().draft).toBe('make it blue')
+
+      const onSend = vi.fn()
+      const request = useAgentConsent().withConsent('first_message', onSend)
+      await startConsent()
+      await request
+
+      expect(onSend).toHaveBeenCalledOnce()
+      expect(posts).toBe(2)
+      expect(useDialogStore().dialogStack).toHaveLength(0)
+    })
+
+    it('holds a Send made during the post-reload save until it settles, without a card', async () => {
+      signedIn()
+      const save = deferred<Response>()
+      fetchWithUnifiedRemint.mockImplementation(
+        async (_url: string, init: RequestInit) =>
+          init.method === 'POST' ? save.promise : settingResponse(false)
+      )
+      const resume = useAgentConsent().resumeAcceptAfterReload('old draft')
+      await vi.waitFor(() =>
+        expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({ method: 'POST' }),
+          false
+        )
+      )
+
+      holdDraft('newer message')
+      const onSend = vi.fn()
+      const request = useAgentConsent().withConsent('first_message', onSend)
+      await setImmediate()
+      expect(useDialogStore().dialogStack).toHaveLength(0)
+      expect(onSend).not.toHaveBeenCalled()
+
+      save.resolve(savedResponse())
+      await Promise.all([resume, request])
+
+      expect(onSend).toHaveBeenCalledOnce()
+      expect(useDialogStore().dialogStack).toHaveLength(0)
+      expect(useAgentComposerStore().draft).toBe('')
+    })
   })
 })

@@ -1,22 +1,22 @@
 <template>
-  <div
-    class="flex items-center justify-between rounded-lg border border-border-default bg-secondary-background p-4"
-  >
+  <Card surface="secondary" class="flex items-center justify-between p-4">
     <div class="flex flex-col gap-1">
       <div class="flex items-center gap-2">
-        <span class="font-medium text-base-foreground">{{ secret.name }}</span>
+        <span class="font-medium text-foreground">{{ secret.name }}</span>
         <img
           v-if="providerLogo"
           :src="providerLogo"
           :alt="providerLabel"
           class="size-5"
         />
-        <span
+        <Badge
           v-else-if="secret.provider"
-          class="rounded-sm bg-tertiary-background px-2 py-0.5 text-xs text-muted-foreground"
+          variant="square"
+          severity="muted"
+          class="px-2"
         >
           {{ providerLabel }}
-        </span>
+        </Badge>
       </div>
       <div class="flex gap-3 text-xs text-muted-foreground">
         <span v-if="createdAtLabel">{{ createdAtLabel }}</span>
@@ -26,7 +26,12 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <i v-if="loading" class="pi pi-spinner pi-spin text-muted-foreground" />
+      <i
+        v-if="loading"
+        role="status"
+        :aria-label="$t('g.loading')"
+        class="icon-[lucide--loader-circle] animate-spin text-muted-foreground motion-reduce:animate-none"
+      />
       <template v-else>
         <Button
           :tooltip="editLabel"
@@ -36,7 +41,7 @@
           :disabled="disabled"
           @click="emit('edit')"
         >
-          <i class="pi pi-pen-to-square" />
+          <i class="icon-[lucide--square-pen]" />
         </Button>
         <Button
           :tooltip="deleteLabel"
@@ -46,22 +51,24 @@
           :disabled="disabled"
           @click="emit('delete')"
         >
-          <i class="pi pi-trash" />
+          <i class="icon-[lucide--trash-2]" />
         </Button>
       </template>
     </div>
-  </div>
+  </Card>
 </template>
 
 <script setup lang="ts">
+import Card from '@comfyorg/design-system/card/Card'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 
-import { getProviderLabel, getProviderLogo } from '../providers'
-import type { SecretMetadata } from '../types'
+import { getProviderLabel, getProviderLogo } from '@/platform/secrets/providers'
+import type { SecretMetadata } from '@/platform/secrets/types'
 
 const {
   secret,

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 import {

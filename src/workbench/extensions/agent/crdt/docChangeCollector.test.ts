@@ -105,7 +105,7 @@ describe('DocChangeCollector', () => {
     })
 
     const changes = collector.take()
-    expect(changes.resyncNodes).toEqual(new Set(['2']))
+    expect(changes.resyncNodes).toEqual(new Map([['2', new Set(['title'])]]))
     expect(changes.nodes.size).toBe(0)
   })
 
@@ -125,8 +125,43 @@ describe('DocChangeCollector', () => {
     })
 
     const changes = collector.take()
-    expect(changes.resyncNodes).toEqual(new Set(['1']))
+    expect(changes.resyncNodes).toEqual(
+      new Map([['1', new Set(['flags.collapsed'])]])
+    )
     expect(changes.widgets.size).toBe(0)
+  })
+
+  it('records interior widget edits under their definition and node (FE-3468)', () => {
+    const { doc, collector } = setup()
+    doc.transact(() => {
+      const definitions = doc.getMap<Y.Map<unknown>>('definitions')
+      const interior = new Y.Map<unknown>([
+        ['type', 'Test'],
+        ['widgets', new Y.Map<unknown>([['value', 1]])]
+      ])
+      const nodes = new Y.Map<unknown>([['7', interior]])
+      const definition = new Y.Map<unknown>([
+        ['id', 'def-1'],
+        ['nodes', nodes]
+      ])
+      definitions.set('def-1', definition)
+    })
+    collector.take()
+
+    doc.transact(() => {
+      const definitions = doc.getMap<Y.Map<unknown>>('definitions')
+      const definition = definitions.get('def-1') as Y.Map<unknown>
+      const nodes = definition.get('nodes') as Y.Map<unknown>
+      const interior = nodes.get('7') as Y.Map<unknown>
+      const widgets = interior.get('widgets') as Y.Map<unknown>
+      widgets.set('value', 42)
+    })
+
+    const changes = collector.take()
+    expect(changes.interiors?.get('def-1')?.get('7')).toEqual(
+      new Set(['value'])
+    )
+    expect(changes.nodes.size).toBe(0)
   })
 
   it('records link keys, clears on take, and stops observing after destroy', () => {

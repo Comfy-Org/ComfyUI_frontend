@@ -1,6 +1,6 @@
 import { TestRunner, assert, vi } from 'vitest'
 
-import type { api as RealApi } from '../api'
+import type { api as RealApi } from '@/scripts/api'
 
 type ApiState = Pick<
   typeof RealApi,
@@ -77,6 +77,7 @@ const actions = vi.mockObject<
     | 'getLogs'
     | 'getRawLogs'
     | 'getShareableAssets'
+    | 'socketAuthParams'
   >
 >(
   {
@@ -142,7 +143,8 @@ const actions = vi.mockObject<
     getRawLogs: async () => ({ entries: [], size: { cols: 80, row: 24 } }),
     async getShareableAssets() {
       assert.fail('Configure api.getShareableAssets for this test')
-    }
+    },
+    socketAuthParams: async () => new URLSearchParams()
   },
   { spy: true }
 )

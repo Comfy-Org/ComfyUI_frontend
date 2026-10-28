@@ -17,7 +17,7 @@ const stubTab = (
   targetPanel
 })
 
-vi.mock(import('@/composables/bottomPanelTabs/useShortcutsTab'), () => ({
+vi.mock(import('@/platform/keybindings/composables/useShortcutsTab'), () => ({
   useShortcutsTab: () => [
     stubTab('shortcuts-essentials', 'shortcuts'),
     stubTab('shortcuts-view-controls', 'shortcuts')
@@ -28,8 +28,6 @@ vi.mock(import('@/composables/bottomPanelTabs/useTerminalTabs'), () => ({
   useLogsTerminalTab: vi.fn(() => stubTab('logs', 'terminal')),
   useCommandTerminalTab: () => stubTab('command', 'terminal')
 }))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const distribution = vi.hoisted(() => ({ isDesktop: false }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)

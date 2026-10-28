@@ -24,17 +24,17 @@
           :button-styles="stringifiedMinimapStyles.buttonStyles"
         />
 
-        <div class="h-[27px] w-px self-center bg-node-divider" />
+        <div class="h-[27px] w-px self-center bg-border" />
 
         <Button
           :tooltip="fitViewLabel"
           variant="secondary"
           :aria-label="fitViewLabel"
           :style="stringifiedMinimapStyles.buttonStyles"
-          class="size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface"
+          class="size-8 bg-transparent p-0"
           @click="() => commandStore.execute('Comfy.Canvas.FitView')"
         >
-          <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--focus]" aria-hidden="true" />
         </Button>
 
         <Button
@@ -42,8 +42,8 @@
           variant="secondary"
           :class="
             cn(
-              'h-8 w-15 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-              isModalVisible && 'not-active:bg-interface-panel-selected-surface'
+              'h-8 w-15 bg-transparent p-0 hover:bg-accent',
+              isModalVisible && 'not-active:bg-muted'
             )
           "
           :aria-label="t('zoomControls.label')"
@@ -53,11 +53,11 @@
         >
           <span class="inline-flex items-center gap-1 px-2 text-xs">
             <span>{{ canvasStore.appScalePercentage }}%</span>
-            <i class="icon-[lucide--chevron-down] size-4" aria-hidden="true" />
+            <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
           </span>
         </Button>
 
-        <div class="h-[27px] w-px self-center bg-node-divider" />
+        <div class="h-[27px] w-px self-center bg-border" />
 
         <Button
           :tooltip="minimapLabel"
@@ -67,14 +67,13 @@
           :style="stringifiedMinimapStyles.buttonStyles"
           :class="
             cn(
-              'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-              settingStore.get('Comfy.Minimap.Visible') &&
-                'not-active:bg-interface-panel-selected-surface'
+              'size-8 bg-transparent p-0 hover:bg-accent',
+              settingStore.get('Comfy.Minimap.Visible') && 'not-active:bg-muted'
             )
           "
           @click="onMinimapToggleClick"
         >
-          <i class="icon-[lucide--map] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--map]" aria-hidden="true" />
         </Button>
 
         <Button
@@ -82,8 +81,8 @@
           variant="secondary"
           :class="
             cn(
-              'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-              linkHidden && 'not-active:bg-interface-panel-selected-surface'
+              'size-8 bg-transparent p-0 hover:bg-accent',
+              linkHidden && 'not-active:bg-muted'
             )
           "
           :aria-label="linkVisibilityLabel"
@@ -91,7 +90,7 @@
           :style="stringifiedMinimapStyles.buttonStyles"
           @click="onLinkVisibilityToggleClick"
         >
-          <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--route-off]" aria-hidden="true" />
         </Button>
       </div>
     </div>
@@ -102,7 +101,7 @@
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useZoomControls } from '@/composables/useZoomControls'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'

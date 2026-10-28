@@ -1,7 +1,8 @@
 import { expect } from '@playwright/test'
 
-import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
-import type { NodeId } from '@/types/nodeId'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SerialisableLLink } from '@comfyorg/graph-model/serialisation'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -317,6 +318,24 @@ export class NodeReference {
       height
     }
   }
+  /** Page-space bounds of the node's current pos and size, title bar included. */
+  async getClientBounding(): Promise<Position & Size> {
+    return this.comfyPage.page.evaluate((id) => {
+      const app = window.app!
+      const node = app.canvas.graph!.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+
+      const bounds: Rect = [0, 0, 0, 0]
+      if (node.flags.collapsed) node.getBounding(bounds)
+      else node.measure(bounds)
+
+      const [x, y, width, height] = bounds
+      const [left, top] = app.canvasPosToClientPos([x, y])
+      const [right, bottom] = app.canvasPosToClientPos([x + width, y + height])
+
+      return { x: left, y: top, width: right - left, height: bottom - top }
+    }, this.id)
+  }
   async getSize(): Promise<Size> {
     const size = await this.getProperty<[number, number]>('size')
     return {
@@ -390,6 +409,26 @@ export class NodeReference {
     return new NodeSlotReference('output', index, this)
   }
   async getInput(index: number) {
+    return new NodeSlotReference('input', index, this)
+  }
+  async getInputByName(name: string) {
+    const index = await this.comfyPage.page.evaluate(
+      ([id, inputName]) => {
+        const node = window.app!.canvas.graph!.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+
+        const inputIndex = node.inputs.findIndex(
+          (input) => input.name === inputName
+        )
+        if (inputIndex < 0) {
+          throw new Error(`Input "${inputName}" not found on node ${id}`)
+        }
+
+        return inputIndex
+      },
+      [this.id, name] as const
+    )
+
     return new NodeSlotReference('input', index, this)
   }
   async getWidget(index: number) {

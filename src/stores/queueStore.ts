@@ -21,7 +21,7 @@ import { useExtensionServiceAccess } from '@/services/extensionServiceAccess'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 enum TaskItemDisplayStatus {
@@ -335,12 +335,26 @@ export const useQueueStore = defineStore('queue', () => {
     () => pendingTasks.value.length + runningTasks.value.length
   )
 
+  let currentUpdate: Promise<void> = Promise.resolve()
+
   const update = async () => {
     if (updateState.inFlight) {
       updateState.dirty = true
       return
     }
+    currentUpdate = fetchQueueAndHistory()
+    await currentUpdate
+  }
 
+  /** Like `update()`, but a coalesced call also waits for the trailing re-fetch. */
+  async function updateFresh() {
+    if (!updateState.inFlight) return update()
+    updateState.dirty = true
+    await currentUpdate
+    await currentUpdate
+  }
+
+  async function fetchQueueAndHistory() {
     updateState.inFlight = true
     updateState.dirty = false
     isLoading.value = true
@@ -454,6 +468,7 @@ export const useQueueStore = defineStore('queue', () => {
     activeJobsCount,
 
     update,
+    updateFresh,
     clear,
     delete: deleteTask
   }

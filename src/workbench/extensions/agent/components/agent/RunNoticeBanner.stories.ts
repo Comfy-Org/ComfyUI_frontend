@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import '../../agentPanel.css'
+import '@/workbench/extensions/agent/agentPanel.css'
 
 import RunNoticeBanner from './RunNoticeBanner.vue'
 
@@ -13,7 +13,7 @@ function withFreshDismissal() {
   localStorage.removeItem(DISMISSED_STORAGE_KEY)
   return {
     template:
-      '<div class="agent-scope w-[388px] bg-secondary-background p-4"><story /></div>'
+      '<div class="agent-scope w-[388px] bg-secondary p-4"><story /></div>'
   }
 }
 
@@ -21,6 +21,7 @@ const meta: Meta<typeof RunNoticeBanner> = {
   title: 'Agent/RunNoticeBanner',
   component: RunNoticeBanner,
   tags: ['autodocs'],
+  args: { genericNoticeReady: true },
   parameters: { layout: 'centered' },
   globals: { theme: 'dark' },
   decorators: [withFreshDismissal]
@@ -44,6 +45,10 @@ export const BoundToWorkflow: Story = {
  * The name is underlined inline, so a long one has to wrap inside the panel
  * without pushing the dismiss button off the row.
  */
+export const FollowFailed: Story = {
+  args: { context: 'followFailed', workflowName: 'portrait' }
+}
+
 export const LongWorkflowName: Story = {
   args: { workflowName: 'product-photo-upscale-with-face-restore-v3' }
 }

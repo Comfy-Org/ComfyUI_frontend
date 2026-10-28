@@ -19,16 +19,20 @@ Extensions in ComfyUI are modular JavaScript modules that extend and enhance the
 
 ComfyUI's extension system follows these key principles:
 
-1. **Registration-based:** Extensions must register themselves with the application using `app.registerExtension()`
+1. **Registration-based:** Custom extensions register themselves with `app.registerExtension()`; core extensions are registered by `registerCoreExtensions()`
 2. **Hook-driven:** Extensions interact with the system through predefined hooks
 3. **Non-intrusive:** Extensions should avoid directly modifying core objects where possible
 
 ## Core Extensions List
 
-Core extensions live in `src/extensions/core/`. `index.ts` is the entry point
-that decides which ones load — some are unconditional, some are gated on the
-build distribution, and the 3D stack is deferred behind a lazy loader. The
-tables below follow that grouping.
+Core extensions live in `src/extensions/core/`. Each module exports its
+extension object and registers nothing when imported. `registerCoreExtensions()`
+in `index.ts` registers them from an explicit ordered list and decides which
+ones load — some are unconditional, some are gated on the build distribution,
+and the 3D stack is deferred behind a lazy loader. Two modules export a
+registration function instead of an object: `electronAdapter.ts` and
+`agentPanel.ts`. `load3dLazy.ts` registers the 3D extensions from its own list
+when the first 3D node appears. The tables below follow that grouping.
 
 ### Always Loaded
 
@@ -121,7 +125,7 @@ When developing or modifying extensions, follow these best practices:
 
 ### Extension Registration
 
-Extensions are registered using the `app.registerExtension()` method:
+Custom extensions are registered using the `app.registerExtension()` method:
 
 ```javascript
 app.registerExtension({
@@ -160,6 +164,24 @@ loadedGraphNode
 afterConfigureGraph
 setup
 ```
+
+#### Late Extension (deployments with late custom nodes on)
+
+When a custom node script takes longer than 2 s, the editor opens without it.
+Once every script has arrived, the extensions registered late run, after
+every other extension's `setup`:
+
+```
+getCustomWidgets         [late extensions only]
+init                     [late extensions only]
+addCustomNodeDefs        [every extension]
+registerCustomNodes      [late extensions only]
+beforeRegisterNodeDef    [repeated multiple times, every extension]
+setup                    [late extensions only]
+```
+
+The open workflow is then loaded again (see Loading Workflow below), so every
+extension's per-node hooks run on its nodes.
 
 #### Loading Workflow
 

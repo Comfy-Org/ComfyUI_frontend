@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const meta: Meta<typeof ErrorNodeCard> = {
   title: 'RightSidePanel/Errors/ErrorNodeCard',
@@ -14,7 +14,7 @@ const meta: Meta<typeof ErrorNodeCard> = {
     (story) => ({
       components: { story },
       template:
-        '<div class="w-[330px] bg-secondary-background border border-interface-stroke rounded-lg p-4"><story /></div>'
+        '<div class="w-[330px] bg-secondary border border-border rounded-lg p-4"><story /></div>'
     })
   ]
 }

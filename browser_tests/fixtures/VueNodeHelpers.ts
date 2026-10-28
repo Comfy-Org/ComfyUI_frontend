@@ -8,7 +8,7 @@ import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 const GRAPH_SIZE_GROWTH: [number, number] = [90, 100]
@@ -25,9 +25,7 @@ export class VueNodeHelpers {
 
   constructor(private page: Page) {
     this.nodes = page.locator('[data-node-id]')
-    this.selectedNodes = page.locator(
-      '[data-node-id].outline-node-component-outline'
-    )
+    this.selectedNodes = page.locator('[data-node-id].outline-foreground')
   }
 
   /**
@@ -269,14 +267,13 @@ export class VueNodeHelpers {
     })
   }
 
-  getWidgetRowByLabel(nodeTitle: string, widgetName: string): Locator {
+  getWidgetRowByLabel(node: string | Locator, widgetName: string): Locator {
     const widgetLabel = this.page
       .getByTestId(TestIds.widgets.layoutFieldLabel)
       .and(this.page.getByText(widgetName, { exact: true }))
 
-    return this.getNodeByTitle(nodeTitle)
-      .getByTestId(TestIds.widgets.widget)
-      .filter({ has: widgetLabel })
+    const root = typeof node === 'string' ? this.getNodeByTitle(node) : node
+    return root.getByTestId(TestIds.widgets.widget).filter({ has: widgetLabel })
   }
 
   /**

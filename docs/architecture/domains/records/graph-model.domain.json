@@ -216,10 +216,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/interfaces.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/lib/litegraph/src/linkDeduplication.conflictingOrigins.test.ts",
       "role": "application"
     },
@@ -344,19 +340,7 @@
       "role": "application"
     },
     {
-      "path": "src/types/graphScopeId.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/groupId.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/types/linkId.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/linkId.ts",
       "role": "domain"
     },
     {
@@ -368,15 +352,7 @@
       "role": "domain"
     },
     {
-      "path": "src/types/nodeId.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/types/nodeIdentification.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/nodeIdentification.ts",
       "role": "domain"
     },
     {
@@ -384,23 +360,11 @@
       "role": "domain"
     },
     {
-      "path": "src/types/rerouteChain.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/types/rerouteId.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/types/rerouteId.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/types/slotId.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/slotId.ts",
       "role": "domain"
     },
     {
@@ -413,8 +377,8 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedDependencies": ["comfyui-api", "node-definition"],
+  "allowedConsumers": ["bounding-boxes"],
   "characterizationScenarios": [
     {
       "name": "Graph configure and serialise round-trips preserve nodes, links, groups, and reroutes",
@@ -489,7 +453,7 @@
   "compatibilityPromises": [
     "Serialised workflow graph shapes (nodes, links, groups, reroutes, extra) stay compatible with existing workflows.",
     "Extension-facing LGraph, LGraphNode, LLink, Reroute, LGraphGroup, and slot callbacks and fields keep their current behaviour; changes need ecosystem migration guidance.",
-    "Inventory grants no new cross-domain permissions; existing imports of drawing, widget, promotion, selection, and layout code from entity classes remain inherited debt."
+    "Graph-model may depend only on the comfyui-api and node-definition public entry points; existing imports of drawing, widget, promotion, selection, and layout code from entity classes remain inherited debt."
   ],
   "deepImports": "inventory"
 }
