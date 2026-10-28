@@ -62,17 +62,11 @@ export function createAgentEventSource({
     reconnectTimer.start()
   }
 
-  async function readAuth(generation: number): Promise<AuthRead> {
+  async function readAuth(): Promise<AuthRead> {
     try {
       return { ok: true, params: await getAuthParams() }
     } catch {
       return { ok: false }
-    } finally {
-      // Only the generation that still owns the latch may release it. `disconnect()`
-      // clears `connecting` and bumps the generation, so a newer `connect()` can
-      // already be awaiting its own auth read by the time this stale one settles --
-      // releasing the latch here would let a third read start in that generation.
-      if (generation === connectGeneration) connecting = false
     }
   }
 
@@ -80,8 +74,16 @@ export function createAgentEventSource({
     if (listeners.size === 0 || socket !== null || connecting) return
     connecting = true
     const generation = connectGeneration
-    const auth = await readAuth(generation)
+    const auth = await readAuth()
+    // A stale read must leave the latch alone: `disconnect()` already cleared it and
+    // bumped the generation, so by now it belongs to a newer `connect()`.
     if (generation !== connectGeneration) return
+    // Released here rather than in `readAuth`, because everything from this point to
+    // `open()` is synchronous. Clearing it before this continuation ran left a window
+    // in which a `subscribe()` could start a second read in the same generation; both
+    // would reach `open()`, and the second would overwrite `socket` without closing
+    // the first, leaving an orphan whose handlers all bail on `socket !== current`.
+    connecting = false
     if (listeners.size === 0) return
     // A credential that cannot be read right now — a rejected refresh, or a
     // token the provider has not minted yet — is retried on the backoff rather
