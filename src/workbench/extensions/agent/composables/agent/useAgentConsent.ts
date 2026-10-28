@@ -169,6 +169,31 @@ export function useAgentConsent() {
         closeWith(saved)
       }
 
+      function unlockCard(): void {
+        saving = false
+        dialogStore.updateDialog({
+          key: CONSENT_DIALOG_KEY,
+          contentProps: { accepting: false, error: '' },
+          dialogComponentProps: {
+            closable: true,
+            dismissOnPointerDownOutside: true
+          }
+        })
+      }
+
+      async function retryFailedLoad(): Promise<void> {
+        await consentStore.load()
+        if (expectedIdentity && identity.value !== expectedIdentity) {
+          closeWith(false)
+          return
+        }
+        if (accepted.value) {
+          finishAcceptance(true)
+          return
+        }
+        unlockCard()
+      }
+
       const accept = async (): Promise<void> => {
         if (saving || settled) return
         markIntroductionResponded()
@@ -186,24 +211,7 @@ export function useAgentConsent() {
 
         try {
           if (retrying === 'load') {
-            await consentStore.load()
-            if (expectedIdentity && identity.value !== expectedIdentity) {
-              closeWith(false)
-              return
-            }
-            if (accepted.value) {
-              finishAcceptance(true)
-              return
-            }
-            saving = false
-            dialogStore.updateDialog({
-              key: CONSENT_DIALOG_KEY,
-              contentProps: { accepting: false, error: '' },
-              dialogComponentProps: {
-                closable: true,
-                dismissOnPointerDownOutside: true
-              }
-            })
+            await retryFailedLoad()
             return
           }
           const saved = persistOnAccept
