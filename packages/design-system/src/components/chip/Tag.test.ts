@@ -8,14 +8,14 @@ function renderTag(
   props: {
     label: string
     shape?: 'square' | 'rounded'
-    removable?: boolean
+    removeLabel?: string
     interactive?: boolean
     onRemove?: (...args: unknown[]) => void
   },
   options?: { slots?: Record<string, string> }
 ) {
   return render(Tag, {
-    props: { removeLabel: 'Remove', ...props },
+    props,
     ...options
   })
 }
@@ -31,8 +31,8 @@ describe('Tag', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('shows remove button when removable', () => {
-    renderTag({ label: 'Test', removable: true })
+  it('shows a remove button named by removeLabel', () => {
+    renderTag({ label: 'Test', removeLabel: 'Remove' })
     expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument()
   })
 
@@ -47,7 +47,7 @@ describe('Tag', () => {
   it('emits remove event when remove button is clicked', async () => {
     const user = userEvent.setup()
     const onRemove = vi.fn()
-    renderTag({ label: 'Test', removable: true, onRemove })
+    renderTag({ label: 'Test', removeLabel: 'Remove', onRemove })
 
     await user.click(screen.getByRole('button', { name: 'Remove' }))
     expect(onRemove).toHaveBeenCalledOnce()
@@ -63,7 +63,6 @@ describe('Tag', () => {
         props: {
           label: 'Test',
           interactive: true,
-          removable: true,
           removeLabel: 'Remove',
           onRemove
         },

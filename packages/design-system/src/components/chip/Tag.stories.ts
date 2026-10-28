@@ -16,15 +16,12 @@ const meta: Meta<typeof Tag> = {
       control: 'select',
       options: ['default', 'unselected', 'selected']
     },
-    removable: { control: 'boolean' },
     interactive: { control: 'boolean' }
   },
   args: {
     label: 'Tag',
     shape: 'square',
     state: 'default',
-    removable: false,
-    removeLabel: 'Remove',
     interactive: false
   }
 }
@@ -51,7 +48,7 @@ export const Unselected: Story = {
 export const Removable: Story = {
   args: {
     label: 'Tag',
-    removable: true
+    removeLabel: 'Remove'
   }
 }
 
@@ -73,7 +70,7 @@ export const AllStates: Story = {
           <div class="flex items-center gap-2">
             <Tag label="Default" />
             <Tag label="Unselected" state="unselected" />
-            <Tag label="Removable" removable remove-label="Remove" />
+            <Tag label="Removable" remove-label="Remove" />
           </div>
         </div>
         <div>
@@ -81,7 +78,7 @@ export const AllStates: Story = {
           <div class="flex items-center gap-2">
             <Tag label="Default" shape="rounded" />
             <Tag label="Unselected" shape="rounded" state="unselected" />
-            <Tag label="Removable" shape="rounded" removable remove-label="Remove" />
+            <Tag label="Removable" shape="rounded" remove-label="Remove" />
           </div>
         </div>
         <div class="bg-zinc-800 p-2 rounded">

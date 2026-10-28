@@ -11,7 +11,6 @@ const {
   label,
   shape = 'square',
   state = 'default',
-  removable = false,
   removeLabel,
   removeTooltip,
   interactive = false,
@@ -20,7 +19,6 @@ const {
   label: string
   shape?: TagVariants['shape']
   state?: TagVariants['state']
-  removable?: boolean
   removeLabel?: string
   removeTooltip?: string
   interactive?: boolean
@@ -52,7 +50,10 @@ function handleKeyup(event: KeyboardEvent): void {
     :role="interactive ? 'button' : undefined"
     :tabindex="interactive ? 0 : undefined"
     :class="
-      cn(tagVariants({ shape, state, removable, interactive }), className)
+      cn(
+        tagVariants({ shape, state, removable: !!removeLabel, interactive }),
+        className
+      )
     "
     @keydown="handleKeydown"
     @keyup="handleKeyup"
@@ -61,7 +62,7 @@ function handleKeyup(event: KeyboardEvent): void {
     <span class="min-w-0 truncate">{{ label }}</span>
     <slot />
     <TagRemoveButton
-      v-if="removable"
+      v-if="removeLabel"
       :aria-label="removeLabel"
       :tooltip="removeTooltip"
       @click.stop="emit('remove', $event)"

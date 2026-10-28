@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { fn } from 'storybook/test'
 import { ref } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -28,10 +29,12 @@ interface StoryArgs {
   hasHeaderRightArea: boolean
   headerPadding?: 'default' | 'symmetric'
   cardCount: number
+  onClose: () => void
 }
 
 const meta: Meta<StoryArgs> = {
   title: 'Components/Layout/BaseModalLayout',
+  args: { onClose: fn() },
   argTypes: {
     contentTitle: {
       control: 'text',
@@ -187,7 +190,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
   },
   template: `
     <div>
-      <BaseModalLayout v-if="!args.hasRightPanel" :labels="labels" :content-title="args.contentTitle || 'Content Title'" :header-padding="args.headerPadding">
+      <BaseModalLayout v-if="!args.hasRightPanel" :labels="labels" @close="args.onClose" :content-title="args.contentTitle || 'Content Title'" :header-padding="args.headerPadding">
         <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
           <i class="icon-[lucide--puzzle] text-neutral" />
           <span class="text-neutral text-base">Title</span>
@@ -306,7 +309,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         </template>
       </BaseModalLayout>
 
-      <BaseModalLayout v-else :labels="labels" :content-title="args.contentTitle || 'Content Title'" :header-padding="args.headerPadding">
+      <BaseModalLayout v-else :labels="labels" @close="args.onClose" :content-title="args.contentTitle || 'Content Title'" :header-padding="args.headerPadding">
         <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
           <i class="icon-[lucide--puzzle] text-neutral" />
           <span class="text-neutral text-base">Title</span>
