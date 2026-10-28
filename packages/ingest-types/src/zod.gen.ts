@@ -3990,6 +3990,15 @@ export const zAutoReloadSettings = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
   status: z.enum(['failed', 'off', 'on_hold', 'paused_by_budget', 'on']),
+  target_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable(),
   threshold_credits: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
