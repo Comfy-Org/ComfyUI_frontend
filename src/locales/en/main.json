@@ -4076,14 +4076,18 @@
   },
   "deploymentSwitcher": {
     "runOn": "Run on",
+    "runningOn": "Running on",
     "comfyCloud": "Comfy Cloud",
     "deployment": "{build} v{version}",
     "unnamedDeployment": "Deployment {id}",
     "namedDeployment": "{name}",
     "fullLabel": "{build} · {deployment}",
-    "nameWithVersion": "{name} · v{version}",
+    "version": "v{version}",
+    "labelWithDetail": "{label} · {detail}",
     "status": {
       "stopped": "Stopped",
+      "stopping": "Stopping",
+      "failed": "Failed",
       "starting": "Starting",
       "provisioning": "Starting",
       "notReady": "Not ready"
@@ -4104,6 +4108,8 @@
     "noDeployments": "This workspace has no deployments yet.",
     "createCustomDeployment": "Create a custom deployment",
     "createCustomDeploymentTooltip": "Run the editor with your own custom nodes and models. Set it up on the Developer Platform.",
+    "manageDeployments": "Manage deployments",
+    "manageDeploymentsTooltip": "Manage your Builds and their deployments on the Developer Platform.",
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
     "reload": "Reload",
@@ -4124,9 +4130,10 @@
     "linkWorkspaceRefused": "Couldn't switch to that workspace. You're still in {workspaceName}.",
     "lookupUnavailable": "Could not check which deployment this editor runs on.",
     "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again.",
-    "runsThisWorkflow": "Runs this workflow",
-    "missingNodes": "Missing {count} node | Missing {count} nodes",
-    "notChecked": "Not checked"
+    "compatibleEnvironments": "Compatible environments",
+    "incompatibleEnvironments": "Incompatible environments",
+    "missingNodesNamed": "{deployment} cannot run this workflow. It is missing {nodes}.",
+    "notCheckedNamed": "Could not check whether {deployment} can run this workflow."
   },
   "selectionToolbox": {
     "executeButton": {

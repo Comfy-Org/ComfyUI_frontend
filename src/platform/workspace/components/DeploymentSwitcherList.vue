@@ -35,34 +35,35 @@
     </template>
     <MenuSeparator />
   </template>
-  <DropdownMenuLabel class="px-2 pt-1.5 pb-1 text-xs text-muted-foreground">
-    {{ $t('deploymentSwitcher.runOn') }}
-  </DropdownMenuLabel>
-  <DropdownMenuRadioGroup :model-value="pickedValue">
-    <DeploymentSwitcherRow
-      :value="COMFY_CLOUD_ROW"
-      :title="$t('deploymentSwitcher.comfyCloud')"
-      :switching="isSwitching && switchingTo === COMFY_CLOUD_ROW"
-      :disabled="isSwitching"
-      :mark="markFor(null)"
-      data-testid="deployment-row-cloud"
-      @select="choose($event, null)"
-    />
-    <DeploymentSwitcherRow
-      v-for="deployment in deployments"
-      :key="deployment.deployment_id"
-      :value="deployment.deployment_id"
-      :title="deploymentTitle(deployment)"
-      :subtitle="deploymentRowSubtitle(deployment)"
-      :tone="deploymentStatusTone(deployment.status)"
-      :meta="deploymentMeta(deployment)"
-      :switching="isSwitching && switchingTo === deployment.deployment_id"
-      :disabled="isSwitching"
-      :mark="markFor(deployment.deployment_id)"
-      :data-testid="`deployment-row-${deployment.deployment_id}`"
-      @select="choose($event, deployment.deployment_id)"
-    />
-  </DropdownMenuRadioGroup>
+  <template v-for="section in listedSections" :key="section.key">
+    <DropdownMenuLabel
+      :id="section.labelId"
+      :class="cn('px-2 pb-1 text-xs text-muted-foreground', section.labelClass)"
+    >
+      {{ section.label }}
+    </DropdownMenuLabel>
+    <DropdownMenuRadioGroup
+      :model-value="pickedValue"
+      :aria-labelledby="section.labelId"
+    >
+      <DeploymentSwitcherRow
+        v-for="row in section.rows"
+        :key="row.value"
+        :value="row.value"
+        :title="row.title"
+        :deployment="row.name"
+        :detail="row.detail"
+        :tooltip="row.tooltip"
+        :tone="row.tone"
+        :compatibility-note="row.compatibilityNote"
+        :switching="row.switching"
+        :disabled="isSwitching"
+        :data-focus-row="row.value"
+        :data-testid="row.testId"
+        @select="choose($event, row.deploymentId)"
+      />
+    </DropdownMenuRadioGroup>
+  </template>
   <p
     v-if="deployments.length === 0"
     class="m-0 w-0 min-w-full px-2 py-1.5 text-xs text-pretty text-muted-foreground"
@@ -76,29 +77,20 @@
     :disabled="isSwitching"
     @set-default="emit('setDefault', $event)"
   />
-  <TextTooltip
-    :text="$t('deploymentSwitcher.createCustomDeploymentTooltip')"
-    side="right"
-  >
+  <TextTooltip :text="buildsLink.tooltip" side="right">
     <MenuItem as-child :class="switcherItemClass">
       <a
-        :href="createDeploymentUrl"
+        :href="buildsUrl"
         target="_blank"
         rel="noopener noreferrer"
         class="text-foreground no-underline"
-        data-testid="deployment-switcher-create"
+        data-testid="deployment-switcher-builds"
       >
         <i
-          class="icon-[lucide--plus] size-3.5 shrink-0 text-muted-foreground"
+          :class="cn(buildsLink.icon, 'size-3.5 text-muted-foreground')"
           aria-hidden="true"
         />
-        {{ $t('deploymentSwitcher.createCustomDeployment') }}
-        <span :class="cn('ml-auto', switcherTrailingSlotClass)">
-          <i
-            class="icon-[lucide--arrow-up-right] size-3.5 text-muted-foreground"
-            aria-hidden="true"
-          />
-        </span>
+        {{ buildsLink.label }}
       </a>
     </MenuItem>
   </TextTooltip>
@@ -116,7 +108,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { DropdownMenuLabel, DropdownMenuRadioGroup } from 'reka-ui'
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MenuItem from '@/components/ui/menu/MenuItem.vue'
@@ -126,16 +118,10 @@ import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/DeploymentSwitcherDefaultMenu.vue'
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
-import {
-  switcherItemClass,
-  switcherTrailingSlotClass
-} from '@/platform/workspace/components/deploymentSwitcherStyles'
-import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
-import {
-  COMFY_CLOUD_ROW,
-  deploymentStatusTone,
-  useDeploymentLabels
-} from '@/platform/workspace/composables/useDeploymentLabels'
+import { switcherItemClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
+import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
+import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocus'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const { switchingTo } = defineProps<{
@@ -163,13 +149,39 @@ const {
   changeSinceBoot,
   followsWorkspace
 } = storeToRefs(useDeploymentPickStore())
-const { deploymentTitle, deploymentRowSubtitle, deploymentMeta, currentLabel } =
-  useDeploymentLabels()
-const { markFor } = useDeploymentCompatibility()
+const { currentLabel } = useDeploymentLabels()
+const { sections, pickedValue } = useDeploymentRows()
+const sectionLabelId = useId()
+useKeepRowFocus(sections)
 
-const createDeploymentUrl = `${getComfyPlatformBaseUrl()}/profile/deploy#builds`
+const buildsUrl = `${getComfyPlatformBaseUrl()}/profile/builds`
 
-const pickedValue = computed(() => pickedDeploymentId.value ?? COMFY_CLOUD_ROW)
+const buildsLink = computed(() =>
+  deployments.value.length > 0
+    ? {
+        label: t('deploymentSwitcher.manageDeployments'),
+        tooltip: t('deploymentSwitcher.manageDeploymentsTooltip'),
+        icon: 'icon-[lucide--arrow-up-right]'
+      }
+    : {
+        label: t('deploymentSwitcher.createCustomDeployment'),
+        tooltip: t('deploymentSwitcher.createCustomDeploymentTooltip'),
+        icon: 'icon-[lucide--plus]'
+      }
+)
+
+const listedSections = computed(() =>
+  sections.value.map((section, index) => ({
+    ...section,
+    labelId: `${sectionLabelId}-${section.key}`,
+    labelClass: index === 0 ? 'pt-1.5' : 'pt-2.5',
+    rows: section.rows.map((row) => ({
+      ...row,
+      testId: `deployment-row-${row.deploymentId ?? 'cloud'}`,
+      switching: isSwitching.value && switchingTo === row.value
+    }))
+  }))
+)
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
 
 const notice = computed(() => {
