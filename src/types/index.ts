@@ -21,6 +21,7 @@ import type {
   TerminalSize
 } from '@/platform/remote/comfyui/execution/types'
 import type { Settings } from '@/platform/settings/types'
+import type { Comfy as ComfyNodeApi } from '@/platform/nodeApi/comfyApi'
 import type { ComfyApp } from '@/types/comfy'
 import type { ContextMenu } from '@/lib/litegraph/src/ContextMenu'
 import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
@@ -234,6 +235,12 @@ declare global {
   interface Window {
     /** For use by extensions and in the browser console. Where possible, import `app` from '@/scripts/app' instead. */
     app?: ComfyApp
+
+    /**
+     * The published custom-node API. Available from the first line of an
+     * extension module, unlike `window.app`.
+     */
+    comfy?: ComfyNodeApi
 
     /** For use by extensions and in the browser console. Where possible, import `app` and access via `app.graph` instead. */
     graph?: unknown
