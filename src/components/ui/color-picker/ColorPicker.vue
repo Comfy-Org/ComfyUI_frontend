@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import {
-  PopoverContent,
-  PopoverRoot,
-  PopoverTrigger,
-  PopoverPortal
-} from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 
 import type { ColorPickerProps } from '@/components/ui/color-picker/types'
 import type { HSVA } from '@/utils/colorUtil'
 import { hexToHsva, hsbToRgb, hsvaToHex, rgbToHex } from '@/utils/colorUtil'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import ColorPickerPanel from './ColorPickerPanel.vue'
@@ -116,29 +112,25 @@ const isOpen = ref(false)
         </button>
       </slot>
     </PopoverTrigger>
-    <PopoverPortal :key="Number(isOpen)">
-      <PopoverContent
-        side="bottom"
-        align="start"
-        :side-offset="7"
-        :collision-padding="10"
-        class="z-overlay"
-      >
-        <ColorPickerPanel
-          v-model:hsva="hsva"
-          v-model:display-mode="displayMode"
-          :alpha
-          :hex-label="$props.hexLabel"
-          :rgba-label="$props.rgbaLabel"
-          :hue-label="$props.hueLabel"
-          :alpha-label="$props.alphaLabel"
-          :red-label="$props.redLabel"
-          :green-label="$props.greenLabel"
-          :blue-label="$props.blueLabel"
-          :saturation-brightness-label="$props.saturationBrightnessLabel"
-          :format-label="$props.formatLabel"
-        />
-      </PopoverContent>
-    </PopoverPortal>
+    <PopoverContent
+      align="start"
+      :side-offset="7"
+      class="w-auto border-0 bg-transparent p-0 shadow-none"
+    >
+      <ColorPickerPanel
+        v-model:hsva="hsva"
+        v-model:display-mode="displayMode"
+        :alpha
+        :hex-label="$props.hexLabel"
+        :rgba-label="$props.rgbaLabel"
+        :hue-label="$props.hueLabel"
+        :alpha-label="$props.alphaLabel"
+        :red-label="$props.redLabel"
+        :green-label="$props.greenLabel"
+        :blue-label="$props.blueLabel"
+        :saturation-brightness-label="$props.saturationBrightnessLabel"
+        :format-label="$props.formatLabel"
+      />
+    </PopoverContent>
   </PopoverRoot>
 </template>

@@ -132,6 +132,53 @@ export type WorkspaceDeployment = {
 }
 
 /**
+ * One declared pack that failed to import on the Release's build, as comfy-builder names it.
+ */
+export type ReleaseUnsupportedPack = {
+  /**
+   * The pack's folder under custom_nodes.
+   */
+  folder: string
+  /**
+   * The pack's Comfy Registry id; empty for a pack not installed from the registry.
+   */
+  registry_id: string
+  /**
+   * The repository URL the pack's own pyproject.toml names, for matching only, never a verified source; empty when it names none.
+   */
+  repository: string
+  /**
+   * Why the pack failed to import: the last line of its import error, or "needs a GPU". Empty when ComfyUI logged no reason.
+   */
+  cause: string
+}
+
+/**
+ * The declared packs that failed to import on the build of the editor's Release, in the order the build declared them, and which Release that is.
+ */
+export type ReleaseUnsupportedPacks = {
+  /**
+   * The Release whose build the packs were read for, the same id as a deployment's release_id in GET /api/workspaces/{id}/deployments. The route answers for the Release the deployment runs now, so an editor that booted on an earlier Release compares this id with its own and ignores the packs when they differ. Null when no Release's build was read: Comfy Cloud, the rollout flag off, or comfy-builder could not be read.
+   */
+  release_id: string | null
+  packs: Array<ReleaseUnsupportedPack>
+}
+
+/**
+ * Which step the CPU server of the deployment this browser's editor runs on is on.
+ */
+export type WorkspaceDeploymentCpuServer = {
+  /**
+   * none: the deployment gets no CPU server (Comfy Cloud, a deployment that is stopping, stop_failed, stopped or failed, or a Release with no route list or no pack route in it), so stop asking. A route list ingest could not read, or a status it does not know, is the 502, never none. creating: none yet, and setting one up takes seconds (a Modal deployment, or one on its way up). building: none yet, and Modal builds the Release's image first, which can take minutes the first time (RunPod). created: the CPU server exists; it may still be starting ComfyUI, which this does not say.
+   */
+  cpu_server: 'none' | 'creating' | 'building' | 'created'
+  /**
+   * The deployment the answer is about. Absent when the editor runs on Comfy Cloud.
+   */
+  deployment_id?: string
+}
+
+/**
  * Present only for can_delete_workspace denied with plan_ending when all live subscription rows carry a known future cancel_at. This is guidance, not a promise that deletion will succeed at that time; writes recheck.
  */
 export type WorkspaceDeletionDenialParams = {
@@ -14353,6 +14400,41 @@ export type GetNodeInfoResponses = {
 export type GetNodeInfoResponse =
   GetNodeInfoResponses[keyof GetNodeInfoResponses]
 
+export type GetReleaseUnsupportedPacksData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/release/unsupported-packs'
+}
+
+export type GetReleaseUnsupportedPacksErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+}
+
+export type GetReleaseUnsupportedPacksError =
+  GetReleaseUnsupportedPacksErrors[keyof GetReleaseUnsupportedPacksErrors]
+
+export type GetReleaseUnsupportedPacksResponses = {
+  /**
+   * The packs the Release built without, in the order the build declared them
+   */
+  200: ReleaseUnsupportedPacks
+}
+
+export type GetReleaseUnsupportedPacksResponse =
+  GetReleaseUnsupportedPacksResponses[keyof GetReleaseUnsupportedPacksResponses]
+
 export type GetLegacyObjectInfoByNodeClassData = {
   body?: never
   path: {
@@ -19538,6 +19620,58 @@ export type PickWorkspaceDeploymentResponses = {
 
 export type PickWorkspaceDeploymentResponse =
   PickWorkspaceDeploymentResponses[keyof PickWorkspaceDeploymentResponses]
+
+export type GetWorkspaceDeploymentCpuServerData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployment/cpu-server'
+}
+
+export type GetWorkspaceDeploymentCpuServerErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Workspace not found, or the caller is not a member
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `code` is `cpu_server_unknown`: the deployment or its Release's route list could not be read, the deployment's status is not one ingest knows (or is empty), or platform-gateway gave no answer ingest knows. Not an answer about the CPU server; ask again.
+   */
+  502: ErrorResponse
+}
+
+export type GetWorkspaceDeploymentCpuServerError =
+  GetWorkspaceDeploymentCpuServerErrors[keyof GetWorkspaceDeploymentCpuServerErrors]
+
+export type GetWorkspaceDeploymentCpuServerResponses = {
+  /**
+   * Which step the deployment's CPU server is on
+   */
+  200: WorkspaceDeploymentCpuServer
+}
+
+export type GetWorkspaceDeploymentCpuServerResponse =
+  GetWorkspaceDeploymentCpuServerResponses[keyof GetWorkspaceDeploymentCpuServerResponses]
 
 export type ListWorkspaceDeploymentsData = {
   body?: never

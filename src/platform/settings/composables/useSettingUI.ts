@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   getSettingInfo,
@@ -53,6 +55,7 @@ export function useSettingUI(
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
+  const { canManageMembers } = useBillingCapabilities()
   const settingStore = useSettingStore()
   const activeCategory = ref<SettingTreeNode | null>(null)
 
@@ -153,7 +156,7 @@ export function useSettingUI(
 
   const workspaceSettingsPanelComponent = defineAsyncComponent(
     () =>
-      import('@/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.vue')
+      import('@/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue')
   )
 
   const planCreditsPanel: SettingPanelItem = {
@@ -173,7 +176,8 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/platform/billing/components/billingTab/BillingTab.vue')
+      () =>
+        import('@/platform/account/components/dialogs/settings/BillingTab.vue')
     )
   }
 
@@ -211,7 +215,13 @@ export function useSettingUI(
     const planPanel = flags.unifiedBillingSettingsEnabled
       ? billingPanel
       : planCreditsPanel
-    const workspacePanels = isCloud ? [planPanel, membersPanel] : [planPanel]
+    const canViewMembers = pendingServerFact(
+      'BE-24066',
+      isCloud || canManageMembers.value
+    )
+    const workspacePanels = canViewMembers
+      ? [planPanel, membersPanel]
+      : [planPanel]
     return shouldShowWorkspaceAllowlist.value
       ? [...workspacePanels, allowlistPanel]
       : workspacePanels
@@ -411,6 +421,10 @@ export function useSettingUI(
     void skillPacksStore.startFlagGate()
   })
 
+  const unifiedBillingSettingsEnabled = computed(
+    () => flags.unifiedBillingSettingsEnabled
+  )
+
   return {
     panels,
     activeCategory,
@@ -418,6 +432,7 @@ export function useSettingUI(
     groupedMenuTreeNodes,
     settingCategories,
     navGroups,
+    unifiedBillingSettingsEnabled,
     findCategoryByKey,
     findPanelByKey
   }

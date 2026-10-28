@@ -1,3 +1,4 @@
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,8 +11,8 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import {
@@ -148,7 +149,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/billing/api/billingApi'))
 
 /** Null is the legacy client; a rail is what the SDK store would hand back. */
 const railState = vi.hoisted(() => ({
@@ -230,7 +231,7 @@ beforeEach(() => {
         throw error
       }
     }
-  vi.mocked(workspaceApi.getBillingStatus).mockImplementation(
+  vi.mocked(billingApi.getBillingStatus).mockImplementation(
     mockGetBillingStatus
   )
   Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
@@ -442,7 +443,7 @@ describe('useSubscription', () => {
 
         expect(subscriptionStatus.value).toEqual(status)
         expect(
-          useTeamWorkspaceStore().setWorkspaceBillingRail
+          useWorkspaceBillingStateStore().setWorkspaceBillingRail
         ).toHaveBeenCalledWith('workspace-123', 'stripe')
         // One transport per read: the rail a read is on is the only client it
         // asks, or the panels read one thing and the rail settled another.
@@ -633,10 +634,10 @@ describe('useSubscription', () => {
         billing_rail: 'legacy_stripe'
       })
       expect(
-        useTeamWorkspaceStore().setWorkspaceBillingRail
+        useWorkspaceBillingStateStore().setWorkspaceBillingRail
       ).toHaveBeenCalledOnce()
       expect(
-        useTeamWorkspaceStore().setWorkspaceBillingRail
+        useWorkspaceBillingStateStore().setWorkspaceBillingRail
       ).toHaveBeenCalledWith('workspace-456', 'legacy_stripe')
     })
 

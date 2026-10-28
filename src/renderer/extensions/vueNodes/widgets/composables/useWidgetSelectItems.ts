@@ -15,7 +15,8 @@ import {
   getAssetDisplayFilename,
   getAssetDisplayName,
   getAssetFilename,
-  getAssetUrlFilename
+  getAssetUrlFilename,
+  getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type {
   FilterOption,
@@ -23,6 +24,7 @@ import type {
 } from '@/platform/assets/types/filterTypes'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
+import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
@@ -222,16 +224,14 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const filenameForUrl = getAssetUrlFilename(asset)
-      const subfolder =
-        kind === 'mesh'
-          ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
-          : undefined
+      const subfolder = getOutputSubfolder(asset.user_metadata)
       const pathWithSubfolder = subfolder
         ? `${subfolder}/${filenameForUrl}`
         : filenameForUrl
-      const annotatedPath = `${pathWithSubfolder} [output]`
+      const rootFolder = isGeneratedTempOutput(asset) ? 'temp' : 'output'
+      const annotatedPath = `${pathWithSubfolder} [${rootFolder}]`
       if (missing.has(annotatedPath)) continue
-      const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
+      const displayLabel = `${getAssetDisplayFilename(asset)} [${rootFolder}]`
       items.push({
         id: `output-${asset.id}`,
         preview_url:

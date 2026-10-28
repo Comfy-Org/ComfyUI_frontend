@@ -19,7 +19,6 @@ import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/age
 import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 import {
   AGENT_COMPOSER_THREAD_ID,
   agentComposerRunMode,
@@ -81,7 +80,6 @@ async function mockAgentBoot(
     features: { ...agentFeatures(agentFlag), ...features },
     settings: {
       'Comfy.TutorialCompleted': true,
-      ...DEPLOY_ACTION_SEEN_SETTINGS,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
       ...settings,
       ...((vueNodes || cloudAppFixture.info().tags.includes('@vue-nodes')) && {
@@ -122,7 +120,8 @@ async function mockAgentBoot(
 
 export async function mockAgentTurnApi(
   page: Page,
-  turnAccepted: AgentTurnAccepted
+  turnAccepted: AgentTurnAccepted,
+  beforeAccept?: () => Promise<void>
 ): Promise<void> {
   const threads = emptyAgentThreadList()
   const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
@@ -135,9 +134,10 @@ export async function mockAgentTurnApi(
   await page.route('**/api/agent/run-mode', (route) =>
     route.fulfill(jsonRoute(runMode))
   )
-  await page.route('**/api/agent/threads/*/messages', (route) =>
-    route.fulfill(jsonRoute(turnAccepted))
-  )
+  await page.route('**/api/agent/threads/*/messages', async (route) => {
+    await beforeAccept?.()
+    await route.fulfill(jsonRoute(turnAccepted))
+  })
 }
 
 export async function mockWorkflowPersistence(

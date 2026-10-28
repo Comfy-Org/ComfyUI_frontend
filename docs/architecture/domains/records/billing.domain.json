@@ -124,10 +124,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/billing/api/capabilityRevision.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/billing/customerActionParity.test.ts",
       "role": "domain"
     },
@@ -217,14 +213,6 @@
     },
     {
       "path": "src/platform/billing/components/SubscriptionInactiveMemberDialog.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/billing/components/SubscriptionPanelContentWorkspace.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/billing/components/SubscriptionPanelContentWorkspace.vue",
       "role": "presentation"
     },
     {
@@ -349,14 +337,6 @@
     },
     {
       "path": "src/platform/billing/components/settings/MemberUpsellBanner.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/billing/components/settings/PlanCreditsPanelContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/billing/components/settings/PlanCreditsPanelContent.vue",
       "role": "presentation"
     },
     {
@@ -613,8 +593,8 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedDependencies": ["design-system", "ingest-api", "server-facts"],
+  "allowedConsumers": ["account"],
   "characterizationScenarios": [
     {
       "name": "Billing context routes reads and actions to the legacy or workspace billing rail",
@@ -731,7 +711,7 @@
   "compatibilityPromises": [
     "Unclassified callers, authentication, workspace, and the cloud record may continue importing billing internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "useBillingContext remains the shared billing seam for the legacy and workspace rails, and plan selection stays in the host app while hosted billing handles checkout only.",
-    "Billing code that reads teamWorkspaceStore, authStore, or cloud subscription constants, workspaceApi billing endpoints owned by the workspace record, and dialog launchers or stores that import presentation remain visible as cross-domain and role-boundary debt; classification does not grant dependency exceptions."
+    "Billing owns the extracted client and SDK contract; mixed membership and billing views belong to account under ADR-BILLING-0049. Remaining cross-domain imports and dialog launchers that import presentation stay visible as boundary debt."
   ],
   "deepImports": "inventory"
 }

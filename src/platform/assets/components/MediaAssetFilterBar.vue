@@ -76,10 +76,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import { isCloud } from '@/platform/distribution/types'
 import {
   dateFilterOptions,

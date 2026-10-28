@@ -41,6 +41,11 @@ import {
   zTurnInProgressError
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
+  agentRequestFailureFingerprint,
+  describeAgentRequestFailure
+} from '@/workbench/extensions/agent/services/agent/agentRequestFailure'
+import type { AgentRequestFailureDiagnostics } from '@/workbench/extensions/agent/services/agent/agentRequestFailure'
+import {
   AgentApiError,
   AgentResponseUnreadableError
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
@@ -301,9 +306,19 @@ export function trackAgentError(
   errorClass: AgentErrorClass,
   stage: AgentErrorMetadata['failure_stage'],
   uiTreatment: AgentErrorMetadata['ui_treatment'],
-  overrides: { retryable?: boolean; turnAccepted?: boolean } = {}
+  overrides: {
+    retryable?: boolean
+    turnAccepted?: boolean
+    /**
+     * FE-3200. Spread straight through, so a call site that has already built
+     * the diagnosis for `reportError` passes the same record to both sinks
+     * rather than deriving it twice and risking them disagreeing.
+     */
+    diagnostics?: AgentRequestFailureDiagnostics
+  } = {}
 ): void {
   useTelemetry()?.trackAgentError({
+    ...overrides.diagnostics,
     error_class: errorClass,
     failure_stage: stage,
     retryable: overrides.retryable ?? stage === 'pre_acceptance',
@@ -938,15 +953,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
         localStorage.removeItem(threadStorageKey)
       return false
     }
+    const diagnostics = describeAgentRequestFailure(error)
     reportError(error, {
       surface: 'agent',
-      errorType: 'agent_history_load_failed'
+      errorType: 'agent_history_load_failed',
+      tags: diagnostics,
+      fingerprint: agentRequestFailureFingerprint(
+        'agent_history_load_failed',
+        diagnostics
+      )
     })
     if (failureNotice === 'error_overlay')
       pushError(error instanceof Error ? error.message : String(error))
     trackAgentError('history_load_failed', 'pre_acceptance', failureNotice, {
       retryable: isRetryableRequestFailure(error, false),
-      turnAccepted: stashedTurn
+      turnAccepted: stashedTurn,
+      diagnostics
     })
     return false
   }
