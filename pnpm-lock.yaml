@@ -900,6 +900,9 @@ importers:
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
+      '@vueuse/integrations':
+        specifier: 'catalog:'
+        version: 14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
       firebase:
         specifier: 'catalog:'
         version: 11.10.0
@@ -1019,6 +1022,9 @@ importers:
       '@comfyorg/account-core':
         specifier: workspace:^
         version: link:../account-core
+      '@vueuse/integrations':
+        specifier: ^14.4.0
+        version: 14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
       primeicons:
         specifier: ^7.0.0
         version: 7.0.0
@@ -1129,12 +1135,6 @@ importers:
       '@iconify/utils':
         specifier: 'catalog:'
         version: 3.1.4
-      '@vueuse/core':
-        specifier: 'catalog:'
-        version: 14.4.0(vue@3.5.42(typescript@6.0.3))
-      '@vueuse/integrations':
-        specifier: 'catalog:'
-        version: 14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
       chart.js:
         specifier: ^4.5.0
         version: 4.5.1
@@ -1187,6 +1187,12 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.2(vitest@5.0.2)
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 14.4.0(vue@3.5.42(typescript@6.0.3))
+      '@vueuse/integrations':
+        specifier: 'catalog:'
+        version: 14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
       happy-dom:
         specifier: 'catalog:'
         version: 20.14.5
