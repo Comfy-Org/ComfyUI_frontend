@@ -50,7 +50,7 @@ import Input from '@comfyorg/design-system/input/Input'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const { t } = useI18n()
 

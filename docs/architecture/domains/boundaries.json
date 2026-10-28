@@ -999,10 +999,6 @@
         ]
       },
       {
-        "name": "color-conversion/domain",
-        "patterns": ["src/utils/colorUtil.test.ts", "src/utils/colorUtil.ts"]
-      },
-      {
         "name": "color-palettes/domain",
         "patterns": [
           "src/constants/coreColorPalettes.ts",
@@ -1055,8 +1051,6 @@
       {
         "name": "design-system/domain",
         "patterns": [
-          "src/components/gradientslider/gradients.ts",
-          "src/types/navTypes.ts",
           "src/types/toastId.ts",
           "src/types/toastOptions.ts",
           "src/utils/histogramUtil.test.ts",
@@ -1095,16 +1089,11 @@
       {
         "name": "design-system/presentation",
         "patterns": [
-          "src/components/button/**",
-          "src/components/card/**",
-          "src/components/chip/**",
           "src/components/curve/CurveEditor.test.ts",
           "src/components/curve/CurveEditor.vue",
           "src/components/loader/**",
           "src/components/range/RangeEditor.test.ts",
           "src/components/range/RangeEditor.vue",
-          "src/components/ui/chart/**",
-          "src/components/ui/color-picker/**",
           "src/utils/gridUtil.ts"
         ]
       },
@@ -1152,7 +1141,6 @@
           "src/platform/telemetry/datadogRumBeforeSend.test.ts",
           "src/platform/telemetry/datadogRumBeforeSend.ts",
           "src/platform/telemetry/redactTelemetryUrls.test.ts",
-          "src/platform/telemetry/redactTelemetryUrls.ts",
           "src/platform/telemetry/sentryBeforeSend.test.ts",
           "src/platform/telemetry/sentryBeforeSend.ts",
           "src/platform/telemetry/thirdPartyErrorNoise.test.ts",
@@ -1170,9 +1158,7 @@
           "src/platform/telemetry/assertFailureReporter.ts",
           "src/platform/telemetry/assetLoadErrorReporting.test.ts",
           "src/platform/telemetry/assetLoadErrorReporting.ts",
-          "src/platform/telemetry/reportError.sentry.test.ts",
-          "src/platform/telemetry/reportError.test.ts",
-          "src/platform/telemetry/reportError.ts"
+          "src/platform/telemetry/reportError.sentry.test.ts"
         ]
       },
       {
@@ -1180,6 +1166,7 @@
         "patterns": [
           "src/platform/telemetry/imageFailureDiagnostics.test.ts",
           "src/platform/telemetry/imageFailureDiagnostics.ts",
+          "src/platform/telemetry/initErrorReporter.ts",
           "src/platform/telemetry/initDatadogRum.test.ts",
           "src/platform/telemetry/initDatadogRum.ts",
           "src/platform/telemetry/initSentry.test.ts",
@@ -2327,7 +2314,6 @@
           "src/components/graph/NodeDragPreview.test.ts",
           "src/components/graph/NodeDragPreview.vue",
           "src/components/node/**",
-          "src/components/searchbox/HighlightedText.vue",
           "src/components/searchbox/NodeSearchBox.test.ts",
           "src/components/searchbox/NodeSearchBox.vue",
           "src/components/searchbox/NodeSearchBoxPopover.test.ts",
@@ -2590,12 +2576,6 @@
           "src/composables/graph/useGraphHierarchy.ts",
           "src/stores/workspace/favoritedWidgetsStore.ts",
           "src/stores/workspace/rightSidePanelStore.ts"
-        ]
-      },
-      {
-        "name": "properties-panel/presentation",
-        "patterns": [
-          "src/components/rightSidePanel/layout/CollapseToggleButton.vue"
         ]
       },
       {
@@ -2942,19 +2922,12 @@
         "patterns": ["src/platform/tasks/**"]
       },
       {
-        "name": "telemetry/domain",
-        "patterns": ["src/platform/telemetry/types.ts"]
-      },
-      {
         "name": "telemetry/application",
         "patterns": [
           "src/composables/useRunButtonTelemetry.test.ts",
           "src/composables/useRunButtonTelemetry.ts",
           "src/platform/telemetry/TelemetryRegistry.test.ts",
-          "src/platform/telemetry/TelemetryRegistry.ts",
-          "src/platform/telemetry/__mocks__/index.ts",
           "src/platform/telemetry/hostTelemetryEnabled.ts",
-          "src/platform/telemetry/index.ts",
           "src/platform/telemetry/nodeAdded/nodeAddSource.ts",
           "src/platform/telemetry/searchQuery/**",
           "src/platform/telemetry/storeReadiness.test.ts",
@@ -3644,13 +3617,7 @@
       },
       {
         "name": "design-system/presentation/outer-1",
-        "patterns": [
-          "src/components/common/**",
-          "src/components/gradientslider/**",
-          "src/components/palette/**",
-          "src/components/rightSidePanel/layout/**",
-          "src/components/widget/**"
-        ]
+        "patterns": ["src/components/common/**", "src/components/palette/**"]
       },
       {
         "name": "dialog-host/presentation/outer-1",
@@ -3659,10 +3626,6 @@
       {
         "name": "error-handling/application/outer-1",
         "patterns": ["src/composables/__mocks__/**"]
-      },
-      {
-        "name": "error-reporting/application/outer-1",
-        "patterns": ["src/platform/telemetry/__mocks__/**"]
       },
       {
         "name": "extension-manager/application/outer-1",
@@ -4162,7 +4125,6 @@
           "workflow-persistence/infrastructure",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
-          "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
@@ -4198,7 +4160,6 @@
           "workflow-persistence/infrastructure",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
-          "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
@@ -4233,7 +4194,6 @@
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
-          "error-reporting/application/outer-1",
           "extension-runtime/presentation/outer-1",
           "workflow-management/presentation/outer-1",
           "workflow-persistence/domain/outer-1",
@@ -4287,7 +4247,6 @@
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
-          "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
           "workflow-management/presentation/outer-1",
@@ -4313,7 +4272,9 @@
         "from": "app-host/domain",
         "allow": [
           "app-host/domain",
+          "error-reporting/domain",
           "app-host/domain/outer-1",
+          "telemetry/domain/outer-1",
           "workflow-persistence/domain/outer-1",
           "unclassified"
         ]
@@ -4324,8 +4285,14 @@
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "workflow-persistence/infrastructure",
           "app-host/domain/outer-1",
+          "telemetry/domain/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "unclassified"
@@ -4337,8 +4304,14 @@
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "workflow-persistence/infrastructure",
           "app-host/domain/outer-1",
+          "telemetry/domain/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "unclassified"
@@ -4351,8 +4324,12 @@
           "app-host/domain",
           "app-host/application",
           "app-host/presentation",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "telemetry/application",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "telemetry/domain/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "unclassified"
@@ -4368,10 +4345,18 @@
           "app-host/infrastructure",
           "app-host/presentation",
           "app-host/integration",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "telemetry/integration",
           "workflow-persistence/infrastructure",
           "workflow-persistence/integration",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/integration/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "unclassified"
@@ -4463,6 +4448,7 @@
           "authentication/domain",
           "cloud/domain",
           "cloud/domain/outer-1",
+          "telemetry/domain/outer-1",
           "workflow-persistence/domain/outer-1",
           "unclassified"
         ]
@@ -4478,11 +4464,14 @@
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "workflow-persistence/infrastructure",
           "authentication/infrastructure/outer-1",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
+          "telemetry/domain/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "cloud/application/outer-3",
@@ -4500,11 +4489,14 @@
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "workflow-persistence/infrastructure",
           "authentication/infrastructure/outer-1",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
+          "telemetry/domain/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "cloud/application/outer-3",
@@ -4522,8 +4514,10 @@
           "cloud/domain",
           "cloud/application",
           "cloud/presentation",
+          "telemetry/application",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
+          "telemetry/domain/outer-1",
           "workflow-persistence/domain/outer-1",
           "cloud/presentation/outer-2",
           "workflow-persistence/application/outer-2",
@@ -4548,12 +4542,17 @@
           "cloud/infrastructure",
           "cloud/presentation",
           "cloud/integration",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "telemetry/integration",
           "workflow-persistence/infrastructure",
           "workflow-persistence/integration",
           "authentication/infrastructure/outer-1",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/integration/outer-1",
           "workflow-persistence/domain/outer-1",
           "cloud/presentation/outer-2",
           "workflow-persistence/application/outer-2",
@@ -4570,6 +4569,7 @@
           "design-system/domain",
           "billing/domain/outer-1",
           "design-system/domain/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -4585,10 +4585,13 @@
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "design-system/domain/outer-1",
+          "telemetry/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4605,10 +4608,13 @@
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "design-system/domain/outer-1",
+          "telemetry/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4624,10 +4630,12 @@
           "design-system/domain",
           "design-system/application",
           "design-system/presentation",
+          "telemetry/application",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "telemetry/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4647,11 +4655,16 @@
           "design-system/application",
           "design-system/infrastructure",
           "design-system/presentation",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "telemetry/integration",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/integration/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -4679,7 +4692,6 @@
         "from": "bounding-boxes/domain",
         "allow": [
           "bounding-boxes/domain",
-          "color-conversion/domain",
           "design-system/domain",
           "dialog-host/domain",
           "graph-model/domain",
@@ -4694,7 +4706,6 @@
         "allow": [
           "bounding-boxes/domain",
           "bounding-boxes/application",
-          "color-conversion/domain",
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
@@ -4717,7 +4728,6 @@
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
-          "color-conversion/domain",
           "design-system/domain",
           "design-system/application",
           "design-system/presentation",
@@ -4744,7 +4754,6 @@
           "bounding-boxes/application",
           "bounding-boxes/presentation",
           "bounding-boxes/integration",
-          "color-conversion/domain",
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
@@ -4870,7 +4879,12 @@
       },
       {
         "from": "cloud/domain",
-        "allow": ["cloud/domain", "cloud/domain/outer-1", "unclassified"]
+        "allow": [
+          "cloud/domain",
+          "cloud/domain/outer-1",
+          "telemetry/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "cloud/application",
@@ -4878,9 +4892,12 @@
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
+          "telemetry/domain/outer-1",
           "cloud/application/outer-3",
           "unclassified"
         ]
@@ -4891,9 +4908,12 @@
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
+          "telemetry/domain/outer-1",
           "cloud/application/outer-3",
           "unclassified"
         ]
@@ -4904,8 +4924,10 @@
           "cloud/domain",
           "cloud/application",
           "cloud/presentation",
+          "telemetry/application",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
+          "telemetry/domain/outer-1",
           "cloud/presentation/outer-2",
           "cloud/application/outer-3",
           "unclassified"
@@ -4919,17 +4941,18 @@
           "cloud/infrastructure",
           "cloud/presentation",
           "cloud/integration",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "telemetry/integration",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/integration/outer-1",
           "cloud/presentation/outer-2",
           "cloud/application/outer-3",
           "unclassified"
         ]
-      },
-      {
-        "from": "color-conversion/domain",
-        "allow": ["color-conversion/domain", "unclassified"]
       },
       {
         "from": "color-palettes/domain",
@@ -5015,13 +5038,20 @@
       },
       {
         "from": "dialog-host/domain",
-        "allow": ["dialog-host/domain", "unclassified"]
+        "allow": [
+          "dialog-host/domain",
+          "error-reporting/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "dialog-host/application",
         "allow": [
           "dialog-host/domain",
           "dialog-host/application",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "unclassified"
         ]
       },
@@ -5031,6 +5061,9 @@
           "dialog-host/domain",
           "dialog-host/application",
           "dialog-host/integration",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "dialog-host/presentation/outer-1",
           "unclassified"
         ]
@@ -5056,7 +5089,11 @@
         "from": "error-reporting/domain",
         "allow": [
           "ingest-api/domain/public",
+          "app-host/domain",
           "error-reporting/domain",
+          "runtime-guards/domain",
+          "app-host/domain/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -5065,10 +5102,17 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
-          "error-reporting/application/outer-1",
+          "runtime-guards/domain",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "app-host/domain/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -5077,10 +5121,17 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
-          "error-reporting/application/outer-1",
+          "runtime-guards/domain",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "app-host/domain/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -5170,35 +5221,56 @@
       },
       {
         "from": "extension-runtime/domain",
-        "allow": ["extension-runtime/domain", "unclassified"]
+        "allow": [
+          "error-reporting/domain",
+          "extension-runtime/domain",
+          "telemetry/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "extension-runtime/application",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "extension-runtime/infrastructure/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "extension-runtime/infrastructure",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "extension-runtime/infrastructure/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "extension-runtime/presentation",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/presentation",
+          "telemetry/application",
           "extension-runtime/presentation/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -5206,13 +5278,21 @@
         "from": "extension-runtime/integration",
         "allow": [
           "webcam-capture/integration/public",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/infrastructure",
           "extension-runtime/presentation",
           "extension-runtime/integration",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "telemetry/integration",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/integration/outer-1",
           "unclassified"
         ]
       },
@@ -5380,6 +5460,7 @@
           "comfyui-api/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
+          "error-reporting/domain",
           "graph-model/domain",
           "node-definition/domain",
           "graph-model/domain/outer-1",
@@ -5394,6 +5475,9 @@
           "comfyui-api/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
@@ -5410,6 +5494,9 @@
           "comfyui-api/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
@@ -5426,6 +5513,9 @@
           "comfyui-api/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
@@ -6046,7 +6136,11 @@
       },
       {
         "from": "node-library/domain",
-        "allow": ["node-library/domain", "unclassified"]
+        "allow": [
+          "node-library/domain",
+          "telemetry/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "node-library/application",
@@ -6054,7 +6148,10 @@
           "node-library/domain",
           "node-library/application",
           "node-library/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "node-library/application/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -6064,7 +6161,10 @@
           "node-library/domain",
           "node-library/application",
           "node-library/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "node-library/application/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -6074,7 +6174,9 @@
           "node-library/domain",
           "node-library/application",
           "node-library/presentation",
+          "telemetry/application",
           "node-library/application/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -6086,7 +6188,12 @@
           "node-library/infrastructure",
           "node-library/presentation",
           "node-library/integration",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "telemetry/integration",
           "node-library/application/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/integration/outer-1",
           "unclassified"
         ]
       },
@@ -6122,11 +6229,18 @@
       },
       {
         "from": "node-widgets/domain",
-        "allow": ["node-widgets/domain", "unclassified"]
+        "allow": [
+          "error-reporting/domain",
+          "node-widgets/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "node-widgets/application",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/infrastructure",
@@ -6136,6 +6250,9 @@
       {
         "from": "node-widgets/infrastructure",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/infrastructure",
@@ -6145,6 +6262,8 @@
       {
         "from": "node-widgets/presentation",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/presentation",
@@ -6155,6 +6274,9 @@
       {
         "from": "node-widgets/integration",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/infrastructure",
@@ -6236,15 +6358,6 @@
         "allow": ["properties-panel/application", "unclassified"]
       },
       {
-        "from": "properties-panel/presentation",
-        "allow": [
-          "properties-panel/application",
-          "properties-panel/presentation",
-          "properties-panel/presentation/outer-2",
-          "unclassified"
-        ]
-      },
-      {
         "from": "release-notes/application",
         "allow": [
           "release-notes/application",
@@ -6321,7 +6434,6 @@
           "app-host/domain",
           "canvas-renderer/domain",
           "selection-toolbox/domain",
-          "telemetry/domain",
           "app-host/domain/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
@@ -6337,10 +6449,8 @@
           "canvas-renderer/application",
           "canvas-renderer/presentation",
           "properties-panel/application",
-          "properties-panel/presentation",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
-          "telemetry/domain",
           "telemetry/application",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
@@ -6364,11 +6474,9 @@
           "canvas-renderer/presentation",
           "canvas-renderer/integration",
           "properties-panel/application",
-          "properties-panel/presentation",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "selection-toolbox/integration",
-          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -6400,6 +6508,7 @@
           "authentication/domain",
           "dialog-host/domain",
           "settings/domain",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -6414,8 +6523,11 @@
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "authentication/infrastructure/outer-1",
           "settings/application/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -6430,8 +6542,11 @@
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "authentication/infrastructure/outer-1",
           "settings/application/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -6447,8 +6562,10 @@
           "settings/domain",
           "settings/application",
           "settings/presentation",
+          "telemetry/application",
           "dialog-host/presentation/outer-1",
           "settings/application/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -6470,9 +6587,14 @@
           "settings/infrastructure",
           "settings/presentation",
           "settings/integration",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "telemetry/integration",
           "authentication/infrastructure/outer-1",
           "dialog-host/presentation/outer-1",
           "settings/application/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/integration/outer-1",
           "unclassified"
         ]
       },
@@ -6618,22 +6740,19 @@
         "allow": ["tasks/infrastructure", "unclassified"]
       },
       {
-        "from": "telemetry/domain",
-        "allow": [
-          "ingest-api/domain/public",
-          "telemetry/domain",
-          "telemetry/domain/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "telemetry/application",
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
-          "telemetry/domain",
+          "node-replacement/domain",
+          "node-replacement/infrastructure",
+          "remote-config/domain",
+          "remote-config/application",
+          "remote-config/infrastructure",
           "telemetry/application",
           "telemetry/infrastructure",
+          "node-replacement/application/outer-1",
+          "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -6643,9 +6762,15 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
-          "telemetry/domain",
+          "node-replacement/domain",
+          "node-replacement/infrastructure",
+          "remote-config/domain",
+          "remote-config/application",
+          "remote-config/infrastructure",
           "telemetry/application",
           "telemetry/infrastructure",
+          "node-replacement/application/outer-1",
+          "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -6655,10 +6780,17 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
-          "telemetry/domain",
+          "node-replacement/domain",
+          "node-replacement/infrastructure",
+          "node-replacement/presentation",
+          "remote-config/domain",
+          "remote-config/application",
+          "remote-config/infrastructure",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
+          "node-replacement/application/outer-1",
+          "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
           "telemetry/integration/outer-1",
           "unclassified"
@@ -6822,32 +6954,44 @@
       },
       {
         "from": "workbench-shell/domain",
-        "allow": ["workbench-shell/domain", "unclassified"]
+        "allow": [
+          "workbench-shell/domain",
+          "telemetry/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "workbench-shell/application",
         "allow": [
+          "telemetry/application",
+          "telemetry/infrastructure",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/infrastructure",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "workbench-shell/infrastructure",
         "allow": [
+          "telemetry/application",
+          "telemetry/infrastructure",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/infrastructure",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "workbench-shell/presentation",
         "allow": [
+          "telemetry/application",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/presentation",
+          "telemetry/domain/outer-1",
           "workbench-shell/presentation/outer-2",
           "unclassified"
         ]
@@ -6855,11 +6999,16 @@
       {
         "from": "workbench-shell/integration",
         "allow": [
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "telemetry/integration",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/infrastructure",
           "workbench-shell/presentation",
           "workbench-shell/integration",
+          "telemetry/domain/outer-1",
+          "telemetry/integration/outer-1",
           "workbench-shell/presentation/outer-2",
           "unclassified"
         ]
@@ -6935,32 +7084,53 @@
       },
       {
         "from": "workflow-management/domain",
-        "allow": ["workflow-management/domain", "unclassified"]
+        "allow": [
+          "error-reporting/domain",
+          "workflow-management/domain",
+          "telemetry/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "workflow-management/application",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "workflow-management/infrastructure",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "workflow-management/presentation",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "telemetry/application",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "telemetry/domain/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
         ]
@@ -6968,11 +7138,19 @@
       {
         "from": "workflow-management/integration",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "telemetry/integration",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
           "workflow-management/presentation",
           "workflow-management/integration",
+          "telemetry/domain/outer-1",
+          "telemetry/integration/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
         ]
@@ -6995,7 +7173,6 @@
           "workspace/infrastructure",
           "app-host/domain/outer-1",
           "authentication/infrastructure/outer-1",
-          "error-reporting/application/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "unclassified"
@@ -7027,7 +7204,6 @@
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
           "authentication/infrastructure/outer-1",
-          "error-reporting/application/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "unclassified"
@@ -7065,13 +7241,20 @@
       },
       {
         "from": "workflow-templates/domain",
-        "allow": ["workflow-templates/domain", "unclassified"]
+        "allow": [
+          "workflow-templates/domain",
+          "telemetry/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "workflow-templates/infrastructure",
         "allow": [
+          "telemetry/application",
+          "telemetry/infrastructure",
           "workflow-templates/domain",
           "workflow-templates/infrastructure",
+          "telemetry/domain/outer-1",
           "workflow-templates/application/outer-1",
           "unclassified"
         ]
@@ -7079,8 +7262,10 @@
       {
         "from": "workflow-templates/presentation",
         "allow": [
+          "telemetry/application",
           "workflow-templates/domain",
           "workflow-templates/presentation",
+          "telemetry/domain/outer-1",
           "workflow-templates/application/outer-1",
           "unclassified"
         ]
@@ -7209,7 +7394,6 @@
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
-          "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
           "workflow-management/presentation/outer-1",
@@ -7232,7 +7416,9 @@
         "from": "app-host/domain/outer-1",
         "allow": [
           "app-host/domain",
+          "error-reporting/domain",
           "app-host/domain/outer-1",
+          "telemetry/domain/outer-1",
           "workflow-persistence/domain/outer-1",
           "unclassified"
         ]
@@ -7244,8 +7430,12 @@
           "app-host/domain",
           "app-host/application",
           "app-host/presentation",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "telemetry/application",
           "app-host/domain/outer-1",
           "app-host/presentation/outer-1",
+          "telemetry/domain/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "unclassified"
@@ -7300,11 +7490,14 @@
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "workflow-persistence/infrastructure",
           "authentication/infrastructure/outer-1",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
+          "telemetry/domain/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "cloud/application/outer-3",
@@ -7320,6 +7513,7 @@
           "design-system/domain",
           "billing/domain/outer-1",
           "design-system/domain/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -7335,10 +7529,13 @@
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "design-system/domain/outer-1",
+          "telemetry/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -7355,10 +7552,13 @@
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "design-system/domain/outer-1",
+          "telemetry/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -7382,7 +7582,6 @@
         "allow": [
           "bounding-boxes/domain",
           "bounding-boxes/application",
-          "color-conversion/domain",
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
@@ -7445,7 +7644,12 @@
       },
       {
         "from": "cloud/domain/outer-1",
-        "allow": ["cloud/domain", "cloud/domain/outer-1", "unclassified"]
+        "allow": [
+          "cloud/domain",
+          "cloud/domain/outer-1",
+          "telemetry/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "cloud/application/outer-1",
@@ -7453,9 +7657,12 @@
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
+          "telemetry/domain/outer-1",
           "cloud/application/outer-3",
           "unclassified"
         ]
@@ -7466,9 +7673,12 @@
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
+          "telemetry/domain/outer-1",
           "cloud/application/outer-3",
           "unclassified"
         ]
@@ -7497,6 +7707,8 @@
         "allow": [
           "dialog-host/domain",
           "dialog-host/application",
+          "error-reporting/domain",
+          "error-reporting/application",
           "dialog-host/presentation/outer-1",
           "unclassified"
         ]
@@ -7507,18 +7719,6 @@
           "error-handling/domain",
           "error-handling/application",
           "error-handling/application/outer-1",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "error-reporting/application/outer-1",
-        "allow": [
-          "ingest-api/domain/public",
-          "ingest-api/infrastructure/public",
-          "error-reporting/domain",
-          "error-reporting/application",
-          "error-reporting/infrastructure",
-          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
@@ -7534,20 +7734,30 @@
       {
         "from": "extension-runtime/infrastructure/outer-1",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "extension-runtime/infrastructure/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "extension-runtime/presentation/outer-1",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/presentation",
+          "telemetry/application",
           "extension-runtime/presentation/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -7608,6 +7818,7 @@
           "comfyui-api/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
+          "error-reporting/domain",
           "graph-model/domain",
           "node-definition/domain",
           "graph-model/domain/outer-1",
@@ -7622,6 +7833,9 @@
           "comfyui-api/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
@@ -7756,7 +7970,10 @@
           "node-library/domain",
           "node-library/application",
           "node-library/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "node-library/application/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -7772,6 +7989,8 @@
       {
         "from": "node-widgets/presentation/outer-1",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/presentation",
@@ -7816,11 +8035,9 @@
           "canvas-renderer/presentation",
           "canvas-renderer/integration",
           "properties-panel/application",
-          "properties-panel/presentation",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "selection-toolbox/integration",
-          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -7849,8 +8066,11 @@
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "authentication/infrastructure/outer-1",
           "settings/application/outer-1",
+          "telemetry/domain/outer-1",
           "unclassified"
         ]
       },
@@ -7907,7 +8127,8 @@
         "from": "telemetry/domain/outer-1",
         "allow": [
           "ingest-api/domain/public",
-          "telemetry/domain",
+          "node-replacement/domain",
+          "remote-config/domain",
           "telemetry/domain/outer-1",
           "unclassified"
         ]
@@ -7917,10 +8138,17 @@
         "allow": [
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
-          "telemetry/domain",
+          "node-replacement/domain",
+          "node-replacement/infrastructure",
+          "node-replacement/presentation",
+          "remote-config/domain",
+          "remote-config/application",
+          "remote-config/infrastructure",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
+          "node-replacement/application/outer-1",
+          "remote-config/application/outer-1",
           "telemetry/domain/outer-1",
           "telemetry/integration/outer-1",
           "unclassified"
@@ -8019,9 +8247,13 @@
       {
         "from": "workflow-management/presentation/outer-1",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "telemetry/application",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "telemetry/domain/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
         ]
@@ -8051,8 +8283,11 @@
       {
         "from": "workflow-templates/application/outer-1",
         "allow": [
+          "telemetry/application",
+          "telemetry/infrastructure",
           "workflow-templates/domain",
           "workflow-templates/infrastructure",
+          "telemetry/domain/outer-1",
           "workflow-templates/application/outer-1",
           "unclassified"
         ]
@@ -8081,10 +8316,13 @@
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "design-system/domain/outer-1",
+          "telemetry/domain/outer-1",
           "billing/application/outer-2",
           "unclassified"
         ]
@@ -8099,8 +8337,10 @@
           "cloud/domain",
           "cloud/application",
           "cloud/presentation",
+          "telemetry/application",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
+          "telemetry/domain/outer-1",
           "cloud/presentation/outer-2",
           "cloud/application/outer-3",
           "unclassified"
@@ -8146,7 +8386,6 @@
         "from": "properties-panel/presentation/outer-2",
         "allow": [
           "properties-panel/application",
-          "properties-panel/presentation",
           "properties-panel/presentation/outer-2",
           "unclassified"
         ]
@@ -8162,9 +8401,11 @@
       {
         "from": "workbench-shell/presentation/outer-2",
         "allow": [
+          "telemetry/application",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/presentation",
+          "telemetry/domain/outer-1",
           "workbench-shell/presentation/outer-2",
           "unclassified"
         ]
@@ -8187,7 +8428,6 @@
           "workspace/infrastructure",
           "app-host/domain/outer-1",
           "authentication/infrastructure/outer-1",
-          "error-reporting/application/outer-1",
           "workflow-persistence/domain/outer-1",
           "workflow-persistence/application/outer-2",
           "unclassified"
@@ -8203,9 +8443,12 @@
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "telemetry/application",
+          "telemetry/infrastructure",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
+          "telemetry/domain/outer-1",
           "cloud/application/outer-3",
           "unclassified"
         ]
@@ -8284,7 +8527,6 @@
           "cloud/infrastructure",
           "cloud/presentation",
           "cloud/integration",
-          "color-conversion/domain",
           "color-palettes/domain",
           "color-palettes/application",
           "comfy-registry/domain",
@@ -8424,7 +8666,6 @@
           "prompt-authoring/domain",
           "prompt-authoring/integration",
           "properties-panel/application",
-          "properties-panel/presentation",
           "release-notes/application",
           "release-notes/infrastructure",
           "remote-config/domain",
@@ -8461,7 +8702,6 @@
           "system-info/application",
           "system-info/presentation",
           "tasks/infrastructure",
-          "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
@@ -8540,7 +8780,6 @@
           "design-system/presentation/outer-1",
           "dialog-host/presentation/outer-1",
           "error-handling/application/outer-1",
-          "error-reporting/application/outer-1",
           "extension-manager/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",

@@ -28,7 +28,7 @@ import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { isWidgetId, parseWidgetId } from '@comfyorg/graph-model/widgetId'
-import type { ViewMode } from '@/utils/appMode'
+import type { ViewMode } from '@comfyorg/graph-model/appMode'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,

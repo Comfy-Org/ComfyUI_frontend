@@ -1,8 +1,8 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { computed, effectScope, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import {
@@ -17,7 +17,7 @@ import { useStorageScopeLifecycle } from './useStorageScopeLifecycle'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 describe('useStorageScopeLifecycle', () => {
   const resolvedUser = ref<{ id: string } | null>(null)

@@ -7,6 +7,7 @@
  * - Adds 512ms debounce on graph change persistence
  */
 
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { debounce } from 'es-toolkit'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { tryOnScopeDispose, until } from '@vueuse/core'
@@ -20,7 +21,6 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useFolderWorkflowsUrlLoader } from '@/platform/workflow/management/composables/useFolderWorkflowsUrlLoader'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'

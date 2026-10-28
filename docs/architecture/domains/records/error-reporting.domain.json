@@ -1,7 +1,7 @@
 {
   "id": "error-reporting",
   "capability": "Error reporting and RUM diagnostics",
-  "description": "The reportError entry point and its Sentry, Datadog RUM, and desktop-host routing; Sentry and Datadog RUM SDK initialization; beforeSend filters that drop third-party noise and enrich Vue directive errors; assertion, preload, resource, and image load failure reporters; and the manual-refresh stability action. Product analytics dispatch and startup tracing are separate records.",
+  "description": "Application error-reporting adapters for the shared telemetry package, vendor initialization and filtering, assertions, asset-load reporting, and manual-refresh diagnostics. Product analytics and startup tracing are separate records.",
   "modules": [
     {
       "path": "src/base/assert.test.ts",
@@ -10,10 +10,6 @@
     {
       "path": "src/base/assert.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/__mocks__/**",
-      "role": "application"
     },
     {
       "path": "src/platform/telemetry/assertFailureReporter.test.ts",
@@ -48,6 +44,10 @@
       "role": "infrastructure"
     },
     {
+      "path": "src/platform/telemetry/initErrorReporter.ts",
+      "role": "infrastructure"
+    },
+    {
       "path": "src/platform/telemetry/initDatadogRum.test.ts",
       "role": "infrastructure"
     },
@@ -76,19 +76,7 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/telemetry/redactTelemetryUrls.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/telemetry/reportError.sentry.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/reportError.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/reportError.ts",
       "role": "application"
     },
     {
@@ -125,13 +113,27 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["ingest-api"],
-  "allowedConsumers": ["agent", "workflow-persistence"],
+  "allowedDependencies": [
+    "app-host",
+    "ingest-api",
+    "runtime-guards",
+    "telemetry"
+  ],
+  "allowedConsumers": [
+    "agent",
+    "app-host",
+    "dialog-host",
+    "extension-runtime",
+    "graph-model",
+    "node-widgets",
+    "workflow-management",
+    "workflow-persistence"
+  ],
   "characterizationScenarios": [
     {
       "name": "reportError routes each failure once to the sinks enabled for the distribution and host",
       "checks": [
-        "src/platform/telemetry/reportError.test.ts",
+        "packages/telemetry/src/reportError.test.ts",
         "src/platform/telemetry/reportError.sentry.test.ts",
         "src/platform/telemetry/assertFailureReporter.test.ts",
         "src/platform/telemetry/assetLoadErrorReporting.test.ts"
@@ -171,7 +173,7 @@
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "reportError() remains the only sanctioned path to Sentry and Datadog error sinks; callers must not call captureException or datadogRum.addError directly.",
     "initDatadogRum and initSentry stay callable from src/bootstrap.ts and main.ts before Pinia and the telemetry registry exist.",
-    "reportError reading the host telemetry gate from the telemetry record, and sentryBeforeSend recognizing workspace API errors, remain visible as cross-domain coupling; classification does not grant dependency exceptions."
+    "Reporter initialization consumes distribution and telemetry enablement policy; error filters consume API error contracts and runtime guards without granting access to feature stores."
   ],
   "deepImports": "inventory"
 }

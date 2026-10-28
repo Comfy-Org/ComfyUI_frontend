@@ -269,7 +269,7 @@ import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -314,7 +314,7 @@ import {
   locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { isTransparent } from '@/utils/colorUtil'
+import { isTransparent } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
@@ -686,9 +686,11 @@ const hasVideoInput = computed(() =>
   nodeData.inputs.some((input) => input.type === 'VIDEO')
 )
 
-const hasVideoEditWidget = computed(() =>
-  widgetIds.value.some(
-    (id) => widgetValueStore.getWidget(id)?.type === 'videoedit'
+const VIDEO_PREVIEW_WIDGET_TYPES = new Set(['videoedit', 'videoconcat'])
+
+const hasVideoPreviewWidget = computed(() =>
+  widgetIds.value.some((id) =>
+    VIDEO_PREVIEW_WIDGET_TYPES.has(widgetValueStore.getWidget(id)?.type ?? '')
   )
 )
 
@@ -718,7 +720,7 @@ const nodeMedia = computed(() => {
       ? 'video'
       : 'image'
 
-  if (type === 'video' && hasVideoEditWidget.value) return undefined
+  if (type === 'video' && hasVideoPreviewWidget.value) return undefined
 
   return { type, urls } as const
 })

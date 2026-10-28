@@ -4,7 +4,9 @@
       <SearchInput
         v-model="searchQuery"
         :clear-label="$t('g.clear')"
-        :accessible-label="$t('g.search')"
+        :accessible-label="
+          $t('g.searchPlaceholder', { subject: $t('g.keybindings') })
+        "
         class="max-w-96"
         size="lg"
         autofocus
@@ -402,6 +404,7 @@ function handleRemoveAllKeybindings(command: KeybindingCommand) {
     headerProps: { title: t('g.removeAllKeybindingsTitle') },
     props: { promptText: t('g.removeAllKeybindingsMessage') },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.removeAll'),
       confirmVariant: 'destructive',
       onCancel: () => dialogStore.closeDialog(dialog),
@@ -453,6 +456,7 @@ function resetAllKeybindings() {
       promptText: t('g.resetAllKeybindingsMessage')
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.resetAll'),
       confirmVariant: 'destructive',
       onCancel: () => {

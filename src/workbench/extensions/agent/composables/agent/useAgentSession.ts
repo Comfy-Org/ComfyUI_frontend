@@ -7,8 +7,8 @@ import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   AgentErrorClass,
   AgentErrorMetadata,
@@ -16,7 +16,7 @@ import type {
   AgentStopMethod,
   AgentThreadStartSource,
   AgentWorkflowBindSource
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import {
   clearLegacyAgentStorage,
   getStorageIdentity,

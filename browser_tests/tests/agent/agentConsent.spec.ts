@@ -241,7 +241,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         name: enMessages.agent.consent.reject
       })
 
-      await test.step('Narrow layout keeps media widescreen and actions in visual order', async () => {
+      await test.step('Narrow layout keeps media widescreen and stacks Start above Skip', async () => {
         await requestConsentFromOpenPanel(page)
         await expect
           .poll(async () => {
@@ -256,20 +256,19 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
               reject.boundingBox()
             ])
             return acceptBox && rejectBox
-              ? rejectBox.x + rejectBox.width <= acceptBox.x &&
-                  rejectBox.y === acceptBox.y
+              ? acceptBox.y + acceptBox.height <= rejectBox.y
               : false
           })
           .toBe(true)
       })
 
-      await test.step('Keyboard order follows docs, Skip, then Start', async () => {
+      await test.step('Keyboard order follows docs, Start, then Skip', async () => {
         await docs.focus()
         await expect(docs).toBeFocused()
         await page.keyboard.press('Tab')
-        await expect(reject).toBeFocused()
-        await page.keyboard.press('Tab')
         await expect(accept).toBeFocused()
+        await page.keyboard.press('Tab')
+        await expect(reject).toBeFocused()
       })
     })
   })

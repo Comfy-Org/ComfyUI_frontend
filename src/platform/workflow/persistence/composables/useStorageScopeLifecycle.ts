@@ -1,9 +1,9 @@
 import { whenever } from '@vueuse/core'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   completeWorkflowLogoutTransition,

@@ -353,6 +353,7 @@
     "account",
     "cloud",
     "ingest-api",
+    "telemetry",
     "workflow-persistence"
   ],
   "allowedConsumers": ["agent", "settings", "workflow-persistence"],
