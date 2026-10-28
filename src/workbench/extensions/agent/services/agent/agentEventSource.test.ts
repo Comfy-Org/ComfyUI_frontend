@@ -569,4 +569,39 @@ describe('createAgentEventSource send', () => {
     expect(source.send('{"type":"doc_subscribe"}')).toBe(true)
     expect(lastSocket().send).toHaveBeenCalledWith('{"type":"doc_subscribe"}')
   })
+  it('does not open a second socket when a stale auth read settles mid-reconnect', async () => {
+    // The stale read's `finally` used to clear `connecting` unconditionally, releasing
+    // the latch held by the newer generation's in-flight read. A subscribe arriving in
+    // that window started a third read, and both survivors called open(), so the second
+    // overwrote `socket` and the first stayed connected forever with every handler
+    // bailing on `socket !== current`.
+    const pending: Array<(params: URLSearchParams) => void> = []
+    const source = createSource({
+      getAuthParams: () =>
+        new Promise<URLSearchParams>((resolve) => pending.push(resolve))
+    })
+
+    source.subscribe(() => {})
+    await connected()
+    expect(pending).toHaveLength(1)
+
+    source.reconnect()
+    await connected()
+    expect(pending).toHaveLength(2)
+
+    pending[0](tokenParams('stale'))
+    await connected()
+
+    source.subscribe(() => {})
+    await connected()
+    expect(pending).toHaveLength(2)
+
+    pending[1](tokenParams('current'))
+    await connected()
+    pending.at(-1)?.(tokenParams('extra'))
+    await connected()
+
+    expect(sockets()).toHaveLength(1)
+    expect(lastSocket().url).toContain('token=current')
+  })
 })

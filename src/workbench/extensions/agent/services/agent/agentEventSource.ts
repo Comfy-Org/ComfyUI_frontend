@@ -62,18 +62,25 @@ export function createAgentEventSource({
     reconnectTimer.start()
   }
 
+  async function readAuth(generation: number): Promise<AuthRead> {
+    try {
+      return { ok: true, params: await getAuthParams() }
+    } catch {
+      return { ok: false }
+    } finally {
+      // Only the generation that still owns the latch may release it. `disconnect()`
+      // clears `connecting` and bumps the generation, so a newer `connect()` can
+      // already be awaiting its own auth read by the time this stale one settles --
+      // releasing the latch here would let a third read start in that generation.
+      if (generation === connectGeneration) connecting = false
+    }
+  }
+
   async function connect(): Promise<void> {
     if (listeners.size === 0 || socket !== null || connecting) return
     connecting = true
     const generation = connectGeneration
-    let auth: AuthRead
-    try {
-      auth = { ok: true, params: await getAuthParams() }
-    } catch {
-      auth = { ok: false }
-    } finally {
-      connecting = false
-    }
+    const auth = await readAuth(generation)
     if (generation !== connectGeneration) return
     if (listeners.size === 0) return
     // A credential that cannot be read right now — a rejected refresh, or a
