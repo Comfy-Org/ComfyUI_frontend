@@ -21,6 +21,9 @@ Import the full theme from your app's entry stylesheet:
 @import '@comfyorg/design-system/css/style.css';
 ```
 
+Use this package import rather than a filesystem path into the package. Its
+published export registers the compiled component sources for Tailwind.
+
 This pulls in the fonts, the color palette, the Tailwind theme and utilities
 layers, `tw-animate-css`, the PrimeUI plugin, and the Comfy and Lucide icon
 plugins.
