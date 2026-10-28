@@ -2,14 +2,16 @@
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 
-import type { ColorPickerProps } from '@comfyorg/design-system/lib/color-picker/types'
-import type { HSVA } from '@comfyorg/design-system/lib/color-picker/colorUtil'
+import type {
+  ColorPickerProps,
+  HSVA
+} from '@comfyorg/design-system/lib/color-picker/types'
 import {
   hexToHsva,
   hsbToRgb,
   hsvaToHex,
   rgbToHex
-} from '@comfyorg/design-system/lib/color-picker/colorUtil'
+} from '@comfyorg/shared-frontend-utils/colorUtil'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { cn } from '@comfyorg/tailwind-utils'
 

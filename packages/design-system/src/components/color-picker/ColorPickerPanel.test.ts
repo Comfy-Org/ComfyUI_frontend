@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
 import ColorPickerPanel from '@comfyorg/design-system/color-picker/ColorPickerPanel'
-import type { HSVA } from '@comfyorg/design-system/lib/color-picker/colorUtil'
+import type { HSVA } from '@comfyorg/design-system/lib/color-picker/types'
 
 function renderPanel(initial: HSVA, mode: 'hex' | 'rgba' = 'hex') {
   const hsva = ref<HSVA>(initial)

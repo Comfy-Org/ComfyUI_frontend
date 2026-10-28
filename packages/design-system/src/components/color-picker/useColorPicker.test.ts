@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
-import type { HSVA } from '@comfyorg/design-system/lib/color-picker/colorUtil'
+import type { HSVA } from '@comfyorg/design-system/lib/color-picker/types'
 
 import { useColorPicker } from './useColorPicker'
 

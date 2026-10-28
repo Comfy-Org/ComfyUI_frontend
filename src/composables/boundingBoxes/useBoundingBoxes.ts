@@ -35,7 +35,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   readableTextColor,
   textOnColor
-} from '@comfyorg/design-system/lib/color-picker/colorUtil'
+} from '@comfyorg/shared-frontend-utils/colorUtil'
 
 const HANDLE_PX = 8
 const DIMENSION_STEP = 16

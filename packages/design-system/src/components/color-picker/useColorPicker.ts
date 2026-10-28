@@ -2,14 +2,14 @@ import { clamp } from 'es-toolkit'
 import type { Ref } from 'vue'
 import { computed, reactive, ref, watch } from 'vue'
 
-import type { HSVA } from '@comfyorg/design-system/lib/color-picker/colorUtil'
+import type { HSVA } from '@comfyorg/design-system/lib/color-picker/types'
 import {
   hexToHsva,
   hsbToRgb,
   normalizeHex,
   rgbToHex,
   rgbToHsv
-} from '@comfyorg/design-system/lib/color-picker/colorUtil'
+} from '@comfyorg/shared-frontend-utils/colorUtil'
 
 export const rgbChannels = [{ key: 'r' }, { key: 'g' }, { key: 'b' }] as const
 

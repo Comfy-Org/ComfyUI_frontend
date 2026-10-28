@@ -1,8 +1,5 @@
 import type { IColorWidget } from '@comfyorg/graph-model/widgets'
-import {
-  hexToInt,
-  intToHex
-} from '@comfyorg/design-system/lib/color-picker/colorUtil'
+import { hexToInt, intToHex } from '@comfyorg/shared-frontend-utils/colorUtil'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 import { BaseWidget } from './BaseWidget'
 

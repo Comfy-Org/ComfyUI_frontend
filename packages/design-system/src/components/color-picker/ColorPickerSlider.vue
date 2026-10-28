@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import {
-  hsbToRgb,
-  rgbToHex
-} from '@comfyorg/design-system/lib/color-picker/colorUtil'
+import { hsbToRgb, rgbToHex } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 const {
   type,

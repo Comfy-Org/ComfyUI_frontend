@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ColorAdjustOptions } from '@comfyorg/design-system/lib/color-picker/colorUtil'
+import type { ColorAdjustOptions } from '@comfyorg/shared-frontend-utils/colorUtil'
 import {
   adjustColor,
   hexToHsva,
@@ -17,7 +17,7 @@ import {
   rgbToHex,
   textOnColor,
   toHexFromFormat
-} from '@comfyorg/design-system/lib/color-picker/colorUtil'
+} from '@comfyorg/shared-frontend-utils/colorUtil'
 
 interface ColorTestCase {
   hex: string

@@ -222,7 +222,7 @@
         "packages/design-system/src/components/color-picker/useColorPicker.test.ts",
         "packages/design-system/src/components/color-picker/ColorPickerPanel.test.ts",
         "packages/design-system/src/components/slider/Slider.test.ts",
-        "packages/design-system/src/components/color-picker/colorUtil.test.ts"
+        "packages/shared-frontend-utils/src/colorUtil.test.ts"
       ]
     },
     {

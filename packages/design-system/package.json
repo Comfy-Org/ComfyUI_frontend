@@ -26,7 +26,6 @@
   "type": "module",
   "exports": {
     "./*": "./src/components/*.vue",
-    "./lib/color-picker/colorUtil": "./src/components/color-picker/colorUtil.ts",
     "./lib/color-picker/types": "./src/components/color-picker/types.ts",
     "./lib/composables/useAttrsClass": "./src/components/composables/useAttrsClass.ts",
     "./lib/composables/usePopoverSizing": "./src/components/composables/usePopoverSizing.ts",
@@ -226,6 +225,7 @@
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {
+    "@comfyorg/shared-frontend-utils": "workspace:^",
     "@comfyorg/tailwind-utils": "workspace:^",
     "@storybook/vue3-vite": "catalog:",
     "@tailwindcss/vite": "catalog:",

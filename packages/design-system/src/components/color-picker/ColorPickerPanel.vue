@@ -98,7 +98,7 @@ import SelectContent from '@comfyorg/design-system/select/SelectContent'
 import SelectItem from '@comfyorg/design-system/select/SelectItem'
 import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 import SelectValue from '@comfyorg/design-system/select/SelectValue'
-import type { HSVA } from '@comfyorg/design-system/lib/color-picker/colorUtil'
+import type { HSVA } from '@comfyorg/design-system/lib/color-picker/types'
 
 import ColorPickerSaturationValue from './ColorPickerSaturationValue.vue'
 import ColorPickerSlider from './ColorPickerSlider.vue'

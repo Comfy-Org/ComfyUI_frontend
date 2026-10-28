@@ -1,3 +1,10 @@
+export interface HSVA {
+  h: number
+  s: number
+  v: number
+  a: number
+}
+
 export interface ColorPickerProps {
   class?: string
   disabled?: boolean

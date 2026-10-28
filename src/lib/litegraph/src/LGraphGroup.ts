@@ -12,7 +12,7 @@ import {
   hexToRgb,
   luminance,
   readableTextColor
-} from '@comfyorg/design-system/lib/color-picker/colorUtil'
+} from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import { canvasClass } from './canvas/canvasClassAccess'
 import { LGraphNode } from './LGraphNode'

@@ -17,7 +17,7 @@ import {
   intToHex,
   isColorFormat,
   toHexFromFormat
-} from '@comfyorg/design-system/lib/color-picker/colorUtil'
+} from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import type { IColorWidgetOptions } from '@comfyorg/graph-model/widgets'
 

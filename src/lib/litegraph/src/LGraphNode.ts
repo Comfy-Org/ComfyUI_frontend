@@ -67,8 +67,8 @@ import {
   isWidgetVisibleOnSurface,
   occupiesCanvasRow
 } from '@/types/widgetVisibility'
-import { adjustColor } from '@comfyorg/design-system/lib/color-picker/colorUtil'
-import type { ColorAdjustOptions } from '@comfyorg/design-system/lib/color-picker/colorUtil'
+import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
+import type { ColorAdjustOptions } from '@comfyorg/shared-frontend-utils/colorUtil'
 import { zeroUuid } from '@/utils/uuid'
 import {
   commonType,
