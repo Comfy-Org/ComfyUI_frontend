@@ -777,7 +777,7 @@ describe('collectCrdtDebugReport', () => {
       ]
     })
 
-    expect(report).toContain('Older turns omitted to fit the size limit: 1.')
+    expect(report).toContain('Turns omitted to fit the size limit: 1.')
     expect(toolSectionJson(report)[1]).toEqual([
       {
         turnId: 'turn-latest',
@@ -785,6 +785,27 @@ describe('collectCrdtDebugReport', () => {
         thinkingTotalMs: 2
       }
     ])
+  })
+
+  it('omits a thinking entry whose turn ID alone exceeds the size limit', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('x'.repeat(70_000))),
+          parts: toolCalls('latest', 1)
+        }
+      ]
+    })
+
+    const section = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.split('\n\n## ')[0]
+    assert.exists(section)
+    expect(section.length).toBeLessThanOrEqual(60_000)
+    expect(section).toContain('Turns omitted to fit the size limit: 1.')
+    expect(toolSectionJson(report)).toEqual([[], []])
   })
 
   it('redacts credential-shaped tool metadata', async () => {

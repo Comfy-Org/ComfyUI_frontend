@@ -555,17 +555,16 @@ function toolPartsOf(message: AssistantMessage) {
   return message.parts.filter((part): part is ToolPart => part.type === 'tool')
 }
 
-/**
- * The latest turn with tool calls is exempt from the {@link MAX_TOOL_CALLS}
- * cap, because that is the turn a report is filed about; the cap only applies
- * to older turns. Section fitting may still drop the oldest calls.
- */
 function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
-  const latestIndex = messages.findLastIndex(
-    (message) => toolPartsOf(message).length > 0
-  )
-  const callsOf = (message: AssistantMessage) =>
-    toolPartsOf(message).map((part) => toRetainedToolCall(message.id, part))
+  let latestIndex = messages.length - 1
+  while (latestIndex >= 0 && toolPartsOf(messages[latestIndex]).length === 0) {
+    latestIndex--
+  }
+  function callsOf(message: AssistantMessage) {
+    return toolPartsOf(message).map((part) =>
+      toRetainedToolCall(message.id, part)
+    )
+  }
   const olderCalls = messages
     .slice(0, Math.max(0, latestIndex))
     .flatMap(callsOf)
@@ -617,6 +616,9 @@ function fitTurnThinking(turns: readonly RetainedTurnThinking[]) {
     }
   }
   const latest = turns[turns.length - 1]
+  if (!fits([{ ...latest, thinkingDurationsMs: [] }])) {
+    return { turns: [], omittedTurns: turns.length }
+  }
   function withLastDurations(count: number) {
     return {
       ...latest,
@@ -646,7 +648,7 @@ function thinkingTrailer(
   const fitted = fitTurnThinking(collectTurnThinking(messages, calls))
   const omissions = [
     fitted.omittedTurns > 0 &&
-      `Older turns omitted to fit the size limit: ${fitted.omittedTurns}.`,
+      `Turns omitted to fit the size limit: ${fitted.omittedTurns}.`,
     fitted.omittedDurations !== undefined &&
       `The latest turn keeps only its last ${fitted.turns[0].thinkingDurationsMs.length} durations; earlier durations omitted but still counted in thinkingTotalMs: ${fitted.omittedDurations}.`
   ].filter((line) => line !== false)
