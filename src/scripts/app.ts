@@ -120,7 +120,6 @@ import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplaceme
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -893,8 +892,6 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/sync-workflows', () =>
       useWorkspaceStore().workflow.syncWorkflows()
     )
-    //Doesn't need to block. Blueprints will load async
-    void useSubgraphStore().fetchSubgraphs()
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()

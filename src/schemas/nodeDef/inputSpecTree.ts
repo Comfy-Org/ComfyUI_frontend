@@ -1,3 +1,4 @@
+import { isTrustedObjectInfo } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createInputSpecInterpreter } from '@/schemas/nodeDef/inputSpecInterpreter'
 import type { InputSpecDiagnosticSink } from '@/schemas/nodeDef/inputSpecInterpreter'
@@ -40,4 +41,6 @@ export const {
   dynamicComboOptionKeys,
   dynamicComboOptionTypes,
   matchTypeTemplate
-} = createInputSpecInterpreter(warnSpecDrift)
+} = createInputSpecInterpreter(warnSpecDrift, {
+  skipValidation: () => isTrustedObjectInfo
+})
