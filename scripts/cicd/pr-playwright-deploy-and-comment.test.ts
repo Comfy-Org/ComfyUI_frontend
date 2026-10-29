@@ -42,7 +42,12 @@ const uploadedProjects = [
   )
 ]
 
-function runWithReports(projects: string[]) {
+const passingCounts = { passed: 2, failed: 0, flaky: 0, skipped: 0, total: 2 }
+
+function runWithReports(
+  projects: string[],
+  countsByProject: Record<string, object> = {}
+) {
   const root = mkdtempSync(join(tmpdir(), 'playwright-pr-report-'))
   const bin = join(root, 'bin')
   const wranglerLog = join(root, 'wrangler.log')
@@ -59,15 +64,19 @@ echo "https://abc.$project.pages.dev"
   writeFileSync(
     join(bin, 'tsx'),
     `#!/bin/bash
-echo '{"passed":2,"failed":0,"flaky":0,"skipped":0,"total":2}'
+cat "$2/counts.json"
 `
   )
   chmodSync(join(bin, 'wrangler'), 0o755)
   chmodSync(join(bin, 'tsx'), 0o755)
-  for (const project of projects)
-    mkdirSync(join(root, 'reports', `playwright-report-${project}`), {
-      recursive: true
-    })
+  for (const project of projects) {
+    const reportDir = join(root, 'reports', `playwright-report-${project}`)
+    mkdirSync(reportDir, { recursive: true })
+    writeFileSync(
+      join(reportDir, 'counts.json'),
+      JSON.stringify(countsByProject[project] ?? passingCounts)
+    )
+  }
 
   const result = spawnSync('bash', [script, '1', 'feature', 'completed'], {
     cwd: root,
@@ -116,5 +125,50 @@ describe('PR Playwright report section', () => {
     expect(status).toBe(0)
     expect(summary).toMatch(/^## 🎭 Playwright: ❌ .*, 1 missing/)
     expect(summary).toContain('- **cloud**: ❌ Report missing')
+  })
+
+  it('lists each named failed test with its trace in a collapsed box', () => {
+    const { status, summary } = runWithReports(uploadedProjects, {
+      chromium: {
+        passed: 1,
+        failed: 1,
+        flaky: 0,
+        skipped: 0,
+        total: 2,
+        failures: [
+          {
+            name: 'saves a workflow',
+            file: 'browser_tests/tests/save.spec.ts',
+            traceUrl: 'https://abc.chromium.pages.dev/trace/1'
+          }
+        ]
+      }
+    })
+
+    expect(status).toBe(0)
+    expect(summary).toMatch(/^## 🎭 Playwright: ❌ .*, 1 failed/)
+    expect(summary).toContain(
+      `> ❌ 1 test failed. Expand the failed tests below, review their traces and fix the failures before merging.
+
+<details>
+<summary>❌ Failed Tests</summary>
+
+- [saves a workflow](https://github.com/Comfy-Org/ComfyUI_frontend/blob/sha/browser_tests/tests/save.spec.ts): [View trace](https://abc.chromium.pages.dev/trace/1)
+
+</details>`
+    )
+  })
+
+  it('points to the browser reports when failed tests have no extracted names', () => {
+    const { status, summary } = runWithReports(uploadedProjects, {
+      chromium: { passed: 1, failed: 1, flaky: 0, skipped: 0, total: 2 }
+    })
+
+    expect(status).toBe(0)
+    expect(summary).toMatch(/^## 🎭 Playwright: ❌ .*, 1 failed/)
+    expect(summary).toContain(
+      '> ❌ 1 test failed. Open the browser reports below, review the traces and fix the failures before merging.'
+    )
+    expect(summary).not.toContain('Failed Tests')
   })
 })

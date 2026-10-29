@@ -329,6 +329,8 @@ else
     # Extract and display failed tests from all browsers (flaky tests are treated as passing)
     if [ $total_failed -gt 0 ]; then
         failed_test_lines=""
+        failed_tests_label="$total_failed tests"
+        [ "$total_failed" -eq 1 ] && failed_tests_label="1 test"
 
         for counts_json in "${counts_array[@]}"; do
             [ -z "$counts_json" ] || [ "$counts_json" = "{}" ] && continue
@@ -361,7 +363,7 @@ $test_line"
         if [ -n "$failed_test_lines" ]; then
             comment="$comment
 
-> ❌ $total_failed tests failed. Expand the failed tests below, review their traces and fix the failures before merging.
+> ❌ $failed_tests_label failed. Expand the failed tests below, review their traces and fix the failures before merging.
 
 <details>
 <summary>❌ Failed Tests</summary>
@@ -372,7 +374,7 @@ ${failed_test_lines#$'\n'}
         else
             comment="$comment
 
-> ❌ $total_failed tests failed. Open the browser reports below, review the traces and fix the failures before merging."
+> ❌ $failed_tests_label failed. Open the browser reports below, review the traces and fix the failures before merging."
         fi
     fi
     
