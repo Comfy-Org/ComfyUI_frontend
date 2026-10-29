@@ -28,6 +28,7 @@ function toolCall(
 }
 
 const restartSucceeded = toolCall('restart_comfyui', 'success')
+const catalogRefreshSucceeded = toolCall('refresh_catalog', 'success')
 const RESTART_WINDOW_MS = 10 * 60_000
 
 function registerRefreshCommand(
@@ -41,6 +42,18 @@ function registerRefreshCommand(
 }
 
 describe('agentNodeDefinitionRefreshStore', () => {
+  it('refreshes node definitions without reloading the workflow after the agent refreshes its catalog', async () => {
+    const refresh = registerRefreshCommand()
+
+    useAgentNodeDefinitionRefreshStore().observeAgentEvent(
+      catalogRefreshSucceeded
+    )
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
+  })
+
   it('waits for ComfyUI to reconnect after a restart, then refreshes node definitions before reloading the open workflow', async () => {
     const order: string[] = []
     registerRefreshCommand(
