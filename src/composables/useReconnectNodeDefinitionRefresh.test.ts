@@ -431,15 +431,13 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     registerRefreshCommand(vi.fn(async () => pageKnows('NewPackNode')))
     showCanvas(node('NewPackNode', { missing: true }))
     serverHas('NewPackNode')
-    const closedView = effectScope()
-    const onReconnected = closedView.run(createReconnectRefresh)
-    assert.exists(onReconnected)
+    const onReconnected = useReconnectNodeDefinitionRefresh()
     const tracker = useWorkflowStore().activeWorkflow!.changeTracker
     tracker.changeCount = 1
 
     const done = onReconnected()
     await vi.advanceTimersByTimeAsync(200)
-    closedView.stop()
+    scope.stop()
     tracker.changeCount = 0
     await vi.advanceTimersByTimeAsync(1_000)
     await done
