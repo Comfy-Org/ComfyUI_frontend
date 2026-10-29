@@ -470,12 +470,18 @@ describe('useAgentConsent', () => {
     await vi.waitFor(() =>
       expect(fetchWithUnifiedRemint).toHaveBeenCalledTimes(2)
     )
-    await setImmediate()
     return { onOpen, request, dialog }
   }
 
   it('keeps the card open without an answer or decision when a load retry finds no consent', async () => {
     const { onOpen, request, dialog } = await retryFailedLoad(false)
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.consent.accept')
+        })
+      ).toBeEnabled()
+    )
 
     expect(onOpen).not.toHaveBeenCalled()
     expect(
