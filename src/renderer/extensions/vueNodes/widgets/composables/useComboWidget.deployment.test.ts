@@ -5,7 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
+import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -30,6 +32,9 @@ vi.mock(import('@/platform/assets/composables/useAssetBrowserDialog'), () => ({
 }))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
+vi.mock(import('@/core/graph/widgets/syncPromotedComboHostOptions'), {
+  spy: true
+})
 vi.mock(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: 'localhost' as const,
   isDesktop: false,
@@ -120,6 +125,24 @@ describe('model widgets on a deployment', () => {
 
     function onWorkspace(workspaceId: string | null) {
       Object.assign(useTeamWorkspaceStore(), { workspaceId })
+    }
+
+    function promotedLoader(subgraph: Subgraph) {
+      const node = new LGraphNode('LoraLoader')
+      node.comfyClass = 'LoraLoader'
+      const input = node.addInput('lora_name', 'COMBO')
+      const { widget } = ComfyWidgets.COMBO(
+        node,
+        'lora_name',
+        [['release.safetensors'], {}],
+        app
+      )
+      input.widget = { name: widget.name }
+      subgraph.add(node)
+      subgraph.inputNode.slots[0].connect(input, node)
+      const host = createTestSubgraphNode(subgraph)
+      subgraph.rootGraph.add(host)
+      return host.widgets[0]
     }
 
     beforeEach(() => {
@@ -383,27 +406,9 @@ describe('model widgets on a deployment', () => {
           answer = resolve
         })
       )
-      const subgraph = createTestSubgraph({
-        inputs: [{ name: 'outer_lora', type: 'COMBO' }]
-      })
-      const node = new LGraphNode('LoraLoader')
-      node.comfyClass = 'LoraLoader'
-      const input = node.addInput('lora_name', 'COMBO')
-      const { widget } = ComfyWidgets.COMBO(
-        node,
-        'lora_name',
-        [['release.safetensors'], {}],
-        app
+      const promoted = promotedLoader(
+        createTestSubgraph({ inputs: [{ name: 'outer_lora', type: 'COMBO' }] })
       )
-      input.widget = { name: widget.name }
-      subgraph.add(node)
-      subgraph.inputNode.slots[0].connect(input, node)
-      const host = createTestSubgraphNode(subgraph, {
-        parentGraph: subgraph.rootGraph,
-        id: 65
-      })
-      subgraph.rootGraph.add(host)
-      const promoted = host.widgets[0]
       expect(promoted.options.values).toEqual(['release.safetensors'])
 
       answer(models('my_style_v2.safetensors'))
@@ -416,6 +421,41 @@ describe('model widgets on a deployment', () => {
       vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = false
       await settle()
       expect(promoted.options.values).toEqual(['release.safetensors'])
+    })
+
+    it('copies a library change to every promoted loader in one pass over the graph', async () => {
+      const first = createTestSubgraph({
+        inputs: [{ name: 'outer_lora', type: 'COMBO' }]
+      })
+      const promoted = [
+        first,
+        ...[1, 2].map(() =>
+          createTestSubgraph({
+            rootGraph: first.rootGraph,
+            inputs: [{ name: 'outer_lora', type: 'COMBO' }]
+          })
+        )
+      ].map(promotedLoader)
+      await settle()
+      vi.mocked(syncPromotedComboHostOptions).mockClear()
+
+      library.set('loras', models('uploaded.safetensors'))
+      useAssetDownloadStore().lastCompletedDownload = {
+        taskId: 'task-1',
+        modelType: 'loras',
+        timestamp: 1
+      }
+      await settle()
+
+      expect(syncPromotedComboHostOptions).toHaveBeenCalledExactlyOnceWith(
+        first.rootGraph
+      )
+      for (const widget of promoted) {
+        expect(widget.options.values).toEqual([
+          'release.safetensors',
+          'uploaded.safetensors'
+        ])
+      }
     })
 
     it('keeps the Release models and reports when the library cannot be read', async () => {

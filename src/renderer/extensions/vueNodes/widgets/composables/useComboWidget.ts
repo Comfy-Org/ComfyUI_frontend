@@ -4,7 +4,7 @@ import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget, IComboWidget } from '@comfyorg/graph-model/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -76,6 +76,19 @@ const bindDynamicValuesOption = (
   })
 }
 
+const rootGraphsToSync = new Set<LGraph>()
+
+function syncPromotedHostsOnce(rootGraph: LGraph) {
+  if (!rootGraphsToSync.size) {
+    queueMicrotask(() => {
+      const graphs = [...rootGraphsToSync]
+      rootGraphsToSync.clear()
+      for (const graph of graphs) syncPromotedComboHostOptions(graph)
+    })
+  }
+  rootGraphsToSync.add(rootGraph)
+}
+
 function addLibraryModelOptions(
   node: LGraphNode,
   widget: IComboWidget,
@@ -108,7 +121,7 @@ function addLibraryModelOptions(
     () => library.refresh(folder)
   )
   const stopSyncingHosts = library.onNamesChange(folder, () => {
-    if (node.graph) syncPromotedComboHostOptions(node.graph.rootGraph)
+    if (node.graph) syncPromotedHostsOnce(node.graph.rootGraph)
     else stopSyncingHosts()
   })
 }
