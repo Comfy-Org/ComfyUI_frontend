@@ -308,7 +308,7 @@ watch(activeCategoryKey, (newKey, oldKey) => {
     activeCategoryKey.value = oldKey
   }
   if (newKey === 'credits') {
-    refreshBalanceInBackground(fetchBalance)
+    void refreshBalanceInBackground(fetchBalance)
   }
   if (newKey) {
     void nextTick(() => {

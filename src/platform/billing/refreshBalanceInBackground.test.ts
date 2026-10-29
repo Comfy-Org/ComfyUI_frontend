@@ -3,19 +3,21 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
 
-const fail = () => Promise.reject(new Error('Balance temporarily unavailable'))
-const settle = () => new Promise((resolve) => setTimeout(resolve))
+function fail() {
+  return Promise.reject(new Error('Balance temporarily unavailable'))
+}
+
+function succeed() {
+  return Promise.resolve()
+}
 
 describe('refreshBalanceInBackground', () => {
   beforeEach(async () => {
-    // A success ends any run of failures an earlier test left behind.
-    refreshBalanceInBackground(() => Promise.resolve())
-    await settle()
+    await refreshBalanceInBackground(succeed)
   })
 
   it('reports nothing when the read succeeds', async () => {
-    refreshBalanceInBackground(() => Promise.resolve())
-    await settle()
+    await refreshBalanceInBackground(succeed)
 
     expect(reportError).not.toHaveBeenCalled()
   })
@@ -23,8 +25,7 @@ describe('refreshBalanceInBackground', () => {
   it('reports a failed read as a billing warning', async () => {
     const failure = new Error('Balance temporarily unavailable')
 
-    refreshBalanceInBackground(() => Promise.reject(failure))
-    await settle()
+    await refreshBalanceInBackground(() => Promise.reject(failure))
 
     expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
       surface: 'billing',
@@ -34,15 +35,14 @@ describe('refreshBalanceInBackground', () => {
   })
 
   it('reports a run of failures once, and again after a success', async () => {
-    refreshBalanceInBackground(fail)
-    refreshBalanceInBackground(fail)
-    await settle()
+    await Promise.all([
+      refreshBalanceInBackground(fail),
+      refreshBalanceInBackground(fail)
+    ])
     expect(reportError).toHaveBeenCalledOnce()
 
-    refreshBalanceInBackground(() => Promise.resolve())
-    await settle()
-    refreshBalanceInBackground(fail)
-    await settle()
+    await refreshBalanceInBackground(succeed)
+    await refreshBalanceInBackground(fail)
 
     expect(reportError).toHaveBeenCalledTimes(2)
   })

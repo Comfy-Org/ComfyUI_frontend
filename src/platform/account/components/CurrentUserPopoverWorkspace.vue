@@ -451,6 +451,6 @@ const handleCreateWorkspace = () => {
 }
 
 onMounted(() => {
-  if (!accountActionsOnly) refreshBalanceInBackground(fetchBalance)
+  if (!accountActionsOnly) void refreshBalanceInBackground(fetchBalance)
 })
 </script>

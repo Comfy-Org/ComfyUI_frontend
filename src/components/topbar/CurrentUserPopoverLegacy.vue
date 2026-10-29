@@ -254,6 +254,6 @@ const handleLogout = async () => {
 }
 
 onMounted(() => {
-  refreshBalanceInBackground(fetchBalance)
+  void refreshBalanceInBackground(fetchBalance)
 })
 </script>
