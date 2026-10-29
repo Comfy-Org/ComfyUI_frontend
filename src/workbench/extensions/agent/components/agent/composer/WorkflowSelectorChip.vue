@@ -13,6 +13,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import Input from '@comfyorg/design-system/input/Input'
 import MenuContent from '@comfyorg/design-system/menu/MenuContent'
 import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
+import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
@@ -123,7 +124,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           :aria-label="t('agent.switchWorkflow')"
           :class="
             cn(
-              'group h-7 min-w-0 justify-start gap-2 px-2.5 text-left text-xs/4 font-normal',
+              'group h-7 min-w-0 justify-start gap-2 px-2 text-left text-xs/4 font-normal',
               current && 'flex-1'
             )
           "
@@ -138,7 +139,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
             v-else
             aria-hidden="true"
             data-testid="workflow-selector-icon"
-            class="icon-[comfy--workflow] text-muted-foreground group-hover:text-foreground"
+            class="icon-[lucide--scan] size-3.5 text-credit"
           />
           <span class="min-w-0 truncate">{{
             current?.name ?? t('agent.selectWorkflowForAgent')
@@ -166,7 +167,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           :disabled="selectingTabPath !== null"
           type="text"
           :placeholder="t('agent.searchWorkflows')"
-          class="mb-1 h-8 bg-background px-2.5 py-1"
+          class="mb-1 h-8 bg-background px-2.5 py-1 text-xs"
           @keydown="onSearchKeydown"
         />
         <DropdownMenuRadioGroup
@@ -176,76 +177,70 @@ function onSearchKeydown(event: KeyboardEvent): void {
             typeof $event === 'string' && onSelectTab($event)
           "
         >
-          <div
-            v-for="section in tabSections"
-            :key="section.key"
-            role="group"
-            :aria-label="section.label"
-          >
-            <div
-              v-if="section.label"
-              aria-hidden="true"
-              class="px-1.5 py-1 text-[11px]/4 text-muted-foreground"
-            >
-              {{ section.label }}
-            </div>
-            <MenuRadioItem
-              v-for="tab in section.tabs"
-              :key="tab.path"
-              :value="tab.path"
-              :disabled="disabled || selectingTabPath !== null"
-              :aria-busy="selectingTabPath === tab.path || undefined"
-              @select.prevent
-            >
-              <span
-                v-if="selectingTabPath === tab.path"
-                role="status"
-                class="flex size-4 shrink-0 items-center justify-center"
-              >
-                <i
-                  class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
-                  aria-hidden="true"
-                />
-                <span class="sr-only">{{ t('agent.savingWorkflow') }}</span>
-              </span>
-              <i
-                v-else-if="conversation.activeTurnTabPath === tab.path"
-                role="img"
-                :aria-label="t('g.agentWorking')"
-                class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
-              />
-              <i
-                v-else
+          <template v-for="(section, index) in tabSections" :key="section.key">
+            <MenuSeparator v-if="index > 0" />
+            <div role="group" :aria-label="section.label">
+              <div
+                v-if="section.label"
                 aria-hidden="true"
-                class="icon-[comfy--workflow] text-muted-foreground"
-              />
-              <span class="min-w-0 truncate">{{ tab.name }}</span>
-              <span
-                v-if="tabActivity.unseenModifiedPaths.has(tab.path)"
-                role="img"
-                :aria-label="t('g.agentModified')"
-                class="flex size-4 shrink-0 items-center justify-center"
+                class="px-1.5 py-1 text-[11px]/4 text-muted-foreground"
               >
-                <span class="size-2 rounded-full bg-primary" />
-              </span>
-              <span
-                v-else-if="tab.isPersisted === false || tab.modified"
-                data-testid="unsaved-dot"
-                class="flex size-4 shrink-0 items-center justify-center"
+                {{ section.label }}
+              </div>
+              <MenuRadioItem
+                v-for="tab in section.tabs"
+                :key="tab.path"
+                :value="tab.path"
+                :disabled="disabled || selectingTabPath !== null"
+                :aria-busy="selectingTabPath === tab.path || undefined"
+                class="gap-1 px-1.5 text-xs"
+                @select.prevent
               >
-                <span class="size-2 rounded-full bg-foreground" />
-              </span>
-              <span
-                class="ml-auto flex size-4 shrink-0 items-center justify-center"
-              >
-                <DropdownMenuItemIndicator
-                  class="flex size-4 items-center justify-center"
+                <span
+                  v-if="selectingTabPath === tab.path"
+                  role="status"
+                  class="flex size-4 shrink-0 items-center justify-center"
                 >
-                  <i aria-hidden="true" class="icon-[lucide--check] size-3.5" />
-                </DropdownMenuItemIndicator>
-              </span>
-            </MenuRadioItem>
-          </div>
+                  <i
+                    class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
+                    aria-hidden="true"
+                  />
+                  <span class="sr-only">{{ t('agent.savingWorkflow') }}</span>
+                </span>
+                <i
+                  v-else-if="conversation.activeTurnTabPath === tab.path"
+                  role="img"
+                  :aria-label="t('g.agentWorking')"
+                  class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
+                />
+                <span class="min-w-0 truncate">{{ tab.name }}</span>
+                <span
+                  v-if="tabActivity.unseenModifiedPaths.has(tab.path)"
+                  role="img"
+                  :aria-label="t('g.agentModified')"
+                  class="flex size-4 shrink-0 items-center justify-center"
+                >
+                  <span class="size-2 rounded-full bg-primary" />
+                </span>
+                <span
+                  v-else-if="tab.isPersisted === false || tab.modified"
+                  data-testid="unsaved-dot"
+                  class="flex size-4 shrink-0 items-center justify-center"
+                >
+                  <span class="size-2 rounded-full bg-foreground" />
+                </span>
+                <span
+                  class="ml-auto flex size-4 shrink-0 items-center justify-center"
+                >
+                  <DropdownMenuItemIndicator
+                    class="flex size-4 items-center justify-center"
+                  >
+                    <i aria-hidden="true" class="icon-[lucide--check] size-3" />
+                  </DropdownMenuItemIndicator>
+                </span>
+              </MenuRadioItem>
+            </div>
+          </template>
         </DropdownMenuRadioGroup>
       </MenuContent>
     </DropdownMenuRoot>
