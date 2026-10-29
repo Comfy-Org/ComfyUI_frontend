@@ -1,12 +1,16 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { EXTENSION_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/extensionLoadTelemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { useExtensionStore } from '@/stores/extensionStore'
 
 import type { ExtensionLoadFailure } from './extensionLoader'
 import {
+  isSafeExtensionBoot,
   loadExtensions,
   reportExtensionLoadFailures,
   shouldLoadExtension
@@ -22,9 +26,11 @@ vi.mock(import('@/extensions/core/index'), () => ({
   registerCoreExtensions: async () => {
     const { LGraphCanvas, LGraphNode } =
       await import('@/lib/litegraph/src/litegraph')
+    const { useExtensionStore } = await import('@/stores/extensionStore')
     coreLoad.onConfigure = LGraphNode.prototype.onConfigure
     coreLoad.processMouseDown = LGraphCanvas.prototype.processMouseDown
     coreLoad.processMouseMove = LGraphCanvas.prototype.processMouseMove
+    useExtensionStore().registerExtension({ name: 'core.test' })
   }
 }))
 
@@ -38,25 +44,79 @@ describe('shouldLoadExtension', () => {
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'skips the inlined Cloud extension %s in cloud builds',
     (extension) => {
-      expect(shouldLoadExtension(extension, true)).toBe(false)
+      expect(shouldLoadExtension(extension, { isCloudBuild: true })).toBe(false)
     }
   )
 
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'keeps the legacy path %s available outside cloud builds',
     (extension) => {
-      expect(shouldLoadExtension(extension, false)).toBe(true)
+      expect(shouldLoadExtension(extension, { isCloudBuild: false })).toBe(true)
     }
   )
 
   it('skips core extensions that load through the core entry point', () => {
-    expect(shouldLoadExtension('/extensions/core/foo.js', false)).toBe(false)
+    expect(
+      shouldLoadExtension('/extensions/core/foo.js', { isCloudBuild: false })
+    ).toBe(false)
   })
 
   it('loads other extensions', () => {
-    expect(shouldLoadExtension('/extensions/comfyui-foo/main.js', true)).toBe(
-      true
-    )
+    expect(
+      shouldLoadExtension('/extensions/comfyui-foo/main.js', {
+        isCloudBuild: true
+      })
+    ).toBe(true)
+  })
+
+  it('leaves malformed extension entries to the isolated import failure path', () => {
+    expect(
+      shouldLoadExtension('http://', {
+        isCloudBuild: false,
+        disabledExtensionPaths: ['/extensions/agent-cushions/']
+      })
+    ).toBe(true)
+  })
+
+  it.for([
+    { extension: '/extensions/agent-cushions/main.js', expected: false },
+    {
+      extension: '/extensions/agent-cushions/nested/panel.js',
+      expected: false
+    },
+    { extension: '/extensions/agent-cushions-extra/main.js', expected: true }
+  ])(
+    'admits $extension as $expected with a disabled extension path',
+    ({ extension, expected }) => {
+      expect(
+        shouldLoadExtension(extension, {
+          isCloudBuild: false,
+          disabledExtensionPaths: ['/extensions/agent-cushions/']
+        })
+      ).toBe(expected)
+    }
+  )
+
+  it('skips every custom extension during a safe boot', () => {
+    expect(
+      shouldLoadExtension('/extensions/comfyui-foo/main.js', {
+        isCloudBuild: false,
+        disableAllCustomExtensions: true
+      })
+    ).toBe(false)
+  })
+})
+
+describe('isSafeExtensionBoot', () => {
+  it.for([
+    { search: '?safe', expected: true },
+    { search: '?safe=1', expected: true },
+    { search: '?safe=true', expected: true },
+    { search: '?safe=0', expected: false },
+    { search: '?safe=false', expected: false },
+    { search: '', expected: false }
+  ])('reads $search as $expected', ({ search, expected }) => {
+    expect(isSafeExtensionBoot(search)).toBe(expected)
   })
 })
 
@@ -237,6 +297,60 @@ describe('extension loading', () => {
   })
 
   describe('loadExtensions', () => {
+    it('keeps custom modules inert while core extensions register in safe mode', async () => {
+      const customExtensionLoaded = vi.fn()
+      vi.stubGlobal('customExtensionLoaded', customExtensionLoaded)
+      window.history.replaceState(null, '', '/?safe')
+      useSettingStore().$patch({
+        settingValues: {
+          'Comfy.Extension.DisabledPacks': ['/extensions/pack-a/']
+        }
+      })
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([
+        '/extensions/pack-a/main.js',
+        '/extensions/pack-b/main.js'
+      ])
+      vi.spyOn(api, 'fileURL').mockReturnValue(
+        'data:text/javascript,globalThis.customExtensionLoaded()'
+      )
+
+      await loadExtensions()
+
+      expect(customExtensionLoaded).not.toHaveBeenCalled()
+      expect(useExtensionStore().isCoreExtension('core.test')).toBe(true)
+      expect(useExtensionStore().extensionPaths).toEqual([
+        '/extensions/pack-a/',
+        '/extensions/pack-b/'
+      ])
+    })
+
+    it('falls back safely when persisted disabled extension paths are malformed', async () => {
+      window.history.replaceState(null, '', '/?safe')
+      const settingStore = useSettingStore()
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json({ 'Comfy.Extension.DisabledPacks': {} })
+      )
+      await settingStore.load()
+      const disabledPathsSetting = CORE_SETTINGS.find(
+        ({ id }) => id === 'Comfy.Extension.DisabledPacks'
+      )
+      assert(disabledPathsSetting)
+      settingStore.addSetting(disabledPathsSetting)
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([
+        '/extensions/pack-a/main.js'
+      ])
+
+      await loadExtensions()
+
+      expect(useExtensionStore().isCoreExtension('core.test')).toBe(true)
+      expect(reportError).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
+        errorType: 'invalid_extension_path_setting',
+        surface: 'platform',
+        level: 'warning'
+      })
+    })
+
     it('reports every failing custom import as one aggregate', async () => {
       vi.spyOn(api, 'getExtensions').mockResolvedValue([
         '/extensions/pack-a/main.js',
