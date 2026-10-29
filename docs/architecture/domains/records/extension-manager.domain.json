@@ -28,6 +28,14 @@
       "role": "integration"
     },
     {
+      "path": "src/platform/customNodes/manager/composables/dialogs/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/dialogs/useManagerDialog.test.ts",
+      "role": "integration"
+    },
+    {
       "path": "src/platform/customNodes/manager/composables/nodePack/usePackInstall.ts",
       "role": "presentation"
     },
@@ -37,30 +45,6 @@
     },
     {
       "path": "src/platform/customNodes/manager/composables/useImportFailedDetection.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/customNodes/manager/composables/useImportFailedNodeDialog.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/customNodes/manager/composables/useManagerDialog.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/customNodes/manager/composables/useManagerDialog.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/customNodes/manager/composables/useManagerSurveyDialog.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/customNodes/manager/composables/useManagerSurveyDialog.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/customNodes/manager/composables/useNodeConflictDialog.ts",
       "role": "presentation"
     },
     {
@@ -76,19 +60,7 @@
       "role": "integration"
     },
     {
-      "path": "src/platform/customNodes/manager/types/comfyManagerTypes.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/customNodes/manager/types/compatibility.types.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/customNodes/manager/types/conflictDetectionTypes.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/customNodes/manager/types/generatedManagerTypes.ts",
+      "path": "src/platform/customNodes/manager/types/**",
       "role": "domain"
     },
     {
@@ -152,7 +124,7 @@
       "name": "Queued pack operations and dialog lifecycle preserve manager behavior",
       "checks": [
         "src/platform/customNodes/manager/composables/useManagerQueue.test.ts",
-        "src/platform/customNodes/manager/composables/useManagerDialog.test.ts",
+        "src/platform/customNodes/manager/composables/dialogs/useManagerDialog.test.ts",
         "src/platform/customNodes/manager/stores/comfyManagerStore.test.ts"
       ]
     },

@@ -1242,10 +1242,6 @@
       {
         "name": "extension-manager/domain",
         "patterns": [
-          "src/platform/customNodes/manager/types/comfyManagerTypes.ts",
-          "src/platform/customNodes/manager/types/compatibility.types.ts",
-          "src/platform/customNodes/manager/types/conflictDetectionTypes.ts",
-          "src/platform/customNodes/manager/types/generatedManagerTypes.ts",
           "src/utils/mapperUtil.ts",
           "src/utils/packUtils.test.ts",
           "src/utils/packUtils.ts"
@@ -1272,11 +1268,6 @@
           "src/platform/customNodes/manager/composables/nodePack/usePackInstall.ts",
           "src/platform/customNodes/manager/composables/useImportFailedDetection.test.ts",
           "src/platform/customNodes/manager/composables/useImportFailedDetection.ts",
-          "src/platform/customNodes/manager/composables/useImportFailedNodeDialog.ts",
-          "src/platform/customNodes/manager/composables/useManagerDialog.ts",
-          "src/platform/customNodes/manager/composables/useManagerSurveyDialog.test.ts",
-          "src/platform/customNodes/manager/composables/useManagerSurveyDialog.ts",
-          "src/platform/customNodes/manager/composables/useNodeConflictDialog.ts",
           "src/platform/customNodes/manager/types/importFailedTypes.ts"
         ]
       },
@@ -1285,7 +1276,7 @@
         "patterns": [
           "src/platform/customNodes/manager/components/ManagerProgressToast.test.ts",
           "src/platform/customNodes/manager/components/manager/ManagerDialog.test.ts",
-          "src/platform/customNodes/manager/composables/useManagerDialog.test.ts",
+          "src/platform/customNodes/manager/composables/dialogs/useManagerDialog.test.ts",
           "src/platform/customNodes/manager/composables/workflowErrorManager.ts",
           "src/platform/customNodes/manager/stores/comfyManagerStore.test.ts"
         ]
@@ -3658,11 +3649,17 @@
       },
       {
         "name": "extension-manager/domain/outer-1",
-        "patterns": ["src/platform/customNodes/manager/utils/**"]
+        "patterns": [
+          "src/platform/customNodes/manager/types/**",
+          "src/platform/customNodes/manager/utils/**"
+        ]
       },
       {
         "name": "extension-manager/presentation/outer-1",
-        "patterns": ["src/platform/customNodes/manager/components/**"]
+        "patterns": [
+          "src/platform/customNodes/manager/components/**",
+          "src/platform/customNodes/manager/composables/dialogs/**"
+        ]
       },
       {
         "name": "extension-runtime/infrastructure/outer-1",

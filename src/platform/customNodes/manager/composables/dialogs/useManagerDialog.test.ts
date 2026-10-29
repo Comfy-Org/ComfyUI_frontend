@@ -8,7 +8,7 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
-import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerDialog'
 import {
   ManagerUIState,
   __resetIncompatibleToastGuard
