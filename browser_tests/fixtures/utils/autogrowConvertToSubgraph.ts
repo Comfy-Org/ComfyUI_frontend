@@ -1,6 +1,6 @@
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { AUTOGROW_THEN_MASK_NODE_TYPE } from '@e2e/fixtures/data/autogrowThenMaskNodeDef'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const SOURCE_NODE_ID = '1'
 export const AUTOGROW_NODE_ID = '2'

@@ -1,0 +1,4 @@
+{
+  "extends": ["./tsconfig.json", "../../tsconfig.declarations.json"],
+  "references": [{ "path": "../graph-model/tsconfig.declarations.json" }]
+}
