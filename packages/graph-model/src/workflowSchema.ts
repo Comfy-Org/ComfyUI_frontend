@@ -323,7 +323,6 @@ const zSubgraphIO = zNodeInput.extend({
   type: z.string(),
   /** Links connected to this slot, or `undefined` if not connected. An output slot should only ever have one link. */
   linkIds: z.array(z.number()).optional(),
-  /** Subgraph inputs only: the input feeds a whole dynamic input group. */
   list: z.boolean().optional()
 })
 

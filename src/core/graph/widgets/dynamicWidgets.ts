@@ -560,13 +560,8 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   addAutogrowGroup(ordinal + 1, groupName, node)
 }
 
-/** A list's group name without the `[]` a subgraph node gives it. */
 const listLabel = (groupName: string) => groupName.replace(/\[\]$/, '')
 
-/**
- * A list from the enclosing subgraph feeds `input`: it supplies the slots
- * after it, so drop those, and show the list and its minimum on the slot.
- */
 function feedFromList(
   node: AutogrowNode,
   input: INodeInputSlot,
@@ -586,11 +581,6 @@ function feedFromList(
   node.size = [node.size[0], node.computeSize([...node.size])[1]]
 }
 
-/**
- * The group a list fed into `slot` stands for: the same template, from that
- * slot on, so a subgraph node can show it with its minimum and maximum.
- * Single-input templates only, so that one list item fills one slot.
- */
 export function listTemplateAt(
   node: LGraphNode,
   slot: number
@@ -600,6 +590,7 @@ export function listTemplateAt(
   if (!groupName || !hasAutogrowGroups(node)) return undefined
   const { min, max, inputSpecs } = node.comfyDynamic.autogrow[groupName]
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
+  //Single-input templates only, so that one list item fills one slot
   if (inputSpecs.length !== 1 || ordinal === undefined) return undefined
   const slots = Array.from({ length: max - ordinal }, (_, offset) =>
     autogrowOrdinalToName(ordinal + offset, inputSpecs[0].name, groupName, node)
@@ -884,7 +875,6 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
   })
 }
 
-/** Gives `node` an autogrow group named `groupName` from a parsed template. */
 export function applyAutogrowTemplate(
   node: LGraphNode,
   groupName: string,

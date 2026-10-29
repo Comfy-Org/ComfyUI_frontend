@@ -66,8 +66,7 @@ export class SubgraphInput extends SubgraphSlot {
 
     // Allow nodes to block connection
     const inputIndex = node.inputs.indexOf(slot)
-    // A list feeds one dynamic input, with nothing connected after it. A
-    // subgraph node's input may take it while it is being made into a list.
+    // A subgraph node's input may take a list while it is being made into one
     const listable = node.isSubgraphNode() || listableNames(node, inputIndex)
     if (this.list && (this.linkIds.length || !listable)) return
     if (

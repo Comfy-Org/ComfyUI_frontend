@@ -198,7 +198,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = e.detail.input._widget
         if (widget) this.ensureWidgetRemoved(widget)
 
-        // Every slot of a list goes with it
         const bound = hostInputsOf(this, e.detail.input)
         if (!bound.length) this.removeInput(e.detail.index)
         for (const input of bound.reverse())
@@ -570,16 +569,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
   }
 
-  /** Binds the slots a list input's dynamic group adds. */
   override onInputAdded(input: INodeInputSlot & Partial<ISubgraphInput>) {
     const slot = input._subgraphSlot ?? this._listInputFor(input.name)
     if (slot) this._addSubgraphInputListeners(slot, input)
   }
 
-  /**
-   * The slot of this node showing the subgraph input at `index`; for a list,
-   * its first slot. `-1` if there is none.
-   */
   hostSlotOf(index: number): number {
     const subgraphInput = this.subgraph.inputs.at(index)
     if (!subgraphInput) return -1
