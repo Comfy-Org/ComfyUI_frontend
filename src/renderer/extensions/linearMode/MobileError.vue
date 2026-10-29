@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Dialogue from '@comfyorg/design-system/dialog/Dialogue'
-import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
+import { useErrorGroups } from '@/platform/workflowErrors/panel/useErrorGroups'
 import Button from '@comfyorg/design-system/button/Button'
 import { useAppMode } from '@/composables/useAppMode'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'

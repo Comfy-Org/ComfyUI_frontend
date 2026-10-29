@@ -63,7 +63,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
-import type { ErrorGroupSeverity } from '@/components/rightSidePanel/errors/types'
+import type { ErrorGroupSeverity } from '@/platform/workflowErrors/panel/types'
 
 const {
   title,
