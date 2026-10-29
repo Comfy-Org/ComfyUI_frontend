@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
 import type { ActivityPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import type {
   AgentPaywallAction,
@@ -29,7 +30,7 @@ const emit = defineEmits<{
   answer: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, workflowId: string | null]
-  paywallAction: [action: AgentPaywallAction]
+  paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
 }>()
 </script>
 
@@ -90,13 +91,13 @@ const emit = defineEmits<{
     @answer="
       (askId, selection) => emit('answer', askId, { selected: [selection] })
     "
-    @add-credits="emit('paywallAction', 'addCredits')"
+    @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
   />
   <AgentPaywallCard
     v-else-if="group.kind === 'paywall'"
     :presentation="paywallPresentation"
     :message="group.part.message"
-    @paywall-action="emit('paywallAction', $event)"
+    @paywall-action="emit('paywallAction', $event, 'refused_send')"
   />
   <AgentNoticeCard v-else :part="group.part" />
 </template>

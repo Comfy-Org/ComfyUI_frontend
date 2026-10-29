@@ -163,11 +163,6 @@ describe('ask_kinds advertisement matches what the panel renders', () => {
     )
   })
 
-  // Cloud raises the pause card for every client whatever this list says, so
-  // advertising `paused` changes nothing on the wire. What it changes is here:
-  // the advertisement is also what the panel reads to decide it can render a
-  // kind, and while `paused` was absent a credits stop fell through to the
-  // notice with its reason discarded (PM-1649).
   it('advertises paused so the pause card renders, which cloud sends regardless', () => {
     expect(ADVERTISED_ASK_KINDS).toContain('paused')
     expect(rendersACardRatherThanTheNotice('paused')).toBe(true)
@@ -197,9 +192,6 @@ describe('ask_kinds advertisement matches what the panel renders', () => {
     ).toEqual([])
   })
 
-  // The notice is still the right answer for a kind this build has never heard
-  // of — a newer server's ask — which is the only case left now that every
-  // kind in the current contract has a card.
   it('stands a notice in for an ask kind this build does not know', () => {
     render(AgentMessage, {
       props: {

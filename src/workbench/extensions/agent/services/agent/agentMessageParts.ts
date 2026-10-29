@@ -146,12 +146,8 @@ export interface DeleteApprovalPart {
   resolution?: AskUserResolution
 }
 
-/**
- * An admission pause: the turn is parked and will recheck on its own, and the
- * user can shortcut that with Resume. `reason` is the binding policy's token
- * (`no_funds`, `workspace_paused`, ...) and `message` is the server's own
- * user-facing copy for it, which is why neither is re-derived here.
- */
+export const NO_FUNDS_PAUSE_REASON = 'no_funds'
+
 export interface PausedPart {
   type: 'paused'
   askId: string
@@ -188,6 +184,14 @@ export function isOpenAskPart(part: MessagePart): boolean {
   return isPendingAskPart(part) || part.type === 'askUnavailable'
 }
 
+/** A part that tells the user, inline in the transcript, that credits ran out. */
+export function isCreditsStopPart(part: MessagePart): boolean {
+  return (
+    part.type === 'paywall' ||
+    (part.type === 'paused' && part.reason === NO_FUNDS_PAUSE_REASON)
+  )
+}
+
 export function askIdOf(part: MessagePart): string | undefined {
   return 'askId' in part ? part.askId : undefined
 }
@@ -199,15 +203,9 @@ export function retireAskParts(
 ): MessagePart[] {
   const next = parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
-    // A retired pause leaves nothing to read back: admission either let the
-    // turn through or ended it, and both are told elsewhere. Drop the card like
-    // a run approval rather than leaving a stale "paused" claim on screen.
-    if (
-      !isAskPart(part) ||
-      part.type === 'runApproval' ||
-      part.type === 'paused'
-    )
-      return []
+    if (part.type === 'paused')
+      return resolution.status === 'unconfirmed' ? [part] : []
+    if (!isAskPart(part) || part.type === 'runApproval') return []
     const settled = settleResolution(part.resolution, resolution)
     return [
       settled === part.resolution ? part : { ...part, resolution: settled }
@@ -303,14 +301,12 @@ function toDeleteApprovalPart(ask: AskInput): DeleteApprovalPart | undefined {
 function toPausedPart(ask: AskInput): PausedPart | undefined {
   const context = zAgentPausedContext.safeParse(ask.context).data
   if (!context) return undefined
-  // One Resume option, never free text (ingest contract). A pause shaped like
-  // anything else is not this card, so fall through to the notice rather than
-  // render a Resume button that answers something unknown.
   const offersResume =
     isEqual(
       ask.options.map(({ id }) => id),
       ['resume']
     ) &&
+    ask.min_selections === 1 &&
     ask.max_selections === 1 &&
     !ask.allow_other
   if (!offersResume) return undefined

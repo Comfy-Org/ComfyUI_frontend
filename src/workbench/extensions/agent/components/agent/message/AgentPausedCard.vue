@@ -6,11 +6,19 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 
 import type { PausedPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
-import type { AgentPaywallPresentation } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import { NO_FUNDS_PAUSE_REASON } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import type {
+  AgentPaywallPresentation,
+  AgentPaywallRemediation
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import {
+  DEFAULT_AGENT_PAYWALL_PRESENTATION,
+  toAgentPaywallRemediation
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 
 const {
   part,
-  presentation,
+  presentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   answering = false
 } = defineProps<{
   part: PausedPart
@@ -20,35 +28,22 @@ const {
 
 const emit = defineEmits<{
   answer: [askId: string, selection: 'resume']
-  addCredits: [askId: string]
+  paywallAction: [action: AgentPaywallRemediation]
 }>()
 
 const { t } = useI18n()
 
-/**
- * `no_funds` is the one pause reason the user themselves can clear, so it is
- * the one that gets credits framing and a top-up route. Every other reason
- * (`workspace_paused`, an operator pause, a reason this build does not know)
- * gets the neutral title: naming the wrong remediation is worse than naming
- * none, and a pause is recoverable either way.
- */
-const outOfCredits = computed(() => part.reason === 'no_funds')
+const REMEDIATION_LABELS: Record<AgentPaywallRemediation, string> = {
+  addCredits: 'agent.paywall.addCredits',
+  subscribe: 'agent.paywall.subscribe'
+}
 
-/**
- * Whether topping up is a route this workspace's viewer actually has. A member
- * who cannot pay, a sales-managed account and an unsettled billing read all
- * resolve to something other than a self-serve top-up, and the paywall
- * presentation already encodes that — so it is reused rather than re-derived
- * from a role here (FRONT-3626: low-credit copy differs by workspace).
- */
-const canAddCredits = computed(
-  () =>
-    outOfCredits.value &&
-    (presentation?.kind === 'subscribed' || presentation?.kind === 'local')
+const outOfCredits = computed(() => part.reason === NO_FUNDS_PAUSE_REASON)
+
+const remediation = computed(() =>
+  outOfCredits.value ? toAgentPaywallRemediation(presentation) : undefined
 )
 
-// The server owns this copy and already wrote it for the user; echoing its
-// message keeps one source of truth for a string that varies by policy.
 const body = computed(() => part.message || part.prompt)
 </script>
 
@@ -81,20 +76,26 @@ const body = computed(() => part.message || part.prompt)
           v-if="part.recheckAfterSeconds > 0"
           class="m-0 text-muted-foreground"
         >
-          {{ t('agent.paused.recheck', { seconds: part.recheckAfterSeconds }) }}
+          {{
+            t(
+              'agent.paused.recheck',
+              { seconds: part.recheckAfterSeconds },
+              part.recheckAfterSeconds
+            )
+          }}
         </p>
       </div>
     </div>
 
     <div class="flex w-full justify-end gap-2">
       <Button
-        v-if="canAddCredits"
+        v-if="remediation"
         variant="inverted"
         size="sm"
         :disabled="answering"
-        @click="emit('addCredits', part.askId)"
+        @click="emit('paywallAction', remediation)"
       >
-        {{ t('agent.paywall.addCredits') }}
+        {{ t(REMEDIATION_LABELS[remediation]) }}
       </Button>
       <Button
         variant="secondary"

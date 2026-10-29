@@ -159,16 +159,7 @@ export function pausedAskFrame(askId: string): AgentAskFrame {
   }
 }
 
-/**
- * An ask whose kind this build has never heard of — a newer server's card. The
- * only case the "waiting on a step this panel can't show" notice is still for,
- * now that every kind in the current contract has a card of its own.
- */
 export function unknownKindAskFrame(askId: string): AgentAskFrame {
-  // Cast at the frame boundary: `kind` is the discriminant of AgentPendingAsk,
-  // so a kind outside the generated contract is unrepresentable by design. That
-  // is exactly the wire shape under test — a server ahead of this build — and
-  // the panel's own schema coerces it to `unknown` on parse.
   return {
     type: 'agent_ask',
     data: {
