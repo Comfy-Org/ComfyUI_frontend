@@ -82,6 +82,48 @@ describe('useJobModelDownloadStore', () => {
     expect(store.downloadFor('job-2')).toBeDefined()
   })
 
+  it.for([
+    {
+      type: 'progress',
+      send: () =>
+        api.dispatchCustomEvent('progress', {
+          prompt_id: 'job-1',
+          node: '1',
+          value: 7,
+          max: 10
+        })
+    },
+    {
+      type: 'progress_state',
+      send: () =>
+        api.dispatchCustomEvent('progress_state', {
+          prompt_id: 'job-1',
+          nodes: {
+            '1': {
+              value: 7,
+              max: 10,
+              state: 'running',
+              node_id: '1',
+              prompt_id: 'job-1'
+            }
+          }
+        })
+    }
+  ])(
+    'ends the download on $type for that job when execution_start was missed',
+    ({ send }) => {
+      const store = useJobModelDownloadStore()
+      dispatch(message())
+      dispatch(message({ prompt_id: 'job-2' }))
+      store.reconcileActiveJobs(new Set(['job-1', 'job-2']))
+
+      send()
+
+      expect(store.downloadFor('job-1')).toBeUndefined()
+      expect(store.downloadFor('job-2')).toBeDefined()
+    }
+  )
+
   it('drops downloads of jobs the queue no longer lists', () => {
     const store = useJobModelDownloadStore()
     dispatch(message())

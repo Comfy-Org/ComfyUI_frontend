@@ -67,6 +67,8 @@ export const useJobModelDownloadStore = defineStore('jobModelDownload', () => {
 
   api.addEventListener('model_download', handleModelDownload)
   api.addEventListener('execution_start', handleJobMoved)
+  api.addEventListener('progress', handleJobMoved)
+  api.addEventListener('progress_state', handleJobMoved)
   api.addEventListener('execution_success', handleJobMoved)
   api.addEventListener('execution_error', handleJobMoved)
   api.addEventListener('execution_interrupted', handleJobMoved)
