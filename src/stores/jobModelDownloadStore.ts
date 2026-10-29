@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { shallowRef } from 'vue'
 
+import { zModelDownloadData } from '@comfyorg/ingest-types/zod'
 import type { JobId } from '@/platform/remote/comfyui/execution/types'
-import { zModelDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
@@ -16,9 +16,21 @@ export interface JobModelDownload {
   progress: number | null
 }
 
+const zModelDownloadMessage = zModelDownloadData.pick({
+  status: true,
+  name: true,
+  index: true,
+  count: true,
+  bytes_downloaded: true,
+  bytes_total: true,
+  progress: true,
+  prompt_id: true
+})
+
 /**
  * Model downloads of queued Cloud jobs, by job id, from `model_download`
- * events; a job's entry ends when it starts running or ends.
+ * events; a job's entry ends when its file stops downloading, or the job
+ * starts running or ends.
  */
 export const useJobModelDownloadStore = defineStore('jobModelDownload', () => {
   const downloads = shallowRef<ReadonlyMap<JobId, JobModelDownload>>(new Map())
@@ -33,7 +45,7 @@ export const useJobModelDownloadStore = defineStore('jobModelDownload', () => {
   }
 
   function handleModelDownload(event: CustomEvent<unknown>) {
-    const parsed = zModelDownloadWsMessage.safeParse(event.detail)
+    const parsed = zModelDownloadMessage.safeParse(event.detail)
     if (!parsed.success) {
       if (!reportedMalformed) {
         reportedMalformed = true

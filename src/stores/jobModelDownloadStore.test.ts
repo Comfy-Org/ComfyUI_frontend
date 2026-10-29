@@ -1,7 +1,8 @@
+import { omit } from 'es-toolkit'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import type { ModelDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ModelDownloadData } from '@comfyorg/ingest-types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
@@ -10,8 +11,8 @@ vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
 function message(
-  overrides: Partial<ModelDownloadWsMessage> = {}
-): ModelDownloadWsMessage {
+  overrides: Partial<ModelDownloadData> = {}
+): ModelDownloadData {
   return {
     status: 'downloading',
     name: 'my_style_v2.safetensors',
@@ -27,7 +28,7 @@ function message(
   }
 }
 
-function dispatch(msg: ModelDownloadWsMessage) {
+function dispatch(msg: ModelDownloadData) {
   api.dispatchCustomEvent('model_download', msg)
 }
 
@@ -151,6 +152,30 @@ describe('useJobModelDownloadStore', () => {
 
     expect(store.downloadFor('job-1')).toBeUndefined()
     expect(store.downloadFor('job-2')).toBeDefined()
+  })
+
+  it('ends the download on a status it does not know, without a report', () => {
+    const store = useJobModelDownloadStore()
+    dispatch(message())
+
+    dispatch(message({ status: 'verifying' }))
+
+    expect(store.downloadFor('job-1')).toBeUndefined()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('shows a download whose frame drops the fields it does not read or adds new ones', () => {
+    const store = useJobModelDownloadStore()
+    const detail = {
+      ...omit(message(), ['dir', 'workflow_id']),
+      eta_seconds: 12
+    }
+
+    const apiEvents: EventTarget = api
+    apiEvents.dispatchEvent(new CustomEvent('model_download', { detail }))
+
+    expect(store.downloadFor('job-1')?.progress).toBe(0.3448)
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('ignores a malformed event and reports the first one', () => {

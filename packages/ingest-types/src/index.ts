@@ -1217,6 +1217,8 @@ export type {
   MediaQueryError,
   MediaWorkspaceId,
   Member,
+  ModelDownloadData,
+  ModelDownloadFrame,
   ModelFile,
   ModelFolder,
   MoveUserdataFileData,
