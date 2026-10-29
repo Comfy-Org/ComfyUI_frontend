@@ -328,6 +328,7 @@ function syncFakeSelection() {
 }
 
 beforeEach(() => {
+  useWorkflowStore().markTabsRestored()
   agentSocket = createFakeAgentSocket()
   agentSocket.send.mockImplementation((frame) => {
     socketSend(frame)
