@@ -69,13 +69,13 @@ export function useNodeArrangement() {
       name: 'horizontal',
       localizedName: t('contextMenu.Distribute horizontally'),
       value: true,
-      icon: 'icon-[lucide--align-center-horizontal]'
+      icon: 'icon-[lucide--align-horizontal-distribute-center]'
     },
     {
       name: 'vertical',
       localizedName: t('contextMenu.Distribute vertically'),
       value: false,
-      icon: 'icon-[lucide--align-center-vertical]'
+      icon: 'icon-[lucide--align-vertical-distribute-center]'
     }
   ]
 
