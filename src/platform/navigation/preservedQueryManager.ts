@@ -37,8 +37,17 @@ const readFromStorage = (namespace: string): Record<string, string> | null => {
     return parsed
   } catch {
     console.warn('[preservedQuery] storage operation failed')
-    sessionStorage.removeItem(getStorageKey(namespace))
+    removeFromStorage(namespace)
     return null
+  }
+}
+
+/** Never throws: sessionStorage itself is unreadable when site data is blocked. */
+const removeFromStorage = (namespace: string) => {
+  try {
+    sessionStorage.removeItem(getStorageKey(namespace))
+  } catch {
+    return
   }
 }
 

@@ -84,6 +84,23 @@ describe('API key authentication initialization', () => {
     )
   })
 
+  it('keeps a key in memory when localStorage is blocked', async () => {
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new DOMException('Access is denied', 'SecurityError')
+    })
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+
+    expect(apiKeyStore.getApiKey()).toBeNull()
+
+    await apiKeyStore.storeApiKey('memory-key')
+
+    expect(apiKeyStore.getApiKey()).toBe('memory-key')
+    await vi.waitFor(() =>
+      expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
+    )
+  })
+
   it('sends one customer lookup for the replacement key when the key changes before initialization runs', async () => {
     localStorage.setItem('comfy_api_key', 'key-a')
     useAuthStore()

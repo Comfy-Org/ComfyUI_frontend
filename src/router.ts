@@ -162,6 +162,21 @@ function installCloudAuthGuards(router: Router): void {
       delay(PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS).then(() => 'signed_out' as const)
     ])
   }
+  /**
+   * A sign-in check that throws (e.g. browser storage blocked) counts as
+   * signed out, so the tab lands on sign-in instead of an aborted first
+   * navigation that renders nothing.
+   */
+  async function signInOrSignedOut(
+    check: () => Promise<CloudSignIn>
+  ): Promise<CloudSignIn> {
+    try {
+      return await check()
+    } catch (error) {
+      console.error('Cloud sign-in check failed:', error)
+      return 'signed_out'
+    }
+  }
   const watchedSessions = new WeakSet<object>()
   /** Closes the signed-in tab's dialogs and re-runs this guard on the current route, which then sends the tab to sign-in. */
   function rerouteWhenSignedOutElsewhere(): void {
@@ -226,12 +241,14 @@ function installCloudAuthGuards(router: Router): void {
       }
     }
 
-    let signIn = isPublicRoute(to)
-      ? await publicRouteSignIn()
-      : await cloudSignIn()
+    let signIn = await signInOrSignedOut(() =>
+      isPublicRoute(to) ? publicRouteSignIn() : cloudSignIn()
+    )
     if (signIn === 'pending' && !isPublicRoute(to)) {
-      await useCloudWebSessionStore().whenDecided()
-      signIn = await cloudSignIn()
+      signIn = await signInOrSignedOut(async () => {
+        await useCloudWebSessionStore().whenDecided()
+        return cloudSignIn()
+      })
     }
     const needsFirebaseForDesktopCode =
       signIn === 'signed_in' &&

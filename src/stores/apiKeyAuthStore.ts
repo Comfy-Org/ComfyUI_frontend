@@ -1,4 +1,4 @@
-import { useLocalStorage } from '@vueuse/core'
+import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
 
@@ -16,7 +16,9 @@ const STORAGE_KEY = 'comfy_api_key'
 
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const authStore = useAuthStoreAccess()
-  const apiKey = useLocalStorage<string | null>(STORAGE_KEY, null)
+  // useStorage, unlike useLocalStorage, falls back to an in-memory ref when
+  // reading `window.localStorage` throws (site data blocked).
+  const apiKey = useStorage<string | null>(STORAGE_KEY, null)
   const toast = useToast()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
