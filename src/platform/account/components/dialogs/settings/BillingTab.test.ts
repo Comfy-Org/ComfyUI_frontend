@@ -492,6 +492,15 @@ describe('BillingTab', () => {
     }
   )
 
+  it('picks the contract-billing row by plan_kind and keeps the served plan name on a PRO tier', () => {
+    arrange({ planKind: 'sales_managed', canOpenPlans: false })
+
+    expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      'Billed by contract. Renews November 15.'
+    )
+  })
+
   it('opens plan management on Cloud instead of a platform plans page', async () => {
     arrange()
 

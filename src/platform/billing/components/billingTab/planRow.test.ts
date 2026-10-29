@@ -189,6 +189,15 @@ describe('derivePlanRow', () => {
       }
     },
     {
+      case: 'a paused sales-managed plan with no served plan name',
+      facts: {
+        planKind: 'sales_managed',
+        billingStatus: 'paused',
+        planName: null
+      },
+      expected: { kind: 'unknown' }
+    },
+    {
       case: 'a canceled sales-managed plan',
       facts: {
         planKind: 'sales_managed',
