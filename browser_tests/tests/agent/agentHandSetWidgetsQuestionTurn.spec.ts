@@ -17,7 +17,6 @@ import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import {
   AGENT_NODE_IDS,
   emptySeed
@@ -46,7 +45,8 @@ const LOAD_IMAGE_WIDGETS = ['image', 'upload']
 const AGENT_CFG = 8
 const AGENT_IMAGE = 'agent-1.png'
 const HAND_CFG = 4.5
-const HAND_IMAGE = 'hand-set.png'
+const AGENT_STEPS = 20
+const HAND_STEPS = 33
 
 const catalog: WidgetCatalog = {
   types: {
@@ -61,7 +61,7 @@ const nodeDefs = {
     ...agentReplayNodeDefs.LoadImage,
     input: {
       required: {
-        image: [[AGENT_IMAGE, HAND_IMAGE], { image_upload: true }],
+        image: [[AGENT_IMAGE], { image_upload: true }],
         upload: ['IMAGEUPLOAD', {}]
       }
     }
@@ -84,7 +84,7 @@ function addSamplerNode(nodeId: number): RecordedGraphOperation {
       inputs: [],
       outputs: [],
       properties: {},
-      widgets_values: [0, 'fixed', 20, AGENT_CFG, 'euler', 'normal', 1]
+      widgets_values: [0, 'fixed', AGENT_STEPS, AGENT_CFG, 'euler', 'normal', 1]
     },
     node_id: nodeId,
     class_type: 'KSampler'
@@ -116,7 +116,7 @@ function addLoadImage(nodeId: number): RecordedGraphOperation {
 
 interface HandSetValues {
   cfg: unknown
-  image: unknown
+  steps: unknown
 }
 
 function valuesFrom(
@@ -128,7 +128,7 @@ function valuesFrom(
   }
   return {
     cfg: widgetsOf(SAMPLER_ID)[SAMPLER_WIDGETS.indexOf('cfg')],
-    image: widgetsOf(LOAD_IMAGE_ID)[LOAD_IMAGE_WIDGETS.indexOf('image')]
+    steps: widgetsOf(SAMPLER_ID)[SAMPLER_WIDGETS.indexOf('steps')]
   }
 }
 
@@ -141,17 +141,17 @@ function draftValues(post: AgentPostMessageRequest): HandSetValues | null {
 
 function canvasValues(page: Page): Promise<HandSetValues> {
   return page.evaluate(
-    ({ samplerId, loadImageId }) => {
+    ({ samplerId }) => {
       const widget = (id: typeof samplerId, name: string) =>
         window
           .app!.graph.getNodeById(id)
           ?.widgets?.find((candidate) => candidate.name === name)?.value
       return {
         cfg: widget(samplerId, 'cfg'),
-        image: widget(loadImageId, 'image')
+        steps: widget(samplerId, 'steps')
       }
     },
-    { samplerId: toNodeId(SAMPLER_ID), loadImageId: toNodeId(LOAD_IMAGE_ID) }
+    { samplerId: toNodeId(SAMPLER_ID) }
   )
 }
 
@@ -181,7 +181,7 @@ function done(messageId: string): AgentWsEvent {
   }
 }
 
-const handSet: HandSetValues = { cfg: HAND_CFG, image: HAND_IMAGE }
+const handSet: HandSetValues = { cfg: HAND_CFG, steps: HAND_STEPS }
 
 const annotation = [
   {
@@ -240,9 +240,6 @@ test.describe(
       await mockWorkflowPersistence(page, WORKFLOW_ID)
 
       const samplerNode = comfyPage.vueNodes.getNodeLocator(String(SAMPLER_ID))
-      const loadImageNode = comfyPage.vueNodes.getNodeLocator(
-        String(LOAD_IMAGE_ID)
-      )
 
       async function setWidgetsByHand(): Promise<void> {
         await panToNode(page, SAMPLER_ID)
@@ -250,10 +247,10 @@ test.describe(
           comfyPage.vueNodes.getWidgetRowByLabel(samplerNode, 'cfg'),
           String(HAND_CFG)
         )
-        await panToNode(page, LOAD_IMAGE_ID)
-        await new WidgetSelectDropdownFixture(
-          comfyPage.vueNodes.getWidgetRowByLabel(loadImageNode, 'image')
-        ).selectOption(HAND_IMAGE)
+        await comfyPage.vueNodes.setInputNumberValue(
+          comfyPage.vueNodes.getWidgetRowByLabel(samplerNode, 'steps'),
+          String(HAND_STEPS)
+        )
         await expect.poll(() => canvasValues(page)).toEqual(handSet)
       }
 
@@ -269,7 +266,7 @@ test.describe(
 
         await expect
           .poll(() => canvasValues(page))
-          .toEqual({ cfg: AGENT_CFG, image: AGENT_IMAGE })
+          .toEqual({ cfg: AGENT_CFG, steps: AGENT_STEPS })
         await expect(panel.sendButton).toBeVisible()
       }
 
@@ -318,7 +315,7 @@ test.describe(
           agentBuildsNodes
         )
 
-        await test.step('The user sets cfg and the image by hand', async () => {
+        await test.step('The user sets cfg and steps by hand', async () => {
           await setWidgetsByHand()
           await expect
             .poll(() => valuesFrom(host.projection().nodes))
@@ -369,7 +366,7 @@ test.describe(
         const connections = hostSocket.connectionCount()
         const subscribes = hostSocket.subscribeCount()
 
-        await test.step('The user sets cfg and the image by hand while offline', async () => {
+        await test.step('The user sets cfg and steps by hand while offline', async () => {
           hostSocket.pauseSubscribes(WORKFLOW_ID)
           hostSocket.holdConnections()
           await hostSocket.disconnect()
