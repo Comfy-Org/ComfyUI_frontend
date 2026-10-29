@@ -121,15 +121,23 @@ describe('useComposer', () => {
     expect(onSend).not.toHaveBeenCalled()
   })
 
-  it('routes submit to stop while running, without sending', () => {
+  it('sends a follow-up while running when the draft can send', () => {
     const { composer, onSend, onStop } = setup(true)
-    composer.setText('ignored while streaming')
+    composer.setText('queue this')
+
+    composer.submit()
+
+    expect(onSend).toHaveBeenCalledWith('queue this', [])
+    expect(onStop).not.toHaveBeenCalled()
+  })
+
+  it('routes submit to stop while running when the draft cannot send', () => {
+    const { composer, onSend, onStop } = setup(true)
 
     composer.submit()
 
     expect(onStop).toHaveBeenCalledOnce()
     expect(onSend).not.toHaveBeenCalled()
-    expect(composer.draft.value).toBe('ignored while streaming')
   })
 
   it('insert appends to the draft without sending', () => {

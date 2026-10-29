@@ -402,6 +402,14 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
+  it('emits send while streaming when the composer has a follow-up draft', async () => {
+    const { emitted } = mount({ streaming: true })
+    await userEvent.type(screen.getByRole('textbox'), 'queue this')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(emitted().send).toHaveLength(1)
+    expect(emitted().stop).toBeUndefined()
+  })
+
   it('keeps Stop available while a workflow reference is saving', async () => {
     const { emitted } = mount({ streaming: true, workflowSelecting: true })
     const stop = screen.getByRole('button', { name: 'Stop' })

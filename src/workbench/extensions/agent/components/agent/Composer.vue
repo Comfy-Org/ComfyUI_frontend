@@ -29,6 +29,7 @@ import type {
 } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { MentionSection } from '@/workbench/extensions/agent/composables/agent/mentionPickerState'
 import { useComposer } from '@/workbench/extensions/agent/composables/agent/useComposer'
+import { useAgentPromptQueueStore } from '@/workbench/extensions/agent/stores/agent/agentPromptQueueStore'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import type {
   PromptSnapshot,
@@ -99,6 +100,8 @@ const { t } = useI18n()
 const skills = useSkillPacksStore()
 
 const running = computed(() => streaming || submitting)
+const promptQueue = useAgentPromptQueueStore()
+const editing = computed(() => promptQueue.editingId !== null)
 
 const composer = useComposer({
   onSend: (_text, attachments) => {
@@ -133,6 +136,10 @@ const composer = useComposer({
   isRunning: () => running.value,
   onStop: () => emit('stop', 'button')
 })
+const showStop = computed(
+  () =>
+    running.value && !editing.value && (!composer.canSend.value || openingChat)
+)
 
 const editorRef =
   useTemplateRef<InstanceType<typeof InlinePromptEditor>>('editorRef')
@@ -386,15 +393,15 @@ function openReferenceMenu(): void {
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
-  if (running.value) return
+  if (running.value && !editing.value) return
   composer.submit('keyboard')
 }
 
 const primaryActionLabel = computed(() =>
-  running.value ? t('agent.stop') : t('agent.send')
+  showStop.value ? t('agent.stop') : t('agent.send')
 )
 const primaryActionVariant = computed(() =>
-  running.value ? 'secondary' : 'inverted'
+  showStop.value ? 'secondary' : 'inverted'
 )
 const SEND_BLOCKED_MESSAGES = {
   'invalid-video': 'agent.sendBlockedByInvalidVideo',
@@ -406,7 +413,7 @@ const sendBlockedReason = computed(() => {
     ({ name, validationError }) =>
       validationError ? [{ name, validationError }] : []
   )
-  if (running.value || invalid.length === 0) return undefined
+  if (showStop.value || invalid.length === 0) return undefined
   if (invalid.length > 1)
     return t('agent.sendBlockedByInvalidAttachments', {
       count: invalid.length
@@ -423,7 +430,7 @@ const primaryActionAriaDisabled = computed(() =>
 const primaryActionDisabled = computed(
   () =>
     openingChat ||
-    (!running.value &&
+    (!showStop.value &&
       !sendBlockedReason.value &&
       (workflowSelecting || !composer.canSend.value))
 )
@@ -436,12 +443,12 @@ const activeMentionDescendant = computed(() =>
     : undefined
 )
 const primaryActionShortcut = computed(() =>
-  running.value ? t('agent.stopShortcut') : undefined
+  showStop.value ? t('agent.stopShortcut') : undefined
 )
 
 function onPrimaryAction(): void {
   if (openingChat) return
-  if (running.value) emit('stop', 'button')
+  if (showStop.value) emit('stop', 'button')
   else composer.submit('explicit')
 }
 
@@ -592,9 +599,16 @@ defineExpose({
       />
     </div>
 
+    <slot name="beforeHeader" />
+
     <div
       v-if="$slots.header"
-      class="flex h-11 shrink-0 items-center rounded-t-lg bg-background px-2"
+      :class="
+        cn(
+          'flex h-11 shrink-0 items-center bg-background px-2',
+          !$slots.beforeHeader && 'rounded-t-lg'
+        )
+      "
     >
       <slot name="header" />
     </div>
@@ -722,6 +736,16 @@ defineExpose({
         <div class="flex items-center gap-1">
           <RunModePopover />
           <Button
+            v-if="editing"
+            type="button"
+            variant="muted-textonly"
+            size="sm"
+            :aria-label="t('agent.queue.cancelEdit')"
+            @click="promptQueue.cancelEdit()"
+          >
+            {{ t('agent.queue.cancelEdit') }}
+          </Button>
+          <Button
             :tooltip="primaryActionTooltip"
             type="button"
             :variant="primaryActionVariant"
@@ -733,7 +757,7 @@ defineExpose({
             class="aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-foreground"
             @click="onPrimaryAction"
           >
-            <i-lucide:square v-if="running" class="size-4" />
+            <i-lucide:square v-if="showStop" class="size-4" />
             <i-lucide:arrow-up v-else class="size-4" />
             <template #tooltip>
               {{ primaryActionTooltip }}

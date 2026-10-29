@@ -35,6 +35,7 @@ import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agen
 import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { AgentPanelView } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentPromptQueueStore } from '@/workbench/extensions/agent/stores/agent/agentPromptQueueStore'
 import { deriveSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
@@ -46,6 +47,7 @@ import EmptyState from './EmptyState.vue'
 import FreeUseNotice from './FreeUseNotice.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
+import PromptQueue from './composer/PromptQueue.vue'
 import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
 import AgentPaywallCard from './message/AgentPaywallCard.vue'
 
@@ -309,6 +311,17 @@ function onClose(): void {
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
+const promptQueue = useAgentPromptQueueStore()
+const queueRows = computed(() =>
+  promptQueue.items.map((item) => ({
+    id: item.id,
+    text: item.text,
+    status:
+      item.id === promptQueue.runningId
+        ? ('running' as const)
+        : ('waiting' as const)
+  }))
+)
 const runNoticeReady = ref(false)
 const { isPending: runNoticeTimerPending, start: startRunNoticeTimer } =
   useTimeoutFn(
@@ -641,6 +654,15 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             "
             @workflow-target-required="onWorkflowTargetRequired"
           >
+            <template v-if="promptQueue.count > 0" #beforeHeader>
+              <PromptQueue
+                :items="queueRows"
+                :expanded="promptQueue.expanded"
+                @toggle="promptQueue.toggle"
+                @edit="promptQueue.startEdit"
+                @delete="promptQueue.deleteItem"
+              />
+            </template>
             <template #header>
               <WorkflowSelectorChip
                 ref="workflowSelectorRef"
