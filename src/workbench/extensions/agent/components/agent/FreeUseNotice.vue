@@ -8,10 +8,10 @@ import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
 } from '@/platform/telemetry/types'
-
 import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'
 
-const FREE_USE_DOCS_URL = 'https://docs.comfy.org/get_started/cloud'
+const FREE_USE_DOCS_URL =
+  'https://docs.comfy.org/agent-tools/in-app-agent#what-it-costs'
 
 const PLACEMENT_CLASSES = {
   'top-banner': 'px-4 py-3',
