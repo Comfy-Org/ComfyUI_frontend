@@ -568,22 +568,44 @@ describe('useMediaAssetActions', () => {
       )
     })
 
-    it('does not warn again when API graph failure was already presented', async () => {
-      mockExtractWorkflowFromAsset.mockResolvedValue({
-        workflow: null,
-        filename: 'open.json'
-      })
-      mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
-      mockLoadApiJson.mockRejectedValueOnce(
-        markGraphLoadFailurePresented(new Error('boom'))
-      )
-      const actions = useMediaAssetActions()
+    // Both public commands regressed here: single open reported success over the
+    // graph-load dialog, and bulk open added its own "no workflows" warning on
+    // top of it. Require neither toast from either entrypoint.
+    it.for([
+      {
+        name: 'single',
+        open: (
+          actions: ReturnType<typeof useMediaAssetActions>,
+          asset: AssetItem
+        ) => actions.openWorkflow(asset)
+      },
+      {
+        name: 'bulk',
+        open: (
+          actions: ReturnType<typeof useMediaAssetActions>,
+          asset: AssetItem
+        ) => actions.openMultipleWorkflows([asset])
+      }
+    ])(
+      'does not show another toast for a handled $name failure',
+      async ({ open }) => {
+        mockExtractWorkflowFromAsset.mockResolvedValue({
+          workflow: null,
+          filename: 'open.json'
+        })
+        mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
+        mockLoadApiJson.mockRejectedValueOnce(
+          markGraphLoadFailurePresented(new Error('boom'))
+        )
+        const actions = useMediaAssetActions()
 
-      await actions.openWorkflow(createMockAsset())
+        await open(actions, createMockAsset())
 
-      expect(useToast().warning).not.toHaveBeenCalled()
-      expect(mockReportError).toHaveBeenCalledOnce()
-    })
+        expect(useToast().warning).not.toHaveBeenCalled()
+        expect(useToast().success).not.toHaveBeenCalled()
+        expect(mockReportError).toHaveBeenCalledOnce()
+      }
+    )
 
     it('warns when fetching the stored API graph fails', async () => {
       mockExtractWorkflowFromAsset.mockResolvedValue({
