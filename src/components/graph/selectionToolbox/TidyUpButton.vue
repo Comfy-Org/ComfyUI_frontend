@@ -79,6 +79,7 @@ watch(gridNodes, (nodes, previous) => {
 })
 
 onBeforeUnmount(() => {
+  isOpen.value = false
   lift.value = 0
 })
 

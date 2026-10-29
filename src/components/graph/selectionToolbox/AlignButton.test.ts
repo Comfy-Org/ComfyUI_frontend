@@ -124,6 +124,70 @@ describe('AlignButton', () => {
     unmount()
   })
 
+  it('starts closed again after it unmounts with its bar open', async () => {
+    selectStaggeredRow()
+    const shown = ref(true)
+    const open = ref(false)
+    const { unmount } = render(
+      defineComponent({
+        render: () =>
+          h(TooltipProvider, () =>
+            h(
+              'div',
+              { 'data-selection-toolbox': '' },
+              shown.value
+                ? [
+                    h(AlignButton, {
+                      open: open.value,
+                      'onUpdate:open': (value: boolean) => (open.value = value)
+                    })
+                  ]
+                : []
+            )
+          )
+      }),
+      { global: { plugins: [i18n] } }
+    )
+    await openBar()
+    expect(open.value).toBe(true)
+
+    shown.value = false
+    await nextTick()
+    expect(open.value).toBe(false)
+
+    shown.value = true
+    await nextTick()
+    expect(
+      screen.queryByRole('group', { name: 'Align and distribute' })
+    ).not.toBeInTheDocument()
+    unmount()
+  })
+
+  it.for<{ selection: string; arrange: () => void }>([
+    {
+      selection: 'two nodes on a read-only canvas',
+      arrange: () => {
+        selectStaggeredRow()
+        useCanvasStore().isReadOnly = true
+      }
+    },
+    {
+      selection: 'one node',
+      arrange: () => {
+        const { first } = selectStaggeredRow()
+        setCanvasSelection([first])
+      }
+    }
+  ])('disables the align button for $selection', ({ arrange }) => {
+    arrange()
+    const { unmount } = renderButton()
+
+    expect(
+      screen.getByRole('button', { name: 'Align and distribute' })
+    ).toBeDisabled()
+    unmount()
+  })
+
   it('closes when other nodes are selected', async () => {
     selectStaggeredRow()
     const { unmount } = renderButton()
