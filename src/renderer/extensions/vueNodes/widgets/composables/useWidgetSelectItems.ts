@@ -66,13 +66,11 @@ function getMediaUrl(
 }
 
 function isPlainRelativePath(filepath: string): boolean {
-  const segments = filepath.split(/[\\/]/)
-  const hasDrivePrefix = segments.length > 1 && segments[0].endsWith(':')
   return (
-    !hasDrivePrefix &&
-    segments.every(
-      (segment) => segment !== '' && segment !== '.' && segment !== '..'
-    )
+    !/^[^\\/]:/.test(filepath) &&
+    filepath
+      .split(/[\\/]/)
+      .every((segment) => segment !== '' && segment !== '.' && segment !== '..')
   )
 }
 

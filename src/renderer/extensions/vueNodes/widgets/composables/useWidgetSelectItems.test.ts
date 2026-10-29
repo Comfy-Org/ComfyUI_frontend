@@ -263,6 +263,8 @@ describe('useWidgetSelectItems', () => {
       'sub//x.png [output]',
       'D:\\x.png [output]',
       '1:/x.png [output]',
+      'D:x.png [output]',
+      'C:sub/x.png [output]',
       'sub/../x.png [output]'
     ])(
       'shows no fallback preview for %s, which is not a plain relative path',
