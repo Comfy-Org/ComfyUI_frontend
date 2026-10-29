@@ -602,6 +602,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
+  let unsubscribeSnapshotSettled: (() => void) | null = null
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
   const recoveringTurns = new Map<string, AbortController>()
@@ -663,6 +664,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     initializeWorkflowContext(initialThreadId !== null)
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
+    unsubscribeSnapshotSettled = conversationStore.onSnapshotTurnSettled(
+      (turn) => void reconcileSettledSnapshotTurn(turn)
+    ).off
     if (!restore) return
     if (initialThreadId === null) {
       onThreadActivated?.(null)
@@ -979,8 +983,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = null
     unsubscribe?.()
     unsubscribeStatus?.()
+    unsubscribeSnapshotSettled?.()
     unsubscribe = null
     unsubscribeStatus = null
+    unsubscribeSnapshotSettled = null
     for (const recovery of recoveringTurns.values()) recovery.abort()
     recoveringTurns.clear()
     const stoppedGeneration = ownedGeneration
@@ -1998,6 +2004,51 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // would land as an `unhandledrejection` the session never sees. Abort is
       // the expected end of a cancelled job; anything else is an unexpected
       // settlement or storage failure and goes through the module's reporter.
+      if (!recovery.signal.aborted)
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_recovering_agent_turn'
+        })
+    } finally {
+      clearTimeout(deadline)
+      if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
+    }
+  }
+
+  /**
+   * FRONT-3659: the socket's terminal frame has settled a turn whose liveness
+   * came from a transcript snapshot, so its trace holds only the rounds that
+   * streamed after the reload -- the snapshot's running row carries no
+   * thinking, and the stored row is where the rounds before it live. Read that
+   * row once and fold it in, which is what the reconnect recovery already does
+   * through `settleTurn`; this is the same read on the one completion path
+   * that fetches nothing.
+   *
+   * Deliberately after the settle, not instead of it: the turn is already
+   * finished, so holding it open for a round trip would delay the composer's
+   * handback and strand it outright if the read failed. Reconciling afterwards
+   * means a failed read leaves the turn exactly as it is today.
+   */
+  async function reconcileSettledSnapshotTurn(turn: LiveTurn): Promise<void> {
+    const generation = ownedGeneration
+    const key = recoveryKey(turn)
+    // The recovery this turn's hydrate armed is now pointless -- it exists to
+    // settle a turn whose terminal frame might never arrive, and the frame
+    // arrived. Aborting it also frees the key, which it only ever releases for
+    // whichever controller still owns the slot.
+    recoveringTurns.get(key)?.abort()
+    const recovery = new AbortController()
+    recoveringTurns.set(key, recovery)
+    const deadline = setTimeout(
+      () => recovery.abort(),
+      TURN_RECOVERY_DEADLINE_MS
+    )
+    try {
+      const outcome = await fetchTurnOutcome(turn, recovery.signal)
+      if (generation !== sessionGeneration || outcome.kind !== 'terminal')
+        return
+      conversationStore.reconcileSettledTurn(turn, outcome.parts)
+    } catch (error) {
       if (!recovery.signal.aborted)
         reportError(error, {
           surface: 'agent',

@@ -2015,6 +2015,113 @@ describe('useAgentConversationStore', () => {
     }
   )
 
+  // FRONT-3659. A turn restored from a reload's snapshot settles on the
+  // socket's terminal frame, the one completion path that fetches nothing, so
+  // the rounds that streamed before the reload are missing from the trace. The
+  // store announces such a turn at settle so the session can read the stored
+  // row once and fold it in. Row id and turn id are deliberately different in
+  // these cases: the snapshot keys the turn by row id while the transcript
+  // message is keyed by turn id, and conflating them is what makes the
+  // reconcile land on nothing.
+  describe('reconciling a snapshot-restored turn settled on the socket', () => {
+    const SNAPSHOT_ROW_ID = 'assistant-row-7' as TurnId
+    const SNAPSHOT_TURN_ID = 'turn-7' as TurnId
+    const liveSnapshot = (): AgentMessages =>
+      zAgentMessages.parse([
+        historyRow(1, 'user', SNAPSHOT_TURN_ID, 'add a loader', 'user-row-1'),
+        {
+          id: SNAPSHOT_ROW_ID,
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: SNAPSHOT_TURN_ID
+        }
+      ])
+    const storedParts = (): AssistantMessage['parts'] => [
+      { type: 'thinking', text: 'before the reload', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      },
+      { type: 'thinking', text: 'after the reload', state: 'done' },
+      { type: 'text', text: 'Added it.', state: 'done' }
+    ]
+    const restoredAndSettled = () => {
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      return { store, settled }
+    }
+
+    it('announces the turn and folds the stored row in', () => {
+      const { store, settled } = restoredAndSettled()
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      const message = store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)
+      expect(message?.streaming).toBe(false)
+      // One copy of the round that did stream: the stored row is authoritative
+      // for reasoning, so the local part it already holds is dropped rather
+      // than shown twice.
+      expect(message?.parts).toEqual(storedParts())
+    })
+
+    it('reconciles once, so a second read cannot re-apply the row', () => {
+      const { store } = restoredAndSettled()
+      const turn = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
+      store.reconcileSettledTurn(turn, storedParts())
+
+      store.reconcileSettledTurn(turn, [
+        { type: 'text', text: 'a later read', state: 'done' }
+      ])
+
+      expect(
+        store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)?.parts
+      ).toEqual(storedParts())
+    })
+
+    it('leaves a turn this client started alone', () => {
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(delta('t1', 'local reply'))
+      store.ingest(done('t1'))
+      expect(settled).toEqual([])
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        { type: 'text', text: 'persisted reply', state: 'done' }
+      ])
+
+      expect(messageTexts(store, T1)).toEqual(['local reply'])
+    })
+
+    it('drops the registration when the thread is left', () => {
+      const { store } = restoredAndSettled()
+      store.reset()
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(store.messages).toEqual([])
+    })
+  })
+
   it('keeps a local tab link between persisted text and tool parts', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')

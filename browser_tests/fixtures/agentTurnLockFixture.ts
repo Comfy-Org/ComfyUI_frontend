@@ -69,7 +69,9 @@ const TURN_IN_PROGRESS: TurnInProgressBody = {
   turn_id: TURN_ID
 }
 
-const TURN_THINKING_TEXT = 'Wiring the audio output node.'
+export const TURN_THINKING_TEXT = 'Wiring the audio output node.'
+/** A round the agent narrates after the client has come back (FRONT-3659). */
+export const LATE_THINKING_TEXT = 'Back online, so I can finish the wiring.'
 export const POST_RECONNECT_TEXT = 'Reconnected, and the graph is ready.'
 export const PERSISTED_BEFORE_TOOL_TEXT = 'Prepared the graph. '
 export const PERSISTED_AFTER_TOOL_TEXT = 'Audio output connected.'
@@ -89,6 +91,11 @@ const TURN_TOOL_EVENT: AgentWsEvent = {
     message_id: TURN_ID,
     thread_id: THREAD_ID
   }
+}
+
+export const LATE_THINKING_EVENT: AgentWsEvent = {
+  type: 'agent_thinking',
+  data: { delta: LATE_THINKING_TEXT, message_id: TURN_ID, thread_id: THREAD_ID }
 }
 
 export const POST_RECONNECT_EVENT: AgentWsEvent = {
@@ -196,6 +203,7 @@ class TurnLockServer {
   private foreignPrompt: string | undefined
   private rejected = 0
   private posts = 0
+  private transcriptReads = 0
   private readonly answered: string[][] = []
   private pendingAsk: z.infer<typeof zAgentPendingAsk> | undefined
   private heldTranscript:
@@ -219,6 +227,15 @@ class TurnLockServer {
   /** Every post the server answered, accepted or rejected. */
   get postAttempts(): number {
     return this.posts
+  }
+
+  /** Every transcript GET the server answered, hydration and polling alike. */
+  get transcriptReadCount(): number {
+    return this.transcriptReads
+  }
+
+  countTranscriptRead(): void {
+    this.transcriptReads++
   }
 
   countPost(): void {
@@ -342,6 +359,16 @@ class TurnLockServer {
                 tool_name: 'add_node',
                 status: 'success'
               }
+            ],
+            // Every round's reasoning, written once the turn finishes
+            // (Comfy-Org/cloud#14903's `finalizeTurn`). The anchored entry
+            // lands ahead of its round's tool call and the unanchored one at
+            // the tail, so a client reading this row back gets the narration
+            // in the order the user saw it stream -- including the rounds a
+            // mid-turn reload took off the screen (FRONT-3659).
+            thinking: [
+              { text: TURN_THINKING_TEXT, tool_call_id: 'call-add-node' },
+              { text: LATE_THINKING_TEXT }
             ]
           }
         },
@@ -459,6 +486,7 @@ async function routeTurnLock(
       const path = new URL(route.request().url()).pathname.split('/')
       const threadId = decodeURIComponent(path.at(-2) ?? '')
       await server.waitForTranscriptRelease(threadId)
+      server.countTranscriptRead()
       return route.fulfill(jsonRoute(server.transcript(threadId)))
     }
     server.countPost()
@@ -592,6 +620,10 @@ export class AgentTurnLockHarness {
 
   postAttempts(): number {
     return this.server.postAttempts
+  }
+
+  transcriptReads(): number {
+    return this.server.transcriptReadCount
   }
 
   /** Opens the panel on a blank workflow and points the composer at that tab. */
