@@ -1,5 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import type { ModelDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -123,6 +124,24 @@ describe('useJobModelDownloadStore', () => {
       expect(store.downloadFor('job-2')).toBeDefined()
     }
   )
+
+  it('updates a consumer created before the download events', () => {
+    const store = useJobModelDownloadStore()
+    const progress = computed(() => store.downloadFor('job-1')?.progress)
+    expect(progress.value).toBeUndefined()
+
+    dispatch(message())
+    expect(progress.value).toBe(0.3448)
+
+    dispatch(message({ progress: 0.75 }))
+    expect(progress.value).toBe(0.75)
+
+    api.dispatchCustomEvent('execution_start', {
+      prompt_id: 'job-1',
+      timestamp: 1
+    })
+    expect(progress.value).toBeUndefined()
+  })
 
   it('drops downloads of jobs the queue no longer lists', () => {
     const store = useJobModelDownloadStore()
