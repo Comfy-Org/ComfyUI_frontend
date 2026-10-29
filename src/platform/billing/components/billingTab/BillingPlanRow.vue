@@ -57,7 +57,7 @@ import {
   CONTACT_SALES_URL,
   formatPlanDate
 } from '@/platform/billing/components/billingTab/planRow'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 import type {
   PlanRowAction,
   PlanRowState
