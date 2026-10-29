@@ -20,7 +20,8 @@ const baseFacts: PlanRowFacts = {
   renewalDate: '2026-11-15T00:00:00Z',
   endDate: null,
   scheduledChange: null,
-  freeRuns: null
+  freeRuns: null,
+  planKind: 'self_serve'
 }
 
 describe('derivePlanRow', () => {
@@ -165,6 +166,59 @@ describe('derivePlanRow', () => {
     {
       case: 'an ended plan without an end date',
       facts: { subscriptionStatus: 'ended' },
+      expected: { kind: 'unknown' }
+    },
+    {
+      case: 'an active sales-managed plan with no served plan name',
+      facts: { planKind: 'sales_managed', planName: null, duration: null },
+      expected: {
+        kind: 'salesManaged',
+        planName: null,
+        cadence: null,
+        renewsAt: '2026-11-15T00:00:00Z'
+      }
+    },
+    {
+      case: 'an active sales-managed plan without a renewal date',
+      facts: { planKind: 'sales_managed', planName: null, renewalDate: null },
+      expected: {
+        kind: 'salesManaged',
+        planName: null,
+        cadence: 'monthly',
+        renewsAt: null
+      }
+    },
+    {
+      case: 'a paused sales-managed plan with no served plan name',
+      facts: {
+        planKind: 'sales_managed',
+        billingStatus: 'paused',
+        planName: null
+      },
+      expected: { kind: 'unknown' }
+    },
+    {
+      case: 'a canceled sales-managed plan',
+      facts: {
+        planKind: 'sales_managed',
+        subscriptionStatus: 'canceled',
+        endDate: '2026-12-01T00:00:00Z'
+      },
+      expected: {
+        kind: 'ending',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endsAt: '2026-12-01T00:00:00Z'
+      }
+    },
+    {
+      case: 'an ended sales-managed plan with no served plan name',
+      facts: {
+        planKind: 'sales_managed',
+        subscriptionStatus: 'ended',
+        planName: null,
+        endDate: '2026-09-01T00:00:00Z'
+      },
       expected: { kind: 'unknown' }
     }
   ])('maps $case', ({ facts, expected }) => {
