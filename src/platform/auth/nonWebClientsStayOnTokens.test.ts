@@ -100,7 +100,7 @@ vi.mock(import('@/services/dialogService'), () => ({
     })
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const { cloudSessionCookieExtension } =
   await import('@/extensions/core/cloudSessionCookie')

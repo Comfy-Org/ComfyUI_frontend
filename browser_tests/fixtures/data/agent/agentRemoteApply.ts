@@ -1,6 +1,6 @@
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
-import type { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import type { RenderShape } from '@comfyorg/graph-model/globalEnums'
 
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 

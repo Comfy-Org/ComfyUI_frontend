@@ -1,4 +1,4 @@
-import type { LiteGraphGlobal } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LiteGraphGlobal } from '@comfyorg/graph-model/entityRegistry'
 
 declare global {
   var __COMFY_LITEGRAPH_INSTANCE__: LiteGraphGlobal | undefined

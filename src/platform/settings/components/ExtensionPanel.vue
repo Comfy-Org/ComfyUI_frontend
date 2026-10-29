@@ -3,7 +3,9 @@
     <SearchInput
       v-model="searchQuery"
       :clear-label="$t('g.clear')"
-      :accessible-label="$t('g.search')"
+      :accessible-label="
+        $t('g.searchPlaceholder', { subject: $t('g.extensions') })
+      "
       :placeholder="$t('g.searchPlaceholder', { subject: $t('g.extensions') })"
     />
     <Message v-if="hasChanges" severity="info" class="max-h-96 overflow-y-auto">
@@ -314,7 +316,7 @@ const applyChanges = () => {
 const extensionActions = computed<MenuItem[]>(() => [
   {
     label: t('g.enableSelected'),
-    icon: 'pi pi-check',
+    icon: 'icon-[lucide--check]',
     command: async () => {
       selectedExtensionNames.value.forEach((name) => {
         if (!extensionStore.isExtensionReadOnly(name)) {
@@ -326,7 +328,7 @@ const extensionActions = computed<MenuItem[]>(() => [
   },
   {
     label: t('g.disableSelected'),
-    icon: 'pi pi-times',
+    icon: 'icon-[lucide--x]',
     command: async () => {
       selectedExtensionNames.value.forEach((name) => {
         if (!extensionStore.isExtensionReadOnly(name)) {
@@ -341,23 +343,23 @@ const extensionActions = computed<MenuItem[]>(() => [
   },
   {
     label: t('g.enableAll'),
-    icon: 'pi pi-check',
+    icon: 'icon-[lucide--check]',
     command: enableAllExtensions
   },
   {
     label: t('g.disableAll'),
-    icon: 'pi pi-times',
+    icon: 'icon-[lucide--x]',
     command: disableAllExtensions
   },
   {
     label: t('g.disableThirdParty'),
-    icon: 'pi pi-times',
+    icon: 'icon-[lucide--x]',
     command: disableThirdPartyExtensions,
     disabled: !extensionStore.hasThirdPartyExtensions
   },
   {
     label: t('g.disableAgentCreated'),
-    icon: 'pi pi-times',
+    icon: 'icon-[lucide--x]',
     command: disableAgentExtensions,
     disabled: !extensionStore.agentExtensions.some(
       (extension) => !extensionStore.isExtensionReadOnly(extension.name)

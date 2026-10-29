@@ -8,7 +8,7 @@ import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { i18n } from '@/i18n'
 import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
 import { api } from '@/scripts/api'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -17,7 +17,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 const billingContext = useBillingContext()
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
