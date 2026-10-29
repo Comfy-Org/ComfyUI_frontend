@@ -1,8 +1,12 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { i18n } from '@/i18n'
+import {
+  authenticatedRemoteConfigState,
+  remoteConfig
+} from '@/platform/remoteConfig/remoteConfig'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
@@ -42,6 +46,11 @@ function paywallMessage(message?: string): AssistantMessage {
 }
 
 describe('AgentMessage credit usage', () => {
+  beforeEach(() => {
+    authenticatedRemoteConfigState.value = 'authenticated'
+    remoteConfig.value = { 'agent-credit-usage-summary': 'treatment' }
+  })
+
   it('shows the completed turn charge without presenting it as a session total', () => {
     render(AgentMessage, {
       props: {
@@ -60,6 +69,24 @@ describe('AgentMessage credit usage', () => {
     )
   })
 
+  it('uses singular copy for exactly one credit', () => {
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...createAssistantMessage(toTurnId('msg-one-credit')),
+          parts: [{ type: 'text', text: 'Done', state: 'done' }],
+          streaming: false,
+          creditsUsed: 1
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByTestId('agent-credit-usage')).toHaveTextContent(
+      'Agent used 1 credit'
+    )
+  })
+
   it('hides unavailable usage', () => {
     render(AgentMessage, {
       props: {
@@ -67,6 +94,23 @@ describe('AgentMessage credit usage', () => {
           ...createAssistantMessage(toTurnId('msg-no-credits')),
           parts: [{ type: 'text', text: 'Done', state: 'done' }],
           streaming: false
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByTestId('agent-credit-usage')).not.toBeInTheDocument()
+  })
+
+  it('hides usage in the control arm', () => {
+    remoteConfig.value = { 'agent-credit-usage-summary': 'control' }
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...createAssistantMessage(toTurnId('msg-control')),
+          parts: [{ type: 'text', text: 'Done', state: 'done' }],
+          streaming: false,
+          creditsUsed: 1.274
         }
       },
       global: { plugins: [i18n] }

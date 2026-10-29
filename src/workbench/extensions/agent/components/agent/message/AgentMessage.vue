@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useCreditUsageSummary } from '@/workbench/extensions/agent/experiments/creditUsageSummary'
 import type {
   ActivityPart,
   AssistantMessage,
@@ -72,16 +73,31 @@ const showActions = computed(
   () => !message.streaming && markdown.value.length > 0
 )
 
+const creditUsageSummary = useCreditUsageSummary()
+const hasCreditUsage = computed(
+  () =>
+    !message.streaming &&
+    Boolean(message.creditsUsed && message.creditsUsed > 0)
+)
+watchEffect(() => {
+  if (hasCreditUsage.value) creditUsageSummary.expose()
+})
+
 const creditUsage = computed(() => {
-  if (message.streaming || !message.creditsUsed || message.creditsUsed <= 0)
+  const creditsUsed = message.creditsUsed
+  if (
+    !hasCreditUsage.value ||
+    !creditUsageSummary.showSummary.value ||
+    creditsUsed === undefined
+  )
     return null
   const credits =
-    message.creditsUsed < 0.01
+    creditsUsed < 0.01
       ? '<0.01'
       : new Intl.NumberFormat(locale.value, {
           maximumFractionDigits: 2
-        }).format(message.creditsUsed)
-  return t('agent.creditsUsed', { credits })
+        }).format(creditsUsed)
+  return t('agent.creditsUsed', { credits }, creditsUsed)
 })
 
 const replyAssets = computed(() =>

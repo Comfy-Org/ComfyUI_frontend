@@ -13188,6 +13188,10 @@ export type GetFeaturesResponses = {
       | 'above-input'
       | 'inside-input'
     /**
+     * Authenticated assignment for the Agent per-turn credit usage experiment. Control renders no usage line; treatment renders the authoritative server-reported charge beneath completed replies. It remains optional so older environments and partial fixtures fail closed. Reading this field is not exposure; the frontend records exposure only when a charged reply is rendered.
+     */
+    'agent-credit-usage-summary'?: 'control' | 'treatment'
+    /**
      * Authenticated assignment for the Agent starter-prompt experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract so older environments and partial feature fixtures fail closed. Reading this field does not constitute experiment exposure; the frontend emits the custom exposure event only after rendering the starter prompt surface.
      */
     'agent-starter-prompt-set'?: 'control' | 'test'

@@ -32,7 +32,6 @@ type MockAgentMessageContent = Omit<
 }
 type MockAgentMessage = Omit<AgentMessage, 'content'> & {
   content?: MockAgentMessageContent
-  token_usage?: Record<string, unknown>
 }
 
 export const promptHistoryTest = base.extend<{
@@ -157,7 +156,7 @@ export const promptHistoryTest = base.extend<{
         if (!turn) throw new Error('No turn has been sent yet')
         turn.status = 'complete'
         turn.content = { text: reply }
-        turn.token_usage = {
+        const usage = {
           input_tokens: 10,
           output_tokens: 5,
           total_tokens: 15,
@@ -182,7 +181,7 @@ export const promptHistoryTest = base.extend<{
             data: {
               message_id: turn.id,
               thread_id: threadId,
-              usage: turn.token_usage
+              usage
             }
           } satisfies AgentWsEvent)
         )
