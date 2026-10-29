@@ -27,7 +27,7 @@ import {
   getNodeByExecutionId,
   getRootParentNode,
   mapAllNodes
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
 import { useErrorGroups } from './useErrorGroups'
@@ -45,7 +45,7 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'), { spy: true })
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 const unknownValidationMessage = vi.hoisted(

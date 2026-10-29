@@ -5,7 +5,7 @@ import {
   buildPromotedWidgetExecutionSources,
   hasActivePromotedWidgetConsumer,
   resolveActivePromotedWidgetConsumers
-} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+} from '@/lib/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -25,7 +25,7 @@ import {
   getExecutionIdByNode,
   getNodeByExecutionId,
   isExecutionPathActive
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'

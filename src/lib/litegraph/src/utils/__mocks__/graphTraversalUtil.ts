@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { getNodeByLocatorId as realGetNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import type { getNodeByLocatorId as realGetNodeByLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 export {
   collectAllNodes,
@@ -38,7 +38,7 @@ export {
   traverseSubgraphPath,
   triggerCallbackOnAllNodes,
   visitGraphNodes
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 export const getNodeByLocatorId = vi.fn<typeof realGetNodeByLocatorId>(
   () => null

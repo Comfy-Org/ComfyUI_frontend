@@ -71,7 +71,7 @@ vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'))
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'))
 
 vi.mock(import('@/services/audioService'), () => ({
   useAudioService: () =>

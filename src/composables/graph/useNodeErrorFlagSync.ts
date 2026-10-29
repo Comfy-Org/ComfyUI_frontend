@@ -10,7 +10,10 @@ import { useApp } from '@/scripts/appInstance'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 import { hasErrorForSlot } from '@/utils/executionErrorUtil'
-import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import {
+  forEachNode,
+  getNodeByExecutionId
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 function setNodeHasErrors(node: LGraphNode, hasErrors: boolean): void {
   if (node.has_errors === hasErrors) return

@@ -21,7 +21,7 @@ import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
-import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { executionIdToNodeLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
 
 const apiEvents: EventTarget = api

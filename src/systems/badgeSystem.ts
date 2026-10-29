@@ -16,12 +16,15 @@ import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { CORE_PART_ORDER } from '@/types/badgeData'
-import type { BadgeData, CoreBadgePart } from '@/types/badgeData'
+import { CORE_PART_ORDER } from '@/lib/litegraph/src/types/badgeData'
+import type {
+  BadgeData,
+  CoreBadgePart
+} from '@/lib/litegraph/src/types/badgeData'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
+import { mapUniqueNodes } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import type { UUID } from '@/utils/uuid'
 
 /** The badge-relevant projection of a node's definition. */

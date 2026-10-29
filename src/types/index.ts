@@ -72,7 +72,10 @@ export type {
   parseNodeExecutionId,
   createNodeExecutionId
 } from '@comfyorg/graph-model/nodeIdentification'
-export type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
+export type {
+  DOMWidget,
+  DOMWidgetOptions
+} from '@/lib/litegraph/src/types/domWidget'
 export type {
   EmbeddingsResponse,
   ExtensionsResponse,

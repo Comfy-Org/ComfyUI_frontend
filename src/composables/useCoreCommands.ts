@@ -69,7 +69,7 @@ import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   ManagerUIState,

@@ -11,17 +11,17 @@ import { toValue } from 'vue'
 import { provideCanvasClass } from './canvas/canvasClassAccess'
 
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
-import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { transferLinkPresentation } from '@/lib/litegraph/src/transferLinkPresentation'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
-import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
-import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
-import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { AutoPanController } from '@/lib/litegraph/src/canvas/useAutoPan'
+import { LitegraphLinkAdapter } from '@/lib/litegraph/src/canvas/litegraphLinkAdapter'
+import type { LinkRenderContext } from '@/lib/litegraph/src/canvas/litegraphLinkAdapter'
+import { nodesInRenderOrder } from '@/lib/litegraph/src/canvas/arrangeForLegacyRender'
 import {
   getSlotLayoutAtPoint,
   getSlotPosition
-} from '@/renderer/core/canvas/litegraph/slotCalculations'
+} from '@/lib/litegraph/src/canvas/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -38,7 +38,7 @@ import {
   replaceCanvasSelection,
   selectedCanvasNodes,
   resolveSelectable
-} from '@/renderer/core/canvas/litegraph/selectionAdapter'
+} from '@/lib/litegraph/src/canvas/selectionAdapter'
 import {
   applyMarqueeSelection,
   resolveClickSelection,
@@ -56,7 +56,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
-import { forEachNode } from '@/utils/graphTraversalUtil'
+import { forEachNode } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
 import {

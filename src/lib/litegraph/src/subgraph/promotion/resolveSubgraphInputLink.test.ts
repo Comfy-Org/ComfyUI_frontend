@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphInputLink'
+import { resolveSubgraphInputLink } from '@/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputLink'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { registerNodeState } from '@/core/graph/nodeShell/nodeShellState'
+import { registerNodeState } from '@/lib/litegraph/src/node/nodeShell/nodeShellState'
 import {
   LGraph,
   LGraphNode,

@@ -7,7 +7,7 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { collectAllNodes } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 export type NodeDefLookup = Record<string, ComfyNodeDefImpl | undefined>
 

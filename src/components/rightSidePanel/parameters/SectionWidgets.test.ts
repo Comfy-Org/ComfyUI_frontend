@@ -21,7 +21,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import { getExecutionIdByNode } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 import SectionWidgets from './SectionWidgets.vue'
 

@@ -15,7 +15,7 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import { resolveSubgraphInputTarget } from '@/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget'
 import SubgraphEditor from './SubgraphEditor.vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import type DraggableList from '@/components/common/DraggableList.vue'

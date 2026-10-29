@@ -22,7 +22,7 @@ function mockNode(
   }
 }
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'), () => ({
   reduceAllNodes: vi.fn((_graph, reducer, initial) => {
     let result = initial
     for (const node of hoisted.mockNodes) {

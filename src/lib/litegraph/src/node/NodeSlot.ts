@@ -5,7 +5,7 @@ import type {
 } from '@comfyorg/graph-model/entityRegistry'
 import { shallowReactive } from 'vue'
 
-import { MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
+import { MAX_MULTITYPE_SLICES } from '@/lib/litegraph/src/slotColors'
 
 import { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
 import type {

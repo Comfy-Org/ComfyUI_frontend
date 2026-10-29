@@ -8,7 +8,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { selectedCanvasNodes } from '@/lib/litegraph/src/canvas/selectionAdapter'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'

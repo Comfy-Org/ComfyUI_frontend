@@ -1,5 +1,5 @@
 import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
-import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { moveRerouteLayout } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { toSelectableKey } from '@/core/selection/selectionState'

@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { getCnrIdFromNode } from '@/lib/litegraph/src/utils/cnrIdUtil'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import type { NamedValuesShadowDiffResult } from './namedValuesShadowDiff'

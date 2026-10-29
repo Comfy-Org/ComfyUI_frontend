@@ -28,7 +28,7 @@ import {
   getNodeByExecutionId,
   isCandidateScopeActive,
   isMissingCandidateActive
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 interface MissingModelPipelineStore {
   missingModelCandidates: MissingModelCandidate[] | null

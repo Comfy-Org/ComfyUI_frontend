@@ -8,7 +8,7 @@ import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { BaseDOMWidget } from '@/types/domWidget'
+import type { BaseDOMWidget } from '@/lib/litegraph/src/types/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 

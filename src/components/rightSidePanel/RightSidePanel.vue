@@ -12,7 +12,7 @@ import { app } from '@/scripts/app'
 import {
   getActiveGraphNodeIds,
   getExecutionIdByNode
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'

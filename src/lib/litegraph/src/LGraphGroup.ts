@@ -1,6 +1,6 @@
 import type { LGraph, LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
-import { setGroupBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { setGroupBoundsLayout } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { toSelectableKey } from '@/core/selection/selectionState'

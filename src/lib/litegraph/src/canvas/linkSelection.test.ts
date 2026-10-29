@@ -10,7 +10,7 @@ import type {
   Point2D as Point
 } from '@comfyorg/shared-frontend-utils/geometry'
 import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
-import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
+import { setLinkPolyline } from '@/lib/litegraph/src/canvas/linkPolylines'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'

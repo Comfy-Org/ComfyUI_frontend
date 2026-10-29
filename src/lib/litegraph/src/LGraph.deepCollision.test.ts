@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
+import { parseProxyWidgets } from '@/lib/litegraph/src/subgraph/promotion/promotionSchema'
 import type {
   ExportedSubgraph,
   ISerialisedGroup,

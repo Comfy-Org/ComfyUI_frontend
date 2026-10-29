@@ -895,8 +895,8 @@
           "src/renderer/core/canvas/canvasStore.test.ts",
           "src/renderer/core/canvas/canvasStore.ts",
           "src/renderer/core/canvas/links/slotLinkDragUIState.ts",
-          "src/renderer/core/canvas/useAutoPan.test.ts",
-          "src/renderer/core/canvas/useAutoPan.ts",
+          "src/lib/litegraph/src/canvas/useAutoPan.test.ts",
+          "src/lib/litegraph/src/canvas/useAutoPan.ts",
           "src/renderer/core/canvas/useCanvasInteractions.test.ts",
           "src/renderer/core/canvas/useCanvasInteractions.ts",
           "src/renderer/core/canvas/useCanvasScheduler.ts"
@@ -909,8 +909,8 @@
           "src/composables/canvas/visibleCanvasViewport.ts",
           "src/renderer/core/canvas/__tests__/canvasViewport.test.ts",
           "src/renderer/core/canvas/canvasViewport.ts",
-          "src/renderer/core/canvas/pathRenderer.test.ts",
-          "src/renderer/core/canvas/pathRenderer.ts"
+          "src/lib/litegraph/src/canvas/pathRenderer.test.ts",
+          "src/lib/litegraph/src/canvas/pathRenderer.ts"
         ]
       },
       {
@@ -1378,7 +1378,7 @@
           "src/lib/litegraph/src/infrastructure/LGraphCanvasEventMap.ts",
           "src/lib/litegraph/src/types/contextMenu.ts",
           "src/lib/litegraph/src/types/panel.ts",
-          "src/types/badgeData.ts",
+          "src/lib/litegraph/src/types/badgeData.ts",
           "src/utils/vintageClipboard.ts"
         ]
       },
@@ -1487,6 +1487,7 @@
       {
         "name": "graph-compatibility/integration",
         "patterns": [
+          "src/utils/__mocks__/**",
           "src/utils/litegraphUtil.test.ts",
           "src/utils/litegraphUtil.ts"
         ]
@@ -1536,7 +1537,7 @@
       {
         "name": "graph-model/domain",
         "patterns": [
-          "src/constants/slotColors.ts",
+          "src/lib/litegraph/src/slotColors.ts",
           "src/lib/litegraph/src/LGraph.compoundUndo.test.ts",
           "src/lib/litegraph/src/LGraph.configureStoreScope.test.ts",
           "src/lib/litegraph/src/LGraph.deepCollision.test.ts",
@@ -1596,7 +1597,7 @@
       {
         "name": "graph-model/application",
         "patterns": [
-          "src/core/graph/nodeShell/**",
+          "src/lib/litegraph/src/node/nodeShell/**",
           "src/lib/litegraph/src/LGraph.remintLinkRemap.test.ts",
           "src/lib/litegraph/src/linkDeduplication.conflictingOrigins.test.ts",
           "src/lib/litegraph/src/linkDeduplication.remapReferences.test.ts",
@@ -1662,9 +1663,9 @@
       {
         "name": "graph-traversal/application",
         "patterns": [
-          "src/utils/__mocks__/graphTraversalUtil.ts",
-          "src/utils/graphTraversalUtil.test.ts",
-          "src/utils/graphTraversalUtil.ts"
+          "src/lib/litegraph/src/utils/__mocks__/graphTraversalUtil.ts",
+          "src/lib/litegraph/src/utils/graphTraversalUtil.test.ts",
+          "src/lib/litegraph/src/utils/graphTraversalUtil.ts"
         ]
       },
       {
@@ -1974,7 +1975,7 @@
       {
         "name": "link-presentation/application",
         "patterns": [
-          "src/core/graph/transferLinkPresentation.ts",
+          "src/lib/litegraph/src/transferLinkPresentation.ts",
           "src/lib/litegraph/src/canvas/linkVisibility.test.ts",
           "src/lib/litegraph/src/canvas/linkVisibility.ts",
           "src/stores/linkPresentationStore.test.ts",
@@ -2359,8 +2360,8 @@
       {
         "name": "node-replacement/domain",
         "patterns": [
-          "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.test.ts",
-          "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.ts",
+          "src/lib/litegraph/src/utils/cnrIdUtil.test.ts",
+          "src/lib/litegraph/src/utils/cnrIdUtil.ts",
           "src/platform/workflowErrors/nodeReplacement/types.ts"
         ]
       },
@@ -2797,7 +2798,7 @@
         "patterns": [
           "src/composables/node/usePromotedPreviews.test.ts",
           "src/composables/node/usePromotedPreviews.ts",
-          "src/core/graph/subgraph/adoptPromotedWidgetValue.ts",
+          "src/lib/litegraph/src/subgraph/promotion/adoptPromotedWidgetValue.ts",
           "src/core/graph/subgraph/migration/**",
           "src/core/graph/subgraph/promotedInputWidget.test.ts",
           "src/core/graph/subgraph/promotedInputWidget.ts",
@@ -2821,10 +2822,10 @@
         "name": "subgraphs/domain",
         "patterns": [
           "src/constants/groupNodeConstants.ts",
-          "src/core/graph/subgraph/resolveSubgraphInputLink.test.ts",
-          "src/core/graph/subgraph/resolveSubgraphInputLink.ts",
-          "src/core/graph/subgraph/resolveSubgraphInputTarget.test.ts",
-          "src/core/graph/subgraph/resolveSubgraphInputTarget.ts",
+          "src/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputLink.test.ts",
+          "src/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputLink.ts",
+          "src/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget.test.ts",
+          "src/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget.ts",
           "src/lib/litegraph/src/constants.ts",
           "src/lib/litegraph/src/infrastructure/SubgraphEventMap.ts",
           "src/lib/litegraph/src/infrastructure/SubgraphInputEventMap.ts",
@@ -3643,10 +3644,6 @@
       {
         "name": "glsl-preview/application/outer-1",
         "patterns": ["src/renderer/glsl/**"]
-      },
-      {
-        "name": "graph-compatibility/integration/outer-1",
-        "patterns": ["src/utils/__mocks__/**"]
       },
       {
         "name": "graph-layout/application/outer-1",
@@ -5481,11 +5478,7 @@
       },
       {
         "from": "graph-compatibility/integration",
-        "allow": [
-          "graph-compatibility/integration",
-          "graph-compatibility/integration/outer-1",
-          "unclassified"
-        ]
+        "allow": ["graph-compatibility/integration", "unclassified"]
       },
       {
         "from": "graph-layout/domain",
@@ -8041,14 +8034,6 @@
         ]
       },
       {
-        "from": "graph-compatibility/integration/outer-1",
-        "allow": [
-          "graph-compatibility/integration",
-          "graph-compatibility/integration/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "graph-layout/application/outer-1",
         "allow": [
           "graph-layout/domain",
@@ -9096,7 +9081,6 @@
           "extension-runtime/presentation/outer-1",
           "first-run-tour/application/outer-1",
           "glsl-preview/application/outer-1",
-          "graph-compatibility/integration/outer-1",
           "graph-layout/application/outer-1",
           "graph-layout/integration/outer-1",
           "graph-model/domain/outer-1",

@@ -27,7 +27,7 @@ type TestNode = Omit<LGraphNode, 'constructor'> & {
   _testExecutionId?: string
 }
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
+vi.mock<unknown>(import('@/lib/litegraph/src/utils/graphTraversalUtil'), () => {
   type TestNode = LGraphNode & {
     _testExecutionId?: string
     _testActiveExecutionIds?: string[]

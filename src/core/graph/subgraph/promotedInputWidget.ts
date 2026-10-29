@@ -4,7 +4,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import { resolveSubgraphInputTarget } from './resolveSubgraphInputTarget'
+import { resolveSubgraphInputTarget } from '@/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget'
 
 /**
  * Where a promoted subgraph input is sourced from inside the subgraph. The

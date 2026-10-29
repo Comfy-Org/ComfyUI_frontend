@@ -39,11 +39,11 @@ import {
   isMissingCandidateActive,
   findSubgraphNodePathById,
   executionIdToNodeLocatorId
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 // Mock node factory
 function createMockNode(

@@ -18,7 +18,7 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn(),
   getExecutionIdByNode: vi.fn(),
   getRootParentNode: vi.fn(() => null),

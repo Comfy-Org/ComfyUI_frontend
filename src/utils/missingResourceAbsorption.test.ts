@@ -22,7 +22,7 @@ import { scanAllMediaCandidates } from '@/platform/workflowErrors/missingMedia/m
 import {
   getExecutionIdByNode,
   isCandidateScopeActive
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

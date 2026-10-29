@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import { resolveSubgraphInputTarget } from '@/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,

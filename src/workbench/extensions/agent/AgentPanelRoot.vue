@@ -55,7 +55,7 @@ import {
   isValidAgentAttachment
 } from './utils/attachableFiles'
 import type { AgentAttachVerdict } from './utils/attachableFiles'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { MinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'

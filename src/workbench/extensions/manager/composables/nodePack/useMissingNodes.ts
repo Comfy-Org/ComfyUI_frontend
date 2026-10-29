@@ -8,7 +8,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { collectAllNodes } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 

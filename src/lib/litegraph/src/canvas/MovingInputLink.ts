@@ -5,7 +5,7 @@ import type {
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
 
-import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { transferLinkPresentation } from '@/lib/litegraph/src/transferLinkPresentation'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'

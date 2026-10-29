@@ -4,7 +4,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   getExecutionIdByNode,
   getRootParentNode
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 import { heuristicRoles } from './heuristicRoles'

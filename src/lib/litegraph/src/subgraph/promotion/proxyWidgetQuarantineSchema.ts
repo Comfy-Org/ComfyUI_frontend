@@ -3,7 +3,7 @@ import { z } from 'zod'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
-import { parseNodePropertyArray } from './parseNodePropertyArray'
+import { parseNodePropertyArray } from '@/core/schemas/parseNodePropertyArray'
 import { serializedProxyWidgetTupleSchema } from './promotionSchema'
 
 const proxyWidgetQuarantineReasonSchema = z.enum([

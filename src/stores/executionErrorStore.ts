@@ -37,7 +37,7 @@ import {
   executionIdToNodeLocatorId,
   getExecutionIdByNode,
   getNodeByExecutionId
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 import {

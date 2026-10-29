@@ -23,7 +23,7 @@ import { app } from '@/scripts/app'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import type { ComfyExtension } from '@/types/comfy'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 function applyResultToLoad3d(
   node: LGraphNode,

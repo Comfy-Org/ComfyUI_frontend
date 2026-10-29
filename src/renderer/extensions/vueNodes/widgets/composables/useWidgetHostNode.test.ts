@@ -6,13 +6,13 @@ import { app } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 import { useWidgetHostNode } from './useWidgetHostNode'
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'))
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'))
 
 const locatorId = createNodeLocatorId(null, 7)
 const locatedNode = new LGraphNode('located')

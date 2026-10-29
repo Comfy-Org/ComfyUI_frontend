@@ -3,12 +3,12 @@ import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
-import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
+import { adoptPromotedWidgetValue } from '@/lib/litegraph/src/subgraph/promotion/adoptPromotedWidgetValue'
 import { toSelectableKey } from '@/core/selection/selectionState'
 import {
   getAgreedLinkPresentation,
   transferLinkPresentation
-} from '@/core/graph/transferLinkPresentation'
+} from '@/lib/litegraph/src/transferLinkPresentation'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -17,7 +17,7 @@ import {
   attachNodeToStores,
   detachAllNodesFromStores,
   detachNodeFromStores
-} from '@/core/graph/nodeShell/nodeShellLifecycle'
+} from '@/lib/litegraph/src/node/nodeShell/nodeShellLifecycle'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -29,11 +29,11 @@ import {
   detachNodeLayout,
   detachRerouteLayout,
   materializeRerouteLayout
-} from '@/renderer/core/layout/operations/graphLayoutAttachment'
+} from '@/lib/litegraph/src/layout/graphLayoutAttachment'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
-import { changeCanvasSelection } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { nodesInRenderOrder } from '@/lib/litegraph/src/canvas/arrangeForLegacyRender'
+import { changeCanvasSelection } from '@/lib/litegraph/src/canvas/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
@@ -93,7 +93,10 @@ import {
   toNodeId
 } from '@comfyorg/graph-model/nodeId'
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
+import {
+  forEachNode,
+  visitGraphNodes
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 import {
   normalizeConfiguredTopology,

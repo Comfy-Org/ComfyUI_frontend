@@ -18,7 +18,7 @@ import type {
   ComponentWidgetCustomProps,
   DOMWidget,
   DOMWidgetOptions
-} from '@/types/domWidget'
+} from '@/lib/litegraph/src/types/domWidget'
 import { generateUUID } from '@/utils/formatUtil'
 
 function readDomWidgetValue<V extends object | string>(

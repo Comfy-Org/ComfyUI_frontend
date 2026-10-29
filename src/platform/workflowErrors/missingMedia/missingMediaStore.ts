@@ -13,7 +13,7 @@ import type {
   NodeExecutionId,
   NodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
-import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
+import { getActiveGraphNodeIds } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 /**

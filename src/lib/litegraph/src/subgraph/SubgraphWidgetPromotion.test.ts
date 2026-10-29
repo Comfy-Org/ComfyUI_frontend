@@ -26,7 +26,7 @@ import {
   makeQuarantineEntry
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
-import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
+import type { SerializedProxyWidgetTuple } from '@/lib/litegraph/src/subgraph/promotion/promotionSchema'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import {
   getPreviewExposureHostLocator,

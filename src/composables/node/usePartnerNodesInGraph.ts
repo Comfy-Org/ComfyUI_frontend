@@ -9,7 +9,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { reduceAllNodes } from '@/utils/graphTraversalUtil'
+import { reduceAllNodes } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 export interface PartnerNodeInfo {
   nodeName: string

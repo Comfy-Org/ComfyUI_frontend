@@ -8,7 +8,7 @@ import type {
   PointTuple as Point,
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { attachGroupLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { attachGroupLayout } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
 

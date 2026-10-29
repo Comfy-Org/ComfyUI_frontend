@@ -38,7 +38,7 @@ import {
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { getCnrIdFromNode } from '@/lib/litegraph/src/utils/cnrIdUtil'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -51,7 +51,7 @@ import {
   getNodeByExecutionId,
   isExecutionPathActive,
   isMissingCandidateActive
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 
 const hookedNodes = new WeakSet<LGraphNode>()

@@ -36,7 +36,7 @@ import type {
 } from '@/platform/remote/comfyui/execution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 type Matrix = number[][]
 
@@ -51,7 +51,7 @@ import { useLoad3dService } from '@/extensions/core/load3d/services/load3dServic
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isLoad3dNode } from '@/utils/litegraphUtil'
-import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { selectedCanvasNodes } from '@/lib/litegraph/src/canvas/selectionAdapter'
 
 export const load3dExtension: ComfyExtension = {
   name: 'Comfy.Load3D',

@@ -23,7 +23,7 @@ import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { UUID } from '@/utils/uuid'
 import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
-import { isSubgraphIoNode } from './typeGuardUtil'
+import { isSubgraphIoNode } from '@/utils/typeGuardUtil'
 
 type RuntimeGraphNode = Omit<LGraphNode, 'isSubgraphNode'> &
   Partial<Pick<LGraphNode, 'isSubgraphNode'>>

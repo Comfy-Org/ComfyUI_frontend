@@ -3,7 +3,7 @@ import type {
   Reroute,
   LinkConnector
 } from '@comfyorg/graph-model/entityRegistry'
-import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { transferLinkPresentation } from '@/lib/litegraph/src/transferLinkPresentation'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 

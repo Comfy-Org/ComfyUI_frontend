@@ -7,15 +7,15 @@ import {
   getPromotableWidgets,
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
-import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
+import { resolveConcretePromotedWidget } from '@/lib/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget'
+import { resolveSubgraphInputTarget } from '@/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget'
+import type { SerializedProxyWidgetTuple } from '@/lib/litegraph/src/subgraph/promotion/promotionSchema'
+import { parseProxyWidgets } from '@/lib/litegraph/src/subgraph/promotion/promotionSchema'
 import type {
   ProxyWidgetErrorQuarantineEntry,
   ProxyWidgetQuarantineReason
-} from '@/core/schemas/proxyWidgetQuarantineSchema'
-import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
+} from '@/lib/litegraph/src/subgraph/promotion/proxyWidgetQuarantineSchema'
+import { parseProxyWidgetErrorQuarantine } from '@/lib/litegraph/src/subgraph/promotion/proxyWidgetQuarantineSchema'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'

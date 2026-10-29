@@ -4,7 +4,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   arrangeForLegacyRender,
   nodesInRenderOrder
-} from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+} from '@/lib/litegraph/src/canvas/arrangeForLegacyRender'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'

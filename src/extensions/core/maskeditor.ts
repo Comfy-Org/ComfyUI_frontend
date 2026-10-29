@@ -9,7 +9,7 @@ import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useM
 import { useCanvasTransform } from '@comfyorg/mask-editor/useCanvasTransform'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import { isImageNode } from '@/utils/litegraphUtil'
-import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { selectedCanvasNodes } from '@/lib/litegraph/src/canvas/selectionAdapter'
 import type { ComfyExtension } from '@/types/comfy'
 
 function openMaskEditor(node: LGraphNode): void {

@@ -20,15 +20,15 @@ import {
   LinkMarkerShape,
   LinkRenderType
 } from '@comfyorg/graph-model/globalEnums'
-import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
+import { CanvasPathRenderer } from '@/lib/litegraph/src/canvas/pathRenderer'
 import type {
   ArrowShape,
   Direction,
   LinkRenderData,
   RenderContext as PathRenderContext,
   RenderMode
-} from '@/renderer/core/canvas/pathRenderer'
-import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
+} from '@/lib/litegraph/src/canvas/pathRenderer'
+import { setLinkPolyline } from '@/lib/litegraph/src/canvas/linkPolylines'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 export interface LinkRenderContext {

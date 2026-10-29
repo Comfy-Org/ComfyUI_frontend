@@ -26,7 +26,7 @@ import type {
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { parseFilePath } from '@/utils/formatUtil'
-import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { executionIdToNodeLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import {
   isAnimatedOutput,
   isVideoNode,

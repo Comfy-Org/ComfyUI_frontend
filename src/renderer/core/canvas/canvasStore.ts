@@ -15,7 +15,7 @@ import type {
   LGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { resolveSelectable } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { resolveSelectable } from '@/lib/litegraph/src/canvas/selectionAdapter'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'

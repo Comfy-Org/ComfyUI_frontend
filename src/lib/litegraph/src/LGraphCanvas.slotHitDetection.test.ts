@@ -7,11 +7,11 @@ import {
   LiteGraph,
   ToInputRenderLink
 } from '@/lib/litegraph/src/litegraph'
-import { getSlotLayoutAtPoint } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { getSlotLayoutAtPoint } from '@/lib/litegraph/src/canvas/slotCalculations'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 vi.mock(
-  import('@/renderer/core/canvas/litegraph/slotCalculations'), // oxlint-disable-line comfy/no-restricted-paths
+  import('@/lib/litegraph/src/canvas/slotCalculations'), // oxlint-disable-line comfy/no-restricted-paths
   { spy: true }
 )
 

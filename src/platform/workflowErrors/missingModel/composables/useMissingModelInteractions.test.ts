@@ -37,7 +37,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: (...args: unknown[]) =>
     mockGetNodeByExecutionId(...args)
 }))

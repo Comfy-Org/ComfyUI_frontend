@@ -8,8 +8,8 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 import {
   collectAllNodes,
   getExecutionIdByNode
-} from '@/utils/graphTraversalUtil'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
+import { getCnrIdFromNode } from '@/lib/litegraph/src/utils/cnrIdUtil'
 
 /** Scan the live graph for unregistered node types and build a full MissingNodeType list. */
 function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {

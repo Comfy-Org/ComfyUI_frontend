@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { getSlotColor, MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
+import {
+  getSlotColor,
+  MAX_MULTITYPE_SLICES
+} from '@/lib/litegraph/src/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import type { SlotId } from '@comfyorg/graph-model/slotId'

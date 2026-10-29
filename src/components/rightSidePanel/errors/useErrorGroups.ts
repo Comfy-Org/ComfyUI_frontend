@@ -18,7 +18,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   getNodeByExecutionId,
   getExecutionIdByNode
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { createCancelToken } from '@/utils/createCancelToken'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'

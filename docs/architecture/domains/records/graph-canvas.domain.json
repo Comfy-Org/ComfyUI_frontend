@@ -308,7 +308,7 @@
       "role": "application"
     },
     {
-      "path": "src/types/badgeData.ts",
+      "path": "src/lib/litegraph/src/types/badgeData.ts",
       "role": "domain"
     },
     {

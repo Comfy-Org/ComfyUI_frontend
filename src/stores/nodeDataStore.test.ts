@@ -1,7 +1,7 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { transferReplacementOwnership } from '@/core/graph/nodeShell/nodeShellState'
+import { transferReplacementOwnership } from '@/lib/litegraph/src/node/nodeShell/nodeShellState'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import {

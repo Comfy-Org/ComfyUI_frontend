@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { getCnrIdFromNode } from '@/lib/litegraph/src/utils/cnrIdUtil'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { NamedValuesShadowDiffResult } from './namedValuesShadowDiff'
 import {
@@ -12,7 +12,7 @@ import {
 
 vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@/platform/workflowErrors/nodeReplacement/cnrIdUtil'), () => ({
+vi.mock(import('@/lib/litegraph/src/utils/cnrIdUtil'), () => ({
   getCnrIdFromNode: vi.fn()
 }))
 

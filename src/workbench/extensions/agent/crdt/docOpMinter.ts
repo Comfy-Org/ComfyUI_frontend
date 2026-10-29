@@ -43,7 +43,7 @@ import {
   findSubgraphByUuid,
   findSubgraphNodePathById,
   traverseSubgraphPath
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 import {
   SUBSCRIBE_ACK_MAX_TIMEOUTS,

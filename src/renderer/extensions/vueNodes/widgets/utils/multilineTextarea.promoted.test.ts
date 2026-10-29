@@ -5,7 +5,7 @@ vi.mock(import('@/scripts/app'))
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { DOMWidget } from '@/types/domWidget'
+import type { DOMWidget } from '@/lib/litegraph/src/types/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

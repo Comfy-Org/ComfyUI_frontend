@@ -3,7 +3,7 @@ import { uniq } from 'es-toolkit'
 import type { LGraphNode, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, Reroute } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { collectFromNodes } from '@/utils/graphTraversalUtil'
+import { collectFromNodes } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
 /**

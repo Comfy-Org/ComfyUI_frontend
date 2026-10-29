@@ -9,7 +9,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 

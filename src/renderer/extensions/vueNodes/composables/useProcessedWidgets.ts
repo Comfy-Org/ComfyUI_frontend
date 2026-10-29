@@ -17,7 +17,7 @@ import { app } from '@/scripts/app'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { getNodeByState } from '@/utils/graphTraversalUtil'
+import { getNodeByState } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 export { computeProcessedWidgets }
 export type { ProcessedWidget }

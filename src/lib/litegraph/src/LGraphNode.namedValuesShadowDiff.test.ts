@@ -6,7 +6,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 
 vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@/platform/workflowErrors/nodeReplacement/cnrIdUtil'), () => ({
+vi.mock(import('@/lib/litegraph/src/utils/cnrIdUtil'), () => ({
   getCnrIdFromNode: () => undefined
 }))
 

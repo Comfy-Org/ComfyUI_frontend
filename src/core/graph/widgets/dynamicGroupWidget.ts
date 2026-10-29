@@ -21,7 +21,7 @@ import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { deriveWidgetSurfaces } from '@/types/widgetVisibility'
-import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
+import { mapUniqueNodes } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 import {

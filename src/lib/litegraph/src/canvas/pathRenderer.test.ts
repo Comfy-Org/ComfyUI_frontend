@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   LinkRenderData,
   RenderContext
-} from '@/renderer/core/canvas/pathRenderer'
+} from '@/lib/litegraph/src/canvas/pathRenderer'
 import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
+import { CanvasPathRenderer } from '@/lib/litegraph/src/canvas/pathRenderer'
 
 function createMockCtx(): CanvasRenderingContext2D {
   return {

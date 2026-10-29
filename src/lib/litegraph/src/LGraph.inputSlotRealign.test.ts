@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { registerNodeState } from '@/core/graph/nodeShell/nodeShellState'
+import { registerNodeState } from '@/lib/litegraph/src/node/nodeShell/nodeShellState'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID

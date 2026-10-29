@@ -1,5 +1,5 @@
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveConcretePromotedWidget } from '@/lib/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget'
 import {
   isValueControlWidget,
   nextValueForLinkedTarget

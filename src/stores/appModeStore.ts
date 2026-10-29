@@ -16,7 +16,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import { resolveSubgraphInputTarget } from '@/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {

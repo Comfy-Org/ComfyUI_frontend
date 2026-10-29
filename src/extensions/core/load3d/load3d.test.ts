@@ -9,7 +9,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyApp } from '@/scripts/app'
 import { app } from '@/scripts/app'
 import type { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
-import * as graphTraversal from '@/utils/graphTraversalUtil'
+import * as graphTraversal from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import {
@@ -114,7 +114,7 @@ vi.mock(import('@/scripts/app'), () => ({
   ComfyApp: fromAny({ copyToClipspace: vi.fn(), clipspace_return_node: null })
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'))
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'))
 
 vi.mock(import('@/i18n'))
 

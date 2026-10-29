@@ -32,9 +32,9 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
-import * as graphTraversal from '@/utils/graphTraversalUtil'
+import * as graphTraversal from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
-vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'), { spy: true })
 
 const { mockHandles } = vi.hoisted(() => {
   const state = {

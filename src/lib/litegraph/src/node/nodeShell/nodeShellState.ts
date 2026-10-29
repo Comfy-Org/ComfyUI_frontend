@@ -5,7 +5,7 @@ import { assert } from '@/base/assert'
 import {
   canTransferLayoutAttachment,
   transferLayoutAttachment
-} from '@/renderer/core/layout/operations/graphLayoutAttachment'
+} from '@/lib/litegraph/src/layout/graphLayoutAttachment'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'

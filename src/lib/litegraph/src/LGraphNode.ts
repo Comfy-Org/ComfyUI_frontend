@@ -23,12 +23,12 @@ import { toValue } from 'vue'
 import {
   createNodeShellState,
   setTrackedNodeState
-} from '@/core/graph/nodeShell/nodeShellState'
+} from '@/lib/litegraph/src/node/nodeShell/nodeShellState'
 import {
   calculateInputSlotPosFromSlot,
   getSlotPosition
-} from '@/renderer/core/canvas/litegraph/slotCalculations'
-import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
+} from '@/lib/litegraph/src/canvas/slotCalculations'
+import type { SlotPositionContext } from '@/lib/litegraph/src/canvas/slotCalculations'
 import {
   nodeGeometryBuffer,
   nodePositionBuffer,
@@ -38,7 +38,7 @@ import {
   refreshNodeGeometry,
   setNodePosition,
   setNodeSize
-} from '@/renderer/core/layout/operations/graphLayoutAttachment'
+} from '@/lib/litegraph/src/layout/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { toSelectableKey } from '@/core/selection/selectionState'
@@ -47,7 +47,10 @@ import type {
   ResultItem
 } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
-import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
+import type {
+  DOMWidget,
+  DOMWidgetOptions
+} from '@/lib/litegraph/src/types/domWidget'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'

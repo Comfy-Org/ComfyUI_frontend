@@ -17,7 +17,7 @@ import {
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { getNodeByExecutionId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -47,7 +47,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn(),
   getExecutionIdByNode: vi.fn(),
   getRootParentNode: vi.fn(() => null),

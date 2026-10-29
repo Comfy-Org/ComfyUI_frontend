@@ -4,7 +4,7 @@ import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
+import { AutoPanController } from '@/lib/litegraph/src/canvas/useAutoPan'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
@@ -45,7 +45,7 @@ const testState = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/renderer/core/canvas/useAutoPan'), () => ({
+vi.mock(import('@/lib/litegraph/src/canvas/useAutoPan'), () => ({
   AutoPanController: vi.fn()
 }))
 

@@ -16,7 +16,7 @@ import { useApp } from '@/scripts/appInstance'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { getAncestorExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import { getExecutionIdByNode } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 interface MissingNodesError {
   message: string

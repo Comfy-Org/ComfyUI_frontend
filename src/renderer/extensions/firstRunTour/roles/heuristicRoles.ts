@@ -1,11 +1,11 @@
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import { resolveSubgraphInputTarget } from '@/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import {
   collectAllNodes,
   getExecutionIdByNode,
   isExecutionPathActive
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 import { MEDIA_KIND_BY_SINK_TYPE } from './tourRolePins'

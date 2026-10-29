@@ -5,7 +5,7 @@ import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import {
   AutoPanController,
   calculateEdgePanSpeed
-} from '@/renderer/core/canvas/useAutoPan'
+} from '@/lib/litegraph/src/canvas/useAutoPan'
 
 describe('calculateEdgePanSpeed', () => {
   const MAX = 15

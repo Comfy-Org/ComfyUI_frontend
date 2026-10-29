@@ -11,10 +11,10 @@ import {
   measureViewportFromElement
 } from '@/renderer/core/canvas/canvasViewport'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
-import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { selectedCanvasNodes } from '@/lib/litegraph/src/canvas/selectionAdapter'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveConcretePromotedWidget } from '@/lib/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget'
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -91,7 +91,7 @@ import type { NodeError } from '@/platform/remote/comfyui/types'
 import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
-import type { BaseDOMWidget } from '@/types/domWidget'
+import type { BaseDOMWidget } from '@/lib/litegraph/src/types/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -139,7 +139,7 @@ import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { getCnrIdFromProperties } from '@/lib/litegraph/src/utils/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
 import {
@@ -164,7 +164,7 @@ import {
   getNodeByExecutionId,
   isAncestorPathActive,
   triggerCallbackOnAllNodes
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import {
   executeWidgetsCallback,
   isImageNode,

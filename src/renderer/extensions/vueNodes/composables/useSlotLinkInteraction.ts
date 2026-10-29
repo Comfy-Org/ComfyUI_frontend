@@ -2,7 +2,7 @@ import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
 import type { Fn } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
+import { AutoPanController } from '@/lib/litegraph/src/canvas/useAutoPan'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
@@ -24,7 +24,7 @@ import {
 } from '@/renderer/core/canvas/interaction/canvasPointerEvent'
 import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
-import { getGraphSlotLayout } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { getGraphSlotLayout } from '@/lib/litegraph/src/canvas/slotCalculations'
 import {
   resolveNodeSurfaceSlotCandidate,
   resolveSlotTargetCandidate

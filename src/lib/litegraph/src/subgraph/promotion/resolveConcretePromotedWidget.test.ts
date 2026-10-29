@@ -1,7 +1,7 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, test, vi } from 'vitest'
 
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveConcretePromotedWidget } from '@/lib/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import {

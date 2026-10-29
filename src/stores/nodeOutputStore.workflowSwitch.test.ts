@@ -18,9 +18,12 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   resolveNode: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
-}))
+vi.mock<unknown>(
+  import('@/lib/litegraph/src/utils/graphTraversalUtil'),
+  () => ({
+    executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
+  })
+)
 
 vi.mock(import('@/scripts/app'))
 

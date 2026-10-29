@@ -19,7 +19,7 @@ import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
-import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
+import { findSubgraphPathById } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
 
 interface WorkflowServiceAccess {

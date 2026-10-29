@@ -77,9 +77,12 @@ vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
-}))
+vi.mock<unknown>(
+  import('@/lib/litegraph/src/utils/graphTraversalUtil'),
+  () => ({
+    executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
+  })
+)
 
 describe('useMaskEditorSaver', () => {
   let mockNode: LGraphNode

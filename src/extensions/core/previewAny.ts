@@ -11,7 +11,7 @@ import {
 } from '@/extensions/core/textPreviewWidgets'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 export const previewAnyExtension: ComfyExtension = {
   name: 'Comfy.PreviewAny',

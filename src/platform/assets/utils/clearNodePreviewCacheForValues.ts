@@ -4,7 +4,7 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { collectAllNodes } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 const LONGEST_ANNOTATION = '[output]'
 

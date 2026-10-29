@@ -26,7 +26,7 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import { getExecutionIdByNode } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 

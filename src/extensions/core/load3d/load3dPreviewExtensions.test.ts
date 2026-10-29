@@ -8,7 +8,7 @@ import { app } from '@/scripts/app'
 import type { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import * as graphTraversal from '@/utils/graphTraversalUtil'
+import * as graphTraversal from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import {
   previewGaussianSplatExtension,
   previewPointCloudExtension,
@@ -62,7 +62,7 @@ vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'))
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'))
 
 vi.mock(import('@/i18n'))
 

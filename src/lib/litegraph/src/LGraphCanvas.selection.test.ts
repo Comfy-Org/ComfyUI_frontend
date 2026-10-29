@@ -24,14 +24,14 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 import {
   resolveSelectable,
   selectableKeyOf
-} from '@/renderer/core/canvas/litegraph/selectionAdapter'
+} from '@/lib/litegraph/src/canvas/selectionAdapter'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
-import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
+import { setLinkPolyline } from '@/lib/litegraph/src/canvas/linkPolylines'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 

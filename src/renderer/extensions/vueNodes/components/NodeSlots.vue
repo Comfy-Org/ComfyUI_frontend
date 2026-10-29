@@ -61,7 +61,7 @@ import {
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { locatorIdFromState } from '@/utils/graphTraversalUtil'
+import { locatorIdFromState } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'

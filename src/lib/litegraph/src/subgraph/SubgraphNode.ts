@@ -45,10 +45,10 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import { resolveConcretePromotedWidget } from '@/lib/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget'
+import { resolveSubgraphInputTarget } from '@/lib/litegraph/src/subgraph/promotion/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
-import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
+import { parseProxyWidgetErrorQuarantine } from '@/lib/litegraph/src/subgraph/promotion/proxyWidgetQuarantineSchema'
 import {
   getPreviewExposureHostLocator,
   tryGetPreviewExposureHostLocator,

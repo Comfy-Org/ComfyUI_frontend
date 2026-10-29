@@ -312,11 +312,11 @@ import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
   locatorIdFromState
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { isTransparent } from '@comfyorg/shared-frontend-utils/colorUtil'
 
-import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { resizeNodeLayout } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'

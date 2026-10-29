@@ -1,7 +1,7 @@
 import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
-} from '@/core/graph/nodeShell/nodeShellState'
+} from '@/lib/litegraph/src/node/nodeShell/nodeShellState'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
@@ -29,7 +29,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { collectAllNodes } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 interface ReplacementGroup {
   type: string

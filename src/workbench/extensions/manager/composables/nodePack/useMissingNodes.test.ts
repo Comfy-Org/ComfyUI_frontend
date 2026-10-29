@@ -6,7 +6,7 @@ import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { collectAllNodes } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { useMissingNodes as useSharedMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import type { WorkflowPack } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
@@ -56,7 +56,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn()
 }))
 

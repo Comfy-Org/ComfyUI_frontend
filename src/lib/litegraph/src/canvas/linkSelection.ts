@@ -1,6 +1,6 @@
 import { partition } from 'es-toolkit'
 
-import { getLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
+import { getLinkPolyline } from '@/lib/litegraph/src/canvas/linkPolylines'
 import {
   pointInBounds,
   polylineIntersectsBounds

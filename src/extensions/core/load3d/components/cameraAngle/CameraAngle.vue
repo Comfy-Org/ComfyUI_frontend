@@ -115,7 +115,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 const { widget } = defineProps<{
   widget: SimplifiedWidget

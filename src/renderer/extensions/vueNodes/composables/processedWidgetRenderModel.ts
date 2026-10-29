@@ -47,7 +47,7 @@ import {
   executionIdToNodeLocatorId,
   getNodeByState,
   subgraphIdFromState
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
 
 type TooltipValueType = 'asset' | 'combo' | 'number' | 'text'

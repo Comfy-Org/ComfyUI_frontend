@@ -1,7 +1,10 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { truncate } from 'es-toolkit/compat'
 
-import type { BadgeData, CoreBadgeData } from '@/types/badgeData'
+import type {
+  BadgeData,
+  CoreBadgeData
+} from '@/lib/litegraph/src/types/badgeData'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphIconOptions } from './LGraphIcon'

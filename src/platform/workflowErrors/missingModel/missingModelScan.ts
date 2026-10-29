@@ -21,7 +21,7 @@ import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromot
 import {
   buildPromotedWidgetExecutionSources,
   resolveActivePromotedWidgetConsumers
-} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+} from '@/lib/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget'
 import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -36,7 +36,7 @@ import {
   collectAllNodes,
   getExecutionIdByNode,
   isExecutionPathActive
-} from '@/utils/graphTraversalUtil'
+} from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 
 export type MissingModelWorkflowData = FlattenableWorkflowGraph & {

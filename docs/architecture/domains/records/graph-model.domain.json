@@ -4,11 +4,11 @@
   "description": "LiteGraph graph, node, link, reroute, group, and slot entities with their store-backed node shell state, identity allocation, serialisation shapes, load-time link repair, and geometry value types. Node, slot, and group classes still carry canvas drawing and import shared drawing, widget, subgraph-promotion, selection, and layout code; those imports are recorded coupling, not owned responsibilities.",
   "modules": [
     {
-      "path": "src/constants/slotColors.ts",
+      "path": "src/lib/litegraph/src/slotColors.ts",
       "role": "domain"
     },
     {
-      "path": "src/core/graph/nodeShell/**",
+      "path": "src/lib/litegraph/src/node/nodeShell/**",
       "role": "application"
     },
     {
@@ -412,8 +412,8 @@
     {
       "name": "Node shell state and geometry project store state onto LGraphNode",
       "checks": [
-        "src/core/graph/nodeShell/nodeShellState.test.ts",
-        "src/core/graph/nodeShell/nodeShellLifecycle.test.ts",
+        "src/lib/litegraph/src/node/nodeShell/nodeShellState.test.ts",
+        "src/lib/litegraph/src/node/nodeShell/nodeShellLifecycle.test.ts",
         "src/lib/litegraph/src/LGraphNode.stateProjection.test.ts",
         "src/lib/litegraph/src/LGraphNode.geometry.test.ts",
         "src/lib/litegraph/src/geometryApiContracts.test.ts"

@@ -18,7 +18,7 @@ import type {
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 const SUBGRAPH_ID = '00000000-0000-4000-8000-000000000002'
 const mockApp: {
@@ -31,7 +31,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'), { spy: true })
 
 vi.mock(import('@/composables/useErrorHandling'))
 

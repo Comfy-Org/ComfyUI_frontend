@@ -4,7 +4,7 @@
   "description": "Per-link hidden state and labels in the link presentation store, reveal state, badge layout and drawing, and transfer of presentation when links are replaced.",
   "modules": [
     {
-      "path": "src/core/graph/transferLinkPresentation.ts",
+      "path": "src/lib/litegraph/src/transferLinkPresentation.ts",
       "role": "application"
     },
     {

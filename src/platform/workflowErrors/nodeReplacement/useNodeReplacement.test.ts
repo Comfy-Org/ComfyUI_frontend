@@ -9,7 +9,7 @@ import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
-} from '@/core/graph/nodeShell/nodeShellState'
+} from '@/lib/litegraph/src/node/nodeShell/nodeShellState'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
@@ -30,7 +30,7 @@ vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
 LiteGraph.createNode = vi.fn()
 LiteGraph.registered_node_types = {}
 
-vi.mock(import('@/core/graph/nodeShell/nodeShellState'), () => ({
+vi.mock(import('@/lib/litegraph/src/node/nodeShell/nodeShellState'), () => ({
   canTransferReplacementOwnership: vi.fn(() => true),
   transferReplacementOwnership: vi.fn(
     (node: LGraphNode, replacement: LGraphNode) => {
@@ -46,7 +46,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   sanitizeNodeName: (name: string) => name.replace(/[&<>"'`=]/g, '')
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn()
 }))
 
@@ -54,7 +54,7 @@ vi.mock(import('@/i18n'))
 
 import { app } from '@/scripts/app'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { collectAllNodes } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 import { useNodeReplacement } from './useNodeReplacement'
 
 beforeEach(() => {

@@ -11,7 +11,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyApp } from '@/scripts/app'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 import AgentGraphActivityBar from './AgentGraphActivityBar.vue'
 import { useAgentGraphActivityStore } from '@/workbench/extensions/agent/stores/agent/agentGraphActivityStore'
@@ -38,7 +38,7 @@ vi.mock(import('@/scripts/app'), () => ({
     })
   })
 }))
-vi.mock(import('@/utils/graphTraversalUtil'))
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'))
 function mount() {
   return render(AgentGraphActivityBar, {
     props: { canvas },

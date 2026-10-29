@@ -15,7 +15,7 @@ import type {
   NodeExecutionId,
   NodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
-import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
+import { getActiveGraphNodeIds } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 /**
  * Missing model error state and interaction state.

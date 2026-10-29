@@ -6,7 +6,7 @@ import type { BoundingBoxInput } from '@/composables/boundingBoxes/boundingBoxes
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { savedImageUrls } from '@/renderer/extensions/vueNodes/widgets/utils/savedImageUrls'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { resolveInputSourceNode } from '@/utils/graphTraversalUtil'
+import { resolveInputSourceNode } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 const BACKGROUND_INPUT = 'background'
 const BBOXES_INPUT = 'bboxes'

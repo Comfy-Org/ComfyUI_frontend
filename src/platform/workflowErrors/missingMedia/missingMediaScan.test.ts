@@ -27,7 +27,7 @@ import {
 } from './missingMediaGrouping'
 import type { MissingMediaCandidate } from './types'
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
+vi.mock<unknown>(import('@/lib/litegraph/src/utils/graphTraversalUtil'), () => {
   type TestNode = LGraphNode & { _testExecutionId?: string }
   type TestGraph = { _testNodes: TestNode[] }
   const isTestGraph = (graph: LGraph | TestGraph): graph is TestGraph =>

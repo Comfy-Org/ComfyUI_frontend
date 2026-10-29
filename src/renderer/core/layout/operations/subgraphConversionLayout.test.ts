@@ -13,7 +13,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-import { setNodePosition } from './graphLayoutAttachment'
+import { setNodePosition } from '@/lib/litegraph/src/layout/graphLayoutAttachment'
 
 beforeEach(() => {
   resetSubgraphFixtureState()

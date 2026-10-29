@@ -49,7 +49,7 @@ const {
   }
 })
 
-vi.mock<unknown>(import('@/renderer/core/canvas/useAutoPan'), () => ({
+vi.mock<unknown>(import('@/lib/litegraph/src/canvas/useAutoPan'), () => ({
   AutoPanController: class {
     updatePointer = vi.fn()
     start = vi.fn()
@@ -144,17 +144,14 @@ vi.mock<unknown>(
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/litegraph/slotCalculations'),
-  () => ({
-    getGraphSlotLayout: () => ({
-      nodeId: 'node1',
-      index: 0,
-      type: 'output',
-      position: { x: 100, y: 200 }
-    })
+vi.mock<unknown>(import('@/lib/litegraph/src/canvas/slotCalculations'), () => ({
+  getGraphSlotLayout: () => ({
+    nodeId: 'node1',
+    index: 0,
+    type: 'output',
+    position: { x: 100, y: 200 }
   })
-)
+}))
 
 vi.mock<unknown>(import('@/renderer/core/layout/slots/slotIdentifier'), () => ({
   getSlotKey: (...args: unknown[]) => args.join('-')

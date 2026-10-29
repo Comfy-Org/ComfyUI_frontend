@@ -3,7 +3,7 @@ import type { LGraph } from '@comfyorg/graph-model/entityRegistry'
 import {
   clearGraphSelection,
   updateGraphSelection
-} from '@/renderer/core/canvas/litegraph/selectionAdapter'
+} from '@/lib/litegraph/src/canvas/selectionAdapter'
 
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 

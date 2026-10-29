@@ -6,11 +6,11 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 import { useSettingStore } from '@/platform/settings/settingStore'
 import '@/scripts/changeTracker'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { getNodeByExecutionId } from '@/lib/litegraph/src/utils/graphTraversalUtil'
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+vi.mock(import('@/lib/litegraph/src/utils/graphTraversalUtil'), { spy: true })
 
 vi.mock(import('@/i18n'))
 
