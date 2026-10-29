@@ -53,10 +53,20 @@ test.describe('Price badge', { tag: '@vue-nodes' }, () => {
     if (!(nodeBox && requiredBox && restBox && requiredTextBox && restTextBox))
       throw new Error('Pricing badge layout is unavailable')
 
-    for (const box of [requiredBox, restBox]) {
-      expect(box.x + box.width).toBeLessThanOrEqual(nodeBox.x + nodeBox.width)
-      expect(box.y + box.height).toBeLessThanOrEqual(nodeBox.y + nodeBox.height)
-    }
+    expect(requiredBox.height).toBe(20)
+    expect(restBox.height).toBe(20)
+    expect(requiredBox.x + requiredBox.width).toBeLessThanOrEqual(
+      nodeBox.x + nodeBox.width
+    )
+    expect(restBox.x + restBox.width).toBeLessThanOrEqual(
+      nodeBox.x + nodeBox.width
+    )
+    expect(requiredBox.y + requiredBox.height).toBeLessThanOrEqual(
+      nodeBox.y + nodeBox.height
+    )
+    expect(restBox.y + restBox.height).toBeLessThanOrEqual(
+      nodeBox.y + nodeBox.height
+    )
     expect(
       restTextBox.x - (requiredTextBox.x + requiredTextBox.width)
     ).toBeGreaterThan(0)

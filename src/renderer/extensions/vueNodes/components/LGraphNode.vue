@@ -44,7 +44,10 @@
     <NodeBadges
       v-if="!isRerouteNode && !isTransparentHeaderless"
       v-bind="badges"
-      class="absolute right-0 bottom-full mb-0.5"
+      class="absolute right-0 bottom-full"
+      :style="{
+        marginBottom: `${4 + (hasAnyError || isDraggingOver ? 4 : 0) + (isEmphasized || executing ? 3 : 0)}px`
+      }"
     />
     <NodeBloodDrips
       v-if="

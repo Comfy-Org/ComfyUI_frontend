@@ -21,7 +21,7 @@ const { pricing = [] } = defineProps<{
   >
     <div
       v-if="core.length"
-      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-input"
+      class="flex h-5 items-center justify-center overflow-clip rounded-md bg-input"
     >
       <template v-for="(badge, index) of core" :key="badge.text">
         <div
@@ -31,14 +31,14 @@ const { pricing = [] } = defineProps<{
         <NodeBadge
           bg-color="transparent"
           v-bind="badge"
-          class="h-6 first:pl-2 last:pr-2"
+          class="h-5 first:pl-2 last:pr-2"
         />
       </template>
     </div>
     <div
       v-if="hasComfyBadge"
       data-testid="comfy-badge"
-      class="flex size-6 items-center justify-center rounded-full bg-input"
+      class="flex size-5 items-center justify-center rounded-md bg-input"
     >
       <i
         :class="
@@ -51,7 +51,7 @@ const { pricing = [] } = defineProps<{
     </div>
     <div
       v-if="extension.length"
-      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-input"
+      class="flex h-5 items-center justify-center overflow-clip rounded-md bg-input"
     >
       <template v-for="(badge, index) of extension" :key="badge.text">
         <div
@@ -63,7 +63,7 @@ const { pricing = [] } = defineProps<{
           v-bind="badge"
           :class="
             cn(
-              'h-6 first:pl-2 last:pr-2',
+              'h-5 first:pl-2 last:pr-2',
               badge.onClick && 'pointer-events-auto'
             )
           "
@@ -75,7 +75,7 @@ const { pricing = [] } = defineProps<{
       :key="badge.required"
       class="flex items-center gap-1"
     >
-      <CreditBadge :text="badge.required" :rest="badge.rest" />
+      <CreditBadge variant="node" :text="badge.required" :rest="badge.rest" />
     </div>
   </div>
 </template>

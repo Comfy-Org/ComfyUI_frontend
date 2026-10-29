@@ -161,11 +161,15 @@ test.describe('Floating node badges', { tag: ['@vue-nodes', '@node'] }, () => {
       await expect(node).toBeVisible()
       const badges = node.getByTestId('node-badges')
       await expect(badges).toBeVisible()
+      await comfyPage.vueNodes.selectNode(String(ref.id))
+      const outline = node.getByTestId('node-state-outline-overlay')
+      await expect(outline).toBeVisible()
       await expect(async () => {
         const baselineBox = await baseline.boundingBox()
         const nodeBox = await node.boundingBox()
         const badgeBox = await badges.boundingBox()
-        if (!baselineBox || !nodeBox || !badgeBox)
+        const outlineBox = await outline.boundingBox()
+        if (!baselineBox || !nodeBox || !badgeBox || !outlineBox)
           throw new Error('Badge layout is unavailable')
         expect(nodeBox.width).toBeCloseTo(baselineBox.width, 0)
         expect(badgeBox.width).toBeGreaterThan(nodeBox.width)
@@ -173,7 +177,7 @@ test.describe('Floating node badges', { tag: ['@vue-nodes', '@node'] }, () => {
           nodeBox.x + nodeBox.width,
           0
         )
-        expect(nodeBox.y - (badgeBox.y + badgeBox.height)).toBeCloseTo(2, 0)
+        expect(outlineBox.y - (badgeBox.y + badgeBox.height)).toBeCloseTo(4, 0)
       }).toPass({ timeout: 5000 })
 
       await baselineRef.toggleCollapse()
@@ -185,7 +189,8 @@ test.describe('Floating node badges', { tag: ['@vue-nodes', '@node'] }, () => {
         const baselineBox = await baseline.boundingBox()
         const collapsedBox = await node.boundingBox()
         const collapsedBadgeBox = await badges.boundingBox()
-        if (!baselineBox || !collapsedBox || !collapsedBadgeBox)
+        const outlineBox = await outline.boundingBox()
+        if (!baselineBox || !collapsedBox || !collapsedBadgeBox || !outlineBox)
           throw new Error('Collapsed badge layout is unavailable')
         expect(collapsedBox.width).toBeCloseTo(baselineBox.width, 0)
         expect(collapsedBadgeBox.x + collapsedBadgeBox.width).toBeCloseTo(
@@ -193,8 +198,8 @@ test.describe('Floating node badges', { tag: ['@vue-nodes', '@node'] }, () => {
           0
         )
         expect(
-          collapsedBox.y - (collapsedBadgeBox.y + collapsedBadgeBox.height)
-        ).toBeCloseTo(2, 0)
+          outlineBox.y - (collapsedBadgeBox.y + collapsedBadgeBox.height)
+        ).toBeCloseTo(4, 0)
       }).toPass({ timeout: 5000 })
     })
   })
