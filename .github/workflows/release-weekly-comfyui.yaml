@@ -476,10 +476,6 @@ jobs:
 
             if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
               echo "PR already exists (#${EXISTING_PR}), refreshing title/body"
-              # REST, not `gh pr edit`: that command resolves assignee and
-              # reviewer `login` fields over GraphQL, which needs read:org.
-              # PR_GH_TOKEN lacks it, so the refresh failed after the branch
-              # was force-pushed and the PR kept a stale title and body.
               gh api --silent --method PATCH \
                 "repos/Comfy-Org/ComfyUI/pulls/${EXISTING_PR}" \
                 -f title="Bump comfyui-frontend-package to ${{ needs.resolve-version.outputs.target_version }}" \
