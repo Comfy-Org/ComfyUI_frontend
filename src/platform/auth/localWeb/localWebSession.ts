@@ -7,7 +7,7 @@ import type {
 } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createLocalWebAuthBridge } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createStorageTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 /**
  * Hosts whose origin Cloud allows to read `/oauth/token` responses. `[::1]` is

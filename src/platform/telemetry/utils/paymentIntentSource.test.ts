@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import type {
   AddCreditsClickMetadata,
   PaymentIntentSource
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import {
   paymentIntentSourceForAddCreditsClick,
   paymentIntentSourceForJourneyEntry

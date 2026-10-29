@@ -12,7 +12,7 @@ import {
 } from '@/services/customerEventsService'
 
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { BillingEventsResponse } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
@@ -22,7 +22,7 @@ import UsageLogsTable from './UsageLogsTable.vue'
 
 vi.mock(import('@/services/customerEventsService'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const CONFIRMED_AT_MS = Date.parse('2024-06-15T12:30:00Z')
 

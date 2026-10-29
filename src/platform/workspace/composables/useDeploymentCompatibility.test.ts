@@ -13,7 +13,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type {
@@ -501,10 +501,10 @@ describe('useDeploymentCompatibility', () => {
       moved: { ...deployment('dep-building'), release_id: 'r-new' }
     },
     {
-      change: 'finishes building',
-      moved: { ...deployment('dep-building'), status: 'running' }
+      change: 'stops',
+      moved: { ...deployment('dep-building'), status: 'stopped' }
     }
-  ])(
+  ] satisfies { change: string; moved: WorkspaceDeployment }[])(
     'asks again and shows the new answer when a deployment $change',
     async ({ moved }) => {
       const { markFor } = setup()

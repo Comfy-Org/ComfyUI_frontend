@@ -26,7 +26,7 @@ import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   NodeExecutionId,
   NodeLocatorId
@@ -582,6 +582,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  const tabsRestored = ref(false)
+  const markTabsRestored = () => {
+    tabsRestored.value = true
+  }
+
   /** @see WorkflowStore.isSubgraphActive */
   const isSubgraphActive = ref(false)
 
@@ -786,6 +791,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isSyncLoading,
     loadWorkflows,
 
+    tabsRestored: computed(() => tabsRestored.value),
+    markTabsRestored,
     isSubgraphActive,
     activeSubgraph,
     updateActiveGraph,

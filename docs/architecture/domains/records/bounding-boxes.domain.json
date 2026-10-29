@@ -54,7 +54,6 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [
-    "color-conversion",
     "design-system",
     "dialog-host",
     "graph-model",

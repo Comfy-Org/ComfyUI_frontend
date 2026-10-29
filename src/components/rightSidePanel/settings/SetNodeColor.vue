@@ -10,10 +10,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ColorOption } from '@/lib/litegraph/src/litegraph'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { adjustColor } from '@/utils/colorUtil'
+import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import LayoutField from './LayoutField.vue'
+import LayoutField from '@comfyorg/design-system/field/LayoutField'
 
 /**
  * Good design limits dependencies and simplifies the interface of the abstraction layer.

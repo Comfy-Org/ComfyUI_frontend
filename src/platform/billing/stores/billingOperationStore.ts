@@ -16,9 +16,9 @@ import type { TierKey } from '@/platform/billing/subscription/constants/tierPric
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import type {
   BillingAuthenticationState,
