@@ -14103,11 +14103,47 @@ describe('AgentPanelRoot workflow binding', () => {
         seq: 1
       })
 
+      vi.mocked(reportError).mockClear()
       agentSocket.drop()
       await sendFromComposer('second message')
 
       expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
       expect(bodies[1]).not.toHaveProperty('draft')
+      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_canvas_draft_withheld_stale',
+        level: 'warning',
+        fingerprint: ['agent_canvas_draft_withheld_stale'],
+        tags: {
+          failure_kind: 'bad_state',
+          feature_area: 'agent',
+          operation: 'send',
+          outcome: 'withheld'
+        },
+        context: { workflowId: 'wf-42' }
+      })
+    })
+
+    it('reports nothing when a connected canvas sends its draft', async () => {
+      const bodies = await bindAndSettle()
+      ws.emit('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: true,
+        seq: 1
+      })
+      vi.mocked(reportError).mockClear()
+
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toHaveProperty('draft')
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorType: 'agent_canvas_draft_withheld_stale'
+        })
+      )
     })
 
     it('seeds the draft for a bound document while the agent identity is still pending', async () => {
