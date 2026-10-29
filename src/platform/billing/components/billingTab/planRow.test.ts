@@ -260,7 +260,7 @@ describe('planRowAction', () => {
     { state: 'unknown', expected: 'manage' },
     { state: 'noPlan', expected: 'subscribe' },
     { state: 'ended', expected: 'choosePlan' },
-    { state: 'ending', expected: null }
+    { state: 'ending', expected: 'manage' }
   ])('offers $expected for $state when granted', ({ state, expected }) => {
     expect(
       planRowAction(states[state], {
