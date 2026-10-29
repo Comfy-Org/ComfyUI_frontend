@@ -5858,7 +5858,6 @@
         "onHold": "没有默认付款方式。请设置一个以恢复自动充值。",
         "paused": "已达到每月限额。将于 {date} 恢复。",
         "pausedNoDate": "已达到每月限额。",
-        "rule": "当积分低于 {threshold} 时，添加 {amount}（{credits} 积分）。",
         "status": {
           "failed": "失败",
           "off": "关闭",

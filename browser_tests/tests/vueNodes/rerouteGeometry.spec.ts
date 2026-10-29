@@ -2,8 +2,8 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { toNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
   test('survives subgraph navigation', async ({ comfyPage }) => {

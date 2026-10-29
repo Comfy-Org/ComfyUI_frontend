@@ -15,7 +15,7 @@
             :loading="assetsStore.isAssetDeleting(item.asset.id)"
             size="sm"
           >
-            <i class="pi pi-trash text-xs" />
+            <i class="icon-[lucide--trash-2] size-3" />
           </LoadingOverlay>
           <AssetsListItem
             role="button"

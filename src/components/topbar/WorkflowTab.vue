@@ -331,15 +331,15 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
   {
     id: 'close-tab',
     label: t('tabMenu.closeTab'),
-    icon: 'pi pi-times',
+    icon: 'icon-[lucide--x]',
     command: () => onCloseWorkflow(workflowOption)
   },
   {
     id: 'close-tabs-to-left',
     label: t('tabMenu.closeTabsToLeft'),
     overlayIcon: {
-      mainIcon: 'pi pi-times',
-      subIcon: 'pi pi-arrow-left',
+      mainIcon: 'icon-[lucide--x]',
+      subIcon: 'icon-[lucide--arrow-left]',
       positionX: 'right',
       positionY: 'bottom',
       subIconScale: 0.5
@@ -351,8 +351,8 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
     id: 'close-tabs-to-right',
     label: t('tabMenu.closeTabsToRight'),
     overlayIcon: {
-      mainIcon: 'pi pi-times',
-      subIcon: 'pi pi-arrow-right',
+      mainIcon: 'icon-[lucide--x]',
+      subIcon: 'icon-[lucide--arrow-right]',
       positionX: 'right',
       positionY: 'bottom',
       subIconScale: 0.5
@@ -364,8 +364,8 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
     id: 'close-other-tabs',
     label: t('tabMenu.closeOtherTabs'),
     overlayIcon: {
-      mainIcon: 'pi pi-times',
-      subIcon: 'pi pi-arrows-h',
+      mainIcon: 'icon-[lucide--x]',
+      subIcon: 'icon-[lucide--move-horizontal]',
       positionX: 'right',
       positionY: 'bottom',
       subIconScale: 0.5

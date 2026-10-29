@@ -1,3 +1,14 @@
+import type {
+  WidgetSurface,
+  WidgetSurfaceTier,
+  WidgetSurfaces,
+  WidgetVisibilityComponent
+} from '@comfyorg/graph-model/widgetVisibility'
+export type {
+  WidgetSurface,
+  WidgetSurfaces,
+  WidgetVisibilityComponent
+} from '@comfyorg/graph-model/widgetVisibility'
 /**
  * Widget visibility as a data-oriented component (ADR-ECS-0008,
  * ADR-ECS-WIDGETS-0023).
@@ -12,15 +23,11 @@
 
 import { isPlainObject } from 'es-toolkit'
 
-export const WIDGET_SURFACES = ['canvas', 'vueNode', 'panel'] as const
-
-export type WidgetSurface = (typeof WIDGET_SURFACES)[number]
-
-const WIDGET_SURFACE_TIERS = ['shown', 'advanced', 'never'] as const
-
-type WidgetSurfaceTier = (typeof WIDGET_SURFACE_TIERS)[number]
-
-export type WidgetSurfaces = Record<WidgetSurface, WidgetSurfaceTier>
+import {
+  WIDGET_SURFACES,
+  WIDGET_SURFACE_TIERS
+} from '@comfyorg/graph-model/widgetSurfaces'
+export { WIDGET_SURFACES } from '@comfyorg/graph-model/widgetSurfaces'
 
 function isWidgetSurfaces(value: unknown): value is WidgetSurfaces {
   return (
@@ -29,16 +36,6 @@ function isWidgetSurfaces(value: unknown): value is WidgetSurfaces {
       WIDGET_SURFACE_TIERS.some((tier) => value[surface] === tier)
     )
   )
-}
-
-interface WidgetSuppression {
-  byExtension: boolean
-  byConnection: boolean
-}
-
-export interface WidgetVisibilityComponent {
-  surfaces: WidgetSurfaces
-  suppression: WidgetSuppression
 }
 
 export interface WidgetVisibilitySource {

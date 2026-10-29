@@ -4,7 +4,7 @@ import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/compo
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { loadCompositorSession } from './compositorSession'
 

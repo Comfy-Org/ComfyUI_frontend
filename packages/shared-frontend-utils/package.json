@@ -6,13 +6,25 @@
   "keywords": [],
   "type": "module",
   "exports": {
+    "./colorUtil": {
+      "types": "./dist-types/colorUtil.d.ts",
+      "default": "./src/colorUtil.ts"
+    },
     "./creditsUtil": {
       "types": "./dist-types/creditsUtil.d.ts",
       "default": "./src/creditsUtil.ts"
     },
+    "./errorUtil": {
+      "types": "./dist-types/errorUtil.d.ts",
+      "default": "./src/errorUtil.ts"
+    },
     "./formatUtil": {
       "types": "./dist-types/formatUtil.d.ts",
       "default": "./src/formatUtil.ts"
+    },
+    "./geometry": {
+      "types": "./dist-types/geometry.d.ts",
+      "default": "./src/geometry.ts"
     },
     "./loadExternalScript": {
       "types": "./dist-types/loadExternalScript.d.ts",

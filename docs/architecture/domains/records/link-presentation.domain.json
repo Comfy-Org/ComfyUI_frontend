@@ -46,10 +46,6 @@
     {
       "path": "src/stores/linkPresentationStore.ts",
       "role": "application"
-    },
-    {
-      "path": "src/types/linkPresentation.ts",
-      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

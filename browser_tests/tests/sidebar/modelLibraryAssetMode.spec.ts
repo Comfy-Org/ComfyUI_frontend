@@ -245,14 +245,14 @@ test.describe('Model library sidebar - asset mode', () => {
       '[data-node-id="preview-CheckpointLoaderSimple"]'
     )
     await expect(ghost).toBeVisible()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     const canvasBox = (await comfyPage.canvas.boundingBox())!
     await comfyPage.canvas.click({
       position: { x: canvasBox.width / 2, y: canvasBox.height / 2 }
     })
 
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
 
     const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
       'CheckpointLoaderSimple'

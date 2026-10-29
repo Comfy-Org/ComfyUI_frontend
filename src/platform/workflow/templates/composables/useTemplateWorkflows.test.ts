@@ -7,12 +7,12 @@ import { defineComponent } from 'vue'
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useFeatureUsageTracker } from '@/platform/surveys/useFeatureUsageTracker'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
 function deferred<T>() {
@@ -79,7 +79,7 @@ const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
   mockTrackTemplate: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry'), () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))

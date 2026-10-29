@@ -290,6 +290,33 @@ export class ComfyPage {
     this.cloudAuth = new CloudAuthHelper(page)
   }
 
+  async expectNodeCount(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBe(count)
+  }
+
+  async expectNodeCountMinimum(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBeGreaterThanOrEqual(count)
+  }
+
+  async expectNodeCountMaximum(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBeLessThanOrEqual(count)
+  }
+
   async setupUser(username: string) {
     const res = await this.request.get(`${this.apiUrl}/api/users`)
     if (res.status() !== 200)
@@ -720,9 +747,7 @@ export const comfyPageFixture = base.extend<{
       }
 
       if (isCustomNodes) {
-        await comfyExpect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-          .toBe(0)
+        await comfyPage.expectNodeCount(0)
       }
 
       if (testInfo.tags.includes('@cloud')) {

@@ -5,16 +5,16 @@ import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   OnboardingTourStepStage,
   OnboardingTourStepMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import type { AppMode } from '@/utils/appMode'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 
 import {
   clearCoachmarks,
@@ -25,7 +25,7 @@ import { TOUR_SEEN_SETTING, tourDefinition } from './onboardingTours'
 import type { CoachId, CoachStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const dispatcher = useTelemetry()
 assert.exists(dispatcher)

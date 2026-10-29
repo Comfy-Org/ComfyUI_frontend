@@ -48,14 +48,17 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useTelemetry } from '@/platform/telemetry'
-import type { AgentConsentTrigger } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentConsentTrigger } from '@comfyorg/telemetry/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { api } from '@/scripts/api'
@@ -77,7 +80,7 @@ import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
@@ -200,7 +203,7 @@ const appMock = vi.hoisted(() => {
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: appMock }))
 
-vi.mock(import('@/platform/workflow/validation/schemas/workflowSchema'), {
+vi.mock(import('@comfyorg/graph-model/workflowSchema'), {
   spy: true
 })
 
@@ -225,7 +228,7 @@ const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
 vi.mock(import('@vueuse/core'), { spy: true })
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
 const telemetry = vi.mocked(telemetryProvider)
@@ -8817,7 +8820,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.paste('continue this submission')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     const agree = await screen.findByRole('button', {
-      name: 'Agree and continue'
+      name: 'Agree and continue with sign in'
     })
     expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
     expect(fetchRequests(consentPost)).toHaveLength(0)

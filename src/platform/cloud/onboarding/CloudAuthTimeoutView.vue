@@ -34,10 +34,9 @@
           <span>{{ $t('cloudOnboarding.authTimeout.technicalDetails') }}</span>
           <i
             :class="
-              cn(
-                'pi',
-                showTechnicalDetails ? 'pi-chevron-up' : 'pi-chevron-down'
-              )
+              showTechnicalDetails
+                ? 'icon-[lucide--chevron-up]'
+                : 'icon-[lucide--chevron-down]'
             "
           ></i>
         </button>
@@ -72,7 +71,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
