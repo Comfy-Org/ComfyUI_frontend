@@ -1,15 +1,23 @@
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
+/** A model Comfy Cloud lacks, as this computer has it. */
+export interface CloudMissingModel {
+  name: string
+  folder: string
+  bytes: number
+}
+
 /** What Comfy Cloud lacks to run a workflow. */
 export interface CloudWorkflowGaps {
-  nodeTypes: string[]
-  models: string[]
+  nodePacks: string[]
+  models: CloudMissingModel[]
 }
 
 /** Comfy Cloud's answer to whether it can run a workflow. */
 export type CloudWorkflowVerdict =
   | { kind: 'canOpen' }
   | { kind: 'missing'; gaps: CloudWorkflowGaps }
+  | { kind: 'signedOut' }
 
 /** Asks Comfy Cloud whether it can run a workflow. */
 export type CloudWorkflowChecker = (
@@ -40,36 +48,88 @@ export function reduceCloudWorkflowCheck(
   }
 }
 
-/** The answer the prototype switch has the stand-in checker give. */
-export type PrototypeCloudCheck = 'checking' | CloudWorkflowVerdict['kind']
+/** The workflow the prototype panel has the stand-in checker answer for. */
+export type PrototypeScenario =
+  | 'compatible'
+  | 'nodePacksMissing'
+  | 'modelsMissing'
+  | 'nodePacksAndModelsMissing'
+  | 'checking'
+  | 'signedOut'
+
+type ScenarioWithGaps = Exclude<
+  PrototypeScenario,
+  'compatible' | 'checking' | 'signedOut'
+>
+
+/** What the stand-in checker answers from. */
+export interface PrototypeCheckInput {
+  scenario: PrototypeScenario
+  uploadedModels: readonly string[]
+}
 
 export const PROTOTYPE_CHECK_MS = 1000
 
-export const PROTOTYPE_GAPS: CloudWorkflowGaps = {
-  nodeTypes: ['UltimateSDUpscale'],
-  models: []
+const PROTOTYPE_NODE_PACKS = ['rgthree-comfy', 'comfyui-impact-pack']
+
+const FACE_DETECTOR: CloudMissingModel = {
+  name: 'face_yolov8m.pt',
+  folder: 'ultralytics/bbox',
+  bytes: 52_000_000
+}
+const DETAIL_LORA: CloudMissingModel = {
+  name: 'add-detail-xl.safetensors',
+  folder: 'loras',
+  bytes: 218_000_000
+}
+const JUGGERNAUT: CloudMissingModel = {
+  name: 'juggernautXL_v9.safetensors',
+  folder: 'checkpoints',
+  bytes: 6_600_000_000
 }
 
-function prototypeVerdict(
-  check: Exclude<PrototypeCloudCheck, 'checking'>
-): CloudWorkflowVerdict {
-  return check === 'canOpen'
+export const PROTOTYPE_GAPS: Record<ScenarioWithGaps, CloudWorkflowGaps> = {
+  nodePacksMissing: { nodePacks: PROTOTYPE_NODE_PACKS, models: [] },
+  modelsMissing: { nodePacks: [], models: [DETAIL_LORA, JUGGERNAUT] },
+  nodePacksAndModelsMissing: {
+    nodePacks: PROTOTYPE_NODE_PACKS,
+    models: [FACE_DETECTOR]
+  }
+}
+
+/** The stand-in's answer: Comfy Cloud has every model already uploaded. */
+export function prototypeVerdict({
+  scenario,
+  uploadedModels
+}: PrototypeCheckInput): CloudWorkflowVerdict | null {
+  switch (scenario) {
+    case 'checking':
+      return null
+    case 'compatible':
+      return { kind: 'canOpen' }
+    case 'signedOut':
+      return { kind: 'signedOut' }
+  }
+  const { nodePacks, models } = PROTOTYPE_GAPS[scenario]
+  const stillMissing = models.filter(
+    (model) => !uploadedModels.includes(model.name)
+  )
+  return nodePacks.length === 0 && stillMissing.length === 0
     ? { kind: 'canOpen' }
-    : { kind: 'missing', gaps: PROTOTYPE_GAPS }
+    : { kind: 'missing', gaps: { nodePacks, models: stillMissing } }
 }
 
 /**
- * Answers with what the prototype switch picks, after a pause; `checking`
- * never answers.
+ * Answers with what the prototype panel picks, after a pause; the checking
+ * scenario never answers.
  */
 export function prototypeCloudWorkflowChecker(
-  pick: () => PrototypeCloudCheck
+  pick: () => PrototypeCheckInput,
+  pauseMs = PROTOTYPE_CHECK_MS
 ): CloudWorkflowChecker {
   return () => {
-    const check = pick()
-    if (check === 'checking') return new Promise(() => {})
-    return new Promise((resolve) =>
-      setTimeout(() => resolve(prototypeVerdict(check)), PROTOTYPE_CHECK_MS)
-    )
+    const verdict = prototypeVerdict(pick())
+    if (!verdict) return new Promise(() => {})
+    return new Promise((resolve) => setTimeout(() => resolve(verdict), pauseMs))
   }
 }

@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
-import { ref, shallowRef } from 'vue'
+import { ref, shallowRef, watch } from 'vue'
 
 import type {
+  CloudWorkflowChecker,
   CloudWorkflowCheckEvent,
   CloudWorkflowCheckState,
-  PrototypeCloudCheck
+  PrototypeScenario
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import {
   prototypeCloudWorkflowChecker,
@@ -12,25 +13,61 @@ import {
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
-/** Whether Comfy Cloud can run the open workflow, rechecked on each call. */
+/**
+ * Whether Comfy Cloud can run the open workflow, rechecked on each call and
+ * again, without a pause, when the prototype panel changes its answer.
+ */
 export const useCloudWorkflowCheckStore = defineStore(
   'cloudWorkflowCheck',
   () => {
-    const prototypeCheck = ref<PrototypeCloudCheck>('canOpen')
+    const prototypeScenario = ref<PrototypeScenario>('compatible')
+    const uploadedModels = ref<string[]>([])
     const state = shallowRef<CloudWorkflowCheckState>({ phase: 'idle' })
-    const checker = prototypeCloudWorkflowChecker(() => prototypeCheck.value)
+    const pick = () => ({
+      scenario: prototypeScenario.value,
+      uploadedModels: uploadedModels.value
+    })
+    const checker = prototypeCloudWorkflowChecker(pick)
+    const recheckNow = prototypeCloudWorkflowChecker(pick, 0)
     let lastRun = 0
+    let lastWorkflow: ComfyWorkflowJSON | null = null
 
     function dispatch(event: CloudWorkflowCheckEvent) {
       state.value = reduceCloudWorkflowCheck(state.value, event)
     }
 
-    async function check(workflow: ComfyWorkflowJSON): Promise<void> {
+    async function run(
+      workflow: ComfyWorkflowJSON,
+      ask: CloudWorkflowChecker
+    ): Promise<void> {
       const run = ++lastRun
       dispatch({ type: 'started', run })
-      dispatch({ type: 'answered', run, verdict: await checker(workflow) })
+      dispatch({ type: 'answered', run, verdict: await ask(workflow) })
     }
 
-    return { state, prototypeCheck, check }
+    function check(workflow: ComfyWorkflowJSON): Promise<void> {
+      lastWorkflow = workflow
+      return run(workflow, checker)
+    }
+
+    function markUploaded(names: readonly string[]) {
+      uploadedModels.value = [...uploadedModels.value, ...names]
+    }
+
+    function forgetUploads() {
+      uploadedModels.value = []
+    }
+
+    watch([prototypeScenario, uploadedModels], () => {
+      if (lastWorkflow) void run(lastWorkflow, recheckNow)
+    })
+
+    return {
+      state,
+      prototypeScenario,
+      check,
+      markUploaded,
+      forgetUploads
+    }
   }
 )

@@ -86,8 +86,9 @@
                   class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
                 />
               </Button>
+              <CloudButton v-if="isCloudButtonShown" />
               <Button
-                v-if="isDeployButtonShown"
+                v-else-if="isDeployButtonShown"
                 :tooltip="t('deployToComfyApi.buttonLabel')"
                 tooltip-side="bottom"
                 variant="secondary"
@@ -212,6 +213,7 @@ import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
+import CloudButton from '@/platform/openOnCloud/components/CloudButton.vue'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
   openShareDialog,
@@ -238,6 +240,7 @@ const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
 const isDeployButtonShown = computed(() => flags.deployToCloud)
+const isCloudButtonShown = computed(() => !isCloud && flags.openOnCloudEnabled)
 function openDeployInstallationDialog() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'run_bar_deploy_clicked',
@@ -269,6 +272,7 @@ const hasDockedButtons = computed(() => {
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
   if (isDeployButtonShown.value) return true
+  if (isCloudButtonShown.value) return true
   if (isCloud) return true
   if (!isRightSidePanelOpen.value) return true
   return false

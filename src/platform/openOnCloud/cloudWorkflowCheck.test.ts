@@ -3,12 +3,14 @@ import { describe, expect, it, vi } from 'vitest'
 import type {
   CloudWorkflowCheckEvent,
   CloudWorkflowCheckState,
-  CloudWorkflowVerdict
+  CloudWorkflowVerdict,
+  PrototypeCheckInput
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import {
   PROTOTYPE_CHECK_MS,
   PROTOTYPE_GAPS,
   prototypeCloudWorkflowChecker,
+  prototypeVerdict,
   reduceCloudWorkflowCheck
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { defaultGraph } from '@/scripts/defaultGraph'
@@ -16,7 +18,10 @@ import { defaultGraph } from '@/scripts/defaultGraph'
 const canOpen: CloudWorkflowVerdict = { kind: 'canOpen' }
 const missing: CloudWorkflowVerdict = {
   kind: 'missing',
-  gaps: { nodeTypes: ['UltimateSDUpscale'], models: ['4x-UltraSharp.pth'] }
+  gaps: {
+    nodePacks: ['comfyui-impact-pack'],
+    models: [{ name: 'face_yolov8m.pt', folder: 'ultralytics/bbox', bytes: 1 }]
+  }
 }
 
 describe(reduceCloudWorkflowCheck, () => {
@@ -61,26 +66,83 @@ describe(reduceCloudWorkflowCheck, () => {
   })
 })
 
-describe(prototypeCloudWorkflowChecker, () => {
-  it.for<{ pick: 'canOpen' | 'missing'; verdict: CloudWorkflowVerdict }>([
-    { pick: 'canOpen', verdict: { kind: 'canOpen' } },
-    { pick: 'missing', verdict: { kind: 'missing', gaps: PROTOTYPE_GAPS } }
-  ])(
-    'answers $pick after the pause the switch asks for',
-    async ({ pick, verdict }) => {
-      const answer = prototypeCloudWorkflowChecker(() => pick)(defaultGraph)
+describe(prototypeVerdict, () => {
+  const { modelsMissing, nodePacksAndModelsMissing } = PROTOTYPE_GAPS
+  const allModels = modelsMissing.models.map((model) => model.name)
 
-      await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
-
-      await expect(answer).resolves.toEqual(verdict)
+  it.for<{
+    name: string
+    input: PrototypeCheckInput
+    expected: CloudWorkflowVerdict | null
+  }>([
+    {
+      name: 'compatible can open',
+      input: { scenario: 'compatible', uploadedModels: [] },
+      expected: { kind: 'canOpen' }
+    },
+    {
+      name: 'signed out says so',
+      input: { scenario: 'signedOut', uploadedModels: [] },
+      expected: { kind: 'signedOut' }
+    },
+    {
+      name: 'checking never answers',
+      input: { scenario: 'checking', uploadedModels: [] },
+      expected: null
+    },
+    {
+      name: 'models missing names each model',
+      input: { scenario: 'modelsMissing', uploadedModels: [] },
+      expected: { kind: 'missing', gaps: modelsMissing }
+    },
+    {
+      name: 'an uploaded model is no longer missing',
+      input: { scenario: 'modelsMissing', uploadedModels: allModels.slice(1) },
+      expected: {
+        kind: 'missing',
+        gaps: { nodePacks: [], models: modelsMissing.models.slice(0, 1) }
+      }
+    },
+    {
+      name: 'once every model is uploaded it can open',
+      input: { scenario: 'modelsMissing', uploadedModels: allModels },
+      expected: { kind: 'canOpen' }
+    },
+    {
+      name: 'node packs and models missing names both',
+      input: { scenario: 'nodePacksAndModelsMissing', uploadedModels: [] },
+      expected: { kind: 'missing', gaps: nodePacksAndModelsMissing }
     }
-  )
+  ])('$name', ({ input, expected }) => {
+    expect(prototypeVerdict(input)).toEqual(expected)
+  })
+})
 
-  it('keeps checking while the switch says checking', async () => {
+describe(prototypeCloudWorkflowChecker, () => {
+  const compatible: PrototypeCheckInput = {
+    scenario: 'compatible',
+    uploadedModels: []
+  }
+
+  it('answers after the pause it was made with', async () => {
     const onAnswer = vi.fn()
-    void prototypeCloudWorkflowChecker(() => 'checking')(defaultGraph).then(
+    void prototypeCloudWorkflowChecker(() => compatible)(defaultGraph).then(
       onAnswer
     )
+
+    await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS - 1)
+    expect(onAnswer).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(onAnswer).toHaveBeenCalledWith({ kind: 'canOpen' })
+  })
+
+  it('keeps checking while the panel says checking', async () => {
+    const onAnswer = vi.fn()
+    void prototypeCloudWorkflowChecker(() => ({
+      scenario: 'checking',
+      uploadedModels: []
+    }))(defaultGraph).then(onAnswer)
 
     await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS * 10)
 

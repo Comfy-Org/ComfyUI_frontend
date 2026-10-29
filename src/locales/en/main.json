@@ -4176,10 +4176,52 @@
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "prototype": {
       "label": "Comfy Cloud check (prototype)",
+      "compatible": "Compatible",
+      "nodePacksMissing": "Node packs missing",
+      "modelsMissing": "Models missing",
+      "nodePacksAndModelsMissing": "Node packs and models missing",
       "checking": "Checking",
-      "canOpen": "Can open",
-      "missing": "Can't open",
+      "signedOut": "Signed out",
+      "localAgent": "Local agent",
+      "agentFound": "Found",
+      "agentNotFound": "Not found",
+      "resetUpload": "Reset upload",
       "simulateOutOfMemory": "Simulate out of memory"
+    },
+    "cloudMenu": {
+      "buttonTooltip": "Run on Comfy Cloud",
+      "runThisWorkflow": "Run this workflow on Comfy Cloud",
+      "nodePacksMissing": "{count} node pack missing | {count} node packs missing",
+      "nodePacks": "{count} node pack | {count} node packs",
+      "models": "{count} model | {count} models",
+      "nodePacksAndModelsMissing": "{nodePacks} and {models} missing",
+      "uploading": "Uploading {models} · {percent}%",
+      "convert": "Convert",
+      "upload": "Upload",
+      "signIn": "Sign in",
+      "deployLocalSetup": "Deploy your local setup to Comfy Cloud"
+    },
+    "convertDialog": {
+      "title": "Run on Comfy Cloud",
+      "bodyAgentFound": "We'll start your local agent to get this workflow running on Comfy Cloud. You'll approve any local file uploads along the way.",
+      "bodyAgentNotFound": "ComfyUI couldn't find your local agent. Copy a prompt for Claude Code or Codex, or set this workflow up on Platform.",
+      "copyPrompt": "Copy prompt",
+      "letsGo": "Let's go",
+      "openInPlatform": "Open in Platform",
+      "agentEnsues": "Agent ensues"
+    },
+    "uploadDialog": {
+      "title": "Upload {count} model | Upload {count} models",
+      "body": "Upload these models to run this workflow on Comfy Cloud.",
+      "total": "{size} in total. They go to your models on Comfy Cloud.",
+      "upload": "Upload",
+      "uploadingTitle": "Uploading {count} model | Uploading {count} models",
+      "uploadingBody": "Hide this and keep working. The upload carries on, and the engine button shows how far it has got.",
+      "uploaded": "Uploaded",
+      "progress": "{done} of {total}",
+      "percent": "{percent}%",
+      "cancelUpload": "Cancel upload",
+      "hide": "Hide"
     }
   },
   "selectionToolbox": {

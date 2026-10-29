@@ -3,62 +3,112 @@
     <div
       role="group"
       :aria-label="$t('openOnCloud.prototype.label')"
-      class="fixed right-4 bottom-4 z-3000 flex flex-col gap-1.5 rounded-lg border border-border bg-background p-2 text-xs shadow-lg"
+      class="fixed right-4 bottom-4 z-3000 flex w-88 flex-col gap-1.5 rounded-lg border border-border bg-background p-2 text-xs shadow-lg"
+      data-prototype-panel
       data-testid="cloud-check-prototype-switch"
     >
       <span class="px-1 text-muted-foreground">
         {{ $t('openOnCloud.prototype.label') }}
       </span>
-      <ToggleGroup v-model="prototypeCheck" type="single" :allow-empty="false">
+      <ToggleGroup
+        v-model="prototypeScenario"
+        type="single"
+        :allow-empty="false"
+        class="grid grid-cols-2"
+      >
         <ToggleGroupItem
-          v-for="option in options"
-          :key="option.value"
-          :value="option.value"
+          v-for="scenario in scenarios"
+          :key="scenario.value"
+          :value="scenario.value"
           size="sm"
-          class="px-2.5"
+          class="justify-start px-2.5"
         >
-          {{ option.label }}
+          {{ scenario.label }}
         </ToggleGroupItem>
       </ToggleGroup>
-      <Button
-        variant="secondary"
-        size="sm"
-        class="h-7"
-        data-testid="prototype-simulate-out-of-memory"
-        @click="simulateOutOfMemory"
-      >
-        <i class="icon-[lucide--memory-stick] size-3.5" aria-hidden="true" />
-        {{ $t('openOnCloud.prototype.simulateOutOfMemory') }}
-      </Button>
+      <div class="flex items-center gap-1.5">
+        <span class="px-1 text-muted-foreground">
+          {{ $t('openOnCloud.prototype.localAgent') }}
+        </span>
+        <ToggleGroup
+          v-model="prototypeAgent"
+          type="single"
+          :allow-empty="false"
+        >
+          <ToggleGroupItem value="found" size="sm" class="px-2.5">
+            {{ $t('openOnCloud.prototype.agentFound') }}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="notFound" size="sm" class="px-2.5">
+            {{ $t('openOnCloud.prototype.agentNotFound') }}
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+      <div class="grid grid-cols-2 gap-1.5">
+        <Button
+          variant="secondary"
+          size="sm"
+          class="h-7"
+          data-testid="prototype-reset-upload"
+          @click="uploadStore.reset()"
+        >
+          <i class="icon-[lucide--rotate-ccw] size-3.5" aria-hidden="true" />
+          {{ $t('openOnCloud.prototype.resetUpload') }}
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          class="h-7"
+          data-testid="prototype-simulate-out-of-memory"
+          @click="simulateOutOfMemory"
+        >
+          <i class="icon-[lucide--memory-stick] size-3.5" aria-hidden="true" />
+          {{ $t('openOnCloud.prototype.simulateOutOfMemory') }}
+        </Button>
+      </div>
     </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
-import type { PrototypeCloudCheck } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import type { PrototypeScenario } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { prototypeOutOfMemoryError } from '@/platform/openOnCloud/prototypeOutOfMemory'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useLocalAgentStore } from '@/platform/openOnCloud/stores/localAgentStore'
+import { useModelUploadStore } from '@/platform/openOnCloud/stores/modelUploadStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 const { t } = useI18n()
-const options = computed<{ value: PrototypeCloudCheck; label: string }[]>(
+const scenarios = computed<{ value: PrototypeScenario; label: string }[]>(
   () => [
+    { value: 'compatible', label: t('openOnCloud.prototype.compatible') },
+    {
+      value: 'nodePacksMissing',
+      label: t('openOnCloud.prototype.nodePacksMissing')
+    },
+    { value: 'modelsMissing', label: t('openOnCloud.prototype.modelsMissing') },
+    {
+      value: 'nodePacksAndModelsMissing',
+      label: t('openOnCloud.prototype.nodePacksAndModelsMissing')
+    },
     { value: 'checking', label: t('openOnCloud.prototype.checking') },
-    { value: 'canOpen', label: t('openOnCloud.prototype.canOpen') },
-    { value: 'missing', label: t('openOnCloud.prototype.missing') }
+    { value: 'signedOut', label: t('openOnCloud.prototype.signedOut') }
   ]
 )
 
-const { prototypeCheck } = storeToRefs(useCloudWorkflowCheckStore())
+const { prototypeScenario } = storeToRefs(useCloudWorkflowCheckStore())
+const { prototypeAgent } = storeToRefs(useLocalAgentStore())
+const uploadStore = useModelUploadStore()
 const executionErrorStore = useExecutionErrorStore()
+
+watch(prototypeScenario, () => uploadStore.cancel())
 
 function simulateOutOfMemory() {
   const error = prototypeOutOfMemoryError(app.rootGraph.nodes, Date.now())
