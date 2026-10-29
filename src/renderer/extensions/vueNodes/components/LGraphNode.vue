@@ -41,6 +41,11 @@
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
+    <NodeBadges
+      v-if="!isRerouteNode && !isTransparentHeaderless"
+      v-bind="badges"
+      class="absolute right-0 bottom-full mb-0.5"
+    />
     <NodeBloodDrips
       v-if="
         !isRerouteNode &&
@@ -112,7 +117,6 @@
         <NodeHeader
           :node-data
           :collapsed="isCollapsed"
-          :price-badges="badges.pricing"
           @collapse="handleCollapse"
           @update:title="handleHeaderTitleUpdate"
         />
@@ -185,12 +189,6 @@
           <LivePreview
             v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
             :image-url="latestPreviewUrl"
-          />
-          <NodeBadges
-            v-if="!isTransparentHeaderless"
-            v-bind="badges"
-            :pricing="undefined"
-            class="mt-auto"
           />
         </div>
       </template>

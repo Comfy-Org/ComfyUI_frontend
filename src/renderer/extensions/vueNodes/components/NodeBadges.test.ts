@@ -20,4 +20,18 @@ describe('NodeBadges', () => {
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
   })
+
+  it('renders pricing without identity or extension badges', () => {
+    render(NodeBadges, {
+      props: {
+        hasComfyBadge: false,
+        core: [],
+        extension: [],
+        pricing: [{ required: '0.25', rest: 'credits / image' }]
+      }
+    })
+
+    expect(screen.getByText('0.25')).toBeVisible()
+    expect(screen.getByText('credits / image')).toBeVisible()
+  })
 })

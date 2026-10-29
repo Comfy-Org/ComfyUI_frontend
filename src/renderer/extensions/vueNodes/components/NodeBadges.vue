@@ -1,20 +1,23 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import CreditBadge from '@comfyorg/design-system/badge/CreditBadge'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 
-defineProps<{
+const { pricing = [] } = defineProps<{
   hasComfyBadge: boolean
   hasComfyCloudBadge?: boolean
   core: NodeBadgeProps[]
   extension: NodeBadgeProps[]
+  pricing?: { required: string; rest?: string }[]
 }>()
 </script>
 <template>
   <div
-    v-if="hasComfyBadge || core.length || extension.length"
-    class="flex h-5 w-full gap-2 px-2 text-muted-foreground"
+    v-if="hasComfyBadge || core.length || extension.length || pricing.length"
+    data-testid="node-badges"
+    class="flex w-max items-center gap-2 text-muted-foreground"
   >
     <div
       v-if="core.length"
@@ -61,6 +64,13 @@ defineProps<{
           class="h-6 first:pl-2 last:pr-2"
         />
       </template>
+    </div>
+    <div
+      v-for="badge in pricing"
+      :key="badge.required"
+      class="flex items-center"
+    >
+      <CreditBadge :text="badge.required" :rest="badge.rest" />
     </div>
   </div>
 </template>
