@@ -320,7 +320,7 @@ function isLiteGraphSingleton(
       definition.node.imported?.name === 'LiteGraph' &&
       typeof source === 'string' &&
       ((source.startsWith('.') && source.endsWith('/litegraph')) ||
-        /(?:^|\/)lib\/litegraph(?:\/src)?\/litegraph$/.test(source))
+        /^(?:@comfyorg\/litegraph|#)\/litegraph$/.test(source))
     )
   })
 }

@@ -271,12 +271,14 @@
       }
     },
     {
-      "files": ["src/**/*.{ts,tsx,vue}"],
+      "files": ["src/**/*.{ts,tsx,vue}", "packages/litegraph/src/**/*.ts"],
       "excludeFiles": [
         "src/**/*.d.ts",
         "src/**/*.{test,spec,stories}.{ts,tsx,vue}",
         "src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**",
-        "src/**/{generated,vendor}/**"
+        "src/**/{generated,vendor}/**",
+        "packages/litegraph/src/**/*.test.ts",
+        "packages/litegraph/src/**/__fixtures__/**"
       ],
       "rules": {
         "comfy/no-new-error-throw": "error",

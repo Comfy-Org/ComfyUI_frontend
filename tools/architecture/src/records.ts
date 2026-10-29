@@ -34,7 +34,7 @@ export interface ArchitectureConfiguration {
 function listSourceFiles(repositoryRoot: string): Outcome<string[]> {
   const files: string[] = []
   for (const root of SOURCE_ROOTS) {
-    if (!existsSync(join(repositoryRoot, root))) continue
+    if (root !== 'src' && !existsSync(join(repositoryRoot, root))) continue
     const entries = listDirectory(repositoryRoot, root, true)
     if (!entries.ok) return entries
     files.push(...entries.value.map((filename) => `${root}/${filename}`))
