@@ -17,11 +17,7 @@ interface LibraryFolder {
 
 const NO_NAMES: readonly string[] = []
 
-/**
- * Every member's private models in the workspace library, by model folder, offered after the
- * Release's models in the loader dropdowns of a page booted on a deployment
- * while the runtime library models flag is on.
- */
+/** The workspace library's model names by folder, offered after the Release's in a deployment's loader dropdowns. */
 export const useDeploymentLibraryModelsStore = defineStore(
   'deploymentLibraryModels',
   () => {
@@ -58,7 +54,6 @@ export const useDeploymentLibraryModelsStore = defineStore(
       })
     )
 
-    /** The library folder a loader input offers on a deployment, else undefined. */
     function folderFor(nodeType: string, widgetName: string) {
       if (!deploymentPick.bootDeployment) return undefined
       if (!assetService.isAssetBrowserEligible(nodeType, widgetName)) {
@@ -67,7 +62,6 @@ export const useDeploymentLibraryModelsStore = defineStore(
       return useModelToNodeStore().getCategoryForNodeType(nodeType)
     }
 
-    /** Reads the folder again, keeping its names shown until the answer. */
     function refresh(folder: string): LibraryFolder | undefined {
       if (!flags.runtimeLibraryModelsEnabled || !workspaceStore.workspaceId) {
         return undefined
@@ -107,17 +101,14 @@ export const useDeploymentLibraryModelsStore = defineStore(
       return folders.get(folder) ?? refresh(folder)
     }
 
-    /** Starts reading the folder unless it was read already. */
     function prepare(folder: string) {
       current(folder)
     }
 
-    /** The folder's library model names, loading them on first read. */
     function namesIn(folder: string): readonly string[] {
       return current(folder)?.names ?? NO_NAMES
     }
 
-    /** Calls back each time the folder's offered names change; returns the stop. */
     function onNamesChange(folder: string, callback: () => void): () => void {
       const stop = listeners.run(() => watch(() => namesIn(folder), callback))
       return stop ?? (() => {})
