@@ -3,13 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import SubscriptionRequiredDialogContent from './SubscriptionRequiredDialogContent.vue'
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 

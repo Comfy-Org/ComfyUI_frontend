@@ -22,6 +22,7 @@ const SCHEDULED_CHANGE = {
 const TOO_LARGE = BigInt(Number.MAX_SAFE_INTEGER) + 1n
 
 const DECODED: BillingStatusData = {
+  ended_at: null,
   is_active: true,
   has_funds: true,
   max_seats: 5,

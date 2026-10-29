@@ -112,6 +112,7 @@ function confirmDelete(secret: SecretMetadata) {
       promptText: t('secrets.deleteConfirmMessage', { name: secret.name })
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.delete'),
       confirmVariant: 'destructive',
       onCancel: () => dialogStore.closeDialog(dialog),

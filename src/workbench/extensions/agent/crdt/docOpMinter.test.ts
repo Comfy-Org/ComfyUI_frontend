@@ -21,7 +21,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -462,8 +462,7 @@ describe('attachDocOpMinter', () => {
             op: 'set_widget',
             node_id: source.id,
             widget: 'steps',
-            value: 42,
-            old: 20
+            value: 42
           }
         }
       },
@@ -1473,7 +1472,6 @@ describe('attachDocOpMinter', () => {
         node_id: interior.id,
         widget: 'steps',
         value: 3,
-        old: 20,
         path: [String(host.id), String(interior.id)],
         inner_widget: 'steps'
       }
@@ -1544,14 +1542,10 @@ describe('attachDocOpMinter', () => {
         node_id: host.id,
         widget: 'text',
         value: 'a prompt pasted while the agent panel is open',
-        old: 'an interior default',
         promoted: {
           value_index: 1,
           instance_path: [String(host.id)],
-          host_widgets_values: [
-            'an interior default',
-            'a prompt pasted while the agent panel is open'
-          ]
+          host_widgets_values: ['an interior default', undefined]
         }
       }
     ])
@@ -1577,6 +1571,44 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
+  it('keeps a large promoted host write inside the cost budget by leaving the edited value out of the host array', async () => {
+    const { host, doc } = seedPromotedHost()
+    const counterfactualDoc = mintDocFrom(graph)
+    seededPromotedDocs.add(counterfactualDoc)
+    const pasted = 'c'.repeat(140_000)
+
+    host.widgets[1].value = pasted
+    await afterFlush()
+
+    expect(minted).toHaveLength(1)
+    const [write] = minted
+    assert(write.op === 'set_widget' && write.path == null)
+    expect(write.promoted?.host_widgets_values).toEqual([
+      'an interior default',
+      undefined
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    expect(
+      project(doc, CATALOG).nodes.find(
+        (node) => String(node.id) === String(host.id)
+      )?.widgets_values
+    ).toEqual(['an interior default', pasted])
+    expect(
+      applyMinted(counterfactualDoc, [
+        {
+          ...write,
+          promoted: {
+            ...write.promoted,
+            host_widgets_values: ['an interior default', pasted]
+          }
+        } as GraphOperation
+      ])
+    ).toEqual(['rejected'])
+
+    doc.destroy()
+    counterfactualDoc.destroy()
+  })
+
   it('builds the array from the host values when the document holds none', async () => {
     const { host, doc } = seedPromotedHost([])
 
@@ -1588,7 +1620,7 @@ describe('attachDocOpMinter', () => {
         promoted: {
           value_index: 1,
           instance_path: [String(host.id)],
-          host_widgets_values: ['an interior default', 'pasted']
+          host_widgets_values: ['an interior default', undefined]
         }
       })
     ])
@@ -1699,8 +1731,7 @@ describe('attachDocOpMinter', () => {
         op: 'set_widget',
         node_id: source.id,
         widget: 'steps',
-        value: 42,
-        old: 20
+        value: 42
       }
     ])
     expect(applyMinted(doc, minted)).toEqual(['applied'])
@@ -1722,8 +1753,7 @@ describe('attachDocOpMinter', () => {
         op: 'set_widget',
         node_id: source.id,
         widget: 'steps',
-        value: 42,
-        old: 20
+        value: 42
       }
     ])
     expect(applyMinted(doc, minted)).toEqual(['applied'])
@@ -1742,7 +1772,11 @@ describe('attachDocOpMinter', () => {
     const [write] = minted
     assert(write.op === 'set_widget' && write.path == null)
     expect(write.promoted?.host_widgets_values).toEqual(
-      host.serialize().widgets_values
+      host
+        .serialize()
+        .widgets_values?.map((value, index) =>
+          index === write.promoted?.value_index ? undefined : value
+        )
     )
 
     // Over the wire, where an unset sibling becomes the same `null` a saved
@@ -1844,7 +1878,7 @@ describe('attachDocOpMinter', () => {
       const [write] = minted
       assert(write.op === 'set_widget')
       expect(write.value).toBe('second')
-      expect(write.promoted?.host_widgets_values[1]).toBe('second')
+      expect(write.promoted?.host_widgets_values[1]).toBeUndefined()
       doc.destroy()
     })
 
@@ -1883,7 +1917,7 @@ describe('attachDocOpMinter', () => {
       assert(last?.op === 'set_widget')
       expect(last.promoted?.host_widgets_values).toEqual([
         'prefix edit',
-        'text edit'
+        undefined
       ])
       doc.destroy()
     })
@@ -2517,8 +2551,7 @@ describe('attachDocOpMinter', () => {
         op: 'set_widget',
         node_id: source.id,
         widget: 'steps',
-        value: 42,
-        old: 20
+        value: 42
       }
     ])
     expect(applyMinted(doc, minted)).toEqual(['applied'])
@@ -2647,10 +2680,42 @@ describe('attachDocOpMinter', () => {
         op: 'set_widget',
         node_id: source.id,
         widget: 'steps',
-        value: 21,
-        old: 20
+        value: 21
       }
     ])
+  })
+
+  it('keeps a large widget edit inside the cost budget by leaving the previous value off the wire', async () => {
+    const held = 'c'.repeat(140_000)
+    const node = new TestPrompt()
+    withGraphIntentSource('load', () => {
+      graph.add(node)
+      node.widgets![0].value = held
+    })
+    await afterFlush()
+    const doc = mintDocFrom(graph)
+    const counterfactualDoc = mintDocFrom(graph)
+
+    node.widgets![0].value = `${held}x`
+    await afterFlush()
+
+    expect(minted).toHaveLength(1)
+    const mintedKeys = Object.keys(minted[0])
+    expect(mintedKeys).toHaveLength(4)
+    expect(mintedKeys).toEqual(
+      expect.arrayContaining(['node_id', 'op', 'value', 'widget'])
+    )
+    expect(minted[0]).not.toHaveProperty('old')
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    expect(readDocWidgetValue(doc, String(node.id), 'text')).toBe(`${held}x`)
+    expect(
+      applyMinted(counterfactualDoc, [
+        { ...minted[0], old: held } as GraphOperation
+      ])
+    ).toEqual(['rejected'])
+
+    doc.destroy()
+    counterfactualDoc.destroy()
   })
 
   it('uses the store serialize flag when a projected widget omits it', async () => {
@@ -2799,8 +2864,7 @@ describe('attachDocOpMinter', () => {
         op: 'set_widget',
         node_id: node.id,
         widget: 'steps',
-        value: 21,
-        old: 20
+        value: 21
       }
     ])
   })
@@ -2901,7 +2965,6 @@ describe('attachDocOpMinter', () => {
         node_id: source.id,
         widget: 'steps',
         value: 3,
-        old: 20,
         path: [String(host.id), String(source.id)],
         inner_widget: 'steps'
       }
@@ -3005,19 +3068,18 @@ describe('attachDocOpMinter', () => {
       widget('loras.$add').callback?.(undefined)
       await afterFlush()
 
-      const setWidget = (name: string, value: unknown, old: unknown) => ({
+      const setWidget = (name: string, value: unknown) => ({
         op: 'set_widget',
         node_id: node.id,
         widget: name,
-        value,
-        old
+        value
       })
       expect(minted).toEqual([
-        setWidget('loras', 1, 2),
-        setWidget('loras', 2, 1),
-        setWidget('loras.1.lora_name', 'A', undefined),
-        setWidget('loras.1.seed', 1, undefined),
-        setWidget('loras.1.seed.0', 'randomize', undefined)
+        setWidget('loras', 1),
+        setWidget('loras', 2),
+        setWidget('loras.1.lora_name', 'A'),
+        setWidget('loras.1.seed', 1),
+        setWidget('loras.1.seed.0', 'randomize')
       ])
     })
 
@@ -3041,18 +3103,17 @@ describe('attachDocOpMinter', () => {
       widget('loras.1').callback?.(undefined)
       await afterFlush()
 
-      const setWidget = (name: string, value: unknown, old: unknown) => ({
+      const setWidget = (name: string, value: unknown) => ({
         op: 'set_widget',
         node_id: node.id,
         widget: name,
-        value,
-        old
+        value
       })
       expect(minted).toEqual([
-        setWidget('loras.1.lora_name', 'A', undefined),
-        setWidget('loras.1.seed', 12, undefined),
-        setWidget('loras.1.seed.0', 'decrement', undefined),
-        setWidget('loras', 2, 3)
+        setWidget('loras.1.lora_name', 'A'),
+        setWidget('loras.1.seed', 12),
+        setWidget('loras.1.seed.0', 'decrement'),
+        setWidget('loras', 2)
       ])
     })
 
@@ -3068,8 +3129,7 @@ describe('attachDocOpMinter', () => {
           op: 'set_widget',
           node_id: node.id,
           widget: 'loras',
-          value: 2,
-          old: 3
+          value: 2
         }
       ])
     })

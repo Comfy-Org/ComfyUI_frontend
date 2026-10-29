@@ -25,7 +25,7 @@ import type {
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 
 const EDITOR_WIDGET_NAME = 'editor_state'
