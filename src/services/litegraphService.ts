@@ -1,6 +1,5 @@
 import { pick, zip } from 'es-toolkit/compat'
 
-import { syncListInputs } from '@/core/graph/subgraph/subgraphListInputs'
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
@@ -12,7 +11,7 @@ import {
   addWidgetPromotionOptions,
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
-import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
+import { applyDynamicInputs, syncListInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
   LGraphCanvas,

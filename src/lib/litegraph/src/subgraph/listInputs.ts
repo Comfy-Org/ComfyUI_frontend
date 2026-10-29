@@ -6,8 +6,6 @@ import type {
 } from '@comfyorg/graph-model/entityRegistry'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
-
 // A list input feeds a whole dynamic group through one link; the app layer shows it as that group on each subgraph node
 export function listableNames(
   node: LGraphNode,
@@ -36,18 +34,6 @@ export function notifyListTargets(subgraph: Subgraph, input: SubgraphInput) {
     const index = inputNode.inputs.indexOf(slot)
     inputNode.onConnectionsChange?.(NodeSlotType.INPUT, index, true, link, slot)
   }
-}
-
-export function listSourceOf(
-  node: LGraphNode,
-  slot: number
-): SubgraphInput | undefined {
-  const { graph } = node
-  const link = graph?.getLink(node.inputs.at(slot)?.link)
-  if (!graph || graph.isRootGraph || link?.origin_id !== SUBGRAPH_INPUT_ID)
-    return undefined
-  const source = (graph as Subgraph).inputs.at(link.origin_slot)
-  return source?.list ? source : undefined
 }
 
 export function canBeList(subgraph: Subgraph, input: SubgraphInput): boolean {

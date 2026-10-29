@@ -198,10 +198,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = e.detail.input._widget
         if (widget) this.ensureWidgetRemoved(widget)
 
-        const bound = hostInputsOf(this, e.detail.input)
-        if (!bound.length) this.removeInput(e.detail.index)
-        for (const input of bound.reverse())
-          this.removeInput(this.inputs.indexOf(input))
+        this._removeHostInputs(e.detail.input, e.detail.index)
         this.invalidatePromotedViews()
         this.setDirtyCanvas(true, true)
       },
@@ -229,11 +226,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphEvents.addEventListener(
       'renaming-input',
       (e) => {
-        const { index, oldName, newName } = e.detail
+        const { oldName, newName } = e.detail
         // A list's slots keep the names of its dynamic group
         if (e.detail.input.list) return
-        const input =
-          hostInputsOf(this, e.detail.input).at(0) ?? this.inputs.at(index)
+        const input = hostInputsOf(this, e.detail.input).at(0)
         if (!input) {
           console.error('Subgraph input not found')
           return
@@ -422,7 +418,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       slots: SubgraphInput[] | undefined
     ): SubgraphInput | undefined => {
       if (!slots) return undefined
-      return slots.find((slot) => !assignedSlotIds.has(slot.id))
+      return slots.find((slot) => slot.list || !assignedSlotIds.has(slot.id))
     }
 
     for (const input of this.inputs) {
@@ -438,8 +434,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const signature = `${input.name}:${String(input.type)}`
       const matchedSlot =
         takeUnassignedSlot(slotsBySignature.get(signature)) ??
-        takeUnassignedSlot(slotsByName.get(input.name)) ??
-        this._listInputFor(input.name)
+        // A list's slots are named `<list>[].<item>`
+        takeUnassignedSlot(slotsByName.get(input.name.split('[].')[0]))
 
       if (matchedSlot) {
         input._subgraphSlot = matchedSlot
@@ -563,6 +559,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   /** The list input a slot belongs to: its slots are named `<list>[].<item>`. */
+  private _removeHostInputs(subgraphInput: SubgraphInput, index: number) {
+    const bound = hostInputsOf(this, subgraphInput)
+    if (!bound.length) this.removeInput(index)
+    for (const input of bound.reverse())
+      this.removeInput(this.inputs.indexOf(input))
+  }
+
   private _listInputFor(name: string) {
     return this.subgraph.inputs.find(
       (slot) => slot.list && name.startsWith(`${slot.name}[].`)
@@ -574,12 +577,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (slot) this._addSubgraphInputListeners(slot, input)
   }
 
-  hostSlotOf(index: number): number {
+  hostSlotOf(index: number) {
     const subgraphInput = this.subgraph.inputs.at(index)
-    if (!subgraphInput) return -1
-    return this.inputs.findIndex(
-      (input) => input._subgraphSlot === subgraphInput
+    const slot = this.inputs.findIndex(
+      (input) => subgraphInput && input._subgraphSlot === subgraphInput
     )
+    return slot === -1 ? undefined : { input: this.inputs[slot], slot }
   }
 
   private _hydratePreviewExposures() {
